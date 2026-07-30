@@ -4674,6 +4674,7 @@ const CandidatePipelineModal = ({
     hasSelectedPrfStatusThisSession &&
     ["Matched", "Not Matched"].includes(activePrfStatus);
   const isOnlineAssessment = currentStage === "Online Assessment";
+  const isAssessmentFit = currentStage === "Assessment Fit";
   const isInterviewScheduled = currentStage === "Interview Scheduled";
   const isInterviewed = currentStage === "Interviewed";
   const isOffered = currentStage === "Offered";
@@ -5319,7 +5320,14 @@ const CandidatePipelineModal = ({
       payload?.emailWarning || payload?.email_warning,
     );
 
+    /*
+     * A successful assessment save must leave only StatusModal visible.
+     * Close every child overlay now; Candidate Pipeline Details remains
+     * hidden while StatusModal is open and closes when the user confirms it.
+     */
     setShowAssessmentModal(false);
+    setShowAssessmentEmailModal(false);
+    setShowNhoScheduleModal(false);
 
     if (typeof onOpenAssessmentModal === "function") {
       try {
@@ -5347,7 +5355,7 @@ const CandidatePipelineModal = ({
         (automaticallyDropped
           ? "The assessment was saved and the candidate was automatically marked as Drop-off."
           : "Assessment details were saved successfully."),
-      closeParentOnClose: automaticallyDropped,
+      closeParentOnClose: true,
     });
   }
 
@@ -7456,7 +7464,7 @@ const CandidatePipelineModal = ({
                           </div>
                         )}
 
-                        {isOnlineAssessment &&
+                        {isAssessmentFit &&
                           canScheduleInterview(activeCandidate) && (
                             <button
                               type="button"

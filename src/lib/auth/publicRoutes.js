@@ -4,6 +4,7 @@ export const PUBLIC_ROUTES = [
   "/online-assessment",
   "/apply",
   "/public/talent-pool/apply",
+  "/public/interview-date",
   "/recruitment/talent-pool/apply",
 ];
 

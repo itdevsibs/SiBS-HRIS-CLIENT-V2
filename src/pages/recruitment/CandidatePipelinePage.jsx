@@ -14,6 +14,7 @@ import {
   ChevronDown,
   RefreshCw,
   Loader2,
+  LoaderCircle,
 } from "lucide-react";
 
 import DashboardMetric from "../../components/layout/common/DashboardMetric";
@@ -317,9 +318,39 @@ function LoadingPipelineBoard() {
   );
 }
 
+function CandidatePipelineScheduleLoadingState() {
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-[#e8eef5] px-6 py-10">
+      <div
+        className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-[#dfe7ef] bg-white px-8 py-10 text-center shadow-sm"
+        role="status"
+        aria-live="polite"
+        aria-label="Saving interview schedule"
+      >
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
+          <LoaderCircle
+            className="h-8 w-8 animate-spin text-[#ff5c28]"
+            aria-hidden="true"
+          />
+        </div>
+
+        <h2 className="mt-5 text-lg font-extrabold text-[#042c51]">
+          Loading Interview Schedule
+        </h2>
+
+        <p className="mt-2 max-w-[300px] text-sm font-medium leading-6 text-[#667085]">
+          Sending the interview email and updating the candidate schedule...
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function CandidatePipelinePage() {
   const {
     isLoading,
+    isSaving,
+    isSchedulingInterview,
     loadError,
     refreshCandidatePipeline,
 
@@ -429,6 +460,7 @@ export default function CandidatePipelinePage() {
       ...metrics,
       initialScreening: 0,
       onlineAssessment: 0,
+      assessmentFit: 0,
       interviewScheduled: 0,
       interviewed: 0,
       offered: 0,
@@ -466,6 +498,10 @@ export default function CandidatePipelinePage() {
       Promise.resolve(refreshCandidatePipeline?.()),
       refreshDropOffCandidates(),
     ]);
+  }
+
+  if (isSchedulingInterview) {
+    return <CandidatePipelineScheduleLoadingState />;
   }
 
   return (
@@ -547,7 +583,7 @@ export default function CandidatePipelinePage() {
               Pipeline Summary
             </h2>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7">
               <DashboardMetric
                 label="Initial Screening"
                 value={safeMetrics.initialScreening}
@@ -560,6 +596,13 @@ export default function CandidatePipelinePage() {
                 value={safeMetrics.onlineAssessment}
                 icon={ClipboardCheck}
                 description="Assessment stage"
+              />
+
+              <DashboardMetric
+                label="Assessment Fit"
+                value={safeMetrics.assessmentFit}
+                icon={ClipboardCheck}
+                description="Ready to schedule"
               />
 
               <DashboardMetric
@@ -719,6 +762,7 @@ export default function CandidatePipelinePage() {
         candidate={scheduleCandidate}
         form={scheduleForm}
         setForm={setScheduleForm}
+        isSaving={isSaving}
         onClose={handleCloseScheduleInterview}
         onSubmit={handleSubmitScheduleInterview}
       />

@@ -73,7 +73,7 @@ const PipelineListView = ({
                 const showAssessmentButton =
                   candidate.currentStage === "Online Assessment";
                 const showScheduleButton =
-                  candidate.currentStage === "Online Assessment" &&
+                  candidate.currentStage === "Assessment Fit" &&
                   canScheduleInterview(candidate);
                 const showUpdateSchedule =
                   candidate.currentStage === "Interview Scheduled";
@@ -81,6 +81,7 @@ const PipelineListView = ({
                   candidate.currentStage !== "Drop-off" &&
                   candidate.currentStage !== "Accepted" &&
                   candidate.currentStage !== "Online Assessment" &&
+                  candidate.currentStage !== "Assessment Fit" &&
                   candidate.currentStage !== "Interview Scheduled" &&
                   candidate.currentStage !== "Offered" &&
                   Boolean(nextStage);

@@ -29,6 +29,7 @@ import WorkforceHiringPlanPage from "./pages/recruitment/WorkforceHiringPlanPage
 import TalentPoolPage from "./pages/recruitment/talent-pool/TalentPoolPage";
 import TalentPoolApplyPage from "./pages/recruitment/talent-pool/PublicTalentPoolApplicationPage";
 import CandidatePipelinePage from "./pages/recruitment/CandidatePipelinePage";
+import PublicInterviewDateSelectionPage from "./pages/recruitment/candidate-pipeline/PublicInterviewDateSelectionPage";
 import OffersPage from "./pages/recruitment/OffersPage";
 import OnboardingPage from "./pages/recruitment/OnboardingPage";
 import CandidateExperiencePage from "./pages/recruitment/CandidateExperiencePage";
@@ -60,6 +61,13 @@ export default function Router() {
       <Route
         path="/online-assessment"
         element={<FinalInterviewForms publicMode />}
+      />
+
+
+      {/* PUBLIC CANDIDATE INTERVIEW SCHEDULING */}
+      <Route
+        path="/public/interview-date/:token"
+        element={<PublicInterviewDateSelectionPage />}
       />
 
       {/* PUBLIC TALENT POOL APPLICATION FORM */}

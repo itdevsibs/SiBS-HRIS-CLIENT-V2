@@ -726,6 +726,7 @@ function isOfferStageCandidate(candidate = {}) {
   const excludedStages = [
     "Initial Screening",
     "Online Assessment",
+    "Assessment Fit",
     "Interview Scheduled",
     "Interviewed",
     "Accepted",

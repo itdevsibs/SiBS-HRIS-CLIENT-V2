@@ -2,14 +2,15 @@ const PIPELINE_STAGE_RANKS = Object.freeze({
   "Talent Pool": -1,
   "Initial Screening": 0,
   "Online Assessment": 1,
-  "Interview Scheduled": 2,
-  Interviewed: 3,
-  Offered: 4,
-  Accepted: 5,
-  "For NHO": 6,
-  "For Onboarding - Incomplete Requirements": 7,
-  Onboarding: 8,
-  "Hired / Active": 9,
+  "Assessment Fit": 2,
+  "Interview Scheduled": 3,
+  Interviewed: 4,
+  Offered: 5,
+  Accepted: 6,
+  "For NHO": 7,
+  "For Onboarding - Incomplete Requirements": 8,
+  Onboarding: 9,
+  "Hired / Active": 10,
   "Drop-off": 99,
 });
 
@@ -144,6 +145,14 @@ export function normalizePipelineStageForVisibility(value) {
     key === "interview"
   ) {
     return "Interview Scheduled";
+  }
+
+  if (
+    key === "assessment fit" ||
+    key.includes("moved to assessment fit") ||
+    key.includes("assessment passed")
+  ) {
+    return "Assessment Fit";
   }
 
   if (
@@ -325,12 +334,11 @@ function hasDirectAssessmentPayload(item = {}) {
 export function shouldShowAssessmentArtifactsForTimelineEntry(
   item = {},
 ) {
-  if (
-    !isTimelineEntryForStage(
-      item,
-      "Online Assessment",
-    )
-  ) {
+  const isAssessmentStage =
+    isTimelineEntryForStage(item, "Online Assessment") ||
+    isTimelineEntryForStage(item, "Assessment Fit");
+
+  if (!isAssessmentStage) {
     return false;
   }
 

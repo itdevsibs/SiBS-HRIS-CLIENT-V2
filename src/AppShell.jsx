@@ -8,6 +8,7 @@ const PUBLIC_ROUTES_WITHOUT_SIDEBAR = [
   "/",
   "/login",
   "/recruitment/talent-pool/apply",
+  "/public/interview-date",
 ];
 
 function shouldHideSidebar(pathname) {

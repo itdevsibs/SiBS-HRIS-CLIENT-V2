@@ -17,6 +17,7 @@ export const PIPELINE_SYNC_EVENTS_KEY = "ta_pipeline_sync_events";
 export const pipelineStages = [
   "Initial Screening",
   "Online Assessment",
+  "Assessment Fit",
   "Interview Scheduled",
   "Interviewed",
   "Offered",
@@ -27,11 +28,34 @@ export const pipelineStages = [
 export const normalStageFlow = [
   "Initial Screening",
   "Online Assessment",
+  "Assessment Fit",
   "Interview Scheduled",
   "Interviewed",
   "Offered",
   "Accepted",
 ];
+
+export function getNextPipelineStage(currentStage = "") {
+  const normalizedStage = String(currentStage || "").trim();
+  const currentIndex = normalStageFlow.indexOf(normalizedStage);
+
+  if (currentIndex < 0 || currentIndex >= normalStageFlow.length - 1) {
+    return "";
+  }
+
+  return normalStageFlow[currentIndex + 1];
+}
+
+export function canScheduleInterviewFromStage(
+  currentStage = "",
+  candidate = {},
+) {
+  return (
+    String(currentStage || "").trim() === "Assessment Fit" &&
+    candidate?.assessmentStatus === "Taken" &&
+    candidate?.assessmentResult === "Assessment Fit"
+  );
+}
 
 /* ================================
    FILTER DEFAULTS
