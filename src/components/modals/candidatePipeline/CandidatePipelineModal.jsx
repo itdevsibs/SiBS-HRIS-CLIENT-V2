@@ -3763,8 +3763,17 @@ const SIBS_ASSESSMENT_PUBLIC_LINK =
   "https://link.sibscareers.online/l/4HqL27kZ3";
 
 function getCurrentAppOrigin() {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin.replace(/\/+$/, "");
+  const configuredOrigin = getAssessmentClientBaseUrl();
+
+  try {
+    const parsedOrigin = new URL(configuredOrigin);
+    const hostname = parsedOrigin.hostname.toLowerCase();
+
+    if (!["localhost", "127.0.0.1", "0.0.0.0"].includes(hostname)) {
+      return configuredOrigin;
+    }
+  } catch {
+    // Fall through to the production client URL.
   }
 
   return "https://sibs-hris.getleadsource.com";
@@ -4512,30 +4521,6 @@ const CandidatePipelineModal = ({
           candidate?.interviewStatus ||
           candidate?.interview_status ||
           "",
-        interviewResponseStatus:
-          candidate?.interviewResponseStatus ||
-          candidate?.interview_response_status ||
-          "",
-        interviewResponseReason:
-          candidate?.interviewResponseReason ||
-          candidate?.interview_response_reason ||
-          "",
-        interviewResponseDeadline:
-          candidate?.interviewResponseDeadline ||
-          candidate?.interview_response_deadline ||
-          "",
-        interviewNextFollowUpAt:
-          candidate?.interviewNextFollowUpAt ||
-          candidate?.interview_next_follow_up_at ||
-          "",
-        interviewFollowUpCount:
-          candidate?.interviewFollowUpCount ??
-          candidate?.interview_follow_up_count ??
-          0,
-        finalInterviewDate:
-          candidate?.finalInterviewDate ||
-          candidate?.final_interview_date ||
-          "",
         onlineInterviewLink:
           candidate?.onlineInterviewLink ||
           candidate?.online_interview_link ||
@@ -4698,7 +4683,6 @@ const CandidatePipelineModal = ({
     hasSelectedPrfStatusThisSession &&
     ["Matched", "Not Matched"].includes(activePrfStatus);
   const isOnlineAssessment = currentStage === "Online Assessment";
-  const isAssessmentFit = currentStage === "Assessment Fit";
   const isInterviewScheduled = currentStage === "Interview Scheduled";
   const isInterviewed = currentStage === "Interviewed";
   const isOffered = currentStage === "Offered";
@@ -5344,14 +5328,7 @@ const CandidatePipelineModal = ({
       payload?.emailWarning || payload?.email_warning,
     );
 
-    /*
-     * A successful assessment save must leave only StatusModal visible.
-     * Close every child overlay now; Candidate Pipeline Details remains
-     * hidden while StatusModal is open and closes when the user confirms it.
-     */
     setShowAssessmentModal(false);
-    setShowAssessmentEmailModal(false);
-    setShowNhoScheduleModal(false);
 
     if (typeof onOpenAssessmentModal === "function") {
       try {
@@ -5379,7 +5356,7 @@ const CandidatePipelineModal = ({
         (automaticallyDropped
           ? "The assessment was saved and the candidate was automatically marked as Drop-off."
           : "Assessment details were saved successfully."),
-      closeParentOnClose: true,
+      closeParentOnClose: automaticallyDropped,
     });
   }
 
@@ -6696,14 +6673,6 @@ const CandidatePipelineModal = ({
   }
 
  function openFinalInterviewForm() {
-    if (activeCandidate.onlineInterviewLink) {
-      window.open(
-        activeCandidate.onlineInterviewLink,
-        "_blank",
-        "noopener,noreferrer",
-      );
-    }
-
     const submittedForms = Array.isArray(
       activeCandidate.finalInterviewSubmittedForms,
     )
@@ -7409,64 +7378,6 @@ const CandidatePipelineModal = ({
                               getDisplayInterviewStatus(activeCandidate) || "—"
                             }
                           />
-                          {(activeCandidate.interviewResponseStatus ||
-                            activeCandidate.interview_response_status) && (
-                            <>
-                            <DetailRow
-                              label="Candidate Response"
-                              value={
-                                activeCandidate.interviewResponseStatus ||
-                                activeCandidate.interview_response_status ||
-                                "—"
-                              }
-                            />
-                            <DetailRow
-                              label="Proposed Schedule"
-                              value={formatDateTime(
-                                activeCandidate.proposedInterviewDate ||
-                                  activeCandidate.proposed_interview_date,
-                              )}
-                            />
-                            <DetailRow
-                              label="Final Schedule"
-                              value={formatDateTime(
-                                activeCandidate.finalInterviewDate ||
-                                  activeCandidate.final_interview_date,
-                              )}
-                            />
-                            <DetailRow
-                              label="Response Deadline"
-                              value={formatDateTime(
-                                activeCandidate.interviewResponseDeadline ||
-                                  activeCandidate.interview_response_deadline,
-                              )}
-                            />
-                            <DetailRow
-                              label="Follow-ups"
-                              value={`${Number(
-                                activeCandidate.interviewFollowUpCount ??
-                                  activeCandidate.interview_follow_up_count ??
-                                  0,
-                              )} of 3`}
-                            />
-                            <DetailRow
-                              label="Next Follow-up / Deadline"
-                              value={formatDateTime(
-                                activeCandidate.interviewNextFollowUpAt ||
-                                  activeCandidate.interview_next_follow_up_at,
-                              )}
-                            />
-                            <DetailRow
-                              label="Response Reason"
-                              value={
-                                activeCandidate.interviewResponseReason ||
-                                activeCandidate.interview_response_reason ||
-                                "—"
-                              }
-                            />
-
-                            </>
-                          )}
 
                           <div className="mt-4 flex items-center justify-between gap-4 text-[12px]">
                             <span className="shrink-0 font-bold uppercase text-sibs-tertiary-5">
@@ -7546,7 +7457,7 @@ const CandidatePipelineModal = ({
                           </div>
                         )}
 
-                        {isAssessmentFit &&
+                        {isOnlineAssessment &&
                           canScheduleInterview(activeCandidate) && (
                             <button
                               type="button"
