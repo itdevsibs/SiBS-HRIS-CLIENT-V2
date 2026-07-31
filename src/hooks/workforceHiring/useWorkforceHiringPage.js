@@ -623,10 +623,24 @@ export default function useWorkforceHiringPage() {
             .filter((key) => key && key !== "__"),
         );
 
+        const sortedLatestWeeks = [...formattedWeeks].sort((a, b) => {
+          const dateA = new Date(a.startDate || a.weekStart || 0).getTime();
+          const dateB = new Date(b.startDate || b.weekStart || 0).getTime();
+          if (dateA && dateB && dateA !== dateB) return dateB - dateA;
+
+          const yearA = Number(a.year || String(a.label || "").match(/\d{4}/)?.[0] || 0);
+          const yearB = Number(b.year || String(b.label || "").match(/\d{4}/)?.[0] || 0);
+          if (yearA !== yearB) return yearB - yearA;
+
+          return 0;
+        });
+
+        const latestWeekId = sortedLatestWeeks[0]?.id || formattedWeeks[formattedWeeks.length - 1]?.id || "";
+
         if (!ignore) {
           setWeeklyVersions(formattedWeeks);
           setDatabaseLockedWeekKeys(initialDatabaseLockedWeekKeys);
-          setActiveWeekId(formattedWeeks[0]?.id || "");
+          setActiveWeekId(latestWeekId);
         }
       } catch (error) {
         console.error("FETCH WEEKLY VERSIONS ERROR:", error);

@@ -648,14 +648,14 @@ export default function Sidebar() {
       name: "Workforce & Hiring Overview",
       icon: CalendarDays,
       path: "/recruitment/workforce-hiring-overview",
-      allowedUsers: [1, 2, 3, 5, 6, 7],
+      allowedUsers: [3, 5, 6, 7],
       notificationKey: "workforceHiringOverview",
     },
     {
       name: "Workforce & Hiring Plan",
       icon: CalendarDays,
       path: "/recruitment/workforce-hiring-plan",
-      allowedUsers: [1, 2, 3, 5, 6, 7],
+      allowedUsers: [3, 5, 6, 7],
     },
     {
       name: "Job Description",

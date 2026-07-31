@@ -359,3 +359,4 @@ export function normalizeEmployeeData(employee) {
 export function buildEditableEmployee(employee) {
   return normalizeEmployeeData(employee);
 }
+

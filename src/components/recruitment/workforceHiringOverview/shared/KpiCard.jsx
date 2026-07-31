@@ -1,145 +1,101 @@
-import { useEffect, useMemo, useState } from "react";
+import AnimatedNumber from "./AnimatedNumber";
 
-function parseAnimatedValue(value) {
-  const cleanValue = String(value ?? "").trim();
-
-  const numericValue = Number(cleanValue.replace(/,/g, "").replace("%", ""));
-
-  return {
-    raw: cleanValue,
-    number: Number.isFinite(numericValue) ? numericValue : 0,
-    isNumeric: Number.isFinite(numericValue),
-    hasPercent: cleanValue.includes("%"),
-    hasComma:
-      typeof value === "number" ||
-      cleanValue.includes(",") ||
-      Math.abs(numericValue) >= 1000,
-    decimals: cleanValue.includes(".")
-      ? cleanValue.split(".")[1]?.replace("%", "").length || 0
-      : 0,
-  };
-}
-
-function formatAnimatedValue(value, meta) {
-  if (!meta.isNumeric) return meta.raw;
-
-  const decimals = meta.decimals;
-
-  const formattedNumber = meta.hasComma
-    ? value.toLocaleString("en-US", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      })
-    : value.toFixed(decimals);
-
-  return meta.hasPercent ? `${formattedNumber}%` : formattedNumber;
-}
-
-function useAnimatedNumber(value, duration = 850) {
-  const meta = useMemo(() => parseAnimatedValue(value), [value]);
-
-  const [displayValue, setDisplayValue] = useState(() =>
-    formatAnimatedValue(0, meta),
-  );
-
-  useEffect(() => {
-    if (!meta.isNumeric) {
-      setDisplayValue(meta.raw);
-      return;
-    }
-
-    let animationFrameId;
-    const startTime = performance.now();
-    const startValue = 0;
-    const endValue = meta.number;
-
-    function animate(currentTime) {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      const easedProgress = 1 - Math.pow(1 - progress, 3);
-      const currentValue = startValue + (endValue - startValue) * easedProgress;
-
-      setDisplayValue(formatAnimatedValue(currentValue, meta));
-
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(animate);
-      }
-    }
-
-    animationFrameId = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [duration, meta]);
-
-  return displayValue;
-}
+const TONES = {
+  navy: {
+    label: "text-[#52637A]",
+    value: "text-[#042C51]",
+    icon: "bg-[#E9F0FC] text-[#042C51]",
+    auxiliary: "border-blue-100 bg-[#E9F0FC] text-[#042C51]",
+  },
+  orange: {
+    label: "text-[#C2410C]",
+    value: "text-[#FF5C28]",
+    icon: "bg-orange-50 text-[#FF5C28]",
+    auxiliary: "border-orange-100 bg-orange-50 text-[#C2410C]",
+  },
+  green: {
+    label: "text-emerald-700",
+    value: "text-emerald-600",
+    icon: "bg-emerald-50 text-emerald-600",
+    auxiliary: "border-emerald-100 bg-emerald-50 text-emerald-700",
+  },
+  red: {
+    label: "text-rose-700",
+    value: "text-rose-600",
+    icon: "bg-rose-50 text-rose-600",
+    auxiliary: "border-rose-100 bg-rose-50 text-rose-700",
+  },
+  amber: {
+    label: "text-amber-700",
+    value: "text-amber-600",
+    icon: "bg-amber-50 text-amber-600",
+    auxiliary: "border-amber-100 bg-amber-50 text-amber-700",
+  },
+  indigo: {
+    label: "text-indigo-700",
+    value: "text-indigo-600",
+    icon: "bg-indigo-50 text-indigo-600",
+    auxiliary: "border-indigo-100 bg-indigo-50 text-indigo-700",
+  },
+  teal: {
+    label: "text-cyan-700",
+    value: "text-cyan-600",
+    icon: "bg-cyan-50 text-cyan-600",
+    auxiliary: "border-cyan-100 bg-cyan-50 text-cyan-700",
+  },
+};
 
 export default function KpiCard({
   title,
   value,
-  sideValue,
-  icon,
+  auxiliaryValue,
+  icon: Icon,
   subtitle,
-  tone,
+  tone = "navy",
+  delay = 0,
 }) {
-  const toneClass = {
-    blue: "text-sibs-primary-80",
-    green: "text-emerald-600",
-    green2: "text-green-600",
-    orange: "text-orange-500",
-    red: "text-red-600",
-    purple: "text-violet-600",
-    teal: "text-cyan-600",
-  };
-
-  const mainDisplayValue = useAnimatedNumber(sideValue || value);
-  const sideDisplayValue = useAnimatedNumber(value);
-
-  const IconComponent = icon;
+  const palette = TONES[tone] || TONES.navy;
 
   return (
-    <div
-      className={[
-        "flex min-h-[160px] flex-col rounded-xl border border-slate-200 bg-white px-3 py-4 text-center shadow-sm",
-        toneClass[tone] || "text-sibs-primary-80",
-      ].join(" ")}
+    <article
+      className="sibs-metric-card flex min-h-[116px] flex-col justify-between overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="flex h-[30px] items-start justify-center overflow-hidden">
-        <h4 className="m-0 max-w-full whitespace-nowrap text-[13px] font-extrabold leading-tight tracking-[-0.01em] text-slate-950">
+      <div className="flex items-start justify-between gap-2">
+        <span
+          className={`min-w-0 text-[9px] font-extrabold uppercase tracking-wider ${palette.label}`}
+        >
           {title}
-        </h4>
-      </div>
+        </span>
 
-      <div className="flex flex-1 flex-col items-center justify-center">
-        <div className="flex h-[48px] items-center justify-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-current/10">
-            <IconComponent className="h-7 w-7" strokeWidth={2.5} />
-          </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {auxiliaryValue !== undefined && auxiliaryValue !== null ? (
+            <span
+              className={`rounded border px-1.5 py-0.5 text-[9px] font-extrabold tabular-nums ${palette.auxiliary}`}
+            >
+              <AnimatedNumber value={auxiliaryValue} />
+            </span>
+          ) : null}
 
-          {sideValue ? (
-            <span className="text-[28px] font-bold leading-none tracking-[-0.03em]">
-              {sideDisplayValue}
+          {Icon ? (
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-full ${palette.icon}`}
+            >
+              <Icon size={15} strokeWidth={2.2} />
             </span>
           ) : null}
         </div>
-
-        <strong className="mt-2 block text-[34px] font-extrabold leading-none tracking-[-0.045em]">
-          {mainDisplayValue}
-        </strong>
-
-        <div className="mt-2 flex min-h-[18px] items-start justify-center">
-          {subtitle ? (
-            <p className="m-0 text-xs font-semibold leading-tight tracking-[-0.01em] text-slate-600">
-              {subtitle}
-            </p>
-          ) : (
-            <span className="h-4" />
-          )}
-        </div>
       </div>
-    </div>
+
+      <div className="mt-2">
+        <AnimatedNumber
+          value={value}
+          className={`block text-[25px] font-extrabold leading-none tabular-nums tracking-tight ${palette.value}`}
+        />
+        <p className="mt-1.5 line-clamp-2 min-h-[28px] text-[10px] font-bold leading-4 text-[#667085]">
+          {subtitle || "Current selected scope"}
+        </p>
+      </div>
+    </article>
   );
 }

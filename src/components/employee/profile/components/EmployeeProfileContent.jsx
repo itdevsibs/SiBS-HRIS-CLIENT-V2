@@ -15,6 +15,7 @@ export default function EmployeeProfileContent({
     employee,
     displayEmployee,
     isEditing,
+    isSaving,
     onEdit,
     onSave,
     onCancel,
@@ -28,6 +29,7 @@ export default function EmployeeProfileContent({
   const commonEditProps = {
     employee: displayEmployee,
     isEditing,
+    isSaving,
     onEdit,
     onSave,
     onCancel,
@@ -111,3 +113,5 @@ export default function EmployeeProfileContent({
 
   return null;
 }
+
+

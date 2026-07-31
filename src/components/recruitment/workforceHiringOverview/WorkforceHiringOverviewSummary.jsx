@@ -1,6 +1,4 @@
 import {
-  CalendarDays,
-  CalendarX,
   CalendarX2,
   CheckCircle2,
   Gauge,
@@ -17,81 +15,89 @@ export default function WorkforceHiringOverviewSummary() {
     overview: { summary },
   } = useWorkforceHiringView();
 
-  return (
-    <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="mb-4">
-        <h2 className="text-base font-bold uppercase tracking-tight text-slate-900">
-          Workforce Plan Overview (Aggregated)
-        </h2>
-        <p className="mt-1 text-sm font-medium text-sibs-primary-70">
-          Aggregated workforce hiring plan metrics based on the selected week,
-          cluster, and account filters.
-        </p>
-      </div>
+  const metrics = [
+    {
+      title: "Required HC",
+      value: summary.requiredHeadcount,
+      subtitle: "Approved baseline",
+      icon: Users,
+      tone: "navy",
+    },
+    {
+      title: "Actual HC",
+      value: summary.actualHeadcount,
+      subtitle: "Roster count",
+      icon: Users,
+      tone: "navy",
+    },
+    {
+      title: "Buffer %",
+      value: `${Number(summary.bufferPercentage || 0).toFixed(2)}%`,
+      subtitle: "VS required HC",
+      icon: Gauge,
+      tone: Number(summary.bufferPercentage || 0) < 0 ? "red" : "green",
+    },
+    {
+      title: "Absenteeism",
+      value: `${Number(summary.absenteeismPercentage || 0).toFixed(2)}%`,
+      subtitle: "Absenteeism%",
+      icon: CalendarX2,
+      tone: "amber",
+    },
+    {
+      title: "Attrition",
+      value: `${Number(summary.attritionPercentage || 0).toFixed(2)}%`,
+      subtitle: "Attrition%",
+      icon: UserRoundX,
+      tone: "red",
+    },
+    {
+      title: "Net Actual HC",
+      value: Math.round(summary.netActualHc),
+      subtitle: "Floor Availability",
+      icon: Users,
+      tone: "navy",
+    },
+    {
+      title: "Hiring Needed",
+      value: Math.round(summary.hiringNeeded),
+      subtitle: "Total Coverage Gap",
+      icon: UserPlus,
+      tone: "indigo",
+    },
+    {
+      title: "Hiring Rate",
+      value: `${Number(summary.hiringRate || 0).toFixed(1)}%`,
+      subtitle: "Leads yield",
+      icon: TrendingUp,
+      tone: "teal",
+    },
+    {
+      title: "Hired Count",
+      value: summary.hiredCount,
+      subtitle: "Current deployed hiring output",
+      icon: CheckCircle2,
+      tone: "green",
+    },
+  ];
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-9">
-        <KpiCard
-          title="Required Headcount"
-          value={summary.requiredHeadcount}
-          icon={Users}
-          tone="blue"
-        />
-        <KpiCard
-          title="Actual Headcount"
-          value={summary.actualHeadcount}
-          icon={Users}
-          tone="blue"
-        />
-        <KpiCard
-          title="Buffer Percentage"
-          value={`${summary.bufferPercentage.toFixed(2)}%`}
-          icon={Gauge}
-          subtitle="vs Required HC"
-          tone="green2"
-          // tone={summary.bufferPercentage < 0 ? "red" : "green"}
-        />
-        <KpiCard
-          title="Absenteeism"
-          value={Math.round(summary.absenteeism)}
-          sideValue={`${summary.absenteeismPercentage.toFixed(2)}%`}
-          icon={CalendarX2}
-          subtitle="Absenteeism %"
-          tone="orange"
-        />
-        <KpiCard
-          title="Attrition"
-          value={summary.attrition}
-          sideValue={`${summary.attritionPercentage.toFixed(2)}%`}
-          icon={UserRoundX}
-          subtitle="Attrition %"
-          tone="red"
-        />
-        <KpiCard
-          title="Net Actual HC"
-          value={Math.round(summary.netActualHc)}
-          icon={Users}
-          tone="blue"
-        />
-        <KpiCard
-          title="Hiring Needed"
-          value={Math.round(summary.hiringNeeded)}
-          icon={UserPlus}
-          tone="purple"
-        />
-        <KpiCard
-          title="Hiring Rate"
-          value={`${summary.hiringRate.toFixed(1)}%`}
-          icon={TrendingUp}
-          subtitle="Leads to JO"
-          tone="teal"
-        />
-        <KpiCard
-          title="Hired Count"
-          value={summary.hiredCount}
-          icon={CheckCircle2}
-          tone="green"
-        />
+  return (
+    <section className="space-y-3">
+
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-9">
+        {metrics.map((metric, index) => (
+          <KpiCard
+            key={metric.title}
+            {...metric}
+            delay={60 + index * 45}
+          />
+        ))}
       </div>
     </section>
   );
 }
+
+
+
+

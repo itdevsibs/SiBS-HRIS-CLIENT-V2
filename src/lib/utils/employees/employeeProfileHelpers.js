@@ -77,6 +77,14 @@ export function getProfileImageUrl(employee, apiUrl) {
     employee?.profile_picture_url,
     employee?.profileUrl,
     employee?.profile_url,
+    employee?.profileImageUrl,
+    employee?.profile_image_url,
+    employee?.avatarUrl,
+    employee?.avatar_url,
+    employee?.photoUrl,
+    employee?.photo_url,
+    employee?.imageUrl,
+    employee?.image_url,
   );
 
   if (directUrl) return directUrl;
@@ -86,6 +94,15 @@ export function getProfileImageUrl(employee, apiUrl) {
     employee?.profile_filename,
     employee?.profilePicture,
     employee?.profile_picture,
+    employee?.profileImage,
+    employee?.profile_image,
+    employee?.avatar,
+    employee?.photo,
+    employee?.image,
+    employee?.employeePhoto,
+    employee?.employee_photo,
+    employee?.employeePicture,
+    employee?.employee_picture,
   );
 
   if (!filename) return "";
@@ -161,3 +178,4 @@ export function getActiveProfileLabel(activeTab) {
     secondary: child?.label || "",
   };
 }
+
