@@ -44,17 +44,17 @@ function getOptionLabel(option) {
 
   return getText(
     option?.label ||
-      option?.name ||
-      option?.accountName ||
-      option?.account ||
-      option?.account_name ||
-      option?.gy_acc_name ||
-      option?.clusterName ||
-      option?.cluster ||
-      option?.weeklyVersion ||
-      option?.weekly_version ||
-      option?.weekRange ||
-      option?.value,
+    option?.name ||
+    option?.accountName ||
+    option?.account ||
+    option?.account_name ||
+    option?.gy_acc_name ||
+    option?.clusterName ||
+    option?.cluster ||
+    option?.weeklyVersion ||
+    option?.weekly_version ||
+    option?.weekRange ||
+    option?.value,
   );
 }
 
@@ -65,16 +65,16 @@ function getOptionValue(option) {
 
   return getText(
     option?.value ||
-      option?.id ||
-      option?.accountName ||
-      option?.account ||
-      option?.account_name ||
-      option?.gy_acc_name ||
-      option?.clusterName ||
-      option?.cluster ||
-      option?.label ||
-      option?.weeklyVersion ||
-      option?.weekly_version,
+    option?.id ||
+    option?.accountName ||
+    option?.account ||
+    option?.account_name ||
+    option?.gy_acc_name ||
+    option?.clusterName ||
+    option?.cluster ||
+    option?.label ||
+    option?.weeklyVersion ||
+    option?.weekly_version,
   );
 }
 
@@ -244,23 +244,23 @@ function getWeekEndValue(item = {}) {
 function getWeekOptionYear(item = {}) {
   return String(
     item.year ||
-      item.weekYear ||
-      item.week_year ||
-      getYearFromDate(getWeekStartValue(item)) ||
-      getYearFromDate(getWeekEndValue(item)) ||
-      "",
+    item.weekYear ||
+    item.week_year ||
+    getYearFromDate(getWeekStartValue(item)) ||
+    getYearFromDate(getWeekEndValue(item)) ||
+    "",
   );
 }
 
 function getWeekOptionNumber(item = {}) {
   return String(
     item.weekNumber ||
-      item.week_number ||
-      item.weekNo ||
-      item.week_no ||
-      item.week ||
-      getWeekNumberFromLabel(item.label || item.weekLabel || item.week_label) ||
-      "",
+    item.week_number ||
+    item.weekNo ||
+    item.week_no ||
+    item.week ||
+    getWeekNumberFromLabel(item.label || item.weekLabel || item.week_label) ||
+    "",
   );
 }
 
@@ -275,19 +275,19 @@ function normalizeWeekOption(item = {}, index = 0) {
     year && weekNumber
       ? `${year} - Week ${weekNumber}`
       : String(
-          item.label ||
-            item.weekLabel ||
-            item.week_label ||
-            `Week ${index + 1}`,
-        );
+        item.label ||
+        item.weekLabel ||
+        item.week_label ||
+        `Week ${index + 1}`,
+      );
 
   return {
     ...item,
     id: String(
       item.id ||
-        item.value ||
-        item.week_id ||
-        `${weekStart}-${weekEnd}-${index}`,
+      item.value ||
+      item.week_id ||
+      `${weekStart}-${weekEnd}-${index}`,
     ),
     title,
     range,
@@ -381,25 +381,25 @@ function getTrendRangeEndpointOption({
   const fallbackTarget =
     type === "start"
       ? {
-          label: trendWeeks?.[0],
-          weekStart:
-            endpointDetail?.weekStart ||
-            trendMeta.trendStart ||
-            trendMeta.trend_start,
-          weekEnd:
-            endpointDetail?.weekEnd ||
-            trendMeta.trendStartEnd ||
-            trendMeta.trend_start_end,
-        }
+        label: trendWeeks?.[0],
+        weekStart:
+          endpointDetail?.weekStart ||
+          trendMeta.trendStart ||
+          trendMeta.trend_start,
+        weekEnd:
+          endpointDetail?.weekEnd ||
+          trendMeta.trendStartEnd ||
+          trendMeta.trend_start_end,
+      }
       : {
-          label: trendWeeks?.[trendWeeks.length - 1],
-          weekStart:
-            endpointDetail?.weekStart ||
-            trendMeta.weekStart ||
-            trendMeta.week_start,
-          weekEnd:
-            endpointDetail?.weekEnd || trendMeta.weekEnd || trendMeta.week_end,
-        };
+        label: trendWeeks?.[trendWeeks.length - 1],
+        weekStart:
+          endpointDetail?.weekStart ||
+          trendMeta.weekStart ||
+          trendMeta.week_start,
+        weekEnd:
+          endpointDetail?.weekEnd || trendMeta.weekEnd || trendMeta.week_end,
+      };
 
   const target = endpointDetail || normalizeWeekOption(fallbackTarget);
 
@@ -451,9 +451,9 @@ function DropdownPortal({
       const top = shouldOpenUp
         ? Math.max(safePadding, rect.top - cleanMaxHeight - gap)
         : Math.min(
-            rect.bottom + gap,
-            viewportHeight - cleanMaxHeight - safePadding,
-          );
+          rect.bottom + gap,
+          viewportHeight - cleanMaxHeight - safePadding,
+        );
 
       const maxLeft = Math.max(
         safePadding,
@@ -547,7 +547,6 @@ function TrendDisplayDropdown({
   onToggle,
   onClose,
   onSelect,
-  onSelect,
 }) {
   const buttonRef = useRef(null);
   const menuOptions =
@@ -570,17 +569,15 @@ function TrendDisplayDropdown({
         type="button"
         disabled={disabled}
         onClick={onToggle}
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
-          open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
-        }`}
+        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
+          }`}
       >
         <span className="min-w-0 truncate">{value || "—"}</span>
 
         <ChevronDown
           size={18}
-          className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+            }`}
         />
       </button>
 
@@ -596,18 +593,17 @@ function TrendDisplayDropdown({
             const isSelected =
               optionId === selectedId ||
               String(option.value || "") ===
-                String(selectedOption?.value || "");
+              String(selectedOption?.value || "");
 
             return (
               <button
                 key={optionId || option.title}
                 type="button"
                 onClick={() => handleSelect(option)}
-                className={`block w-full px-4 py-2.5 text-left text-xs transition ${
-                  isSelected
-                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                    : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-                }`}
+                className={`block w-full px-4 py-2.5 text-left text-xs transition ${isSelected
+                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                  : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  }`}
               >
                 <p className="truncate font-bold">{option.title}</p>
 
@@ -745,9 +741,8 @@ function TrendCheckboxDropdown({
           <ChevronDown
             size={18}
             onClick={handleOpen}
-            className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
-              open ? "rotate-180" : ""
-            }`}
+            className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+              }`}
           />
         </div>
       ) : (
@@ -756,9 +751,8 @@ function TrendCheckboxDropdown({
           type="button"
           disabled={loading}
           onClick={handleOpen}
-          className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
-            open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
-          }`}
+          className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
+            }`}
         >
           <span className="min-w-0 truncate">
             {loading ? "Loading..." : displayLabel}
@@ -766,9 +760,8 @@ function TrendCheckboxDropdown({
 
           <ChevronDown
             size={18}
-            className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-              open ? "rotate-180" : ""
-            }`}
+            className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+              }`}
           />
         </button>
       )}
@@ -782,11 +775,10 @@ function TrendCheckboxDropdown({
         <button
           type="button"
           onClick={() => handleToggle(allValue)}
-          className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs transition ${
-            selectedValues.includes(allValue)
-              ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-              : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-          }`}
+          className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs transition ${selectedValues.includes(allValue)
+            ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+            : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+            }`}
         >
           <input
             type="checkbox"
@@ -809,11 +801,10 @@ function TrendCheckboxDropdown({
                 key={option.value}
                 type="button"
                 onClick={() => handleToggle(option.value)}
-                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs transition ${
-                  checked
-                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                    : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-                }`}
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs transition ${checked
+                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                  : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  }`}
               >
                 <input
                   type="checkbox"
@@ -1242,15 +1233,22 @@ function SortHeaderButton({ label, active = false, direction = "asc", onClick })
           : "text-sibs-primary-90 hover:bg-slate-100 hover:text-sibs-primary-1",
       ].join(" ")}
     >
-      <div className="flex flex-col items-center justify-center text-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-sibs-primary-2" />
-        <p className="mt-4 text-sm font-extrabold text-sibs-primary-1">
-          {title}
-        </p>
-        <p className="mt-1 text-xs font-semibold text-slate-500">
-          Please wait while the graph and table are loading.
-        </p>
-      </div>
+      <span>{label}</span>
+      <span className="text-[10px] text-[#FF5C28]">
+        {active ? (direction === "asc" ? "▲" : "▼") : "↕"}
+      </span>
+    </button>
+  );
+}
+
+function TrendLoadingScreen({ title, classname = "" }) {
+  return (
+    <div className={`flex flex-col items-center justify-center text-center ${classname}`}>
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-sibs-primary-2" />
+      <p className="mt-4 text-sm font-extrabold text-sibs-primary-1">{title}</p>
+      <p className="mt-1 text-xs font-semibold text-slate-500">
+        Please wait while the data is loading.
+      </p>
     </div>
   );
 }
@@ -1316,6 +1314,7 @@ function SixWeekDetailedPerformanceTable({
   const [search, setSearch] = useState("");
   const [selectedCluster, setSelectedCluster] = useState("All Clusters");
   const [selectedRisk, setSelectedRisk] = useState("All Risks");
+  const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
 
   const clusterOptions = useMemo(
     () => [
@@ -1333,11 +1332,23 @@ function SixWeekDetailedPerformanceTable({
     [rows],
   );
 
+  function handleSort(key) {
+    setSortConfig((current) => {
+      if (current.key === key) {
+        return {
+          key,
+          direction: current.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      return { key, direction: "asc" };
+    });
+  }
+
   const filteredRows = useMemo(() => {
     const keyword = String(search || "").trim().toLowerCase();
     const safeRows = Array.isArray(rows) ? rows : [];
 
-    return safeRows.filter((row) => {
+    const filtered = safeRows.filter((row) => {
       const matchesSearch =
         !keyword ||
         [getRowClusterValue(row), getRowAccountValue(row)].some((value) =>
@@ -1352,7 +1363,28 @@ function SixWeekDetailedPerformanceTable({
 
       return matchesSearch && matchesCluster && matchesRisk;
     });
-  }, [rows, search, selectedCluster, selectedRisk]);
+
+    if (!sortConfig.key) return filtered;
+
+    return [...filtered].sort((first, second) => {
+      const firstVal =
+        sortConfig.key === "cluster"
+          ? getRowClusterValue(first)
+          : getRowAccountValue(first);
+      const secondVal =
+        sortConfig.key === "cluster"
+          ? getRowClusterValue(second)
+          : getRowAccountValue(second);
+
+      const comparison = String(firstVal || "").localeCompare(
+        String(secondVal || ""),
+        undefined,
+        { numeric: true, sensitivity: "base" },
+      );
+
+      return sortConfig.direction === "asc" ? comparison : -comparison;
+    });
+  }, [rows, search, selectedCluster, selectedRisk, sortConfig]);
 
   const hasRows = filteredRows.length > 0;
   const detailTotals = useMemo(
@@ -1456,488 +1488,488 @@ function SixWeekDetailedPerformanceTable({
       </div>
 
       <div className="p-4 sm:p-5">
-      {error ? (
-        <div className="mb-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
-          {error}
-        </div>
-      ) : null}
+        {error ? (
+          <div className="mb-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+            {error}
+          </div>
+        ) : null}
 
-      <DraggableXScroll className="mt-4 border-[#C9D6E4]">
-        <table className="w-full min-w-[2600px] border-collapse">
-          <thead>
-            <tr>
-              <DetailTh rowSpan={2}>
-                <SortHeaderButton
-                  label="Cluster"
-                  active={sortConfig.key === "cluster"}
-                  direction={sortConfig.direction}
-                  onClick={() => handleSort("cluster")}
-                />
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                <SortHeaderButton
-                  label="Account"
-                  active={sortConfig.key === "account"}
-                  direction={sortConfig.direction}
-                  onClick={() => handleSort("account")}
-                />
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Required
-                <br />
-                Headcount
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Actual
-                <br />
-                Headcount
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Buffer
-                <br />%
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Absenteeism
-                <br />
-                (6 Weeks Avg)
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Absenteeism
-                <br />%
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Attrition
-                <br />
-                (6 Weeks Total)
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Attrition
-                <br />%
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Net
-                <br />
-                Actual HC
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Hiring
-                <br />
-                Needed
-              </DetailTh>
-              <DetailTh colSpan={5}>Hiring Funnel Counts</DetailTh>
-              <DetailTh colSpan={10}>Attrition Between Stages</DetailTh>
-              <DetailTh rowSpan={2}>
-                Hired
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Hiring Rate
-                <br />
-                (Leads to JO)
-              </DetailTh>
-            </tr>
-            <tr>
-              <DetailTh>
-                Accepted
-                <br />
-                JO
-              </DetailTh>
-              <DetailTh>
-                NHO
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>
-                FST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>
-                PST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>
-                Go
-                <br />
-                Live
-              </DetailTh>
-              <DetailTh>
-                JO - NHO
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-              <DetailTh>
-                NHO - FST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-              <DetailTh>
-                FST - PST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-              <DetailTh>
-                NHO - PST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-              <DetailTh>
-                PST - Go Live
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-            </tr>
-          </thead>
-
-          <tbody>
-            {hasRows ? (
-              filteredRows.map((row, index) => {
-                const cluster = getRowText(row, [
-                  "cluster",
-                  "clusterName",
-                  "cluster_name",
-                ]);
-                const account = getRowText(row, [
-                  "account",
-                  "accountName",
-                  "account_name",
-                ]);
-
-                const requiredHeadcount = getRowNumber(row, [
-                  "requiredHeadcount",
-                  "required_headcount",
-                ]);
-                const actualHeadcount = getRowNumber(row, [
-                  "actualHeadcount",
-                  "actual_headcount",
-                ]);
-                const bufferPercent = getRowNumber(row, [
-                  "bufferPercent",
-                  "buffer_percent",
-                  "bufferPercentage",
-                  "buffer_percentage",
-                  "actualBufferPercent",
-                  "actual_buffer_percent",
-                ]);
-                const absenteeismCount = getRowNumber(row, [
-                  "absenteeism",
-                  "absenteeismCount",
-                  "absenteeism_count",
-                  "averageAbsentHeadcount",
-                  "average_absent_headcount",
-                ]);
-                const absenteeismPercent = getRowNumber(row, [
-                  "absenteeismPercent",
-                  "absenteeism_percent",
-                  "averageAbsenteeismPercent",
-                  "average_absenteeism_percent",
-                  "absenteeismPercentage",
-                  "absenteeism_percentage",
-                ]);
-                const attritionCount = getRowNumber(row, [
-                  "attrition",
-                  "attritionPastCount",
-                  "attrition_past_count",
-                  "attritionCount",
-                  "attrition_count",
-                  "attritionSixWeeks",
-                  "attrition_6_weeks",
-                ]);
-                const attritionPercent = getRowNumber(row, [
-                  "attritionPastPercent",
-                  "attrition_past_percent",
-                  "attritionPercent",
-                  "attrition_percent",
-                  "attritionPercentage",
-                  "attrition_percentage",
-                ]);
-                const netActualHeadcount = getRowNumber(row, [
-                  "netActualHc",
-                  "netActualHeadcount",
-                  "net_actual_headcount",
-                  "netActualHc",
-                  "net_actual_hc",
-                ]);
-                const hiringNeeded = getRowNumber(row, [
-                  "hiringNeeded",
-                  "hiring_needed",
-                  "actualHeadcountNeeds",
-                  "actual_headcount_needs",
-                ]);
-
-                const acceptedJo = getRowNumber(row, [
-                  "acceptedJo",
-                  "acceptedJO",
-                  "accepted_jo",
-                  "interviewCount",
-                  "interview_count",
-                  "interviewPopulationCount",
-                  "interview_population_count",
-                ]);
-                const nhoCount = getRowNumber(row, [
-                  "nho",
-                  "nhoCount",
-                  "nho_count",
-                  "nhoPopulationCount",
-                  "nho_population_count",
-                ]);
-                const fstCount = getRowNumber(row, [
-                  "fst",
-                  "fstCount",
-                  "fst_count",
-                  "fstPopulationCount",
-                  "fst_population_count",
-                ]);
-                const pstCount = getRowNumber(row, [
-                  "pst",
-                  "pstCount",
-                  "pst_count",
-                  "pstPopulationCount",
-                  "pst_population_count",
-                ]);
-                const goLive = getRowNumber(row, [
-                  "goLive",
-                  "go_live",
-                  "projectedToBeEndorsed",
-                  "projected_to_be_endorsed",
-                  "projectedEndorsed",
-                  "projected_endorsed",
-                ]);
-
-                const joNhoCount = getRowNumber(row, [
-                  "joNhoCount",
-                  "jo_nho_count",
-                  "attritionInterviewToNhoCount",
-                  "attrition_interview_to_nho_count",
-                ]);
-                const joNhoPercent = getRowNumber(row, [
-                  "joNhoPercentage",
-                  "joNhoPercent",
-                  "jo_nho_percent",
-                  "attritionInterviewToNhoPercent",
-                  "attrition_interview_to_nho_percent",
-                ]);
-                const nhoFstCount = getRowNumber(row, [
-                  "nhoFstCount",
-                  "nho_fst_count",
-                  "attritionNhoToFstPstCount",
-                  "attrition_nho_to_fst_pst_count",
-                  "attritionNhoToFstCount",
-                  "attrition_nho_to_fst_count",
-                ]);
-                const nhoFstPercent = getRowNumber(row, [
-                  "nhoFstPercentage",
-                  "nhoFstPercent",
-                  "nho_fst_percent",
-                  "attritionNhoToFstPstPercent",
-                  "attrition_nho_to_fst_pst_percent",
-                  "attritionNhoToFstPercent",
-                  "attrition_nho_to_fst_percent",
-                ]);
-                const fstPstCount = getRowNumber(row, [
-                  "fstPstCount",
-                  "fst_pst_count",
-                  "attritionFstToPstCount",
-                  "attrition_fst_to_pst_count",
-                ]);
-                const fstPstPercent = getRowNumber(row, [
-                  "fstPstPercentage",
-                  "fstPstPercent",
-                  "fst_pst_percent",
-                  "attritionFstToPstPercent",
-                  "attrition_fst_to_pst_percent",
-                ]);
-                const nhoPstCount = getRowNumber(row, [
-                  "nhoPstCount",
-                  "nho_pst_count",
-                  "attritionNhoToPstCount",
-                  "attrition_nho_to_pst_count",
-                ]);
-                const nhoPstPercent = getRowNumber(row, [
-                  "nhoPstPercentage",
-                  "nhoPstPercent",
-                  "nho_pst_percent",
-                  "attritionNhoToPstPercent",
-                  "attrition_nho_to_pst_percent",
-                ]);
-                const pstGoLiveCount = getRowNumber(row, [
-                  "pstGoLiveCount",
-                  "pst_go_live_count",
-                  "attritionPstToGoLiveCount",
-                  "attrition_pst_to_go_live_count",
-                ]);
-                const pstGoLivePercent = getRowNumber(row, [
-                  "pstGoLivePercentage",
-                  "pstGoLivePercent",
-                  "pst_go_live_percent",
-                  "attritionPstToGoLivePercent",
-                  "attrition_pst_to_go_live_percent",
-                ]);
-
-                const hiredCount = getRowNumber(
-                  row,
-                  ["hiredCount", "hired_count"],
-                  fstCount,
-                );
-                const hiringRate = getRowNumber(row, [
-                  "hiringRate",
-                  "hiring_rate",
-                  "hiringPlanPercent",
-                  "hiring_plan_percent",
-                ]);
-
-                return (
-                  <tr
-                    key={`${cluster}-${account}-${index}`}
-                    className={index % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
-                  >
-                    <DetailTd>{cluster}</DetailTd>
-                    <DetailTd className="text-left">{account}</DetailTd>
-                    <DetailTd>{formatNumber(requiredHeadcount)}</DetailTd>
-                    <DetailTd>{formatNumber(actualHeadcount)}</DetailTd>
-                    <DetailTd
-                      className={getNegativePositiveColor(bufferPercent)}
-                    >
-                      {formatPercent(bufferPercent)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(absenteeismCount)}</DetailTd>
-                    <DetailTd className="text-blue-600">
-                      {formatPercent(absenteeismPercent)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(attritionCount)}</DetailTd>
-                    <DetailTd className="text-red-600">
-                      {formatPercent(attritionPercent)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(netActualHeadcount)}</DetailTd>
-                    <DetailTd className={getHiringNeededColor(hiringNeeded)}>
-                      {formatNumber(hiringNeeded)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(acceptedJo)}</DetailTd>
-                    <DetailTd>{formatNumber(nhoCount)}</DetailTd>
-                    <DetailTd>{formatNumber(fstCount)}</DetailTd>
-                    <DetailTd>{formatNumber(pstCount)}</DetailTd>
-                    <DetailTd className="text-emerald-600">
-                      {formatNumber(goLive)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(joNhoCount)}</DetailTd>
-                    <DetailTd>{formatPercent(joNhoPercent)}</DetailTd>
-                    <DetailTd>{formatNumber(nhoFstCount)}</DetailTd>
-                    <DetailTd>{formatPercent(nhoFstPercent)}</DetailTd>
-                    <DetailTd>{formatNumber(fstPstCount)}</DetailTd>
-                    <DetailTd>{formatPercent(fstPstPercent)}</DetailTd>
-                    <DetailTd>{formatNumber(nhoPstCount)}</DetailTd>
-                    <DetailTd>{formatPercent(nhoPstPercent)}</DetailTd>
-                    <DetailTd>{formatNumber(pstGoLiveCount)}</DetailTd>
-                    <DetailTd>{formatPercent(pstGoLivePercent)}</DetailTd>
-                    <DetailTd className="text-emerald-600">
-                      {formatNumber(hiredCount)}
-                    </DetailTd>
-                    <DetailTd>{formatPercent(hiringRate)}</DetailTd>
-                  </tr>
-                );
-              })
-            ) : (
+        <DraggableXScroll className="mt-4 border-[#C9D6E4]">
+          <table className="w-full min-w-[2600px] border-collapse">
+            <thead>
               <tr>
-                <DetailTd colSpan={28}>
-                  {loading
-                    ? `Loading ${rangeLabel.toLowerCase()} detailed table...`
-                    : `No ${rangeLabel.toLowerCase()} detailed account rows available.`}
-                </DetailTd>
-              </tr>
-            )}
-          </tbody>
-
-          {hasRows ? (
-            <tfoot>
-              <tr className="bg-slate-100 font-extrabold">
-                <DetailTd className="text-left">
-                  TOTAL /
+                <DetailTh rowSpan={2}>
+                  <SortHeaderButton
+                    label="Cluster"
+                    active={sortConfig.key === "cluster"}
+                    direction={sortConfig.direction}
+                    onClick={() => handleSort("cluster")}
+                  />
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  <SortHeaderButton
+                    label="Account"
+                    active={sortConfig.key === "account"}
+                    direction={sortConfig.direction}
+                    onClick={() => handleSort("account")}
+                  />
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Required
                   <br />
-                  AVERAGE
-                </DetailTd>
-
-                <DetailTd />
-
-                <DetailTd>
-                  {formatNumber(detailTotals.requiredHeadcount)}
-                </DetailTd>
-                <DetailTd>
-                  {formatNumber(detailTotals.actualHeadcount)}
-                </DetailTd>
-
-                <DetailTd
-                  className={getNegativePositiveColor(
-                    detailTotals.bufferPercent,
-                  )}
-                >
-                  {formatPercent(detailTotals.bufferPercent)}
-                </DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.absenteeism)}</DetailTd>
-
-                <DetailTd className="text-blue-600">
-                  {formatPercent(detailTotals.absenteeismPercent)}
-                </DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.attrition)}</DetailTd>
-
-                <DetailTd className="text-red-600">
-                  {formatPercent(detailTotals.attritionPercent)}
-                </DetailTd>
-
-                <DetailTd>
-                  {formatNumber(detailTotals.netActualHeadcount)}
-                </DetailTd>
-
-                <DetailTd
-                  className={getHiringNeededColor(detailTotals.hiringNeeded)}
-                >
-                  {formatNumber(detailTotals.hiringNeeded)}
-                </DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.acceptedJo)}</DetailTd>
-                <DetailTd>{formatNumber(detailTotals.nhoCount)}</DetailTd>
-                <DetailTd>{formatNumber(detailTotals.fstCount)}</DetailTd>
-                <DetailTd>{formatNumber(detailTotals.pstCount)}</DetailTd>
-
-                <DetailTd className="text-emerald-600">
-                  {formatNumber(detailTotals.goLive)}
-                </DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.joNhoCount)}</DetailTd>
-                <DetailTd>{formatPercent(detailTotals.joNhoPercent)}</DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.nhoFstCount)}</DetailTd>
-                <DetailTd>{formatPercent(detailTotals.nhoFstPercent)}</DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.fstPstCount)}</DetailTd>
-                <DetailTd>{formatPercent(detailTotals.fstPstPercent)}</DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.nhoPstCount)}</DetailTd>
-                <DetailTd>{formatPercent(detailTotals.nhoPstPercent)}</DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.pstGoLiveCount)}</DetailTd>
-                <DetailTd>
-                  {formatPercent(detailTotals.pstGoLivePercent)}
-                </DetailTd>
-
-                <DetailTd className="text-emerald-600">
-                  {formatNumber(detailTotals.hiredCount)}
-                </DetailTd>
-
-                <DetailTd>{formatPercent(detailTotals.hiringRate)}</DetailTd>
+                  Headcount
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Actual
+                  <br />
+                  Headcount
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Buffer
+                  <br />%
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Absenteeism
+                  <br />
+                  (6 Weeks Avg)
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Absenteeism
+                  <br />%
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Attrition
+                  <br />
+                  (6 Weeks Total)
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Attrition
+                  <br />%
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Net
+                  <br />
+                  Actual HC
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Hiring
+                  <br />
+                  Needed
+                </DetailTh>
+                <DetailTh colSpan={5}>Hiring Funnel Counts</DetailTh>
+                <DetailTh colSpan={10}>Attrition Between Stages</DetailTh>
+                <DetailTh rowSpan={2}>
+                  Hired
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Hiring Rate
+                  <br />
+                  (Leads to JO)
+                </DetailTh>
               </tr>
-            </tfoot>
-          ) : null}
-        </table>
-      </DraggableXScroll>
+              <tr>
+                <DetailTh>
+                  Accepted
+                  <br />
+                  JO
+                </DetailTh>
+                <DetailTh>
+                  NHO
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>
+                  FST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>
+                  PST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>
+                  Go
+                  <br />
+                  Live
+                </DetailTh>
+                <DetailTh>
+                  JO - NHO
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+                <DetailTh>
+                  NHO - FST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+                <DetailTh>
+                  FST - PST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+                <DetailTh>
+                  NHO - PST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+                <DetailTh>
+                  PST - Go Live
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+              </tr>
+            </thead>
+
+            <tbody>
+              {hasRows ? (
+                filteredRows.map((row, index) => {
+                  const cluster = getRowText(row, [
+                    "cluster",
+                    "clusterName",
+                    "cluster_name",
+                  ]);
+                  const account = getRowText(row, [
+                    "account",
+                    "accountName",
+                    "account_name",
+                  ]);
+
+                  const requiredHeadcount = getRowNumber(row, [
+                    "requiredHeadcount",
+                    "required_headcount",
+                  ]);
+                  const actualHeadcount = getRowNumber(row, [
+                    "actualHeadcount",
+                    "actual_headcount",
+                  ]);
+                  const bufferPercent = getRowNumber(row, [
+                    "bufferPercent",
+                    "buffer_percent",
+                    "bufferPercentage",
+                    "buffer_percentage",
+                    "actualBufferPercent",
+                    "actual_buffer_percent",
+                  ]);
+                  const absenteeismCount = getRowNumber(row, [
+                    "absenteeism",
+                    "absenteeismCount",
+                    "absenteeism_count",
+                    "averageAbsentHeadcount",
+                    "average_absent_headcount",
+                  ]);
+                  const absenteeismPercent = getRowNumber(row, [
+                    "absenteeismPercent",
+                    "absenteeism_percent",
+                    "averageAbsenteeismPercent",
+                    "average_absenteeism_percent",
+                    "absenteeismPercentage",
+                    "absenteeism_percentage",
+                  ]);
+                  const attritionCount = getRowNumber(row, [
+                    "attrition",
+                    "attritionPastCount",
+                    "attrition_past_count",
+                    "attritionCount",
+                    "attrition_count",
+                    "attritionSixWeeks",
+                    "attrition_6_weeks",
+                  ]);
+                  const attritionPercent = getRowNumber(row, [
+                    "attritionPastPercent",
+                    "attrition_past_percent",
+                    "attritionPercent",
+                    "attrition_percent",
+                    "attritionPercentage",
+                    "attrition_percentage",
+                  ]);
+                  const netActualHeadcount = getRowNumber(row, [
+                    "netActualHc",
+                    "netActualHeadcount",
+                    "net_actual_headcount",
+                    "netActualHc",
+                    "net_actual_hc",
+                  ]);
+                  const hiringNeeded = getRowNumber(row, [
+                    "hiringNeeded",
+                    "hiring_needed",
+                    "actualHeadcountNeeds",
+                    "actual_headcount_needs",
+                  ]);
+
+                  const acceptedJo = getRowNumber(row, [
+                    "acceptedJo",
+                    "acceptedJO",
+                    "accepted_jo",
+                    "interviewCount",
+                    "interview_count",
+                    "interviewPopulationCount",
+                    "interview_population_count",
+                  ]);
+                  const nhoCount = getRowNumber(row, [
+                    "nho",
+                    "nhoCount",
+                    "nho_count",
+                    "nhoPopulationCount",
+                    "nho_population_count",
+                  ]);
+                  const fstCount = getRowNumber(row, [
+                    "fst",
+                    "fstCount",
+                    "fst_count",
+                    "fstPopulationCount",
+                    "fst_population_count",
+                  ]);
+                  const pstCount = getRowNumber(row, [
+                    "pst",
+                    "pstCount",
+                    "pst_count",
+                    "pstPopulationCount",
+                    "pst_population_count",
+                  ]);
+                  const goLive = getRowNumber(row, [
+                    "goLive",
+                    "go_live",
+                    "projectedToBeEndorsed",
+                    "projected_to_be_endorsed",
+                    "projectedEndorsed",
+                    "projected_endorsed",
+                  ]);
+
+                  const joNhoCount = getRowNumber(row, [
+                    "joNhoCount",
+                    "jo_nho_count",
+                    "attritionInterviewToNhoCount",
+                    "attrition_interview_to_nho_count",
+                  ]);
+                  const joNhoPercent = getRowNumber(row, [
+                    "joNhoPercentage",
+                    "joNhoPercent",
+                    "jo_nho_percent",
+                    "attritionInterviewToNhoPercent",
+                    "attrition_interview_to_nho_percent",
+                  ]);
+                  const nhoFstCount = getRowNumber(row, [
+                    "nhoFstCount",
+                    "nho_fst_count",
+                    "attritionNhoToFstPstCount",
+                    "attrition_nho_to_fst_pst_count",
+                    "attritionNhoToFstCount",
+                    "attrition_nho_to_fst_count",
+                  ]);
+                  const nhoFstPercent = getRowNumber(row, [
+                    "nhoFstPercentage",
+                    "nhoFstPercent",
+                    "nho_fst_percent",
+                    "attritionNhoToFstPstPercent",
+                    "attrition_nho_to_fst_pst_percent",
+                    "attritionNhoToFstPercent",
+                    "attrition_nho_to_fst_percent",
+                  ]);
+                  const fstPstCount = getRowNumber(row, [
+                    "fstPstCount",
+                    "fst_pst_count",
+                    "attritionFstToPstCount",
+                    "attrition_fst_to_pst_count",
+                  ]);
+                  const fstPstPercent = getRowNumber(row, [
+                    "fstPstPercentage",
+                    "fstPstPercent",
+                    "fst_pst_percent",
+                    "attritionFstToPstPercent",
+                    "attrition_fst_to_pst_percent",
+                  ]);
+                  const nhoPstCount = getRowNumber(row, [
+                    "nhoPstCount",
+                    "nho_pst_count",
+                    "attritionNhoToPstCount",
+                    "attrition_nho_to_pst_count",
+                  ]);
+                  const nhoPstPercent = getRowNumber(row, [
+                    "nhoPstPercentage",
+                    "nhoPstPercent",
+                    "nho_pst_percent",
+                    "attritionNhoToPstPercent",
+                    "attrition_nho_to_pst_percent",
+                  ]);
+                  const pstGoLiveCount = getRowNumber(row, [
+                    "pstGoLiveCount",
+                    "pst_go_live_count",
+                    "attritionPstToGoLiveCount",
+                    "attrition_pst_to_go_live_count",
+                  ]);
+                  const pstGoLivePercent = getRowNumber(row, [
+                    "pstGoLivePercentage",
+                    "pstGoLivePercent",
+                    "pst_go_live_percent",
+                    "attritionPstToGoLivePercent",
+                    "attrition_pst_to_go_live_percent",
+                  ]);
+
+                  const hiredCount = getRowNumber(
+                    row,
+                    ["hiredCount", "hired_count"],
+                    fstCount,
+                  );
+                  const hiringRate = getRowNumber(row, [
+                    "hiringRate",
+                    "hiring_rate",
+                    "hiringPlanPercent",
+                    "hiring_plan_percent",
+                  ]);
+
+                  return (
+                    <tr
+                      key={`${cluster}-${account}-${index}`}
+                      className={index % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
+                    >
+                      <DetailTd>{cluster}</DetailTd>
+                      <DetailTd className="text-left">{account}</DetailTd>
+                      <DetailTd>{formatNumber(requiredHeadcount)}</DetailTd>
+                      <DetailTd>{formatNumber(actualHeadcount)}</DetailTd>
+                      <DetailTd
+                        className={getNegativePositiveColor(bufferPercent)}
+                      >
+                        {formatPercent(bufferPercent)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(absenteeismCount)}</DetailTd>
+                      <DetailTd className="text-blue-600">
+                        {formatPercent(absenteeismPercent)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(attritionCount)}</DetailTd>
+                      <DetailTd className="text-red-600">
+                        {formatPercent(attritionPercent)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(netActualHeadcount)}</DetailTd>
+                      <DetailTd className={getHiringNeededColor(hiringNeeded)}>
+                        {formatNumber(hiringNeeded)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(acceptedJo)}</DetailTd>
+                      <DetailTd>{formatNumber(nhoCount)}</DetailTd>
+                      <DetailTd>{formatNumber(fstCount)}</DetailTd>
+                      <DetailTd>{formatNumber(pstCount)}</DetailTd>
+                      <DetailTd className="text-emerald-600">
+                        {formatNumber(goLive)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(joNhoCount)}</DetailTd>
+                      <DetailTd>{formatPercent(joNhoPercent)}</DetailTd>
+                      <DetailTd>{formatNumber(nhoFstCount)}</DetailTd>
+                      <DetailTd>{formatPercent(nhoFstPercent)}</DetailTd>
+                      <DetailTd>{formatNumber(fstPstCount)}</DetailTd>
+                      <DetailTd>{formatPercent(fstPstPercent)}</DetailTd>
+                      <DetailTd>{formatNumber(nhoPstCount)}</DetailTd>
+                      <DetailTd>{formatPercent(nhoPstPercent)}</DetailTd>
+                      <DetailTd>{formatNumber(pstGoLiveCount)}</DetailTd>
+                      <DetailTd>{formatPercent(pstGoLivePercent)}</DetailTd>
+                      <DetailTd className="text-emerald-600">
+                        {formatNumber(hiredCount)}
+                      </DetailTd>
+                      <DetailTd>{formatPercent(hiringRate)}</DetailTd>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <DetailTd colSpan={28}>
+                    {loading
+                      ? `Loading ${rangeLabel.toLowerCase()} detailed table...`
+                      : `No ${rangeLabel.toLowerCase()} detailed account rows available.`}
+                  </DetailTd>
+                </tr>
+              )}
+            </tbody>
+
+            {hasRows ? (
+              <tfoot>
+                <tr className="bg-slate-100 font-extrabold">
+                  <DetailTd className="text-left">
+                    TOTAL /
+                    <br />
+                    AVERAGE
+                  </DetailTd>
+
+                  <DetailTd />
+
+                  <DetailTd>
+                    {formatNumber(detailTotals.requiredHeadcount)}
+                  </DetailTd>
+                  <DetailTd>
+                    {formatNumber(detailTotals.actualHeadcount)}
+                  </DetailTd>
+
+                  <DetailTd
+                    className={getNegativePositiveColor(
+                      detailTotals.bufferPercent,
+                    )}
+                  >
+                    {formatPercent(detailTotals.bufferPercent)}
+                  </DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.absenteeism)}</DetailTd>
+
+                  <DetailTd className="text-blue-600">
+                    {formatPercent(detailTotals.absenteeismPercent)}
+                  </DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.attrition)}</DetailTd>
+
+                  <DetailTd className="text-red-600">
+                    {formatPercent(detailTotals.attritionPercent)}
+                  </DetailTd>
+
+                  <DetailTd>
+                    {formatNumber(detailTotals.netActualHeadcount)}
+                  </DetailTd>
+
+                  <DetailTd
+                    className={getHiringNeededColor(detailTotals.hiringNeeded)}
+                  >
+                    {formatNumber(detailTotals.hiringNeeded)}
+                  </DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.acceptedJo)}</DetailTd>
+                  <DetailTd>{formatNumber(detailTotals.nhoCount)}</DetailTd>
+                  <DetailTd>{formatNumber(detailTotals.fstCount)}</DetailTd>
+                  <DetailTd>{formatNumber(detailTotals.pstCount)}</DetailTd>
+
+                  <DetailTd className="text-emerald-600">
+                    {formatNumber(detailTotals.goLive)}
+                  </DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.joNhoCount)}</DetailTd>
+                  <DetailTd>{formatPercent(detailTotals.joNhoPercent)}</DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.nhoFstCount)}</DetailTd>
+                  <DetailTd>{formatPercent(detailTotals.nhoFstPercent)}</DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.fstPstCount)}</DetailTd>
+                  <DetailTd>{formatPercent(detailTotals.fstPstPercent)}</DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.nhoPstCount)}</DetailTd>
+                  <DetailTd>{formatPercent(detailTotals.nhoPstPercent)}</DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.pstGoLiveCount)}</DetailTd>
+                  <DetailTd>
+                    {formatPercent(detailTotals.pstGoLivePercent)}
+                  </DetailTd>
+
+                  <DetailTd className="text-emerald-600">
+                    {formatNumber(detailTotals.hiredCount)}
+                  </DetailTd>
+
+                  <DetailTd>{formatPercent(detailTotals.hiringRate)}</DetailTd>
+                </tr>
+              </tfoot>
+            ) : null}
+          </table>
+        </DraggableXScroll>
       </div>
     </section>
   );
@@ -1975,11 +2007,10 @@ function TrendRangeSelector({ value, onChange }) {
               key={option.key}
               type="button"
               onClick={() => onChange(option.key)}
-              className={`min-w-0 rounded-lg px-2 py-2 text-[10px] font-extrabold transition sm:text-[11px] ${
-                active
-                  ? "bg-[#042C51] text-white shadow-sm"
-                  : "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
-              }`}
+              className={`min-w-0 rounded-lg px-2 py-2 text-[10px] font-extrabold transition sm:text-[11px] ${active
+                ? "bg-[#042C51] text-white shadow-sm"
+                : "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                }`}
               aria-pressed={active}
             >
               {option.label}
@@ -2246,13 +2277,8 @@ export default function WorkforceHiringTrendDetailsModal({
   );
 
   const filteredRangeRows = useMemo(
-    () =>
-      filterSixWeekRowsBySelectedFilters({
-        rows: rangeState.rows,
-        selectedClusters,
-        selectedAccounts,
-      }),
-    [rangeState.rows, selectedAccounts, selectedClusters],
+    () => (Array.isArray(rangeState.rows) ? rangeState.rows : []),
+    [rangeState.rows],
   );
 
   const rangeLabel = getTrendRangeDisplayLabel({
@@ -2269,8 +2295,8 @@ export default function WorkforceHiringTrendDetailsModal({
     rangeMode === "custom" && selectedWeekCount > 0 && selectedWeekCount % 6 !== 0;
   const combinedTrendLoading = Boolean(
     rangeState.loading ||
-      (!activePoints.length &&
-        (statusState.isLoadingTrends || statusState.isLoading || trendsLoading)),
+    (!activePoints.length &&
+      (statusState.isLoadingTrends || statusState.isLoading || trendsLoading)),
   );
 
   function toggleTrendDropdown(key) {
@@ -2514,7 +2540,7 @@ export default function WorkforceHiringTrendDetailsModal({
                       <div className="flex h-full min-h-0 w-full items-center justify-center">
                         <TrendSvg
                           weeks={displaySeries.weeks}
-                          trends={filteredTrends}
+                          trends={chartTrends}
                           variant="modal"
                           className="block h-full w-full"
                         />
@@ -2552,36 +2578,32 @@ export default function WorkforceHiringTrendDetailsModal({
                     </article>
 
                     <article
-                      className={`rounded-xl border p-3.5 ${
-                        safeNumber(displaySummary.bufferPercentage) < 0
-                          ? "border-rose-100 bg-rose-50/70"
-                          : "border-emerald-100 bg-emerald-50/70"
-                      }`}
+                      className={`rounded-xl border p-3.5 ${safeNumber(displaySummary.bufferPercentage) < 0
+                        ? "border-rose-100 bg-rose-50/70"
+                        : "border-emerald-100 bg-emerald-50/70"
+                        }`}
                     >
                       <span
-                        className={`text-[9px] font-extrabold uppercase tracking-wider ${
-                          safeNumber(displaySummary.bufferPercentage) < 0
-                            ? "text-rose-900/70"
-                            : "text-emerald-900/70"
-                        }`}
+                        className={`text-[9px] font-extrabold uppercase tracking-wider ${safeNumber(displaySummary.bufferPercentage) < 0
+                          ? "text-rose-900/70"
+                          : "text-emerald-900/70"
+                          }`}
                       >
                         Buffer Average
                       </span>
                       <strong
-                        className={`mt-1 block text-xl font-black tabular-nums ${
-                          safeNumber(displaySummary.bufferPercentage) < 0
-                            ? "text-rose-700"
-                            : "text-emerald-700"
-                        }`}
+                        className={`mt-1 block text-xl font-black tabular-nums ${safeNumber(displaySummary.bufferPercentage) < 0
+                          ? "text-rose-700"
+                          : "text-emerald-700"
+                          }`}
                       >
                         {formatPercent(displaySummary.bufferPercentage)}
                       </strong>
                       <p
-                        className={`mt-1 text-[10px] font-semibold ${
-                          safeNumber(displaySummary.bufferPercentage) < 0
-                            ? "text-rose-700/70"
-                            : "text-emerald-700/70"
-                        }`}
+                        className={`mt-1 text-[10px] font-semibold ${safeNumber(displaySummary.bufferPercentage) < 0
+                          ? "text-rose-700/70"
+                          : "text-emerald-700/70"
+                          }`}
                       >
                         Average workforce cushion versus required headcount.
                       </p>

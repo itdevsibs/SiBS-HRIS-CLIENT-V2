@@ -309,8 +309,8 @@ export default function TrendSvg({
   );
 
   const zeroY = yScale(0);
-  const tooltipWidth = 205;
-  const tooltipHeight = 108;
+  const tooltipWidth = 240;
+  const tooltipHeight = 124;
 
   const tooltipAnchor = useMemo(() => {
     if (pointerPosition) return pointerPosition;
@@ -582,70 +582,71 @@ export default function TrendSvg({
             opacity="0.98"
           />
           <text
-            x={tooltipPosition.x + 15}
-            y={tooltipPosition.y + 23}
+            x={tooltipPosition.x + 18}
+            y={tooltipPosition.y + 26}
             fill="#D7E0EA"
-            className="text-[10px] font-extrabold uppercase"
+            className="text-[12px] font-extrabold uppercase tracking-wide"
           >
             {activePoint.week || "Week Breakdown"} Breakdown
           </text>
           <line
-            x1={tooltipPosition.x + 14}
-            x2={tooltipPosition.x + tooltipWidth - 14}
-            y1={tooltipPosition.y + 32}
-            y2={tooltipPosition.y + 32}
+            x1={tooltipPosition.x + 16}
+            x2={tooltipPosition.x + tooltipWidth - 16}
+            y1={tooltipPosition.y + 36}
+            y2={tooltipPosition.y + 36}
             stroke="#315779"
+            strokeWidth="1.2"
           />
           <text
-            x={tooltipPosition.x + 15}
-            y={tooltipPosition.y + 55}
+            x={tooltipPosition.x + 18}
+            y={tooltipPosition.y + 61}
             fill="#D7E0EA"
-            className="text-[10px] font-semibold"
+            className="text-[12px] font-bold"
           >
             Absenteeism (ABS):
           </text>
           <text
-            x={tooltipPosition.x + tooltipWidth - 15}
-            y={tooltipPosition.y + 55}
+            x={tooltipPosition.x + tooltipWidth - 18}
+            y={tooltipPosition.y + 61}
             textAnchor="end"
             fill="#60A5FA"
-            className="text-[11px] font-extrabold"
+            className="text-[13px] font-black"
           >
             {Number(activePoint.absenteeism || 0).toFixed(1)}%
           </text>
           <text
-            x={tooltipPosition.x + 15}
-            y={tooltipPosition.y + 76}
+            x={tooltipPosition.x + 18}
+            y={tooltipPosition.y + 84}
             fill="#D7E0EA"
-            className="text-[10px] font-semibold"
+            className="text-[12px] font-bold"
           >
             Attrition (ATT):
           </text>
           <text
-            x={tooltipPosition.x + tooltipWidth - 15}
-            y={tooltipPosition.y + 76}
+            x={tooltipPosition.x + tooltipWidth - 18}
+            y={tooltipPosition.y + 84}
             textAnchor="end"
             fill="#FB923C"
-            className="text-[11px] font-extrabold"
+            className="text-[13px] font-black"
           >
             {Number(activePoint.attrition || 0).toFixed(1)}%
           </text>
           <text
-            x={tooltipPosition.x + 15}
-            y={tooltipPosition.y + 97}
+            x={tooltipPosition.x + 18}
+            y={tooltipPosition.y + 107}
             fill="#D7E0EA"
-            className="text-[10px] font-semibold"
+            className="text-[12px] font-bold"
           >
             Buffer Cushion (BUF):
           </text>
           <text
-            x={tooltipPosition.x + tooltipWidth - 15}
-            y={tooltipPosition.y + 97}
+            x={tooltipPosition.x + tooltipWidth - 18}
+            y={tooltipPosition.y + 107}
             textAnchor="end"
             fill={
               Number(activePoint.buffer || 0) < 0 ? "#F87171" : "#4ADE80"
             }
-            className="text-[11px] font-extrabold"
+            className="text-[13px] font-black"
           >
             {Number(activePoint.buffer || 0).toFixed(1)}%
           </text>
