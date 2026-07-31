@@ -1,15 +1,24 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowRight,
+  Briefcase,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Copy,
   Edit3,
   Filter,
   Grid3X3,
   Link2,
+  LogOut,
   List,
   MapPin,
   Plus,
@@ -68,9 +77,87 @@ const STATUS_OPTIONS = [
 
 const EVENT_COLORS = {
   blue: "border-blue-200 bg-blue-50 text-[#06325E]",
+  peacock: "border-sky-200 bg-sky-50 text-[#075985]",
   amber: "border-amber-200 bg-amber-50 text-[#713F12]",
   emerald: "border-emerald-200 bg-emerald-50 text-[#065F46]",
+  tomato: "border-orange-200 bg-orange-50 text-[#9A3412]",
+  grape: "border-violet-200 bg-violet-50 text-[#5B21B6]",
+  graphite: "border-slate-200 bg-slate-50 text-[#334155]",
 };
+
+const COLOR_OPTIONS = [
+  {
+    value: "blue",
+    label: "Blue",
+    dotClass: "bg-blue-500",
+    googleColorId: "1",
+  },
+  {
+    value: "peacock",
+    label: "Peacock Blue",
+    dotClass: "bg-sky-500",
+    googleColorId: "7",
+  },
+  {
+    value: "emerald",
+    label: "Sage Green",
+    dotClass: "bg-emerald-500",
+    googleColorId: "2",
+  },
+  {
+    value: "grape",
+    label: "Grape Purple",
+    dotClass: "bg-violet-500",
+    googleColorId: "3",
+  },
+  {
+    value: "tomato",
+    label: "Tomato Orange",
+    dotClass: "bg-orange-500",
+    googleColorId: "6",
+  },
+  {
+    value: "amber",
+    label: "Banana Yellow",
+    dotClass: "bg-amber-400",
+    googleColorId: "5",
+  },
+  {
+    value: "graphite",
+    label: "Graphite",
+    dotClass: "bg-slate-500",
+    googleColorId: "8",
+  },
+];
+
+const EVENT_COLOR_BY_GOOGLE_COLOR_ID = COLOR_OPTIONS.reduce(
+  (mappedColors, option) => ({
+    ...mappedColors,
+    [option.googleColorId]: option.value,
+  }),
+  {},
+);
+
+const AVAILABILITY_OPTIONS = ["Busy", "Free"];
+const VISIBILITY_OPTIONS = ["Default visibility", "Public", "Private"];
+
+function getEventColorOption(value) {
+  return (
+    COLOR_OPTIONS.find((option) => option.value === value) || COLOR_OPTIONS[0]
+  );
+}
+
+function getGoogleVisibilityValue(value) {
+  if (value === "Public") return "public";
+  if (value === "Private") return "private";
+  return "default";
+}
+
+function getVisibilityLabel(value) {
+  if (value === "public") return "Public";
+  if (value === "private") return "Private";
+  return "Default visibility";
+}
 
 const STATUS_BADGE_CLASSES = {
   Scheduled: "border-blue-200 bg-blue-50 text-[#06325E]",
@@ -146,9 +233,17 @@ function normalizeGoogleCalendarEvent(event = {}) {
   const startValue = event?.start?.dateTime || event?.start?.date;
   const endValue = event?.end?.dateTime || event?.end?.date || startValue;
 
+  const meetLink =
+    event.hangoutLink ||
+    event?.conferenceData?.entryPoints?.find(
+      (entryPoint) => entryPoint.entryPointType === "video",
+    )?.uri ||
+    "";
+
   return {
     id: event.id || `google-${Date.now()}`,
     googleEventId: event.id || "",
+    meetLink,
     title: event.summary || "Untitled Schedule",
     category: privateProperties.category || "Talent Acquisition",
     status:
@@ -163,9 +258,38 @@ function normalizeGoogleCalendarEvent(event = {}) {
       event?.organizer?.email ||
       privateProperties.organizer ||
       "",
-    location: event.location || "",
+    location: event.location || meetLink || "",
     notes: event.description || "",
-    color: privateProperties.color || "blue",
+    color:
+      privateProperties.color ||
+      EVENT_COLOR_BY_GOOGLE_COLOR_ID[event.colorId] ||
+      "blue",
+    colorId:
+      privateProperties.colorId ||
+      event.colorId ||
+      getEventColorOption(
+        privateProperties.color ||
+          EVENT_COLOR_BY_GOOGLE_COLOR_ID[event.colorId] ||
+          "blue",
+      ).googleColorId,
+    scheduleType: privateProperties.scheduleType || "Event",
+    deadline: privateProperties.deadline || "",
+    taskList: privateProperties.taskList || "My Tasks",
+    outOfOfficeEndDate:
+      privateProperties.outOfOfficeEndDate || formatDateTimeToDateKey(endValue),
+    declineMeetings:
+      privateProperties.declineMeetings === "false" ? false : true,
+    declineMode: privateProperties.declineMode || "newAndExisting",
+    outOfOfficeMessage:
+      privateProperties.outOfOfficeMessage ||
+      "Declined because I am out of office",
+    visibility:
+      privateProperties.visibility || getVisibilityLabel(event.visibility),
+    availability:
+      privateProperties.availability ||
+      (event.transparency === "transparent" ? "Free" : "Busy"),
+    addNotification: privateProperties.addNotification === "true",
+    addGoogleMeet: privateProperties.addGoogleMeet === "true",
   };
 }
 
@@ -175,8 +299,17 @@ function buildGoogleCalendarPayload(form = {}) {
     description: form.notes || "",
     location: form.location || "",
     startDateTime: parseTimeLabel(form.date, form.startTime),
-    endDateTime: parseTimeLabel(form.date, form.endTime),
+    endDateTime: parseTimeLabel(
+      form.scheduleType === "Out of office"
+        ? form.outOfOfficeEndDate || form.date
+        : form.date,
+      form.scheduleType === "Out of office" ? "05:00 PM" : form.endTime,
+    ),
     timeZone: "Asia/Manila",
+    colorId: getEventColorOption(form.color || "blue").googleColorId,
+    visibility: getGoogleVisibilityValue(form.visibility),
+    transparency: form.availability === "Free" ? "transparent" : "opaque",
+    addGoogleMeet: form.scheduleType === "Event" && Boolean(form.addGoogleMeet),
     extendedProperties: {
       private: {
         category: form.category || "Talent Acquisition",
@@ -184,6 +317,19 @@ function buildGoogleCalendarPayload(form = {}) {
         account: form.account || "",
         organizer: form.organizer || "",
         color: form.color || "blue",
+        colorId: getEventColorOption(form.color || "blue").googleColorId,
+        availability: form.availability || "Busy",
+        scheduleType: form.scheduleType || "Event",
+        deadline: form.deadline || "",
+        taskList: form.taskList || "My Tasks",
+        outOfOfficeEndDate: form.outOfOfficeEndDate || form.date || "",
+        declineMeetings: String(form.declineMeetings ?? true),
+        declineMode: form.declineMode || "newAndExisting",
+        outOfOfficeMessage:
+          form.outOfOfficeMessage || "Declined because I am out of office",
+        visibility: form.visibility || "Default visibility",
+        addNotification: String(Boolean(form.addNotification)),
+        addGoogleMeet: String(Boolean(form.addGoogleMeet)),
       },
     },
   };
@@ -306,222 +452,778 @@ function createBlankEvent(baseDate) {
     organizer: "",
     location: "",
     notes: "",
-    color: "blue",
+    color: "peacock",
+    colorId: getEventColorOption("peacock").googleColorId,
+    availability: "Busy",
+    scheduleType: "Event",
+    deadline: "",
+    taskList: "My Tasks",
+    outOfOfficeEndDate: baseDate,
+    declineMeetings: true,
+    declineMode: "newAndExisting",
+    outOfOfficeMessage: "Declined because I am out of office",
+    visibility: "Default visibility",
+    addNotification: false,
+    addGoogleMeet: false,
   };
 }
 
 function EventEditorModal({ event, onClose, onDelete, onSave }) {
   const [form, setForm] = useState(event);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
-    setForm(event);
+    setForm({
+      ...createBlankEvent(formatDateKey(new Date())),
+      ...event,
+      scheduleType: event?.scheduleType || "Event",
+    });
   }, [event]);
+
+  const activeType = form.scheduleType || "Event";
+  const selectedColorOption = getEventColorOption(form.color || "peacock");
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  function updateScheduleType(nextType) {
+    setForm((current) => ({
+      ...current,
+      scheduleType: nextType,
+      status:
+        nextType === "Task"
+          ? "Scheduled"
+          : nextType === "Out of office"
+            ? "Scheduled"
+            : current.status || "Scheduled",
+      outOfOfficeEndDate: current.outOfOfficeEndDate || current.date,
+      addGoogleMeet:
+        nextType === "Event" ? (current.addGoogleMeet ?? true) : false,
+    }));
+  }
+
+  function handleAddGoogleMeetRequest() {
+    updateField("scheduleType", "Event");
+    updateField("addGoogleMeet", true);
+    setCopySuccess(false);
+  }
+
+  async function handleCopyGoogleMeetLink() {
+    const link = form.meetLink || form.location || "";
+
+    if (!link) return;
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopySuccess(true);
+      window.setTimeout(() => setCopySuccess(false), 1600);
+    } catch {
+      const textArea = document.createElement("textarea");
+      textArea.value = link;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopySuccess(true);
+      window.setTimeout(() => setCopySuccess(false), 1600);
+    }
+  }
+
   function handleSubmit(submitEvent) {
     submitEvent.preventDefault();
+
     onSave({
       ...form,
       id: form.id || `schedule-${Date.now()}`,
-      title: form.title.trim() || "Untitled Schedule",
+      title: form.title?.trim() || "Untitled Schedule",
+      outOfOfficeEndDate: form.outOfOfficeEndDate || form.date,
     });
   }
 
+  const tabItems = ["Event", "Task", "Out of office"];
+
   return (
-    <div className="absolute inset-0 z-[2] flex items-center justify-center bg-[#06294A]/50 px-3 backdrop-blur-sm">
+    <div
+      className="absolute inset-0 z-[2] flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-[3px]"
+      onClick={onClose}
+    >
       <form
         onSubmit={handleSubmit}
-        className="max-h-[86vh] w-full max-w-[512px] overflow-hidden rounded-[14px] bg-white shadow-[0_24px_80px_rgba(2,30,56,0.35)]"
+        onClick={(clickEvent) => clickEvent.stopPropagation()}
+        className="thin-scroll max-h-[82vh] w-full max-w-[660px] overflow-y-auto rounded-[18px] bg-white px-6 py-5 shadow-[0_24px_80px_rgba(2,30,56,0.38)]"
       >
-        <div className="flex h-14 items-center justify-between bg-[#062F56] px-5 text-white">
-          <div className="flex items-center gap-2 text-sm font-extrabold">
-            <Edit3 className="h-4 w-4 text-[#FF5C28]" />
-            Edit & Reschedule Event
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-[#06325E]">
+            <span className="h-1 w-5 rounded-full bg-[#FF5C28]" />
+            Google Calendar Event
           </div>
+
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white"
-            aria-label="Close editor"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[#667085] transition hover:cursor-pointer hover:bg-[#F1F5F9] hover:text-[#06325E]"
+            aria-label="Close schedule editor"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="thin-scroll max-h-[calc(86vh-56px)] overflow-y-auto px-5 py-5">
-          <label className="block text-[10px] font-black uppercase text-[#1F2937]">
-            Event / Schedule Title *
-            <input
-              value={form.title}
-              onChange={(inputEvent) =>
-                updateField("title", inputEvent.target.value)
-              }
-              className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 text-xs font-semibold normal-case text-[#111827] outline-none transition focus:border-[#FF5C28] focus:bg-white"
-            />
-          </label>
+        <input
+          value={form.title || ""}
+          onChange={(inputEvent) =>
+            updateField("title", inputEvent.target.value)
+          }
+          placeholder="Add title"
+          className="mt-4 h-10 w-full border-b border-[#DDE7F2] bg-transparent text-[22px] font-black leading-tight text-[#06325E] outline-none placeholder:text-[#98A2B3]"
+        />
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="text-[10px] font-black uppercase text-[#1F2937]">
-              Category
-              <select
-                value={form.category}
-                onChange={(inputEvent) =>
-                  updateField("category", inputEvent.target.value)
-                }
-                className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 text-xs font-semibold normal-case text-[#111827] outline-none"
-              >
-                {CATEGORY_OPTIONS.filter(
-                  (item) => item !== "All Categories",
-                ).map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </label>
+        <div className="mt-4 flex items-center gap-2">
+          {tabItems.map((item) => {
+            const isActive = activeType === item;
 
-            <label className="text-[10px] font-black uppercase text-[#1F2937]">
-              Status
-              <select
-                value={form.status}
-                onChange={(inputEvent) =>
-                  updateField("status", inputEvent.target.value)
-                }
-                className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 text-xs font-semibold normal-case text-[#111827] outline-none"
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => updateScheduleType(item)}
+                className={[
+                  "h-8 rounded-[9px] px-5 text-xs font-black transition hover:cursor-pointer",
+                  isActive
+                    ? "bg-[#06325E] text-white shadow-sm"
+                    : "text-[#667085] hover:cursor-pointer hover:bg-[#EEF4FA] hover:text-[#06325E]",
+                ].join(" ")}
               >
-                {STATUS_OPTIONS.filter((item) => item !== "All Statuses").map(
-                  (item) => (
-                    <option key={item}>{item}</option>
-                  ),
+                {item}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 space-y-4">
+          {activeType === "Event" ? (
+            <>
+              <div className="grid grid-cols-[24px_minmax(0,1fr)] items-start gap-3 lg:grid-cols-[24px_minmax(0,1fr)_auto]">
+                <Clock className="mt-1.5 h-5 w-5 text-[#FF5C28]" />
+
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="date"
+                      value={form.date || ""}
+                      onChange={(inputEvent) =>
+                        updateField("date", inputEvent.target.value)
+                      }
+                      className="h-9 w-[166px] rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer focus:border-[#FF5C28]"
+                    />
+
+                    <span className="text-xs font-bold text-[#98A2B3]">-</span>
+
+                    <div className="flex h-9 w-fit items-center justify-center gap-2 rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3">
+                      <input
+                        value={form.startTime || ""}
+                        onChange={(inputEvent) =>
+                          updateField("startTime", inputEvent.target.value)
+                        }
+                        className="w-[82px] bg-transparent text-center text-sm font-black text-[#06325E] outline-none"
+                      />
+                      <span className="text-xs font-black text-[#667085]">
+                        -
+                      </span>
+                      <input
+                        value={form.endTime || ""}
+                        onChange={(inputEvent) =>
+                          updateField("endTime", inputEvent.target.value)
+                        }
+                        className="w-[82px] bg-transparent text-center text-sm font-black text-[#06325E] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="mt-1 text-[11px] font-semibold text-[#667085]">
+                    Does not repeat
+                  </p>
+                </div>
+
+                <div className="col-start-2 flex w-fit items-center gap-1 justify-self-start lg:col-start-auto lg:justify-self-end">
+                  <button
+                    type="button"
+                    onClick={() => updateField("date", addDays(form.date, 1))}
+                    className="h-7 rounded-[7px] border border-blue-200 bg-blue-50 px-3 text-[10px] font-black text-[#06325E] transition hover:cursor-pointer hover:border-[#FF5C28]"
+                  >
+                    +1 Day
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateField("date", addDays(form.date, 7))}
+                    className="h-7 rounded-[7px] border border-blue-200 bg-blue-50 px-3 text-[10px] font-black text-[#06325E] transition hover:cursor-pointer hover:border-[#FF5C28]"
+                  >
+                    +1 Week
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[24px_1fr] items-start gap-3">
+                <svg
+                  className="mt-1 h-5 w-5 text-[#FF8A00]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M4.5 7.5h10v9h-10v-9Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="m14.5 10.25 5-2.75v9l-5-2.75v-3.5Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+
+                {form.meetLink || form.location?.includes("meet.google.com") ? (
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-[8px] bg-[#EEF4FA] px-3 py-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-black text-[#06325E]">
+                        Join with Google Meet
+                      </div>
+                      <a
+                        href={form.meetLink || form.location}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block truncate text-xs font-semibold text-[#52637A] underline-offset-2 transition hover:cursor-pointer hover:text-[#FF5C28] hover:underline"
+                      >
+                        {form.meetLink || form.location}
+                      </a>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyGoogleMeetLink}
+                      className="flex h-8 items-center gap-1.5 rounded-[8px] border border-[#C9D6E4] bg-white px-3 text-xs font-black text-[#06325E] transition hover:cursor-pointer hover:border-[#FF5C28] hover:text-[#FF5C28]"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      {copySuccess ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                ) : form.addGoogleMeet ? (
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-[8px] border border-emerald-200 bg-emerald-50 px-3 py-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-black text-emerald-700">
+                        Google Meet will be added after Save
+                      </div>
+                      <p className="text-xs font-semibold text-emerald-700/75">
+                        The event is not saved yet. Click Save to create the
+                        calendar event and generate the Meet link.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => updateField("addGoogleMeet", false)}
+                      className="h-8 rounded-[8px] border border-emerald-200 bg-white px-3 text-xs font-black text-emerald-700 transition hover:cursor-pointer hover:border-[#FF5C28] hover:text-[#FF5C28]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleAddGoogleMeetRequest}
+                    className="inline-flex h-9 w-fit items-center gap-2 rounded-[9px] bg-[#EEF4FA] px-4 text-sm font-black text-[#06325E] transition hover:cursor-pointer hover:bg-[#E3EDF8]"
+                  >
+                    <Link2 className="h-4 w-4 text-[#FF5C28]" />
+                    Add Google Meet link
+                  </button>
                 )}
-              </select>
-            </label>
-          </div>
+              </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <label className="text-[10px] font-black uppercase text-[#1F2937]">
-              Date *
-              <input
-                type="date"
-                value={form.date}
-                onChange={(inputEvent) =>
-                  updateField("date", inputEvent.target.value)
-                }
-                className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 text-xs font-semibold normal-case text-[#111827] outline-none"
-              />
-            </label>
-            <label className="text-[10px] font-black uppercase text-[#1F2937]">
-              Start Time
-              <input
-                value={form.startTime}
-                onChange={(inputEvent) =>
-                  updateField("startTime", inputEvent.target.value)
-                }
-                className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 text-xs font-semibold normal-case text-[#111827] outline-none"
-              />
-            </label>
-            <label className="text-[10px] font-black uppercase text-[#1F2937]">
-              End Time
-              <input
-                value={form.endTime}
-                onChange={(inputEvent) =>
-                  updateField("endTime", inputEvent.target.value)
-                }
-                className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 text-xs font-semibold normal-case text-[#111827] outline-none"
-              />
-            </label>
-          </div>
+              <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,1.15fr)]">
+                <div className="grid grid-cols-[24px_1fr] items-center gap-3">
+                  <MapPin className="h-5 w-5 text-[#06325E]" />
+                  <input
+                    value={form.location || ""}
+                    onChange={(inputEvent) =>
+                      updateField("location", inputEvent.target.value)
+                    }
+                    placeholder="Location / Google Meet link appears after save"
+                    className="h-10 border-b border-[#DDE7F2] bg-transparent text-sm font-semibold text-[#111827] outline-none placeholder:text-[#98A2B3]"
+                  />
+                </div>
 
-          <div className="mt-4 flex items-center justify-between rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2">
-            <span className="text-[11px] font-extrabold text-[#06325E]">
-              Quick Reschedule Shortcut:
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => updateField("date", addDays(form.date, 1))}
-                className="rounded-md border border-[#DDE7F2] bg-white px-3 py-1 text-[11px] font-extrabold text-[#06325E] shadow-sm hover:border-[#FF5C28]"
-              >
-                +1 Day
-              </button>
-              <button
-                type="button"
-                onClick={() => updateField("date", addDays(form.date, 7))}
-                className="rounded-md border border-[#DDE7F2] bg-white px-3 py-1 text-[11px] font-extrabold text-[#06325E] shadow-sm hover:border-[#FF5C28]"
-              >
-                +1 Week
-              </button>
-            </div>
-          </div>
+                <div className="grid grid-cols-[24px_1fr] items-center gap-3">
+                  <List className="h-5 w-5 text-[#06325E]" />
+                  <input
+                    value={form.notes || ""}
+                    onChange={(inputEvent) =>
+                      updateField("notes", inputEvent.target.value)
+                    }
+                    placeholder="Add description or agenda"
+                    className="h-10 border-b border-[#DDE7F2] bg-transparent text-sm font-semibold text-[#111827] outline-none placeholder:text-[#98A2B3]"
+                  />
+                </div>
+              </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="sm:col-span-2 text-[10px] font-black uppercase text-[#1F2937]">
-              Account / Participants Involved
-              <input
-                value={form.account}
-                onChange={(inputEvent) =>
-                  updateField("account", inputEvent.target.value)
-                }
-                className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 text-xs font-semibold normal-case text-[#111827] outline-none"
-              />
-            </label>
-            <label className="text-[10px] font-black uppercase text-[#1F2937]">
-              Organizer / Host
-              <input
-                value={form.organizer}
-                onChange={(inputEvent) =>
-                  updateField("organizer", inputEvent.target.value)
-                }
-                className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 text-xs font-semibold normal-case text-[#111827] outline-none"
-              />
-            </label>
-            <label className="text-[10px] font-black uppercase text-[#1F2937]">
-              Location / Link
-              <input
-                value={form.location}
-                onChange={(inputEvent) =>
-                  updateField("location", inputEvent.target.value)
-                }
-                className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 text-xs font-semibold normal-case text-[#111827] outline-none"
-              />
-            </label>
-            <label className="sm:col-span-2 text-[10px] font-black uppercase text-[#1F2937]">
-              Schedule Agenda / Operational Notes
-              <textarea
-                value={form.notes}
-                onChange={(inputEvent) =>
-                  updateField("notes", inputEvent.target.value)
-                }
-                className="mt-1 min-h-[50px] w-full resize-none rounded-[10px] border border-[#DDE7F2] bg-[#F3F6F9] px-3 py-2 text-xs font-semibold normal-case text-[#111827] outline-none"
-              />
-            </label>
-          </div>
+              <div className="space-y-3 border-b border-[#DDE7F2] pb-4">
+                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
+                  <CalendarDays className="h-5 w-5 text-[#06325E]" />
 
-          <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
+                    <div className="min-w-[210px] flex-1">
+                      <div className="flex items-center gap-1 text-sm font-black text-[#06325E]">
+                        {form.organizer || "Crister Canitan"}
+                        <span className="h-2 w-2 rounded-full bg-[#FF5C28]" />
+                      </div>
+                      <p className="text-[11px] font-semibold text-[#667085]">
+                        {form.availability || "Busy"} •{" "}
+                        {form.visibility || "Default visibility"} •{" "}
+                        {form.addNotification ? "Notify" : "Do not notify"}
+                      </p>
+                    </div>
+
+                    <select
+                      value={form.color || "peacock"}
+                      onChange={(inputEvent) => {
+                        const nextColor = inputEvent.target.value;
+                        const nextColorOption = getEventColorOption(nextColor);
+
+                        setForm((current) => ({
+                          ...current,
+                          color: nextColor,
+                          colorId: nextColorOption.googleColorId,
+                        }));
+                      }}
+                      className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
+                    >
+                      {COLOR_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <span
+                      className={[
+                        "h-3 w-3 rounded-full",
+                        selectedColorOption.dotClass,
+                      ].join(" ")}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
+                  <Tags className="h-5 w-5 text-[#06325E]" />
+
+                  <div className="flex w-fit flex-wrap items-center gap-2">
+                    <select
+                      value={form.category || "Talent Acquisition"}
+                      onChange={(inputEvent) =>
+                        updateField("category", inputEvent.target.value)
+                      }
+                      className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
+                    >
+                      {CATEGORY_OPTIONS.filter(
+                        (item) => item !== "All Categories",
+                      ).map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={form.status || "Scheduled"}
+                      onChange={(inputEvent) =>
+                        updateField("status", inputEvent.target.value)
+                      }
+                      className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
+                    >
+                      {STATUS_OPTIONS.filter(
+                        (item) => item !== "All Statuses",
+                      ).map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
+                  <Briefcase className="h-5 w-5 text-[#06325E]" />
+
+                  <select
+                    value={form.availability || "Busy"}
+                    onChange={(inputEvent) =>
+                      updateField("availability", inputEvent.target.value)
+                    }
+                    className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
+                  >
+                    {AVAILABILITY_OPTIONS.map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
+                  <svg
+                    className="h-5 w-5 text-[#06325E]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <path
+                      d="M17 10V8a5 5 0 0 0-10 0v2"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M5 10h14v10H5V10Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+
+                  <div className="flex w-fit flex-wrap items-center gap-2">
+                    <select
+                      value={form.visibility || "Default visibility"}
+                      onChange={(inputEvent) =>
+                        updateField("visibility", inputEvent.target.value)
+                      }
+                      className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
+                    >
+                      {VISIBILITY_OPTIONS.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#98A2B3] text-[11px] font-black text-[#667085]">
+                      ?
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
+                  <svg
+                    className="h-5 w-5 text-[#06325E]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <path
+                      d="M18 9.5a6 6 0 1 0-12 0c0 7-2.5 7-2.5 7h17s-2.5 0-2.5-7Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M13.75 20a2 2 0 0 1-3.5 0"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateField("addNotification", !form.addNotification)
+                    }
+                    className="h-9 w-fit rounded-[9px] px-0 text-sm font-black text-[#06325E] transition hover:cursor-pointer hover:text-[#FF5C28]"
+                  >
+                    {form.addNotification
+                      ? "Notification enabled"
+                      : "Add notification"}
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          {activeType === "Task" ? (
+            <>
+              <div className="grid grid-cols-[24px_1fr_auto] items-start gap-3">
+                <Clock className="mt-1.5 h-5 w-5 text-[#FF5C28]" />
+                <div>
+                  <input
+                    type="date"
+                    value={form.date || ""}
+                    onChange={(inputEvent) =>
+                      updateField("date", inputEvent.target.value)
+                    }
+                    className="h-8 rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer focus:border-[#FF5C28]"
+                  />
+                  <p className="mt-1 text-[11px] font-semibold text-[#667085]">
+                    Does not repeat
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateField("startTime", form.startTime || "09:00 AM");
+                    updateField("endTime", form.endTime || "10:00 AM");
+                  }}
+                  className="h-8 rounded-full border border-[#DDE7F2] bg-[#EEF4FA] px-4 text-xs font-black text-[#06325E] transition hover:cursor-pointer hover:border-[#FF5C28]"
+                >
+                  Add time
+                </button>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="grid grid-cols-[24px_1fr] items-center gap-3">
+                  <svg
+                    className="h-5 w-5 text-[#FF5C28]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="8"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                  <input
+                    value={form.deadline || ""}
+                    onChange={(inputEvent) =>
+                      updateField("deadline", inputEvent.target.value)
+                    }
+                    placeholder="Add deadline"
+                    className="h-10 border-b border-[#DDE7F2] bg-transparent text-sm font-semibold text-[#111827] outline-none placeholder:text-[#98A2B3]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-[24px_1fr] items-center gap-3">
+                  <List className="h-5 w-5 text-[#06325E]" />
+                  <input
+                    value={form.notes || ""}
+                    onChange={(inputEvent) =>
+                      updateField("notes", inputEvent.target.value)
+                    }
+                    placeholder="Add task details"
+                    className="h-10 border-b border-[#DDE7F2] bg-transparent text-sm font-semibold text-[#111827] outline-none placeholder:text-[#98A2B3]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[24px_1fr] items-center gap-3 border-b border-[#DDE7F2] pb-4">
+                <svg
+                  className="h-5 w-5 text-[#06325E]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M8 6h13M8 12h13M8 18h13"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="m3 6 .8.8L5.5 5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="m3 12 .8.8 1.7-1.8"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+
+                <select
+                  value={form.taskList || "My Tasks"}
+                  onChange={(inputEvent) =>
+                    updateField("taskList", inputEvent.target.value)
+                  }
+                  className="h-9 w-full max-w-[220px] rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA] px-4 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer"
+                >
+                  <option>My Tasks</option>
+                  <option>Talent Acquisition</option>
+                  <option>HR Tasks</option>
+                  <option>Operations</option>
+                </select>
+              </div>
+            </>
+          ) : null}
+
+          {activeType === "Out of office" ? (
+            <>
+              <div className="grid grid-cols-[24px_1fr] items-start gap-3">
+                <Clock className="mt-1.5 h-5 w-5 text-[#FF5C28]" />
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="date"
+                      value={form.date || ""}
+                      onChange={(inputEvent) =>
+                        updateField("date", inputEvent.target.value)
+                      }
+                      className="h-8 rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer focus:border-[#FF5C28]"
+                    />
+                    <span className="text-xs font-bold text-[#98A2B3]">-</span>
+                    <input
+                      type="date"
+                      value={form.outOfOfficeEndDate || form.date || ""}
+                      onChange={(inputEvent) =>
+                        updateField(
+                          "outOfOfficeEndDate",
+                          inputEvent.target.value,
+                        )
+                      }
+                      className="h-8 rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer focus:border-[#FF5C28]"
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] font-semibold text-[#667085]">
+                    Does not repeat
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[24px_1fr] items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.declineMeetings)}
+                  onChange={(inputEvent) =>
+                    updateField("declineMeetings", inputEvent.target.checked)
+                  }
+                  className="mt-1 h-4 w-4 accent-[#06325E] hover:cursor-pointer"
+                />
+
+                <div>
+                  <div className="text-sm font-black text-[#111827]">
+                    Automatically decline meetings
+                  </div>
+
+                  <div className="mt-1 grid gap-1 sm:grid-cols-2">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-[#344054]">
+                      <input
+                        type="radio"
+                        checked={form.declineMode === "newOnly"}
+                        onChange={() => updateField("declineMode", "newOnly")}
+                        className="accent-[#06325E] hover:cursor-pointer"
+                      />
+                      Only new meeting invitations
+                    </label>
+
+                    <label className="flex items-center gap-2 text-xs font-semibold text-[#344054]">
+                      <input
+                        type="radio"
+                        checked={form.declineMode !== "newOnly"}
+                        onChange={() =>
+                          updateField("declineMode", "newAndExisting")
+                        }
+                        className="accent-[#06325E] hover:cursor-pointer"
+                      />
+                      New and existing meetings
+                    </label>
+                  </div>
+
+                  <label className="mt-3 block text-[10px] font-black uppercase text-[#667085]">
+                    Message
+                    <input
+                      value={
+                        form.outOfOfficeMessage ||
+                        "Declined because I am out of office"
+                      }
+                      onChange={(inputEvent) =>
+                        updateField(
+                          "outOfOfficeMessage",
+                          inputEvent.target.value,
+                        )
+                      }
+                      className="mt-1 h-9 w-full rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 text-sm font-semibold normal-case text-[#111827] outline-none"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[24px_1fr] items-start gap-3 border-b border-[#DDE7F2] pb-4">
+                <svg
+                  className="h-5 w-5 text-[#06325E]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M17 10V8a5 5 0 0 0-10 0v2"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M5 10h14v10H5V10Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={form.visibility || "Public"}
+                      onChange={(inputEvent) =>
+                        updateField("visibility", inputEvent.target.value)
+                      }
+                      className="h-9 rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA] px-4 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer"
+                    >
+                      <option>Public</option>
+                      <option>Private</option>
+                      <option>Default visibility</option>
+                    </select>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#98A2B3] text-[11px] font-black text-[#667085]">
+                      ?
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[11px] font-semibold text-[#667085]">
+                    Availability might be shown in other Google apps
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={() => form.id && onDelete(form.id)}
+            disabled={!form.id}
+            className="inline-flex h-9 items-center gap-1.5 rounded-[9px] px-1 text-xs font-black text-rose-600 transition hover:cursor-pointer hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </button>
+
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => form.id && onDelete(form.id)}
-              disabled={!form.id}
-              className="text-xs font-extrabold text-rose-600 transition hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-9 rounded-[10px] px-4 text-xs font-black text-[#06325E] transition hover:cursor-pointer hover:bg-[#F1F5F9]"
             >
-              Delete
+              More options
             </button>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="h-9 rounded-[10px] bg-[#F1F5F9] px-4 text-xs font-extrabold text-[#06325E] transition hover:bg-[#E6ECF2]"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="h-9 rounded-[10px] bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E84F1F]"
-              >
-                Save Schedule
-              </button>
-            </div>
+
+            <button
+              type="submit"
+              className="h-10 rounded-[14px] bg-[#FF5C28] px-8 text-xs font-black text-white shadow-[0_8px_20px_rgba(255,92,40,0.28)] transition hover:cursor-pointer hover:bg-[#E84F1F]"
+            >
+              Save
+            </button>
           </div>
         </div>
       </form>
@@ -535,7 +1237,7 @@ function CompactScheduleCard({ event, onEdit }) {
       type="button"
       onClick={onEdit}
       className={[
-        "block w-full rounded-[8px] border px-2 py-1 text-left text-[10px] font-bold leading-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28] hover:shadow-md",
+        "block w-full rounded-[8px] border px-2 py-1 text-left text-[10px] font-bold leading-4 shadow-sm transition hover:cursor-pointer hover:-translate-y-0.5 hover:border-[#FF5C28] hover:shadow-md",
         EVENT_COLORS[event.color] || EVENT_COLORS.blue,
       ].join(" ")}
     >
@@ -555,7 +1257,7 @@ function WeekScheduleCard({ event, onEdit }) {
       type="button"
       onClick={onEdit}
       className={[
-        "w-full rounded-[10px] border px-2 py-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28] hover:shadow-md",
+        "w-full rounded-[10px] border px-2 py-2 text-left shadow-sm transition hover:cursor-pointer hover:-translate-y-0.5 hover:border-[#FF5C28] hover:shadow-md",
         EVENT_COLORS[event.color] || EVENT_COLORS.blue,
       ].join(" ")}
     >
@@ -612,7 +1314,7 @@ function MonthCalendarView({
               key={cell.key}
               onClick={() => onCreateEvent(cell.key)}
               className={[
-                "group flex h-[118px] flex-col border-r border-b border-[#DDE7F2] p-3 text-left transition last:border-r-0 hover:bg-[#F8FAFC]",
+                "group flex h-[118px] flex-col border-r border-b border-[#DDE7F2] p-3 text-left transition last:border-r-0 hover:cursor-pointer hover:bg-[#F8FAFC]",
                 cell.inMonth ? "bg-white" : "bg-[#EEF2F6]",
                 isToday ? "ring-2 ring-inset ring-[#FF5C28]" : "",
               ].join(" ")}
@@ -631,10 +1333,6 @@ function MonthCalendarView({
               </span>
 
               <div className="mt-2 space-y-1.5">
-                {calendarLoading && dayEvents.length === 0 ? (
-                  <div className="h-8 animate-pulse rounded-[8px] bg-slate-200" />
-                ) : null}
-
                 {dayEvents.slice(0, 3).map((event) => (
                   <CompactScheduleCard
                     key={event.id}
@@ -683,7 +1381,9 @@ function WeekCalendarView({
 
         <div className="mt-4 grid min-h-0 flex-1 min-w-[880px] grid-cols-7 gap-3">
           {weekCells.map((cell) => {
-            const dayEvents = sortEventsByDateTime(eventsByDate[cell.key] || []);
+            const dayEvents = sortEventsByDateTime(
+              eventsByDate[cell.key] || [],
+            );
             const isToday = cell.key === todayKey;
 
             return (
@@ -691,7 +1391,9 @@ function WeekCalendarView({
                 key={cell.key}
                 className={[
                   "flex min-h-full flex-col rounded-[12px] border bg-[#F8FAFC] p-3",
-                  isToday ? "border-[#FF5C28] ring-1 ring-[#FF5C28]" : "border-[#DDE7F2]",
+                  isToday
+                    ? "border-[#FF5C28] ring-1 ring-[#FF5C28]"
+                    : "border-[#DDE7F2]",
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-2">
@@ -706,7 +1408,7 @@ function WeekCalendarView({
                   <button
                     type="button"
                     onClick={() => onCreateEvent(cell.key)}
-                    className="flex h-6 w-6 items-center justify-center rounded-md text-[#06325E] transition hover:bg-[#EAF0F7] hover:text-[#FF5C28]"
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-[#06325E] transition hover:cursor-pointer hover:bg-[#EAF0F7] hover:text-[#FF5C28]"
                     aria-label={`Add schedule on ${cell.label}`}
                   >
                     <Plus className="h-4 w-4" />
@@ -714,10 +1416,6 @@ function WeekCalendarView({
                 </div>
 
                 <div className="thin-scroll mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-                  {calendarLoading && dayEvents.length === 0 ? (
-                    <div className="h-14 animate-pulse rounded-[10px] bg-slate-200" />
-                  ) : null}
-
                   {!calendarLoading && dayEvents.length === 0 ? (
                     <div className="flex h-full min-h-[260px] items-center justify-center text-center text-[11px] font-semibold italic text-[#667085]">
                       No events scheduled
@@ -839,7 +1537,7 @@ function AgendaCalendarView({
                 <button
                   type="button"
                   onClick={() => onRescheduleEvent(event, 1)}
-                  className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-[#F1F5F9] px-3 text-xs font-black text-[#06325E] transition hover:bg-[#E6ECF2]"
+                  className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-[#F1F5F9] px-3 text-xs font-black text-[#06325E] transition hover:cursor-pointer hover:bg-[#E6ECF2]"
                 >
                   <RotateCcw className="h-3.5 w-3.5 text-[#FF5C28]" />
                   +1 Day
@@ -847,7 +1545,7 @@ function AgendaCalendarView({
                 <button
                   type="button"
                   onClick={() => onRescheduleEvent(event, 7)}
-                  className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-[#F1F5F9] px-3 text-xs font-black text-[#06325E] transition hover:bg-[#E6ECF2]"
+                  className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-[#F1F5F9] px-3 text-xs font-black text-[#06325E] transition hover:cursor-pointer hover:bg-[#E6ECF2]"
                 >
                   <ArrowRight className="h-3.5 w-3.5 text-[#FF5C28]" />
                   +1 Wk
@@ -855,7 +1553,7 @@ function AgendaCalendarView({
                 <button
                   type="button"
                   onClick={() => onEditEvent(event)}
-                  className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-[#06325E] px-3 text-xs font-black text-white transition hover:bg-[#0A3A63]"
+                  className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-[#06325E] px-3 text-xs font-black text-white transition hover:cursor-pointer hover:bg-[#0A3A63]"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
                   Edit / Resched
@@ -863,7 +1561,7 @@ function AgendaCalendarView({
                 <button
                   type="button"
                   onClick={() => onDeleteEvent(event.id)}
-                  className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[#98A2B3] transition hover:bg-rose-50 hover:text-rose-600"
+                  className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[#98A2B3] transition hover:cursor-pointer hover:bg-rose-50 hover:text-rose-600"
                   aria-label={`Delete ${event.title}`}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -877,6 +1575,194 @@ function AgendaCalendarView({
   );
 }
 
+function GoogleLogoIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 48 48"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="#FFC107"
+        d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+      />
+      <path
+        fill="#FF3D00"
+        d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.281-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"
+      />
+    </svg>
+  );
+}
+
+function SmallFeatureIcon({ type }) {
+  if (type === "shield") {
+    return (
+      <svg
+        className="h-3.5 w-3.5 text-emerald-500"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M12 3.75 18.25 6v5.25c0 4.1-2.55 7.75-6.25 9-3.7-1.25-6.25-4.9-6.25-9V6L12 3.75Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="m9.5 12 1.6 1.6 3.65-3.85"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (type === "video") {
+    return (
+      <svg
+        className="h-3.5 w-3.5 text-[#4285F4]"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M4.5 7.5h10v9h-10v-9Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="m14.5 10.25 5-2.75v9l-5-2.75v-3.5Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="h-3.5 w-3.5 text-[#FF5C28]" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M18 9.5a6 6 0 1 0-12 0c0 7-2.5 7-2.5 7h17s-2.5 0-2.5-7Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M13.75 20a2 2 0 0 1-3.5 0"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function GoogleCalendarAuthRequiredScreen({
+  onConnect,
+  googleCalendarEmail,
+  calendarLoading,
+}) {
+  const targetAccount =
+    googleCalendarEmail ||
+    import.meta.env.VITE_GOOGLE_CALENDAR_TARGET_ACCOUNT ||
+    "alena.batacan@thesiblingssolutions.com";
+
+  return (
+    <div className="flex min-h-0 flex-1 items-center justify-center bg-[#F7F9FC] px-6 py-10">
+      <section className="w-full max-w-[512px] rounded-[16px] border border-[#DDE7F2] bg-white px-8 py-8 text-center shadow-[0_18px_42px_rgba(2,30,56,0.12)]">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[16px] bg-[#EAF2FF] text-[#06325E] shadow-sm">
+          <CalendarDays className="h-8 w-8" />
+        </div>
+
+        <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-[#FBBF24] bg-white px-4 py-1 text-[11px] font-black text-[#92400E]">
+          <svg
+            className="h-3.5 w-3.5 text-[#D97706]"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path
+              d="M7 10V8a5 5 0 0 1 10 0v2"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M6 10h12v10H6V10Z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Google Calendar Access Required
+        </div>
+
+        <h3 className="mt-7 text-[22px] font-black leading-tight text-[#06325E]">
+          Connect Google Workspace
+        </h3>
+
+        <p className="mx-auto mt-3 max-w-[390px] text-[13px] font-semibold leading-6 text-[#667085]">
+          To view and synchronize live HR & Talent Acquisition schedules, please
+          authenticate with your organization's Google account.
+        </p>
+
+        <button
+          type="button"
+          onClick={onConnect}
+          disabled={calendarLoading}
+          className="mt-8 inline-flex h-12 w-full items-center justify-center gap-3 rounded-[10px] border border-[#C9D6E4] bg-white px-6 text-[14px] font-black text-[#1F2937] shadow-[0_4px_10px_rgba(2,30,56,0.12)] transition hover:cursor-pointer hover:border-[#9FB2C8] hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <GoogleLogoIcon className="h-5 w-5" />
+          {calendarLoading ? "Connecting..." : "Sign in with Google"}
+        </button>
+
+        <p className="mt-4 text-[11px] font-semibold text-[#667085]">
+          Target Account:{" "}
+          <span className="font-black text-[#06325E]">{targetAccount}</span>
+        </p>
+
+        <div className="mt-6 border-t border-[#DDE7F2] pt-4">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-[8px] border border-[#DDE7F2] bg-[#F8FAFC] px-3 text-[11px] font-bold text-[#667085]">
+              <SmallFeatureIcon type="shield" />
+              OAuth 2.0 Secure
+            </span>
+
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-[8px] border border-[#DDE7F2] bg-[#F8FAFC] px-3 text-[11px] font-bold text-[#667085]">
+              <SmallFeatureIcon type="video" />
+              Meet & Teams Links
+            </span>
+
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-[8px] border border-[#DDE7F2] bg-[#F8FAFC] px-3 text-[11px] font-bold text-[#667085]">
+              <SmallFeatureIcon type="bell" />
+              Real-Time Sync
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function waitForGoogleCalendarSync(milliseconds) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, milliseconds);
+  });
+}
+
 export default function HeaderCalendarModal({ open, onClose }) {
   const [viewDate, setViewDate] = useState(() => new Date());
   const [events, setEvents] = useState([]);
@@ -884,17 +1770,25 @@ export default function HeaderCalendarModal({ open, onClose }) {
   const [calendarError, setCalendarError] = useState("");
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [googleCalendarEmail, setGoogleCalendarEmail] = useState("");
-  const [category, setCategory] = useState("All Categories");
-  const [status, setStatus] = useState("All Statuses");
-  const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState("Month");
   const [editingEvent, setEditingEvent] = useState(null);
+  const calendarLoadRequestRef = useRef(0);
+  const googleConnectPopupTimerRef = useRef(null);
+  const wasOpenRef = useRef(false);
+  const calendarConnectedRef = useRef(false);
+  const lastLoadedRangeRef = useRef("");
+  const googleConnectFinalizingRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return undefined;
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") onCloseRef.current?.();
     };
 
     const originalOverflow = document.body.style.overflow;
@@ -902,78 +1796,128 @@ export default function HeaderCalendarModal({ open, onClose }) {
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      calendarLoadRequestRef.current += 1;
       document.body.style.overflow = originalOverflow;
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose, open]);
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (open && !wasOpenRef.current) {
+      wasOpenRef.current = true;
+      calendarLoadRequestRef.current += 1;
+      lastLoadedRangeRef.current = "";
+      setViewDate(new Date());
+      setEditingEvent(null);
+      setCalendarError("");
+      return;
+    }
+
+    if (!open && wasOpenRef.current) {
+      wasOpenRef.current = false;
+      calendarLoadRequestRef.current += 1;
+      clearGoogleCalendarPopupTimer();
+      googleConnectFinalizingRef.current = false;
+      setCalendarLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   async function loadGoogleCalendarStatus() {
     try {
       const payload = await getGoogleCalendarStatus();
 
       if (payload?.success === false) {
+        calendarConnectedRef.current = false;
+        lastLoadedRangeRef.current = "";
         setCalendarConnected(false);
         setGoogleCalendarEmail("");
-        return false;
+        return {
+          connected: false,
+          googleEmail: "",
+        };
       }
 
-      setCalendarConnected(Boolean(payload?.connected));
-      setGoogleCalendarEmail(payload?.googleEmail || "");
+      const connected = Boolean(payload?.connected);
+      const googleEmail = payload?.googleEmail || "";
 
-      return Boolean(payload?.connected);
+      calendarConnectedRef.current = connected;
+
+      if (!connected) {
+        lastLoadedRangeRef.current = "";
+      }
+
+      setCalendarConnected(connected);
+      setGoogleCalendarEmail(googleEmail);
+
+      return {
+        connected,
+        googleEmail,
+      };
     } catch {
+      calendarConnectedRef.current = false;
+      lastLoadedRangeRef.current = "";
       setCalendarConnected(false);
       setGoogleCalendarEmail("");
-      return false;
+
+      return {
+        connected: false,
+        googleEmail: "",
+      };
     }
   }
 
-  useEffect(() => {
-    if (!open) return undefined;
-
-    loadGoogleCalendarStatus();
-
-    function handleGoogleCalendarMessage(event) {
-      if (event.data?.type === "GOOGLE_CALENDAR_CONNECTED") {
-        loadGoogleCalendarStatus();
-        loadGoogleCalendarEvents();
-      }
-
-      if (event.data?.type === "GOOGLE_CALENDAR_FAILED") {
-        setCalendarConnected(false);
-        setGoogleCalendarEmail("");
-        setCalendarError("Google Calendar connection failed.");
-      }
+  function clearGoogleCalendarPopupTimer() {
+    if (googleConnectPopupTimerRef.current) {
+      window.clearInterval(googleConnectPopupTimerRef.current);
+      googleConnectPopupTimerRef.current = null;
     }
+  }
 
-    window.addEventListener("message", handleGoogleCalendarMessage);
+  async function finishGoogleCalendarConnection() {
+    if (!open || googleConnectFinalizingRef.current) return;
 
-    return () => {
-      window.removeEventListener("message", handleGoogleCalendarMessage);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+    googleConnectFinalizingRef.current = true;
+    clearGoogleCalendarPopupTimer();
 
-  async function loadGoogleCalendarEvents() {
-    if (!open) return;
+    const requestId = calendarLoadRequestRef.current + 1;
+    calendarLoadRequestRef.current = requestId;
 
     setCalendarLoading(true);
     setCalendarError("");
 
     try {
-      const isConnected = await loadGoogleCalendarStatus();
+      let statusResult = {
+        connected: false,
+        googleEmail: "",
+      };
 
-      if (!isConnected) {
-        setEvents([]);
-        return;
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        statusResult = await loadGoogleCalendarStatus();
+
+        if (calendarLoadRequestRef.current !== requestId) return;
+
+        if (statusResult.connected) break;
+
+        await waitForGoogleCalendarSync(500);
+      }
+
+      if (!statusResult.connected) {
+        throw new Error(
+          "Google Calendar connection is still finalizing. Please click Sync again.",
+        );
       }
 
       const { timeMin, timeMax } = getMonthRange(viewDate);
+      const rangeKey = `${timeMin}|${timeMax}`;
 
       const payload = await getGoogleCalendarEvents({
         timeMin,
         timeMax,
+        maxResults: 100,
       });
+
+      if (calendarLoadRequestRef.current !== requestId) return;
 
       if (payload?.success === false) {
         throw new Error(
@@ -989,19 +1933,133 @@ export default function HeaderCalendarModal({ open, onClose }) {
           ? payload.data
           : [];
 
-      setEvents(googleEvents.map(normalizeGoogleCalendarEvent));
+      lastLoadedRangeRef.current = rangeKey;
+      calendarConnectedRef.current = true;
       setCalendarConnected(true);
+      setGoogleCalendarEmail(statusResult.googleEmail || "");
+      setEvents(googleEvents.map(normalizeGoogleCalendarEvent));
     } catch (error) {
+      if (calendarLoadRequestRef.current !== requestId) return;
+
       setCalendarError(
-        error?.message || "Unable to load Google Calendar events.",
+        error?.message || "Unable to finish Google Calendar sync.",
       );
     } finally {
-      setCalendarLoading(false);
+      if (calendarLoadRequestRef.current === requestId) {
+        setCalendarLoading(false);
+      }
+
+      googleConnectFinalizingRef.current = false;
     }
   }
 
   useEffect(() => {
-    loadGoogleCalendarEvents();
+    if (!open) return undefined;
+
+    function handleGoogleCalendarMessage(event) {
+      if (event.data?.type === "GOOGLE_CALENDAR_CONNECTED") {
+        clearGoogleCalendarPopupTimer();
+        finishGoogleCalendarConnection();
+      }
+
+      if (event.data?.type === "GOOGLE_CALENDAR_FAILED") {
+        clearGoogleCalendarPopupTimer();
+        googleConnectFinalizingRef.current = false;
+        setCalendarLoading(false);
+        setCalendarConnected(false);
+        setGoogleCalendarEmail("");
+        setCalendarError("Google Calendar connection failed.");
+      }
+    }
+
+    window.addEventListener("message", handleGoogleCalendarMessage);
+
+    return () => {
+      window.removeEventListener("message", handleGoogleCalendarMessage);
+      clearGoogleCalendarPopupTimer();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  async function loadGoogleCalendarEvents(options = {}) {
+    if (!open) return;
+
+    const { force = false, checkStatus = false } = options;
+    const requestId = calendarLoadRequestRef.current + 1;
+    calendarLoadRequestRef.current = requestId;
+
+    setCalendarError("");
+
+    try {
+      let isConnected = calendarConnectedRef.current;
+
+      if (checkStatus || !isConnected) {
+        const statusResult = await loadGoogleCalendarStatus();
+
+        if (calendarLoadRequestRef.current !== requestId) return;
+
+        isConnected = statusResult.connected;
+      }
+
+      if (!isConnected) {
+        setEvents([]);
+        setCalendarLoading(false);
+        return;
+      }
+
+      const { timeMin, timeMax } = getMonthRange(viewDate);
+      const rangeKey = `${timeMin}|${timeMax}`;
+
+      if (!force && lastLoadedRangeRef.current === rangeKey) {
+        setCalendarLoading(false);
+        return;
+      }
+
+      setCalendarLoading(true);
+
+      const payload = await getGoogleCalendarEvents({
+        timeMin,
+        timeMax,
+        maxResults: 100,
+      });
+
+      if (calendarLoadRequestRef.current !== requestId) return;
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            payload?.error ||
+            "Unable to load Google Calendar events.",
+        );
+      }
+
+      const googleEvents = Array.isArray(payload?.events)
+        ? payload.events
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+      lastLoadedRangeRef.current = rangeKey;
+      calendarConnectedRef.current = true;
+      setEvents(googleEvents.map(normalizeGoogleCalendarEvent));
+      setCalendarConnected(true);
+    } catch (error) {
+      if (calendarLoadRequestRef.current !== requestId) return;
+
+      setCalendarError(
+        error?.message || "Unable to load Google Calendar events.",
+      );
+    } finally {
+      if (calendarLoadRequestRef.current === requestId) {
+        setCalendarLoading(false);
+      }
+    }
+  }
+
+  useEffect(() => {
+    loadGoogleCalendarEvents({
+      checkStatus: !calendarConnectedRef.current,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, viewDate]);
 
@@ -1009,34 +2067,10 @@ export default function HeaderCalendarModal({ open, onClose }) {
   const weekCells = useMemo(() => buildWeekCells(viewDate), [viewDate]);
   const todayKey = formatDateKey(new Date());
   const monthLabel = `${MONTH_NAMES[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
-  const periodLabel = viewMode === "Week" ? buildRangeLabel(weekCells) : monthLabel;
-  const normalizedQuery = query.trim().toLowerCase();
+  const periodLabel =
+    viewMode === "Week" ? buildRangeLabel(weekCells) : monthLabel;
 
-  const filteredEvents = useMemo(
-    () =>
-      events.filter((event) => {
-        const matchesCategory =
-          category === "All Categories" || event.category === category;
-        const matchesStatus =
-          status === "All Statuses" || event.status === status;
-        const searchable = [
-          event.title,
-          event.account,
-          event.organizer,
-          event.location,
-          event.notes,
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        return (
-          matchesCategory &&
-          matchesStatus &&
-          searchable.includes(normalizedQuery)
-        );
-      }),
-    [category, events, normalizedQuery, status],
-  );
+  const filteredEvents = useMemo(() => events, [events]);
 
   const eventsByDate = useMemo(() => {
     return filteredEvents.reduce((grouped, event) => {
@@ -1049,6 +2083,8 @@ export default function HeaderCalendarModal({ open, onClose }) {
   if (!open) return null;
 
   function openGoogleCalendarConnection() {
+    clearGoogleCalendarPopupTimer();
+
     const popup = window.open(
       getGoogleCalendarConnectUrl(),
       "google-calendar-connect",
@@ -1060,10 +2096,10 @@ export default function HeaderCalendarModal({ open, onClose }) {
       return;
     }
 
-    const timer = window.setInterval(() => {
+    googleConnectPopupTimerRef.current = window.setInterval(() => {
       if (popup.closed) {
-        window.clearInterval(timer);
-        loadGoogleCalendarEvents();
+        clearGoogleCalendarPopupTimer();
+        finishGoogleCalendarConnection();
       }
     }, 800);
   }
@@ -1128,6 +2164,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
         return [...current, normalizedEvent];
       });
 
+      calendarConnectedRef.current = true;
       setCalendarConnected(true);
       setEditingEvent(null);
     } catch (error) {
@@ -1194,6 +2231,8 @@ export default function HeaderCalendarModal({ open, onClose }) {
         );
       }
 
+      calendarConnectedRef.current = false;
+      lastLoadedRangeRef.current = "";
       setCalendarConnected(false);
       setGoogleCalendarEmail("");
       setEvents([]);
@@ -1216,35 +2255,42 @@ export default function HeaderCalendarModal({ open, onClose }) {
 
   const modalContent = (
     <div className="fixed inset-0 z-[2147483000] flex items-center justify-center overflow-hidden bg-[#06294A]/75 px-3 py-6 font-jakarta backdrop-blur-sm sm:px-4">
-      <section className="relative flex h-[min(852px,calc(100vh-48px))] w-full max-w-[min(1120px,calc(100vw-24px))] flex-col overflow-hidden rounded-[16px] border border-white/70 bg-white shadow-[0_28px_90px_rgba(2,30,56,0.45)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#062F56] px-4 py-4 text-white sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#FF5C28]">
-              <CalendarDays className="h-5 w-5" />
+      <section className="relative flex h-[min(852px,calc(100vh-48px))] w-full max-w-[min(1120px,calc(100vw-24px))] flex-col overflow-hidden rounded-[16px] bg-white shadow-[0_28px_90px_rgba(2,30,56,0.45)]">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-t-[16px] border-b border-white/10 bg-[#062F56] px-5 py-5 text-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] sm:px-6">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] border border-white/20 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+              <CalendarDays className="h-6 w-6" />
             </div>
+
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded bg-[#FF5C28] px-2 py-0.5 text-[10px] font-black uppercase">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="truncate text-[11px] font-extrabold text-white/75">
                   HRIS Operational Workspace
                 </span>
+
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/35" />
+
                 <span
                   className={[
-                    "inline-flex items-center gap-1 text-[10px] font-black uppercase",
+                    "inline-flex min-w-0 items-center gap-1.5 truncate text-[11px] font-extrabold",
                     calendarConnected ? "text-emerald-300" : "text-amber-300",
                   ].join(" ")}
                 >
                   <span
                     className={[
-                      "h-1.5 w-1.5 rounded-full",
+                      "h-2 w-2 shrink-0 rounded-full",
                       calendarConnected ? "bg-emerald-300" : "bg-amber-300",
                     ].join(" ")}
                   />
-                  {calendarConnected
-                    ? googleCalendarEmail || "Google Calendar Sync"
-                    : "Calendar Not Connected"}
+                  <span className="truncate">
+                    {calendarConnected
+                      ? googleCalendarEmail || "Google Calendar Sync"
+                      : "Calendar Not Connected"}
+                  </span>
                 </span>
               </div>
-              <h2 className="mt-1 truncate text-base font-extrabold sm:text-lg">
+
+              <h2 className="mt-1 truncate text-xl font-black leading-tight tracking-[-0.02em] text-white sm:text-[22px]">
                 HR & Talent Acquisition Calendar
               </h2>
             </div>
@@ -1253,9 +2299,14 @@ export default function HeaderCalendarModal({ open, onClose }) {
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
             <button
               type="button"
-              onClick={loadGoogleCalendarEvents}
+              onClick={() =>
+                loadGoogleCalendarEvents({
+                  force: true,
+                  checkStatus: true,
+                })
+              }
               disabled={calendarLoading || !calendarConnected}
-              className="hidden h-9 items-center gap-2 rounded-[12px] bg-white/10 px-3 text-xs font-extrabold text-white shadow-sm transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex"
+              className="hidden h-9 items-center gap-2 rounded-[10px] border border-white/30 bg-white/10 px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
             >
               <RefreshCw
                 className={[
@@ -1270,7 +2321,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
               <button
                 type="button"
                 onClick={openGoogleCalendarConnection}
-                className="hidden h-9 items-center gap-2 rounded-[12px] bg-emerald-500 px-3 text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-600 sm:inline-flex"
+                className="hidden h-9 items-center gap-2 rounded-[10px] border border-emerald-300/40 bg-emerald-500 px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-emerald-600 sm:inline-flex"
               >
                 <Link2 className="h-4 w-4" />
                 Connect
@@ -1282,24 +2333,30 @@ export default function HeaderCalendarModal({ open, onClose }) {
                 type="button"
                 onClick={handleDisconnectGoogleCalendar}
                 disabled={calendarLoading}
-                className="hidden h-9 items-center gap-2 rounded-[12px] bg-rose-500 px-3 text-xs font-extrabold text-white shadow-sm transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex"
+                className="hidden h-9 items-center gap-2 rounded-[10px] border border-[#C35D86] bg-[#2B203D] px-4 text-xs font-black text-[#FFB2C7] shadow-sm transition hover:cursor-pointer hover:border-[#F472B6] hover:bg-[#3A254F] disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex"
               >
+                <LogOut className="h-4 w-4" />
                 Disconnect
               </button>
             ) : null}
 
             <button
               type="button"
-              onClick={() => setEditingEvent(createBlankEvent(todayKey))}
-              className="hidden h-9 items-center gap-2 rounded-[12px] bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E84F1F] sm:inline-flex"
+              onClick={(event) => {
+                event.stopPropagation();
+                setEditingEvent(createBlankEvent(todayKey));
+              }}
+              disabled={!calendarConnected}
+              className="hidden h-9 items-center gap-2 rounded-[10px] bg-[#FF5C28] px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-[#E84F1F] disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
             >
               <Plus className="h-4 w-4" />
               New Schedule
             </button>
+
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#082744] text-white/80 transition hover:bg-white/10 hover:text-white"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/80 transition hover:cursor-pointer hover:bg-white/10 hover:text-white"
               aria-label="Close calendar"
             >
               <X className="h-5 w-5" />
@@ -1307,156 +2364,152 @@ export default function HeaderCalendarModal({ open, onClose }) {
           </div>
         </div>
 
-        <div className="thin-scroll flex items-center gap-2 overflow-x-auto border-b border-[#DDE7F2] bg-[#F8FAFC] px-4 py-3 lg:overflow-visible">
-          <div className="flex h-8 shrink-0 overflow-hidden rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA]">
-            <button
-              type="button"
-              onClick={() => movePeriod(-1)}
-              className="flex w-9 items-center justify-center text-[#06325E] transition hover:bg-white"
-              aria-label={viewMode === "Week" ? "Previous week" : "Previous month"}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleToday}
-              className="border-x border-[#DDE7F2] px-4 text-xs font-extrabold text-[#06325E] transition hover:bg-white"
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              onClick={() => movePeriod(1)}
-              className="flex w-9 items-center justify-center text-[#06325E] transition hover:bg-white"
-              aria-label={viewMode === "Week" ? "Next week" : "Next month"}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          <span className="min-w-[100px] shrink-0 px-1 text-sm font-black text-[#06325E]">
-            {periodLabel}
-          </span>
-
-          <label className="relative shrink-0">
-            <Tags className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#667085]" />
-            <select
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className="h-8 w-[190px] rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA] pl-9 pr-3 text-xs font-extrabold text-[#1F2937] outline-none transition hover:bg-white"
-            >
-              {CATEGORY_OPTIONS.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="relative shrink-0">
-            <Filter className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#667085]" />
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              className="h-8 w-[140px] rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA] pl-9 pr-3 text-xs font-extrabold text-[#1F2937] outline-none transition hover:bg-white"
-            >
-              {STATUS_OPTIONS.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="relative min-w-[220px] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#667085]" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Filter schedules..."
-              className="h-8 w-full rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA] pl-9 pr-3 text-xs font-semibold text-[#1F2937] outline-none transition placeholder:text-[#98A2B3] hover:bg-white focus:bg-white"
+        {!calendarConnected ? (
+          <>
+            <GoogleCalendarAuthRequiredScreen
+              onConnect={openGoogleCalendarConnection}
+              googleCalendarEmail={googleCalendarEmail}
+              calendarLoading={calendarLoading}
             />
-          </label>
 
-          <div className="flex h-8 shrink-0 overflow-hidden rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA]">
-            {[
-              ["Month", Grid3X3],
-              ["Week", CalendarDays],
-              ["Agenda", List],
-            ].map(([label, Icon]) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => setViewMode(label)}
-                className={[
-                  "flex items-center gap-1.5 px-3 text-xs font-extrabold transition",
-                  viewMode === label
-                    ? "bg-[#06325E] text-white"
-                    : "text-[#667085] hover:bg-white hover:text-[#06325E]",
-                ].join(" ")}
-              >
-                {React.createElement(Icon, { className: "h-3.5 w-3.5" })}
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+            <div className="flex flex-wrap items-center gap-4 border-t border-[#DDE7F2] bg-[#F8FAFC] px-6 py-3 text-xs text-[#667085]">
+              <strong className="text-[#111827]">
+                Google Account Status:{" "}
+                <span className="text-[#FF5C28]">Not Connected</span>
+              </strong>
+              <span className="ml-auto hidden italic md:inline">
+                Sign in with Google to enable calendar sync.
+              </span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="thin-scroll flex items-center justify-between gap-2 overflow-x-auto border-b border-[#DDE7F2] bg-[#F8FAFC] px-4 py-3 lg:overflow-visible">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 shrink-0 overflow-hidden rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA]">
+                  <button
+                    type="button"
+                    onClick={() => movePeriod(-1)}
+                    className="flex w-9 items-center justify-center text-[#06325E] transition hover:cursor-pointer hover:bg-white"
+                    aria-label={
+                      viewMode === "Week" ? "Previous week" : "Previous month"
+                    }
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleToday}
+                    className="border-x border-[#DDE7F2] px-4 text-xs font-extrabold text-[#06325E] transition hover:cursor-pointer hover:bg-white"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => movePeriod(1)}
+                    className="flex w-9 items-center justify-center text-[#06325E] transition hover:cursor-pointer hover:bg-white"
+                    aria-label={
+                      viewMode === "Week" ? "Next week" : "Next month"
+                    }
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
 
-        {calendarError ? (
-          <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-xs font-bold text-amber-700">
-            {calendarError}
-            {!calendarConnected ? (
-              <button
-                type="button"
-                onClick={openGoogleCalendarConnection}
-                className="ml-3 rounded-md bg-amber-100 px-2 py-1 text-[11px] font-extrabold text-amber-800 transition hover:bg-amber-200"
-              >
-                Connect Google Calendar
-              </button>
+                <span className="min-w-[100px] shrink-0 px-1 text-sm font-black text-[#06325E]">
+                  {periodLabel}
+                </span>
+              </div>
+
+              <div className="flex h-8 shrink-0 overflow-hidden rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA]">
+                {[
+                  ["Month", Grid3X3],
+                  ["Week", CalendarDays],
+                  ["Agenda", List],
+                ].map(([label, Icon]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setViewMode(label)}
+                    className={[
+                      "flex items-center gap-1.5 px-3 text-xs font-extrabold transition",
+                      viewMode === label
+                        ? "bg-[#06325E] text-white"
+                        : "text-[#667085] hover:cursor-pointer hover:bg-white hover:text-[#06325E]",
+                    ].join(" ")}
+                  >
+                    {React.createElement(Icon, { className: "h-3.5 w-3.5" })}
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {calendarError ? (
+              <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-xs font-bold text-amber-700">
+                {calendarError}
+                {!calendarConnected ? (
+                  <button
+                    type="button"
+                    onClick={openGoogleCalendarConnection}
+                    className="ml-3 rounded-md bg-amber-100 px-2 py-1 text-[11px] font-extrabold text-amber-800 transition hover:cursor-pointer hover:bg-amber-200"
+                  >
+                    Connect Google Calendar
+                  </button>
+                ) : null}
+              </div>
             ) : null}
-          </div>
-        ) : null}
 
-        {viewMode === "Month" ? (
-          <MonthCalendarView
-            calendarLoading={calendarLoading}
-            monthCells={monthCells}
-            eventsByDate={eventsByDate}
-            todayKey={todayKey}
-            onCreateEvent={(dateKey) => setEditingEvent(createBlankEvent(dateKey))}
-            onEditEvent={setEditingEvent}
-          />
-        ) : null}
+            {viewMode === "Month" ? (
+              <MonthCalendarView
+                calendarLoading={calendarLoading}
+                monthCells={monthCells}
+                eventsByDate={eventsByDate}
+                todayKey={todayKey}
+                onCreateEvent={(dateKey) =>
+                  setEditingEvent(createBlankEvent(dateKey))
+                }
+                onEditEvent={setEditingEvent}
+              />
+            ) : null}
 
-        {viewMode === "Week" ? (
-          <WeekCalendarView
-            calendarLoading={calendarLoading}
-            weekCells={weekCells}
-            eventsByDate={eventsByDate}
-            todayKey={todayKey}
-            onCreateEvent={(dateKey) => setEditingEvent(createBlankEvent(dateKey))}
-            onEditEvent={setEditingEvent}
-          />
-        ) : null}
+            {viewMode === "Week" ? (
+              <WeekCalendarView
+                calendarLoading={calendarLoading}
+                weekCells={weekCells}
+                eventsByDate={eventsByDate}
+                todayKey={todayKey}
+                onCreateEvent={(dateKey) =>
+                  setEditingEvent(createBlankEvent(dateKey))
+                }
+                onEditEvent={setEditingEvent}
+              />
+            ) : null}
 
-        {viewMode === "Agenda" ? (
-          <AgendaCalendarView
-            events={filteredEvents}
-            onEditEvent={setEditingEvent}
-            onDeleteEvent={handleDeleteEvent}
-            onRescheduleEvent={handleRescheduleEvent}
-          />
-        ) : null}
+            {viewMode === "Agenda" ? (
+              <AgendaCalendarView
+                events={filteredEvents}
+                onEditEvent={setEditingEvent}
+                onDeleteEvent={handleDeleteEvent}
+                onRescheduleEvent={handleRescheduleEvent}
+              />
+            ) : null}
 
-        <div className="flex flex-wrap items-center gap-4 border-t border-[#DDE7F2] bg-[#F8FAFC] px-6 py-3 text-xs text-[#667085]">
-          <strong className="text-[#111827]">
-            Google Calendar Events: {filteredEvents.length}
-          </strong>
-          <span className="h-4 w-px bg-[#DDE7F2]" />
-          <span>TA Drives: {taDrives}</span>
-          <span className="h-4 w-px bg-[#DDE7F2]" />
-          <span>HR Syncs: {hrSyncs}</span>
-          <span className="ml-auto hidden items-center gap-1 italic md:flex">
-            <Clock className="h-3.5 w-3.5" />
-            Click any schedule block to edit or reschedule timelines.
-          </span>
-        </div>
+            <div className="flex flex-wrap items-center gap-4 border-t border-[#DDE7F2] bg-[#F8FAFC] px-6 py-3 text-xs text-[#667085]">
+              <strong className="text-[#111827]">
+                Google Calendar Events: {filteredEvents.length}
+              </strong>
+              <span className="h-4 w-px bg-[#DDE7F2]" />
+              <span>TA Drives: {taDrives}</span>
+              <span className="h-4 w-px bg-[#DDE7F2]" />
+              <span>HR Syncs: {hrSyncs}</span>
+              <span className="ml-auto hidden items-center gap-1 italic md:flex">
+                <Clock className="h-3.5 w-3.5" />
+                Click any schedule block to edit or reschedule timelines.
+              </span>
+            </div>
+          </>
+        )}
 
         {editingEvent ? (
           <EventEditorModal

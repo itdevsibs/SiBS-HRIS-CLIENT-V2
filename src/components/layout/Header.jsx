@@ -1124,7 +1124,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setCalendarOpen(true)}
-            className="hidden h-10 items-center gap-2 rounded-[12px] border border-transparent px-3 text-[10px] font-semibold text-[#667085] transition hover:border-[#C9D6E4] hover:bg-white hover:text-sibs-primary-1 hover:shadow-sm xl:flex"
+            className="hidden h-10 items-center gap-2 rounded-[12px] border border-transparent px-3 text-[10px] font-semibold text-[#667085] transition hover:border-[#C9D6E4] hover:bg-white hover:text-sibs-primary-1 hover:shadow-sm xl:flex hover:cursor-pointer"
             aria-label="Open HR and talent acquisition calendar"
           >
             <CalendarDays className="h-3.5 w-3.5 text-[#98A2B3]" />
