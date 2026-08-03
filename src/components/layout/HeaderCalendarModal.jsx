@@ -1876,6 +1876,12 @@ export default function HeaderCalendarModal({ open, onClose }) {
       setEditingEvent(null);
       setDisconnectConfirmOpen(false);
       setCalendarError("");
+      window.setTimeout(() => {
+        loadGoogleCalendarEvents({
+          force: true,
+          checkStatus: true,
+        });
+      }, 0);
       return;
     }
 
@@ -1887,6 +1893,9 @@ export default function HeaderCalendarModal({ open, onClose }) {
       stopCalendarLoading();
       setDisconnectConfirmOpen(false);
     }
+    // The open reset must run exactly when `open` flips; `loadGoogleCalendarEvents`
+    // is invoked after the reset so the modal always syncs on open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, stopCalendarLoading]);
 
   async function loadGoogleCalendarStatus() {
@@ -2058,8 +2067,6 @@ export default function HeaderCalendarModal({ open, onClose }) {
       if (checkStatus || !isConnected) {
         const statusResult = await loadGoogleCalendarStatus();
 
-        if (calendarLoadRequestRef.current !== requestId) return;
-
         isConnected = statusResult.connected;
       }
 
@@ -2115,11 +2122,13 @@ export default function HeaderCalendarModal({ open, onClose }) {
   }
 
   useEffect(() => {
+    if (!open) return;
+
     loadGoogleCalendarEvents({
       checkStatus: !calendarConnectedRef.current,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, viewDate]);
+  }, [viewDate]);
 
   const monthCells = useMemo(() => buildMonthCells(viewDate), [viewDate]);
   const weekCells = useMemo(() => buildWeekCells(viewDate), [viewDate]);
