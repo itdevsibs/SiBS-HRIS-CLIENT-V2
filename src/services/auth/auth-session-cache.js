@@ -28,28 +28,13 @@ export function normalizeExpiry(value) {
 
 export function readStoredExpiry() {
   const sessionStore = getSessionStorage();
-  const localStore = getLocalStorage();
-
   const sessionExpiry = normalizeExpiry(
     sessionStore?.getItem(SESSION_EXPIRY_KEY),
   );
-  const persistentExpiry = normalizeExpiry(
-    localStore?.getItem(PERSISTENT_EXPIRY_KEY),
-  );
 
-  const availableExpiries = [sessionExpiry, persistentExpiry].filter(
-    (value) => value > 0,
-  );
+  if (!sessionExpiry) return 0;
 
-  if (availableExpiries.length === 0) return 0;
-
-  // Always keep the earliest value. A stale value can never extend a session.
-  const expiresAt = Math.min(...availableExpiries);
-
-  sessionStore?.setItem(SESSION_EXPIRY_KEY, String(expiresAt));
-  localStore?.setItem(PERSISTENT_EXPIRY_KEY, String(expiresAt));
-
-  return expiresAt;
+  return sessionExpiry;
 }
 
 export function writeStoredExpiry(expiresAt) {
@@ -61,10 +46,7 @@ export function writeStoredExpiry(expiresAt) {
     SESSION_EXPIRY_KEY,
     String(normalizedExpiry),
   );
-  getLocalStorage()?.setItem(
-    PERSISTENT_EXPIRY_KEY,
-    String(normalizedExpiry),
-  );
+  getLocalStorage()?.removeItem(PERSISTENT_EXPIRY_KEY);
 
   return normalizedExpiry;
 }
