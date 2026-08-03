@@ -488,6 +488,26 @@ export async function dropOffCandidatePipelineCandidate(id, payload = {}) {
   }
 }
 
+export async function resendCandidatePipelineDropOffEmail(id) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${encodeURIComponent(id)}/drop-off-email/resend`,
+      {},
+      { withCredentials: true },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios resendCandidatePipelineDropOffEmail API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(err, "Failed to resend the Drop-off email.");
+  }
+}
+
 export async function saveCandidatePipelineOffer(id, payload = {}) {
   try {
     const res = await api.post(`/api/candidate-pipeline/${id}/offer`, payload, {
@@ -695,6 +715,7 @@ const candidatePipelineApi = {
   sendCandidatePipelineAssessmentEmail,
   saveCandidatePipelineAssessment,
   dropOffCandidatePipelineCandidate,
+  resendCandidatePipelineDropOffEmail,
   saveCandidatePipelineOffer,
   updateCandidatePipelineOfferApproval,
   sendCandidatePipelineOfferEmail,

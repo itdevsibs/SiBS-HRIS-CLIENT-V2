@@ -317,140 +317,9 @@ function LoadingPipelineBoard() {
   );
 }
 
-function CandidatePipelineScheduleSkeleton() {
-  const metricSkeletons = Array.from({ length: 7 });
-  const columnSkeletons = Array.from({ length: 7 });
-  const cardSkeletons = Array.from({ length: 2 });
-
-  return (
-    <div
-      className="mx-auto max-w-[1600px] space-y-5 animate-pulse"
-      role="status"
-      aria-live="polite"
-      aria-label="Sending interview schedule"
-    >
-      <span className="sr-only">
-        Sending the interview email and saving the interview schedule.
-      </span>
-
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="space-y-3">
-          <div className="h-6 w-48 rounded-full bg-slate-200" />
-          <div className="h-9 w-72 max-w-full rounded-xl bg-slate-200" />
-          <div className="h-4 w-[420px] max-w-full rounded-lg bg-slate-100" />
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <div className="h-11 w-28 rounded-xl bg-slate-200" />
-          <div className="h-11 w-36 rounded-xl bg-slate-200" />
-          <div className="h-11 w-36 rounded-xl bg-slate-200" />
-        </div>
-      </div>
-
-      <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-        <div className="h-5 w-36 rounded-lg bg-slate-200" />
-
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7">
-          {metricSkeletons.map((_, index) => (
-            <div
-              key={`schedule-metric-skeleton-${index}`}
-              className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="h-4 w-24 rounded bg-slate-200" />
-                <div className="h-9 w-9 rounded-xl bg-slate-200" />
-              </div>
-              <div className="mt-4 h-7 w-14 rounded-lg bg-slate-200" />
-              <div className="mt-3 h-3 w-20 rounded bg-slate-100" />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_220px_auto] xl:items-end">
-          <div className="space-y-2">
-            <div className="h-4 w-16 rounded bg-slate-200" />
-            <div className="h-12 w-full rounded-xl bg-slate-100" />
-          </div>
-          <div className="space-y-2">
-            <div className="h-4 w-12 rounded bg-slate-200" />
-            <div className="h-12 w-full rounded-xl bg-slate-100" />
-          </div>
-          <div className="space-y-2">
-            <div className="h-4 w-16 rounded bg-slate-200" />
-            <div className="h-12 w-full rounded-xl bg-slate-100" />
-          </div>
-          <div className="h-12 w-24 rounded-xl bg-slate-200" />
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-        <div className="flex items-center justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4">
-          <div className="space-y-2">
-            <div className="h-5 w-24 rounded bg-slate-200" />
-            <div className="h-3 w-64 max-w-full rounded bg-slate-100" />
-          </div>
-          <div className="h-10 w-28 rounded-xl bg-slate-200" />
-        </div>
-
-        <div className="overflow-x-auto p-4">
-          <div className="grid min-w-[1500px] grid-cols-7 gap-3">
-            {columnSkeletons.map((_, columnIndex) => (
-              <div
-                key={`schedule-column-skeleton-${columnIndex}`}
-                className="min-h-[430px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3"
-              >
-                <div className="flex items-center justify-between gap-3 border-b border-[#E6ECF2] pb-3">
-                  <div className="space-y-2">
-                    <div className="h-4 w-28 rounded bg-slate-200" />
-                    <div className="h-3 w-16 rounded bg-slate-100" />
-                  </div>
-                  <div className="h-7 w-7 rounded-full bg-slate-200" />
-                </div>
-
-                <div className="mt-3 space-y-3">
-                  {cardSkeletons.map((_, cardIndex) => (
-                    <div
-                      key={`schedule-card-skeleton-${columnIndex}-${cardIndex}`}
-                      className="rounded-xl border border-[#DCE5EE] bg-white p-3 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1 space-y-2">
-                          <div className="h-4 w-4/5 rounded bg-slate-200" />
-                          <div className="h-3 w-full rounded bg-slate-100" />
-                        </div>
-                        <div className="h-8 w-8 shrink-0 rounded-full bg-slate-200" />
-                      </div>
-
-                      <div className="mt-4 flex gap-2">
-                        <div className="h-5 w-20 rounded-full bg-slate-100" />
-                        <div className="h-5 w-16 rounded-full bg-slate-100" />
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                        <div className="h-12 rounded-lg bg-slate-100" />
-                        <div className="h-12 rounded-lg bg-slate-100" />
-                      </div>
-
-                      <div className="mt-4 h-9 rounded-lg bg-slate-100" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
 export default function CandidatePipelinePage() {
   const {
     isLoading,
-    isSaving,
-    isSchedulingInterview,
     loadError,
     refreshCandidatePipeline,
 
@@ -490,6 +359,7 @@ export default function CandidatePipelinePage() {
     offerCandidate,
     offerForm,
     setOfferForm,
+    offerSubmitting,
 
     filteredCandidates,
     stageVisibleCandidates,
@@ -519,6 +389,7 @@ export default function CandidatePipelinePage() {
     handleSubmitDropOff,
 
     handleCloseOfferModal,
+    handleReprofileOfferAccount,
     handleSubmitOfferDetails,
     handleUpdateOfferApproval,
     handleSendOfferEmail,
@@ -560,7 +431,6 @@ export default function CandidatePipelinePage() {
       ...metrics,
       initialScreening: 0,
       onlineAssessment: 0,
-      assessmentFit: 0,
       interviewScheduled: 0,
       interviewed: 0,
       offered: 0,
@@ -607,10 +477,7 @@ export default function CandidatePipelinePage() {
       </div>
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        {isSchedulingInterview ? (
-          <CandidatePipelineScheduleSkeleton />
-        ) : (
-          <div className="mx-auto max-w-[1600px] space-y-5">
+        <div className="mx-auto max-w-[1600px] space-y-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -682,7 +549,7 @@ export default function CandidatePipelinePage() {
               Pipeline Summary
             </h2>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
               <DashboardMetric
                 label="Initial Screening"
                 value={safeMetrics.initialScreening}
@@ -695,13 +562,6 @@ export default function CandidatePipelinePage() {
                 value={safeMetrics.onlineAssessment}
                 icon={ClipboardCheck}
                 description="Assessment stage"
-              />
-
-              <DashboardMetric
-                label="Assessment Fit"
-                value={safeMetrics.assessmentFit}
-                icon={ClipboardCheck}
-                description="Ready to schedule"
               />
 
               <DashboardMetric
@@ -823,8 +683,7 @@ export default function CandidatePipelinePage() {
               onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
             />
           )}
-          </div>
-        )}
+        </div>
       </main>
 
       <CandidatePipelineModal
@@ -862,7 +721,6 @@ export default function CandidatePipelinePage() {
         candidate={scheduleCandidate}
         form={scheduleForm}
         setForm={setScheduleForm}
-        isSaving={isSaving}
         onClose={handleCloseScheduleInterview}
         onSubmit={handleSubmitScheduleInterview}
       />
@@ -883,7 +741,9 @@ export default function CandidatePipelinePage() {
         form={offerForm}
         setForm={setOfferForm}
         onClose={handleCloseOfferModal}
+        onReprofile={handleReprofileOfferAccount}
         onSubmit={handleSubmitOfferDetails}
+        submitting={offerSubmitting}
       />
 
       <DropOffModal

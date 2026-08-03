@@ -46,12 +46,7 @@ import {
 } from "../../lib/utils/candidatePipeline/candidatePipelineIdentity";
 
 import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
-
-import {
-  isSelectableCandidateInterviewDate,
-  parseCandidateInterviewDateValue,
-  validateCandidateInterviewTime,
-} from "../../lib/utils/candidatePipeline/candidateInterviewDateSelection";
+import { generateEmploymentOfferPdf } from "../../lib/utils/candidatePipeline/employmentOfferPdf";
 
 const CandidatePipelineContext = createContext(null);
 
@@ -101,6 +96,7 @@ const emptyOfferForm = {
   account: "",
   basicPay: "",
   deminimisDailyRate: "",
+  startDate: "",
   remarks: "",
 };
 
@@ -521,6 +517,26 @@ async function dropOffCandidatePipelineCandidate(id, payload = {}) {
   }
 }
 
+async function resendCandidatePipelineDropOffEmail(id) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${encodeURIComponent(id)}/drop-off-email/resend`,
+      {},
+      { withCredentials: true },
+    );
+
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Axios resendCandidatePipelineDropOffEmail API error:",
+      error?.response?.status,
+      error?.response?.data || error?.message,
+    );
+
+    return apiErrorResponse(error, "Failed to resend the Drop-off email.");
+  }
+}
+
 async function saveCandidatePipelineOffer(id, payload = {}) {
   try {
     const res = await api.post(`/api/candidate-pipeline/${id}/offer`, payload, {
@@ -536,6 +552,24 @@ async function saveCandidatePipelineOffer(id, payload = {}) {
     );
 
     return apiErrorResponse(error, "Failed to save offer details.");
+  }
+}
+
+async function reprofileCandidatePipelineAccount(id, payload = {}) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/reprofile-account`,
+      payload,
+      { withCredentials: true },
+    );
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Axios reprofileCandidatePipelineAccount API error:",
+      error?.response?.status,
+      error?.response?.data || error?.message,
+    );
+    return apiErrorResponse(error, "Failed to reprofile candidate account.");
   }
 }
 
@@ -739,47 +773,6 @@ function normalizePipelineCandidateForBoard(candidate = {}) {
       candidate.interviewStatus ||
       candidate.interview_status ||
       "For Assessment",
-
-    proposedInterviewDate:
-      candidate.proposedInterviewDate ||
-      candidate.proposed_interview_date ||
-      null,
-
-    finalInterviewDate:
-      candidate.finalInterviewDate ||
-      candidate.final_interview_date ||
-      null,
-
-    interviewResponseStatus:
-      candidate.interviewResponseStatus ||
-      candidate.interview_response_status ||
-      "",
-
-    interviewResponseReason:
-      candidate.interviewResponseReason ||
-      candidate.interview_response_reason ||
-      "",
-
-    interviewResponseAt:
-      candidate.interviewResponseAt ||
-      candidate.interview_response_at ||
-      null,
-
-    interviewResponseDeadline:
-      candidate.interviewResponseDeadline ||
-      candidate.interview_response_deadline ||
-      null,
-
-    interviewNextFollowUpAt:
-      candidate.interviewNextFollowUpAt ||
-      candidate.interview_next_follow_up_at ||
-      null,
-
-    interviewFollowUpCount: Number(
-      candidate.interviewFollowUpCount ??
-        candidate.interview_follow_up_count ??
-        0,
-    ),
 
     roleTitle,
     currentAppliedRole: candidate.currentAppliedRole || roleTitle,
@@ -1041,23 +1034,11 @@ export function CandidatePipelineProvider({ children }) {
     user?.username ||
     "Current User";
 
-  const currentUserEmail = cleanText(
-    user?.email ||
-      user?.workEmail ||
-      user?.work_email ||
-      user?.companyEmail ||
-      user?.company_email ||
-      user?.employeeEmail ||
-      user?.employee_email ||
-      user?.gy_emp_email,
-  );
-
   const [candidateList, setCandidateList] = useState([]);
   const [hasLoadedStorage, setHasLoadedStorage] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
   const [loadError, setLoadError] = useState("");
 
   const [search, setSearch] = useState("");
@@ -1082,6 +1063,7 @@ export function CandidatePipelineProvider({ children }) {
 
   const [offerCandidate, setOfferCandidate] = useState(null);
   const [offerForm, setOfferForm] = useState(emptyOfferForm);
+  const [offerSubmitting, setOfferSubmitting] = useState(false);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -1095,13 +1077,11 @@ export function CandidatePipelineProvider({ children }) {
 
   const hideInterviewColumns =
     normalizedActiveStage === "Initial Screening" ||
-    normalizedActiveStage === "Online Assessment" ||
-    normalizedActiveStage === "Assessment Fit";
+    normalizedActiveStage === "Online Assessment";
 
   const showAssessmentStatusColumn = false;
   const showAssessmentResultColumn =
-    normalizedActiveStage === "Online Assessment" ||
-    normalizedActiveStage === "Assessment Fit";
+    normalizedActiveStage === "Online Assessment";
 
   function openStatusModal(type, title, message, options = {}) {
     const isSuccess = type === "success";
@@ -1337,13 +1317,6 @@ export function CandidatePipelineProvider({ children }) {
         return getCandidatePrfStatus(candidate) === "Matched";
       }
 
-      if (currentStage === "Assessment Fit") {
-        return (
-          candidate.assessmentStatus === "Taken" &&
-          candidate.assessmentResult === "Assessment Fit"
-        );
-      }
-
       if (currentStage === "Interview Scheduled") {
         return (
           candidate.assessmentStatus === "Taken" &&
@@ -1383,7 +1356,6 @@ export function CandidatePipelineProvider({ children }) {
     return {
       initialScreening: stageCounts["Initial Screening"] || 0,
       onlineAssessment: stageCounts["Online Assessment"] || 0,
-      assessmentFit: stageCounts["Assessment Fit"] || 0,
       interviewScheduled: stageCounts["Interview Scheduled"] || 0,
       interviewed: stageCounts.Interviewed || 0,
       offered: stageCounts.Offered || 0,
@@ -1695,14 +1667,9 @@ export function CandidatePipelineProvider({ children }) {
         }
       }
 
-      const resolvedActiveStageAfter =
-        typeof activeStageAfter === "function"
-          ? activeStageAfter(response, updatedCandidate)
-          : activeStageAfter;
-
-      if (resolvedActiveStageAfter) {
+      if (activeStageAfter) {
         setActiveStage(
-          normalizePipelineStageName(resolvedActiveStageAfter),
+          normalizePipelineStageName(activeStageAfter),
         );
       }
 
@@ -2185,41 +2152,6 @@ export function CandidatePipelineProvider({ children }) {
       return null;
     }
 
-    const scheduleMatch = cleanText(scheduleForm.interviewDate).match(
-      /^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/,
-    );
-    const scheduleDate = parseCandidateInterviewDateValue(
-      scheduleMatch?.[1] || "",
-    );
-    const scheduleTimeValidation = validateCandidateInterviewTime(
-      scheduleMatch?.[2] || "",
-    );
-
-    if (
-      !scheduleDate ||
-      !isSelectableCandidateInterviewDate(scheduleDate, new Date())
-    ) {
-      showError(
-        "Interview date must be today or a future Monday to Friday.",
-      );
-      return null;
-    }
-
-    if (!scheduleTimeValidation.valid) {
-      showError(
-        scheduleTimeValidation.message ||
-          "Interview time must be between 10:00 AM and 5:00 PM.",
-      );
-      return null;
-    }
-
-    if (!currentUserEmail) {
-      showError(
-        "Your TA email address is required before sending the interview schedule.",
-      );
-      return null;
-    }
-
     if (
       scheduleForm.interviewType === "Online" &&
       !String(scheduleForm.onlineInterviewLink || "").trim()
@@ -2238,55 +2170,51 @@ export function CandidatePipelineProvider({ children }) {
       return null;
     }
 
-    const submittedCandidate = scheduleCandidate;
-    const submittedForm = {
-      ...scheduleForm,
-    };
-    const id = getCandidateRecordId(submittedCandidate);
+    const id = getCandidateRecordId(scheduleCandidate);
 
-    /*
-     * Show the same full-page loading treatment used by the HR Dashboard,
-     * then hide Candidate Details and Schedule Interview. The request uses
-     * the snapshots above, so closing the forms cannot clear the submitted
-     * values while the interview email and schedule are being processed.
-     */
-    setIsSchedulingInterview(true);
-    closeAllPipelineModals();
-
-    try {
-      return await runCandidateAction(
-        () =>
-          scheduleCandidatePipelineInterview(id, {
-            interviewDate: submittedForm.interviewDate,
-            interviewType: submittedForm.interviewType,
-            onlineInterviewLink:
-              submittedForm.interviewType === "Online"
-                ? submittedForm.onlineInterviewLink
-                : "",
-            remarks: submittedForm.remarks,
-            taEmail: currentUserEmail,
-            taName: currentUserName,
-          }),
-        {
-          activeStageAfter: "Interview Scheduled",
-          successTitle: isUpdatingSchedule
-            ? "Interview Schedule Updated"
-            : "Interview Scheduled",
-          successMessage: (response) =>
-            response?.message ||
-            (isUpdatingSchedule
-              ? `${submittedCandidate.name}'s interview schedule was updated and the email sent successfully.`
-              : `${submittedCandidate.name}'s interview was scheduled and the email sent successfully.`),
-        },
-      );
-    } finally {
-      /*
-       * runCandidateAction opens the success or error StatusModal before it
-       * resolves. Removing this loading state here makes the StatusModal the
-       * next visible UI after the loader.
-       */
-      setIsSchedulingInterview(false);
-    }
+    return runCandidateAction(
+      () =>
+        scheduleCandidatePipelineInterview(id, {
+          interviewDate: scheduleForm.interviewDate,
+          interviewType: scheduleForm.interviewType,
+          onlineInterviewLink:
+            scheduleForm.interviewType === "Online"
+              ? scheduleForm.onlineInterviewLink
+              : "",
+          remarks: scheduleForm.remarks,
+          taEmail: String(
+            user?.email ||
+              user?.workEmail ||
+              user?.work_email ||
+              user?.emailAddress ||
+              user?.email_address ||
+              "",
+          ).trim(),
+          taName: [
+            user?.firstName || user?.first_name,
+            user?.middleName || user?.middle_name,
+            user?.lastName || user?.last_name,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .trim() ||
+            user?.name ||
+            user?.fullName ||
+            user?.full_name ||
+            user?.sibs_id ||
+            user?.username ||
+            "Talent Acquisition",
+        }),
+      {
+        activeStageAfter: "Interview Scheduled",
+        successTitle: isUpdatingSchedule
+          ? "Interview Schedule Updated"
+          : "Interview Scheduled",
+        successMessage: isUpdatingSchedule
+          ? `${scheduleCandidate.name}'s interview schedule was updated successfully.`
+          : `${scheduleCandidate.name}'s interview was scheduled successfully.`,
+      },
+    );
   }
 
   async function handleCancelInterview(candidate) {
@@ -2422,6 +2350,7 @@ export function CandidatePipelineProvider({ children }) {
         (currentAccount === "Not assigned yet" ? "" : currentAccount),
       basicPay: offerDetails.basicPay || "",
       deminimisDailyRate: offerDetails.deminimisDailyRate || "",
+      startDate: offerDetails.startDate || offerDetails.start_date || "",
       remarks: "",
     });
   }
@@ -2429,6 +2358,42 @@ export function CandidatePipelineProvider({ children }) {
   async function handleCloseOfferModal() {
     setOfferCandidate(null);
     setOfferForm(emptyOfferForm);
+  }
+
+  async function handleReprofileOfferAccount({ hiringRequirementId, account }) {
+    if (!offerCandidate) {
+      return { success: false, message: "No candidate is selected." };
+    }
+
+    const id = getCandidateRecordId(offerCandidate);
+    const response = await reprofileCandidatePipelineAccount(id, {
+      hiringRequirementId,
+    });
+
+    if (!response?.success) {
+      showError(
+        response?.message || "Failed to reprofile candidate account.",
+        "Reprofile Failed",
+      );
+      return response;
+    }
+
+    const updatedCandidate = normalizePipelineCandidateForBoard(
+      response.candidate || response.data,
+    );
+
+    syncSelectedCandidate(updatedCandidate);
+    setOfferCandidate(updatedCandidate);
+    setOfferForm((previous) => ({
+      ...previous,
+      hiringRequirementId,
+      account,
+      finalAccount: account,
+      roleTitle: previous.roleTitle || updatedCandidate.roleTitle,
+      finalRole: previous.roleTitle || updatedCandidate.roleTitle,
+    }));
+
+    return response;
   }
 
   async function handleSubmitOfferDetails(event) {
@@ -2454,7 +2419,7 @@ export function CandidatePipelineProvider({ children }) {
       !offerForm.deminimisDailyRate
     ) {
       showError(
-        "Hiring requirement, final role, final account, basic pay, and deminimis / daily rate are required.",
+        "An approved PRF for the same role, final account, basic pay, and deminimis / daily rate are required.",
         "Incomplete Offer Details",
       );
 
@@ -2478,7 +2443,22 @@ export function CandidatePipelineProvider({ children }) {
 
     const id = getCandidateRecordId(offerCandidate);
 
-    const response = await runCandidateAction(
+    setOfferSubmitting(true);
+
+    let employmentOfferPdf = null;
+    let response;
+
+    try {
+      try {
+        employmentOfferPdf = await generateEmploymentOfferPdf({
+          candidate: offerCandidate,
+          offer: offerForm,
+        });
+      } catch (pdfError) {
+        console.error("Employment offer PDF generation failed:", pdfError);
+      }
+
+      response = await runCandidateAction(
       () =>
         saveCandidatePipelineOffer(id, {
           hiringRequirementId: offerForm.hiringRequirementId,
@@ -2490,6 +2470,15 @@ export function CandidatePipelineProvider({ children }) {
           deminimisDailyRate: Number(
             offerForm.deminimisDailyRate,
           ),
+          ...(offerForm.startDate
+            ? { startDate: offerForm.startDate }
+            : {}),
+          ...(employmentOfferPdf?.base64
+            ? {
+                employmentOfferPdfBase64: employmentOfferPdf.base64,
+                employmentOfferPdfFilename: employmentOfferPdf.filename,
+              }
+            : {}),
           remarks:
             offerForm.remarks ||
             `Hiring Requirement: ${
@@ -2509,16 +2498,22 @@ export function CandidatePipelineProvider({ children }) {
           `${offerCandidate.name}'s offer was submitted for approval successfully.`,
         errorTitle: "Offer Submission Failed",
       },
-    );
+      );
+    } finally {
+      setOfferSubmitting(false);
+    }
 
     if (!response?.success) {
       return response;
     }
 
     showSuccess(
-      response?.message ||
+      response?.emailWarning ||
+        response?.message ||
         `${offerCandidate.name}'s offer was submitted for approval successfully.`,
-      "Offer Submitted for Approval",
+      response?.emailSent === false
+        ? "Offer Saved - Email Not Sent"
+        : "Offer Submitted for Approval",
       {
         /*
          * closeStatusModal() reads this flag. When the user clicks OK,
@@ -2659,11 +2654,6 @@ export function CandidatePipelineProvider({ children }) {
     }
 
     if (currentStage === "Online Assessment") {
-      handleOpenAssessmentModal(normalizedCandidate);
-      return;
-    }
-
-    if (currentStage === "Assessment Fit") {
       handleOpenScheduleInterview(normalizedCandidate);
       return;
     }
@@ -2965,14 +2955,7 @@ export function CandidatePipelineProvider({ children }) {
           assessmentRemarks: assessmentForm.assessmentRemarks.trim(),
         }),
       {
-        activeStageAfter: (response, updatedCandidate) => {
-          const responseCandidate =
-            updatedCandidate || getApiCandidate(response);
-
-          return responseCandidate
-            ? getCandidateStage(responseCandidate)
-            : "Online Assessment";
-        },
+        activeStageAfter: "Online Assessment",
         successTitle: "Assessment Saved",
         successMessage:
           `${assessmentCandidate.name}'s assessment was saved successfully.`,
@@ -3245,6 +3228,43 @@ export function CandidatePipelineProvider({ children }) {
     );
   }
 
+  async function handleResendDropOffEmail(candidate) {
+    if (!candidate) {
+      showError("Candidate information is missing.", "Unable to Resend Email");
+      return null;
+    }
+
+    if (normalizePipelineStageName(getCandidateStage(candidate)) !== "Drop-off") {
+      showError(
+        "Only candidates currently in Drop-off can receive this email.",
+        "Unable to Resend Email",
+      );
+      return null;
+    }
+
+    if (
+      !(await confirmAction(
+        `Resend the Drop-off application update email to ${candidate.name}?`,
+      ))
+    ) {
+      return null;
+    }
+
+    const id = getCandidateRecordId(candidate);
+
+    return runCandidateAction(
+      () => resendCandidatePipelineDropOffEmail(id),
+      {
+        refresh: true,
+        successTitle: "Drop-off Email Sent",
+        successMessage: (response) =>
+          response?.message ||
+          `The Drop-off application update email was sent to ${candidate.name}.`,
+        errorTitle: "Drop-off Email Failed",
+      },
+    );
+  }
+
   async function handleStartInterview(candidate) {
     if (!candidate) {
       showError(
@@ -3279,6 +3299,7 @@ export function CandidatePipelineProvider({ children }) {
     effectiveCandidateApplicationId,
     positionId,
     formId,
+    submissionId,
     formName = "",
     passingScore = 80,
     answers = {},
@@ -3305,8 +3326,12 @@ export function CandidatePipelineProvider({ children }) {
         candidateApplicationId: resolvedCandidateApplicationId,
       });
 
-      showError("Candidate was not found for final interview submission.");
-      return false;
+      const message = "Candidate was not found for final interview submission.";
+      showError(message);
+      return {
+        success: false,
+        message,
+      };
     }
 
     const id = getCandidateRecordId(matchedCandidate);
@@ -3324,6 +3349,7 @@ export function CandidatePipelineProvider({ children }) {
             "",
           positionId: positionId || "",
           formId: finalFormId,
+          submissionId: submissionId || undefined,
           formName: finalFormName,
           passingScore,
           answers,
@@ -3333,11 +3359,23 @@ export function CandidatePipelineProvider({ children }) {
           remarks: "Final interview / job evaluation submitted.",
         }),
       {
-        activeStageAfter: "Interviewed",
+        showSuccessModal: false,
       },
     );
 
-    return Boolean(response?.success);
+    if (response?.success) {
+      const finalStage = normalizePipelineStageName(
+        response?.finalStage ||
+          response?.final_stage ||
+          (response?.outcome === "final-interview-failed"
+            ? "Drop-off"
+            : "Interviewed"),
+      );
+
+      setActiveStage(finalStage);
+    }
+
+    return response;
   }
 
   function updateCandidateFromOffer(updatedCandidatePayload) {
@@ -3385,7 +3423,6 @@ export function CandidatePipelineProvider({ children }) {
 
     isLoading,
     isSaving,
-    isSchedulingInterview,
     loadError,
     refreshCandidatePipeline,
 
@@ -3430,6 +3467,7 @@ export function CandidatePipelineProvider({ children }) {
     setOfferCandidate,
     offerForm,
     setOfferForm,
+    offerSubmitting,
 
     hideInterviewColumns,
     showAssessmentStatusColumn,
@@ -3460,6 +3498,7 @@ export function CandidatePipelineProvider({ children }) {
 
     handleOpenOfferModal,
     handleCloseOfferModal,
+    handleReprofileOfferAccount,
     handleSubmitOfferDetails,
     handleUpdateOfferApproval,
     handleSendOfferEmail,
@@ -3482,6 +3521,7 @@ export function CandidatePipelineProvider({ children }) {
     handleResetSampleData,
 
     handleStartInterview,
+    handleResendDropOffEmail,
     handleSubmitFinalInterview,
 
     resetConnectedRecruitmentStorage,
