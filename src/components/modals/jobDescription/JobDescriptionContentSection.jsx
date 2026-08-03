@@ -1,7 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, X } from "lucide-react";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
-import ThemedDropdown from "../../layout/dropdown/ThemedDropdown";
 import RichTextEditor from "./RichTextEditor";
 
 const reportToOptions = [
@@ -44,6 +43,9 @@ const fieldLabelClass =
 
 const fieldButtonClass =
   "flex h-10 w-full items-center justify-between gap-3 rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] px-3 text-left text-xs font-semibold text-sibs-primary-1 outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60";
+
+const fieldInputClass =
+  "h-10 w-full rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] px-3 pr-9 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60";
 
 function CompactMultiSelect({
   refBox,
@@ -180,13 +182,45 @@ export default function JobDescriptionContentSection() {
   const { form, setForm } = useJobDescription();
 
   const personalityTypeRef = useRef(null);
+  const reportsToRef = useRef(null);
 
+  const [reportsToOpen, setReportsToOpen] = useState(false);
   const [personalityTypeOpen, setPersonalityTypeOpen] =
     useState(false);
 
   function closeDropdowns() {
+    setReportsToOpen(false);
     setPersonalityTypeOpen(false);
   }
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        reportsToRef.current &&
+        !reportsToRef.current.contains(event.target)
+      ) {
+        setReportsToOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const filteredReportToOptions = useMemo(() => {
+    const query = String(form.reportsTo || "")
+      .trim()
+      .toLowerCase();
+
+    if (!query) return reportToOptions;
+
+    return reportToOptions.filter((option) =>
+      option.label.toLowerCase().includes(query),
+    );
+  }, [form.reportsTo]);
 
   function updateRichTextField(
     field,
@@ -296,25 +330,130 @@ export default function JobDescriptionContentSection() {
 
       <div className="space-y-4 overflow-visible">
         <div className="grid grid-cols-1 gap-4 overflow-visible md:grid-cols-2 md:items-start">
-          <div className="relative z-[40] min-w-0 overflow-visible">
-            <ThemedDropdown
-              required
-              label="Reports to"
-              value={form.reportsTo || ""}
-              placeholder="Select reporting line"
-              options={reportToOptions}
-              searchable={false}
-              zIndex="z-[40]"
-              onBeforeOpen={() => {
-                setPersonalityTypeOpen(false);
-              }}
-              onChange={(value) => {
-                setForm((previous) => ({
-                  ...previous,
-                  reportsTo: value,
-                }));
-              }}
-            />
+          <div
+            ref={reportsToRef}
+            className={`relative min-w-0 overflow-visible ${
+              reportsToOpen ? "z-[9999]" : "z-[40]"
+            }`}
+          >
+            <label
+              htmlFor="job-description-reports-to"
+              className={fieldLabelClass}
+            >
+              Reports to <span className="text-red-500">*</span>
+            </label>
+
+            <div className="relative">
+              <input
+                id="job-description-reports-to"
+                value={form.reportsTo || ""}
+                placeholder="Type or choose reporting line"
+                className={fieldInputClass}
+                autoComplete="off"
+                onFocus={() => {
+                  setReportsToOpen(true);
+                  setPersonalityTypeOpen(false);
+                }}
+                onClick={() => {
+                  setReportsToOpen(true);
+                  setPersonalityTypeOpen(false);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    setReportsToOpen(false);
+                  }
+                }}
+                onChange={(event) => {
+                  const value = event.target.value;
+
+                  setForm((previous) => ({
+                    ...previous,
+                    reportsTo: value,
+                  }));
+                  setReportsToOpen(true);
+                }}
+              />
+
+              <button
+                type="button"
+                onClick={() => {
+                  setReportsToOpen((previous) => !previous);
+                  setPersonalityTypeOpen(false);
+                }}
+                className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-primary-1 transition hover:bg-[#EAF0F7]"
+                aria-label="Show reporting line suggestions"
+              >
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform ${
+                    reportsToOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              <div
+                className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-200 ease-out ${
+                  reportsToOpen
+                    ? "grid-rows-[1fr] opacity-100"
+                    : "pointer-events-none grid-rows-[0fr] opacity-0"
+                }`}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div
+                    className={`max-h-72 overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+                      reportsToOpen
+                        ? "translate-y-0 scale-100"
+                        : "-translate-y-1 scale-[0.99]"
+                    }`}
+                  >
+                    <div className="max-h-72 overflow-y-auto py-1.5">
+                      {filteredReportToOptions.length > 0 ? (
+                        filteredReportToOptions.map((option) => {
+                          const active = form.reportsTo === option.value;
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setForm((previous) => ({
+                                  ...previous,
+                                  reportsTo: option.value,
+                                }));
+                                setReportsToOpen(false);
+                              }}
+                              className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs font-semibold transition ${
+                                active
+                                  ? "bg-[#EAF2FB] text-sibs-primary-1"
+                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                              }`}
+                            >
+                              <span>{option.label}</span>
+                              {active ? (
+                                <Check
+                                  size={14}
+                                  className="shrink-0 text-sibs-primary-1"
+                                />
+                              ) : null}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="px-3 py-3 text-xs font-semibold text-sibs-tertiary-5">
+                          No matching suggestion. Custom value will be saved.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* {!String(form.reportsTo || "").trim() && (
+              <p className="mt-2 text-xs font-semibold text-red-500">
+                Please enter a reporting line.
+              </p>
+            )} */}
           </div>
 
           <div className="relative z-[10] min-w-0">
