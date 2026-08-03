@@ -1,12 +1,35 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, CalendarDays, LineChart, ChevronDown, Search } from "lucide-react";
+import {
+  BarChart3,
+  CalendarDays,
+  ChevronDown,
+  Filter,
+  GripHorizontal,
+  LineChart,
+  X,
+} from "lucide-react";
 import TrendSvg from "../../recruitment/workforceHiringOverview/shared/TrendSvg";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
   getWorkforceHiringPlanAccountTrends,
   getWorkforceHiringPlanSixWeekTable,
 } from "../../../lib/axios/getWorkforceHiringPlan";
+import {
+  TREND_RANGE_OPTIONS,
+  buildSixWeekRequestChunks,
+  buildTrendSeries,
+  calculateTrendRangeSummary,
+  getTrendRangeDisplayLabel,
+  getWeekOptionId,
+  mergeRangeTableResponses,
+  mergeTrendResponses,
+  normalizeRequestFilterValue,
+  normalizeTrendResponsePoints,
+  resolveTrendRangeSelection,
+  sortWeekOptionsChronologically,
+} from "../../../lib/utils/workforceHiringOverview/workforceHiringTrendRangeHelpers";
 
 const EDGE = "rounded-[10px]";
 
@@ -21,17 +44,17 @@ function getOptionLabel(option) {
 
   return getText(
     option?.label ||
-      option?.name ||
-      option?.accountName ||
-      option?.account ||
-      option?.account_name ||
-      option?.gy_acc_name ||
-      option?.clusterName ||
-      option?.cluster ||
-      option?.weeklyVersion ||
-      option?.weekly_version ||
-      option?.weekRange ||
-      option?.value,
+    option?.name ||
+    option?.accountName ||
+    option?.account ||
+    option?.account_name ||
+    option?.gy_acc_name ||
+    option?.clusterName ||
+    option?.cluster ||
+    option?.weeklyVersion ||
+    option?.weekly_version ||
+    option?.weekRange ||
+    option?.value,
   );
 }
 
@@ -42,16 +65,16 @@ function getOptionValue(option) {
 
   return getText(
     option?.value ||
-      option?.id ||
-      option?.accountName ||
-      option?.account ||
-      option?.account_name ||
-      option?.gy_acc_name ||
-      option?.clusterName ||
-      option?.cluster ||
-      option?.label ||
-      option?.weeklyVersion ||
-      option?.weekly_version,
+    option?.id ||
+    option?.accountName ||
+    option?.account ||
+    option?.account_name ||
+    option?.gy_acc_name ||
+    option?.clusterName ||
+    option?.cluster ||
+    option?.label ||
+    option?.weeklyVersion ||
+    option?.weekly_version,
   );
 }
 
@@ -221,23 +244,23 @@ function getWeekEndValue(item = {}) {
 function getWeekOptionYear(item = {}) {
   return String(
     item.year ||
-      item.weekYear ||
-      item.week_year ||
-      getYearFromDate(getWeekStartValue(item)) ||
-      getYearFromDate(getWeekEndValue(item)) ||
-      "",
+    item.weekYear ||
+    item.week_year ||
+    getYearFromDate(getWeekStartValue(item)) ||
+    getYearFromDate(getWeekEndValue(item)) ||
+    "",
   );
 }
 
 function getWeekOptionNumber(item = {}) {
   return String(
     item.weekNumber ||
-      item.week_number ||
-      item.weekNo ||
-      item.week_no ||
-      item.week ||
-      getWeekNumberFromLabel(item.label || item.weekLabel || item.week_label) ||
-      "",
+    item.week_number ||
+    item.weekNo ||
+    item.week_no ||
+    item.week ||
+    getWeekNumberFromLabel(item.label || item.weekLabel || item.week_label) ||
+    "",
   );
 }
 
@@ -252,19 +275,19 @@ function normalizeWeekOption(item = {}, index = 0) {
     year && weekNumber
       ? `${year} - Week ${weekNumber}`
       : String(
-          item.label ||
-            item.weekLabel ||
-            item.week_label ||
-            `Week ${index + 1}`,
-        );
+        item.label ||
+        item.weekLabel ||
+        item.week_label ||
+        `Week ${index + 1}`,
+      );
 
   return {
     ...item,
     id: String(
       item.id ||
-        item.value ||
-        item.week_id ||
-        `${weekStart}-${weekEnd}-${index}`,
+      item.value ||
+      item.week_id ||
+      `${weekStart}-${weekEnd}-${index}`,
     ),
     title,
     range,
@@ -358,25 +381,25 @@ function getTrendRangeEndpointOption({
   const fallbackTarget =
     type === "start"
       ? {
-          label: trendWeeks?.[0],
-          weekStart:
-            endpointDetail?.weekStart ||
-            trendMeta.trendStart ||
-            trendMeta.trend_start,
-          weekEnd:
-            endpointDetail?.weekEnd ||
-            trendMeta.trendStartEnd ||
-            trendMeta.trend_start_end,
-        }
+        label: trendWeeks?.[0],
+        weekStart:
+          endpointDetail?.weekStart ||
+          trendMeta.trendStart ||
+          trendMeta.trend_start,
+        weekEnd:
+          endpointDetail?.weekEnd ||
+          trendMeta.trendStartEnd ||
+          trendMeta.trend_start_end,
+      }
       : {
-          label: trendWeeks?.[trendWeeks.length - 1],
-          weekStart:
-            endpointDetail?.weekStart ||
-            trendMeta.weekStart ||
-            trendMeta.week_start,
-          weekEnd:
-            endpointDetail?.weekEnd || trendMeta.weekEnd || trendMeta.week_end,
-        };
+        label: trendWeeks?.[trendWeeks.length - 1],
+        weekStart:
+          endpointDetail?.weekStart ||
+          trendMeta.weekStart ||
+          trendMeta.week_start,
+        weekEnd:
+          endpointDetail?.weekEnd || trendMeta.weekEnd || trendMeta.week_end,
+      };
 
   const target = endpointDetail || normalizeWeekOption(fallbackTarget);
 
@@ -428,9 +451,9 @@ function DropdownPortal({
       const top = shouldOpenUp
         ? Math.max(safePadding, rect.top - cleanMaxHeight - gap)
         : Math.min(
-            rect.bottom + gap,
-            viewportHeight - cleanMaxHeight - safePadding,
-          );
+          rect.bottom + gap,
+          viewportHeight - cleanMaxHeight - safePadding,
+        );
 
       const maxLeft = Math.max(
         safePadding,
@@ -520,6 +543,7 @@ function TrendDisplayDropdown({
   options = [],
   selectedOption = null,
   open = false,
+  disabled = false,
   onToggle,
   onClose,
   onSelect,
@@ -529,56 +553,57 @@ function TrendDisplayDropdown({
     Array.isArray(options) && options.length > 0 ? options : [];
   const selectedId = String(selectedOption?.id || selectedOption?.value || "");
 
+  function handleSelect(option) {
+    onSelect?.(option);
+    onClose?.();
+  }
+
   return (
     <div className="relative min-w-0 overflow-visible">
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
         {label}
       </label>
 
       <button
         ref={buttonRef}
         type="button"
+        disabled={disabled}
         onClick={onToggle}
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
-          open ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10" : ""
-        }`}
+        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
+          }`}
       >
         <span className="min-w-0 truncate">{value || "—"}</span>
 
         <ChevronDown
           size={18}
-          className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+            }`}
         />
       </button>
 
       <DropdownPortal
-        open={open}
+        open={open && !disabled}
         anchorRef={buttonRef}
         maxHeight={288}
         onClose={onClose}
       >
         {menuOptions.length > 0 ? (
-          menuOptions.map((option) => {
+          menuOptions.map((option, index) => {
+            const optionId = getWeekOptionId(option, index);
             const isSelected =
-              String(option.id || option.value || "") === selectedId ||
+              optionId === selectedId ||
               String(option.value || "") ===
-                String(selectedOption?.value || "");
+              String(selectedOption?.value || "");
 
             return (
               <button
-                key={option.id || option.value || option.title}
+                key={optionId || option.title}
                 type="button"
-                onClick={() => {
-                  onSelect?.(option);
-                  onClose?.();
-                }}
-                className={`block w-full px-4 py-3 text-left text-sm transition ${
-                  isSelected
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                }`}
+                onClick={() => handleSelect(option)}
+                className={`block w-full px-4 py-2.5 text-left text-xs transition ${isSelected
+                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                  : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  }`}
               >
                 <p className="truncate font-bold">{option.title}</p>
 
@@ -589,7 +614,7 @@ function TrendDisplayDropdown({
             );
           })
         ) : (
-          <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+          <div className="px-4 py-3 text-xs font-semibold text-[#667085]">
             No weekly versions available.
           </div>
         )}
@@ -601,12 +626,12 @@ function TrendDisplayDropdown({
 function TrendDisplayField({ label, value }) {
   return (
     <div className="min-w-0">
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
         {label}
       </label>
 
       <div
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] shadow-sm`}
+        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] shadow-sm`}
       >
         <span className="min-w-0 truncate">{value || "—"}</span>
 
@@ -681,7 +706,7 @@ function TrendCheckboxDropdown({
 
   return (
     <div className="relative min-w-0 overflow-visible">
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
         {label}
       </label>
 
@@ -710,15 +735,14 @@ function TrendCheckboxDropdown({
             disabled={loading}
             placeholder={searchPlaceholder}
             autoComplete="off"
-            className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+            className={`h-11 w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-11 font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10`}
           />
 
           <ChevronDown
             size={18}
             onClick={handleOpen}
-            className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
-              open ? "rotate-180" : ""
-            }`}
+            className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+              }`}
           />
         </div>
       ) : (
@@ -727,9 +751,8 @@ function TrendCheckboxDropdown({
           type="button"
           disabled={loading}
           onClick={handleOpen}
-          className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
-            open ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10" : ""
-          }`}
+          className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
+            }`}
         >
           <span className="min-w-0 truncate">
             {loading ? "Loading..." : displayLabel}
@@ -737,9 +760,8 @@ function TrendCheckboxDropdown({
 
           <ChevronDown
             size={18}
-            className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-              open ? "rotate-180" : ""
-            }`}
+            className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+              }`}
           />
         </button>
       )}
@@ -753,17 +775,16 @@ function TrendCheckboxDropdown({
         <button
           type="button"
           onClick={() => handleToggle(allValue)}
-          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-            selectedValues.includes(allValue)
-              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-              : "text-[#344054] hover:bg-[#F8FAFC]"
-          }`}
+          className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs transition ${selectedValues.includes(allValue)
+            ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+            : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+            }`}
         >
           <input
             type="checkbox"
             checked={selectedValues.includes(allValue)}
             readOnly
-            className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+            className="h-4 w-4 rounded border-[#D0D5DD] accent-[#FF5C28]"
           />
 
           <span className="truncate">{allLabel}</span>
@@ -780,17 +801,16 @@ function TrendCheckboxDropdown({
                 key={option.value}
                 type="button"
                 onClick={() => handleToggle(option.value)}
-                className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                  checked
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-[#344054] hover:bg-[#F8FAFC]"
-                }`}
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs transition ${checked
+                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                  : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  }`}
               >
                 <input
                   type="checkbox"
                   checked={checked}
                   readOnly
-                  className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                  className="h-4 w-4 rounded border-[#D0D5DD] accent-[#FF5C28]"
                 />
 
                 <span className="truncate">{option.label}</span>
@@ -798,7 +818,7 @@ function TrendCheckboxDropdown({
             );
           })
         ) : (
-          <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+          <div className="px-4 py-4 text-xs font-semibold text-[#667085]">
             {emptyText}
           </div>
         )}
@@ -813,7 +833,7 @@ function getBufferColor(value) {
   if (numberValue < 0) return "text-red-600";
   if (numberValue > 0) return "text-emerald-600";
 
-  return "text-sibs-primary-90";
+  return "text-sibs-primary-1";
 }
 
 function getRowValue(row = {}, keys = []) {
@@ -1033,7 +1053,7 @@ function getNegativePositiveColor(value) {
   if (numberValue < 0) return "text-red-600";
   if (numberValue > 0) return "text-emerald-600";
 
-  return "text-sibs-primary-90";
+  return "text-sibs-primary-1";
 }
 
 function getHiringNeededColor(value) {
@@ -1062,6 +1082,29 @@ function getRowText(row = {}, keys = [], fallback = "—") {
   }
 
   return fallback;
+}
+
+function MetricToggle({ active, colorClass, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "inline-flex w-full items-center justify-start gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition",
+        active
+          ? "border-slate-300 bg-white text-sibs-primary-1 shadow-sm"
+          : "border-slate-200 bg-slate-50 text-slate-400",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "h-[3px] w-6 rounded-full",
+          active ? colorClass : "bg-slate-300",
+        ].join(" ")}
+      />
+      {label}
+    </button>
+  );
 }
 
 function DraggableXScroll({ children, className = "" }) {
@@ -1155,7 +1198,7 @@ function DetailTh({ children, className = "", ...props }) {
     <th
       {...props}
       className={[
-        "border border-slate-200 bg-slate-50 px-3 py-3 text-center align-middle text-[11px] font-extrabold uppercase leading-tight text-sibs-primary-90",
+        "border border-slate-200 bg-slate-50 px-3 py-3 text-center align-middle text-[11px] font-extrabold uppercase leading-tight text-sibs-primary-1",
         className,
       ].join(" ")}
     >
@@ -1169,7 +1212,7 @@ function DetailTd({ children, className = "", ...props }) {
     <td
       {...props}
       className={[
-        "border border-slate-200 px-3 py-2.5 text-center align-middle text-xs font-semibold text-sibs-primary-90",
+        "border border-slate-200 px-3 py-2.5 text-center align-middle text-xs font-semibold text-sibs-primary-1",
         className,
       ].join(" ")}
     >
@@ -1191,644 +1234,790 @@ function SortHeaderButton({ label, active = false, direction = "asc", onClick })
       ].join(" ")}
     >
       <span>{label}</span>
-
-      <span className="relative flex h-4 w-3 shrink-0 flex-col items-center justify-center">
-        <span
-          className={[
-            "h-0 w-0 border-x-[4px] border-b-[5px] border-x-transparent transition",
-            active && direction === "asc"
-              ? "border-b-sibs-primary-1"
-              : "border-b-slate-300 group-hover:border-b-sibs-primary-1/70",
-          ].join(" ")}
-        />
-
-        <span
-          className={[
-            "mt-0.5 h-0 w-0 border-x-[4px] border-t-[5px] border-x-transparent transition",
-            active && direction === "desc"
-              ? "border-t-sibs-primary-1"
-              : "border-t-slate-300 group-hover:border-t-sibs-primary-1/70",
-          ].join(" ")}
-        />
+      <span className="text-[10px] text-[#FF5C28]">
+        {active ? (direction === "asc" ? "▲" : "▼") : "↕"}
       </span>
     </button>
   );
+}
+
+function TrendLoadingScreen({ title, classname = "" }) {
+  return (
+    <div className={`flex flex-col items-center justify-center text-center ${classname}`}>
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-sibs-primary-2" />
+      <p className="mt-4 text-sm font-extrabold text-sibs-primary-1">{title}</p>
+      <p className="mt-1 text-xs font-semibold text-slate-500">
+        Please wait while the data is loading.
+      </p>
+    </div>
+  );
+}
+
+const WORKFORCE_RISK_OPTIONS = [
+  "All Risks",
+  "Healthy",
+  "Watch",
+  "At Risk",
+  "Critical",
+];
+
+function getModalWorkforceRiskLevel(row = {}) {
+  const explicit = String(
+    row.riskLevel || row.risk_level || row.risk || row.riskStatus || "",
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ");
+
+  if (["healthy", "low", "low risk", "good"].includes(explicit)) return "Healthy";
+  if (["watch", "monitor", "medium", "medium risk"].includes(explicit)) return "Watch";
+  if (["at risk", "atrisk", "high", "high risk"].includes(explicit)) return "At Risk";
+  if (["critical", "severe", "urgent"].includes(explicit)) return "Critical";
+
+  const buffer = getRowNumber(row, [
+    "bufferPercent",
+    "buffer_percentage",
+    "bufferPercentage",
+  ]);
+  const hiringNeeded = getRowNumber(row, ["hiringNeeded", "hiring_needed"]);
+  const absenteeism = getRowNumber(row, [
+    "absenteeismPercent",
+    "absenteeism_percentage",
+    "absenteeismPercentage",
+  ]);
+  const attrition = getRowNumber(row, [
+    "attritionPercent",
+    "attrition_percentage",
+    "attritionPercentage",
+  ]);
+
+  if (buffer <= -20 || hiringNeeded >= 20 || absenteeism >= 15 || attrition >= 10) {
+    return "Critical";
+  }
+  if (buffer <= -10 || hiringNeeded >= 10 || absenteeism >= 10 || attrition >= 7) {
+    return "At Risk";
+  }
+  if (buffer < 0 || hiringNeeded > 0 || absenteeism >= 5 || attrition >= 5) {
+    return "Watch";
+  }
+  return "Healthy";
 }
 
 function SixWeekDetailedPerformanceTable({
   rows = [],
   loading = false,
   error = "",
+  rangeLabel = "6-Week Range",
+  rangeWeekCount = 6,
 }) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortConfig, setSortConfig] = useState({
-    key: "cluster",
-    direction: "asc",
-  });
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [selectedCluster, setSelectedCluster] = useState("All Clusters");
+  const [selectedRisk, setSelectedRisk] = useState("All Risks");
+  const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
 
-  const sourceRows = Array.isArray(rows) ? rows : [];
+  const clusterOptions = useMemo(
+    () => [
+      "All Clusters",
+      ...Array.from(
+        new Set(
+          (Array.isArray(rows) ? rows : [])
+            .map((row) => getRowClusterValue(row))
+            .filter(Boolean),
+        ),
+      ).sort((first, second) =>
+        first.localeCompare(second, undefined, { numeric: true, sensitivity: "base" }),
+      ),
+    ],
+    [rows],
+  );
 
-  function getSortableText(row, key) {
-    if (key === "cluster") {
-      return getRowText(row, ["cluster", "clusterName", "cluster_name"], "");
-    }
-
-    if (key === "account") {
-      return getRowText(row, ["account", "accountName", "account_name"], "");
-    }
-
-    return "";
-  }
-
-  function handleSort(nextKey) {
+  function handleSort(key) {
     setSortConfig((current) => {
-      if (current.key === nextKey) {
+      if (current.key === key) {
         return {
-          key: nextKey,
+          key,
           direction: current.direction === "asc" ? "desc" : "asc",
         };
       }
-
-      return {
-        key: nextKey,
-        direction: "asc",
-      };
+      return { key, direction: "asc" };
     });
   }
 
-  const visibleRows = useMemo(() => {
-    const cleanSearch = searchQuery.trim().toLowerCase();
+  const filteredRows = useMemo(() => {
+    const keyword = String(search || "").trim().toLowerCase();
+    const safeRows = Array.isArray(rows) ? rows : [];
 
-    const filteredRows = cleanSearch
-      ? sourceRows.filter((row) => {
-          const cluster = getSortableText(row, "cluster").toLowerCase();
-          const account = getSortableText(row, "account").toLowerCase();
+    const filtered = safeRows.filter((row) => {
+      const matchesSearch =
+        !keyword ||
+        [getRowClusterValue(row), getRowAccountValue(row)].some((value) =>
+          String(value || "").toLowerCase().includes(keyword),
+        );
+      const matchesCluster =
+        selectedCluster === "All Clusters" ||
+        getRowClusterValue(row) === selectedCluster;
+      const matchesRisk =
+        selectedRisk === "All Risks" ||
+        getModalWorkforceRiskLevel(row) === selectedRisk;
 
-          return (
-            cluster.includes(cleanSearch) ||
-            account.includes(cleanSearch)
-          );
-        })
-      : sourceRows;
+      return matchesSearch && matchesCluster && matchesRisk;
+    });
 
-    return [...filteredRows].sort((firstRow, secondRow) => {
-      const firstValue = getSortableText(firstRow, sortConfig.key);
-      const secondValue = getSortableText(secondRow, sortConfig.key);
+    if (!sortConfig.key) return filtered;
 
-      const comparison = firstValue.localeCompare(secondValue, undefined, {
-        numeric: true,
-        sensitivity: "base",
-      });
+    return [...filtered].sort((first, second) => {
+      const firstVal =
+        sortConfig.key === "cluster"
+          ? getRowClusterValue(first)
+          : getRowAccountValue(first);
+      const secondVal =
+        sortConfig.key === "cluster"
+          ? getRowClusterValue(second)
+          : getRowAccountValue(second);
+
+      const comparison = String(firstVal || "").localeCompare(
+        String(secondVal || ""),
+        undefined,
+        { numeric: true, sensitivity: "base" },
+      );
 
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
-  }, [searchQuery, sortConfig.direction, sortConfig.key, sourceRows]);
+  }, [rows, search, selectedCluster, selectedRisk, sortConfig]);
 
-  const hasRows = visibleRows.length > 0;
-
+  const hasRows = filteredRows.length > 0;
   const detailTotals = useMemo(
-    () => buildDetailedTableTotals(visibleRows),
-    [visibleRows],
+    () => buildDetailedTableTotals(filteredRows),
+    [filteredRows],
   );
 
+  function handleSearchKeyDown(event) {
+    if (event.key !== "Enter") return;
+    setSearch(searchInput.trim());
+  }
+
+  function clearAllFilters() {
+    setSearchInput("");
+    setSearch("");
+    setSelectedCluster("All Clusters");
+    setSelectedRisk("All Risks");
+  }
+
+  const hasActiveFilters =
+    Boolean(searchInput || search) ||
+    selectedCluster !== "All Clusters" ||
+    selectedRisk !== "All Risks";
+
   return (
-    <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-base font-extrabold uppercase text-sibs-primary-90">
-            6-Week Detailed Performance by Cluster / Account
-          </h3>
-          <p className="mt-1 text-xs font-semibold text-slate-500">
-            Same table format as the main detailed table, calculated from the
-            previous 6 weeks.
-          </p>
+    <section className="sibs-page-card-in sibs-card mt-4 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <h3 className="sibs-section-title">
+              {rangeLabel} Detailed Performance by Cluster / Account
+            </h3>
+            <p className="sibs-section-subtitle">
+              Same table format as the main detailed table, calculated from {rangeWeekCount} selected production weeks.
+            </p>
+          </div>
+
+          <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+            <GripHorizontal className="h-3.5 w-3.5 text-[#FF5C28]" />
+            Drag horizontally to inspect all columns
+          </span>
         </div>
 
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
-          {loading
-            ? "Loading..."
-            : sourceRows.length > 0
-              ? `${visibleRows.length} of ${sourceRows.length} account rows`
-              : "No rows"}
-        </span>
+        <PaginationTable
+          className="mt-4 border-0 bg-transparent p-0 shadow-none"
+          showPagination={false}
+          searchValue={searchInput}
+          searchPlaceholder="Search account or cluster, then press Enter..."
+          onSearchChange={setSearchInput}
+          onSearchKeyDown={handleSearchKeyDown}
+          filterLayout="ta-inline"
+          controlsClassName="flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end"
+          searchClassName="relative w-full min-w-0 xl:flex-[1_1_520px]"
+          dropdownFilters={[
+            {
+              key: "cluster",
+              value: selectedCluster,
+              onChange: setSelectedCluster,
+              options: clusterOptions
+                .filter((option) => option !== "All Clusters")
+                .map((option) => ({ label: option, value: option })),
+              allLabel: "All Clusters",
+              placeholder: "Search clusters...",
+              includeAll: true,
+              searchable: true,
+              className: "w-full xl:w-[210px] xl:flex-none",
+            },
+            {
+              key: "risk",
+              value: selectedRisk,
+              onChange: setSelectedRisk,
+              options: WORKFORCE_RISK_OPTIONS
+                .filter((option) => option !== "All Risks")
+                .map((option) => ({ label: option, value: option })),
+              allLabel: "All Risks",
+              placeholder: "Search risks...",
+              includeAll: true,
+              searchable: true,
+              className: "w-full xl:w-[180px] xl:flex-none",
+            },
+          ]}
+          rightContentClassName="flex w-full items-end xl:w-auto xl:flex-none"
+          rightContent={
+            <div className="flex h-10 items-center gap-2">
+              <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-3 py-1.5 text-[10px] font-extrabold text-[#042C51]">
+                {loading ? "Loading..." : `${filteredRows.length} account rows`}
+              </span>
+
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="h-9 rounded-lg border border-[#D6E0EA] bg-white px-3 text-[10px] font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          }
+        />
       </div>
 
-      <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-        <label className="mb-2 block text-sm font-bold text-[#101828]">
-          Search
-        </label>
+      <div className="p-4 sm:p-5">
+        {error ? (
+          <div className="mb-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+            {error}
+          </div>
+        ) : null}
 
-        <div className="relative">
-          <Search
-            size={18}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sibs-primary-70"
-            strokeWidth={2.3}
-          />
-
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search cluster or account..."
-            className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-12 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-slate-400 hover:border-sibs-primary-1/30 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-          />
-
-          {searchQuery ? (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1.5 text-xs font-extrabold text-slate-500 transition hover:bg-slate-100 hover:text-sibs-primary-90"
-            >
-              Clear
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      {error ? (
-        <div className="mb-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
-          {error}
-        </div>
-      ) : null}
-
-      <DraggableXScroll>
-        <table className="w-full min-w-[2600px] border-collapse">
-          <thead>
-            <tr>
-              <DetailTh rowSpan={2}>
-                <SortHeaderButton
-                  label="Cluster"
-                  active={sortConfig.key === "cluster"}
-                  direction={sortConfig.direction}
-                  onClick={() => handleSort("cluster")}
-                />
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                <SortHeaderButton
-                  label="Account"
-                  active={sortConfig.key === "account"}
-                  direction={sortConfig.direction}
-                  onClick={() => handleSort("account")}
-                />
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Required
-                <br />
-                Headcount
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Actual
-                <br />
-                Headcount
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Buffer
-                <br />%
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Absenteeism
-                <br />
-                (6 Weeks Avg)
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Absenteeism
-                <br />%
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Attrition
-                <br />
-                (6 Weeks Total)
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Attrition
-                <br />%
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Net
-                <br />
-                Actual HC
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Hiring
-                <br />
-                Needed
-              </DetailTh>
-              <DetailTh colSpan={5}>Hiring Funnel Counts</DetailTh>
-              <DetailTh colSpan={10}>Attrition Between Stages</DetailTh>
-              <DetailTh rowSpan={2}>
-                Hired
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh rowSpan={2}>
-                Hiring Rate
-                <br />
-                (Leads to JO)
-              </DetailTh>
-            </tr>
-            <tr>
-              <DetailTh>
-                Accepted
-                <br />
-                JO
-              </DetailTh>
-              <DetailTh>
-                NHO
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>
-                FST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>
-                PST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>
-                Go
-                <br />
-                Live
-              </DetailTh>
-              <DetailTh>
-                JO - NHO
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-              <DetailTh>
-                NHO - FST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-              <DetailTh>
-                FST - PST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-              <DetailTh>
-                NHO - PST
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-              <DetailTh>
-                PST - Go Live
-                <br />
-                Count
-              </DetailTh>
-              <DetailTh>%</DetailTh>
-            </tr>
-          </thead>
-
-          <tbody>
-            {hasRows ? (
-              visibleRows.map((row, index) => {
-                const cluster = getRowText(row, [
-                  "cluster",
-                  "clusterName",
-                  "cluster_name",
-                ]);
-                const account = getRowText(row, [
-                  "account",
-                  "accountName",
-                  "account_name",
-                ]);
-
-                const requiredHeadcount = getRowNumber(row, [
-                  "requiredHeadcount",
-                  "required_headcount",
-                ]);
-                const actualHeadcount = getRowNumber(row, [
-                  "actualHeadcount",
-                  "actual_headcount",
-                ]);
-                const bufferPercent = getRowNumber(row, [
-                  "bufferPercent",
-                  "buffer_percent",
-                  "bufferPercentage",
-                  "buffer_percentage",
-                  "actualBufferPercent",
-                  "actual_buffer_percent",
-                ]);
-                const absenteeismCount = getRowNumber(row, [
-                  "absenteeism",
-                  "absenteeismCount",
-                  "absenteeism_count",
-                  "averageAbsentHeadcount",
-                  "average_absent_headcount",
-                ]);
-                const absenteeismPercent = getRowNumber(row, [
-                  "absenteeismPercent",
-                  "absenteeism_percent",
-                  "averageAbsenteeismPercent",
-                  "average_absenteeism_percent",
-                  "absenteeismPercentage",
-                  "absenteeism_percentage",
-                ]);
-                const attritionCount = getRowNumber(row, [
-                  "attrition",
-                  "attritionPastCount",
-                  "attrition_past_count",
-                  "attritionCount",
-                  "attrition_count",
-                  "attritionSixWeeks",
-                  "attrition_6_weeks",
-                ]);
-                const attritionPercent = getRowNumber(row, [
-                  "attritionPastPercent",
-                  "attrition_past_percent",
-                  "attritionPercent",
-                  "attrition_percent",
-                  "attritionPercentage",
-                  "attrition_percentage",
-                ]);
-                const netActualHeadcount = getRowNumber(row, [
-                  "netActualHc",
-                  "netActualHeadcount",
-                  "net_actual_headcount",
-                  "netActualHc",
-                  "net_actual_hc",
-                ]);
-                const hiringNeeded = getRowNumber(row, [
-                  "hiringNeeded",
-                  "hiring_needed",
-                  "actualHeadcountNeeds",
-                  "actual_headcount_needs",
-                ]);
-
-                const acceptedJo = getRowNumber(row, [
-                  "acceptedJo",
-                  "acceptedJO",
-                  "accepted_jo",
-                  "interviewCount",
-                  "interview_count",
-                  "interviewPopulationCount",
-                  "interview_population_count",
-                ]);
-                const nhoCount = getRowNumber(row, [
-                  "nho",
-                  "nhoCount",
-                  "nho_count",
-                  "nhoPopulationCount",
-                  "nho_population_count",
-                ]);
-                const fstCount = getRowNumber(row, [
-                  "fst",
-                  "fstCount",
-                  "fst_count",
-                  "fstPopulationCount",
-                  "fst_population_count",
-                ]);
-                const pstCount = getRowNumber(row, [
-                  "pst",
-                  "pstCount",
-                  "pst_count",
-                  "pstPopulationCount",
-                  "pst_population_count",
-                ]);
-                const goLive = getRowNumber(row, [
-                  "goLive",
-                  "go_live",
-                  "projectedToBeEndorsed",
-                  "projected_to_be_endorsed",
-                  "projectedEndorsed",
-                  "projected_endorsed",
-                ]);
-
-                const joNhoCount = getRowNumber(row, [
-                  "joNhoCount",
-                  "jo_nho_count",
-                  "attritionInterviewToNhoCount",
-                  "attrition_interview_to_nho_count",
-                ]);
-                const joNhoPercent = getRowNumber(row, [
-                  "joNhoPercentage",
-                  "joNhoPercent",
-                  "jo_nho_percent",
-                  "attritionInterviewToNhoPercent",
-                  "attrition_interview_to_nho_percent",
-                ]);
-                const nhoFstCount = getRowNumber(row, [
-                  "nhoFstCount",
-                  "nho_fst_count",
-                  "attritionNhoToFstPstCount",
-                  "attrition_nho_to_fst_pst_count",
-                  "attritionNhoToFstCount",
-                  "attrition_nho_to_fst_count",
-                ]);
-                const nhoFstPercent = getRowNumber(row, [
-                  "nhoFstPercentage",
-                  "nhoFstPercent",
-                  "nho_fst_percent",
-                  "attritionNhoToFstPstPercent",
-                  "attrition_nho_to_fst_pst_percent",
-                  "attritionNhoToFstPercent",
-                  "attrition_nho_to_fst_percent",
-                ]);
-                const fstPstCount = getRowNumber(row, [
-                  "fstPstCount",
-                  "fst_pst_count",
-                  "attritionFstToPstCount",
-                  "attrition_fst_to_pst_count",
-                ]);
-                const fstPstPercent = getRowNumber(row, [
-                  "fstPstPercentage",
-                  "fstPstPercent",
-                  "fst_pst_percent",
-                  "attritionFstToPstPercent",
-                  "attrition_fst_to_pst_percent",
-                ]);
-                const nhoPstCount = getRowNumber(row, [
-                  "nhoPstCount",
-                  "nho_pst_count",
-                  "attritionNhoToPstCount",
-                  "attrition_nho_to_pst_count",
-                ]);
-                const nhoPstPercent = getRowNumber(row, [
-                  "nhoPstPercentage",
-                  "nhoPstPercent",
-                  "nho_pst_percent",
-                  "attritionNhoToPstPercent",
-                  "attrition_nho_to_pst_percent",
-                ]);
-                const pstGoLiveCount = getRowNumber(row, [
-                  "pstGoLiveCount",
-                  "pst_go_live_count",
-                  "attritionPstToGoLiveCount",
-                  "attrition_pst_to_go_live_count",
-                ]);
-                const pstGoLivePercent = getRowNumber(row, [
-                  "pstGoLivePercentage",
-                  "pstGoLivePercent",
-                  "pst_go_live_percent",
-                  "attritionPstToGoLivePercent",
-                  "attrition_pst_to_go_live_percent",
-                ]);
-
-                const hiredCount = getRowNumber(
-                  row,
-                  ["hiredCount", "hired_count"],
-                  fstCount,
-                );
-                const hiringRate = getRowNumber(row, [
-                  "hiringRate",
-                  "hiring_rate",
-                  "hiringPlanPercent",
-                  "hiring_plan_percent",
-                ]);
-
-                return (
-                  <tr
-                    key={`${cluster}-${account}-${index}`}
-                    className={index % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
-                  >
-                    <DetailTd>{cluster}</DetailTd>
-                    <DetailTd className="text-left">{account}</DetailTd>
-                    <DetailTd>{formatNumber(requiredHeadcount)}</DetailTd>
-                    <DetailTd>{formatNumber(actualHeadcount)}</DetailTd>
-                    <DetailTd
-                      className={getNegativePositiveColor(bufferPercent)}
-                    >
-                      {formatPercent(bufferPercent)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(absenteeismCount)}</DetailTd>
-                    <DetailTd className="text-blue-600">
-                      {formatPercent(absenteeismPercent)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(attritionCount)}</DetailTd>
-                    <DetailTd className="text-red-600">
-                      {formatPercent(attritionPercent)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(netActualHeadcount)}</DetailTd>
-                    <DetailTd className={getHiringNeededColor(hiringNeeded)}>
-                      {formatNumber(hiringNeeded)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(acceptedJo)}</DetailTd>
-                    <DetailTd>{formatNumber(nhoCount)}</DetailTd>
-                    <DetailTd>{formatNumber(fstCount)}</DetailTd>
-                    <DetailTd>{formatNumber(pstCount)}</DetailTd>
-                    <DetailTd className="text-emerald-600">
-                      {formatNumber(goLive)}
-                    </DetailTd>
-                    <DetailTd>{formatNumber(joNhoCount)}</DetailTd>
-                    <DetailTd>{formatPercent(joNhoPercent)}</DetailTd>
-                    <DetailTd>{formatNumber(nhoFstCount)}</DetailTd>
-                    <DetailTd>{formatPercent(nhoFstPercent)}</DetailTd>
-                    <DetailTd>{formatNumber(fstPstCount)}</DetailTd>
-                    <DetailTd>{formatPercent(fstPstPercent)}</DetailTd>
-                    <DetailTd>{formatNumber(nhoPstCount)}</DetailTd>
-                    <DetailTd>{formatPercent(nhoPstPercent)}</DetailTd>
-                    <DetailTd>{formatNumber(pstGoLiveCount)}</DetailTd>
-                    <DetailTd>{formatPercent(pstGoLivePercent)}</DetailTd>
-                    <DetailTd className="text-emerald-600">
-                      {formatNumber(hiredCount)}
-                    </DetailTd>
-                    <DetailTd>{formatPercent(hiringRate)}</DetailTd>
-                  </tr>
-                );
-              })
-            ) : (
+        <DraggableXScroll className="mt-4 border-[#C9D6E4]">
+          <table className="w-full min-w-[2600px] border-collapse">
+            <thead>
               <tr>
-                <DetailTd colSpan={28}>
-                  {loading
-                    ? "Loading 6-week detailed table..."
-                    : searchQuery
-                      ? "No rows matched your search."
-                      : "No 6-week detailed account rows available."}
-                </DetailTd>
-              </tr>
-            )}
-          </tbody>
-
-          {hasRows ? (
-            <tfoot>
-              <tr className="bg-slate-100 font-extrabold">
-                <DetailTd className="text-left">
-                  TOTAL /
+                <DetailTh rowSpan={2}>
+                  <SortHeaderButton
+                    label="Cluster"
+                    active={sortConfig.key === "cluster"}
+                    direction={sortConfig.direction}
+                    onClick={() => handleSort("cluster")}
+                  />
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  <SortHeaderButton
+                    label="Account"
+                    active={sortConfig.key === "account"}
+                    direction={sortConfig.direction}
+                    onClick={() => handleSort("account")}
+                  />
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Required
                   <br />
-                  AVERAGE
-                </DetailTd>
-
-                <DetailTd />
-
-                <DetailTd>
-                  {formatNumber(detailTotals.requiredHeadcount)}
-                </DetailTd>
-                <DetailTd>
-                  {formatNumber(detailTotals.actualHeadcount)}
-                </DetailTd>
-
-                <DetailTd
-                  className={getNegativePositiveColor(
-                    detailTotals.bufferPercent,
-                  )}
-                >
-                  {formatPercent(detailTotals.bufferPercent)}
-                </DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.absenteeism)}</DetailTd>
-
-                <DetailTd className="text-blue-600">
-                  {formatPercent(detailTotals.absenteeismPercent)}
-                </DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.attrition)}</DetailTd>
-
-                <DetailTd className="text-red-600">
-                  {formatPercent(detailTotals.attritionPercent)}
-                </DetailTd>
-
-                <DetailTd>
-                  {formatNumber(detailTotals.netActualHeadcount)}
-                </DetailTd>
-
-                <DetailTd
-                  className={getHiringNeededColor(detailTotals.hiringNeeded)}
-                >
-                  {formatNumber(detailTotals.hiringNeeded)}
-                </DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.acceptedJo)}</DetailTd>
-                <DetailTd>{formatNumber(detailTotals.nhoCount)}</DetailTd>
-                <DetailTd>{formatNumber(detailTotals.fstCount)}</DetailTd>
-                <DetailTd>{formatNumber(detailTotals.pstCount)}</DetailTd>
-
-                <DetailTd className="text-emerald-600">
-                  {formatNumber(detailTotals.goLive)}
-                </DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.joNhoCount)}</DetailTd>
-                <DetailTd>{formatPercent(detailTotals.joNhoPercent)}</DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.nhoFstCount)}</DetailTd>
-                <DetailTd>{formatPercent(detailTotals.nhoFstPercent)}</DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.fstPstCount)}</DetailTd>
-                <DetailTd>{formatPercent(detailTotals.fstPstPercent)}</DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.nhoPstCount)}</DetailTd>
-                <DetailTd>{formatPercent(detailTotals.nhoPstPercent)}</DetailTd>
-
-                <DetailTd>{formatNumber(detailTotals.pstGoLiveCount)}</DetailTd>
-                <DetailTd>
-                  {formatPercent(detailTotals.pstGoLivePercent)}
-                </DetailTd>
-
-                <DetailTd className="text-emerald-600">
-                  {formatNumber(detailTotals.hiredCount)}
-                </DetailTd>
-
-                <DetailTd>{formatPercent(detailTotals.hiringRate)}</DetailTd>
+                  Headcount
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Actual
+                  <br />
+                  Headcount
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Buffer
+                  <br />%
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Absenteeism
+                  <br />
+                  (6 Weeks Avg)
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Absenteeism
+                  <br />%
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Attrition
+                  <br />
+                  (6 Weeks Total)
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Attrition
+                  <br />%
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Net
+                  <br />
+                  Actual HC
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Hiring
+                  <br />
+                  Needed
+                </DetailTh>
+                <DetailTh colSpan={5}>Hiring Funnel Counts</DetailTh>
+                <DetailTh colSpan={10}>Attrition Between Stages</DetailTh>
+                <DetailTh rowSpan={2}>
+                  Hired
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh rowSpan={2}>
+                  Hiring Rate
+                  <br />
+                  (Leads to JO)
+                </DetailTh>
               </tr>
-            </tfoot>
-          ) : null}
-        </table>
-      </DraggableXScroll>
+              <tr>
+                <DetailTh>
+                  Accepted
+                  <br />
+                  JO
+                </DetailTh>
+                <DetailTh>
+                  NHO
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>
+                  FST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>
+                  PST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>
+                  Go
+                  <br />
+                  Live
+                </DetailTh>
+                <DetailTh>
+                  JO - NHO
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+                <DetailTh>
+                  NHO - FST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+                <DetailTh>
+                  FST - PST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+                <DetailTh>
+                  NHO - PST
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+                <DetailTh>
+                  PST - Go Live
+                  <br />
+                  Count
+                </DetailTh>
+                <DetailTh>%</DetailTh>
+              </tr>
+            </thead>
+
+            <tbody>
+              {hasRows ? (
+                filteredRows.map((row, index) => {
+                  const cluster = getRowText(row, [
+                    "cluster",
+                    "clusterName",
+                    "cluster_name",
+                  ]);
+                  const account = getRowText(row, [
+                    "account",
+                    "accountName",
+                    "account_name",
+                  ]);
+
+                  const requiredHeadcount = getRowNumber(row, [
+                    "requiredHeadcount",
+                    "required_headcount",
+                  ]);
+                  const actualHeadcount = getRowNumber(row, [
+                    "actualHeadcount",
+                    "actual_headcount",
+                  ]);
+                  const bufferPercent = getRowNumber(row, [
+                    "bufferPercent",
+                    "buffer_percent",
+                    "bufferPercentage",
+                    "buffer_percentage",
+                    "actualBufferPercent",
+                    "actual_buffer_percent",
+                  ]);
+                  const absenteeismCount = getRowNumber(row, [
+                    "absenteeism",
+                    "absenteeismCount",
+                    "absenteeism_count",
+                    "averageAbsentHeadcount",
+                    "average_absent_headcount",
+                  ]);
+                  const absenteeismPercent = getRowNumber(row, [
+                    "absenteeismPercent",
+                    "absenteeism_percent",
+                    "averageAbsenteeismPercent",
+                    "average_absenteeism_percent",
+                    "absenteeismPercentage",
+                    "absenteeism_percentage",
+                  ]);
+                  const attritionCount = getRowNumber(row, [
+                    "attrition",
+                    "attritionPastCount",
+                    "attrition_past_count",
+                    "attritionCount",
+                    "attrition_count",
+                    "attritionSixWeeks",
+                    "attrition_6_weeks",
+                  ]);
+                  const attritionPercent = getRowNumber(row, [
+                    "attritionPastPercent",
+                    "attrition_past_percent",
+                    "attritionPercent",
+                    "attrition_percent",
+                    "attritionPercentage",
+                    "attrition_percentage",
+                  ]);
+                  const netActualHeadcount = getRowNumber(row, [
+                    "netActualHc",
+                    "netActualHeadcount",
+                    "net_actual_headcount",
+                    "netActualHc",
+                    "net_actual_hc",
+                  ]);
+                  const hiringNeeded = getRowNumber(row, [
+                    "hiringNeeded",
+                    "hiring_needed",
+                    "actualHeadcountNeeds",
+                    "actual_headcount_needs",
+                  ]);
+
+                  const acceptedJo = getRowNumber(row, [
+                    "acceptedJo",
+                    "acceptedJO",
+                    "accepted_jo",
+                    "interviewCount",
+                    "interview_count",
+                    "interviewPopulationCount",
+                    "interview_population_count",
+                  ]);
+                  const nhoCount = getRowNumber(row, [
+                    "nho",
+                    "nhoCount",
+                    "nho_count",
+                    "nhoPopulationCount",
+                    "nho_population_count",
+                  ]);
+                  const fstCount = getRowNumber(row, [
+                    "fst",
+                    "fstCount",
+                    "fst_count",
+                    "fstPopulationCount",
+                    "fst_population_count",
+                  ]);
+                  const pstCount = getRowNumber(row, [
+                    "pst",
+                    "pstCount",
+                    "pst_count",
+                    "pstPopulationCount",
+                    "pst_population_count",
+                  ]);
+                  const goLive = getRowNumber(row, [
+                    "goLive",
+                    "go_live",
+                    "projectedToBeEndorsed",
+                    "projected_to_be_endorsed",
+                    "projectedEndorsed",
+                    "projected_endorsed",
+                  ]);
+
+                  const joNhoCount = getRowNumber(row, [
+                    "joNhoCount",
+                    "jo_nho_count",
+                    "attritionInterviewToNhoCount",
+                    "attrition_interview_to_nho_count",
+                  ]);
+                  const joNhoPercent = getRowNumber(row, [
+                    "joNhoPercentage",
+                    "joNhoPercent",
+                    "jo_nho_percent",
+                    "attritionInterviewToNhoPercent",
+                    "attrition_interview_to_nho_percent",
+                  ]);
+                  const nhoFstCount = getRowNumber(row, [
+                    "nhoFstCount",
+                    "nho_fst_count",
+                    "attritionNhoToFstPstCount",
+                    "attrition_nho_to_fst_pst_count",
+                    "attritionNhoToFstCount",
+                    "attrition_nho_to_fst_count",
+                  ]);
+                  const nhoFstPercent = getRowNumber(row, [
+                    "nhoFstPercentage",
+                    "nhoFstPercent",
+                    "nho_fst_percent",
+                    "attritionNhoToFstPstPercent",
+                    "attrition_nho_to_fst_pst_percent",
+                    "attritionNhoToFstPercent",
+                    "attrition_nho_to_fst_percent",
+                  ]);
+                  const fstPstCount = getRowNumber(row, [
+                    "fstPstCount",
+                    "fst_pst_count",
+                    "attritionFstToPstCount",
+                    "attrition_fst_to_pst_count",
+                  ]);
+                  const fstPstPercent = getRowNumber(row, [
+                    "fstPstPercentage",
+                    "fstPstPercent",
+                    "fst_pst_percent",
+                    "attritionFstToPstPercent",
+                    "attrition_fst_to_pst_percent",
+                  ]);
+                  const nhoPstCount = getRowNumber(row, [
+                    "nhoPstCount",
+                    "nho_pst_count",
+                    "attritionNhoToPstCount",
+                    "attrition_nho_to_pst_count",
+                  ]);
+                  const nhoPstPercent = getRowNumber(row, [
+                    "nhoPstPercentage",
+                    "nhoPstPercent",
+                    "nho_pst_percent",
+                    "attritionNhoToPstPercent",
+                    "attrition_nho_to_pst_percent",
+                  ]);
+                  const pstGoLiveCount = getRowNumber(row, [
+                    "pstGoLiveCount",
+                    "pst_go_live_count",
+                    "attritionPstToGoLiveCount",
+                    "attrition_pst_to_go_live_count",
+                  ]);
+                  const pstGoLivePercent = getRowNumber(row, [
+                    "pstGoLivePercentage",
+                    "pstGoLivePercent",
+                    "pst_go_live_percent",
+                    "attritionPstToGoLivePercent",
+                    "attrition_pst_to_go_live_percent",
+                  ]);
+
+                  const hiredCount = getRowNumber(
+                    row,
+                    ["hiredCount", "hired_count"],
+                    fstCount,
+                  );
+                  const hiringRate = getRowNumber(row, [
+                    "hiringRate",
+                    "hiring_rate",
+                    "hiringPlanPercent",
+                    "hiring_plan_percent",
+                  ]);
+
+                  return (
+                    <tr
+                      key={`${cluster}-${account}-${index}`}
+                      className={index % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
+                    >
+                      <DetailTd>{cluster}</DetailTd>
+                      <DetailTd className="text-left">{account}</DetailTd>
+                      <DetailTd>{formatNumber(requiredHeadcount)}</DetailTd>
+                      <DetailTd>{formatNumber(actualHeadcount)}</DetailTd>
+                      <DetailTd
+                        className={getNegativePositiveColor(bufferPercent)}
+                      >
+                        {formatPercent(bufferPercent)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(absenteeismCount)}</DetailTd>
+                      <DetailTd className="text-blue-600">
+                        {formatPercent(absenteeismPercent)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(attritionCount)}</DetailTd>
+                      <DetailTd className="text-red-600">
+                        {formatPercent(attritionPercent)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(netActualHeadcount)}</DetailTd>
+                      <DetailTd className={getHiringNeededColor(hiringNeeded)}>
+                        {formatNumber(hiringNeeded)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(acceptedJo)}</DetailTd>
+                      <DetailTd>{formatNumber(nhoCount)}</DetailTd>
+                      <DetailTd>{formatNumber(fstCount)}</DetailTd>
+                      <DetailTd>{formatNumber(pstCount)}</DetailTd>
+                      <DetailTd className="text-emerald-600">
+                        {formatNumber(goLive)}
+                      </DetailTd>
+                      <DetailTd>{formatNumber(joNhoCount)}</DetailTd>
+                      <DetailTd>{formatPercent(joNhoPercent)}</DetailTd>
+                      <DetailTd>{formatNumber(nhoFstCount)}</DetailTd>
+                      <DetailTd>{formatPercent(nhoFstPercent)}</DetailTd>
+                      <DetailTd>{formatNumber(fstPstCount)}</DetailTd>
+                      <DetailTd>{formatPercent(fstPstPercent)}</DetailTd>
+                      <DetailTd>{formatNumber(nhoPstCount)}</DetailTd>
+                      <DetailTd>{formatPercent(nhoPstPercent)}</DetailTd>
+                      <DetailTd>{formatNumber(pstGoLiveCount)}</DetailTd>
+                      <DetailTd>{formatPercent(pstGoLivePercent)}</DetailTd>
+                      <DetailTd className="text-emerald-600">
+                        {formatNumber(hiredCount)}
+                      </DetailTd>
+                      <DetailTd>{formatPercent(hiringRate)}</DetailTd>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <DetailTd colSpan={28}>
+                    {loading
+                      ? `Loading ${rangeLabel.toLowerCase()} detailed table...`
+                      : `No ${rangeLabel.toLowerCase()} detailed account rows available.`}
+                  </DetailTd>
+                </tr>
+              )}
+            </tbody>
+
+            {hasRows ? (
+              <tfoot>
+                <tr className="bg-slate-100 font-extrabold">
+                  <DetailTd className="text-left">
+                    TOTAL /
+                    <br />
+                    AVERAGE
+                  </DetailTd>
+
+                  <DetailTd />
+
+                  <DetailTd>
+                    {formatNumber(detailTotals.requiredHeadcount)}
+                  </DetailTd>
+                  <DetailTd>
+                    {formatNumber(detailTotals.actualHeadcount)}
+                  </DetailTd>
+
+                  <DetailTd
+                    className={getNegativePositiveColor(
+                      detailTotals.bufferPercent,
+                    )}
+                  >
+                    {formatPercent(detailTotals.bufferPercent)}
+                  </DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.absenteeism)}</DetailTd>
+
+                  <DetailTd className="text-blue-600">
+                    {formatPercent(detailTotals.absenteeismPercent)}
+                  </DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.attrition)}</DetailTd>
+
+                  <DetailTd className="text-red-600">
+                    {formatPercent(detailTotals.attritionPercent)}
+                  </DetailTd>
+
+                  <DetailTd>
+                    {formatNumber(detailTotals.netActualHeadcount)}
+                  </DetailTd>
+
+                  <DetailTd
+                    className={getHiringNeededColor(detailTotals.hiringNeeded)}
+                  >
+                    {formatNumber(detailTotals.hiringNeeded)}
+                  </DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.acceptedJo)}</DetailTd>
+                  <DetailTd>{formatNumber(detailTotals.nhoCount)}</DetailTd>
+                  <DetailTd>{formatNumber(detailTotals.fstCount)}</DetailTd>
+                  <DetailTd>{formatNumber(detailTotals.pstCount)}</DetailTd>
+
+                  <DetailTd className="text-emerald-600">
+                    {formatNumber(detailTotals.goLive)}
+                  </DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.joNhoCount)}</DetailTd>
+                  <DetailTd>{formatPercent(detailTotals.joNhoPercent)}</DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.nhoFstCount)}</DetailTd>
+                  <DetailTd>{formatPercent(detailTotals.nhoFstPercent)}</DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.fstPstCount)}</DetailTd>
+                  <DetailTd>{formatPercent(detailTotals.fstPstPercent)}</DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.nhoPstCount)}</DetailTd>
+                  <DetailTd>{formatPercent(detailTotals.nhoPstPercent)}</DetailTd>
+
+                  <DetailTd>{formatNumber(detailTotals.pstGoLiveCount)}</DetailTd>
+                  <DetailTd>
+                    {formatPercent(detailTotals.pstGoLivePercent)}
+                  </DetailTd>
+
+                  <DetailTd className="text-emerald-600">
+                    {formatNumber(detailTotals.hiredCount)}
+                  </DetailTd>
+
+                  <DetailTd>{formatPercent(detailTotals.hiringRate)}</DetailTd>
+                </tr>
+              </tfoot>
+            ) : null}
+          </table>
+        </DraggableXScroll>
+      </div>
+    </section>
+  );
+}
+
+function buildFallbackTrendResponse({ trendWeeks = [], trends = {}, trendDetails = [] }) {
+  return {
+    labels: trendWeeks,
+    trends,
+    data: trendDetails,
+  };
+}
+
+function getInitialEndOption({ options = [], trendDetails = [], trendWeeks = [], trendMeta = {} }) {
+  return getTrendRangeEndpointOption({
+    type: "end",
+    trendDetails,
+    trendWeeks,
+    trendMeta,
+    weeklyOptions: options,
+  });
+}
+
+function TrendRangeSelector({ value, onChange }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-bold text-[#101828]">
+        Trend Range
+      </label>
+      <div className="grid grid-cols-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-1 shadow-sm">
+        {TREND_RANGE_OPTIONS.map((option) => {
+          const active = value === option.key;
+          return (
+            <button
+              key={option.key}
+              type="button"
+              onClick={() => onChange(option.key)}
+              className={`min-w-0 rounded-lg px-2 py-2 text-[10px] font-extrabold transition sm:text-[11px] ${active
+                ? "bg-[#042C51] text-white shadow-sm"
+                : "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                }`}
+              aria-pressed={active}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1844,23 +2033,25 @@ export default function WorkforceHiringTrendDetailsModal({
 }) {
   const workforceHiringView = useWorkforceHiringView();
   const sixWeekTable = workforceHiringView?.sixWeekTable || {};
-  const sixWeekDetailRows = Array.isArray(sixWeekTable.rows)
-    ? sixWeekTable.rows
-    : [];
-  const sixWeekTableLoading = Boolean(sixWeekTable.loading);
-  const sixWeekTableError = sixWeekTable.error || "";
-
   const filterState = workforceHiringView?.filters || {};
   const filterOptions = filterState?.options || {};
   const statusState = workforceHiringView?.status || {};
 
-  const selectedClusters = normalizeArrayValue(
-    filterState.cluster || trendMeta.cluster || "All Clusters",
-    "All Clusters",
+  const selectedClusters = useMemo(
+    () =>
+      normalizeArrayValue(
+        filterState.cluster || trendMeta.cluster || "All Clusters",
+        "All Clusters",
+      ),
+    [filterState.cluster, trendMeta.cluster],
   );
-  const selectedAccounts = normalizeArrayValue(
-    filterState.account || trendMeta.account || "All Accounts",
-    "All Accounts",
+  const selectedAccounts = useMemo(
+    () =>
+      normalizeArrayValue(
+        filterState.account || trendMeta.account || "All Accounts",
+        "All Accounts",
+      ),
+    [filterState.account, trendMeta.account],
   );
 
   const clusterOptions = useMemo(
@@ -1879,25 +2070,36 @@ export default function WorkforceHiringTrendDetailsModal({
     [filterOptions?.accounts],
   );
 
+  const [visibleMetrics, setVisibleMetrics] = useState({
+    absenteeism: true,
+    attrition: true,
+    buffer: true,
+  });
+  const [rangeMode, setRangeMode] = useState("6");
+  const [selectedStartId, setSelectedStartId] = useState("");
+  const [selectedEndId, setSelectedEndId] = useState("");
   const [openTrendDropdown, setOpenTrendDropdown] = useState(null);
-  const [selectedWeekStartId, setSelectedWeekStartId] = useState("");
-  const [selectedWeekEndId, setSelectedWeekEndId] = useState("");
-  const [selectedTrendPreset, setSelectedTrendPreset] = useState(6);
-  const [modalTrendData, setModalTrendData] = useState(null);
-  const [modalTrendLoading, setModalTrendLoading] = useState(false);
-  const [modalTrendError, setModalTrendError] = useState("");
-
-  const [modalTableData, setModalTableData] = useState(null);
-  const [modalTableLoading, setModalTableLoading] = useState(false);
-  const [modalTableError, setModalTableError] = useState("");
+  const [rangeState, setRangeState] = useState({
+    loading: false,
+    error: "",
+    points: [],
+    rows: [],
+    returnedWeeks: 0,
+  });
 
   const weeklyVersionOptions = useMemo(
-    () => getWeeklyVersionOptionsFromView(workforceHiringView),
-    [workforceHiringView],
+    () =>
+      sortWeekOptionsChronologically(
+        getWeeklyVersionOptionsFromView(workforceHiringView),
+      ).reverse(),
+    [filterOptions?.weeklyVersions],
   );
 
   const trendDetailWeekOptions = useMemo(
-    () => getTrendDetailWeekOptions(trendDetails, trendWeeks),
+    () =>
+      sortWeekOptionsChronologically(
+        getTrendDetailWeekOptions(trendDetails, trendWeeks),
+      ).reverse(),
     [trendDetails, trendWeeks],
   );
 
@@ -1909,418 +2111,193 @@ export default function WorkforceHiringTrendDetailsModal({
     [weeklyVersionOptions, trendDetailWeekOptions],
   );
 
-  const weekStartOption = useMemo(
-    () =>
-      getTrendRangeEndpointOption({
-        type: "start",
-        trendDetails,
-        trendWeeks,
-        trendMeta,
-        weeklyOptions: weekDropdownOptions,
-      }),
-    [trendDetails, trendWeeks, trendMeta, weekDropdownOptions],
-  );
+  useEffect(() => {
+    if (!open || !weekDropdownOptions.length) return;
 
-  const weekEndOption = useMemo(
+    const initialEnd = getInitialEndOption({
+      options: weekDropdownOptions,
+      trendDetails,
+      trendWeeks,
+      trendMeta,
+    });
+    const nextEndId = getWeekOptionId(
+      initialEnd || weekDropdownOptions[weekDropdownOptions.length - 1],
+    );
+
+    setSelectedEndId((current) => current || nextEndId);
+  }, [open, trendDetails, trendMeta, trendWeeks, weekDropdownOptions]);
+
+  const rangeSelection = useMemo(
     () =>
-      getTrendRangeEndpointOption({
-        type: "end",
-        trendDetails,
-        trendWeeks,
-        trendMeta,
-        weeklyOptions: weekDropdownOptions,
+      resolveTrendRangeSelection({
+        options: weekDropdownOptions,
+        mode: rangeMode,
+        startId: selectedStartId,
+        endId: selectedEndId,
       }),
-    [trendDetails, trendWeeks, trendMeta, weekDropdownOptions],
+    [rangeMode, selectedEndId, selectedStartId, weekDropdownOptions],
   );
 
   useEffect(() => {
-    if (!open) return;
+    if (!rangeSelection.startOption || !rangeSelection.endOption) return;
 
-    setSelectedTrendPreset(6);
-    setSelectedWeekStartId(weekStartOption?.id || "");
-    setSelectedWeekEndId(weekEndOption?.id || "");
-    setModalTrendData(null);
-    setModalTrendError("");
-    setModalTableData(null);
-    setModalTableError("");
-  }, [open, weekStartOption?.id, weekEndOption?.id]);
+    const resolvedStartId = getWeekOptionId(rangeSelection.startOption);
+    const resolvedEndId = getWeekOptionId(rangeSelection.endOption);
 
-  const selectedWeekStartOption = useMemo(
-    () =>
-      weekDropdownOptions.find(
-        (option) => String(option.id) === String(selectedWeekStartId),
-      ) || weekStartOption,
-    [weekDropdownOptions, selectedWeekStartId, weekStartOption],
-  );
-
-  const selectedWeekEndOption = useMemo(
-    () =>
-      weekDropdownOptions.find(
-        (option) => String(option.id) === String(selectedWeekEndId),
-      ) || weekEndOption,
-    [weekDropdownOptions, selectedWeekEndId, weekEndOption],
-  );
-
-  const activeClusterRequestValue = useMemo(
-    () => buildTrendRequestFilterValue(selectedClusters, "All Clusters"),
-    [selectedClusters],
-  );
-
-  const activeAccountRequestValue = useMemo(
-    () => buildTrendRequestFilterValue(selectedAccounts, "All Accounts"),
-    [selectedAccounts],
-  );
-
-  const selectedRangeStartDate = selectedWeekStartOption?.weekStart || "";
-  const selectedRangeEndDate = selectedWeekEndOption?.weekEnd || "";
-  const selectedCurrentWeekStartDate = selectedWeekEndOption?.weekStart || "";
-  const selectedCurrentWeekEndDate = selectedWeekEndOption?.weekEnd || "";
-
-  const trendPresetOptions = [6, 12, 24, "custom"];
-
-  const selectedTrendWeekCount = useMemo(() => {
-    const startIndex = weekDropdownOptions.findIndex(
-      (option) => String(option.id) === String(selectedWeekStartOption?.id),
-    );
-
-    const endIndex = weekDropdownOptions.findIndex(
-      (option) => String(option.id) === String(selectedWeekEndOption?.id),
-    );
-
-    if (startIndex < 0 || endIndex < 0 || endIndex < startIndex) {
-      return typeof selectedTrendPreset === "number" ? selectedTrendPreset : 0;
+    if (rangeMode !== "custom" && selectedStartId !== resolvedStartId) {
+      setSelectedStartId(resolvedStartId);
     }
-
-    return endIndex - startIndex + 1;
+    if (!selectedEndId && resolvedEndId) setSelectedEndId(resolvedEndId);
   }, [
-    selectedTrendPreset,
-    selectedWeekEndOption?.id,
-    selectedWeekStartOption?.id,
-    weekDropdownOptions,
+    rangeMode,
+    rangeSelection.endOption,
+    rangeSelection.startOption,
+    selectedEndId,
+    selectedStartId,
   ]);
 
-  const matchedPreset = trendPresetOptions
-    .filter((option) => typeof option === "number")
-    .find((option) => option === selectedTrendWeekCount);
-
-  const activeTrendPreset =
-    selectedTrendPreset === "custom"
-      ? "custom"
-      : matchedPreset || selectedTrendPreset || 6;
-
-  const activePresetIndex = Math.max(
-    0,
-    trendPresetOptions.indexOf(activeTrendPreset),
+  const fallbackPoints = useMemo(
+    () =>
+      normalizeTrendResponsePoints(
+        buildFallbackTrendResponse({ trendWeeks, trends, trendDetails }),
+      ),
+    [trendDetails, trendWeeks, trends],
   );
 
-  function getPresetStartWeekForEnd(endOption, weekCount) {
-    if (
-      !Array.isArray(weekDropdownOptions) ||
-      weekDropdownOptions.length === 0 ||
-      !endOption
-    ) {
-      return null;
-    }
-
-    const cleanWeekCount = Number(weekCount || 6);
-    const endWeekStart = endOption?.weekStart || "";
-    const endWeekEnd = endOption?.weekEnd || "";
-
-    /*
-      Do not depend on the dropdown order.
-
-      Some weekly option lists are newest-first:
-      Week 29, Week 28, Week 27...
-
-      Some are oldest-first:
-      Week 24, Week 25, Week 26...
-
-      The preset range must always mean:
-      selected Week End minus N weeks.
-    */
-    const sortedOptions = [...weekDropdownOptions]
-      .filter((option) => option?.weekStart && option?.weekEnd)
-      .sort((a, b) => String(a.weekStart).localeCompare(String(b.weekStart)));
-
-    const endIndex = sortedOptions.findIndex(
-      (option) =>
-        String(option.id) === String(endOption?.id) ||
-        (option.weekStart === endWeekStart && option.weekEnd === endWeekEnd),
-    );
-
-    if (endIndex < 0) return null;
-
-    const startIndex = Math.max(0, endIndex - cleanWeekCount + 1);
-    const startOption = sortedOptions[startIndex];
-
-    if (!startOption) return null;
-
-    /*
-      Return the original dropdown option object so ids stay compatible
-      with TrendDisplayDropdown selectedOption lookup.
-    */
-    return (
-      weekDropdownOptions.find(
-        (option) =>
-          String(option.id) === String(startOption.id) ||
-          (option.weekStart === startOption.weekStart &&
-            option.weekEnd === startOption.weekEnd),
-      ) || startOption
-    );
-  }
-
-  function applyTrendPreset(weekCount) {
-    if (weekCount === "custom") {
-      setSelectedTrendPreset("custom");
-      setOpenTrendDropdown(null);
-      return;
-    }
-
-    if (
-      !Array.isArray(weekDropdownOptions) ||
-      weekDropdownOptions.length === 0
-    ) {
-      return;
-    }
-
-    const cleanWeekCount = Number(weekCount || 6);
-    const currentEndIndex = weekDropdownOptions.findIndex(
-      (option) => String(option.id) === String(selectedWeekEndOption?.id),
-    );
-
-    const endIndex =
-      currentEndIndex >= 0 ? currentEndIndex : weekDropdownOptions.length - 1;
-
-    const nextEndWeek = weekDropdownOptions[endIndex];
-    const nextStartWeek = getPresetStartWeekForEnd(
-      nextEndWeek,
-      cleanWeekCount,
-    );
-
-    if (!nextStartWeek || !nextEndWeek) return;
-
-    setSelectedTrendPreset(cleanWeekCount);
-    setSelectedWeekStartId(nextStartWeek.id || "");
-    setSelectedWeekEndId(nextEndWeek.id || "");
-    setOpenTrendDropdown(null);
-  }
-
-  function handleSelectWeekEnd(option) {
-    if (!option) return;
-
-    /*
-      Manual Week End changes become a custom range.
-      If a numeric preset was active before the manual change, keep the helpful
-      behavior of moving Week Start to the matching range first.
-    */
-    const nextStartWeek =
-      typeof selectedTrendPreset === "number"
-        ? getPresetStartWeekForEnd(option, selectedTrendPreset)
-        : null;
-
-    setSelectedTrendPreset("custom");
-    setSelectedWeekEndId(option.id || "");
-
-    if (nextStartWeek?.id) {
-      setSelectedWeekStartId(nextStartWeek.id);
-    }
-  }
-
-  function handleSelectWeekStart(option) {
-    if (!option) return;
-
-    setSelectedTrendPreset("custom");
-    setSelectedWeekStartId(option.id || "");
-  }
-
   useEffect(() => {
+    if (!open || !rangeSelection.selectedOptions.length) return undefined;
+
     let cancelled = false;
+    const chunks = buildSixWeekRequestChunks(rangeSelection.selectedOptions);
+    const cluster = normalizeRequestFilterValue(selectedClusters, "All");
+    const account = normalizeRequestFilterValue(selectedAccounts, "All");
 
-    async function loadModalTrendData() {
-      if (!open) return;
-
-      if (
-        !selectedRangeStartDate ||
-        !selectedRangeEndDate ||
-        !selectedCurrentWeekStartDate ||
-        !selectedCurrentWeekEndDate
-      ) {
-        setModalTrendLoading(false);
-        return;
-      }
-
-      if (String(selectedRangeStartDate) > String(selectedRangeEndDate)) {
-        setModalTrendData(null);
-        setModalTrendLoading(false);
-        setModalTrendError(
-          "Week Start must be earlier than or equal to Week End.",
-        );
-        return;
-      }
-
-      setModalTrendLoading(true);
-      setModalTrendError("");
+    async function fetchRangeData() {
+      setRangeState((current) => ({ ...current, loading: true, error: "" }));
 
       try {
-        const response = await getWorkforceHiringPlanAccountTrends({
-          cluster: activeClusterRequestValue,
-          account: activeAccountRequestValue,
-          weekStart: selectedCurrentWeekStartDate,
-          weekEnd: selectedCurrentWeekEndDate,
-          startDate: selectedCurrentWeekStartDate,
-          endDate: selectedCurrentWeekEndDate,
-          rangeStartDate: selectedRangeStartDate,
-          rangeEndDate: selectedRangeEndDate,
-        });
+        const chunkResults = await Promise.all(
+          chunks.map(async (chunk, order) => {
+            const request = {
+              cluster,
+              account,
+              weekStart: chunk.weekStart,
+              weekEnd: chunk.weekEnd,
+              startDate: chunk.weekStart,
+              endDate: chunk.weekEnd,
+            };
+
+            const [trendResult, tableResult] = await Promise.all([
+              getWorkforceHiringPlanAccountTrends(request),
+              getWorkforceHiringPlanSixWeekTable(request),
+            ]);
+
+            return {
+              order,
+              weight: chunk.weight,
+              trendResult,
+              tableResult,
+            };
+          }),
+        );
 
         if (cancelled) return;
 
-        if (response?.success === false) {
-          setModalTrendData(null);
-          setModalTrendError(response?.message || "Failed to load trend data.");
-        } else {
-          setModalTrendData(response);
-        }
+        const trendResponses = chunkResults
+          .map((item) => item.trendResult)
+          .filter(Boolean);
+        const points = mergeTrendResponses(
+          trendResponses,
+          rangeSelection.selectedOptions,
+        );
+        const rows = mergeRangeTableResponses(
+          chunkResults.map((item) => ({
+            response: item.tableResult,
+            order: item.order,
+            weight: item.weight,
+          })),
+        );
+
+        setRangeState({
+          loading: false,
+          error: "",
+          points: points.length ? points : fallbackPoints,
+          rows:
+            rows.length > 0
+              ? rows
+              : Array.isArray(sixWeekTable.rows)
+                ? sixWeekTable.rows
+                : [],
+          returnedWeeks: points.length,
+        });
       } catch (error) {
         if (cancelled) return;
 
-        console.error("FETCH MODAL TREND DATA ERROR:", error);
-        setModalTrendData(null);
-        setModalTrendError(
-          error?.response?.data?.message ||
-            error?.response?.data?.error ||
+        setRangeState({
+          loading: false,
+          error:
             error?.message ||
-            "Failed to load trend data.",
-        );
-      } finally {
-        if (!cancelled) {
-          setModalTrendLoading(false);
-        }
+            "The selected trend range could not be loaded. Existing available data is displayed.",
+          points: fallbackPoints,
+          rows: Array.isArray(sixWeekTable.rows) ? sixWeekTable.rows : [],
+          returnedWeeks: fallbackPoints.length,
+        });
       }
     }
 
-    loadModalTrendData();
+    fetchRangeData();
 
     return () => {
       cancelled = true;
     };
   }, [
+    fallbackPoints,
     open,
-    selectedRangeStartDate,
-    selectedRangeEndDate,
-    selectedCurrentWeekStartDate,
-    selectedCurrentWeekEndDate,
-    activeClusterRequestValue,
-    activeAccountRequestValue,
+    rangeSelection.selectedOptions,
+    selectedAccounts,
+    selectedClusters,
   ]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const activePoints = rangeState.points.length ? rangeState.points : fallbackPoints;
+  const displaySeries = useMemo(() => buildTrendSeries(activePoints), [activePoints]);
+  const displaySummary = useMemo(
+    () => calculateTrendRangeSummary(activePoints, trendSummary),
+    [activePoints, trendSummary],
+  );
 
-    async function loadModalTableData() {
-      if (!open) return;
+  const chartTrends = useMemo(
+    () => ({
+      absenteeism: visibleMetrics.absenteeism
+        ? displaySeries.trends.absenteeism
+        : [],
+      attrition: visibleMetrics.attrition ? displaySeries.trends.attrition : [],
+      buffer: visibleMetrics.buffer ? displaySeries.trends.buffer : [],
+    }),
+    [displaySeries.trends, visibleMetrics],
+  );
 
-      if (
-        !selectedRangeStartDate ||
-        !selectedRangeEndDate ||
-        !selectedCurrentWeekStartDate ||
-        !selectedCurrentWeekEndDate
-      ) {
-        setModalTableLoading(false);
-        return;
-      }
+  const filteredRangeRows = useMemo(
+    () => (Array.isArray(rangeState.rows) ? rangeState.rows : []),
+    [rangeState.rows],
+  );
 
-      if (String(selectedRangeStartDate) > String(selectedRangeEndDate)) {
-        setModalTableData(null);
-        setModalTableLoading(false);
-        setModalTableError(
-          "Week Start must be earlier than or equal to Week End.",
-        );
-        return;
-      }
-
-      setModalTableLoading(true);
-      setModalTableError("");
-
-      try {
-        const response = await getWorkforceHiringPlanSixWeekTable({
-          cluster: activeClusterRequestValue,
-          account: activeAccountRequestValue,
-
-          /*
-            Current selected week follows the Week End dropdown.
-          */
-          weekStart: selectedCurrentWeekStartDate,
-          weekEnd: selectedCurrentWeekEndDate,
-          startDate: selectedCurrentWeekStartDate,
-          endDate: selectedCurrentWeekEndDate,
-
-          /*
-            Dynamic table range follows Week Start to Week End.
-          */
-          rangeStartDate: selectedRangeStartDate,
-          rangeEndDate: selectedRangeEndDate,
-        });
-
-        if (cancelled) return;
-
-        if (response?.success === false) {
-          setModalTableData(null);
-          setModalTableError(response?.message || "Failed to load table data.");
-        } else {
-          setModalTableData(response);
-        }
-      } catch (error) {
-        if (cancelled) return;
-
-        console.error("FETCH MODAL TABLE DATA ERROR:", error);
-        setModalTableData(null);
-        setModalTableError(
-          error?.response?.data?.message ||
-            error?.response?.data?.error ||
-            error?.message ||
-            "Failed to load table data.",
-        );
-      } finally {
-        if (!cancelled) {
-          setModalTableLoading(false);
-        }
-      }
-    }
-
-    loadModalTableData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    open,
-    selectedRangeStartDate,
-    selectedRangeEndDate,
-    selectedCurrentWeekStartDate,
-    selectedCurrentWeekEndDate,
-    activeClusterRequestValue,
-    activeAccountRequestValue,
-  ]);
-
-  const activeSixWeekTableRows =
-    Array.isArray(modalTableData?.data) && modalTableData.data.length > 0
-      ? modalTableData.data
-      : sixWeekDetailRows;
-
-  const activeSixWeekTableLoading = modalTableLoading || sixWeekTableLoading;
-
-  const activeSixWeekTableError = modalTableError || sixWeekTableError || "";
-
-  const activeTrendWeeks =
-    Array.isArray(modalTrendData?.labels) && modalTrendData.labels.length > 0
-      ? modalTrendData.labels
-      : trendWeeks;
-
-  const activeTrends = modalTrendData?.trends || trends;
-
-  const activeTrendSummary =
-    modalTrendData?.summary || modalTrendData?.averages || trendSummary || {};
+  const rangeLabel = getTrendRangeDisplayLabel({
+    mode: rangeMode,
+    selectedOptions: rangeSelection.selectedOptions,
+  });
+  const selectedWeekCount = rangeSelection.selectedOptions.length;
+  const requestedWeekCount = rangeSelection.requestedWeeks;
+  const coverageLimited =
+    !rangeState.loading &&
+    requestedWeekCount > 0 &&
+    activePoints.length < requestedWeekCount;
+  const customTableCoverageLimited =
+    rangeMode === "custom" && selectedWeekCount > 0 && selectedWeekCount % 6 !== 0;
+  const combinedTrendLoading = Boolean(
+    rangeState.loading ||
+    (!activePoints.length &&
+      (statusState.isLoadingTrends || statusState.isLoading || trendsLoading)),
+  );
 
   function toggleTrendDropdown(key) {
     setOpenTrendDropdown((current) => (current === key ? null : key));
@@ -2330,265 +2307,333 @@ export default function WorkforceHiringTrendDetailsModal({
     setOpenTrendDropdown(null);
   }
 
-  const chartTrends = useMemo(
-    () => ({
-      absenteeism: activeTrends?.absenteeism || [],
-      attrition: activeTrends?.attrition || [],
-      buffer: activeTrends?.buffer || [],
-    }),
-    [activeTrends],
-  );
+  function toggleMetric(key) {
+    setVisibleMetrics((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
+  }
+
+  function handleRangeModeChange(nextMode) {
+    setRangeMode(nextMode);
+    setOpenTrendDropdown(null);
+  }
+
+  function handleEndSelect(option) {
+    const nextId = getWeekOptionId(option);
+    setSelectedEndId(nextId);
+    filterState.setWeeklyVersion?.(option.id || option.value || nextId);
+  }
+
+  function handleStartSelect(option) {
+    setSelectedStartId(getWeekOptionId(option));
+  }
 
   if (!open) return null;
 
   return createPortal(
-    <div className="sibs-modal-blur fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="flex max-h-[92vh] w-[96vw] max-w-[1680px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-white text-sibs-primary-80 shadow-sm">
-                <LineChart className="h-5 w-5" strokeWidth={2.4} />
+    <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-3 sm:p-5">
+      <div className="sibs-modal-pop-in flex max-h-[94vh] w-full max-w-[1480px] flex-col overflow-hidden rounded-2xl border border-[#315779] bg-[#F8FAFC] font-jakarta text-[#042C51] shadow-2xl">
+        <header className="shrink-0 border-b border-white/10 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+                <BarChart3 className="h-5 w-5" strokeWidth={2.4} />
               </span>
 
-              <div>
-                <h2 className="text-lg font-extrabold uppercase tracking-tight text-sibs-primary-90">
-                  6-Week Trend Details
-                </h2>
-                <p className="mt-0.5 text-xs font-semibold text-slate-500">
-                  Expanded trend view based on the selected weekly version,
-                  cluster, and account.
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-sm font-black uppercase tracking-wide text-white sm:text-base">
+                    {rangeLabel} Trend Details Diagnostic Center
+                  </h2>
+                  <span className="rounded-full bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider text-white">
+                    Executive Suite
+                  </span>
+                </div>
+
+                <p className="mt-1 max-w-4xl text-[11px] font-semibold leading-relaxed text-slate-300 sm:text-xs">
+                  Inspect the selected trend range, operational filters, workforce trends, and detailed account performance.
                 </p>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white"
+              aria-label="Close trend details"
+            >
+              <X className="h-5 w-5" strokeWidth={2.4} />
+            </button>
           </div>
+        </header>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-100 hover:text-sibs-primary-90"
-          >
-            <X className="h-5 w-5" strokeWidth={2.4} />
-          </button>
-        </div>
-
-        <div className="overflow-y-auto p-5">
-          <div className="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-[370px_minmax(0,1fr)] xl:items-stretch">
-            <aside className="flex h-full min-h-[500px] flex-col gap-3">
-              <div className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                <div className="mb-4 flex items-center gap-2 text-sm font-extrabold uppercase text-sibs-primary-90">
-                  <CalendarDays className="h-4 w-4" strokeWidth={2.4} />
-                  Selected Trend Range
-                </div>
-
-                <div className="grid content-start gap-3">
-                  <div>
-                    <label className="mb-1 block text-sm font-bold text-[#101828]">
-                      Trend Range
-                    </label>
-
-                    <div className="relative grid h-10 grid-cols-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-                      <span
-                        className="absolute bottom-1 top-1 rounded-lg bg-sibs-primary-1 shadow-sm transition-all duration-300 ease-out"
-                        style={{
-                          width: "calc((100% - 8px) / 4)",
-                          left: `calc(4px + ${activePresetIndex} * ((100% - 8px) / 4))`,
-                        }}
-                      />
-
-                      {trendPresetOptions.map((weekCount) => {
-                        const active = activeTrendPreset === weekCount;
-                        const label =
-                          weekCount === "custom"
-                            ? "Custom"
-                            : `${weekCount} Weeks`;
-
-                        return (
-                          <button
-                            key={weekCount}
-                            type="button"
-                            onClick={() => applyTrendPreset(weekCount)}
-                            className={`relative z-10 rounded-lg px-1.5 py-2 text-[11px] font-extrabold transition-colors duration-300 ${
-                              active
-                                ? "text-white"
-                                : "text-sibs-primary-80 hover:text-sibs-primary-1"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
-                    </div>
+        <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <main className="space-y-5 p-4 sm:p-6">
+            <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
+              <aside className="sibs-page-card-in sibs-card overflow-visible rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+                <div className="border-b border-[#E6ECF2] px-4 py-4 sm:px-5">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays
+                      className="h-4 w-4 text-[#FF5C28]"
+                      strokeWidth={2.4}
+                    />
+                    <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                      Scope Controls
+                    </h3>
                   </div>
-
-                  <TrendDisplayDropdown
-                    label="Week End"
-                    value={selectedWeekEndOption?.value}
-                    selectedOption={selectedWeekEndOption}
-                    options={weekDropdownOptions}
-                    open={openTrendDropdown === "weekEnd"}
-                    onToggle={() => toggleTrendDropdown("weekEnd")}
-                    onClose={closeTrendDropdown}
-                    onSelect={handleSelectWeekEnd}
-                  />
-
-                  <TrendDisplayDropdown
-                    label="Week Start"
-                    value={selectedWeekStartOption?.value}
-                    selectedOption={selectedWeekStartOption}
-                    options={weekDropdownOptions}
-                    open={openTrendDropdown === "weekStart"}
-                    onToggle={() => toggleTrendDropdown("weekStart")}
-                    onClose={closeTrendDropdown}
-                    onSelect={handleSelectWeekStart}
-                  />
-
-                  <TrendCheckboxDropdown
-                    label="Cluster"
-                    value={selectedClusters}
-                    onChange={(nextSelected) => {
-                      const nextValue = nextSelected.includes("All Clusters")
-                        ? "All Clusters"
-                        : nextSelected;
-
-                      filterState.setCluster?.(nextValue);
-                      filterState.setAccount?.("All Accounts");
-                    }}
-                    options={clusterOptions}
-                    allValue="All Clusters"
-                    allLabel="All Clusters"
-                    itemLabel="Clusters"
-                    loading={statusState?.isLoadingFilters}
-                    emptyText="No clusters available."
-                  />
-
-                  <TrendCheckboxDropdown
-                    label="Account"
-                    value={selectedAccounts}
-                    onChange={(nextSelected) => {
-                      const nextValue = nextSelected.includes("All Accounts")
-                        ? "All Accounts"
-                        : nextSelected;
-
-                      filterState.setAccount?.(nextValue);
-                    }}
-                    options={accountOptions}
-                    allValue="All Accounts"
-                    allLabel="All Accounts"
-                    itemLabel="Accounts"
-                    loading={statusState?.isLoadingAccounts}
-                    searchable
-                    searchPlaceholder="Search accounts..."
-                    emptyText="No accounts found."
-                  />
-                </div>
-
-              </div>
-
-              <div className="flex flex-none flex-col rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-90">
-                    Legend
-                  </span>
-
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-extrabold uppercase text-slate-500">
-                    Trend Lines
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="flex min-w-0 flex-col items-center justify-center rounded-xl border border-blue-100 bg-blue-50/70 px-2 py-2 text-center">
-                    <span className="mb-1 h-[3px] w-8 rounded-full bg-blue-600" />
-                    <span className="truncate text-[10px] font-extrabold text-sibs-primary-90">
-                      Absenteeism
-                    </span>
-                  </div>
-
-                  <div className="flex min-w-0 flex-col items-center justify-center rounded-xl border border-red-100 bg-red-50/70 px-2 py-2 text-center">
-                    <span className="mb-1 h-[3px] w-8 rounded-full bg-red-600" />
-                    <span className="truncate text-[10px] font-extrabold text-sibs-primary-90">
-                      Attrition
-                    </span>
-                  </div>
-
-                  <div className="flex min-w-0 flex-col items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50/70 px-2 py-2 text-center">
-                    <span className="mb-1 h-[3px] w-8 rounded-full bg-green-600" />
-                    <span className="truncate text-[10px] font-extrabold text-sibs-primary-90">
-                      Buffer
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-            </aside>
-
-            <section className="flex min-h-[500px] min-w-0 flex-col rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-              <div className="mb-4 flex flex-col gap-4 2xl:flex-row 2xl:items-start 2xl:justify-between">
-                <div>
-                  <h3 className="text-base font-extrabold uppercase text-sibs-primary-90">
-                    Expanded Trend Graph
-                  </h3>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
-                    Select a preset range or use Week Start / Week End to adjust
-                    the displayed trend.
+                  <p className="sibs-section-subtitle mt-1 text-xs font-semibold text-[#667085]">
+                    Range, weekly version, cluster, and account controls refresh the graph and table together.
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-3 xl:items-end">
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <div className="min-w-[142px] rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-1.5 text-center">
-                      <span className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
-                        Absenteeism Avg
-                      </span>
-                      <strong className="block text-sm font-extrabold text-blue-600">
-                        {formatPercent(activeTrendSummary.absenteeismPercentage)}
-                      </strong>
+                <div className="flex h-full flex-col gap-5 p-4 sm:p-5">
+                  <section className="space-y-4">
+                    <TrendRangeSelector
+                      value={rangeMode}
+                      onChange={handleRangeModeChange}
+                    />
+
+                    <TrendDisplayDropdown
+                      label="Week End"
+                      value={rangeSelection.endOption?.value}
+                      selectedOption={rangeSelection.endOption}
+                      options={weekDropdownOptions}
+                      open={openTrendDropdown === "weekEnd"}
+                      onToggle={() => toggleTrendDropdown("weekEnd")}
+                      onClose={closeTrendDropdown}
+                      onSelect={handleEndSelect}
+                    />
+
+                    <TrendDisplayDropdown
+                      label="Week Start"
+                      value={rangeSelection.startOption?.value}
+                      selectedOption={rangeSelection.startOption}
+                      options={weekDropdownOptions.filter((option, index) => {
+                        const endIndex = rangeSelection.options.findIndex(
+                          (item, itemIndex) =>
+                            getWeekOptionId(item, itemIndex) ===
+                            getWeekOptionId(rangeSelection.endOption),
+                        );
+                        return endIndex < 0 || index <= endIndex;
+                      })}
+                      open={openTrendDropdown === "weekStart"}
+                      disabled={rangeMode !== "custom"}
+                      onToggle={() => toggleTrendDropdown("weekStart")}
+                      onClose={closeTrendDropdown}
+                      onSelect={handleStartSelect}
+                    />
+
+                    <TrendCheckboxDropdown
+                      label="Cluster"
+                      value={selectedClusters}
+                      onChange={(nextSelected) => {
+                        const nextValue = nextSelected.includes("All Clusters")
+                          ? "All Clusters"
+                          : nextSelected;
+                        filterState.setCluster?.(nextValue);
+                        filterState.setAccount?.("All Accounts");
+                      }}
+                      options={clusterOptions}
+                      allValue="All Clusters"
+                      allLabel="All Clusters"
+                      itemLabel="Clusters"
+                      loading={statusState?.isLoadingFilters}
+                      emptyText="No clusters available."
+                    />
+
+                    <TrendCheckboxDropdown
+                      label="Account"
+                      value={selectedAccounts}
+                      onChange={(nextSelected) => {
+                        const nextValue = nextSelected.includes("All Accounts")
+                          ? "All Accounts"
+                          : nextSelected;
+                        filterState.setAccount?.(nextValue);
+                      }}
+                      options={accountOptions}
+                      allValue="All Accounts"
+                      allLabel="All Accounts"
+                      itemLabel="Accounts"
+                      loading={statusState?.isLoadingAccounts}
+                      searchable
+                      searchPlaceholder="Search accounts..."
+                      emptyText="No accounts found."
+                    />
+                  </section>
+
+                  <section className="border-t border-[#E6ECF2] pt-5">
+                    <div className="mb-3 flex items-center gap-2">
+                      <Filter
+                        className="h-4 w-4 text-[#FF5C28]"
+                        strokeWidth={2.4}
+                      />
+                      <h4 className="text-[10px] font-black uppercase tracking-wide text-[#042C51]">
+                        Metric Visibility
+                      </h4>
                     </div>
 
-                    <div className="min-w-[142px] rounded-xl border border-red-100 bg-red-50/60 px-3 py-1.5 text-center">
-                      <span className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
-                        Attrition Avg
-                      </span>
-                      <strong className="block text-sm font-extrabold text-red-600">
-                        {formatPercent(activeTrendSummary.attritionPercentage)}
-                      </strong>
+                    <div className="grid grid-cols-1 gap-2">
+                      <MetricToggle
+                        active={visibleMetrics.absenteeism}
+                        colorClass="bg-blue-600"
+                        label="Absenteeism %"
+                        onClick={() => toggleMetric("absenteeism")}
+                      />
+                      <MetricToggle
+                        active={visibleMetrics.attrition}
+                        colorClass="bg-orange-600"
+                        label="Attrition %"
+                        onClick={() => toggleMetric("attrition")}
+                      />
+                      <MetricToggle
+                        active={visibleMetrics.buffer}
+                        colorClass="bg-emerald-600"
+                        label="Buffer %"
+                        onClick={() => toggleMetric("buffer")}
+                      />
+                    </div>
+                  </section>
+
+                </div>
+              </aside>
+
+              <section className="sibs-page-card-in sibs-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+                <div className="border-b border-[#E6ECF2] px-4 py-4 sm:px-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="sibs-section-title flex items-center gap-2 text-base font-extrabold text-[#042C51]">
+                        Interactive Multi-Series {rangeLabel}
+                      </h3>
+                      <p className="sibs-section-subtitle mt-1 text-xs font-semibold text-[#667085]">
+                        Move the cursor across the graph to inspect each production week.
+                      </p>
                     </div>
 
-                    <div className="min-w-[142px] rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-1.5 text-center">
-                      <span className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
-                        Buffer Avg
-                      </span>
-                      <strong className="block text-sm font-extrabold text-green-600">
-                        {formatPercent(activeTrendSummary.bufferPercentage)}
-                      </strong>
-                    </div>
+                    <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-blue-100 bg-[#E9F0FC] px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                      <LineChart className="h-3.5 w-3.5 text-[#FF5C28]" />
+                      {selectedWeekCount}-week view
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              {modalTrendError ? (
-                <div className="mt-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
-                  {modalTrendError}
-                </div>
-              ) : null}
+                <div className="flex flex-1 flex-col p-4 sm:p-5">
+                  {rangeState.error ? (
+                    <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                      {rangeState.error}
+                    </div>
+                  ) : null}
 
-              <div className="mt-0 flex w-full flex-1 items-start justify-center px-0 pt-0 pb-2">
-                {modalTrendLoading ? (
-                  <div className="flex min-h-[260px] w-full items-center justify-center text-sm font-bold text-slate-500">
-                    Loading trend data...
+                  {coverageLimited ? (
+                    <div className="mb-3 rounded-xl border border-blue-100 bg-[#E9F0FC] px-4 py-3 text-xs font-semibold text-[#315779]">
+                      Requested {requestedWeekCount} weeks; {activePoints.length} production weeks were returned and displayed. No missing values were generated.
+                    </div>
+                  ) : null}
+
+                  <div className="min-h-0 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:h-[420px] sm:p-4 xl:h-[500px]">
+                    {combinedTrendLoading ? (
+                      <TrendLoadingScreen
+                        title={`Loading ${rangeLabel.toLowerCase()} graph...`}
+                        classname="h-full min-h-0"
+                      />
+                    ) : activePoints.length ? (
+                      <div className="flex h-full min-h-0 w-full items-center justify-center">
+                        <TrendSvg
+                          weeks={displaySeries.weeks}
+                          trends={chartTrends}
+                          variant="modal"
+                          className="block h-full w-full"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-[#D6E0EA] bg-white px-5 text-center text-xs font-semibold text-[#667085]">
+                        No production trend data is available for the selected range.
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <TrendSvg weeks={activeTrendWeeks} trends={chartTrends} />
-                )}
-              </div>
-            </section>
-          </div>
 
-          <SixWeekDetailedPerformanceTable
-            rows={activeSixWeekTableRows}
-            loading={activeSixWeekTableLoading}
-            error={activeSixWeekTableError}
-          />
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <article className="rounded-xl border border-blue-100 bg-blue-50/70 p-3.5">
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-blue-900/70">
+                        Absenteeism Average
+                      </span>
+                      <strong className="mt-1 block text-xl font-black tabular-nums text-blue-700">
+                        {formatPercent(displaySummary.absenteeismPercentage)}
+                      </strong>
+                      <p className="mt-1 text-[10px] font-semibold text-blue-700/70">
+                        Mean absence rate across the displayed range.
+                      </p>
+                    </article>
+
+                    <article className="rounded-xl border border-orange-100 bg-orange-50/70 p-3.5">
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-orange-900/70">
+                        Attrition Average
+                      </span>
+                      <strong className="mt-1 block text-xl font-black tabular-nums text-orange-700">
+                        {formatPercent(displaySummary.attritionPercentage)}
+                      </strong>
+                      <p className="mt-1 text-[10px] font-semibold text-orange-700/70">
+                        Mean attrition rate across the displayed range.
+                      </p>
+                    </article>
+
+                    <article
+                      className={`rounded-xl border p-3.5 ${safeNumber(displaySummary.bufferPercentage) < 0
+                        ? "border-rose-100 bg-rose-50/70"
+                        : "border-emerald-100 bg-emerald-50/70"
+                        }`}
+                    >
+                      <span
+                        className={`text-[9px] font-extrabold uppercase tracking-wider ${safeNumber(displaySummary.bufferPercentage) < 0
+                          ? "text-rose-900/70"
+                          : "text-emerald-900/70"
+                          }`}
+                      >
+                        Buffer Average
+                      </span>
+                      <strong
+                        className={`mt-1 block text-xl font-black tabular-nums ${safeNumber(displaySummary.bufferPercentage) < 0
+                          ? "text-rose-700"
+                          : "text-emerald-700"
+                          }`}
+                      >
+                        {formatPercent(displaySummary.bufferPercentage)}
+                      </strong>
+                      <p
+                        className={`mt-1 text-[10px] font-semibold ${safeNumber(displaySummary.bufferPercentage) < 0
+                          ? "text-rose-700/70"
+                          : "text-emerald-700/70"
+                          }`}
+                      >
+                        Average workforce cushion versus required headcount.
+                      </p>
+                    </article>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {customTableCoverageLimited ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                The graph is filtered to the exact custom dates. The existing table endpoint returns six-week aggregates, so the table combines the complete six-week request blocks that cover this custom range.
+              </div>
+            ) : null}
+
+            {combinedTrendLoading ? (
+              <TrendLoadingScreen
+                title={`Loading ${rangeLabel.toLowerCase()} detailed table...`}
+                classname="min-h-[500px]"
+              />
+            ) : (
+              <SixWeekDetailedPerformanceTable
+                rows={filteredRangeRows}
+                loading={false}
+                error={rangeState.error || sixWeekTable.error || ""}
+                rangeLabel={rangeLabel}
+                rangeWeekCount={selectedWeekCount || requestedWeekCount}
+              />
+            )}
+          </main>
         </div>
       </div>
     </div>,

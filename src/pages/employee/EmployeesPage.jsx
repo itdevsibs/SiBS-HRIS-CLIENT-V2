@@ -1,12 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import {
-  FileCheck2,
-  UserRoundCheck,
-} from "lucide-react";
+import { FileCheck2, UserRoundCheck } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import ChwcpTable from "../../components/tables/employees/ChwcpTable";
-import EmployeeTable from "../../components/tables/employees/EmployeeTable";
+import EmployeeDirectoryContent from "../../components/employee/directory/EmployeeDirectoryContent.jsx";
+import EmployeeDirectoryHeader from "../../components/employee/directory/EmployeeDirectoryHeader.jsx";
+import EmployeeDirectoryStats from "../../components/employee/directory/EmployeeDirectoryStats.jsx";
 import { usePagination } from "@/services/context/PaginationContext";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
@@ -15,8 +13,6 @@ const animationTiming = {
   header: 0,
   summary: 60,
   table: 120,
-  summaryCardBase: 0,
-  summaryCardStagger: 60,
 };
 
 const employeeTabs = [
@@ -41,78 +37,6 @@ function getAnimationStyle(delay = 0) {
     animationDelay: `${delay}ms`,
     animationFillMode: "both",
   };
-}
-
-function getMetricTone(tone) {
-  if (tone === "orange") {
-    return {
-      label: "text-[#C2410C]",
-      value: "text-[#FF5C28]",
-      iconWrap: "bg-[#FFF3ED]",
-      icon: "text-[#FF5C28]",
-    };
-  }
-
-  if (tone === "emerald") {
-    return {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      iconWrap: "bg-[#ECFDF3]",
-      icon: "text-[#059669]",
-    };
-  }
-
-  return {
-    label: "text-[#042C51]",
-    value: "text-[#042C51]",
-    iconWrap: "bg-[#EAF2FB]",
-    icon: "text-[#042C51]",
-  };
-}
-
-function SummaryCard({
-  label,
-  value,
-  description,
-  icon,
-  tone = "navy",
-  delay = 0,
-}) {
-  const metricTone = getMetricTone(tone);
-  const CardIcon = icon;
-
-  return (
-    <article
-      className="sibs-metric-card"
-      style={getAnimationStyle(delay)}
-    >
-      <div className="flex h-full items-start justify-between gap-4">
-        <div className="min-w-0 flex-1 self-stretch">
-          <p
-            className={`m-0 truncate text-[10px] font-extrabold uppercase tracking-normal ${metricTone.label}`}
-          >
-            {label}
-          </p>
-
-          <p
-            className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal ${metricTone.value}`}
-          >
-            {value}
-          </p>
-
-          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
-            {description}
-          </p>
-        </div>
-
-        <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${metricTone.iconWrap} ${metricTone.icon}`}
-        >
-          <CardIcon size={17} strokeWidth={2} />
-        </div>
-      </div>
-    </article>
-  );
 }
 
 export default function EmployeesPage() {
@@ -224,134 +148,21 @@ export default function EmployeesPage() {
     }
   }
 
-  function renderDirectoryTabs() {
-    return (
-      <div className="overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
-        <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4">
-          {directoryTabs.map((tab) => {
-            const { label, count } = tab;
-            const TabIcon = tab.icon;
-            const isActive = activeEmployeeTab === label;
-
-            return (
-              <button
-                key={label}
-                type="button"
-                onClick={() => handleTabChange(label)}
-                className={`inline-flex h-10 shrink-0 items-center gap-2 border-b-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition ${
-                  isActive
-                    ? "rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
-                    : "border-transparent text-[#667085] hover:text-[#042C51]"
-                }`}
-              >
-                <TabIcon size={15} className="shrink-0" />
-                <span className="truncate">{label}</span>
-
-                {count > 0 ? (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums ${
-                      isActive
-                        ? "bg-[#042C51] text-white"
-                        : "bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  function renderActiveTable() {
-    if (activeEmployeeTab === "Employees") {
-      return (
-        <EmployeeTable
-          tabs={directoryTabs}
-          activeTab={activeEmployeeTab}
-          onTabChange={handleTabChange}
-        />
-      );
-    }
-
-
-    if (activeEmployeeTab === "CHWCP") {
-      return (
-        <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
-          <div className="p-4 sm:p-5">
-            {renderDirectoryTabs()}
-            <ChwcpTable />
-          </div>
-        </div>
-      );
-    }
-
-    return null;
-  }
-
   return (
     <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
-      <main
-        ref={mainScrollRef}
-        className="sibs-dashboard-main-wide"
-      >
+      <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6"
-            style={getAnimationStyle(animationTiming.header)}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
+          <div style={getAnimationStyle(animationTiming.header)}>
+            <EmployeeDirectoryHeader />
+          </div>
 
-            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28] animate-sibs-pulse" />
-                    Employee Directory View
-                  </span>
-
-                  <span className="inline-flex max-w-full rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
-                    Module: Core HR
-                  </span>
-                </div>
-
-                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
-                  Employee Directory
-                </h1>
-
-                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
-                  Manage employee records and CHWCP compliance information.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-            style={getAnimationStyle(animationTiming.summary)}
-          >
-            {directoryTabs.map((tab, index) => (
-              <SummaryCard
-                key={tab.label}
-                label={tab.label}
-                value={tab.count}
-                description={tab.description}
-                icon={tab.icon}
-                tone={tab.tone}
-                delay={
-                  animationTiming.summaryCardBase +
-                  index * animationTiming.summaryCardStagger
-                }
-              />
-            ))}
-          </section>
+          <div style={getAnimationStyle(animationTiming.summary)}>
+            <EmployeeDirectoryStats tabs={directoryTabs} />
+          </div>
 
           <section
             className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
@@ -374,7 +185,11 @@ export default function EmployeesPage() {
             </div>
 
             <div className="sibs-page-card-in" style={getAnimationStyle(60)}>
-              {renderActiveTable()}
+              <EmployeeDirectoryContent
+                tabs={directoryTabs}
+                activeTab={activeEmployeeTab}
+                onTabChange={handleTabChange}
+              />
             </div>
           </section>
         </div>

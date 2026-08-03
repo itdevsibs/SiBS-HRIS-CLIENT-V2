@@ -1,4 +1,4 @@
-import React, {
+import {
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -8,8 +8,6 @@ import React, {
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
-
-const EDGE = "rounded-[10px]";
 
 function getText(value) {
   return String(value || "").trim();
@@ -203,7 +201,22 @@ function DropdownPortal({
     };
   }, [anchorRef, onClose, open]);
 
-  if (!open || typeof document === "undefined") return null;
+  const [isRendered, setIsRendered] = useState(open);
+  const [isAnimatedOpen, setIsAnimatedOpen] = useState(open);
+
+  useEffect(() => {
+    if (open) {
+      setIsRendered(true);
+      const timer = setTimeout(() => setIsAnimatedOpen(true), 15);
+      return () => clearTimeout(timer);
+    } else {
+      setIsAnimatedOpen(false);
+      const timer = setTimeout(() => setIsRendered(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  if (!isRendered || typeof document === "undefined") return null;
 
   return createPortal(
     <div
@@ -212,18 +225,32 @@ function DropdownPortal({
       onMouseDown={(event) => event.stopPropagation()}
       onTouchStartCapture={(event) => event.stopPropagation()}
       onTouchStart={(event) => event.stopPropagation()}
-      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
+      className={`fixed z-[999999] grid transition-all duration-200 ease-out ${
+        isAnimatedOpen
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      }`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
         width: `${style.width}px`,
       }}
     >
-      <div
-        className="sibs-scrollbar overflow-y-auto py-2"
-        style={{ maxHeight: `${style.maxHeight}px` }}
-      >
-        {children}
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+            isAnimatedOpen
+              ? "translate-y-0 scale-100"
+              : "-translate-y-1 scale-[0.99]"
+          }`}
+        >
+          <div
+            className="sibs-scrollbar overflow-y-auto py-2"
+            style={{ maxHeight: `${style.maxHeight}px` }}
+          >
+            {children}
+          </div>
+        </div>
       </div>
     </div>,
     document.body,
@@ -292,7 +319,18 @@ function WeeklyVersionDropdown({
             value,
           };
         })
-        .filter((option) => option.label && option.value),
+        .filter((option) => option.label && option.value)
+        .sort((a, b) => {
+          const dateA = new Date(a.raw?.startDate || a.raw?.weekStart || 0).getTime();
+          const dateB = new Date(b.raw?.startDate || b.raw?.weekStart || 0).getTime();
+          if (dateA && dateB && dateA !== dateB) return dateB - dateA;
+
+          const yearA = Number(a.raw?.year || String(a.label || "").match(/\d{4}/)?.[0] || 0);
+          const yearB = Number(b.raw?.year || String(b.label || "").match(/\d{4}/)?.[0] || 0);
+          if (yearA !== yearB) return yearB - yearA;
+
+          return 0;
+        }),
     [options],
   );
 
@@ -319,7 +357,7 @@ function WeeklyVersionDropdown({
 
   return (
     <div className="relative z-[80] min-w-0 overflow-visible">
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
         Weekly Version
       </label>
 
@@ -328,7 +366,11 @@ function WeeklyVersionDropdown({
         type="button"
         disabled={loading}
         onClick={handleOpen}
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+        className={`flex h-11 w-full items-center justify-between rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+          open
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : ""
+        }`}
       >
         <span className="min-w-0 truncate">
           {loading
@@ -338,8 +380,8 @@ function WeeklyVersionDropdown({
 
         <ChevronDown
           size={18}
-          className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
+          className={`ml-2 shrink-0 transition-all duration-300 ${
+            open ? "rotate-180 text-[#FF5C28]" : "text-[#667085]"
           }`}
         />
       </button>
@@ -363,22 +405,22 @@ function WeeklyVersionDropdown({
                 key={option.value}
                 type="button"
                 onClick={() => handleSelect(option)}
-                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                className={`block w-full px-4 py-2.5 text-left font-jakarta text-xs transition ${
                   isSelected
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                    : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                 }`}
               >
-                <p className="truncate font-bold">{formatWeekLabel(week)}</p>
+                <p className="truncate font-extrabold">{formatWeekLabel(week)}</p>
 
-                <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                <p className="mt-1 truncate text-[10px] font-semibold text-[#667085]">
                   {week?.weekRange || week?.week_range || "—"}
                 </p>
               </button>
             );
           })
         ) : (
-          <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+          <div className="px-4 py-3 font-jakarta text-xs font-semibold text-[#667085]">
             No weekly versions available.
           </div>
         )}
@@ -452,7 +494,7 @@ function CheckboxDropdown({
 
   return (
     <div className="relative z-[70] min-w-0 overflow-visible">
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
         {label}
       </label>
 
@@ -479,14 +521,18 @@ function CheckboxDropdown({
             disabled={loading}
             placeholder={searchPlaceholder}
             autoComplete="off"
-            className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+            className={`h-11 w-full rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-10 font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+              open
+                ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+                : ""
+            }`}
           />
 
           <ChevronDown
             size={18}
             onClick={handleOpen}
-            className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
-              open ? "rotate-180" : ""
+            className={`absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 ${
+              open ? "rotate-180 text-[#FF5C28]" : "text-[#667085]"
             }`}
           />
         </div>
@@ -496,7 +542,11 @@ function CheckboxDropdown({
           type="button"
           disabled={loading}
           onClick={handleOpen}
-          className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+          className={`flex h-11 w-full items-center justify-between rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+            open
+              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+              : ""
+          }`}
         >
           <span className="min-w-0 truncate">
             {loading ? "Loading..." : displayLabel}
@@ -504,9 +554,9 @@ function CheckboxDropdown({
 
           <ChevronDown
             size={18}
-            className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-              open ? "rotate-180" : ""
-            }`}
+            className={`ml-2 shrink-0 transition-all duration-300 ${
+            open ? "rotate-180 text-[#FF5C28]" : "text-[#667085]"
+          }`}
           />
         </button>
       )}
@@ -520,17 +570,17 @@ function CheckboxDropdown({
         <button
           type="button"
           onClick={() => handleToggle(allValue)}
-          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+          className={`flex w-full items-center gap-3 px-4 py-2.5 text-left font-jakarta text-xs transition ${
             selectedValues.includes(allValue)
-              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-              : "text-[#344054] hover:bg-[#F8FAFC]"
+              ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+              : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
           }`}
         >
           <input
             type="checkbox"
             checked={selectedValues.includes(allValue)}
             readOnly
-            className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+            className="h-4 w-4 rounded border-[#D6E0EA] accent-[#FF5C28]"
           />
 
           <span className="truncate">{allLabel}</span>
@@ -547,17 +597,17 @@ function CheckboxDropdown({
                 key={option.value}
                 type="button"
                 onClick={() => handleToggle(option.value)}
-                className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left font-jakarta text-xs transition ${
                   checked
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                    : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={checked}
                   readOnly
-                  className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                  className="h-4 w-4 rounded border-[#D6E0EA] accent-[#FF5C28]"
                 />
 
                 <span className="truncate">{option.label}</span>
@@ -565,7 +615,7 @@ function CheckboxDropdown({
             );
           })
         ) : (
-          <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+          <div className="px-4 py-4 font-jakarta text-xs font-semibold text-[#667085]">
             {emptyText}
           </div>
         )}
@@ -600,75 +650,81 @@ export default function WorkforceHiringOverviewFilters() {
   return (
     <div className="relative z-[100] w-full overflow-visible">
       <div className="flex w-full justify-start xl:justify-end">
-        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:w-auto xl:grid-cols-[minmax(280px,410px)_minmax(220px,290px)_minmax(240px,340px)] xl:items-end">
-          <WeeklyVersionDropdown
-            value={weeklyVersion}
-            onChange={(nextValue) => {
-              setWeeklyVersion?.(nextValue);
-              setCluster?.("All Clusters");
-              setAccount?.("All Accounts");
-            }}
-            options={options?.weeklyVersions || []}
-            loading={status?.isLoadingWeeks}
-            onOpen={() => closeOtherDropdowns("week")}
-          />
+        <div className="flex w-full flex-col gap-3 overflow-visible xl:w-auto xl:flex-row xl:items-end xl:gap-3">
+          <div className="w-full xl:w-[350px] xl:flex-none">
+            <WeeklyVersionDropdown
+              value={weeklyVersion}
+              onChange={(nextValue) => {
+                setWeeklyVersion?.(nextValue);
+                setCluster?.("All Clusters");
+                setAccount?.("All Accounts");
+              }}
+              options={options?.weeklyVersions || []}
+              loading={status?.isLoadingWeeks}
+              onOpen={() => closeOtherDropdowns("week")}
+            />
+          </div>
 
-          <CheckboxDropdown
-            label="Cluster"
-            value={selectedClusters}
-            onChange={(nextSelected) => {
-              const nextValue = nextSelected.includes("All Clusters")
-                ? "All Clusters"
-                : nextSelected;
+          <div className="w-full xl:w-[220px] xl:flex-none">
+            <CheckboxDropdown
+              label="Cluster"
+              value={selectedClusters}
+              onChange={(nextSelected) => {
+                const nextValue = nextSelected.includes("All Clusters")
+                  ? "All Clusters"
+                  : nextSelected;
 
-              setCluster?.(nextValue);
-              setAccount?.("All Accounts");
-            }}
-            options={(options?.clusters || []).filter(
-              (item) => getOptionValue(item) !== "All Clusters",
-            )}
-            allValue="All Clusters"
-            allLabel="All Clusters"
-            itemLabel="Clusters"
-            selectedLabel={getMultiSelectLabel(
-              selectedClusters,
-              "All Clusters",
-              "All Clusters",
-              "Clusters",
-            )}
-            loading={status?.isLoadingFilters}
-            emptyText="No clusters available."
-            onOpen={() => closeOtherDropdowns("cluster")}
-          />
+                setCluster?.(nextValue);
+                setAccount?.("All Accounts");
+              }}
+              options={(options?.clusters || []).filter(
+                (item) => getOptionValue(item) !== "All Clusters",
+              )}
+              allValue="All Clusters"
+              allLabel="All Clusters"
+              itemLabel="Clusters"
+              selectedLabel={getMultiSelectLabel(
+                selectedClusters,
+                "All Clusters",
+                "All Clusters",
+                "Clusters",
+              )}
+              loading={status?.isLoadingFilters}
+              emptyText="No clusters available."
+              onOpen={() => closeOtherDropdowns("cluster")}
+            />
+          </div>
 
-          <CheckboxDropdown
-            label="Account"
-            value={selectedAccounts}
-            onChange={(nextSelected) => {
-              const nextValue = nextSelected.includes("All Accounts")
-                ? "All Accounts"
-                : nextSelected;
+          <div className="w-full xl:w-[240px] xl:flex-none">
+            <CheckboxDropdown
+              label="Account"
+              value={selectedAccounts}
+              onChange={(nextSelected) => {
+                const nextValue = nextSelected.includes("All Accounts")
+                  ? "All Accounts"
+                  : nextSelected;
 
-              setAccount?.(nextValue);
-            }}
-            options={(options?.accounts || []).filter(
-              (item) => getOptionValue(item) !== "All Accounts",
-            )}
-            allValue="All Accounts"
-            allLabel="All Accounts"
-            itemLabel="Accounts"
-            selectedLabel={getMultiSelectLabel(
-              selectedAccounts,
-              "All Accounts",
-              "All Accounts",
-              "Accounts",
-            )}
-            loading={status?.isLoadingAccounts}
-            searchable
-            searchPlaceholder="Search accounts..."
-            emptyText="No accounts found."
-            onOpen={() => closeOtherDropdowns("account")}
-          />
+                setAccount?.(nextValue);
+              }}
+              options={(options?.accounts || []).filter(
+                (item) => getOptionValue(item) !== "All Accounts",
+              )}
+              allValue="All Accounts"
+              allLabel="All Accounts"
+              itemLabel="Accounts"
+              selectedLabel={getMultiSelectLabel(
+                selectedAccounts,
+                "All Accounts",
+                "All Accounts",
+                "Accounts",
+              )}
+              loading={status?.isLoadingAccounts}
+              searchable
+              searchPlaceholder="Search accounts..."
+              emptyText="No accounts found."
+              onOpen={() => closeOtherDropdowns("account")}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -33,6 +33,7 @@ export default function EmployeeProfileHeader({
   apiUrl,
   canEdit,
   isEditing,
+  isSaving = false,
   onEdit,
   onCancel,
   onSave,
@@ -102,7 +103,7 @@ export default function EmployeeProfileHeader({
 
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {employee?.status || "Active"}
+                {employee?.employmentStatus || employee?.status || "Active"}
               </span>
 
               <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] font-extrabold uppercase text-[#042C51]">
@@ -139,15 +140,17 @@ export default function EmployeeProfileHeader({
                 <button
                   type="button"
                   onClick={onSave}
-                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700"
+                  disabled={isSaving}
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
                 >
                   <CheckCircle2 size={14} />
-                  Save Profile
+                  {isSaving ? "Saving..." : "Save Profile"}
                 </button>
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="inline-flex h-9 items-center justify-center rounded-lg bg-slate-100 px-3 text-xs font-black text-[#667085] transition hover:bg-slate-200"
+                  disabled={isSaving}
+                  className="inline-flex h-9 items-center justify-center rounded-lg bg-slate-100 px-3 text-xs font-black text-[#667085] transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -190,3 +193,6 @@ export default function EmployeeProfileHeader({
     </section>
   );
 }
+
+
+
