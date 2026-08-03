@@ -2151,15 +2151,16 @@ export default function HeaderCalendarModal({ open, onClose }) {
 
   function openGoogleCalendarConnection() {
     clearGoogleCalendarPopupTimer();
+    const connectUrl = getGoogleCalendarConnectUrl();
 
     const popup = window.open(
-      getGoogleCalendarConnectUrl(),
+      connectUrl,
       "google-calendar-connect",
       "width=520,height=720",
     );
 
     if (!popup) {
-      window.location.href = getGoogleCalendarConnectUrl();
+      window.location.href = connectUrl;
       return;
     }
 
