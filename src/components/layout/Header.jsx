@@ -60,7 +60,7 @@ const ALL_ADMIN_ACCESS = [1, 2, 3, 4, 5, 6, 7];
 
 const SEARCHABLE_MODULES = [
   {
-    label: "My Dashboard",
+    label: "Dashboard",
     group: "Employee Access",
     description: "Employee dashboard and personal overview",
     path: "/dashboard/employee",
@@ -87,7 +87,7 @@ const SEARCHABLE_MODULES = [
     keywords: ["schedule", "shift", "roster"],
   },
   {
-    label: "Super Admin Dashboard",
+    label: "Dashboard",
     group: "Core HR",
     description: "System-wide control and governance dashboard",
     path: "/dashboard/super-admin",
@@ -107,7 +107,7 @@ const SEARCHABLE_MODULES = [
     keywords: ["home", "hr dashboard", "admin dashboard"],
   },
   {
-    label: "TA Dashboard",
+    label: "Dashboard",
     group: "Core HR",
     description: "Talent acquisition dashboard",
     path: "/recruitment/ta-dashboard",
@@ -117,7 +117,7 @@ const SEARCHABLE_MODULES = [
     keywords: ["talent acquisition", "recruitment dashboard", "ta"],
   },
   {
-    label: "OM Dashboard",
+    label: "Dashboard",
     group: "Core HR",
     description: "Operations management dashboard",
     path: "/recruitment/om-dashboard",

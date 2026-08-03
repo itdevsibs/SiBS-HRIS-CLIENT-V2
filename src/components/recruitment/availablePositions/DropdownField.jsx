@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -29,22 +28,23 @@ export default function DropdownField({
   searchable = false,
   searchPlaceholder = "Search...",
   emptyMessage = "No options found.",
+  excludeSelectedOption = false,
+  excludedOptionId = "",
+  boundaryRef = null,
+  maxMenuHeight = 224,
 }) {
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
   const inputRef = useRef(null);
 
   const [open, setOpen] = useState(false);
-  const [dropdownSearch, setDropdownSearch] =
-    useState("");
+  const [dropdownSearch, setDropdownSearch] = useState("");
   const [menuStyle, setMenuStyle] = useState({
     left: 0,
     top: 0,
     width: 0,
     maxHeight: 224,
   });
-  const [menuPlacement, setMenuPlacement] =
-    useState("down");
 
   const normalizedOptions = useMemo(
     () => normalizeDropdownOptions(options),
@@ -52,9 +52,7 @@ export default function DropdownField({
   );
 
   const selectedOption = normalizedOptions.find(
-    (option) =>
-      String(option.value) ===
-      String(value ?? ""),
+    (option) => String(option.value) === String(value ?? ""),
   );
 
   const displayLabel =
@@ -64,103 +62,136 @@ export default function DropdownField({
     "";
 
   const filteredOptions = useMemo(() => {
-    const keyword = cleanText(
-      dropdownSearch,
-    ).toLowerCase();
+    const keyword = cleanText(dropdownSearch).toLowerCase();
 
-    if (!keyword) return normalizedOptions;
+    const matchesSearch = keyword
+      ? normalizedOptions.filter((option) =>
+          [
+            option.label,
+            option.value,
+            option.id,
+            option.description,
+            option.searchText,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(keyword),
+        )
+      : normalizedOptions;
 
-    return normalizedOptions.filter((option) =>
-      [
-        option.label,
-        option.value,
-        option.id,
-        option.description,
-        option.searchText,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(keyword),
-    );
+    if (!excludeSelectedOption) return matchesSearch;
+
+    return matchesSearch.filter((option) => {
+      const isSelectedValue =
+        String(option.value) === String(value ?? "");
+      const isExcludedId =
+        cleanText(excludedOptionId) &&
+        String(option.id) === String(excludedOptionId);
+
+      return !isSelectedValue && !isExcludedId;
+    });
   }, [
     normalizedOptions,
     dropdownSearch,
+    excludeSelectedOption,
+    excludedOptionId,
+    value,
   ]);
 
   const inputDisplayValue =
-    open && searchable
-      ? dropdownSearch
-      : displayLabel;
+    open && searchable ? dropdownSearch : displayLabel;
 
-  const hasDisplayValue =
-    Boolean(displayLabel);
+  const hasDisplayValue = Boolean(displayLabel);
 
-  const updateMenuPosition = useCallback(() => {
+  function getBoundaryRect() {
+    const explicitBoundary = boundaryRef?.current;
+    const closestBoundary = dropdownRef.current?.closest?.(
+      '[data-dropdown-boundary="true"]',
+    );
+
+    return (explicitBoundary || closestBoundary)?.getBoundingClientRect?.() || null;
+  }
+
+  function updateMenuPosition() {
     if (!dropdownRef.current) return;
 
-    const triggerElement =
-      dropdownRef.current.querySelector("[data-dropdown-trigger]") ||
-      dropdownRef.current;
-    const rect = triggerElement.getBoundingClientRect();
-    const gap = 6;
+    const rect = dropdownRef.current.getBoundingClientRect();
+    const boundaryRect = getBoundaryRect();
+    const gap = 8;
+    const viewportPadding = 12;
     const viewportHeight =
       window.innerHeight || document.documentElement.clientHeight;
     const viewportWidth =
       window.innerWidth || document.documentElement.clientWidth;
 
-    const optionCount = filteredOptions.length || 1;
-    const estimatedMenuHeight = Math.min(
-      220,
-      optionCount * 38 + 8,
+    const boundaryTop = Math.max(
+      viewportPadding,
+      boundaryRect?.top ?? viewportPadding,
+    );
+    const boundaryBottom = Math.min(
+      viewportHeight - viewportPadding,
+      boundaryRect?.bottom ?? viewportHeight - viewportPadding,
+    );
+    const boundaryLeft = Math.max(
+      viewportPadding,
+      boundaryRect?.left ?? viewportPadding,
+    );
+    const boundaryRight = Math.min(
+      viewportWidth - viewportPadding,
+      boundaryRect?.right ?? viewportWidth - viewportPadding,
     );
 
-    const spaceBelow = viewportHeight - rect.bottom - gap - 12;
-    const spaceAbove = rect.top - gap - 12;
+    const availableBelow = Math.max(
+      0,
+      boundaryBottom - rect.bottom - gap,
+    );
+    const availableAbove = Math.max(
+      0,
+      rect.top - boundaryTop - gap,
+    );
 
+    const preferredHeight = Math.max(
+      120,
+      Number(maxMenuHeight) || 224,
+    );
     const shouldOpenUp =
-      spaceBelow < estimatedMenuHeight &&
-      spaceAbove > spaceBelow;
-
-    const maxHeight = Math.min(
-      220,
-      shouldOpenUp ? Math.max(120, spaceAbove) : Math.max(120, spaceBelow),
-    );
-    const renderedHeight = Math.min(
-      estimatedMenuHeight,
-      maxHeight,
+      availableBelow < 160 && availableAbove > availableBelow;
+    const availableHeight = shouldOpenUp
+      ? availableAbove
+      : availableBelow;
+    const cleanMaxHeight = Math.max(
+      72,
+      Math.min(preferredHeight, availableHeight || preferredHeight),
     );
 
+    const boundaryWidth = Math.max(0, boundaryRight - boundaryLeft);
+    const cleanWidth = Math.min(rect.width, boundaryWidth || rect.width);
     const left = Math.min(
-      Math.max(rect.left, 12),
-      Math.max(viewportWidth - rect.width - 12, 12),
+      Math.max(rect.left, boundaryLeft),
+      Math.max(boundaryRight - cleanWidth, boundaryLeft),
     );
 
-    let top = 0;
-    if (shouldOpenUp) {
-      top = Math.max(12, rect.top - gap - renderedHeight);
-    } else {
-      top = Math.min(
-        rect.bottom + gap,
-        viewportHeight - renderedHeight - 12,
-      );
-    }
+    const preferredTop = shouldOpenUp
+      ? rect.top - gap - cleanMaxHeight
+      : rect.bottom + gap;
+    const top = Math.min(
+      Math.max(preferredTop, boundaryTop),
+      Math.max(boundaryBottom - cleanMaxHeight, boundaryTop),
+    );
 
     setMenuStyle({
       left,
       top,
-      width: rect.width,
-      maxHeight,
+      width: cleanWidth,
+      maxHeight: cleanMaxHeight,
     });
-    setMenuPlacement(shouldOpenUp ? "up" : "down");
-  }, [filteredOptions.length]);
+  }
 
   useEffect(() => {
     if (!open) return undefined;
 
-    const frameId = window.requestAnimationFrame(
-      updateMenuPosition,
-    );
+    updateMenuPosition();
 
     function handleScrollOrResize() {
       updateMenuPosition();
@@ -170,20 +201,21 @@ export default function DropdownField({
     window.addEventListener("scroll", handleScrollOrResize, true);
 
     return () => {
-      window.cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleScrollOrResize);
       window.removeEventListener("scroll", handleScrollOrResize, true);
     };
-  }, [open, updateMenuPosition]);
+  }, [
+    open,
+    filteredOptions.length,
+    maxMenuHeight,
+    boundaryRef,
+  ]);
 
   useEffect(() => {
     function handleClickOutside(event) {
       const target = event.target;
-
-      const clickedInput =
-        dropdownRef.current?.contains(target);
-      const clickedMenu =
-        menuRef.current?.contains(target);
+      const clickedInput = dropdownRef.current?.contains(target);
+      const clickedMenu = menuRef.current?.contains(target);
 
       if (!clickedInput && !clickedMenu) {
         setOpen(false);
@@ -198,24 +230,14 @@ export default function DropdownField({
       }
     }
 
-    document.addEventListener(
-      "mousedown",
-      handleClickOutside,
-    );
-    document.addEventListener(
-      "keydown",
-      handleEscape,
-    );
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside,
-      );
-      document.removeEventListener(
-        "keydown",
-        handleEscape,
-      );
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, []);
 
@@ -243,10 +265,7 @@ export default function DropdownField({
         setDropdownSearch("");
       }
 
-      window.setTimeout(
-        updateMenuPosition,
-        0,
-      );
+      window.setTimeout(updateMenuPosition, 0);
 
       return nextOpen;
     });
@@ -270,85 +289,59 @@ export default function DropdownField({
       event.preventDefault();
 
       if (filteredOptions.length > 0) {
-        handleSelect(
-          filteredOptions[0],
-        );
+        handleSelect(filteredOptions[0]);
       }
     }
   }
 
   const menu =
-    typeof document !== "undefined"
+    open && !disabled && typeof document !== "undefined"
       ? createPortal(
           <div
             ref={menuRef}
+            role="listbox"
             style={{
               position: "fixed",
               left: `${menuStyle.left}px`,
               top: `${menuStyle.top}px`,
               width: `${menuStyle.width}px`,
-              zIndex: 20000,
+              zIndex: 30000,
             }}
-            className={`sibs-animated-dropdown ${
-              open ? "open" : "closed"
-            } ${
-              menuPlacement === "up"
-                ? "sibs-animated-dropdown-up"
-                : ""
-            } font-jakarta ${menuClassName}`}
+            className={`sibs-dropdown-pop-in overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
           >
-            <div className="sibs-animated-dropdown-inner">
-              <div
-                className="sibs-animated-dropdown-box rounded-[10px] border-[#D7DEE8] shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
-              >
-                <div
-                  className="sibs-scrollbar overflow-y-auto py-1"
-                  style={{
-                    maxHeight: `${menuStyle.maxHeight}px`,
-                  }}
-                >
-                  {filteredOptions.length > 0 ? (
-                    filteredOptions.map((option) => {
-                      const active =
-                        String(option.value) === String(value ?? "");
+            <div
+              className="sibs-scrollbar overflow-y-auto overscroll-contain"
+              style={{
+                maxHeight: `${menuStyle.maxHeight}px`,
+              }}
+            >
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((option) => (
+                  <button
+                    key={option.id || option.value}
+                    type="button"
+                    role="option"
+                    aria-selected="false"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => handleSelect(option)}
+                    className="block w-full bg-white px-3 py-2.5 text-left text-xs font-semibold text-[#344054] transition hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  >
+                    <span className="block min-w-0 truncate">
+                      {option.label}
+                    </span>
 
-                      return (
-                        <button
-                          key={option.id || option.value}
-                          type="button"
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => handleSelect(option)}
-                          className={`block w-full px-3 py-2.5 text-left text-xs font-semibold transition ${
-                            active
-                              ? "bg-[#FFF0EB] text-[#FF5C28]"
-                              : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-                          }`}
-                        >
-                          <span className="block min-w-0 truncate">
-                            {option.label}
-                          </span>
-
-                          {option.description ? (
-                            <span
-                              className={`mt-0.5 block min-w-0 truncate text-[10px] font-bold ${
-                                active
-                                  ? "text-[#FF5C28]/80"
-                                  : "text-[#98A2B3]"
-                              }`}
-                            >
-                              {option.description}
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="px-3 py-3 text-xs font-semibold text-[#98A2B3]">
-                      {emptyMessage}
-                    </div>
-                  )}
+                    {option.description ? (
+                      <span className="mt-0.5 block min-w-0 truncate text-[10px] font-bold text-[#98A2B3]">
+                        {option.description}
+                      </span>
+                    ) : null}
+                  </button>
+                ))
+              ) : (
+                <div className="px-3 py-3 text-xs font-semibold text-[#98A2B3]">
+                  {emptyMessage}
                 </div>
-              </div>
+              )}
             </div>
           </div>,
           document.body,
@@ -368,19 +361,14 @@ export default function DropdownField({
   return (
     <div
       ref={dropdownRef}
-      className={`relative min-w-0 ${
-        open ? zIndex : "z-[1]"
-      }`}
+      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
     >
       {label ? (
-        <FieldLabel required={required}>
-          {label}
-        </FieldLabel>
+        <FieldLabel required={required}>{label}</FieldLabel>
       ) : null}
 
       {searchable ? (
         <div
-          data-dropdown-trigger
           className={`${sharedControlClass} cursor-text`}
           onClick={openDropdown}
         >
@@ -391,19 +379,15 @@ export default function DropdownField({
             disabled={disabled}
             onFocus={openDropdown}
             onChange={(event) => {
-              setDropdownSearch(
-                event.target.value,
-              );
+              setDropdownSearch(event.target.value);
               setOpen(true);
-              window.setTimeout(
-                updateMenuPosition,
-                0,
-              );
+              window.setTimeout(updateMenuPosition, 0);
             }}
             onKeyDown={handleInputKeyDown}
-            placeholder={
-              searchPlaceholder || placeholder
-            }
+            placeholder={searchPlaceholder || placeholder}
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            autoComplete="off"
             className={`h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs font-semibold outline-none placeholder:text-[#98A2B3] ${
               hasDisplayValue || open
                 ? "text-[#344054]"
@@ -420,17 +404,16 @@ export default function DropdownField({
         </div>
       ) : (
         <button
-          data-dropdown-trigger
           type="button"
           disabled={disabled}
           onClick={toggleDropdown}
+          aria-expanded={open}
+          aria-haspopup="listbox"
           className={`${sharedControlClass} justify-between gap-3`}
         >
           <span
             className={`min-w-0 flex-1 truncate ${
-              hasDisplayValue
-                ? "text-[#344054]"
-                : "text-[#98A2B3]"
+              hasDisplayValue ? "text-[#344054]" : "text-[#98A2B3]"
             }`}
           >
             {displayLabel || placeholder}

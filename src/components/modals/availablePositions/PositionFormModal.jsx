@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import {
   BriefcaseBusiness,
   Building2,
@@ -10,11 +10,10 @@ import {
   X,
 } from "lucide-react";
 
-import { LOCATION_SITE_OPTIONS } from "../../../lib/utils/availablePositions/availablePositionsConstants";
-import {
-  cleanText,
-} from "../../../lib/utils/availablePositions/availablePositionsHelpers";
-import DropdownField from "../../recruitment/availablePositions/DropdownField";
+import { LOCATION_SITE_OPTIONS } from "@/lib/utils/availablePositions/availablePositionsConstants";
+import { cleanText } from "@/lib/utils/availablePositions/availablePositionsHelpers";
+import DropdownField from "@/components/recruitment/availablePositions/DropdownField";
+import RichTextEditor from "@/components/modals/jobDescription/RichTextEditor";
 
 const INPUT_CLASS =
   "h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
@@ -22,16 +21,11 @@ const INPUT_CLASS =
 const TEXTAREA_CLASS =
   "min-h-28 w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
 
-function FieldLabel({
-  children,
-  required = false,
-}) {
+function FieldLabel({ children, required = false }) {
   return (
     <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
       {children}
-      {required ? (
-        <span className="ml-1 text-red-500">*</span>
-      ) : null}
+      {required ? <span className="ml-1 text-red-500">*</span> : null}
     </label>
   );
 }
@@ -45,10 +39,7 @@ function PositionFormSection({
   return (
     <section className="rounded-2xl border border-[#DCE6F1] bg-white p-4 shadow-[0_8px_24px_rgba(4,44,81,0.04)] sm:p-5">
       <div className="mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-3">
-        <Icon
-          size={17}
-          className="mt-0.5 shrink-0 text-[#FF5C28]"
-        />
+        <Icon size={17} className="mt-0.5 shrink-0 text-[#FF5C28]" />
 
         <div className="min-w-0">
           <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
@@ -66,6 +57,36 @@ function PositionFormSection({
   );
 }
 
+function htmlToPlainText(value) {
+  const source = String(value || "").trim();
+
+  if (!source) return "";
+  if (!/<\/?[a-z][\s\S]*>/i.test(source)) return source;
+
+  if (typeof document !== "undefined") {
+    const container = document.createElement("div");
+    container.innerHTML = source;
+
+    return String(container.textContent || container.innerText || "")
+      .replace(/\u00a0/g, " ")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  return source
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export default function PositionFormModal({
   open,
   mode,
@@ -79,17 +100,17 @@ export default function PositionFormModal({
   isSaving,
 }) {
   const isEditMode = mode === "edit";
+  const modalBodyRef = useRef(null);
 
   const statusDropdownOptions = useMemo(
     () =>
-      (Array.isArray(meta?.statusOptions)
-        ? meta.statusOptions
-        : []
-      ).map((status) => ({
-        id: status,
-        value: status,
-        label: status,
-      })),
+      (Array.isArray(meta?.statusOptions) ? meta.statusOptions : []).map(
+        (status) => ({
+          id: status,
+          value: status,
+          label: status,
+        }),
+      ),
     [meta?.statusOptions],
   );
 
@@ -105,20 +126,14 @@ export default function PositionFormModal({
 
   const departmentDropdownOptions = useMemo(
     () =>
-      (Array.isArray(meta?.departments)
-        ? meta.departments
-        : []
-      )
+      (Array.isArray(meta?.departments) ? meta.departments : [])
         .filter(Boolean)
         .map((department) => ({
           id:
             department.departmentId ||
             department.id ||
             department.departmentName,
-          value:
-            department.departmentId ||
-            department.id ||
-            "",
+          value: department.departmentId || department.id || "",
           label:
             department.departmentName ||
             department.name ||
@@ -136,9 +151,7 @@ export default function PositionFormModal({
   );
 
   const accountDropdownOptions = useMemo(() => {
-    const accounts = Array.isArray(meta?.accounts)
-      ? meta.accounts
-      : [];
+    const accounts = Array.isArray(meta?.accounts) ? meta.accounts : [];
 
     return accounts
       .filter((account) => {
@@ -150,22 +163,12 @@ export default function PositionFormModal({
         );
       })
       .map((account) => ({
-        id:
-          account.accountId ||
-          account.id ||
-          account.accountName,
-        value:
-          account.accountId ||
-          account.id ||
-          "",
+        id: account.accountId || account.id || account.accountName,
+        value: account.accountId || account.id || "",
         label:
-          account.accountName ||
-          account.name ||
-          "Unnamed Account",
+          account.accountName || account.name || "Unnamed Account",
         description:
-          account.accountGhlName ||
-          account.account_ghl_name ||
-          "",
+          account.accountGhlName || account.account_ghl_name || "",
         searchText: [
           account.accountId,
           account.accountName,
@@ -176,10 +179,7 @@ export default function PositionFormModal({
           .join(" "),
         raw: account,
       }));
-  }, [
-    form?.departmentId,
-    meta?.accounts,
-  ]);
+  }, [form?.departmentId, meta?.accounts]);
 
   const approvedJdDropdownOptions = useMemo(
     () =>
@@ -195,12 +195,9 @@ export default function PositionFormModal({
 
           if (!cleanText(roleTitle)) return null;
 
-          const jdCode =
-            jd.jdCode || jd.jd_code || "";
+          const jdCode = jd.jdCode || jd.jd_code || "";
           const documentTitle =
-            jd.documentTitle ||
-            jd.document_title ||
-            "";
+            jd.documentTitle || jd.document_title || "";
           const department =
             jd.department ||
             jd.departmentName ||
@@ -215,20 +212,10 @@ export default function PositionFormModal({
             "";
 
           return {
-            id:
-              jd.id ||
-              jd.rawId ||
-              jd.raw_id ||
-              roleTitle,
+            id: jd.id || jd.rawId || jd.raw_id || roleTitle,
             value: roleTitle,
-            label: `${roleTitle}${
-              jdCode ? ` (${jdCode})` : ""
-            }`,
-            description: [
-              documentTitle,
-              department,
-              account,
-            ]
+            label: roleTitle,
+            description: [documentTitle, department, account]
               .filter(Boolean)
               .join(" • "),
             searchText: [
@@ -256,10 +243,7 @@ export default function PositionFormModal({
     }));
   }
 
-  function handleApprovedJdPositionChange(
-    positionTitle,
-    selectedOption,
-  ) {
+  function handleApprovedJdPositionChange(positionTitle, selectedOption) {
     const selectedJd = selectedOption?.raw;
 
     if (!selectedJd) {
@@ -278,21 +262,15 @@ export default function PositionFormModal({
         accountName: "",
         accountGhlName: "",
         description: "",
+        descriptionPlainText: "",
         preferredSkills: "",
       }));
       return;
     }
 
     const jdId =
-      selectedJd.id ||
-      selectedJd.rawId ||
-      selectedJd.raw_id ||
-      "";
-
-    const jdCode =
-      selectedJd.jdCode ||
-      selectedJd.jd_code ||
-      "";
+      selectedJd.id || selectedJd.rawId || selectedJd.raw_id || "";
+    const jdCode = selectedJd.jdCode || selectedJd.jd_code || "";
 
     const documentTitle =
       selectedJd.documentTitle ||
@@ -341,52 +319,55 @@ export default function PositionFormModal({
       selectedJd.raw?.prepared_for ||
       "";
 
+    const description =
+      selectedJd.description ||
+      selectedJd.positionOverview ||
+      selectedJd.position_overview ||
+      selectedJd.raw?.description ||
+      selectedJd.raw?.positionOverview ||
+      selectedJd.raw?.position_overview ||
+      "";
+
+    const preferredSkillsSource =
+      selectedJd.qualifications ||
+      selectedJd.preferredSkills ||
+      selectedJd.preferred_skills ||
+      selectedJd.raw?.qualifications ||
+      selectedJd.raw?.preferredSkills ||
+      selectedJd.raw?.preferred_skills ||
+      "";
+
     setForm((previous) => ({
       ...previous,
-
       jdId,
       jd_id: jdId,
-
       jdCode,
       jd_code: jdCode,
-
       documentTitle,
       document_title: documentTitle,
-
       positionTitle,
-
       departmentId,
       department,
-
       accountId,
       accountName,
-
       accountGhlName:
         selectedJd.accountGhlName ||
         selectedJd.account_ghl_name ||
         previous.accountGhlName ||
         "",
-
-      description:
-        selectedJd.description ||
-        previous.description ||
-        "",
-
+      description: description || previous.description || "",
+      descriptionPlainText: htmlToPlainText(
+        description || previous.description || "",
+      ),
       preferredSkills:
-        selectedJd.qualifications ||
-        selectedJd.preferredSkills ||
-        selectedJd.preferred_skills ||
+        htmlToPlainText(preferredSkillsSource) ||
         previous.preferredSkills ||
         "",
     }));
   }
 
-  function handleDepartmentChange(
-    departmentId,
-    selectedOption,
-  ) {
-    const department =
-      selectedOption?.raw;
+  function handleDepartmentChange(departmentId, selectedOption) {
+    const department = selectedOption?.raw;
 
     setForm((previous) => ({
       ...previous,
@@ -402,10 +383,7 @@ export default function PositionFormModal({
     }));
   }
 
-  function handleAccountChange(
-    accountId,
-    selectedOption,
-  ) {
+  function handleAccountChange(accountId, selectedOption) {
     const account = selectedOption?.raw;
 
     setForm((previous) => ({
@@ -426,7 +404,7 @@ export default function PositionFormModal({
 
   return (
     <div
-      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/65 p-2 backdrop-blur-[2px] sm:p-4"
       onClick={() => {
         if (!isSaving) onClose?.();
       }}
@@ -437,9 +415,7 @@ export default function PositionFormModal({
         aria-modal="true"
         aria-labelledby="available-position-modal-title"
         onSubmit={onSubmit}
-        onClick={(event) =>
-          event.stopPropagation()
-        }
+        onClick={(event) => event.stopPropagation()}
         className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-[1050px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
       >
         <header className="shrink-0 bg-[#07365F] px-4 py-4 text-white sm:px-6">
@@ -451,21 +427,27 @@ export default function PositionFormModal({
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2
-                    id="available-position-modal-title"
-                    className="text-base font-extrabold text-white"
-                  >
-                    {isEditMode
-                      ? "Edit Available Position"
-                      : "Register Available Position"}
-                  </h2>
-                  <span className="inline-flex rounded bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">
+                  <span className="rounded bg-[#FF5C28] px-2 py-0.5 text-[9px] font-extrabold uppercase text-white">
+                    Position Dictionary
+                  </span>
+
+                  <span className="text-[9px] font-extrabold uppercase text-blue-100">
                     {isEditMode ? "Edit Mode" : "New Registration"}
                   </span>
                 </div>
 
-                <p className="mt-0.5 text-xs font-semibold leading-relaxed text-blue-100">
-                  Link an approved JD, confirm the organizational mapping, and manage applicant visibility.
+                <h2
+                  id="available-position-modal-title"
+                  className="mt-1 text-base font-extrabold text-white"
+                >
+                  {isEditMode
+                    ? "Edit Available Position"
+                    : "Register Available Position"}
+                </h2>
+
+                <p className="mt-0.5 text-xs font-semibold text-blue-100">
+                  Link an approved JD, confirm the organizational mapping, and
+                  manage applicant visibility.
                 </p>
               </div>
             </div>
@@ -487,10 +469,7 @@ export default function PositionFormModal({
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#FF5C28] px-3.5 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSaving ? (
-                  <Loader2
-                    size={14}
-                    className="animate-spin"
-                  />
+                  <Loader2 size={14} className="animate-spin" />
                 ) : (
                   <Save size={14} />
                 )}
@@ -515,7 +494,11 @@ export default function PositionFormModal({
           </div>
         </header>
 
-        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-3 sm:p-5">
+        <div
+          ref={modalBodyRef}
+          data-dropdown-boundary="true"
+          className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-3 sm:p-5"
+        >
           <div className="space-y-4">
             <PositionFormSection
               title="Approved JD Link"
@@ -525,21 +508,28 @@ export default function PositionFormModal({
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                 <div className="lg:col-span-3">
                   <DropdownField
-                    label="Approved Job Description"
+                    label="Select Job Description"
                     required
                     value={form.positionTitle}
                     displayValue={form.positionTitle}
-                    onChange={
-                      handleApprovedJdPositionChange
-                    }
-                    options={
-                      approvedJdDropdownOptions
-                    }
-                    placeholder="Search approved JD position"
-                    searchPlaceholder="Search approved JD position..."
-                    emptyMessage="No approved JD positions found."
+                    onChange={handleApprovedJdPositionChange}
+                    options={approvedJdDropdownOptions}
+                    placeholder="Select approved job description"
+                    searchPlaceholder="Search approved job description..."
+                    emptyMessage="No other approved Job Descriptions found."
                     disabled={isSaving}
                     searchable
+                    excludeSelectedOption
+                    excludedOptionId={form.jdId || form.jd_id || ""}
+                    excludedOptionValues={[
+                      form.jdId,
+                      form.jd_id,
+                      form.jdCode,
+                      form.jd_code,
+                      form.positionTitle,
+                    ]}
+                    boundaryRef={modalBodyRef}
+                    maxMenuHeight={280}
                     zIndex="z-[190]"
                   />
                 </div>
@@ -547,11 +537,7 @@ export default function PositionFormModal({
                 <div>
                   <FieldLabel>JD ID</FieldLabel>
                   <input
-                    value={
-                      form.jdId ||
-                      form.jd_id ||
-                      ""
-                    }
+                    value={form.jdId || form.jd_id || ""}
                     readOnly
                     className={INPUT_CLASS}
                     placeholder="Approved JD database ID"
@@ -561,11 +547,7 @@ export default function PositionFormModal({
                 <div>
                   <FieldLabel>JD Code</FieldLabel>
                   <input
-                    value={
-                      form.jdCode ||
-                      form.jd_code ||
-                      ""
-                    }
+                    value={form.jdCode || form.jd_code || ""}
                     readOnly
                     className={INPUT_CLASS}
                     placeholder="Approved JD code"
@@ -573,18 +555,11 @@ export default function PositionFormModal({
                 </div>
 
                 <div>
-                  <FieldLabel required>
-                    Position Title
-                  </FieldLabel>
+                  <FieldLabel required>Position Title</FieldLabel>
                   <input
-                    value={
-                      form.positionTitle || ""
-                    }
+                    value={form.positionTitle || ""}
                     onChange={(event) =>
-                      updateField(
-                        "positionTitle",
-                        event.target.value,
-                      )
+                      updateField("positionTitle", event.target.value)
                     }
                     disabled={isSaving}
                     className={INPUT_CLASS}
@@ -593,14 +568,10 @@ export default function PositionFormModal({
                 </div>
 
                 <div className="lg:col-span-3">
-                  <FieldLabel>
-                    Document Title
-                  </FieldLabel>
+                  <FieldLabel>Document Title</FieldLabel>
                   <input
                     value={
-                      form.documentTitle ||
-                      form.document_title ||
-                      ""
+                      form.documentTitle || form.document_title || ""
                     }
                     readOnly
                     className={INPUT_CLASS}
@@ -621,17 +592,14 @@ export default function PositionFormModal({
                   required
                   value={form.departmentId}
                   displayValue={form.department}
-                  onChange={
-                    handleDepartmentChange
-                  }
-                  options={
-                    departmentDropdownOptions
-                  }
+                  onChange={handleDepartmentChange}
+                  options={departmentDropdownOptions}
                   placeholder="Select department"
                   searchPlaceholder="Search departments..."
                   emptyMessage="No departments found."
                   disabled={isSaving}
                   searchable
+                  boundaryRef={modalBodyRef}
                   zIndex="z-[180]"
                 />
 
@@ -649,27 +617,18 @@ export default function PositionFormModal({
                   }
                   searchPlaceholder="Search accounts..."
                   emptyMessage="No accounts found for this department."
-                  disabled={
-                    isSaving ||
-                    !form.departmentId
-                  }
+                  disabled={isSaving || !form.departmentId}
                   searchable
+                  boundaryRef={modalBodyRef}
                   zIndex="z-[170]"
                 />
 
                 <div>
-                  <FieldLabel>
-                    Account GHL Name
-                  </FieldLabel>
+                  <FieldLabel>Account GHL Name</FieldLabel>
                   <input
-                    value={
-                      form.accountGhlName || ""
-                    }
+                    value={form.accountGhlName || ""}
                     onChange={(event) =>
-                      updateField(
-                        "accountGhlName",
-                        event.target.value,
-                      )
+                      updateField("accountGhlName", event.target.value)
                     }
                     disabled={isSaving}
                     className={INPUT_CLASS}
@@ -681,17 +640,11 @@ export default function PositionFormModal({
                   label="Location / Site"
                   required
                   value={form.locationSite}
-                  onChange={(value) =>
-                    updateField(
-                      "locationSite",
-                      value,
-                    )
-                  }
-                  options={
-                    locationDropdownOptions
-                  }
+                  onChange={(value) => updateField("locationSite", value)}
+                  options={locationDropdownOptions}
                   placeholder="Select location / site"
                   disabled={isSaving}
+                  boundaryRef={modalBodyRef}
                   zIndex="z-[160]"
                 />
               </div>
@@ -704,86 +657,83 @@ export default function PositionFormModal({
             >
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <FieldLabel>
-                    Description
-                  </FieldLabel>
+                  <FieldLabel>Description</FieldLabel>
 
-                  <textarea
-                    rows={4}
-                    value={
-                      form.description || ""
+                  <div
+                    className={
+                      isSaving
+                        ? "pointer-events-none opacity-70"
+                        : ""
                     }
-                    onChange={(event) =>
-                      updateField(
-                        "description",
-                        event.target.value,
-                      )
+                  >
+                    <RichTextEditor
+                      id="available-position-description"
+                      value={form.description || ""}
+                      onChange={(html, plainText) =>
+                        setForm((previous) => ({
+                          ...previous,
+                          description: html,
+                          descriptionPlainText: plainText,
+                        }))
+                      }
+                      placeholder="Describe the position and its operational purpose."
+                      minHeight={120}
+                    />
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <FieldLabel>Preferred Skills</FieldLabel>
+
+                  <div
+                    className={
+                      isSaving
+                        ? "pointer-events-none opacity-70"
+                        : ""
                     }
+                  >
+                    <RichTextEditor
+                      id="available-position-preferred-skills"
+                      value={form.preferredSkills || ""}
+                      onChange={(html, plainText) =>
+                        setForm((previous) => ({
+                          ...previous,
+                          preferredSkills: html,
+                          preferredSkillsPlainText: plainText,
+                        }))
+                      }
+                      placeholder="List preferred skills, certifications, or qualifications."
+                      minHeight={100}
+                    />
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <DropdownField
+                    label="Status"
+                    required
+                    value={form.status}
+                    onChange={(value) => updateField("status", value)}
+                    options={statusDropdownOptions}
+                    placeholder="Select status"
                     disabled={isSaving}
-                    placeholder="Describe the position and its operational purpose."
-                    className={TEXTAREA_CLASS}
+                    boundaryRef={modalBodyRef}
+                    zIndex="z-[150]"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <FieldLabel>
-                    Preferred Skills
-                  </FieldLabel>
+                  <FieldLabel>Remarks</FieldLabel>
 
                   <textarea
                     rows={3}
-                    value={
-                      form.preferredSkills || ""
-                    }
+                    value={form.remarks || ""}
                     onChange={(event) =>
-                      updateField(
-                        "preferredSkills",
-                        event.target.value,
-                      )
-                    }
-                    disabled={isSaving}
-                    placeholder="Separate skills with commas, semicolons, or new lines."
-                    className={TEXTAREA_CLASS}
-                  />
-                </div>
-
-                <DropdownField
-                  label="Status"
-                  required
-                  value={form.status}
-                  onChange={(value) =>
-                    updateField(
-                      "status",
-                      value,
-                    )
-                  }
-                  options={
-                    statusDropdownOptions
-                  }
-                  placeholder="Select status"
-                  disabled={isSaving}
-                  zIndex="z-[150]"
-                />
-
-                <div>
-                  <FieldLabel>
-                    Remarks
-                  </FieldLabel>
-
-                  <textarea
-                    rows={3}
-                    value={
-                      form.remarks || ""
-                    }
-                    onChange={(event) =>
-                      updateField(
-                        "remarks",
-                        event.target.value,
-                      )
+                      updateField("remarks", event.target.value)
                     }
                     disabled={isSaving}
                     placeholder="Internal notes only."
-                    className={`${TEXTAREA_CLASS} min-h-10`}
+                    className={TEXTAREA_CLASS}
                   />
                 </div>
               </div>

@@ -558,6 +558,10 @@ export default function RichTextEditor({
       forceToolbarRender((current) => current + 1);
     },
 
+    onTransaction() {
+      forceToolbarRender((current) => current + 1);
+    },
+
     immediatelyRender: true,
   });
 
@@ -606,6 +610,22 @@ export default function RichTextEditor({
 
         .jd-rich-text-editor .ProseMirror > * + * {
           margin-top: 0.55rem;
+        }
+
+        .jd-rich-text-editor .ProseMirror em {
+          font-style: italic;
+        }
+
+        .jd-rich-text-editor .ProseMirror strong {
+          font-weight: 700;
+        }
+
+        .jd-rich-text-editor .ProseMirror u {
+          text-decoration: underline;
+        }
+
+        .jd-rich-text-editor .ProseMirror s {
+          text-decoration: line-through;
         }
 
         .jd-rich-text-editor .ProseMirror p {

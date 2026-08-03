@@ -1,11 +1,21 @@
+import React, { useMemo, useState } from "react";
+import {
+  ShieldAlert,
+  TrendingUp,
+  UsersRound,
+  Workflow,
+} from "lucide-react";
 import {
   formatOverviewNumber,
-  formatOverviewPercent,
 } from "../../../lib/utils/workforceHiringOverview/workforceHiringOverviewHelpers";
 
 function safeNumber(value) {
-  const numberValue = Number(value || 0);
+  const numberValue = Number(String(value ?? 0).replace(/,/g, "").replace(/%/g, ""));
   return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function formatPercent(value, decimals = 1) {
+  return `${safeNumber(value).toFixed(decimals)}%`;
 }
 
 function getDateValue(row = {}, keys = []) {
@@ -22,7 +32,6 @@ function parseDate(value) {
   if (!value) return null;
 
   const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -32,20 +41,18 @@ function getWeekNumberFromDate(value) {
   if (!date) return 0;
 
   const year = date.getFullYear();
-  const weekOneStart = new Date(`${year}-01-01T00:00:00`);
-  const day = weekOneStart.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const firstDate = new Date(year, 0, 1);
+  const firstDay = firstDate.getDay();
+  const diffToMonday = firstDay === 0 ? -6 : 1 - firstDay;
 
-  weekOneStart.setDate(weekOneStart.getDate() + diffToMonday);
-  weekOneStart.setHours(0, 0, 0, 0);
+  firstDate.setDate(firstDate.getDate() + diffToMonday);
+  firstDate.setHours(0, 0, 0, 0);
 
   const diffDays = Math.floor(
-    (date.getTime() - weekOneStart.getTime()) / 86_400_000,
+    (date.getTime() - firstDate.getTime()) / 86_400_000,
   );
 
-  if (!Number.isFinite(diffDays) || diffDays < 0) return 0;
-
-  return Math.floor(diffDays / 7) + 1;
+  return diffDays >= 0 ? Math.floor(diffDays / 7) + 1 : 0;
 }
 
 function getWeekStart(row = {}) {
@@ -61,16 +68,12 @@ function getWeekStart(row = {}) {
   ]);
 }
 
-function sumRows(rows = [], key) {
-  return rows.reduce((total, row) => total + safeNumber(row?.[key]), 0);
-}
+function getWeekLabel(row = {}, index = 0) {
+  const weekStart = getWeekStart(row);
+  const weekNumber =
+    row?.weekNumber || row?.week_number || getWeekNumberFromDate(weekStart);
 
-function averageRows(rows = [], key) {
-  if (!rows.length) return 0;
-
-  return (
-    rows.reduce((total, row) => total + safeNumber(row?.[key]), 0) / rows.length
-  );
+  return weekNumber ? `W${weekNumber}` : `W${index + 1}`;
 }
 
 function getRowNumber(row = {}, keys = [], fallback = 0) {
@@ -85,161 +88,141 @@ function getRowNumber(row = {}, keys = [], fallback = 0) {
   return safeNumber(fallback);
 }
 
-function normalizeGraphRow(row = {}) {
-  return {
-    ...row,
+function averageRows(rows = [], key) {
+  if (!rows.length) return 0;
 
-    acceptedJo: getRowNumber(row, [
-      "acceptedJo",
-      "acceptedJO",
-      "accepted_jo",
-      "acceptedJobOffer",
-      "accepted_job_offer",
+  return rows.reduce((total, row) => total + safeNumber(row?.[key]), 0) /
+    rows.length;
+}
+
+function sumRows(rows = [], key) {
+  return rows.reduce((total, row) => total + safeNumber(row?.[key]), 0);
+}
+
+function normalizeGraphRow(row = {}, index = 0) {
+  const acceptedJo = getRowNumber(row, [
+    "acceptedJo",
+    "acceptedJO",
+    "accepted_jo",
+    "acceptedJobOffer",
+    "accepted_job_offer",
+  ]);
+
+  const leadsToInterview = getRowNumber(row, [
+    "leadsToInterview",
+    "leads_to_interview",
+    "targetLeads",
+    "target_leads",
+  ]);
+
+  const interviewsCompleted = getRowNumber(
+    row,
+    [
+      "interviewsCompleted",
+      "interviews_completed",
       "interviewCount",
       "interview_count",
       "interviewPopulationCount",
       "interview_population_count",
-    ]),
+    ],
+    acceptedJo,
+  );
 
-    nho: getRowNumber(row, ["nho", "nhoCount", "nho_count"]),
-    fst: getRowNumber(row, ["fst", "fstCount", "fst_count"]),
-    pst: getRowNumber(row, ["pst", "pstCount", "pst_count"]),
-
-    goLive: getRowNumber(row, [
-      "goLive",
-      "go_live",
-      "goLiveCount",
-      "go_live_count",
-      "projectedToBeEndorsed",
-      "projected_to_be_endorsed",
-    ]),
-
-    hiredCount: getRowNumber(row, ["hiredCount", "hired_count", "hired"]),
-
-    hiringRate: getRowNumber(row, [
+  const hiringRate = getRowNumber(
+    row,
+    [
       "hiringRate",
       "hiring_rate",
       "hiringPlanPercent",
       "hiring_plan_percent",
-    ]),
+    ],
+    leadsToInterview > 0 ? (acceptedJo / leadsToInterview) * 100 : 0,
+  );
 
-    leadsToInterview: getRowNumber(row, [
-      "leadsToInterview",
-      "leads_to_interview",
-      "targetLeads",
-      "target_leads",
-    ]),
+  const yieldPct = getRowNumber(
+    row,
+    ["yieldPct", "yield_pct", "interviewYield", "interview_yield"],
+    leadsToInterview > 0
+      ? (interviewsCompleted / leadsToInterview) * 100
+      : 0,
+  );
 
-    acceptedJoToNhoCount: getRowNumber(row, [
-      "acceptedJoToNhoCount",
-      "accepted_jo_to_nho_count",
-      "attritionInterviewToNhoCount",
-      "attrition_interview_to_nho_count",
-    ]),
-    acceptedJoToNhoPercent: getRowNumber(row, [
-      "acceptedJoToNhoPercent",
-      "accepted_jo_to_nho_percent",
-      "attritionInterviewToNhoPercent",
-      "attrition_interview_to_nho_percent",
-    ]),
+  const goLive = getRowNumber(row, [
+    "goLive",
+    "go_live",
+    "goLiveCount",
+    "go_live_count",
+    "projectedToBeEndorsed",
+    "projected_to_be_endorsed",
+  ]);
 
-    nhoToFstCount: getRowNumber(row, [
-      "nhoToFstCount",
-      "nho_to_fst_count",
-      "attritionNhoToFstCount",
-      "attrition_nho_to_fst_count",
-    ]),
-    nhoToFstPercent: getRowNumber(row, [
-      "nhoToFstPercent",
-      "nho_to_fst_percent",
-      "attritionNhoToFstPercent",
-      "attrition_nho_to_fst_percent",
-    ]),
-
-    fstToPstCount: getRowNumber(row, [
-      "fstToPstCount",
-      "fst_to_pst_count",
-      "attritionFstToPstCount",
-      "attrition_fst_to_pst_count",
-    ]),
-    fstToPstPercent: getRowNumber(row, [
-      "fstToPstPercent",
-      "fst_to_pst_percent",
-      "attritionFstToPstPercent",
-      "attrition_fst_to_pst_percent",
-    ]),
-
-    nhoToPstCount: getRowNumber(row, [
-      "nhoToPstCount",
-      "nho_to_pst_count",
-      "attritionNhoToPstCount",
-      "attrition_nho_to_pst_count",
-      "attritionNhoToFstPstCount",
-      "attrition_nho_to_fst_pst_count",
-    ]),
-    nhoToPstPercent: getRowNumber(row, [
-      "nhoToPstPercent",
-      "nho_to_pst_percent",
-      "attritionNhoToPstPercent",
-      "attrition_nho_to_pst_percent",
-      "attritionNhoToFstPstPercent",
-      "attrition_nho_to_fst_pst_percent",
-    ]),
-
-    pstToGoLiveCount: getRowNumber(row, [
-      "pstToGoLiveCount",
-      "pst_to_go_live_count",
-      "attritionPstToGoLiveCount",
-      "attrition_pst_to_go_live_count",
-    ]),
-    pstToGoLivePercent: getRowNumber(row, [
-      "pstToGoLivePercent",
-      "pst_to_go_live_percent",
-      "attritionPstToGoLivePercent",
-      "attrition_pst_to_go_live_percent",
-    ]),
+  return {
+    ...row,
+    weekLabel: getWeekLabel(row, index),
+    acceptedJo,
+    nho: getRowNumber(row, ["nho", "nhoCount", "nho_count"]),
+    fst: getRowNumber(row, ["fst", "fstCount", "fst_count"]),
+    pst: getRowNumber(row, ["pst", "pstCount", "pst_count"]),
+    goLive,
+    hiredCount: getRowNumber(
+      row,
+      ["hiredCount", "hired_count", "hired"],
+      goLive,
+    ),
+    leadsToInterview,
+    interviewsCompleted,
+    hiringRate,
+    yieldPct,
+    targetFloor: getRowNumber(
+      row,
+      ["targetFloor", "target_floor", "hiringRateTarget", "hiring_rate_target"],
+      20,
+    ),
   };
 }
 
-function getNormalizedGraphRows(rows = []) {
+function getNormalizedRows(rows = []) {
   return (Array.isArray(rows) ? rows : []).map(normalizeGraphRow);
 }
 
 function getPipelineDrop(fromValue, toValue) {
-  const count = Math.max(0, Math.round(fromValue - toValue));
+  const count = Math.max(0, Math.round(safeNumber(fromValue) - safeNumber(toValue)));
   const percent = fromValue > 0 ? (count / fromValue) * 100 : 0;
 
-  return {
-    count,
-    percent,
-  };
+  return { count, percent };
 }
 
-function getPipelineSourceRow(rows = []) {
-  if (!rows.length) return {};
+function getPipelineSummary(rows = []) {
+  if (!rows.length) {
+    return {
+      acceptedJo: 0,
+      nho: 0,
+      fst: 0,
+      pst: 0,
+      goLive: 0,
+      drops: [],
+      totalLosses: 0,
+      overallConversion: 0,
+      cumulativeLossRate: 0,
+    };
+  }
 
-  /*
-    Match the forecast table TOTAL / AVG. row.
-
-    The pipeline graph is a TOTAL (6 weeks) visual, so it must not use the
-    last forecast week only. It uses the same Excel-style average:
-    average the six weekly count columns first, round them, then derive drops.
-  */
   const acceptedJo = Math.round(averageRows(rows, "acceptedJo"));
   const nho = Math.round(averageRows(rows, "nho"));
   const fst = Math.round(averageRows(rows, "fst"));
   const pst = Math.round(averageRows(rows, "pst"));
   const goLive = Math.round(averageRows(rows, "goLive"));
-  const hiredCount = Math.round(averageRows(rows, "hiredCount"));
-  const leadsToInterview = Math.round(averageRows(rows, "leadsToInterview"));
 
-  const hiringRate = acceptedJo > 0 ? (fst / acceptedJo) * 100 : 0;
+  const drops = [
+    { label: "JO → NHO", ...getPipelineDrop(acceptedJo, nho) },
+    { label: "NHO → FST", ...getPipelineDrop(nho, fst) },
+    { label: "FST → PST", ...getPipelineDrop(fst, pst) },
+    { label: "PST → Go Live", ...getPipelineDrop(pst, goLive) },
+  ];
 
-  const acceptedJoToNho = getPipelineDrop(acceptedJo, nho);
-  const nhoToFst = getPipelineDrop(nho, fst);
-  const fstToPst = getPipelineDrop(fst, pst);
-  const nhoToPst = getPipelineDrop(nho, pst);
-  const pstToGoLive = getPipelineDrop(pst, goLive);
+  const totalLosses = Math.max(0, acceptedJo - goLive);
+  const overallConversion = acceptedJo > 0 ? (goLive / acceptedJo) * 100 : 0;
+  const cumulativeLossRate = acceptedJo > 0 ? (totalLosses / acceptedJo) * 100 : 0;
 
   return {
     acceptedJo,
@@ -247,521 +230,691 @@ function getPipelineSourceRow(rows = []) {
     fst,
     pst,
     goLive,
-    hiredCount,
-    hiringRate,
-    leadsToInterview,
-
-    acceptedJoToNhoCount: acceptedJoToNho.count,
-    acceptedJoToNhoPercent: acceptedJoToNho.percent,
-
-    nhoToFstCount: nhoToFst.count,
-    nhoToFstPercent: nhoToFst.percent,
-
-    fstToPstCount: fstToPst.count,
-    fstToPstPercent: fstToPst.percent,
-
-    nhoToPstCount: nhoToPst.count,
-    nhoToPstPercent: nhoToPst.percent,
-
-    pstToGoLiveCount: pstToGoLive.count,
-    pstToGoLivePercent: pstToGoLive.percent,
+    drops,
+    totalLosses,
+    overallConversion,
+    cumulativeLossRate,
   };
 }
 
-function getTrendPointLabel(row = {}, index = 0) {
-  const weekStart = getWeekStart(row);
-  const weekNumber =
-    row?.weekNumber || row?.week_number || getWeekNumberFromDate(weekStart);
-
-  return weekNumber ? String(weekNumber) : String(index + 1);
-}
-
-function GraphCard({ title, children }) {
+function AnalyticsCard({
+  icon: Icon,
+  iconClassName,
+  iconBoxClassName,
+  title,
+  subtitle,
+  badge,
+  badgeClassName,
+  children,
+  footerLabel,
+  footerValue,
+  footerValueClassName,
+}) {
   return (
-    <div className="flex h-[300px] min-h-[300px] flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="shrink-0 text-sm font-extrabold uppercase tracking-tight text-sibs-primary-90">
-        {title}
-      </h3>
+    <article className="flex h-full min-h-[390px] flex-col overflow-hidden rounded-[18px] border border-[#DDE5EE] bg-white p-4 shadow-[0_2px_5px_rgba(15,23,42,0.08)]">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[#E9EEF4] pb-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-xs font-extrabold leading-5 text-[#042C51]">
+            {title}
+          </h3>
+          <p className="truncate text-[10px] font-semibold leading-4 text-[#6B88A8]">
+            {subtitle}
+          </p>
+        </div>
 
-      <div className="mt-2 flex min-h-0 flex-1 flex-col justify-between">
-        {children}
+        <span
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${badgeClassName}`}
+        >
+          {badge}
+        </span>
       </div>
-    </div>
+
+      <div className="flex min-h-0 flex-1 flex-col py-4">{children}</div>
+
+      <div className="mt-auto flex shrink-0 items-center justify-between gap-3 border-t border-[#E9EEF4] pt-3 text-[10px]">
+        <span className="font-medium text-[#6B88A8]">{footerLabel}:</span>
+        <strong className={`text-right font-extrabold ${footerValueClassName}`}>
+          {footerValue}
+        </strong>
+      </div>
+    </article>
   );
 }
 
-function MiniPipelineFlowGraph({ rows = [] }) {
-  const pipelineSourceRow = getPipelineSourceRow(rows);
-
+function PipelineFlowVisual({ pipeline }) {
   const stages = [
-    {
-      key: "acceptedJo",
-      label: "Accepted\nJob Offer",
-      color: "#1E5FC6",
-    },
-    {
-      key: "nho",
-      label: "NHO\nCount",
-      color: "#6B4AA3",
-    },
-    {
-      key: "fst",
-      label: "FST\nCount",
-      color: "#0C9297",
-    },
-    {
-      key: "pst",
-      label: "PST\nCount",
-      color: "#F5820B",
-    },
-    {
-      key: "goLive",
-      label: "Go Live",
-      color: "#4D9531",
-    },
+    { key: "acceptedJo", lines: ["Accepted", "Job Offer"], color: "#042C51" },
+    { key: "nho", lines: ["NHO", "Count"], color: "#2563EB" },
+    { key: "fst", lines: ["FST", "Count"], color: "#0D9488" },
+    { key: "pst", lines: ["PST", "Count"], color: "#F97316" },
+    { key: "goLive", lines: ["Go", "Live"], color: "#15803D" },
   ].map((stage) => ({
     ...stage,
-    value: Math.round(safeNumber(pipelineSourceRow?.[stage.key])),
+    value: safeNumber(pipeline?.[stage.key]),
   }));
 
-  const getDropCount = (fromValue, toValue, explicitKey) => {
-    const explicitCount = Math.round(
-      safeNumber(pipelineSourceRow?.[explicitKey]),
-    );
-
-    if (explicitCount > 0) return explicitCount;
-
-    return Math.max(0, Math.round(fromValue - toValue));
-  };
-
-  const getDropPercent = (dropCount, fromValue, explicitKey) => {
-    const explicitPercent = safeNumber(pipelineSourceRow?.[explicitKey]);
-
-    if (explicitPercent > 0) return explicitPercent;
-
-    return fromValue > 0 ? (dropCount / fromValue) * 100 : 0;
-  };
-
-  const drops = [
-    {
-      from: stages[0].value,
-      to: stages[1].value,
-      countKey: "acceptedJoToNhoCount",
-      percentKey: "acceptedJoToNhoPercent",
-    },
-    {
-      from: stages[1].value,
-      to: stages[2].value,
-      countKey: "nhoToFstCount",
-      percentKey: "nhoToFstPercent",
-    },
-    {
-      from: stages[2].value,
-      to: stages[3].value,
-      countKey: "fstToPstCount",
-      percentKey: "fstToPstPercent",
-    },
-    {
-      from: stages[3].value,
-      to: stages[4].value,
-      countKey: "pstToGoLiveCount",
-      percentKey: "pstToGoLivePercent",
-    },
-  ].map((drop) => {
-    const count = getDropCount(drop.from, drop.to, drop.countKey);
-
-    return {
-      ...drop,
-      count,
-      percent: getDropPercent(count, drop.from, drop.percentKey),
-    };
-  });
-
   const maxValue = Math.max(...stages.map((stage) => stage.value), 1);
-
-  /*
-    Tight SVG layout:
-    - Smaller viewBox height removes the large blank space below the graph.
-    - Footer/legend is outside the SVG and pinned at the bottom of the card.
-    - The graph area is compact but still keeps labels, arrows, and drop values.
-  */
-  const chartWidth = 440;
-  const chartHeight = 205;
-  const baseY = 200;
-  const minHeight = 62;
-  const maxHeight = 160;
-  const barWidth = 48;
-  const gap = 40;
-  const startX = 20;
-  const connectorTopOffset = 0;
-  const connectorBottomOffset = 0;
+  const width = 760;
+  const height = 255;
+  const baseY = 174;
+  const barWidth = 70;
+  const gap = 80;
+  const startX = 25;
+  const minHeight = 72;
+  const maxHeight = 118;
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col">
-      <div className="flex min-h-0 flex-1 items-end justify-center pb-1">
-        <svg
-          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          className="h-[215px] w-full"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {stages.map((stage, index) => {
-            const x = startX + index * (barWidth + gap);
-            const height =
-              minHeight + (stage.value / maxValue) * (maxHeight - minHeight);
-            const y = baseY - height;
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-[245px] w-full">
+      {stages.map((stage, index) => {
+        const x = startX + index * (barWidth + gap);
+        const barHeight =
+          minHeight + (stage.value / maxValue) * (maxHeight - minHeight);
+        const y = baseY - barHeight;
+        const nextStage = stages[index + 1];
+        const nextX = startX + (index + 1) * (barWidth + gap);
+        const nextHeight = nextStage
+          ? minHeight + (nextStage.value / maxValue) * (maxHeight - minHeight)
+          : barHeight;
+        const nextY = baseY - nextHeight;
+        const drop = pipeline.drops[index];
+        const dropX = (x + barWidth + nextX) / 2;
 
-            const nextX = startX + (index + 1) * (barWidth + gap);
-            const nextStage = stages[index + 1];
-            const nextHeight = nextStage
-              ? minHeight +
-                (nextStage.value / maxValue) * (maxHeight - minHeight)
-              : height;
-            const nextY = baseY - nextHeight;
+        return (
+          <g key={stage.key}>
+            <text
+              x={x + barWidth / 2}
+              y="18"
+              textAnchor="middle"
+              fill="#042C51"
+              fontSize="10"
+              fontWeight="800"
+            >
+              <tspan x={x + barWidth / 2}>{stage.lines[0]}</tspan>
+              <tspan x={x + barWidth / 2} dy="11" fill="#6B88A8" fontSize="8.5">
+                {stage.lines[1]}
+              </tspan>
+            </text>
 
-            const drop = drops[index];
-            const dropX = (x + barWidth + nextX) / 2;
-            const connectorFill = nextY < y ? "#DDF5EB" : "#FAEEDC";
-            const connectorStroke = nextY < y ? "#8ED7B5" : "#E8C89C";
+            {nextStage ? (
+              <polygon
+                points={`${x + barWidth},${y} ${nextX},${nextY} ${nextX},${baseY} ${x + barWidth},${baseY}`}
+                fill="#FDEAEA"
+                stroke="#F8CACA"
+                strokeWidth="0.6"
+              />
+            ) : null}
 
-            return (
-              <g key={stage.key}>
-                <text
-                  x={x + barWidth / 2}
-                  y="15"
-                  textAnchor="middle"
-                  className="fill-sibs-primary-90 text-[8.5px] font-extrabold"
-                >
-                  {stage.label.split("\n").map((line, lineIndex) => (
-                    <tspan
-                      key={line}
-                      x={x + barWidth / 2}
-                      dy={lineIndex ? 9 : 0}
-                    >
-                      {line}
-                    </tspan>
-                  ))}
-                </text>
+            <rect
+              x={x}
+              y={y}
+              width={barWidth}
+              height={barHeight}
+              rx="4"
+              fill={stage.color}
+            />
 
-                {index < stages.length - 1 ? (
-                  <polygon
-                    points={`${x + barWidth},${y + connectorTopOffset} ${
-                      nextX
-                    },${nextY + connectorTopOffset} ${nextX},${
-                      nextY + nextHeight - connectorBottomOffset
-                    } ${x + barWidth},${y + height - connectorBottomOffset}`}
-                    fill={connectorFill}
-                    stroke={connectorStroke}
-                    strokeWidth="0.7"
-                    opacity="0.95"
-                  />
-                ) : null}
+            <text
+              x={x + barWidth / 2}
+              y={y + barHeight / 2 + 4}
+              textAnchor="middle"
+              fill="#FFFFFF"
+              fontSize="14"
+              fontWeight="900"
+            >
+              {formatOverviewNumber(stage.value)}
+            </text>
 
-                <rect
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={height}
-                  rx="2"
-                  fill={stage.color}
-                />
+            <line
+              x1={x + barWidth / 2}
+              x2={x + barWidth / 2}
+              y1={baseY + 7}
+              y2={baseY + 18}
+              stroke="#94A3B8"
+              strokeWidth="0.9"
+            />
+            <path
+              d={`M ${x + barWidth / 2 - 3} ${baseY + 13} L ${x + barWidth / 2} ${baseY + 7} L ${x + barWidth / 2 + 3} ${baseY + 9}`}
+              fill="none"
+              stroke="#94A3B8"
+              strokeWidth="0.9"
+            />
 
-                <text
-                  x={x + barWidth / 2}
-                  y={y + height / 2 + 4}
-                  textAnchor="middle"
-                  className="fill-white text-[12px] font-extrabold"
-                >
-                  {formatOverviewNumber(stage.value)}
-                </text>
+            {drop ? (
+              <text
+                x={dropX}
+                y={baseY + 27}
+                textAnchor="middle"
+                fill="#DC2626"
+                fontSize="8.5"
+                fontWeight="800"
+              >
+                -{formatOverviewNumber(drop.count)} (-{drop.percent.toFixed(2)}%)
+              </text>
+            ) : null}
+          </g>
+        );
+      })}
 
-                <line
-                  x1={x + barWidth / 2}
-                  x2={x + barWidth / 2}
-                  y1={baseY + 8}
-                  y2={baseY + 17}
-                  stroke="#A9B8C8"
-                  strokeWidth="1"
-                />
-                <path
-                  d={`M ${x + barWidth / 2 - 3.5} ${baseY + 12} L ${
-                    x + barWidth / 2
-                  } ${baseY + 8} L ${x + barWidth / 2 + 3.5} ${baseY + 12}`}
-                  fill="none"
-                  stroke="#A9B8C8"
-                  strokeWidth="1"
-                />
-
-                {drop ? (
-                  <text
-                    x={dropX}
-                    y={baseY + 27}
-                    textAnchor="middle"
-                    className="fill-red-600 text-[7.8px] font-extrabold"
-                  >
-                    <tspan x={dropX}>-{formatOverviewNumber(drop.count)}</tspan>
-                    <tspan x={dropX} dy="9">
-                      ({formatOverviewPercent(drop.percent)})
-                    </tspan>
-                  </text>
-                ) : null}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      <div className="mt-auto flex h-5 shrink-0 items-center justify-center pt-1 text-[9.5px] font-extrabold text-red-600">
+      <text
+        x={width / 2}
+        y={height - 10}
+        textAnchor="middle"
+        fill="#DC2626"
+        fontSize="10"
+        fontWeight="800"
+      >
         Drop = Attrition Count (% Attrition)
-      </div>
-    </div>
+      </text>
+    </svg>
   );
 }
 
-function MiniAttritionStageGraph({ rows = [] }) {
-  const pipelineSourceRow = getPipelineSourceRow(rows);
-
-  function getStage({ label, countKey, percentKey }) {
-    return {
-      label,
-      count: Math.round(safeNumber(pipelineSourceRow?.[countKey])),
-      percent: safeNumber(pipelineSourceRow?.[percentKey]),
-    };
-  }
-
-  /*
-    Use the same averaged pipeline source as the Pipeline Flow graph.
-    This keeps Attrition by Stage matched with the graph bars and the
-    forecast table TOTAL / AVG. values.
-  */
-  const stages = [
-    getStage({
-      label: "Accepted JO → NHO",
-      countKey: "acceptedJoToNhoCount",
-      percentKey: "acceptedJoToNhoPercent",
-    }),
-    getStage({
-      label: "NHO → FST",
-      countKey: "nhoToFstCount",
-      percentKey: "nhoToFstPercent",
-    }),
-    getStage({
-      label: "FST → PST",
-      countKey: "fstToPstCount",
-      percentKey: "fstToPstPercent",
-    }),
-    getStage({
-      label: "NHO → PST",
-      countKey: "nhoToPstCount",
-      percentKey: "nhoToPstPercent",
-    }),
-    getStage({
-      label: "PST → Go Live",
-      countKey: "pstToGoLiveCount",
-      percentKey: "pstToGoLivePercent",
-    }),
-  ];
-
-  const maxCount = Math.max(...stages.map((stage) => stage.count), 1);
-
+function AttritionStageList({ drops = [] }) {
   return (
-    <div className="flex h-[220px] w-full flex-col overflow-hidden rounded-lg border border-slate-100">
-      <div className="grid grid-cols-[1.5fr_0.75fr_0.75fr_0.7fr] bg-slate-50 px-3 py-2 text-[10px] font-extrabold text-sibs-primary-90">
-        <span>Stage</span>
-        <span className="text-center">Attrition Count</span>
-        <span className="text-center">Attrition %</span>
-        <span />
-      </div>
-
-      {stages.map((stage) => (
+    <div className="flex flex-1 flex-col justify-center gap-3">
+      {drops.map((drop) => (
         <div
-          key={stage.label}
-          className="grid flex-1 grid-cols-[1.5fr_0.75fr_0.75fr_0.7fr] items-center border-t border-slate-100 px-3 text-[11px] font-semibold text-sibs-primary-90"
+          key={drop.label}
+          className="flex items-center justify-between gap-3 rounded-[7px] border border-[#E9EEF4] bg-[#F8FAFC] px-3 py-3"
         >
-          <span>{stage.label}</span>
-          <span className="text-center font-extrabold text-red-600">
-            {formatOverviewNumber(stage.count)}
+          <span className="text-[11px] font-semibold text-[#344054]">
+            {drop.label}:
           </span>
-          <span className="text-center">
-            {formatOverviewPercent(stage.percent)}
-          </span>
-          <span className="h-2 rounded-full bg-red-50">
-            <span
-              className="block h-2 rounded-full bg-red-600"
-              style={{
-                width:
-                  stage.count > 0
-                    ? `${Math.max(4, (stage.count / maxCount) * 100)}%`
-                    : "2px",
-              }}
-            />
-          </span>
+          <strong className="text-right text-[10px] font-extrabold text-rose-600">
+            {formatOverviewNumber(drop.count)} candidates ({formatPercent(drop.percent, 1)})
+          </strong>
         </div>
       ))}
     </div>
   );
 }
 
-function MiniLineTrendGraph({
-  rows = [],
-  legendLabel,
-  valueKey,
-  color = "#6D28D9",
-  valueSuffix = "",
-  yMax,
-}) {
-  const width = 360;
-  const height = 168;
-  const padLeft = 44;
-  const padRight = 18;
-  const padTop = 20;
-  const padBottom = 30;
+function LeadsTrendChart({ rows = [] }) {
+  const [activeIndex, setActiveIndex] = useState(null);
+  const width = 760;
+  const height = 250;
+  const padLeft = 46;
+  const padRight = 24;
+  const padTop = 38;
+  const padBottom = 34;
 
-  const points = rows.map((row, index) => ({
-    label: getTrendPointLabel(row, index),
-    value: safeNumber(row?.[valueKey]),
-  }));
-
-  const maxValue = yMax || Math.max(...points.map((point) => point.value), 1);
-  const minValue = 0;
+  const maxInterview = Math.max(
+    1,
+    ...rows.map((row) => safeNumber(row.interviewsCompleted)),
+  );
+  const maxLead = Math.max(1, ...rows.map((row) => safeNumber(row.leadsToInterview)));
+  const yMax = Math.max(100, Math.ceil(maxInterview / 25) * 25);
+  const leadScale = maxLead > 0 ? maxLead / yMax : 1;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((ratio) =>
+    Math.round(yMax * ratio),
+  );
 
   function getX(index) {
-    if (points.length <= 1) return padLeft;
+    if (rows.length <= 1) return padLeft;
 
-    return (
-      padLeft + (index / (points.length - 1)) * (width - padLeft - padRight)
-    );
+    return padLeft + (index / (rows.length - 1)) * (width - padLeft - padRight);
   }
 
   function getY(value) {
-    const range = maxValue - minValue || 1;
-
     return (
-      padTop + ((maxValue - value) / range) * (height - padTop - padBottom)
+      height -
+      padBottom -
+      (safeNumber(value) / yMax) * (height - padTop - padBottom)
     );
   }
 
-  const path = points
+  const interviewPath = rows
     .map(
-      (point, index) =>
-        `${index === 0 ? "M" : "L"} ${getX(index)} ${getY(point.value)}`,
+      (row, index) =>
+        `${index === 0 ? "M" : "L"} ${getX(index)} ${getY(row.interviewsCompleted)}`,
     )
     .join(" ");
 
+  const leadPath = rows
+    .map(
+      (row, index) =>
+        `${index === 0 ? "M" : "L"} ${getX(index)} ${getY(row.leadsToInterview / leadScale)}`,
+    )
+    .join(" ");
+
+  const activeRow = activeIndex !== null ? rows[activeIndex] : null;
+
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col justify-between">
-      <div className="flex h-[220px] min-h-0 items-center justify-center">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full">
-          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-            const y = padTop + ratio * (height - padTop - padBottom);
-            const value = maxValue - ratio * (maxValue - minValue);
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-[245px] w-full">
+        {ticks.map((tick) => {
+          const y = getY(tick);
 
-            return (
-              <g key={ratio}>
-                <line
-                  x1={padLeft}
-                  x2={width - padRight}
-                  y1={y}
-                  y2={y}
-                  stroke="#E2E8F0"
-                  strokeWidth="1"
-                />
-                <text
-                  x={padLeft - 8}
-                  y={y + 4}
-                  textAnchor="end"
-                  className="fill-sibs-primary-90 text-[9px] font-bold"
-                >
-                  {valueSuffix === "%"
-                    ? `${Math.round(value)}%`
-                    : formatOverviewNumber(value)}
-                </text>
-              </g>
-            );
-          })}
+          return (
+            <g key={tick}>
+              <line
+                x1={padLeft}
+                y1={y}
+                x2={width - padRight}
+                y2={y}
+                stroke="#E8EDF3"
+                strokeWidth="1"
+              />
+              <text
+                x={padLeft - 7}
+                y={y + 3}
+                textAnchor="end"
+                fill="#0F172A"
+                fontSize="10"
+                fontWeight="700"
+              >
+                {tick}
+              </text>
+            </g>
+          );
+        })}
 
-          <path d={path} fill="none" stroke={color} strokeWidth="3" />
-
-          {points.map((point, index) => {
-            const x = getX(index);
-            const y = getY(point.value);
-
-            return (
-              <g key={`${point.label}-${index}`}>
-                <circle cx={x} cy={y} r="4" fill={color} />
-                <text
-                  x={x}
-                  y={y - 10}
-                  textAnchor="middle"
-                  className="fill-sibs-primary-90 text-[9px] font-extrabold"
-                >
-                  {valueSuffix === "%"
-                    ? `${point.value.toFixed(1)}%`
-                    : formatOverviewNumber(point.value)}
-                </text>
-                <text
-                  x={x}
-                  y={height - 7}
-                  textAnchor="middle"
-                  className="fill-sibs-primary-80 text-[9px] font-bold"
-                >
-                  {point.label}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      <div className="mt-auto flex h-5 shrink-0 items-center justify-center gap-2 pt-1 text-[11px] font-bold text-sibs-primary-90">
-        <span
-          className="h-2 w-5 rounded-full"
-          style={{ backgroundColor: color }}
+        <path
+          d={leadPath}
+          fill="none"
+          stroke="#C084FC"
+          strokeWidth="2"
+          strokeDasharray="4 3"
+          opacity="0.65"
         />
-        <span>{legendLabel}</span>
-      </div>
+
+        <path
+          d={interviewPath}
+          fill="none"
+          stroke="#7C3AED"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {rows.map((row, index) => {
+          const x = getX(index);
+          const y = getY(row.interviewsCompleted);
+
+          return (
+            <g
+              key={`${row.weekLabel}-${index}`}
+              onMouseEnter={() => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(null)}
+              className="cursor-pointer"
+            >
+              <rect
+                x={x - 16}
+                y={padTop - 10}
+                width="32"
+                height={height - padTop - padBottom + 18}
+                fill="transparent"
+              />
+              <text
+                x={x}
+                y={y - 8}
+                textAnchor="middle"
+                fill="#0F172A"
+                fontSize="11"
+                fontWeight="800"
+              >
+                {formatOverviewNumber(row.interviewsCompleted)}
+              </text>
+              <circle cx={x} cy={y} r="5" fill="#7C3AED" stroke="#FFFFFF" strokeWidth="1.5" />
+              <text
+                x={x}
+                y={height - 5}
+                textAnchor="middle"
+                fill="#64748B"
+                fontSize="10"
+                fontWeight="700"
+              >
+                {row.weekLabel}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+
+      {activeRow ? (
+        <div className="pointer-events-none absolute right-0 top-0 min-w-[124px] rounded-[8px] border border-purple-700 bg-[#042C51] px-2.5 py-2 text-[8px] font-semibold text-white shadow-xl">
+          <p className="border-b border-purple-700/70 pb-1 font-extrabold text-purple-300">
+            {activeRow.weekLabel} Details
+          </p>
+          <div className="mt-1 space-y-1 font-mono">
+            <p className="flex justify-between gap-3">
+              <span className="text-purple-300">Interviews:</span>
+              <strong>{formatOverviewNumber(activeRow.interviewsCompleted)}</strong>
+            </p>
+            <p className="flex justify-between gap-3">
+              <span className="text-slate-300">Total Leads:</span>
+              <strong>{formatOverviewNumber(activeRow.leadsToInterview)}</strong>
+            </p>
+            <p className="flex justify-between gap-3">
+              <span className="text-emerald-300">Yield %:</span>
+              <strong className="text-emerald-400">
+                {formatPercent(activeRow.yieldPct, 1)}
+              </strong>
+            </p>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function HiringRateTrendChart({ rows = [] }) {
+  const [activeIndex, setActiveIndex] = useState(null);
+  const width = 760;
+  const height = 250;
+  const padLeft = 50;
+  const padRight = 24;
+  const padTop = 38;
+  const padBottom = 34;
+
+  const minRate = Math.min(10, ...rows.map((row) => safeNumber(row.hiringRate)));
+  const maxRate = Math.max(
+    25,
+    ...rows.map((row) => safeNumber(row.hiringRate)),
+    ...rows.map((row) => safeNumber(row.targetFloor)),
+  );
+  const yMin = Math.floor(minRate / 5) * 5;
+  const yMax = Math.ceil(maxRate / 5) * 5;
+  const range = Math.max(5, yMax - yMin);
+  const tickStep = range / 3;
+  const ticks = [0, 1, 2, 3].map((index) => yMin + tickStep * index);
+
+  function getX(index) {
+    if (rows.length <= 1) return padLeft;
+
+    return padLeft + (index / (rows.length - 1)) * (width - padLeft - padRight);
+  }
+
+  function getY(value) {
+    return (
+      height -
+      padBottom -
+      ((safeNumber(value) - yMin) / range) * (height - padTop - padBottom)
+    );
+  }
+
+  const ratePath = rows
+    .map(
+      (row, index) =>
+        `${index === 0 ? "M" : "L"} ${getX(index)} ${getY(row.hiringRate)}`,
+    )
+    .join(" ");
+
+  const targetFloor = rows.length
+    ? averageRows(rows, "targetFloor") || 20
+    : 20;
+  const targetY = getY(targetFloor);
+  const activeRow = activeIndex !== null ? rows[activeIndex] : null;
+
+  return (
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-[245px] w-full">
+        {ticks.map((tick) => {
+          const y = getY(tick);
+
+          return (
+            <g key={tick}>
+              <line
+                x1={padLeft}
+                y1={y}
+                x2={width - padRight}
+                y2={y}
+                stroke="#E8EDF3"
+                strokeWidth="1"
+              />
+              <text
+                x={padLeft - 7}
+                y={y + 3}
+                textAnchor="end"
+                fill="#0F172A"
+                fontSize="10"
+                fontWeight="700"
+              >
+                {Math.round(tick)}%
+              </text>
+            </g>
+          );
+        })}
+
+        <line
+          x1={padLeft}
+          y1={targetY}
+          x2={width - padRight}
+          y2={targetY}
+          stroke="#F59E0B"
+          strokeWidth="1.8"
+          strokeDasharray="3 2"
+        />
+
+        <path
+          d={ratePath}
+          fill="none"
+          stroke="#0D9488"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {rows.map((row, index) => {
+          const x = getX(index);
+          const y = getY(row.hiringRate);
+
+          return (
+            <g
+              key={`${row.weekLabel}-${index}`}
+              onMouseEnter={() => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(null)}
+              className="cursor-pointer"
+            >
+              <rect
+                x={x - 16}
+                y={padTop - 10}
+                width="32"
+                height={height - padTop - padBottom + 18}
+                fill="transparent"
+              />
+              <text
+                x={x}
+                y={y - 8}
+                textAnchor="middle"
+                fill="#0F172A"
+                fontSize="11"
+                fontWeight="800"
+              >
+                {formatPercent(row.hiringRate, 1)}
+              </text>
+              <circle cx={x} cy={y} r="5" fill="#0D9488" stroke="#FFFFFF" strokeWidth="1.5" />
+              <text
+                x={x}
+                y={height - 5}
+                textAnchor="middle"
+                fill="#64748B"
+                fontSize="10"
+                fontWeight="700"
+              >
+                {row.weekLabel}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+
+      {activeRow ? (
+        <div className="pointer-events-none absolute right-0 top-0 min-w-[128px] rounded-[8px] border border-teal-700 bg-[#042C51] px-2.5 py-2 text-[8px] font-semibold text-white shadow-xl">
+          <p className="border-b border-teal-700/70 pb-1 font-extrabold text-teal-300">
+            {activeRow.weekLabel} Yield Details
+          </p>
+          <div className="mt-1 space-y-1 font-mono">
+            <p className="flex justify-between gap-3">
+              <span className="text-teal-300">Hiring Rate:</span>
+              <strong>{formatPercent(activeRow.hiringRate, 1)}</strong>
+            </p>
+            <p className="flex justify-between gap-3">
+              <span className="text-amber-300">Target Floor:</span>
+              <strong className="text-amber-200">
+                {formatPercent(activeRow.targetFloor, 0)}
+              </strong>
+            </p>
+            <p className="flex justify-between gap-3">
+              <span className="text-emerald-300">Deployed Hires:</span>
+              <strong className="text-emerald-400">
+                {formatOverviewNumber(activeRow.hiredCount)}
+              </strong>
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
 export default function ForecastBottomGraphs({ rows = [] }) {
-  const graphRows = getNormalizedGraphRows(rows);
+  const graphRows = useMemo(() => getNormalizedRows(rows), [rows]);
+  const pipeline = useMemo(() => getPipelineSummary(graphRows), [graphRows]);
 
   if (!graphRows.length) return null;
 
+  const totalLeads = Math.round(sumRows(graphRows, "leadsToInterview"));
+  const totalInterviews = Math.round(sumRows(graphRows, "interviewsCompleted"));
+  const averageYield =
+    totalLeads > 0 ? (totalInterviews / totalLeads) * 100 : averageRows(graphRows, "yieldPct");
+  const weeklyAverageLeads = graphRows.length
+    ? Math.round(totalLeads / graphRows.length)
+    : 0;
+  const averageHiringRate = averageRows(graphRows, "hiringRate");
+  const averageTargetFloor = averageRows(graphRows, "targetFloor") || 20;
+  const deployedCount = pipeline.goLive;
+  const isOnTarget = averageHiringRate >= averageTargetFloor;
+
   return (
-    <div className="bg-slate-50/50">
-      <div className="grid grid-cols-1 items-stretch gap-3 xl:grid-cols-4">
-        <GraphCard title="Pipeline Flow – Total (6 Weeks)">
-          <MiniPipelineFlowGraph rows={graphRows} />
-        </GraphCard>
+    <section className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-10">
+        <div className="xl:col-span-7">
+      <AnalyticsCard
+        icon={Workflow}
+        iconBoxClassName="bg-[#042C51]"
+        iconClassName="text-white"
+        title="Pipeline Flow – Total (6 Weeks)"
+        subtitle="6-Week Cumulative Training Funnel"
+        badge={`${formatOverviewNumber(pipeline.acceptedJo)} JO`}
+        badgeClassName="border-blue-100 bg-blue-50 text-blue-700"
+        footerLabel="Overall Conversion"
+        footerValue={`${formatPercent(pipeline.overallConversion, 1)} (JO to Live)`}
+        footerValueClassName="text-[#F97316]"
+      >
+        <PipelineFlowVisual pipeline={pipeline} />
+      </AnalyticsCard>
+        </div>
 
-        <GraphCard title="Attrition by Stage – Total (6 Weeks)">
-          <MiniAttritionStageGraph rows={graphRows} />
-        </GraphCard>
-
-        <GraphCard title="Leads to Interview Trend">
-          <MiniLineTrendGraph
-            rows={graphRows}
-            legendLabel="Leads to Interview (To Generate)"
-            valueKey="leadsToInterview"
-            color="#6D28D9"
-          />
-        </GraphCard>
-
-        <GraphCard title="Hiring Rate Trend">
-          <MiniLineTrendGraph
-            rows={graphRows}
-            legendLabel="Hiring Rate (Leads to JO)"
-            valueKey="hiringRate"
-            color="#0F5CC0"
-            valueSuffix="%"
-            yMax={Math.max(
-              30,
-              ...graphRows.map((row) => safeNumber(row.hiringRate)),
-            )}
-          />
-        </GraphCard>
+        <div className="xl:col-span-3">
+          <AnalyticsCard
+        icon={ShieldAlert}
+        iconBoxClassName="bg-rose-50"
+        iconClassName="text-rose-600"
+        title="Attrition by Stage – Total (6 Weeks)"
+        subtitle="Stage Drop-off Loss Breakdown"
+        badge={`${formatOverviewNumber(pipeline.totalLosses)} Losses`}
+        badgeClassName="border-rose-100 bg-rose-50 text-rose-600"
+        footerLabel="Cumulative Loss Rate"
+        footerValue={`${formatPercent(pipeline.cumulativeLossRate, 1)} Total Drop`}
+        footerValueClassName="text-rose-600"
+      >
+        <AttritionStageList drops={pipeline.drops} />
+      </AnalyticsCard>
+        </div>
       </div>
-    </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <AnalyticsCard
+        icon={UsersRound}
+        iconBoxClassName="bg-violet-50"
+        iconClassName="text-violet-600"
+        title="Leads to Interview Trend"
+        subtitle="6-Week Sourcing Volume & Yield"
+        badge={`${formatOverviewNumber(totalLeads)} Leads`}
+        badgeClassName="border-violet-100 bg-violet-50 text-violet-700"
+        footerLabel="Weekly Avg Sourcing"
+        footerValue={`${formatOverviewNumber(weeklyAverageLeads)} Leads / Wk`}
+        footerValueClassName="text-violet-700"
+      >
+        <div className="mb-1 flex items-end justify-between gap-3">
+          <div>
+            <strong className="text-[20px] font-black leading-none text-[#042C51]">
+              {formatOverviewNumber(totalInterviews)}
+            </strong>
+            <span className="ml-1 text-[8px] font-bold uppercase text-[#6B88A8]">
+              Interviews
+            </span>
+          </div>
+          <strong className="text-[10px] font-extrabold text-violet-600">
+            {formatPercent(averageYield, 1)} Avg Yield
+          </strong>
+        </div>
+
+        <div className="mb-1 flex items-center justify-between gap-3 border-b border-[#E9EEF4] pb-1.5 text-[8px] font-bold">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1 text-violet-700">
+              <span className="h-2 w-2 rounded-full bg-violet-600" />
+              Interviews Completed
+            </span>
+            <span className="inline-flex items-center gap-1 text-[#A78BFA]">
+              <span className="w-3 border-t border-dashed border-[#C084FC]" />
+              Leads Vol (Ref)
+            </span>
+          </div>
+          <span className="text-[#94A3B8]">6-Wk Trend</span>
+        </div>
+
+        <LeadsTrendChart rows={graphRows} />
+      </AnalyticsCard>
+
+      <AnalyticsCard
+        icon={TrendingUp}
+        iconBoxClassName="bg-teal-50"
+        iconClassName="text-teal-600"
+        title="Hiring Rate Trend"
+        subtitle="6-Week Lead-to-JO Yield %"
+        badge={`${formatPercent(averageHiringRate, 1)} Avg`}
+        badgeClassName="border-teal-100 bg-teal-50 text-teal-700"
+        footerLabel="6-Wk Target Status"
+        footerValue={
+          isOnTarget
+            ? `On Target (≥ ${formatPercent(averageTargetFloor, 0)})`
+            : `Below Target (< ${formatPercent(averageTargetFloor, 0)})`
+        }
+        footerValueClassName={isOnTarget ? "text-teal-700" : "text-rose-600"}
+      >
+        <div className="mb-1 flex items-end justify-between gap-3">
+          <div>
+            <strong className="text-[20px] font-black leading-none text-teal-600">
+              {formatPercent(averageHiringRate, 1)}
+            </strong>
+            <span className="ml-1 text-[8px] font-bold uppercase text-[#6B88A8]">
+              JO Yield
+            </span>
+          </div>
+          <strong className="text-[10px] font-extrabold text-emerald-600">
+            {formatOverviewNumber(deployedCount)} Deployed
+          </strong>
+        </div>
+
+        <div className="mb-1 flex items-center justify-between gap-3 border-b border-[#E9EEF4] pb-1.5 text-[8px] font-bold">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1 text-teal-700">
+              <span className="h-2 w-2 rounded-full bg-teal-600" />
+              Hiring Rate %
+            </span>
+            <span className="inline-flex items-center gap-1 text-amber-600">
+              <span className="w-3 border-t border-dashed border-amber-500" />
+              Target Floor (20%)
+            </span>
+          </div>
+          <span className="text-[#94A3B8]">6-Wk Trend</span>
+        </div>
+
+        <HiringRateTrendChart rows={graphRows} />
+      </AnalyticsCard>
+      </div>
+    </section>
   );
 }

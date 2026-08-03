@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { CalendarDays, ChevronDown, ChevronUp, GripHorizontal } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, ChevronUp, GripHorizontal } from "lucide-react";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import { usePagination } from "../../../services/context/PaginationContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
@@ -15,7 +15,7 @@ import {
 } from "../../../lib/utils/workforceHiringOverview/workforceHiringOverviewHelpers";
 
 const DETAILS_ENTITY = "workforce-hiring-overview-details";
-const TABLE_COLUMN_COUNT = 29;
+const TABLE_COLUMN_COUNT = 24;
 
 const HISTORY_FACTORS = [0.88, 0.9, 0.93, 0.95, 0.98, 1];
 const ABSENTEEISM_OFFSETS = [-0.8, -0.6, 0.2, -0.3, 0.1, 0];
@@ -171,10 +171,10 @@ function HeaderTh({
     <th
       rowSpan={rowSpan}
       colSpan={colSpan}
-      className={`sibs-data-table-th border border-[#E6ECF2] px-3 text-center align-middle font-jakarta font-extrabold uppercase tracking-normal text-[#667085] ${
+      className={`sibs-data-table-th border border-slate-200 !px-3 text-center align-middle font-jakarta uppercase tracking-wider ${
         group
-          ? "bg-[#F8FAFC] py-2.5 text-[11px] leading-snug text-[#042C51]"
-          : "bg-[#F8FAFC] py-3 text-[10px] leading-snug"
+          ? "!bg-[#EBF3FA] !py-2 !text-[10px] !font-black !text-sibs-primary-1"
+          : "!bg-[#F8FAFC] !py-2.5 !text-[10px] !font-extrabold !text-slate-500"
       } ${className}`}
     >
       {children}
@@ -182,11 +182,24 @@ function HeaderTh({
   );
 }
 
-function BodyTd({ children, className = "", ...props }) {
+function BodyTd({
+  children,
+  className = "",
+  align = "right",
+  numeric = true,
+  ...props
+}) {
+  const alignmentClass =
+    align === "left"
+      ? "text-left"
+      : align === "center"
+        ? "text-center"
+        : "text-right";
+
   return (
     <td
       {...props}
-      className={`border border-[#E6ECF2] px-3 py-3.5 text-center align-middle font-jakarta text-xs font-semibold leading-snug text-[#344054] ${className}`}
+      className={`whitespace-nowrap border-b border-[#E6ECF2] px-3 py-2.5 align-middle text-xs leading-tight font-jakarta tabular-nums ${alignmentClass} ${className}`}
     >
       {children}
     </td>
@@ -213,22 +226,43 @@ function HistoryTd({ children, className = "" }) {
   );
 }
 
-function SortHeaderButton({ label, active, direction, onClick }) {
+function SortHeaderButton({
+  label,
+  active,
+  direction,
+  onClick,
+  align = "left",
+  className = "",
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       onMouseDown={(event) => event.stopPropagation()}
-      className={`inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 font-jakarta text-[10px] font-extrabold uppercase tracking-normal transition ${
+      className={`inline-flex w-full min-w-0 items-center gap-1 whitespace-nowrap rounded-none bg-transparent p-0 font-jakarta text-[10px] font-extrabold uppercase tracking-wider transition-colors focus:outline-none focus-visible:text-sibs-primary-1 active:bg-transparent ${
+        align === "right"
+          ? "justify-end"
+          : align === "center"
+            ? "justify-center"
+            : "justify-start"
+      } ${
         active
-          ? "bg-[#E9F0FC] text-[#042C51] shadow-sm"
-          : "text-[#042C51] hover:bg-[#F3F6FA]"
-      }`}
+          ? "text-sibs-primary-1"
+          : "text-slate-500 hover:text-sibs-primary-2"
+      } ${className}`}
     >
-      {label}
-      <span className="text-[8px] text-[#FF5C28]">
-        {active ? (direction === "asc" ? "▲" : "▼") : "↕"}
-      </span>
+      <span>{label}</span>
+
+      {active ? (
+        <span
+          aria-hidden="true"
+          className={`h-0 w-0 border-x-[3px] border-x-transparent ${
+            direction === "asc"
+              ? "border-b-[5px] border-b-sibs-primary-1"
+              : "border-t-[5px] border-t-sibs-primary-1"
+          }`}
+        />
+      ) : null}
     </button>
   );
 }
@@ -329,7 +363,7 @@ function buildFilteredTotals(rows = [], fallbackTotals = {}) {
 
 function getBufferColor(value) {
   const numberValue = Number(value || 0);
-  if (numberValue < 0) return "text-rose-600";
+  if (numberValue < 0) return "text-[#E74C3C]";
   if (numberValue > 0) return "text-emerald-600";
   return "text-[#042C51]";
 }
@@ -500,6 +534,21 @@ function normalizeHistoryRow(historyRow = {}, fallbackRow = {}, period = "") {
         getPercent(hiredCount, acceptedJo),
       ),
     ),
+    riskLevel: normalizeRiskLabel(
+      firstDefined(
+        historyRow,
+        [
+          "riskLevel",
+          "risk_level",
+          "risk",
+          "hiringRisk",
+          "hiring_risk",
+          "riskStatus",
+          "risk_status",
+        ],
+        "",
+      ),
+    ),
   };
 }
 
@@ -590,66 +639,487 @@ function getSixWeekHistory(row = {}, selectedWeekNumber = 28) {
   return buildFallbackHistory(row, selectedWeekNumber);
 }
 
-function PerformanceCells({ row }) {
+
+export const ALL_SIX_WEEKS = "All 6 Weeks";
+
+function getPeriodWeekNumber(value) {
+  const match = String(value || "").match(/(?:week|wk)\s*-?\s*(\d+)/i);
+  return match?.[1] ? Number(match[1]) : 0;
+}
+
+export function buildPeriodOptions(selectedWeekNumber = 28) {
+  const currentWeek = Math.max(6, Number(selectedWeekNumber) || 28);
+  const startWeek = currentWeek - 5;
+
+  return [
+    ...Array.from({ length: 6 }, (_, index) => {
+      const weekNumber = startWeek + index;
+      const value = `Week ${weekNumber}`;
+      const isCurrent = weekNumber === currentWeek;
+
+      return {
+        value,
+        weekNumber,
+        isCurrent,
+        label: isCurrent ? `${value} (Current)` : value,
+      };
+    }),
+    {
+      value: ALL_SIX_WEEKS,
+      label: ALL_SIX_WEEKS,
+      weekNumber: null,
+      isCurrent: false,
+    },
+  ];
+}
+
+function buildStageLossMetrics({
+  acceptedJo = 0,
+  nho = 0,
+  fst = 0,
+  pst = 0,
+  goLive = 0,
+} = {}) {
+  const cleanAcceptedJo = toNumber(acceptedJo);
+  const cleanNho = toNumber(nho);
+  const cleanFst = toNumber(fst);
+  const cleanPst = toNumber(pst);
+  const cleanGoLive = toNumber(goLive);
+
+  const joNhoCount = Math.max(0, cleanAcceptedJo - cleanNho);
+  const nhoFstCount = Math.max(0, cleanNho - cleanFst);
+  const fstPstCount = Math.max(0, cleanFst - cleanPst);
+  const nhoPstCount = Math.max(0, cleanNho - cleanPst);
+  const pstGoLiveCount = Math.max(0, cleanPst - cleanGoLive);
+
+  return {
+    joNhoCount,
+    joNhoPercentage: getPercent(joNhoCount, cleanAcceptedJo),
+    nhoFstCount,
+    nhoFstPercentage: getPercent(nhoFstCount, cleanNho),
+    fstPstCount,
+    fstPstPercentage: getPercent(fstPstCount, cleanFst),
+    nhoPstCount,
+    nhoPstPercentage: getPercent(nhoPstCount, cleanNho),
+    pstGoLiveCount,
+    pstGoLivePercentage: getPercent(pstGoLiveCount, cleanPst),
+  };
+}
+
+function clearPeriodRiskAliases(explicitRisk = "") {
+  return {
+    riskLevel: normalizeRiskLabel(explicitRisk),
+    risk_level: undefined,
+    risk: undefined,
+    hiringRisk: undefined,
+    hiring_risk: undefined,
+    riskStatus: undefined,
+    risk_status: undefined,
+  };
+}
+
+function buildSingleWeekDisplayRow(row = {}, historyRow = {}, history = []) {
+  const acceptedJo = toNumber(historyRow.acceptedJo);
+  const nho = toNumber(historyRow.nho);
+  const fst = toNumber(historyRow.fst);
+  const pst = toNumber(historyRow.pst);
+  const goLive = toNumber(historyRow.goLive);
+
+  return {
+    ...row,
+    period: historyRow.period,
+    requiredHeadcount: toNumber(historyRow.requiredHeadcount),
+    actualHeadcount: toNumber(historyRow.actualHeadcount),
+    bufferPercentage: toNumber(historyRow.bufferPercentage),
+    absenteeism: toNumber(historyRow.absenteeism),
+    absenteeismPercentage: toNumber(historyRow.absenteeismPercentage),
+    attrition: toNumber(historyRow.attrition),
+    attritionPercentage: toNumber(historyRow.attritionPercentage),
+    netActualHc: toNumber(historyRow.netActualHc),
+    hiringNeeded: toNumber(historyRow.hiringNeeded),
+    acceptedJo,
+    nho,
+    fst,
+    pst,
+    goLive,
+    hiredCount: toNumber(historyRow.hiredCount),
+    hiringRate: toNumber(historyRow.hiringRate),
+    ...buildStageLossMetrics({ acceptedJo, nho, fst, pst, goLive }),
+    ...clearPeriodRiskAliases(historyRow.riskLevel),
+    history,
+  };
+}
+
+function buildAllWeeksDisplayRow(row = {}, history = []) {
+  const safeHistory = Array.isArray(history) ? history : [];
+  const weekCount = safeHistory.length || 1;
+
+  const totals = safeHistory.reduce(
+    (result, week) => {
+      result.requiredHeadcount += toNumber(week.requiredHeadcount);
+      result.actualHeadcount += toNumber(week.actualHeadcount);
+      result.absenteeism += toNumber(week.absenteeism);
+      result.attrition += toNumber(week.attrition);
+      result.netActualHc += toNumber(week.netActualHc);
+      result.hiringNeeded += toNumber(week.hiringNeeded);
+      result.acceptedJo += toNumber(week.acceptedJo);
+      result.nho += toNumber(week.nho);
+      result.fst += toNumber(week.fst);
+      result.pst += toNumber(week.pst);
+      result.goLive += toNumber(week.goLive);
+      result.hiredCount += toNumber(week.hiredCount);
+      return result;
+    },
+    {
+      requiredHeadcount: 0,
+      actualHeadcount: 0,
+      absenteeism: 0,
+      attrition: 0,
+      netActualHc: 0,
+      hiringNeeded: 0,
+      acceptedJo: 0,
+      nho: 0,
+      fst: 0,
+      pst: 0,
+      goLive: 0,
+      hiredCount: 0,
+    },
+  );
+
+  const requiredHeadcount = totals.requiredHeadcount / weekCount;
+  const actualHeadcount = totals.actualHeadcount / weekCount;
+  const netActualHc = totals.netActualHc / weekCount;
+  const hiringNeeded = totals.hiringNeeded / weekCount;
+
+  return {
+    ...row,
+    period: ALL_SIX_WEEKS,
+    requiredHeadcount,
+    actualHeadcount,
+    bufferPercentage: getPercent(
+      totals.netActualHc - totals.requiredHeadcount,
+      totals.requiredHeadcount,
+    ),
+    absenteeism: totals.absenteeism,
+    absenteeismPercentage: getPercent(
+      totals.absenteeism,
+      totals.actualHeadcount,
+    ),
+    attrition: totals.attrition,
+    attritionPercentage: getPercent(
+      totals.attrition,
+      totals.actualHeadcount,
+    ),
+    netActualHc,
+    hiringNeeded,
+    acceptedJo: totals.acceptedJo,
+    nho: totals.nho,
+    fst: totals.fst,
+    pst: totals.pst,
+    goLive: totals.goLive,
+    hiredCount: totals.hiredCount,
+    hiringRate: getPercent(totals.hiredCount, totals.acceptedJo),
+    ...buildStageLossMetrics(totals),
+    ...clearPeriodRiskAliases(),
+    history: safeHistory,
+  };
+}
+
+export function buildPeriodDisplayRow(
+  row = {},
+  selectedPeriod = "",
+  selectedWeekNumber = 28,
+) {
+  const history = getSixWeekHistory(row, selectedWeekNumber);
+
+  if (selectedPeriod === ALL_SIX_WEEKS) {
+    return buildAllWeeksDisplayRow(row, history);
+  }
+
+  const selectedWeek = getPeriodWeekNumber(selectedPeriod);
+  const matchedHistoryRow =
+    history.find(
+      (week) => getPeriodWeekNumber(week?.period) === selectedWeek,
+    ) || history[history.length - 1];
+
+  if (!matchedHistoryRow) {
+    return {
+      ...row,
+      history,
+    };
+  }
+
+  return buildSingleWeekDisplayRow(row, matchedHistoryRow, history);
+}
+
+function PeriodSelector({ options = [], value = "", onChange }) {
+  return (
+    <div className="inline-flex min-w-0 items-center overflow-hidden rounded-xl border border-[#DDE5EE] bg-[#F3F6FA] p-1.5 font-jakarta">
+      <div className="flex h-8 shrink-0 items-center gap-1.5 px-2.5 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+        <CalendarDays className="h-3.5 w-3.5 text-[#FF5C28]" />
+        <span>Period:</span>
+      </div>
+
+      <div className="no-scrollbar min-w-0 flex-1 overflow-x-auto sm:flex-initial">
+        <div className="flex min-w-max items-center justify-end gap-1.5">
+          {options.map((option) => {
+            const isActive = option.value === value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onChange?.(option.value)}
+                aria-pressed={isActive}
+                className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-lg px-3 text-[10px] font-extrabold leading-tight transition focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/20 ${
+                  isActive
+                    ? "bg-[#042C51] text-white shadow-sm"
+                    : "text-[#52637A] hover:bg-white hover:text-[#FF5C28]"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getStageRetentionPercentage(startValue, endValue) {
+  const start = toNumber(startValue);
+  const end = toNumber(endValue);
+
+  return start > 0 ? (end / start) * 100 : 0;
+}
+
+function formatRetentionPercentage(value, summary = false) {
+  const cleanValue = toNumber(value);
+
+  if (summary) {
+    return cleanValue
+      .toFixed(1)
+      .replace(/\.0$/, "");
+  }
+
+  return String(Math.round(cleanValue));
+}
+
+function getRiskBadgeClasses(riskLabel = "") {
+  if (riskLabel === "Watch") {
+    return "border-blue-100 bg-blue-50 text-blue-700";
+  }
+
+  if (riskLabel === "At Risk") {
+    return "border-amber-100 bg-amber-50 text-amber-700";
+  }
+
+  if (riskLabel === "Critical") {
+    return "border-rose-100 bg-rose-50 text-rose-700";
+  }
+
+  if (riskLabel === "Summary") {
+    return "border-[#042C51] bg-[#042C51] text-white";
+  }
+
+  return "border-emerald-100 bg-emerald-50 text-emerald-700";
+}
+
+function StageConversionCell({
+  dropCount = 0,
+  startCount = 0,
+  endCount = 0,
+  summary = false,
+}) {
+  const retentionPercentage = getStageRetentionPercentage(
+    startCount,
+    endCount,
+  );
+
+  return (
+    <BodyTd align="center">
+      <span className="font-bold text-[#E74C3C]">
+        -{formatOverviewNumber(dropCount)}
+      </span>
+
+      <span
+        className={`ml-1 ${
+          summary
+            ? "font-bold text-[#E74C3C]"
+            : "text-[10px] font-medium text-slate-400"
+        }`}
+      >
+        ({formatRetentionPercentage(retentionPercentage, summary)}%)
+      </span>
+    </BodyTd>
+  );
+}
+
+const BOLD_NUMBER_CLASS = "!font-jakarta !text-xs !font-black !text-[#042C51]";
+
+function PerformanceCells({ row, summary = false }) {
+  const hiringNeeded = toNumber(row.hiringNeeded);
+  const riskLabel = summary ? "Summary" : getWorkforceRiskLevel(row);
+
   return (
     <>
-      <BodyTd>{formatOverviewNumber(row.requiredHeadcount)}</BodyTd>
-      <BodyTd>{formatOverviewNumber(row.actualHeadcount)}</BodyTd>
-      <BodyTd className={getBufferColor(row.bufferPercentage)}>
-        {formatOverviewPercent(row.bufferPercentage)}
-      </BodyTd>
-      <BodyTd className="font-extrabold text-[#042C51]">
-        {formatOverviewNumber(row.netActualHc)}
-      </BodyTd>
-      <BodyTd className={getHiringNeededColor(row.hiringNeeded)}>
-        {formatOverviewNumber(row.hiringNeeded)}
+      {/* Required HC (BOLD) */}
+      <BodyTd className={BOLD_NUMBER_CLASS}>
+        {formatOverviewNumber(row.requiredHeadcount)}
       </BodyTd>
 
-      <BodyTd>{formatOverviewNumber(row.absenteeism)}</BodyTd>
-      <BodyTd className="font-extrabold text-blue-700">
+      {/* Actual HC (NOT BOLD) */}
+      <BodyTd className={summary ? BOLD_NUMBER_CLASS : "font-normal text-slate-600"}>
+        {formatOverviewNumber(row.actualHeadcount)}
+      </BodyTd>
+
+      {/* Buffer % (BOLD RED / GREEN) */}
+      <BodyTd
+        className={`!font-black ${getBufferColor(
+          row.bufferPercentage,
+        )}`}
+      >
+        {formatOverviewPercent(row.bufferPercentage)}
+      </BodyTd>
+
+      {/* Net Actual (BOLD) */}
+      <BodyTd className={BOLD_NUMBER_CLASS}>
+        {formatOverviewNumber(row.netActualHc)}
+      </BodyTd>
+
+      {/* Hiring Needed (BOLD RED BADGE) */}
+      <BodyTd>
+        {summary ? (
+          <span
+            className={
+              hiringNeeded > 0
+                ? "!font-black !text-rose-600"
+                : "!font-black !text-emerald-600"
+            }
+          >
+            {formatOverviewNumber(row.hiringNeeded)}
+          </span>
+        ) : (
+          <span
+            className={
+              hiringNeeded > 0
+                ? "inline-block rounded border border-rose-100 bg-rose-50 px-1.5 py-0.5 !font-black !text-rose-600"
+                : "font-normal text-slate-400"
+            }
+          >
+            {formatOverviewNumber(row.hiringNeeded)}
+          </span>
+        )}
+      </BodyTd>
+
+      {/* Absenteeism (NOT BOLD) */}
+      <BodyTd className={summary ? BOLD_NUMBER_CLASS : "font-normal text-slate-600"}>
+        {formatOverviewNumber(row.absenteeism)}
+      </BodyTd>
+
+      {/* ABS % (BOLD) */}
+      <BodyTd className={BOLD_NUMBER_CLASS}>
         {formatOverviewPercent(row.absenteeismPercentage)}
       </BodyTd>
-      <BodyTd>{formatOverviewNumber(row.attrition)}</BodyTd>
-      <BodyTd className="font-extrabold text-rose-600">
+
+      {/* Attrition (NOT BOLD) */}
+      <BodyTd className={summary ? BOLD_NUMBER_CLASS : "font-normal text-slate-600"}>
+        {formatOverviewNumber(row.attrition)}
+      </BodyTd>
+
+      {/* ATT % (BOLD) */}
+      <BodyTd className={BOLD_NUMBER_CLASS}>
         {formatOverviewPercent(row.attritionPercentage)}
       </BodyTd>
 
-      <BodyTd>{formatOverviewNumber(row.acceptedJo)}</BodyTd>
-      <BodyTd>{formatOverviewNumber(row.nho)}</BodyTd>
-      <BodyTd>{formatOverviewNumber(row.fst)}</BodyTd>
-      <BodyTd>{formatOverviewNumber(row.pst)}</BodyTd>
-      <BodyTd className="font-extrabold text-emerald-700">
+      {/* Accepted JO (BOLD) */}
+      <BodyTd className={BOLD_NUMBER_CLASS}>
+        {formatOverviewNumber(row.acceptedJo)}
+      </BodyTd>
+
+      {/* NHO Count (NOT BOLD) */}
+      <BodyTd className={summary ? BOLD_NUMBER_CLASS : "font-normal text-slate-600"}>
+        {formatOverviewNumber(row.nho)}
+      </BodyTd>
+
+      {/* FST Count (NOT BOLD) */}
+      <BodyTd className={summary ? BOLD_NUMBER_CLASS : "font-normal text-slate-600"}>
+        {formatOverviewNumber(row.fst)}
+      </BodyTd>
+
+      {/* PST Count (NOT BOLD) */}
+      <BodyTd className={summary ? BOLD_NUMBER_CLASS : "font-normal text-slate-600"}>
+        {formatOverviewNumber(row.pst)}
+      </BodyTd>
+
+      {/* Go Live (BOLD GREEN) */}
+      <BodyTd className="!font-black !text-emerald-600">
         {formatOverviewNumber(row.goLive)}
       </BodyTd>
 
-      <BodyTd>{formatOverviewNumber(row.joNhoCount)}</BodyTd>
-      <BodyTd>{formatOverviewPercent(row.joNhoPercentage)}</BodyTd>
-      <BodyTd>{formatOverviewNumber(row.nhoFstCount)}</BodyTd>
-      <BodyTd>{formatOverviewPercent(row.nhoFstPercentage)}</BodyTd>
-      <BodyTd>{formatOverviewNumber(row.fstPstCount)}</BodyTd>
-      <BodyTd>{formatOverviewPercent(row.fstPstPercentage)}</BodyTd>
-      <BodyTd>{formatOverviewNumber(row.nhoPstCount)}</BodyTd>
-      <BodyTd>{formatOverviewPercent(row.nhoPstPercentage)}</BodyTd>
-      <BodyTd>{formatOverviewNumber(row.pstGoLiveCount)}</BodyTd>
-      <BodyTd>{formatOverviewPercent(row.pstGoLivePercentage)}</BodyTd>
+      <StageConversionCell
+        dropCount={row.joNhoCount}
+        startCount={row.acceptedJo}
+        endCount={row.nho}
+        summary={summary}
+      />
 
-      <BodyTd className="font-extrabold text-emerald-700">
+      <StageConversionCell
+        dropCount={row.nhoFstCount}
+        startCount={row.nho}
+        endCount={row.fst}
+        summary={summary}
+      />
+
+      <StageConversionCell
+        dropCount={row.fstPstCount}
+        startCount={row.fst}
+        endCount={row.pst}
+        summary={summary}
+      />
+
+      <StageConversionCell
+        dropCount={row.pstGoLiveCount}
+        startCount={row.pst}
+        endCount={row.goLive}
+        summary={summary}
+      />
+
+      {/* Hired Count (BOLD) */}
+      <BodyTd className={BOLD_NUMBER_CLASS}>
         {formatOverviewNumber(row.hiredCount)}
       </BodyTd>
-      <BodyTd className="font-extrabold text-[#042C51]">
+
+      {/* Hiring Rate % (BOLD ORANGE) */}
+      <BodyTd className="!font-black !text-[#FF5C28]">
         {formatOverviewPercent(row.hiringRate)}
+      </BodyTd>
+
+      <BodyTd align="center" numeric={false}>
+        <span
+          className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[10px] !font-extrabold ${
+            summary ? "rounded uppercase !font-black" : ""
+          } ${getRiskBadgeClasses(riskLabel)}`}
+        >
+          {riskLabel}
+        </span>
       </BodyTd>
     </>
   );
 }
 
-function ExpandedHistory({ row, selectedWeekNumber }) {
+function ExpandedHistory({ row, selectedWeekNumber, selectedPeriod }) {
   const history = useMemo(
     () => getSixWeekHistory(row, selectedWeekNumber),
     [row, selectedWeekNumber],
   );
   const firstWeek = history[0] || {};
   const currentWeek = history[history.length - 1] || {};
+  const activeHistoryPeriod =
+    selectedPeriod === ALL_SIX_WEEKS
+      ? currentWeek.period
+      : selectedPeriod || currentWeek.period;
   const cumulativeHires = history.reduce(
     (total, week) => total + toNumber(week.hiredCount),
     0,
@@ -704,12 +1174,15 @@ function ExpandedHistory({ row, selectedWeekNumber }) {
           <tbody className="divide-y divide-[#E6ECF2]">
             {history.map((week, index) => {
               const isCurrentWeek = index === history.length - 1;
+              const isActiveWeek =
+                getPeriodWeekNumber(week.period) ===
+                getPeriodWeekNumber(activeHistoryPeriod);
 
               return (
                 <tr
                   key={`${row.account}-${week.period}-${index}`}
                   className={
-                    isCurrentWeek
+                    isActiveWeek
                       ? "bg-[#EAF2FB] font-extrabold"
                       : "bg-white hover:bg-[#F8FAFC]"
                   }
@@ -717,9 +1190,11 @@ function ExpandedHistory({ row, selectedWeekNumber }) {
                   <HistoryTd className="text-left font-extrabold text-[#042C51]">
                     <div className="flex items-center justify-between gap-3">
                       <span>{week.period}</span>
-                      {isCurrentWeek ? (
-                        <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[8px] font-black uppercase text-white">
-                          Active
+                      {isActiveWeek ? (
+                        <span className="rounded bg-[#042C51] px-1.5 py-0.5 text-[8px] font-black uppercase text-white">
+                          {selectedPeriod === ALL_SIX_WEEKS && isCurrentWeek
+                            ? "Current"
+                            : "Selected"}
                         </span>
                       ) : null}
                     </div>
@@ -825,6 +1300,18 @@ export default function WorkforceHiringOverviewDetailsTable() {
     resetPagination,
   } = usePagination(DETAILS_ENTITY);
 
+  const sourceRows = Array.isArray(detailRows) ? detailRows : [];
+  const selectedWeekNumber = getSelectedWeekNumber(filters);
+  const normalizedSelectedWeekNumber = Math.max(
+    6,
+    Number(selectedWeekNumber) || 28,
+  );
+  const currentPeriodValue = `Week ${normalizedSelectedWeekNumber}`;
+  const periodOptions = useMemo(
+    () => buildPeriodOptions(normalizedSelectedWeekNumber),
+    [normalizedSelectedWeekNumber],
+  );
+
   const dragScrollRef = useRef(null);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
@@ -833,13 +1320,18 @@ export default function WorkforceHiringOverviewDetailsTable() {
   const [expandedRows, setExpandedRows] = useState({});
   const [selectedCluster, setSelectedCluster] = useState("All Clusters");
   const [selectedRisk, setSelectedRisk] = useState("All Risks");
+  const [selectedPeriod, setSelectedPeriod] = useState(currentPeriodValue);
   const [sortConfig, setSortConfig] = useState({
     key: "cluster",
     direction: "asc",
   });
 
-  const sourceRows = Array.isArray(detailRows) ? detailRows : [];
-  const selectedWeekNumber = getSelectedWeekNumber(filters);
+  const activePeriod = periodOptions.some(
+    (option) => option.value === selectedPeriod,
+  )
+    ? selectedPeriod
+    : currentPeriodValue;
+
   const clusterOptions = useMemo(
     () => getWorkforceClusterOptions(sourceRows),
     [sourceRows],
@@ -852,12 +1344,24 @@ export default function WorkforceHiringOverviewDetailsTable() {
     return () => resetPagination();
   }, [resetPagination]);
 
+  useEffect(() => {
+    setSelectedPeriod(currentPeriodValue);
+    setExpandedRows({});
+  }, [currentPeriodValue]);
+
   function handleSort(nextKey) {
     setSortConfig((current) => ({
       key: nextKey,
       direction:
         current.key === nextKey && current.direction === "asc" ? "desc" : "asc",
     }));
+  }
+
+  function handlePeriodChange(nextPeriod) {
+    if (!nextPeriod || nextPeriod === activePeriod) return;
+
+    setSelectedPeriod(nextPeriod);
+    setExpandedRows({});
   }
 
   function toggleExpandedRow(rowKey) {
@@ -867,24 +1371,46 @@ export default function WorkforceHiringOverviewDetailsTable() {
     }));
   }
 
+  const periodRows = useMemo(
+    () =>
+      sourceRows.map((row) =>
+        buildPeriodDisplayRow(row, activePeriod, normalizedSelectedWeekNumber),
+      ),
+    [activePeriod, normalizedSelectedWeekNumber, sourceRows],
+  );
+
   const filteredRows = useMemo(
     () =>
-      filterWorkforceRows(sourceRows, {
+      filterWorkforceRows(periodRows, {
         search,
         cluster: activeCluster,
         risk: selectedRisk,
       }),
-    [activeCluster, search, selectedRisk, sourceRows],
+    [activeCluster, periodRows, search, selectedRisk],
   );
 
   const sortedRows = useMemo(() => {
     return [...filteredRows].sort((firstRow, secondRow) => {
-      const firstValue = getSortableText(firstRow, sortConfig.key);
-      const secondValue = getSortableText(secondRow, sortConfig.key);
-      const comparison = firstValue.localeCompare(secondValue, undefined, {
-        numeric: true,
-        sensitivity: "base",
-      });
+      const firstRawValue = firstRow?.[sortConfig.key];
+      const secondRawValue = secondRow?.[sortConfig.key];
+      const firstNumber = Number(firstRawValue);
+      const secondNumber = Number(secondRawValue);
+
+      let comparison = 0;
+
+      if (Number.isFinite(firstNumber) && Number.isFinite(secondNumber)) {
+        comparison = firstNumber - secondNumber;
+      } else {
+        comparison = getSortableText(firstRow, sortConfig.key).localeCompare(
+          getSortableText(secondRow, sortConfig.key),
+          undefined,
+          {
+            numeric: true,
+            sensitivity: "base",
+          },
+        );
+      }
+
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
   }, [filteredRows, sortConfig]);
@@ -893,6 +1419,13 @@ export default function WorkforceHiringOverviewDetailsTable() {
     () => buildFilteredTotals(filteredRows, totals),
     [filteredRows, totals],
   );
+
+  const lossGroupTitle =
+    activePeriod === ALL_SIX_WEEKS
+      ? "3. 6-Week Loss"
+      : activePeriod === currentPeriodValue
+        ? "3. Current Week Loss"
+        : "3. Selected Week Loss";
 
   function clearSearch() {
     setSearchInput("");
@@ -941,86 +1474,101 @@ export default function WorkforceHiringOverviewDetailsTable() {
   return (
     <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
       <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,1fr)_minmax(680px,860px)] xl:items-start">
           <div className="min-w-0">
-            <h2 className="sibs-section-title">
-              Detailed Performance by Cluster / Account
-            </h2>
-            <p className="sibs-section-subtitle">
-              Current selected-week capacity, loss, pipeline, and yield metrics.
-            </p>
+            <div className="flex min-w-0 items-start gap-2">
+
+              <div className="min-w-0">
+                <h2 className="sibs-section-title">
+                  Detailed Performance by Cluster / Account (6-Week Multi-Week Ledger)
+                </h2>
+                <p className="sibs-section-subtitle">
+                  Master account-level capacity ledger across the selected six-week window, including requirements, buffer, workforce loss, pipeline, and yield metrics.
+                </p>
+              </div>
+            </div>
+
+            <span className="mt-3 inline-flex w-fit items-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+              <GripHorizontal className="h-3.5 w-3.5 text-[#FF5C28]" />
+              Drag horizontally to inspect all columns
+            </span>
           </div>
 
-          <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-            <GripHorizontal className="h-3.5 w-3.5 text-[#FF5C28]" />
-            Drag horizontally to inspect all columns
-          </span>
-        </div>
-
-        <PaginationTable
-          className="mt-4 border-0 bg-transparent p-0 shadow-none"
-          showPagination={false}
-          searchValue={searchInput}
-          searchPlaceholder="Search account / cluster..."
-          onSearchChange={setSearchInput}
-          onSearchKeyDown={handleSearchKeyDown}
-          filterLayout="ta-inline"
-          controlsClassName="flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end"
-          searchClassName="relative w-full min-w-0 xl:flex-[1_1_520px]"
-          dropdownFilters={[
-            {
-              key: "cluster",
-              value: activeCluster,
-              onChange: setSelectedCluster,
-              options: clusterOptions
-                .filter((option) => option !== "All Clusters")
-                .map((option) => ({ label: option, value: option })),
-              allLabel: "All Clusters",
-              placeholder: "Search clusters...",
-              includeAll: true,
-              searchable: true,
-              className: "w-full xl:w-[210px] xl:flex-none",
-            },
-            {
-              key: "risk",
-              value: selectedRisk,
-              onChange: setSelectedRisk,
-              options: WORKFORCE_RISK_OPTIONS
-                .filter((option) => option !== "All Risks")
-                .map((option) => ({ label: option, value: option })),
-              allLabel: "All Risks",
-              placeholder: "Search risks...",
-              includeAll: true,
-              searchable: true,
-              className: "w-full xl:w-[180px] xl:flex-none",
-            },
-          ]}
-          rightContentClassName="flex w-full items-end xl:w-auto xl:flex-none"
-          rightContent={
-            <div className="flex w-full flex-wrap items-center justify-start gap-2 xl:w-auto xl:justify-end">
-              <span className="inline-flex h-10 items-center rounded-[10px] border border-blue-100 bg-[#E9F0FC] px-3 text-[10px] font-extrabold tabular-nums text-[#042C51]">
-                {sortedRows.length} account rows
-              </span>
-
-              {hasActiveFilters ? (
-                <button
-                  type="button"
-                  onClick={clearAllFilters}
-                  className="h-10 rounded-[10px] border border-[#D6E0EA] bg-white px-3 text-[10px] font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/10"
-                >
-                  Clear
-                </button>
-              ) : null}
+          <div className="min-w-0 space-y-3">
+            <div className="flex w-full justify-end">
+              <PeriodSelector
+                options={periodOptions}
+                value={activePeriod}
+                onChange={handlePeriodChange}
+              />
             </div>
-          }
-        />
+
+            <PaginationTable
+              className="border-0 bg-transparent p-0 shadow-none"
+              showPagination={false}
+              searchValue={searchInput}
+              searchPlaceholder="Search account / cluster..."
+              onSearchChange={setSearchInput}
+              onSearchKeyDown={handleSearchKeyDown}
+              filterLayout="ta-inline"
+              controlsClassName="grid grid-cols-1 gap-2 overflow-visible sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_170px_auto] xl:items-end"
+              searchClassName="relative w-full min-w-0 sm:col-span-2 xl:col-span-1"
+              dropdownFilters={[
+                {
+                  key: "cluster",
+                  value: activeCluster,
+                  onChange: setSelectedCluster,
+                  options: clusterOptions
+                    .filter((option) => option !== "All Clusters")
+                    .map((option) => ({ label: option, value: option })),
+                  allLabel: "All Clusters",
+                  placeholder: "Search clusters...",
+                  includeAll: true,
+                  searchable: true,
+                  className: "w-full xl:w-[190px] xl:flex-none",
+                },
+                {
+                  key: "risk",
+                  value: selectedRisk,
+                  onChange: setSelectedRisk,
+                  options: WORKFORCE_RISK_OPTIONS
+                    .filter((option) => option !== "All Risks")
+                    .map((option) => ({ label: option, value: option })),
+                  allLabel: "All Risks",
+                  placeholder: "Search risks...",
+                  includeAll: true,
+                  searchable: true,
+                  className: "w-full xl:w-[170px] xl:flex-none",
+                },
+              ]}
+              rightContentClassName="flex w-full items-end xl:w-auto xl:flex-none"
+              rightContent={
+                <div className="flex w-full flex-wrap items-center justify-start gap-2 xl:w-auto xl:justify-end">
+                  <span className="inline-flex h-10 items-center rounded-[10px] border border-blue-100 bg-[#E9F0FC] px-3 text-[10px] font-extrabold tabular-nums text-[#042C51]">
+                    {sortedRows.length} account rows
+                  </span>
+
+                  {hasActiveFilters ? (
+                    <button
+                      type="button"
+                      onClick={clearAllFilters}
+                      className="h-10 rounded-[10px] border border-[#D6E0EA] bg-white px-3 text-[10px] font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/10"
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
+              }
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="p-4 sm:p-5">
-        <div className="sibs-data-table-shell !block overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+      <div className="p-3 sm:p-4">
+        <div className="sibs-data-table-shell !block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div
             ref={dragScrollRef}
-            className={`overflow-x-auto ${
+            className={`overflow-x-auto sibs-scrollbar ${
               isDragging ? "cursor-grabbing" : "cursor-grab"
             }`}
             onMouseDown={handleDragStart}
@@ -1028,32 +1576,70 @@ export default function WorkforceHiringOverviewDetailsTable() {
             onMouseUp={handleDragEnd}
             onMouseLeave={handleDragEnd}
           >
-            <table className="w-full min-w-[1980px] border-collapse font-jakarta">
-              <thead className="sibs-data-table-head sticky top-0 z-10">
-                <tr className="sibs-data-table-head-row">
-                  <HeaderTh colSpan={3} group>
+            <table className="w-[2500px] min-w-[2500px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
+              <colgroup>
+                <col style={{ width: "40px" }} />
+                <col style={{ width: "120px" }} />
+                <col style={{ width: "150px" }} />
+
+                <col style={{ width: "95px" }} />
+                <col style={{ width: "90px" }} />
+                <col style={{ width: "85px" }} />
+                <col style={{ width: "95px" }} />
+                <col style={{ width: "105px" }} />
+
+                <col style={{ width: "90px" }} />
+                <col style={{ width: "75px" }} />
+                <col style={{ width: "85px" }} />
+                <col style={{ width: "75px" }} />
+
+                <col style={{ width: "95px" }} />
+                <col style={{ width: "85px" }} />
+                <col style={{ width: "85px" }} />
+                <col style={{ width: "85px" }} />
+                <col style={{ width: "80px" }} />
+
+                <col style={{ width: "165px" }} />
+                <col style={{ width: "165px" }} />
+                <col style={{ width: "165px" }} />
+                <col style={{ width: "185px" }} />
+
+                <col style={{ width: "100px" }} />
+                <col style={{ width: "105px" }} />
+                <col style={{ width: "110px" }} />
+              </colgroup>
+
+              <thead className="sibs-data-table-head bg-[#F8FAFC] text-sibs-primary-1">
+                <tr className="sibs-data-table-head-row border-slate-200">
+                  <HeaderTh colSpan={3} group className="!border-r-slate-200">
                     1. Identification &amp; Scope
                   </HeaderTh>
-                  <HeaderTh colSpan={5} group>
+
+                  <HeaderTh colSpan={5} group className="!border-r-slate-200">
                     2. Capacity &amp; Buffer Metrics
                   </HeaderTh>
-                  <HeaderTh colSpan={4} group>
-                    3. Current Week Loss
+
+                  <HeaderTh colSpan={4} group className="!border-r-slate-200">
+                    {lossGroupTitle}
                   </HeaderTh>
-                  <HeaderTh colSpan={5} group>
+
+                  <HeaderTh colSpan={5} group className="!border-r-slate-200">
                     4. Post-Offer Funnel Counts
                   </HeaderTh>
-                  <HeaderTh colSpan={10} group>
-                    5. Attrition Between Stages
+
+                  <HeaderTh colSpan={4} group className="!border-r-slate-200">
+                    5. Stage Conversion &amp; Retention
                   </HeaderTh>
-                  <HeaderTh colSpan={2} group>
-                    6. Yield &amp; Recruiting
+
+                  <HeaderTh colSpan={3} group>
+                    6. Yield &amp; Risk Audit
                   </HeaderTh>
                 </tr>
 
-                <tr className="sibs-data-table-head-row border-b border-[#E6ECF2]">
-                  <HeaderTh>#</HeaderTh>
-                  <HeaderTh>
+                <tr className="sibs-data-table-head-row border-slate-200">
+                  <HeaderTh className="!w-8 !text-center">#</HeaderTh>
+
+                  <HeaderTh className="!text-left">
                     <SortHeaderButton
                       label="Cluster"
                       active={sortConfig.key === "cluster"}
@@ -1061,7 +1647,8 @@ export default function WorkforceHiringOverviewDetailsTable() {
                       onClick={() => handleSort("cluster")}
                     />
                   </HeaderTh>
-                  <HeaderTh>
+
+                  <HeaderTh className="!text-left">
                     <SortHeaderButton
                       label="Account"
                       active={sortConfig.key === "account"}
@@ -1070,142 +1657,194 @@ export default function WorkforceHiringOverviewDetailsTable() {
                     />
                   </HeaderTh>
 
-                  <HeaderTh>Required HC</HeaderTh>
-                  <HeaderTh>Actual HC</HeaderTh>
-                  <HeaderTh>Buffer %</HeaderTh>
-                  <HeaderTh>Net Actual</HeaderTh>
-                  <HeaderTh>Hiring Needed</HeaderTh>
+                  <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
+                    <SortHeaderButton
+                      label="Required HC"
+                      active={sortConfig.key === "requiredHeadcount"}
+                      direction={sortConfig.direction}
+                      onClick={() => handleSort("requiredHeadcount")}
+                      align="right"
+                      className="font-black text-sibs-primary-1"
+                    />
+                  </HeaderTh>
 
-                  <HeaderTh>Absenteeism</HeaderTh>
-                  <HeaderTh>Abs %</HeaderTh>
-                  <HeaderTh>Attrition</HeaderTh>
-                  <HeaderTh>Att %</HeaderTh>
+                  <HeaderTh className="!text-right">Actual HC</HeaderTh>
+                  <HeaderTh className="!text-right">Buffer %</HeaderTh>
 
-                  <HeaderTh>Accepted JO</HeaderTh>
-                  <HeaderTh>NHO Count</HeaderTh>
-                  <HeaderTh>FST Count</HeaderTh>
-                  <HeaderTh>PST Count</HeaderTh>
-                  <HeaderTh>Go Live</HeaderTh>
+                  <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
+                    Net Actual
+                  </HeaderTh>
 
-                  <HeaderTh>JO - NHO Count</HeaderTh>
-                  <HeaderTh>%</HeaderTh>
-                  <HeaderTh>NHO - FST Count</HeaderTh>
-                  <HeaderTh>%</HeaderTh>
-                  <HeaderTh>FST - PST Count</HeaderTh>
-                  <HeaderTh>%</HeaderTh>
-                  <HeaderTh>NHO - PST Count</HeaderTh>
-                  <HeaderTh>%</HeaderTh>
-                  <HeaderTh>PST - Go Live Count</HeaderTh>
-                  <HeaderTh>%</HeaderTh>
+                  <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-rose-600">
+                    Hiring Needed
+                  </HeaderTh>
 
-                  <HeaderTh>Hired Count</HeaderTh>
-                  <HeaderTh>Hiring Rate</HeaderTh>
+                  <HeaderTh className="!text-right">Absenteeism</HeaderTh>
+
+                  <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
+                    ABS %
+                  </HeaderTh>
+
+                  <HeaderTh className="!text-right">Attrition</HeaderTh>
+
+                  <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-sibs-primary-1">
+                    ATT %
+                  </HeaderTh>
+
+                  <HeaderTh className="!text-right">Accepted JO</HeaderTh>
+                  <HeaderTh className="!text-right">NHO Count</HeaderTh>
+                  <HeaderTh className="!text-right">FST Count</HeaderTh>
+                  <HeaderTh className="!text-right">PST Count</HeaderTh>
+
+                  <HeaderTh className="!border-r-slate-200 !text-right">
+                    Go Live
+                  </HeaderTh>
+
+                  <HeaderTh>JO → NHO (Drop / Ret%)</HeaderTh>
+                  <HeaderTh>NHO → FST (Drop / Ret%)</HeaderTh>
+                  <HeaderTh>FST → PST (Drop / Ret%)</HeaderTh>
+
+                  <HeaderTh className="!border-r-slate-200">
+                    PST → Go Live (Drop / Ret%)
+                  </HeaderTh>
+
+                  <HeaderTh className="!text-right">Hired Count</HeaderTh>
+                  <HeaderTh className="!text-right">Hiring Rate %</HeaderTh>
+                  <HeaderTh>Hiring Risk</HeaderTh>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody className="bg-white font-jakarta font-medium">
                 {sortedRows.length === 0 ? (
                   <tr>
                     <td
                       colSpan={TABLE_COLUMN_COUNT}
-                      className="px-6 py-12 text-center text-xs font-semibold text-[#667085]"
+                      className="sibs-empty-panel border-0 px-6 py-12"
                     >
-                      No account records match the current search and filters.
+                      No account records match the current period, search, and filters.
                     </td>
                   </tr>
                 ) : (
-                  <>
-                    {sortedRows.map((row, index) => {
-                      const rowKey = getRowKey(row, index);
-                      const isExpanded = Boolean(expandedRows[rowKey]);
-                      const hasBeenOpened = Object.prototype.hasOwnProperty.call(
-                        expandedRows,
-                        rowKey,
-                      );
-                      const detailsPanelId = `workforce-history-${index}-${String(
-                        rowKey,
-                      ).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+                  sortedRows.map((row, index) => {
+                    const rowKey = getRowKey(row, index);
+                    const isExpanded = Boolean(expandedRows[rowKey]);
+                    const hasBeenOpened = Object.prototype.hasOwnProperty.call(
+                      expandedRows,
+                      rowKey,
+                    );
+                    const detailsPanelId = `workforce-history-${index}-${String(
+                      rowKey,
+                    ).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
-                      return (
-                        <Fragment key={rowKey}>
-                          <tr
-                            className={`sibs-data-table-row !cursor-default transition-colors hover:bg-[#FFF8F5] ${
-                              isExpanded ? "bg-[#FFF9F6]" : "bg-white"
-                            }`}
+                    return (
+                      <Fragment key={rowKey}>
+                        <tr
+                          className={`border-b border-[#E6ECF2] transition-colors cursor-pointer text-xs ${
+                            isExpanded ? "bg-amber-50/60" : "hover:bg-slate-50/80"
+                          }`}
+                        >
+                          <BodyTd
+                            align="center"
+                            numeric={false}
+                            className="!px-2 !py-2.5"
                           >
-                            <BodyTd className="text-[#667085]">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleExpandedRow(rowKey)}
-                                  onMouseDown={(event) => event.stopPropagation()}
-                                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[#52637A] transition hover:bg-[#F8FAFC] hover:text-[#042C51]"
-                                  aria-expanded={isExpanded}
-                                  aria-controls={detailsPanelId}
-                                  aria-label={`${isExpanded ? "Collapse" : "Expand"} ${row.account} six-week history`}
-                                >
-                                  {isExpanded ? (
-                                    <ChevronUp className="h-3.5 w-3.5" />
-                                  ) : (
-                                    <ChevronDown className="h-3.5 w-3.5" />
-                                  )}
-                                </button>
-                                <span>{index + 1}</span>
-                              </div>
-                            </BodyTd>
-                            <BodyTd className="text-left font-semibold text-[#52637A]">
-                              {row.cluster}
-                            </BodyTd>
-                            <BodyTd className="text-left font-extrabold text-[#042C51]">
-                              {row.account}
-                            </BodyTd>
-                            <PerformanceCells row={row} />
-                          </tr>
-
-                          <tr aria-hidden={!isExpanded}>
-                            <td
-                              colSpan={TABLE_COLUMN_COUNT}
-                              className="border-0 bg-white p-0"
+                            <button
+                              type="button"
+                              onClick={() => toggleExpandedRow(rowKey)}
+                              onMouseDown={(event) => event.stopPropagation()}
+                              className="p-1 rounded text-slate-500 transition-colors hover:bg-slate-200"
+                              aria-expanded={isExpanded}
+                              aria-controls={detailsPanelId}
+                              aria-label={`${isExpanded ? "Collapse" : "Expand"} ${row.account} six-week history`}
                             >
-                              <div
-                                className={`sibs-animated-dropdown ${
-                                  isExpanded ? "open" : "closed"
-                                }`}
-                              >
-                                <div className="sibs-animated-dropdown-inner">
-                                  <div
-                                    id={detailsPanelId}
-                                    role="region"
-                                    aria-label={`${row.account} six-week history`}
-                                    className="sibs-animated-dropdown-box !rounded-none !border-x !border-b !border-t-0 !border-[#E6ECF2] !border-l-4 !border-l-[#FF5C28] !bg-white !p-4 !shadow-none"
-                                  >
-                                    {hasBeenOpened ? (
-                                      <ExpandedHistory
-                                        row={row}
-                                        selectedWeekNumber={selectedWeekNumber}
-                                      />
-                                    ) : null}
-                                  </div>
+                              {isExpanded ? (
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              ) : (
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </BodyTd>
+
+                          <BodyTd
+                            align="left"
+                            numeric={false}
+                            className="font-normal text-slate-500"
+                          >
+                            <span
+                              className="block max-w-[105px] truncate font-normal text-slate-500"
+                              title={row.cluster}
+                            >
+                              {row.cluster}
+                            </span>
+                          </BodyTd>
+
+                          <BodyTd
+                            align="left"
+                            numeric={false}
+                            className={BOLD_NUMBER_CLASS}
+                          >
+                            <span
+                              className="block max-w-[135px] truncate !font-black !text-[#042C51]"
+                              title={row.account}
+                            >
+                              {row.account}
+                            </span>
+                          </BodyTd>
+
+                          <PerformanceCells row={row} />
+                        </tr>
+
+                        <tr aria-hidden={!isExpanded}>
+                          <td
+                            colSpan={TABLE_COLUMN_COUNT}
+                            className="border-0 bg-white p-0"
+                          >
+                            <div
+                              className={`sibs-animated-dropdown ${
+                                isExpanded ? "open" : "closed"
+                              }`}
+                            >
+                              <div className="sibs-animated-dropdown-inner">
+                                <div
+                                  id={detailsPanelId}
+                                  role="region"
+                                  aria-label={`${row.account} six-week history`}
+                                  className="sibs-animated-dropdown-box !rounded-none !border-x !border-b !border-t-0 !border-slate-200 !border-l-4 !border-l-sibs-primary-2 !bg-white !p-4 !shadow-none"
+                                >
+                                  {hasBeenOpened ? (
+                                    <ExpandedHistory
+                                      row={row}
+                                      selectedWeekNumber={normalizedSelectedWeekNumber}
+                                      selectedPeriod={activePeriod}
+                                    />
+                                  ) : null}
                                 </div>
                               </div>
-                            </td>
-                          </tr>
-                        </Fragment>
-                      );
-                    })}
-
-                    <tr className="bg-[#F8FAFC] font-extrabold">
-                      <BodyTd
-                        colSpan={3}
-                        className="text-left font-extrabold uppercase text-[#042C51]"
-                      >
-                        Total / Average ({sortedRows.length} Accounts)
-                      </BodyTd>
-                      <PerformanceCells row={activeTotals} />
-                    </tr>
-                  </>
+                            </div>
+                          </td>
+                        </tr>
+                      </Fragment>
+                    );
+                  })
                 )}
               </tbody>
+
+              {sortedRows.length > 0 ? (
+                <tfoot>
+                  <tr className="border-t-2 border-slate-300 bg-[#EBF3FA] font-black text-sibs-primary-1">
+                    <BodyTd
+                      colSpan={3}
+                      align="left"
+                      numeric={false}
+                      className="font-extrabold uppercase text-sibs-primary-1 !border-r-slate-200"
+                    >
+                      Total / Average ({sortedRows.length} Accounts)
+                    </BodyTd>
+
+                    <PerformanceCells row={activeTotals} summary />
+                  </tr>
+                </tfoot>
+              ) : null}
             </table>
           </div>
         </div>
