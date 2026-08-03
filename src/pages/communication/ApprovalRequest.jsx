@@ -47,8 +47,6 @@ import {
 const REQUEST_MODULES = [
   "Attrition",
   "Job Description",
-  "Hiring Needs",
-  "Available Positions",
 ];
 
 const STATUS_OPTIONS = ["All", "Pending", "For Review", "Approved", "Rejected"];
@@ -56,22 +54,16 @@ const STATUS_OPTIONS = ["All", "Pending", "For Review", "Approved", "Rejected"];
 const TYPE_OPTIONS_BY_MODULE = {
   Attrition: ["All", "Resignation", "Attrition"],
   "Job Description": ["All", "Job Description"],
-  "Hiring Needs": ["All", "Requisition", "Downsize"],
-  "Available Positions": ["All", "Available Position"],
 };
 
 const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
   Attrition: ["Resignation", "Attrition"],
   "Job Description": ["Job Description"],
-  "Hiring Needs": ["Hiring Needs"],
-  "Available Positions": ["Available Position"],
 };
 
 const moduleIconMap = {
   Attrition: UserRoundCheck,
   "Job Description": FileText,
-  "Hiring Needs": BriefcaseBusiness,
-  "Available Positions": ClipboardList,
 };
 
 function getApprovalApiModuleName(moduleName = "") {
@@ -1648,6 +1640,16 @@ export default function ApprovalRequest() {
     const stateModule = location.state?.activeModule;
     const requestedModule =
       stateModule === "Available Position" ? "Available Positions" : stateModule;
+
+    if (requestedModule === "Hiring Needs") {
+      navigate("/recruitment/hiring-needs", { replace: true });
+      return;
+    }
+
+    if (requestedModule === "Available Positions") {
+      navigate("/recruitment/available-positions", { replace: true });
+      return;
+    }
 
     if (!requestedModule || !REQUEST_MODULES.includes(requestedModule)) return;
 
