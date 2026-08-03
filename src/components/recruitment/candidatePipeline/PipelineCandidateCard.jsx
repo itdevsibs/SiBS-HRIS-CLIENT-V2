@@ -20,6 +20,7 @@ import {
   CirclePlay,
   ClipboardCheck,
   Eye,
+  Mail,
   X,
 } from "lucide-react";
 import { formatDateTime } from "../../../lib/axios/dateFormatter";
@@ -36,7 +37,8 @@ const PipelineCandidateCard = ({
   onCancelInterview,
   onCompleteInterview,
 }) => {
-  const { handleStartInterview } = useCandidatePipeline();
+  const { handleStartInterview, handleResendDropOffEmail } =
+    useCandidatePipeline();
 
   const nextStage = getNextStage(candidate.currentStage);
 
@@ -53,7 +55,7 @@ const PipelineCandidateCard = ({
   const interviewStatus = getDisplayInterviewStatus(candidate);
 
   const showScheduleButton =
-    candidate.currentStage === "Online Assessment" &&
+    candidate.currentStage === "Assessment Fit" &&
     canScheduleInterview(candidate);
 
   const showAssessmentButton = candidate.currentStage === "Online Assessment";
@@ -64,6 +66,7 @@ const PipelineCandidateCard = ({
     candidate.currentStage !== "Drop-off" &&
     candidate.currentStage !== "Accepted" &&
     candidate.currentStage !== "Online Assessment" &&
+    candidate.currentStage !== "Assessment Fit" &&
     candidate.currentStage !== "Interview Scheduled" &&
     candidate.currentStage !== "Offered" &&
     Boolean(nextStage);
@@ -74,6 +77,31 @@ const PipelineCandidateCard = ({
 
   const disabledActionClass =
     "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none";
+
+  const isDropOff = candidate.currentStage === "Drop-off";
+  const dropOffEmailStatus =
+    candidate.dropOffEmailStatus ||
+    candidate.drop_off_email_status ||
+    "Not Sent";
+  const dropOffEmailRecipient =
+    candidate.dropOffEmailRecipient ||
+    candidate.drop_off_email_recipient ||
+    candidate.email ||
+    "No email saved";
+  const dropOffEmailLastActivity =
+    candidate.dropOffEmailSentAt ||
+    candidate.drop_off_email_sent_at ||
+    candidate.dropOffEmailLastAttemptAt ||
+    candidate.drop_off_email_last_attempt_at;
+  const dropOffEmailStatusClass =
+    dropOffEmailStatus === "Sent"
+      ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+      : dropOffEmailStatus === "Failed"
+        ? "border-red-100 bg-red-50 text-red-700"
+        : dropOffEmailStatus === "Missing Email"
+          ? "border-amber-100 bg-amber-50 text-amber-700"
+          : "border-gray-200 bg-gray-50 text-gray-600";
+
 
   return (
     <article
@@ -174,6 +202,29 @@ const PipelineCandidateCard = ({
           </div>
         )}
 
+        {isDropOff && (
+          <div className="mt-3 rounded-md border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Email Notification
+              </p>
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${dropOffEmailStatusClass}`}
+              >
+                {dropOffEmailStatus}
+              </span>
+            </div>
+            <p className="mt-1 truncate text-[10px] font-semibold text-[#667085]">
+              {dropOffEmailRecipient}
+            </p>
+            {dropOffEmailLastActivity && (
+              <p className="mt-1 text-[9px] font-semibold text-[#98A2B3]">
+                {formatDateTime(dropOffEmailLastActivity)}
+              </p>
+            )}
+          </div>
+        )}
+
         {latestTimeline?.reason && (
           <p className="mt-3 line-clamp-2 rounded-md bg-[#F8FAFC] px-2 py-2 text-[11px] font-semibold leading-5 text-[#667085]">
             {latestTimeline.reason}
@@ -197,6 +248,17 @@ const PipelineCandidateCard = ({
             >
               <Eye size={14} />
             </button>
+
+            {isDropOff && (
+              <button
+                type="button"
+                onClick={() => handleResendDropOffEmail(candidate)}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
+                title="Resend Drop-off Email"
+              >
+                <Mail size={14} />
+              </button>
+            )}
 
             {showAssessmentButton && (
               <button

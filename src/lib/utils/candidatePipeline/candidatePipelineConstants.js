@@ -35,17 +35,6 @@ export const normalStageFlow = [
   "Accepted",
 ];
 
-export function getNextPipelineStage(currentStage = "") {
-  const normalizedStage = String(currentStage || "").trim();
-  const currentIndex = normalStageFlow.indexOf(normalizedStage);
-
-  if (currentIndex < 0 || currentIndex >= normalStageFlow.length - 1) {
-    return "";
-  }
-
-  return normalStageFlow[currentIndex + 1];
-}
-
 export function canScheduleInterviewFromStage(
   currentStage = "",
   candidate = {},

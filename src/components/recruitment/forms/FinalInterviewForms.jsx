@@ -124,6 +124,24 @@ function normalizeId(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function formatReapplyEligibilityDate(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (!match) return text || "the saved eligibility date";
+
+  const date = new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
+  );
+
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
 function safeJsonParseValue(value, fallback) {
   if (value === null || value === undefined || value === "") return fallback;
 
@@ -3079,7 +3097,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
         return;
       }
 
-      const didUpdateCandidate = await handleSubmitFinalInterview({
+      const submissionResponse = await handleSubmitFinalInterview({
         candidateId,
         candidateApplicationId: effectiveCandidateApplicationId,
         positionId: effectivePositionId,
@@ -3092,12 +3110,13 @@ export default function FinalInterviewForms({ publicMode = false }) {
         scoreSummary,
       });
 
-      if (!didUpdateCandidate) {
+      if (!submissionResponse?.success) {
         showStatusModal({
           type: "error",
-          title: "Candidate Not Found",
+          title: "Submission Failed",
           message:
-            "Job evaluation form submitted, but the candidate record was not found in the pipeline.",
+            submissionResponse?.message ||
+            "Job evaluation form submitted, but the candidate record was not updated in the pipeline.",
         });
 
         setIsSubmitting(false);
@@ -3113,10 +3132,28 @@ export default function FinalInterviewForms({ publicMode = false }) {
       setSubmittedSuccessfully(true);
       setHasUserChangedAnswers(false);
 
+      const failedFinalInterview =
+        submissionResponse?.outcome === "final-interview-failed" ||
+        submissionResponse?.automaticDropOff === true;
+      const reapplyEligibleAt =
+        submissionResponse?.reapplyEligibleAt ||
+        submissionResponse?.reapply_eligible_at ||
+        "";
+
       showStatusModal({
         type: "success",
-        title: "Job Evaluation Submitted",
-        message: "Candidate moved to Interviewed.",
+        title: failedFinalInterview
+          ? "Final Interview Result: Failed"
+          : "Job Evaluation Submitted",
+        message: failedFinalInterview
+          ? `Candidate moved to Drop-off because the Final Interview score did not meet the passing score. The candidate may reapply starting ${formatReapplyEligibilityDate(
+              reapplyEligibleAt,
+            )}.${
+              submissionResponse?.emailWarning
+                ? ` Email warning: ${submissionResponse.emailWarning}`
+                : " The failure email was processed."
+            }`
+          : "Candidate moved to Interviewed.",
         afterClose: () => navigate(-1),
       });
     } catch (error) {

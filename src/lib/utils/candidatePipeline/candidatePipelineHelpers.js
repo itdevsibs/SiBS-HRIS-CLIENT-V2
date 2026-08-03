@@ -1,6 +1,6 @@
 import {
+  normalStageFlow,
   canScheduleInterviewFromStage,
-  getNextPipelineStage as getNextPipelineStageFromContract,
   INTERNAL_CANDIDATES_STORAGE_KEY,
   PUBLIC_SUBMISSIONS_KEY,
   OFFER_RECORDS_STORAGE_KEY,
@@ -76,7 +76,13 @@ export function isPrfReviewed(candidate) {
 }
 
 export function getNextStage(currentStage) {
-  return getNextPipelineStageFromContract(currentStage);
+  const normalizedStage = String(currentStage || "").trim();
+  const currentIndex = normalStageFlow.indexOf(normalizedStage);
+
+  if (currentIndex === -1) return "";
+  if (currentIndex === normalStageFlow.length - 1) return "";
+
+  return normalStageFlow[currentIndex + 1];
 }
 
 export function getAssessmentStatus(candidate) {
@@ -98,10 +104,6 @@ export function getDisplayInterviewStatus(candidate) {
     return getAssessmentResult(candidate) ? "" : "For Assessment";
   }
 
-  if (currentStage === "Assessment Fit") {
-    return candidate.interviewStatus || "For Scheduling";
-  }
-
   return candidate.interviewStatus || "—";
 }
 
@@ -112,8 +114,7 @@ export function getDisplayInterviewType(candidate) {
 
   if (
     currentStage === "Initial Screening" ||
-    currentStage === "Online Assessment" ||
-    currentStage === "Assessment Fit"
+    currentStage === "Online Assessment"
   ) {
     return "—";
   }
@@ -152,8 +153,6 @@ export function getStageClass(stage) {
       return "border-blue-100 bg-blue-50 text-blue-700";
     case "Online Assessment":
       return "border-cyan-100 bg-cyan-50 text-cyan-700";
-    case "Assessment Fit":
-      return "border-indigo-100 bg-indigo-50 text-indigo-700";
     case "Interview Scheduled":
       return "border-sky-100 bg-sky-50 text-sky-700";
     case "Interviewed":
@@ -186,12 +185,7 @@ export function getPrfStatusClass(status) {
 export function getInterviewStatusClass(status) {
   switch (status) {
     case "Scheduled":
-    case "Accepted":
       return "border-blue-100 bg-blue-50 text-blue-700";
-
-    case "Awaiting Candidate Response":
-    case "Pending":
-      return "border-amber-100 bg-amber-50 text-amber-700";
 
     case "Interview in Progress":
       return "border-amber-100 bg-amber-50 text-amber-700";
@@ -203,8 +197,6 @@ export function getInterviewStatusClass(status) {
       return "border-violet-100 bg-violet-50 text-violet-700";
 
     case "Cancelled":
-    case "Declined":
-    case "No Response":
       return "border-red-100 bg-red-50 text-sibs-primary-1";
 
     case "For Assessment":
@@ -216,10 +208,6 @@ export function getInterviewStatusClass(status) {
     default:
       return "border-gray-100 bg-gray-50 text-gray-600";
   }
-}
-
-export function getInterviewResponseStatusClass(status) {
-  return getInterviewStatusClass(status);
 }
 
 export function getAssessmentStatusClass(status) {
@@ -792,16 +780,6 @@ export function normalizeCandidate(candidate) {
       interviewDate: null,
       interviewType: "-",
       interviewStatus: "For Assessment",
-      onlineInterviewLink: "",
-    };
-  }
-
-  if (currentStage === "Assessment Fit") {
-    return {
-      ...normalized,
-      interviewDate: null,
-      interviewType: "-",
-      interviewStatus: normalized.interviewStatus || "For Scheduling",
       onlineInterviewLink: "",
     };
   }

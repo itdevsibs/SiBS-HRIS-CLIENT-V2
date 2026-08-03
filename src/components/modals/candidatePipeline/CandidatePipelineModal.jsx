@@ -90,6 +90,24 @@ const ACCEPTED_FILE_TYPES =
 
 const SIBS_ASSESSMENT_LOGO_PREVIEW_URL = "/SiBSLogoNavy.png";
 
+function formatCandidateDateOnly(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (!match) return formatDateTime(value) || "—";
+
+  const date = new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
+  );
+
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
 const MAJOR_REQUIREMENTS = [
   "Transcript of Records and/or Diploma",
   "Medical Records",
@@ -4033,7 +4051,6 @@ function AssessmentEmailFormatModal({
   return (
     <div
       className="sibs-modal-blur fixed inset-0 z-[12000] flex h-dvh items-center justify-center px-4 py-4"
-      onClick={onClose}
     >
       <div
         onClick={(event) => event.stopPropagation()}
@@ -4346,6 +4363,8 @@ const CandidatePipelineModal = ({
   ] = useState(false);
   const [isResendingAssessmentEmail, setIsResendingAssessmentEmail] =
     useState(false);
+  const [isResendingDropOffEmail, setIsResendingDropOffEmail] =
+    useState(false);
   const [showAssessmentEmailModal, setShowAssessmentEmailModal] = useState(false);
   const [assessmentEmailForm, setAssessmentEmailForm] = useState({
     recipientEmail: "",
@@ -4373,11 +4392,24 @@ const CandidatePipelineModal = ({
 
   const {
     handleStartInterview,
+    handleResendDropOffEmail,
     setCandidateList,
     syncSelectedCandidate,
   } = useCandidatePipeline();
 
   const navigate = useNavigate();
+
+  async function handleResendDropOffNotification() {
+    if (!activeCandidate || isResendingDropOffEmail) return;
+
+    setIsResendingDropOffEmail(true);
+
+    try {
+      await handleResendDropOffEmail(activeCandidate);
+    } finally {
+      setIsResendingDropOffEmail(false);
+    }
+  }
 
   function showStatusModal({
     type = "success",
@@ -4683,6 +4715,7 @@ const CandidatePipelineModal = ({
     hasSelectedPrfStatusThisSession &&
     ["Matched", "Not Matched"].includes(activePrfStatus);
   const isOnlineAssessment = currentStage === "Online Assessment";
+  const isAssessmentFit = currentStage === "Assessment Fit";
   const isInterviewScheduled = currentStage === "Interview Scheduled";
   const isInterviewed = currentStage === "Interviewed";
   const isOffered = currentStage === "Offered";
@@ -6928,7 +6961,6 @@ const CandidatePipelineModal = ({
         <>
           <div
             className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4"
-        onClick={onClose}
       >
         <div
           className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
@@ -7379,6 +7411,74 @@ const CandidatePipelineModal = ({
                             }
                           />
 
+                          {(activeCandidate.finalInterviewResult ||
+                            activeCandidate.final_interview_result ||
+                            activeCandidate.reapplyEligibleAt ||
+                            activeCandidate.reapply_eligible_at) && (
+                            <>
+                              <DetailRow
+                                label="Final Interview Result"
+                                value={
+                                  activeCandidate.finalInterviewResult ||
+                                  activeCandidate.final_interview_result ||
+                                  "—"
+                                }
+                              />
+                              <DetailRow
+                                label="Final Interview Score"
+                                value={
+                                  activeCandidate.finalInterviewScore !== null &&
+                                  activeCandidate.finalInterviewScore !== undefined &&
+                                  activeCandidate.finalInterviewScore !== ""
+                                    ? `${activeCandidate.finalInterviewScore}%`
+                                    : activeCandidate.final_interview_score !== null &&
+                                        activeCandidate.final_interview_score !== undefined &&
+                                        activeCandidate.final_interview_score !== ""
+                                      ? `${activeCandidate.final_interview_score}%`
+                                      : "—"
+                                }
+                              />
+                              <DetailRow
+                                label="Required Passing Score"
+                                value={
+                                  activeCandidate.finalInterviewPassingScore !== null &&
+                                  activeCandidate.finalInterviewPassingScore !== undefined &&
+                                  activeCandidate.finalInterviewPassingScore !== ""
+                                    ? `${activeCandidate.finalInterviewPassingScore}%`
+                                    : activeCandidate.final_interview_passing_score !== null &&
+                                        activeCandidate.final_interview_passing_score !== undefined &&
+                                        activeCandidate.final_interview_passing_score !== ""
+                                      ? `${activeCandidate.final_interview_passing_score}%`
+                                      : "—"
+                                }
+                              />
+                              <DetailRow
+                                label="Failed Assessment Date"
+                                value={
+                                  formatDateTime(
+                                    activeCandidate.finalInterviewFailedAt ||
+                                      activeCandidate.final_interview_failed_at,
+                                  ) || "—"
+                                }
+                              />
+                              <DetailRow
+                                label="Reapply Eligibility Date"
+                                value={formatCandidateDateOnly(
+                                  activeCandidate.reapplyEligibleAt ||
+                                    activeCandidate.reapply_eligible_at,
+                                )}
+                              />
+                              <DetailRow
+                                label="Restriction Status"
+                                value={
+                                  activeCandidate.reapplicationRestrictionStatus ||
+                                  activeCandidate.reapplication_restriction_status ||
+                                  "—"
+                                }
+                              />
+                            </>
+                          )}
+
                           <div className="mt-4 flex items-center justify-between gap-4 text-[12px]">
                             <span className="shrink-0 font-bold uppercase text-sibs-tertiary-5">
                               Interview Link
@@ -7457,7 +7557,7 @@ const CandidatePipelineModal = ({
                           </div>
                         )}
 
-                        {isOnlineAssessment &&
+                        {isAssessmentFit &&
                           canScheduleInterview(activeCandidate) && (
                             <button
                               type="button"
@@ -7508,13 +7608,13 @@ const CandidatePipelineModal = ({
                               value={activeCandidate.offerDetails?.account}
                             />
                             <DetailRow
-                              label="Basic Pay"
+                              label="Basic Daily Rate"
                               value={formatCurrency(
                                 activeCandidate.offerDetails?.basicPay,
                               )}
                             />
                             <DetailRow
-                              label="Deminimis / Daily Rate"
+                              label="Daily De Minimis"
                               value={formatCurrency(
                                 activeCandidate.offerDetails?.deminimisDailyRate,
                               )}
@@ -7715,6 +7815,91 @@ const CandidatePipelineModal = ({
               </div>
             </div>
           </div>
+
+          {currentStage === "Drop-off" && (
+            <div className="border-t border-gray-100 px-5 py-5 sm:px-6">
+              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#101828]">
+                      Drop-off Email Notification
+                    </h3>
+                    <p className="mt-1 text-xs font-semibold text-[#667085]">
+                      Automatic application update delivery status
+                    </p>
+                  </div>
+
+                  <span className="inline-flex w-fit rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                    {activeCandidate.dropOffEmailStatus ||
+                      activeCandidate.drop_off_email_status ||
+                      "Not Sent"}
+                  </span>
+                </div>
+
+                <div className="mt-4 rounded-xl bg-white p-4">
+                  <DetailRow
+                    label="Recipient"
+                    value={
+                      activeCandidate.dropOffEmailRecipient ||
+                      activeCandidate.drop_off_email_recipient ||
+                      activeCandidate.email ||
+                      "No email saved"
+                    }
+                  />
+                  <DetailRow
+                    label="Attempt Count"
+                    value={
+                      activeCandidate.dropOffEmailAttemptCount ??
+                      activeCandidate.drop_off_email_attempt_count ??
+                      0
+                    }
+                  />
+                  <DetailRow
+                    label="Sent At"
+                    value={
+                      formatDateTime(
+                        activeCandidate.dropOffEmailSentAt ||
+                          activeCandidate.drop_off_email_sent_at,
+                      ) || "—"
+                    }
+                  />
+                  <DetailRow
+                    label="Last Attempt"
+                    value={
+                      formatDateTime(
+                        activeCandidate.dropOffEmailLastAttemptAt ||
+                          activeCandidate.drop_off_email_last_attempt_at,
+                      ) || "—"
+                    }
+                  />
+                  <DetailRow
+                    label="Delivery Error"
+                    value={
+                      activeCandidate.dropOffEmailError ||
+                      activeCandidate.drop_off_email_error ||
+                      "—"
+                    }
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isResendingDropOffEmail}
+                  onClick={handleResendDropOffNotification}
+                  className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isResendingDropOffEmail ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Mail size={16} />
+                  )}
+                  {isResendingDropOffEmail
+                    ? "Resending..."
+                    : "Resend Drop-off Email"}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
             <div className="flex flex-col justify-end gap-2 sm:flex-row">

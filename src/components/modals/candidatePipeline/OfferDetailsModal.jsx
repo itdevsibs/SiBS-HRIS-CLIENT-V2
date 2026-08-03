@@ -2,14 +2,19 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BriefcaseBusiness,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Check,
   ChevronDown,
   Loader2,
   Search,
+  RefreshCw,
   X,
 } from "lucide-react";
 
 import { getApprovedHiringNeeds } from "../../../lib/axios/getCandidatePipeline";
+import { buildApprovedReprofileOptions } from "../../../lib/utils/candidatePipeline/offerReprofile";
 import StatusModal from "../StatusModal";
 
 const BRAND_BLUE = "#0D4676";
@@ -488,17 +493,123 @@ function textareaClass() {
   return "min-h-[92px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-bold leading-6 text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10";
 }
 
+function padDatePart(value) {
+  return String(value).padStart(2, "0");
+}
+
+function toDateValue(date) {
+  return `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`;
+}
+
+function parseDateValue(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(cleanText(value));
+  if (!match) return null;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function isWeekendDateValue(value) {
+  const date = parseDateValue(value);
+  return !!date && (date.getDay() === 0 || date.getDay() === 6);
+}
+
+function StartDatePicker({ value, onChange }) {
+  const wrapperRef = useRef(null);
+  const selectedDate = parseDateValue(value);
+  const [open, setOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
+
+  useEffect(() => {
+    if (selectedDate) setViewDate(selectedDate);
+  }, [value]);
+
+  useEffect(() => {
+    function close(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = Array.from({ length: firstDay + daysInMonth }, (_, index) =>
+    index < firstDay ? null : new Date(year, month, index - firstDay + 1),
+  );
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
+        className={`${inputClass()} flex items-center justify-between text-left`}
+      >
+        <span className={value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"}>
+          {selectedDate
+            ? selectedDate.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "2-digit" })
+            : "Select start date"}
+        </span>
+        <CalendarDays size={18} className="shrink-0" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="mb-3 flex items-center justify-between">
+            <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-lg p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
+            <span className="text-sm font-extrabold text-sibs-primary-1">{viewDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</span>
+            <button type="button" onClick={() => setViewDate(new Date(year, month + 1, 1))} className="rounded-lg p-2 hover:bg-gray-100"><ChevronRight size={18} /></button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold text-sibs-tertiary-5">
+            {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day) => <span key={day} className="py-1">{day}</span>)}
+          </div>
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {cells.map((date, index) => {
+              if (!date) return <span key={`blank-${index}`} />;
+              const dateValue = toDateValue(date);
+              const disabled = date < today || date.getDay() === 0 || date.getDay() === 6;
+              const active = dateValue === value;
+              return (
+                <button
+                  key={dateValue}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => { onChange(dateValue); setOpen(false); }}
+                  className={`h-9 rounded-lg text-sm font-bold transition ${active ? "bg-sibs-primary-1 text-white" : disabled ? "cursor-not-allowed bg-gray-50 text-gray-300" : "text-sibs-primary-1 hover:bg-[#EAF4FF]"}`}
+                  title={date.getDay() === 0 || date.getDay() === 6 ? "Saturday and Sunday are unavailable" : undefined}
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-xs font-semibold text-sibs-tertiary-5">Saturdays and Sundays are unavailable.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function OfferDetailsModal({
   open,
   candidate,
   form,
   setForm,
   onClose,
+  onReprofile,
   onSubmit,
+  submitting = false,
 }) {
   const [approvedHiringNeeds, setApprovedHiringNeeds] = useState([]);
   const [isLoadingHiringNeeds, setIsLoadingHiringNeeds] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [reprofileOpen, setReprofileOpen] = useState(false);
+  const [selectedReprofileId, setSelectedReprofileId] = useState("");
+  const [isSavingReprofile, setIsSavingReprofile] = useState(false);
+  const [startDateInitiated, setStartDateInitiated] = useState(false);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -528,6 +639,15 @@ export default function OfferDetailsModal({
       message: "",
     });
   }
+
+  useEffect(() => {
+    if (!open) {
+      setStartDateInitiated(false);
+      return;
+    }
+
+    setStartDateInitiated(Boolean(cleanText(form?.startDate)));
+  }, [open]);
 
   useEffect(() => {
     let active = true;
@@ -589,57 +709,15 @@ export default function OfferDetailsModal({
     };
   }, [open]);
 
-  const hiringRequirementOptions = useMemo(() => {
-    return approvedHiringNeeds.map((item) => ({
-      value: item.id,
-      label: item.label,
-      subLabel: [
-        item.roleTitle ? `Role: ${item.roleTitle}` : "",
-        item.account ? `Account: ${item.account}` : "",
-        item.department ? `Department: ${item.department}` : "",
-      ]
-        .filter(Boolean)
-        .join(" • "),
-      searchText: [
-        item.id,
-        item.label,
-        item.roleTitle,
-        item.account,
-        item.department,
-        item.locationSite,
-      ]
-        .filter(Boolean)
-        .join(" "),
-      raw: item,
-    }));
+  const candidateRoleTitle = cleanText(
+    form?.roleTitle || candidate?.roleTitle || candidate?.openPosition,
+  );
+
+  const reprofileOptions = useMemo(() => {
+    return buildApprovedReprofileOptions({
+      hiringNeeds: approvedHiringNeeds,
+    });
   }, [approvedHiringNeeds]);
-
-  const accountOptions = useMemo(() => {
-    const approvedAccounts = approvedHiringNeeds
-      .map((item) => cleanText(item.account))
-      .filter(Boolean)
-      .map((account) => ({
-        value: account,
-        label: account,
-      }));
-
-    const currentAccount = cleanText(form?.account);
-
-    if (currentAccount) {
-      approvedAccounts.unshift({
-        value: currentAccount,
-        label: currentAccount,
-      });
-    }
-
-    return uniqueOptions(approvedAccounts);
-  }, [approvedHiringNeeds, form?.account]);
-
-  const selectedHiringNeed = useMemo(() => {
-    return approvedHiringNeeds.find(
-      (item) => String(item.id) === String(form?.hiringRequirementId),
-    );
-  }, [approvedHiringNeeds, form?.hiringRequirementId]);
 
   if (!open || !candidate) return null;
 
@@ -650,44 +728,54 @@ export default function OfferDetailsModal({
     }));
   }
 
-  function handleHiringNeedSelect(option) {
-    const selected = option?.raw;
+  async function handleSaveReprofile() {
+    const selected = reprofileOptions.find(
+      (option) => String(option.value) === String(selectedReprofileId),
+    );
 
     if (!selected) {
-      updateForm({
-        hiringRequirementId: "",
-        hiringRequirementLabel: "",
-        roleTitle: "",
-        finalRole: "",
-        account: "",
-        finalAccount: "",
-        hiringNeed: null,
+      showStatusModal({
+        type: "error",
+        title: "Select an Account",
+        message: "Select an approved account for the same Role Title.",
       });
       return;
     }
 
-    updateForm({
-      hiringRequirementId: selected.id,
-      hiringRequirementLabel: selected.label,
-      roleTitle: selected.roleTitle || "",
-      finalRole: selected.roleTitle || "",
-      account: selected.account || "",
-      finalAccount: selected.account || "",
-      basicPay:
-        selected.basicPay !== "" && selected.basicPay !== null
-          ? formatMoneyInput(selected.basicPay)
-          : form.basicPay || "",
-      deminimisDailyRate:
-        selected.deminimisDailyRate !== "" &&
-        selected.deminimisDailyRate !== null
-          ? formatMoneyInput(selected.deminimisDailyRate)
-          : form.deminimisDailyRate || "",
-      hiringNeed: selected,
-    });
-  }
+    setIsSavingReprofile(true);
+    try {
+      const response = await onReprofile?.({
+        hiringRequirementId: selected.value,
+        account: selected.account,
+      });
 
-  function handleAccountSelect() {
-    return;
+      if (!response?.success) {
+        throw new Error(response?.message || "Failed to reprofile account.");
+      }
+
+      updateForm({
+        hiringRequirementId: selected.value,
+        hiringRequirementLabel: selected.raw?.label || "",
+        roleTitle: candidateRoleTitle,
+        finalRole: candidateRoleTitle,
+        account: selected.account,
+        finalAccount: selected.account,
+        hiringNeed: selected.raw || null,
+      });
+      setSelectedReprofileId("");
+      setReprofileOpen(false);
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Reprofile Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to reprofile candidate account.",
+      });
+    } finally {
+      setIsSavingReprofile(false);
+    }
   }
 
   async function handleProceedClick(event) {
@@ -695,10 +783,6 @@ export default function OfferDetailsModal({
     event.stopPropagation();
 
     const missingFields = [];
-
-    if (!cleanText(form?.hiringRequirementId)) {
-      missingFields.push("Hiring Requirement / PRF");
-    }
 
     if (!cleanText(form?.roleTitle)) {
       missingFields.push("Final Role Title");
@@ -709,11 +793,15 @@ export default function OfferDetailsModal({
     }
 
     if (isInvalidMoney(form?.basicPay)) {
-      missingFields.push("Valid Basic Pay");
+      missingFields.push("Valid Basic Daily Rate");
     }
 
     if (isInvalidMoney(form?.deminimisDailyRate)) {
-      missingFields.push("Valid Deminimis / Daily Rate");
+      missingFields.push("Valid Daily De Minimis");
+    }
+
+    if (cleanText(form?.startDate) && isWeekendDateValue(form.startDate)) {
+      missingFields.push("Weekday Start Date");
     }
 
     if (missingFields.length > 0) {
@@ -750,12 +838,32 @@ export default function OfferDetailsModal({
     <>
       <div
         className="sibs-modal-blur fixed inset-0 z-[10020] flex h-dvh items-center justify-center px-4 py-4"
-        onClick={onClose}
       >
         <div
-          className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+          className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
           onClick={(event) => event.stopPropagation()}
         >
+          {submitting && (
+            <div className="absolute inset-0 z-50 flex flex-col rounded-2xl bg-white p-6">
+              <div className="animate-pulse space-y-5">
+                <div className="h-7 w-64 rounded bg-slate-200" />
+                <div className="h-4 w-96 max-w-full rounded bg-slate-200" />
+                <div className="h-20 rounded-xl bg-slate-100" />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="h-16 rounded-xl bg-slate-100" />
+                  <div className="h-16 rounded-xl bg-slate-100" />
+                  <div className="h-16 rounded-xl bg-slate-100" />
+                  <div className="h-16 rounded-xl bg-slate-100" />
+                </div>
+                <div className="h-24 rounded-xl bg-slate-100" />
+                <div className="h-20 rounded-xl bg-amber-50" />
+              </div>
+              <div className="mt-auto flex items-center justify-center gap-3 pt-6 text-sm font-extrabold text-sibs-primary-1">
+                <Loader2 size={20} className="animate-spin" />
+                Generating PDF and sending offer for approval...
+              </div>
+            </div>
+          )}
           <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
             <div>
               <h2 className="text-lg font-extrabold text-sibs-primary-1 sm:text-xl">
@@ -771,6 +879,7 @@ export default function OfferDetailsModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={submitting}
               className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
             >
               <X size={20} />
@@ -803,96 +912,38 @@ export default function OfferDetailsModal({
                 </div>
               </div>
 
-              <div>
-                <HrisDropdown
-                  label="Hiring Requirement / PRF"
-                  required
-                  placeholder="Search approved hiring requirement / PRF"
-                  value={form.hiringRequirementId || ""}
-                  options={hiringRequirementOptions}
-                  onChange={handleHiringNeedSelect}
-                  loading={isLoadingHiringNeeds}
-                  emptyText={
-                    loadError ||
-                    "No approved hiring requirements found. Approve a Hiring Need first."
-                  }
-                />
 
-                <p className="mt-2 text-xs font-bold text-sibs-primary-1">
-                  Only Hiring Needs with{" "}
-                  <span className="font-extrabold">Approved</span> approval
-                  status are displayed here.
-                </p>
-              </div>
-
-              {selectedHiringNeed && (
-                <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-                  <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Selected Approved Hiring Need
-                  </p>
-
-                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div>
-                      <p className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
-                        Role Title
-                      </p>
-                      <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-                        {selectedHiringNeed.roleTitle || "—"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
-                        Account
-                      </p>
-                      <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-                        {selectedHiringNeed.account || "—"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
-                        Department
-                      </p>
-                      <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-                        {selectedHiringNeed.department || "—"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
-                        Approved Requirement
-                      </p>
-                      <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-                        {selectedHiringNeed.approvedRequirement || "—"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
                     Final Role Title <span className="text-red-500">*</span>
                   </label>
-
-                  <input
-                    type="text"
-                    value={form.roleTitle || ""}
-                    disabled
-                    readOnly
-                    placeholder="Final role title"
-                    className={inputClass()}
-                    title="Final role title is automatically based on the selected Hiring Requirement / PRF."
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={form.roleTitle || ""}
+                      disabled
+                      readOnly
+                      placeholder="Final role title"
+                      className={`${inputClass()} pr-32`}
+                      title="Role Title remains the same during account reprofile."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setReprofileOpen(true)}
+                      className="absolute right-1.5 top-1/2 inline-flex h-9 -translate-y-1/2 items-center justify-center gap-2 rounded-lg border border-sibs-primary-1 bg-white px-3 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#EAF4FF]"
+                    >
+                      <RefreshCw size={15} />
+                      Reprofile
+                    </button>
+                  </div>
                 </div>
 
                 <div>
                   <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
                     Final Account <span className="text-red-500">*</span>
                   </label>
-
                   <input
                     type="text"
                     value={form.account || ""}
@@ -900,20 +951,27 @@ export default function OfferDetailsModal({
                     readOnly
                     placeholder="Final account"
                     className={inputClass()}
-                    title="Final account is automatically based on the selected Hiring Requirement / PRF."
                   />
                 </div>
               </div>
 
-              <p className="-mt-2 text-xs font-bold text-sibs-tertiary-5">
-                Final Role Title and Final Account are locked because they are
-                automatically based on the selected Hiring Requirement / PRF.
+
+              <p className="-mt-2 text-xs font-bold text-sibs-primary-1/80">
+                Final Role Title remains unchanged. Use Reprofile to select
+                another approved account for the same Role Title.
               </p>
+
+              {!cleanText(form?.hiringRequirementId) && (
+                <p className="-mt-2 text-xs font-bold text-amber-700">
+                  No approved Hiring Requirement matches this Role Title and Account. Use
+                  Reprofile to select an approved account before proceeding.
+                </p>
+              )}
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Basic Pay <span className="text-red-500">*</span>
+                    Basic Daily Rate <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -934,7 +992,7 @@ export default function OfferDetailsModal({
 
                 <div>
                   <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Deminimis / Daily Rate{" "}
+                    Daily De Minimis{" "}
                     <span className="text-red-500">*</span>
                   </label>
 
@@ -953,6 +1011,39 @@ export default function OfferDetailsModal({
                     className={inputClass()}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (startDateInitiated) {
+                      updateForm({ startDate: "" });
+                      setStartDateInitiated(false);
+                      return;
+                    }
+
+                    setStartDateInitiated(true);
+                  }}
+                  className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl border border-sibs-primary-1 bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#EAF4FF]"
+                >
+                  <CalendarDays size={16} />
+                  {startDateInitiated ? "Hide Start Date" : "Add Start Date"}
+                </button>
+
+                {startDateInitiated && (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                        Start Date
+                      </label>
+                      <StartDatePicker
+                        value={form.startDate || ""}
+                        onChange={(startDate) => updateForm({ startDate })}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -987,6 +1078,7 @@ export default function OfferDetailsModal({
               <button
                 type="button"
                 onClick={onClose}
+                disabled={submitting}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-extrabold text-gray-600 transition hover:bg-gray-50"
               >
                 Cancel
@@ -995,15 +1087,66 @@ export default function OfferDetailsModal({
               <button
                 type="button"
                 onClick={handleProceedClick}
+                disabled={submitting}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90"
               >
-                <ArrowRight size={16} />
-                Proceed for Approval
+                {submitting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <ArrowRight size={16} />
+                )}
+                {submitting ? "Sending..." : "Proceed for Approval"}
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {reprofileOpen && (
+        <div
+          className="sibs-modal-blur fixed inset-0 z-[10100] flex h-dvh items-center justify-center px-4 py-4"
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-extrabold text-sibs-primary-1">Reprofile Candidate</h3>
+                <p className="mt-1 text-sm font-bold text-sibs-tertiary-5">Keep the same Role Title and select an approved Hiring Need account.</p>
+              </div>
+              <button type="button" onClick={() => setReprofileOpen(false)} className="rounded-full p-2 text-gray-400 hover:bg-gray-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">Role Title</label>
+                <input value={candidateRoleTitle} disabled readOnly className={inputClass()} />
+              </div>
+              <HrisDropdown
+                label="Hiring Requirement / PRF"
+                required
+                placeholder="Search approved hiring requirement / PRF"
+                value={selectedReprofileId}
+                options={reprofileOptions}
+                onChange={(option) => setSelectedReprofileId(option?.value || "")}
+                loading={isLoadingHiringNeeds}
+                emptyText={loadError || "No approved Hiring Needs are available."}
+              />
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" disabled={isSavingReprofile} onClick={() => setReprofileOpen(false)} className="h-11 rounded-xl border border-[#E6ECF2] px-5 text-sm font-extrabold text-gray-600">Cancel</button>
+              <button type="button" disabled={isSavingReprofile} onClick={handleSaveReprofile} className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white disabled:opacity-60">
+                {isSavingReprofile && <Loader2 size={16} className="animate-spin" />}
+                Save Reprofile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <StatusModal
         open={statusModal.open}
