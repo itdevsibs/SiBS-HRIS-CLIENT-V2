@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  Download,
   Eye,
   FileImage,
   FileSpreadsheet,
@@ -2728,8 +2729,22 @@ function EmptyState({ title, description }) {
   );
 }
 
-function NhoFilePreviewPanel({ file }) {
-  if (!file) {
+function NhoFilePreviewPanel({
+  files = [],
+  selectedFile,
+  onSelectFile,
+}) {
+  const requirement = selectedFile?.requirement || files[0]?.requirement || "";
+  const requirementFiles = requirement
+    ? getFilesForRequirement(files, requirement)
+    : [];
+
+  const activeFile =
+    requirementFiles.find((file) => file.id === selectedFile?.id) ||
+    requirementFiles[0] ||
+    null;
+
+  if (!activeFile) {
     return (
       <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#B9C7D6] bg-[#F8FAFC] p-6 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D9E2EC] bg-white text-sibs-primary-1 shadow-sm">
@@ -2737,23 +2752,27 @@ function NhoFilePreviewPanel({ file }) {
         </div>
 
         <p className="mt-4 text-base font-extrabold text-[#101828]">
-          No file selected
+          No requirement selected
         </p>
 
         <p className="mt-2 max-w-xs text-sm font-semibold leading-6 text-sibs-tertiary-5">
-          Select an uploaded NHO file from the requirements list to preview its
-          details here.
+          Select any uploaded requirement file to view all files saved under
+          that requirement.
         </p>
       </div>
     );
   }
 
-  const resolvedFileUrl = getResolvedFileUrl(file.fileUrl);
+  const resolvedFileUrl = getResolvedFileUrl(activeFile.fileUrl);
 
-  const isImageByType = String(file.fileType || "").startsWith("image/");
+  const isImageByType = String(activeFile.fileType || "").startsWith("image/");
   const isImageByName = /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(
-    file.fileName || "",
+    activeFile.fileName || activeFile.savedFileName || "",
   );
+
+  const isPdf =
+    String(activeFile.fileType || "").toLowerCase() === "application/pdf" ||
+    /\.pdf$/i.test(activeFile.fileName || activeFile.savedFileName || "");
 
   const isImage =
     resolvedFileUrl &&
@@ -2762,37 +2781,72 @@ function NhoFilePreviewPanel({ file }) {
 
   return (
     <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
-      <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
-          <FileTypeIcon fileName={file.fileName} size={24} />
-        </div>
+      <div>
+        <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          Requirement Files
+        </p>
 
-        <div className="min-w-0">
-          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-            Selected File
-          </p>
+        <h3 className="mt-1 break-words text-base font-extrabold text-[#101828]">
+          {requirement || "Pre-Employment Requirement"}
+        </h3>
 
-          <h3
-            title={file.fileName || file.savedFileName}
-            className="mt-1 break-words text-base font-extrabold text-[#101828]"
-          >
-            {file.fileName || file.savedFileName || "Uploaded file"}
-          </h3>
+        <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
+          {requirementFiles.length} file{requirementFiles.length === 1 ? "" : "s"}
+        </p>
+      </div>
 
-          <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
-            {formatFileSize(file.fileSize)}
-          </p>
-        </div>
+      <div className="mt-4 space-y-2">
+        {requirementFiles.map((file) => {
+          const selected = file.id === activeFile.id;
+
+          return (
+            <button
+              key={`${file.id}-${file.fileName}-${file.fileUrl}`}
+              type="button"
+              onClick={() => onSelectFile?.(file)}
+              className={`flex w-full min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${
+                selected
+                  ? "border-sibs-primary-1 bg-blue-50"
+                  : "border-[#D9E2EC] bg-white hover:bg-[#F3F8FF]"
+              }`}
+            >
+              <FileTypeIcon
+                fileName={file.fileName || file.savedFileName}
+                size={17}
+                className={`shrink-0 ${
+                  selected ? "text-sibs-primary-1" : "text-[#667085]"
+                }`}
+              />
+
+              <span className="min-w-0 flex-1">
+                <span
+                  title={file.fileName || file.savedFileName}
+                  className={`block truncate text-xs font-extrabold ${
+                    selected ? "text-sibs-primary-1" : "text-[#344054]"
+                  }`}
+                >
+                  {file.fileName || file.savedFileName || "Uploaded file"}
+                </span>
+
+                <span className="mt-0.5 block truncate text-[11px] font-bold text-sibs-tertiary-5">
+                  {formatFileSize(file.fileSize)}
+                </span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="mt-5 space-y-3 rounded-xl border border-[#E6ECF2] bg-white p-4">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-            Requirement
+            Selected File
           </p>
 
-          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-            {file.requirement || "NHO Uploaded File"}
+          <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+            {activeFile.fileName ||
+              activeFile.savedFileName ||
+              "Uploaded file"}
           </p>
         </div>
 
@@ -2802,30 +2856,18 @@ function NhoFilePreviewPanel({ file }) {
           </p>
 
           <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-            {formatUploadedDate(file.uploadedAt)}
+            {formatUploadedDate(activeFile.uploadedAt)}
           </p>
         </div>
 
-        {file.uploadedBy && (
+        {activeFile.uploadedBy && (
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
               Uploaded By
             </p>
 
             <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
-              {file.uploadedBy}
-            </p>
-          </div>
-        )}
-
-        {file.applicantFolderName && (
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-              Server Folder
-            </p>
-
-            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
-              {file.applicantFolderName}
+              {activeFile.uploadedBy}
             </p>
           </div>
         )}
@@ -2835,21 +2877,53 @@ function NhoFilePreviewPanel({ file }) {
         <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
           <img
             src={resolvedFileUrl}
-            alt={file.fileName || "Uploaded file"}
-            className="max-h-[280px] w-full object-contain"
+            alt={
+              activeFile.fileName ||
+              activeFile.savedFileName ||
+              "Uploaded file"
+            }
+            className="max-h-[360px] w-full object-contain"
           />
         </div>
       )}
 
+      {isPdf && resolvedFileUrl && (
+        <iframe
+          src={resolvedFileUrl}
+          title={
+            activeFile.fileName ||
+            activeFile.savedFileName ||
+            "Uploaded PDF"
+          }
+          className="mt-5 h-[420px] w-full rounded-xl border border-[#E6ECF2] bg-white"
+        />
+      )}
+
       {resolvedFileUrl && (
-        <a
-          href={resolvedFileUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
-        >
-          Open File
-        </a>
+        <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <a
+            href={resolvedFileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+          >
+            <Eye size={16} />
+            Preview
+          </a>
+
+          <a
+            href={resolvedFileUrl}
+            download={
+              activeFile.fileName ||
+              activeFile.savedFileName ||
+              "candidate-document"
+            }
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+          >
+            <Download size={16} />
+            Download
+          </a>
+        </div>
       )}
     </div>
   );
@@ -3054,7 +3128,11 @@ function CandidateNhoFilesSection({
         </div>
 
         <aside className="xl:sticky xl:top-0 xl:self-start">
-          <NhoFilePreviewPanel file={selectedFile} />
+          <NhoFilePreviewPanel
+            files={files}
+            selectedFile={selectedFile}
+            onSelectFile={onSelectFile}
+          />
         </aside>
       </div>
     </section>
