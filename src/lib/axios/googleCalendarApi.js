@@ -1,5 +1,7 @@
 import api from "./api-template";
 
+const GOOGLE_CALENDAR_TIMEOUT_MS = 15000;
+
 function getApiBaseUrl() {
   const axiosBaseUrl = api?.defaults?.baseURL || "";
   const viteBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
@@ -17,7 +19,10 @@ export function getGoogleCalendarConnectUrl() {
 
 export async function getGoogleCalendarStatus() {
   try {
-    const res = await api.get("/api/google/calendar/status");
+    const res = await api.get("/api/google/calendar/status", {
+      skipAuthRedirect: true,
+      timeout: GOOGLE_CALENDAR_TIMEOUT_MS,
+    });
 
     return res.data;
   } catch (err) {
@@ -44,6 +49,8 @@ export async function getGoogleCalendarEvents(params = {}) {
   try {
     const res = await api.get("/api/google/calendar/events", {
       params,
+      skipAuthRedirect: true,
+      timeout: GOOGLE_CALENDAR_TIMEOUT_MS,
     });
 
     return res.data;
@@ -69,7 +76,10 @@ export async function getGoogleCalendarEvents(params = {}) {
 
 export async function createGoogleCalendarEvent(payload) {
   try {
-    const res = await api.post("/api/google/calendar/events", payload);
+    const res = await api.post("/api/google/calendar/events", payload, {
+      skipAuthRedirect: true,
+      timeout: GOOGLE_CALENDAR_TIMEOUT_MS,
+    });
 
     return res.data;
   } catch (err) {
@@ -96,6 +106,10 @@ export async function updateGoogleCalendarEvent(eventId, payload) {
     const res = await api.put(
       `/api/google/calendar/events/${encodeURIComponent(eventId)}`,
       payload,
+      {
+        skipAuthRedirect: true,
+        timeout: GOOGLE_CALENDAR_TIMEOUT_MS,
+      },
     );
 
     return res.data;
@@ -122,6 +136,10 @@ export async function deleteGoogleCalendarEvent(eventId) {
   try {
     const res = await api.delete(
       `/api/google/calendar/events/${encodeURIComponent(eventId)}`,
+      {
+        skipAuthRedirect: true,
+        timeout: GOOGLE_CALENDAR_TIMEOUT_MS,
+      },
     );
 
     return res.data;
@@ -146,7 +164,10 @@ export async function deleteGoogleCalendarEvent(eventId) {
 
 export async function disconnectGoogleCalendar() {
   try {
-    const res = await api.post("/api/google/calendar/disconnect");
+    const res = await api.post("/api/google/calendar/disconnect", undefined, {
+      skipAuthRedirect: true,
+      timeout: GOOGLE_CALENDAR_TIMEOUT_MS,
+    });
 
     return res.data;
   } catch (err) {

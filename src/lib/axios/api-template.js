@@ -145,17 +145,6 @@ export async function handleLogout(redirect = true) {
 
   logoutPromise = (async () => {
     try {
-      try {
-        await logoutApi.post("/api/google/calendar/disconnect", {});
-      } catch (error) {
-        if (error?.code !== "ECONNABORTED") {
-          console.error(
-            "Google Calendar disconnect on logout error:",
-            error?.response?.data || error?.message,
-          );
-        }
-      }
-
       await logoutApi.post("/api/users/logout", {});
     } catch (error) {
       if (error?.code !== "ECONNABORTED") {
