@@ -2261,7 +2261,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
         {[
           {
             id: "uploaded",
@@ -2286,7 +2286,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
               key={card.id}
               type="button"
               onClick={() => setActiveDocumentGroup(card.id)}
-              className={`rounded-2xl border p-5 text-left transition ${
+              className={`h-full w-full min-w-0 rounded-2xl border p-5 text-left transition ${
                 active
                   ? "border-[#042C51] bg-[#042C51] text-white shadow-md"
                   : "border-[#D6E0EA] bg-white text-[#042C51] hover:border-[#8EA3BF] hover:shadow-sm"

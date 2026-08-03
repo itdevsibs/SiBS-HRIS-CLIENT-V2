@@ -56,7 +56,7 @@ export default function DocumentVaultManager({
               key={card.id}
               type="button"
               onClick={() => setActiveSection(card.id)}
-              className={`rounded-2xl border p-5 text-left transition ${
+              className={`h-full w-full min-w-0 rounded-2xl border p-5 text-left transition ${
                 active
                   ? "border-sibs-primary-1 bg-sibs-primary-1 text-white shadow-md"
                   : "border-[#D9E2EC] bg-white text-sibs-primary-1 hover:border-sibs-primary-1/40 hover:shadow-sm"
