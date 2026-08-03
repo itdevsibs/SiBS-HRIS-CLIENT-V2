@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
 @import "tailwindcss";
 
@@ -7,6 +7,7 @@
 ========================= */
 @theme {
   --font-jakarta: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "Plus Jakarta Sans", system-ui, sans-serif;
 
   --color-sibs-primary-1: #042c51;
   --color-sibs-primary-2: #ff5c28;
@@ -30,6 +31,16 @@
   --color-sibs-success: #2ecc71;
   --color-sibs-warning: #e67e22;
   --color-sibs-danger: #e74c3c;
+
+  --color-sibs-surface: #f7f9fc;
+  --color-sibs-card: #ffffff;
+  --color-sibs-subtle-border: #d7dee8;
+
+  --z-dropdown: 100;
+  --z-sticky: 500;
+  --z-modal: 1000;
+  --z-popover: 2000;
+  --z-toast: 3000;
 }
 
 /* =========================
@@ -284,6 +295,36 @@
     font-family: "Plus Jakarta Sans", system-ui, sans-serif;
   }
 
+  /* Shared KPI / Metric Card Base */
+  .sibs-metric-card {
+    border-radius: 1rem;
+    border: 1px solid #dce6f1;
+    background-color: #ffffff;
+    padding: 1.25rem;
+    box-shadow: 0 8px 24px rgba(4, 44, 81, 0.04);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sibs-metric-card:hover {
+    border-color: #c1d3e6;
+    box-shadow: 0 12px 30px rgba(4, 44, 81, 0.08);
+    transform: translateY(-2px);
+  }
+
+  /* Global Metric Card Tone Modifiers */
+  .sibs-tone-orange-label { color: #ff5c28; }
+  .sibs-tone-orange-icon  { background-color: #fff0eb; color: #ff5c28; }
+  .sibs-tone-navy-label   { color: #042c51; }
+  .sibs-tone-navy-icon    { background-color: #e9f0fc; color: #042c51; }
+  .sibs-tone-green-label  { color: #047857; }
+  .sibs-tone-green-icon   { background-color: #ecfdf5; color: #059669; }
+  .sibs-tone-indigo-label { color: #4338ca; }
+  .sibs-tone-indigo-icon  { background-color: #eef2ff; color: #4f46e5; }
+  .sibs-tone-amber-label  { color: #b45309; }
+  .sibs-tone-amber-icon   { background-color: #fffbeb; color: #d97706; }
+  .sibs-tone-red-label    { color: #be123c; }
+  .sibs-tone-red-icon     { background-color: #fff1f2; color: #e11d48; }
+
   .animate-slide-in {
     animation: slide-in 0.3s ease-out;
   }
@@ -458,6 +499,22 @@
     animation: sibsModalBackdropOut 180ms ease-in both;
   }
 
+  @keyframes sibsDropdownMenuIn {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .sibs-dropdown-pop-in {
+    animation: sibsDropdownMenuIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: opacity, transform;
+  }
+
   .sibs-inner-modal-pop-in {
     animation: sibsInnerModalPopIn 220ms ease-out both;
   }
@@ -593,6 +650,90 @@
     @apply rounded-2xl border bg-white;
     border-color: rgba(190, 203, 218, 0.55);
     box-shadow: 0 8px 22px rgba(4, 44, 81, 0.04);
+  }
+
+  /* =========================
+     SIBS METRIC CARD TONES & ICON BACKGROUNDS
+  ========================= */
+  .sibs-metric-card {
+    @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md;
+  }
+
+  .sibs-tone-navy-label {
+    @apply text-[#042C51];
+  }
+  .sibs-tone-navy-icon {
+    @apply bg-blue-50 text-blue-600 border border-blue-100;
+  }
+
+  .sibs-tone-blue-label {
+    @apply text-blue-600;
+  }
+  .sibs-tone-blue-icon {
+    @apply bg-blue-50 text-blue-600 border border-blue-100;
+  }
+
+  .sibs-tone-amber-label {
+    @apply text-amber-700;
+  }
+  .sibs-tone-amber-icon {
+    @apply bg-amber-50 text-amber-600 border border-amber-100;
+  }
+
+  .sibs-tone-orange-label {
+    @apply text-orange-600;
+  }
+  .sibs-tone-orange-icon {
+    @apply bg-orange-50 text-orange-600 border border-orange-100;
+  }
+
+  .sibs-tone-red-label {
+    @apply text-rose-700;
+  }
+  .sibs-tone-red-icon {
+    @apply bg-rose-50 text-rose-600 border border-rose-100;
+  }
+
+  .sibs-tone-rose-label {
+    @apply text-rose-700;
+  }
+  .sibs-tone-rose-icon {
+    @apply bg-rose-50 text-rose-600 border border-rose-100;
+  }
+
+  .sibs-tone-green-label {
+    @apply text-emerald-700;
+  }
+  .sibs-tone-green-icon {
+    @apply bg-emerald-50 text-emerald-600 border border-emerald-100;
+  }
+
+  .sibs-tone-emerald-label {
+    @apply text-emerald-700;
+  }
+  .sibs-tone-emerald-icon {
+    @apply bg-emerald-50 text-emerald-600 border border-emerald-100;
+  }
+
+  .sibs-tone-indigo-label {
+    @apply text-indigo-700;
+  }
+  .sibs-tone-indigo-icon {
+    @apply bg-indigo-50 text-indigo-600 border border-indigo-100;
+  }
+
+  .sibs-tone-purple-label {
+    @apply text-purple-700;
+  }
+  .sibs-tone-purple-icon {
+    @apply bg-purple-50 text-purple-600 border border-purple-100;
+  }
+
+  .sibs-tone-teal-label {
+    @apply text-emerald-700;
+  }
+  .sibs-tone-teal-icon {
+    @apply bg-emerald-50 text-emerald-600 border border-emerald-100;
   }
 
   .sibs-modal-blur {

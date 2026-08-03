@@ -9,7 +9,7 @@ import {
 
 import ReasonForHiringTable from "../../tables/HiringNeeds/ReasonForHiringTable";
 import RequisitionByDepartmentTable from "../../tables/HiringNeeds/RequisitionByDepartmentTable";
-import { useHiringNeeds } from "../../../services/context/HiringNeedsContext";
+import { useHiringNeeds } from "@/services/context/HiringNeedsContext";
 
 function getStatValue(stats, key) {
   const value = Number(stats?.[key] || 0);
@@ -22,45 +22,35 @@ const metricConfig = [
     title: "Total PRF",
     description: "Total requests",
     icon: FileText,
-    labelClassName: "text-[#667085]",
-    valueClassName: "text-[#042C51]",
-    iconClassName: "bg-[#EAF2FB] text-[#042C51]",
+    tone: "navy",
   },
   {
     key: "totalHeadcount",
     title: "Headcount",
     description: "Total personnel",
     icon: CalendarDays,
-    labelClassName: "text-blue-600",
-    valueClassName: "text-[#042C51]",
-    iconClassName: "bg-blue-50 text-blue-700",
+    tone: "indigo",
   },
   {
     key: "forApproval",
     title: "For Approval",
     description: "Pending review",
     icon: Clock3,
-    labelClassName: "text-amber-600",
-    valueClassName: "text-amber-700",
-    iconClassName: "bg-amber-50 text-amber-700",
+    tone: "amber",
   },
   {
     key: "approved",
     title: "Approved",
     description: "Ready for hiring",
     icon: CheckCircle2,
-    labelClassName: "text-emerald-600",
-    valueClassName: "text-emerald-700",
-    iconClassName: "bg-emerald-50 text-emerald-700",
+    tone: "green",
   },
   {
     key: "notApproved",
     title: "Not Approved",
     description: "Rejected/closed",
     icon: XCircle,
-    labelClassName: "text-red-600",
-    valueClassName: "text-red-700",
-    iconClassName: "bg-red-50 text-red-700",
+    tone: "red",
   },
 ];
 
@@ -73,15 +63,13 @@ function MetricCard({ item, value, delay = 0 }) {
       <div className="flex h-full items-start justify-between gap-4">
         <div className="min-w-0 flex-1 self-stretch">
           <p
-            className={`truncate text-[10px] font-extrabold uppercase tracking-normal ${
-              item.labelClassName || "text-[#667085]"
-            }`}
+            className={`truncate text-[10px] font-extrabold uppercase tracking-normal sibs-tone-${item.tone}-label`}
           >
             {item.title}
           </p>
 
           <p
-            className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal ${item.valueClassName}`}
+            className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal sibs-tone-${item.tone}-label`}
           >
             {value.toLocaleString("en-PH")}
           </p>
@@ -92,7 +80,7 @@ function MetricCard({ item, value, delay = 0 }) {
         </div>
 
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.iconClassName}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${item.tone}-icon`}
         >
           {React.createElement(item.icon, { size: 17, strokeWidth: 2 })}
         </span>

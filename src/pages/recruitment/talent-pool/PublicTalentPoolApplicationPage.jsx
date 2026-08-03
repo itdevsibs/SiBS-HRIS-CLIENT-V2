@@ -2274,6 +2274,98 @@ function ChoiceCardGroup({
   );
 }
 
+
+function RadioCardGroup({
+  name,
+  value,
+  onChange,
+  options,
+  required = true,
+  className = "",
+  optionClassName = "min-w-[54px]",
+}) {
+  const normalizedOptions = normalizeDropdownOptions(options);
+
+  if (!normalizedOptions.length) {
+    return <EmptyOptionNotice />;
+  }
+
+  return (
+    <div
+      className={`flex flex-wrap items-center gap-2 sm:justify-end ${className}`}
+      role="radiogroup"
+      aria-required={required}
+    >
+      {normalizedOptions.map((option) => {
+        const optionValue = String(option.value);
+        const active = optionValue === String(value || "");
+
+        return (
+          <label
+            key={option.id || option.value}
+            className={`group inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-xs font-semibold transition ${optionClassName} ${
+              active
+                ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
+                : "border-[#DCE6F1] bg-white text-[#52637A] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+            }`}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={optionValue}
+              checked={active}
+              required={required}
+              onChange={() => onChange(option.value)}
+              className="h-3.5 w-3.5 shrink-0 cursor-pointer border-[#98A2B3] accent-[#FF5C28]"
+            />
+
+            <span className="whitespace-nowrap">{option.label}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function WorkReadinessQuestion({
+  question,
+  name,
+  value,
+  options,
+  onChange,
+  required = true,
+  className = "",
+  radioClassName = "",
+  optionClassName,
+}) {
+  return (
+    <div
+      className={`grid grid-cols-1 gap-3 rounded-xl border border-[#DCE6F1] bg-white px-4 py-3 transition hover:border-[#C9D7E6] hover:bg-[#FCFDFE] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${className}`}
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#D3DEEA]"
+        />
+
+        <div className="min-w-0 text-xs font-extrabold leading-5 text-[#042C51]">
+          {question} {required ? <RequiredMark /> : null}
+        </div>
+      </div>
+
+      <RadioCardGroup
+        name={name}
+        value={value}
+        options={options}
+        required={required}
+        onChange={onChange}
+        className={`sm:justify-end ${radioClassName}`}
+        optionClassName={optionClassName}
+      />
+    </div>
+  );
+}
+
 function DatabaseSelect({
   value,
   onChange,
@@ -3911,103 +4003,77 @@ export default function PublicTalentPoolApplicationPage() {
               title="Work Readiness Questions"
               description="These questions help Talent Acquisition review work setup and compliance readiness."
             >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <FieldLabel>
-                    Are you fully vaccinated? <RequiredMark />
-                  </FieldLabel>
-                  <YesNoSelect
-                    value={form.fullyVaccinated}
-                    options={formOptions.yesNo}
-                    onChange={(value) =>
-                      updateFormField("fullyVaccinated", value)
-                    }
-                  />
-                </div>
+              <div className="space-y-3">
+                <WorkReadinessQuestion
+                  question="Are you fully vaccinated?"
+                  name="work-readiness-fully-vaccinated"
+                  value={form.fullyVaccinated}
+                  options={formOptions.yesNo}
+                  onChange={(value) =>
+                    updateFormField("fullyVaccinated", value)
+                  }
+                />
 
-                <div>
-                  <FieldLabel>
-                    Are you comfortable working on site? <RequiredMark />
-                  </FieldLabel>
-                  <YesNoSelect
-                    value={form.comfortableOnSite}
-                    options={formOptions.yesNo}
-                    onChange={(value) =>
-                      updateFormField("comfortableOnSite", value)
-                    }
-                  />
-                </div>
+                <WorkReadinessQuestion
+                  question="Are you comfortable working on site?"
+                  name="work-readiness-comfortable-on-site"
+                  value={form.comfortableOnSite}
+                  options={formOptions.yesNo}
+                  onChange={(value) =>
+                    updateFormField("comfortableOnSite", value)
+                  }
+                />
 
-                <div>
-                  <FieldLabel>
-                    Are you willing to work in graveyard shift? <RequiredMark />
-                  </FieldLabel>
-                  <YesNoSelect
-                    value={form.willingGraveyard}
-                    options={formOptions.yesNo}
-                    onChange={(value) =>
-                      updateFormField("willingGraveyard", value)
-                    }
-                  />
-                </div>
+                <WorkReadinessQuestion
+                  question="Are you willing to work in graveyard shift?"
+                  name="work-readiness-willing-graveyard"
+                  value={form.willingGraveyard}
+                  options={formOptions.yesNo}
+                  onChange={(value) =>
+                    updateFormField("willingGraveyard", value)
+                  }
+                />
 
-                <div>
-                  <FieldLabel>
-                    Full-time, part-time, or either? <RequiredMark />
-                  </FieldLabel>
-                  <ChoiceCardGroup
-                    required
-                    value={form.employmentInterest}
-                    options={formOptions.employmentInterest}
-                    onChange={(value) =>
-                      updateFormField("employmentInterest", value)
-                    }
-                    columns="grid-cols-1 sm:grid-cols-3"
-                  />
-                </div>
+                <WorkReadinessQuestion
+                  question="Full-time, part-time, or either?"
+                  name="work-readiness-employment-interest"
+                  value={form.employmentInterest}
+                  options={formOptions.employmentInterest}
+                  onChange={(value) =>
+                    updateFormField("employmentInterest", value)
+                  }
+                  optionClassName="min-w-[104px]"
+                />
 
-                <div className="md:col-span-2">
-                  <FieldLabel>
-                    If this is a remote position, do you have access to a
-                    computer, Internet connection, and a private space to work
-                    remotely? <RequiredMark />
-                  </FieldLabel>
-                  <YesNoSelect
-                    value={form.remoteWorkAccess}
-                    options={formOptions.yesNo}
-                    onChange={(value) =>
-                      updateFormField("remoteWorkAccess", value)
-                    }
-                  />
-                </div>
+                <WorkReadinessQuestion
+                  question="If this is a remote position, do you have access to a computer, Internet connection, and a private space to work remotely?"
+                  name="work-readiness-remote-work-access"
+                  value={form.remoteWorkAccess}
+                  options={formOptions.yesNo}
+                  onChange={(value) =>
+                    updateFormField("remoteWorkAccess", value)
+                  }
+                />
 
-                <div>
-                  <FieldLabel>
-                    Are you willing to undertake a drug test as part of this
-                    hiring process? <RequiredMark />
-                  </FieldLabel>
-                  <YesNoSelect
-                    value={form.willingDrugTest}
-                    options={formOptions.yesNo}
-                    onChange={(value) =>
-                      updateFormField("willingDrugTest", value)
-                    }
-                  />
-                </div>
+                <WorkReadinessQuestion
+                  question="Are you willing to undertake a drug test as part of this hiring process?"
+                  name="work-readiness-willing-drug-test"
+                  value={form.willingDrugTest}
+                  options={formOptions.yesNo}
+                  onChange={(value) =>
+                    updateFormField("willingDrugTest", value)
+                  }
+                />
 
-                <div>
-                  <FieldLabel>
-                    Are you willing to allow SiBS to undergo a background check
-                    as part of this hiring process? <RequiredMark />
-                  </FieldLabel>
-                  <YesNoSelect
-                    value={form.willingBackgroundCheck}
-                    options={formOptions.yesNo}
-                    onChange={(value) =>
-                      updateFormField("willingBackgroundCheck", value)
-                    }
-                  />
-                </div>
+                <WorkReadinessQuestion
+                  question="Are you willing to allow SiBS to undergo a background check as part of this hiring process?"
+                  name="work-readiness-background-check"
+                  value={form.willingBackgroundCheck}
+                  options={formOptions.yesNo}
+                  onChange={(value) =>
+                    updateFormField("willingBackgroundCheck", value)
+                  }
+                />
               </div>
             </SectionCard>
 

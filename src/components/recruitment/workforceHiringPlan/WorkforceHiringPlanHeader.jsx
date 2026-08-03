@@ -1,47 +1,75 @@
 import React from "react";
 import { ClipboardList, Sparkles } from "lucide-react";
-import WeeklyVersionTable from "../../tables/WorkforceHiringPlan/WeeklyVersionTable";
+
 import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
-import ForecastWeeklyVersionTable from "../../tables/WorkforceHiringPlan/ForecastWeeklyVersionTable";
+import WorkforceHiringOverviewFilters from "../workforceHiringOverview/WorkforceHiringOverviewFilters";
 
 export default function WorkforceHiringPlanHeader() {
-  const { pageHeader } = useWorkforceHiring();
+  const { pageHeader = {} } = useWorkforceHiring();
+
+  const aiInsightLoading = Boolean(pageHeader.aiInsightLoading);
+  const accountsLoading = Boolean(pageHeader.accountsLoading);
+  const hasAiSession = Boolean(pageHeader.hasAiSession);
+
+  function handleOpenAiInsight() {
+    if (typeof pageHeader.handleOpenAiInsight === "function") {
+      pageHeader.handleOpenAiInsight();
+    }
+  }
 
   return (
-    <div className="sibs-page-header-in mb-5 flex min-w-0 flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-      <div className="min-w-0 xl:max-w-[520px]">
-        <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-          <ClipboardList size={14} />
-          Recruitment
+    <section className="sibs-page-header-in sibs-page-card-in sibs-card relative mb-5 overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+      <span
+        className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 overflow-hidden rounded-t-[15px]"
+        aria-hidden="true"
+      >
+        <span className="block h-full w-full bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
+      </span>
+
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div className="min-w-0 space-y-1.5 xl:max-w-[560px] xl:flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+              <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+              <ClipboardList size={13} strokeWidth={2.2} />
+              Recruitment View
+            </span>
+          </div>
+
+          <h1 className="break-words text-xl font-extrabold tracking-tight text-[#042C51] sm:text-2xl">
+            Workforce Hiring Plan
+          </h1>
+
+          <p className="max-w-2xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+            Review weekly workforce requirements, forecasted hiring gaps,
+            recruitment pipeline volume, attrition, and six-week hiring plans
+            for the selected scope.
+          </p>
         </div>
 
-        <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-          Workforce Hiring Plan
-        </h1>
+        <div className="relative z-[100] w-full min-w-0 xl:w-auto xl:flex-none">
+          <div className="flex flex-col gap-3 overflow-visible">
+            <div className="flex justify-start xl:justify-end">
+              <button
+                type="button"
+                onClick={handleOpenAiInsight}
+                disabled={aiInsightLoading || accountsLoading}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] disabled:hover:shadow-sm"
+              >
+                <Sparkles size={15} />
 
-        <p className="mt-1 text-sm font-medium leading-6 text-sibs-tertiary-5">
-          Manage weekly manpower requirement, OPS PRF, hiring plan percentage,
-          leads needed, and action items.
-        </p>
+                {aiInsightLoading
+                  ? "Thinking..."
+                  : hasAiSession
+                    ? "Open AI"
+                    : "Ask AI"}
+              </button>
+            </div>
+
+            <WorkforceHiringOverviewFilters />
+          </div>
+        </div>
       </div>
-
-      <div className="w-full xl:flex xl:flex-1 xl:flex-col xl:items-end">
-        <button
-          type="button"
-          onClick={pageHeader.handleOpenAiInsight}
-          disabled={pageHeader.aiInsightLoading || pageHeader.accountsLoading}
-          className="mb-3 inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#D9E2EC] bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Sparkles size={14} />
-          {pageHeader.aiInsightLoading
-            ? "Thinking..."
-            : pageHeader.hasAiSession
-              ? "Open AI"
-              : "Ask AI"}
-        </button>
-
-        <ForecastWeeklyVersionTable />
-      </div>
-    </div>
+    </section>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, X } from "lucide-react";
 import {
@@ -48,46 +48,16 @@ function getHiringNeededColor(value) {
   return safeNumber(value) > 0 ? "text-red-600" : "text-emerald-600";
 }
 
-function HeaderTh({ children, className = "" }) {
-  return (
-    <th
-      className={[
-        "sticky top-0 z-10 border-b border-r border-slate-200 bg-slate-50 px-3 py-3 text-center align-middle text-[11px] font-extrabold uppercase leading-tight text-sibs-primary-90",
-        className,
-      ].join(" ")}
-    >
-      {children}
-    </th>
-  );
-}
-
-function BodyTd({ children, className = "", ...props }) {
-  return (
-    <td
-      {...props}
-      className={[
-        "border-b border-r border-slate-200 px-3 py-2.5 text-center align-middle text-sm font-bold text-sibs-primary-90",
-        className,
-      ].join(" ")}
-    >
-      {children}
-    </td>
-  );
-}
-
-function FooterTd({ children, className = "", ...props }) {
-  return (
-    <td
-      {...props}
-      className={[
-        "border-t border-r border-slate-200 bg-slate-50 px-3 py-3 text-center align-middle text-sm font-extrabold text-sibs-primary-90",
-        className,
-      ].join(" ")}
-    >
-      {children}
-    </td>
-  );
-}
+import {
+  WorkforceHeaderTh,
+  WorkforceBodyTd,
+  WorkforceFooterTd,
+  WORKFORCE_BOLD_NUMBER_CLASS,
+  WORKFORCE_SECONDARY_NUMBER_CLASS,
+  WorkforceMetricWithPercent,
+  WorkforceHiringNeededValue,
+  getWorkforceValueColor,
+} from "./WorkforceHiringTablePrimitives";
 
 function ForecastMetricWithPercent({
   value,
@@ -344,6 +314,39 @@ export default function ForecastWeekAccountDetailsModal({
   onClose,
 }) {
   const [searchValue, setSearchValue] = useState("");
+  const dragScrollRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  function handleDragStart(event) {
+    const container = dragScrollRef.current;
+    if (!container) return;
+    if (event.target.closest("button, input, select, textarea, a")) return;
+
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    startXRef.current = event.pageX - container.offsetLeft;
+    scrollLeftRef.current = container.scrollLeft;
+    container.style.userSelect = "none";
+  }
+
+  function handleDragMove(event) {
+    const container = dragScrollRef.current;
+    if (!container || !isDraggingRef.current) return;
+
+    event.preventDefault();
+    const x = event.pageX - container.offsetLeft;
+    container.scrollLeft = scrollLeftRef.current - (x - startXRef.current);
+  }
+
+  function handleDragEnd() {
+    const container = dragScrollRef.current;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    if (container) container.style.userSelect = "";
+  }
 
   useEffect(() => {
     if (!open) return undefined;
@@ -388,15 +391,15 @@ export default function ForecastWeekAccountDetailsModal({
 
   return createPortal(
     <div className="sibs-modal-blur fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="flex max-h-[92vh] w-full max-w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div className="flex max-h-[92vh] w-full max-w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white font-jakarta shadow-2xl">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-extrabold uppercase tracking-tight text-sibs-primary-90">
+              <h2 className="sibs-section-title">
                 Forecast Week Details
               </h2>
 
-              <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-extrabold uppercase text-purple-700">
+              <span className="sibs-section-subtitle">
                 Account / Cluster Breakdown
               </span>
 
@@ -433,161 +436,134 @@ export default function ForecastWeekAccountDetailsModal({
             Clicked forecast week rows are shown per account and cluster.
           </p>
 
-          <div className="relative w-full max-w-md">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-sibs-primary-70" />
+          <div className="group relative w-full max-w-md">
+            <Search
+              size={17}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
+            />
 
             <input
+              type="text"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder="Search cluster or account..."
-              className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-12 pr-4 text-sm font-semibold text-sibs-primary-90 outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-70 focus:ring-4 focus:ring-blue-50"
+              className="h-10 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 font-jakarta text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
             />
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
+        <div className="min-h-0 flex-1 overflow-auto sibs-scrollbar px-5 py-4">
           <div className="overflow-hidden rounded-xl border border-slate-200">
-            <div className="max-h-[62vh] overflow-auto">
-              <table className="w-full min-w-[1760px] border-separate border-spacing-0">
+            <div
+              ref={dragScrollRef}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              className={`max-h-[62vh] overflow-auto sibs-scrollbar ${
+                isDragging ? "cursor-grabbing" : "cursor-grab"
+              }`}
+            >
+              <table className="w-full min-w-[2100px] border-separate border-spacing-0">
                 <thead>
                   <tr>
-                    <HeaderTh className="text-left">Cluster</HeaderTh>
-                    <HeaderTh className="text-left">Account</HeaderTh>
-                    <HeaderTh>
-                      Required
-                      <br />
-                      Headcount
-                    </HeaderTh>
-                    <HeaderTh>
-                      Actual
-                      <br />
-                      Headcount
-                    </HeaderTh>
-                    <HeaderTh>
-                      Buffer
-                      <br />
-                      Percentage
-                    </HeaderTh>
-                    <HeaderTh>
-                      Absenteeism
-                      <br />
-                      Count / %
-                    </HeaderTh>
-                    <HeaderTh>
-                      Attrition
-                      <br />
-                      Count / %
-                    </HeaderTh>
-                    <HeaderTh>
-                      Net Actual
-                      <br />
-                      HC
-                    </HeaderTh>
-                    <HeaderTh>
-                      Hiring
-                      <br />
-                      Needed
-                    </HeaderTh>
-                    <HeaderTh>
-                      Accepted
-                      <br />
-                      Job Offer
-                    </HeaderTh>
-                    <HeaderTh>
-                      NHO
-                      <br />
-                      Count
-                    </HeaderTh>
-                    <HeaderTh>
-                      FST
-                      <br />
-                      Count
-                    </HeaderTh>
-                    <HeaderTh>
-                      PST
-                      <br />
-                      Count
-                    </HeaderTh>
-                    <HeaderTh>Go Live</HeaderTh>
-                    <HeaderTh>
-                      Hired
-                      <br />
-                      Count
-                    </HeaderTh>
-                    <HeaderTh>
-                      Hiring Rate
-                      <br />
-                      (Leads to JO)
-                    </HeaderTh>
-                    <HeaderTh>
-                      Leads to Interview
-                      <br />
-                      (To Generate)
-                    </HeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-left">Cluster</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-left">Account</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#042C51]">Required HC</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center">Actual HC</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center">Buffer %</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center">Absenteeism</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center">Attrition</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#042C51]">Net Actual HC</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-rose-600">Hiring Needed</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#042C51]">Accepted JO</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center">NHO Count</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center">FST Count</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center">PST Count</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-emerald-700">Go Live</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#042C51]">Hired Count</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#FF5C28]">Hiring Rate</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="border-r-0 !top-0 !text-center !font-black !text-purple-700">Leads to Interview</WorkforceHeaderTh>
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody className="bg-white font-jakarta font-medium">
                   {filteredRows.length ? (
                     filteredRows.map((row, index) => (
                       <tr
                         key={`${row.cluster}-${row.account}-${row.id || index}`}
                         className="transition hover:bg-blue-50/40"
                       >
-                        <BodyTd className="text-left whitespace-nowrap">
+                        <WorkforceBodyTd align="left" className="font-bold text-[#042C51]">
                           {row.cluster}
-                        </BodyTd>
-                        <BodyTd className="text-left whitespace-nowrap">
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd align="left" className="font-medium text-slate-700">
                           {row.account}
-                        </BodyTd>
-                        <BodyTd>
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
                           {formatOverviewNumber(row.requiredHeadcount)}
-                        </BodyTd>
-                        <BodyTd>
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className={WORKFORCE_SECONDARY_NUMBER_CLASS}>
                           {formatOverviewNumber(row.actualHeadcount)}
-                        </BodyTd>
-                        <BodyTd className={getValueColor(row.bufferPercentage)}>
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd
+                          className={`!font-black ${getWorkforceValueColor(
+                            row.bufferPercentage,
+                          )}`}
+                        >
                           {formatOverviewPercent(row.bufferPercentage)}
-                        </BodyTd>
-                        <BodyTd className="text-orange-600">
-                          <ForecastMetricWithPercent
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd>
+                          <WorkforceMetricWithPercent
                             value={row.absenteeism}
                             percent={row.absenteeismPercentage}
                             percentClassName="text-orange-500"
                           />
-                        </BodyTd>
-                        <BodyTd className="text-red-600">
-                          <ForecastMetricWithPercent
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd>
+                          <WorkforceMetricWithPercent
                             value={row.attrition}
                             percent={row.attritionPercentage}
                             percentClassName="text-red-500"
                           />
-                        </BodyTd>
-                        <BodyTd>{formatOverviewNumber(row.netActualHc)}</BodyTd>
-                        <BodyTd
-                          className={getHiringNeededColor(row.hiringNeeded)}
-                        >
-                          {formatOverviewNumber(row.hiringNeeded)}
-                        </BodyTd>
-                        <BodyTd>{formatOverviewNumber(row.acceptedJo)}</BodyTd>
-                        <BodyTd>{formatOverviewNumber(row.nho)}</BodyTd>
-                        <BodyTd>{formatOverviewNumber(row.fst)}</BodyTd>
-                        <BodyTd>{formatOverviewNumber(row.pst)}</BodyTd>
-                        <BodyTd className="text-emerald-700">
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
+                          {formatOverviewNumber(row.netActualHc)}
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd>
+                          <WorkforceHiringNeededValue value={row.hiringNeeded} />
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
+                          {formatOverviewNumber(row.acceptedJo)}
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className={WORKFORCE_SECONDARY_NUMBER_CLASS}>
+                          {formatOverviewNumber(row.nho)}
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className={WORKFORCE_SECONDARY_NUMBER_CLASS}>
+                          {formatOverviewNumber(row.fst)}
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className={WORKFORCE_SECONDARY_NUMBER_CLASS}>
+                          {formatOverviewNumber(row.pst)}
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className="!font-black !text-emerald-600">
                           {formatOverviewNumber(row.goLive)}
-                        </BodyTd>
-                        <BodyTd>{formatOverviewNumber(row.hiredCount)}</BodyTd>
-                        <BodyTd>{formatOverviewPercent(row.hiringRate)}</BodyTd>
-                        <BodyTd className="text-purple-700">
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
+                          {formatOverviewNumber(row.hiredCount)}
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className="!font-black !text-[#FF5C28]">
+                          {formatOverviewPercent(row.hiringRate)}
+                        </WorkforceBodyTd>
+                        <WorkforceBodyTd className="border-r-0 !font-black !text-purple-700">
                           {formatOverviewNumber(row.leadsToInterview)}
-                        </BodyTd>
+                        </WorkforceBodyTd>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <BodyTd colSpan={17}>
+                      <WorkforceBodyTd colSpan={17} align="center">
                         No account-level forecast rows found for this week.
-                      </BodyTd>
+                      </WorkforceBodyTd>
                     </tr>
                   )}
                 </tbody>
@@ -595,61 +571,67 @@ export default function ForecastWeekAccountDetailsModal({
                 {filteredRows.length ? (
                   <tfoot>
                     <tr>
-                      <FooterTd className="text-left rounded-bl-xl">
+                      <WorkforceFooterTd align="left" className="!font-black text-[#042C51]">
                         TOTAL / AVG.
-                      </FooterTd>
-                      <FooterTd />
-                      <FooterTd>
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd />
+                      <WorkforceFooterTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
                         {formatOverviewNumber(totals.requiredHeadcount)}
-                      </FooterTd>
-                      <FooterTd>
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className={WORKFORCE_SECONDARY_NUMBER_CLASS}>
                         {formatOverviewNumber(totals.actualHeadcount)}
-                      </FooterTd>
-                      <FooterTd
-                        className={getValueColor(totals.bufferPercentage)}
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd
+                        className={`!font-black ${getWorkforceValueColor(
+                          totals.bufferPercentage,
+                        )}`}
                       >
                         {formatOverviewPercent(totals.bufferPercentage)}
-                      </FooterTd>
-                      <FooterTd className="text-orange-600">
-                        <ForecastMetricWithPercent
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd>
+                        <WorkforceMetricWithPercent
                           value={totals.absenteeism}
                           percent={totals.absenteeismPercentage}
                           percentClassName="text-orange-500"
                         />
-                      </FooterTd>
-                      <FooterTd className="text-red-600">
-                        <ForecastMetricWithPercent
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd>
+                        <WorkforceMetricWithPercent
                           value={totals.attrition}
                           percent={totals.attritionPercentage}
                           percentClassName="text-red-500"
                         />
-                      </FooterTd>
-                      <FooterTd>
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
                         {formatOverviewNumber(totals.netActualHc)}
-                      </FooterTd>
-                      <FooterTd
-                        className={getHiringNeededColor(totals.hiringNeeded)}
-                      >
-                        {formatOverviewNumber(totals.hiringNeeded)}
-                      </FooterTd>
-                      <FooterTd>
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd>
+                        <WorkforceHiringNeededValue value={totals.hiringNeeded} />
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
                         {formatOverviewNumber(totals.acceptedJo)}
-                      </FooterTd>
-                      <FooterTd>{formatOverviewNumber(totals.nho)}</FooterTd>
-                      <FooterTd>{formatOverviewNumber(totals.fst)}</FooterTd>
-                      <FooterTd>{formatOverviewNumber(totals.pst)}</FooterTd>
-                      <FooterTd className="text-emerald-700">
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className={WORKFORCE_SECONDARY_NUMBER_CLASS}>
+                        {formatOverviewNumber(totals.nho)}
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className={WORKFORCE_SECONDARY_NUMBER_CLASS}>
+                        {formatOverviewNumber(totals.fst)}
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className={WORKFORCE_SECONDARY_NUMBER_CLASS}>
+                        {formatOverviewNumber(totals.pst)}
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className="!font-black !text-emerald-600">
                         {formatOverviewNumber(totals.goLive)}
-                      </FooterTd>
-                      <FooterTd>
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
                         {formatOverviewNumber(totals.hiredCount)}
-                      </FooterTd>
-                      <FooterTd>
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className="!font-black !text-[#FF5C28]">
                         {formatOverviewPercent(totals.hiringRate)}
-                      </FooterTd>
-                      <FooterTd className="rounded-br-xl text-purple-700">
+                      </WorkforceFooterTd>
+                      <WorkforceFooterTd className="border-r-0 !font-black !text-purple-700">
                         {formatOverviewNumber(totals.leadsToInterview)}
-                      </FooterTd>
+                      </WorkforceFooterTd>
                     </tr>
                   </tfoot>
                 ) : null}

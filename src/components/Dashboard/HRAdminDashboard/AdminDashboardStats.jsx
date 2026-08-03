@@ -1,36 +1,17 @@
 import { createElement } from "react";
 import { ChevronRight } from "lucide-react";
 
-const metricTone = {
-  orange: {
-    label: "text-[#FF5C28]",
-    icon: "bg-orange-50 text-[#FF5C28]",
-    badge: "bg-orange-50 text-[#FF5C28]",
-  },
-  navy: {
-    label: "text-[#042C51]",
-    icon: "bg-[#E9F0FC] text-[#042C51]",
-    badge: "bg-[#E9F0FC] text-[#042C51]",
-  },
-  green: {
-    label: "text-emerald-700",
-    icon: "bg-emerald-50 text-emerald-600",
-    badge: "bg-emerald-50 text-emerald-700",
-  },
-  indigo: {
-    label: "text-indigo-700",
-    icon: "bg-indigo-50 text-indigo-600",
-    badge: "bg-indigo-50 text-indigo-700",
-  },
-  amber: {
-    label: "text-amber-700",
-    icon: "bg-amber-50 text-amber-600",
-    badge: "bg-amber-50 text-amber-700",
-  },
-};
+function getToneClasses(tone = "navy") {
+  const safeTone = tone || "navy";
+  return {
+    label: `sibs-tone-${safeTone}-label`,
+    icon: `sibs-tone-${safeTone}-icon`,
+    badge: `sibs-tone-${safeTone}-icon`,
+  };
+}
 
 function AdminDashboardMetricCard({ item, onClick, delay = 0 }) {
-  const tone = metricTone[item?.tone] || metricTone.navy;
+  const tone = getToneClasses(item?.tone);
 
   return (
     <button

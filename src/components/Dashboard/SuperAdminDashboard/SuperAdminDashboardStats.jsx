@@ -16,7 +16,7 @@ const METRICS = [
     note: "+12% MoM",
     description: "Across 18 Active Depts",
     icon: Users,
-    tone: "bg-blue-50 text-[#042C51]",
+    tone: "sibs-tone-navy-icon",
   },
   {
     key: "admins",
@@ -24,7 +24,7 @@ const METRICS = [
     note: "7 Access Tiers",
     description: "TA, HR, Finance & Execs",
     icon: ShieldCheck,
-    tone: "bg-emerald-50 text-emerald-700",
+    tone: "sibs-tone-green-icon",
   },
   {
     key: "approvals",
@@ -33,7 +33,7 @@ const METRICS = [
     note: "Cross-Module",
     description: "Leaves, Offers & Reqs",
     icon: Clock,
-    tone: "bg-amber-50 text-amber-700",
+    tone: "sibs-tone-amber-icon",
   },
   {
     key: "attendance",
@@ -42,7 +42,7 @@ const METRICS = [
     note: "Needs Review",
     description: "Biometric timecard check",
     icon: AlertTriangle,
-    tone: "bg-orange-50 text-[#FF5C28]",
+    tone: "sibs-tone-orange-icon",
   },
   {
     key: "leaves",
@@ -51,7 +51,7 @@ const METRICS = [
     note: "14 Leave • 4 Resig",
     description: "Active clearance pipelines",
     icon: UserX,
-    tone: "bg-red-50 text-red-600",
+    tone: "sibs-tone-red-icon",
   },
   {
     key: "recruitment",
@@ -60,7 +60,7 @@ const METRICS = [
     note: "8 Offers Pending",
     description: "18 Open Requisitions",
     icon: Briefcase,
-    tone: "bg-indigo-50 text-indigo-700",
+    tone: "sibs-tone-indigo-icon",
   },
 ];
 

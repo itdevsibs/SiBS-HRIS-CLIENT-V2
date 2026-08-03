@@ -563,7 +563,7 @@ export default function Sidebar() {
 
   const employeeCoreMenu = [
     {
-      name: "My Dashboard",
+      name: "Dashboard",
       icon: LayoutDashboard,
       path: "/dashboard/employee",
     },
@@ -592,26 +592,26 @@ export default function Sidebar() {
 
   const adminCoreMenu = [
     {
-      name: "Super Admin Dashboard",
+      name: "Dashboard",
       icon: LayoutDashboard,
       path: "/dashboard/super-admin",
       allowedUsers: DASHBOARD_ACCESS.SUPER_ADMIN,
     },
     {
-      name: "HR Dashboard",
+      name: "Dashboard",
       icon: LayoutDashboard,
       path: "/dashboard/admin",
       allowedUsers: DASHBOARD_ACCESS.HR,
       notificationKey: "hrDashboard",
     },
     {
-      name: "TA Dashboard",
+      name: "Dashboard",
       icon: LayoutDashboard,
       path: "/recruitment/ta-dashboard",
       allowedUsers: DASHBOARD_ACCESS.TA,
     },
     {
-      name: "OM Dashboard",
+      name: "Dashboard",
       icon: LayoutDashboard,
       path: "/recruitment/om-dashboard",
       allowedUsers: DASHBOARD_ACCESS.OM,
