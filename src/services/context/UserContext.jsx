@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
@@ -86,44 +87,14 @@ function getLocalStorage() {
   return typeof localStorage === "undefined" ? null : localStorage;
 }
 
-function normalizeDuration(value, fallback = 0) {
-  const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue) || numericValue <= 0) {
-    return fallback;
-  }
-
-  return Math.floor(numericValue);
-}
-
 function readStoredServerTokenExpiry() {
   const sessionExpiry = normalizeExpiry(
     getSessionStorage()?.getItem(SERVER_TOKEN_EXPIRY_SESSION_KEY),
   );
 
-  const localExpiry = normalizeExpiry(
-    getLocalStorage()?.getItem(SERVER_TOKEN_EXPIRY_LOCAL_KEY),
-  );
+  if (!sessionExpiry) return 0;
 
-  const values = [sessionExpiry, localExpiry].filter(
-    (value) => value > 0,
-  );
-
-  if (!values.length) return 0;
-
-  const expiresAt = Math.min(...values);
-
-  getSessionStorage()?.setItem(
-    SERVER_TOKEN_EXPIRY_SESSION_KEY,
-    String(expiresAt),
-  );
-
-  getLocalStorage()?.setItem(
-    SERVER_TOKEN_EXPIRY_LOCAL_KEY,
-    String(expiresAt),
-  );
-
-  return expiresAt;
+  return sessionExpiry;
 }
 
 function writeStoredServerTokenExpiry(value) {
@@ -136,10 +107,7 @@ function writeStoredServerTokenExpiry(value) {
     String(expiresAt),
   );
 
-  getLocalStorage()?.setItem(
-    SERVER_TOKEN_EXPIRY_LOCAL_KEY,
-    String(expiresAt),
-  );
+  getLocalStorage()?.removeItem(SERVER_TOKEN_EXPIRY_LOCAL_KEY);
 
   return expiresAt;
 }
@@ -162,10 +130,7 @@ function readStoredIdleDuration() {
     String(duration),
   );
 
-  getLocalStorage()?.setItem(
-    SESSION_IDLE_DURATION_LOCAL_KEY,
-    String(duration),
-  );
+  getLocalStorage()?.removeItem(SESSION_IDLE_DURATION_LOCAL_KEY);
 
   return duration;
 }
@@ -178,10 +143,7 @@ function writeStoredIdleDuration() {
     String(duration),
   );
 
-  getLocalStorage()?.setItem(
-    SESSION_IDLE_DURATION_LOCAL_KEY,
-    String(duration),
-  );
+  getLocalStorage()?.removeItem(SESSION_IDLE_DURATION_LOCAL_KEY);
 
   return duration;
 }
@@ -970,7 +932,6 @@ export function UserProvider({ children }) {
     (
       newUser,
       serverExpiresAt = null,
-      serverExpiresInMs = null,
     ) => {
       abortUserFetch();
       abortServerRefresh();
