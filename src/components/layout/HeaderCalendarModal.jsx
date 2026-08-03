@@ -142,6 +142,7 @@ const EVENT_COLOR_BY_GOOGLE_COLOR_ID = COLOR_OPTIONS.reduce(
 
 const AVAILABILITY_OPTIONS = ["Busy", "Free"];
 const VISIBILITY_OPTIONS = ["Default visibility", "Public", "Private"];
+const GOOGLE_CALENDAR_UI_SYNC_TIMEOUT_MS = 20000;
 
 function getEventColorOption(value) {
   return (
@@ -1828,6 +1829,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
   const calendarConnectedRef = useRef(false);
   const lastLoadedRangeRef = useRef("");
   const googleConnectFinalizingRef = useRef(false);
+  const calendarLoadingTimeoutRef = useRef(null);
 
   const handlePortalCleanup = useCallback(() => {
     calendarLoadRequestRef.current += 1;
@@ -1839,6 +1841,32 @@ export default function HeaderCalendarModal({ open, onClose }) {
     onCleanup: handlePortalCleanup,
   });
 
+  const clearCalendarLoadingTimeout = useCallback(() => {
+    if (calendarLoadingTimeoutRef.current) {
+      window.clearTimeout(calendarLoadingTimeoutRef.current);
+      calendarLoadingTimeoutRef.current = null;
+    }
+  }, []);
+
+  const startCalendarLoading = useCallback(() => {
+    clearCalendarLoadingTimeout();
+    setCalendarLoading(true);
+
+    calendarLoadingTimeoutRef.current = window.setTimeout(() => {
+      calendarLoadingTimeoutRef.current = null;
+      googleConnectFinalizingRef.current = false;
+      setCalendarLoading(false);
+      setCalendarError(
+        "Google Calendar sync took too long. Please click Sync again.",
+      );
+    }, GOOGLE_CALENDAR_UI_SYNC_TIMEOUT_MS);
+  }, [clearCalendarLoadingTimeout]);
+
+  const stopCalendarLoading = useCallback(() => {
+    clearCalendarLoadingTimeout();
+    setCalendarLoading(false);
+  }, [clearCalendarLoadingTimeout]);
+
   useLayoutEffect(() => {
     if (open && !wasOpenRef.current) {
       wasOpenRef.current = true;
@@ -1848,6 +1876,12 @@ export default function HeaderCalendarModal({ open, onClose }) {
       setEditingEvent(null);
       setDisconnectConfirmOpen(false);
       setCalendarError("");
+      window.setTimeout(() => {
+        loadGoogleCalendarEvents({
+          force: true,
+          checkStatus: true,
+        });
+      }, 0);
       return;
     }
 
@@ -1856,10 +1890,13 @@ export default function HeaderCalendarModal({ open, onClose }) {
       calendarLoadRequestRef.current += 1;
       clearGoogleCalendarPopupTimer();
       googleConnectFinalizingRef.current = false;
-      setCalendarLoading(false);
+      stopCalendarLoading();
       setDisconnectConfirmOpen(false);
     }
-  }, [open]);
+    // The open reset must run exactly when `open` flips; `loadGoogleCalendarEvents`
+    // is invoked after the reset so the modal always syncs on open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, stopCalendarLoading]);
 
   async function loadGoogleCalendarStatus() {
     try {
@@ -1921,7 +1958,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
     const requestId = calendarLoadRequestRef.current + 1;
     calendarLoadRequestRef.current = requestId;
 
-    setCalendarLoading(true);
+    startCalendarLoading();
     setCalendarError("");
 
     try {
@@ -1955,8 +1992,6 @@ export default function HeaderCalendarModal({ open, onClose }) {
         maxResults: 100,
       });
 
-      if (calendarLoadRequestRef.current !== requestId) return;
-
       if (payload?.success === false) {
         throw new Error(
           payload?.message ||
@@ -1983,10 +2018,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
         error?.message || "Unable to finish Google Calendar sync.",
       );
     } finally {
-      if (calendarLoadRequestRef.current === requestId) {
-        setCalendarLoading(false);
-      }
-
+      stopCalendarLoading();
       googleConnectFinalizingRef.current = false;
     }
   }
@@ -2003,7 +2035,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
       if (event.data?.type === "GOOGLE_CALENDAR_FAILED") {
         clearGoogleCalendarPopupTimer();
         googleConnectFinalizingRef.current = false;
-        setCalendarLoading(false);
+        stopCalendarLoading();
         setCalendarConnected(false);
         setGoogleCalendarEmail("");
         setCalendarError("Google Calendar connection failed.");
@@ -2015,6 +2047,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
     return () => {
       window.removeEventListener("message", handleGoogleCalendarMessage);
       clearGoogleCalendarPopupTimer();
+      clearCalendarLoadingTimeout();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -2034,14 +2067,12 @@ export default function HeaderCalendarModal({ open, onClose }) {
       if (checkStatus || !isConnected) {
         const statusResult = await loadGoogleCalendarStatus();
 
-        if (calendarLoadRequestRef.current !== requestId) return;
-
         isConnected = statusResult.connected;
       }
 
       if (!isConnected) {
         setEvents([]);
-        setCalendarLoading(false);
+        stopCalendarLoading();
         return;
       }
 
@@ -2049,19 +2080,17 @@ export default function HeaderCalendarModal({ open, onClose }) {
       const rangeKey = `${timeMin}|${timeMax}`;
 
       if (!force && lastLoadedRangeRef.current === rangeKey) {
-        setCalendarLoading(false);
+        stopCalendarLoading();
         return;
       }
 
-      setCalendarLoading(true);
+      startCalendarLoading();
 
       const payload = await getGoogleCalendarEvents({
         timeMin,
         timeMax,
         maxResults: 100,
       });
-
-      if (calendarLoadRequestRef.current !== requestId) return;
 
       if (payload?.success === false) {
         throw new Error(
@@ -2088,18 +2117,18 @@ export default function HeaderCalendarModal({ open, onClose }) {
         error?.message || "Unable to load Google Calendar events.",
       );
     } finally {
-      if (calendarLoadRequestRef.current === requestId) {
-        setCalendarLoading(false);
-      }
+      stopCalendarLoading();
     }
   }
 
   useEffect(() => {
+    if (!open) return;
+
     loadGoogleCalendarEvents({
       checkStatus: !calendarConnectedRef.current,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, viewDate]);
+  }, [viewDate]);
 
   const monthCells = useMemo(() => buildMonthCells(viewDate), [viewDate]);
   const weekCells = useMemo(() => buildWeekCells(viewDate), [viewDate]);
@@ -2122,15 +2151,16 @@ export default function HeaderCalendarModal({ open, onClose }) {
 
   function openGoogleCalendarConnection() {
     clearGoogleCalendarPopupTimer();
+    const connectUrl = getGoogleCalendarConnectUrl();
 
     const popup = window.open(
-      getGoogleCalendarConnectUrl(),
+      connectUrl,
       "google-calendar-connect",
       "width=520,height=720",
     );
 
     if (!popup) {
-      window.location.href = getGoogleCalendarConnectUrl();
+      window.location.href = connectUrl;
       return;
     }
 
