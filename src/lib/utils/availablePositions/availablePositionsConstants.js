@@ -11,8 +11,11 @@ export const LOCATION_SITE_OPTIONS = [
 // Used in the page filter dropdown.
 export const STATUS_FILTER_OPTIONS = [
   "All",
+  "For Approval",
   "Active",
   "Inactive",
+  "Approved",
+  "Rejected",
   "Archived",
 ];
 

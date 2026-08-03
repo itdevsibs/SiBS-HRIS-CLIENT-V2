@@ -93,6 +93,22 @@ export function getStatusTone(status) {
     return "border-gray-200 bg-gray-50 text-gray-600";
   }
 
+  if (
+    normalizedStatus === "pending" ||
+    normalizedStatus === "for approval" ||
+    normalizedStatus === "for review"
+  ) {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+
+  if (normalizedStatus === "approved") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (normalizedStatus === "rejected" || normalizedStatus === "declined") {
+    return "border-red-200 bg-red-50 text-red-700";
+  }
+
   return "border-blue-200 bg-blue-50 text-sibs-primary-1";
 }
 

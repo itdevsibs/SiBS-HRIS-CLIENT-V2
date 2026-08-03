@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion as framerMotion } from "framer-motion";
 import {
   Activity,
   BarChart3,
@@ -33,6 +33,7 @@ import {
 import { useUser } from "../../services/context/UserContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
+import { getJobDescriptions } from "../../lib/axios/getJobDescription";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
@@ -69,6 +70,9 @@ const APPROVAL_SETTINGS_API_BY_MODULE = {
   "Hiring Needs": getHiringNeedsApprovalUsers,
   "Available Positions": getAvailablePositionApprovalUsers,
 };
+
+const MotionDiv = framerMotion.div;
+const MotionSpan = framerMotion.span;
 
 function normalizeSibsId(value = "") {
   return String(value ?? "")
@@ -219,6 +223,28 @@ function normalizeApprovalNotificationStatus(value) {
   return "Pending";
 }
 
+function normalizeJobDescriptionStatus(value) {
+  const cleanValue = String(value || "").trim();
+
+  if (cleanValue === "New JD") return "New Job Description";
+  if (cleanValue === "Archived JD") return "Archived";
+
+  return cleanValue || "New Job Description";
+}
+
+function getJobDescriptionStatus(item = {}) {
+  const raw = item.raw || {};
+
+  return normalizeJobDescriptionStatus(
+    item.jdStatus ||
+      item.jd_status ||
+      raw.jdStatus ||
+      raw.jd_status ||
+      item.status ||
+      raw.status,
+  );
+}
+
 function getApprovalNotificationStatus(item = {}) {
   const raw = item.raw || {};
 
@@ -265,6 +291,23 @@ function countApprovalNotificationData(moduleName, data = []) {
 }
 
 async function getApprovalNotificationCountByModule(moduleName) {
+  if (moduleName === "Job Description") {
+    const result = await getJobDescriptions({
+      page: 1,
+      limit: 500,
+      search: "",
+      status: "",
+    });
+
+    if (!result?.success || !Array.isArray(result.data)) {
+      return 0;
+    }
+
+    return result.data.filter(
+      (item) => getJobDescriptionStatus(item) === "For Approval",
+    ).length;
+  }
+
   const types = APPROVAL_NOTIFICATION_TYPES_BY_MODULE[moduleName] || [""];
 
   const results = await Promise.allSettled(
@@ -303,7 +346,7 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
   const showText = !collapsed || isMobile;
 
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, x: -18 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
@@ -313,12 +356,12 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
         showText ? "gap-3" : "justify-center",
       ].join(" ")}
     >
-      <motion.div
+      <MotionDiv
         whileHover={{ rotate: -3, scale: 1.05 }}
         transition={{ type: "spring", stiffness: 260, damping: 18 }}
         className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-sibs-primary-2 shadow-[0_10px_24px_rgba(255,92,40,0.22)]"
       >
-        <motion.div
+        <MotionDiv
           className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-sibs-primary-1"
           animate={{
             backgroundColor: ["#FFFFFF", "#FFB29A", "#FFFFFF"],
@@ -335,7 +378,7 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           }}
         />
 
-        <motion.span
+        <MotionSpan
           className="relative text-[20px] font-semibold leading-none tracking-[-0.04em] text-white"
           animate={{
             textShadow: [
@@ -351,8 +394,8 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           }}
         >
           S
-        </motion.span>
-      </motion.div>
+        </MotionSpan>
+      </MotionDiv>
 
       {showText && (
         <div className="min-w-0 leading-none">
@@ -370,7 +413,7 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           </p>
         </div>
       )}
-    </motion.div>
+    </MotionDiv>
   );
 }
 
@@ -430,6 +473,9 @@ export default function Sidebar() {
 
       if (accessibleApprovalModules.length === 0) {
         setApprovalRequestNotificationCount(0);
+        setSidebarNotification?.("jobDescriptionApprovals", null);
+        setSidebarNotification?.("hiringNeedsApprovals", null);
+        setSidebarNotification?.("availablePositionApprovals", null);
         setSidebarNotification?.("approvalRequests", null);
         return;
       }
@@ -440,33 +486,85 @@ export default function Sidebar() {
         ),
       );
 
-      const totalPending = moduleCounts.reduce(
-        (sum, count) => sum + Number(count || 0),
+      const moduleCountByName = accessibleApprovalModules.reduce(
+        (countsByName, moduleName, index) => ({
+          ...countsByName,
+          [moduleName]: Number(moduleCounts[index] || 0),
+        }),
+        {},
+      );
+      const jobDescriptionPending = Number(
+        moduleCountByName["Job Description"] || 0,
+      );
+      const hiringNeedsPending = Number(moduleCountByName["Hiring Needs"] || 0);
+      const availablePositionsPending = Number(
+        moduleCountByName["Available Positions"] || 0,
+      );
+      const centralApprovalPending = ["Attrition", "Job Description"].reduce(
+        (sum, moduleName) => sum + Number(moduleCountByName[moduleName] || 0),
         0,
       );
 
-      setApprovalRequestNotificationCount(totalPending);
+      setApprovalRequestNotificationCount(centralApprovalPending);
+      setSidebarNotification?.(
+        "jobDescriptionApprovals",
+        jobDescriptionPending > 0
+          ? {
+              name: "Job Description",
+              count: jobDescriptionPending,
+              tone: "urgent",
+              title: `${jobDescriptionPending > 99 ? "99+" : jobDescriptionPending} job descriptions for approval`,
+            }
+          : null,
+      );
+      setSidebarNotification?.(
+        "hiringNeedsApprovals",
+        hiringNeedsPending > 0
+          ? {
+              name: "Hiring Needs Intake",
+              count: hiringNeedsPending,
+              tone: "urgent",
+              title: `${hiringNeedsPending > 99 ? "99+" : hiringNeedsPending} hiring needs for approval`,
+            }
+          : null,
+      );
+      setSidebarNotification?.(
+        "availablePositionApprovals",
+        availablePositionsPending > 0
+          ? {
+              name: "Available Positions",
+              count: availablePositionsPending,
+              tone: "urgent",
+              title: `${availablePositionsPending > 99 ? "99+" : availablePositionsPending} available positions for approval`,
+            }
+          : null,
+      );
       setSidebarNotification?.(
         "approvalRequests",
-        totalPending > 0
+        centralApprovalPending > 0
           ? {
               name: "Approval Requests",
-              count: totalPending,
+              count: centralApprovalPending,
               label: "PENDING",
               tone: "urgent",
-              title: `${totalPending > 99 ? "99+" : totalPending} pending approval requests`,
+              title: `${centralApprovalPending > 99 ? "99+" : centralApprovalPending} pending approval requests`,
             }
           : null,
       );
     } catch (error) {
       console.error("Sidebar approval request notification error:", error);
       setApprovalRequestNotificationCount(0);
+      setSidebarNotification?.("jobDescriptionApprovals", null);
+      setSidebarNotification?.("hiringNeedsApprovals", null);
+      setSidebarNotification?.("availablePositionApprovals", null);
       setSidebarNotification?.("approvalRequests", null);
     }
   }, [setSidebarNotification, user]);
 
   useEffect(() => {
-    setMounted(true);
+    const mountedTimer = window.setTimeout(() => {
+      setMounted(true);
+    }, 0);
 
     const handleResize = () => {
       setIsMobile(window.innerWidth < 1024);
@@ -476,6 +574,7 @@ export default function Sidebar() {
     window.addEventListener("resize", handleResize);
 
     return () => {
+      window.clearTimeout(mountedTimer);
       window.removeEventListener("resize", handleResize);
     };
   }, []);
@@ -521,8 +620,16 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (isMobile) {
-      setMobileOpen(false);
+      const closeTimer = window.setTimeout(() => {
+        setMobileOpen(false);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(closeTimer);
+      };
     }
+
+    return undefined;
   }, [pathname, isMobile]);
 
   useEffect(() => {
@@ -538,18 +645,30 @@ export default function Sidebar() {
   useEffect(() => {
     if (!mounted || loading || !user) return;
 
-    if (!ADMIN_ROLES.includes(user.role)) {
-      setApprovalRequestNotificationCount(0);
-      return;
+    if (!ADMIN_ROLES.includes(normalizeRole(user.role))) {
+      const resetTimer = window.setTimeout(() => {
+        setApprovalRequestNotificationCount(0);
+        setSidebarNotification?.("jobDescriptionApprovals", null);
+        setSidebarNotification?.("hiringNeedsApprovals", null);
+        setSidebarNotification?.("availablePositionApprovals", null);
+        setSidebarNotification?.("approvalRequests", null);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(resetTimer);
+      };
     }
 
-    loadApprovalRequestNotifications();
+    const initialLoadTimer = window.setTimeout(() => {
+      loadApprovalRequestNotifications();
+    }, 0);
 
     const interval = window.setInterval(() => {
       loadApprovalRequestNotifications();
     }, 30000);
 
     return () => {
+      window.clearTimeout(initialLoadTimer);
       window.clearInterval(interval);
     };
   }, [
@@ -559,6 +678,7 @@ export default function Sidebar() {
     pathname,
     ADMIN_ROLES,
     loadApprovalRequestNotifications,
+    setSidebarNotification,
   ]);
 
   const employeeCoreMenu = [
@@ -662,18 +782,21 @@ export default function Sidebar() {
       icon: ClipboardList,
       path: "/recruitment/job-description",
       allowedUsers: [1, 2, 3, 6, 7],
+      notificationKey: "jobDescriptionApprovals",
     },
     {
       name: "Hiring Needs Intake",
       icon: FileText,
       path: "/recruitment/hiring-needs",
       allowedUsers: [1, 2, 3, 5, 6, 7],
+      notificationKey: "hiringNeedsApprovals",
     },
     {
       name: "Available Positions",
       icon: BriefcaseBusiness,
       path: "/recruitment/available-positions",
       allowedUsers: [1, 2, 3, 7],
+      notificationKey: "availablePositionApprovals",
     },
     {
       name: "Sourcing Analytics",
@@ -741,14 +864,14 @@ export default function Sidebar() {
   ];
 
   const communicationMenu = [
-    {
-      name: "Approval Requests",
-      icon: ClipboardCheck,
-      path: "/approval-request",
-      allowedUsers: [3, 4, 5, 6, 7],
-      notificationKey: "approvalRequests",
-      notificationCount: approvalRequestNotificationCount,
-    },
+    // {
+    //   name: "Approval Requests",
+    //   icon: ClipboardCheck,
+    //   path: "/approval-request",
+    //   allowedUsers: [3, 4, 5, 6, 7],
+    //   notificationKey: "approvalRequests",
+    //   notificationCount: approvalRequestNotificationCount,
+    // },
     {
       name: "Email Logs",
       icon: FileClock,

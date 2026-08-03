@@ -1,10 +1,13 @@
 import React from "react";
 import {
+  CheckCircle2,
   FileText,
   Pencil,
+  XCircle,
 } from "lucide-react";
 
 import PositionMobileCard from "../../recruitment/availablePositions/PositionMobileCard";
+import StatusFilterTabs from "../../recruitment/StatusFilterTabs";
 import { formatDate } from "../../layout/FormatDateTime";
 import { formatPersonName } from "../../../lib/utils/availablePositions/availablePositionsHelpers";
 import { StatusBadge } from "../../../lib/utils/availablePositions/reactComponents/reactHelpers";
@@ -49,7 +52,7 @@ function ActionButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-lg border px-2.5 text-[10px] font-extrabold transition disabled:cursor-not-allowed disabled:opacity-45 ${variantClass}`}
+      className={`inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 text-[10px] font-extrabold transition disabled:cursor-not-allowed disabled:opacity-45 ${variantClass}`}
     >
       {children}
     </button>
@@ -59,7 +62,7 @@ function ActionButton({
 function EmptyTableRow() {
   return (
     <tr>
-      <td colSpan={8} className="px-5 py-14 text-center">
+      <td colSpan={9} className="px-5 py-14 text-center">
         <div className="mx-auto max-w-sm rounded-2xl border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-5 py-8">
           <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
 
@@ -77,6 +80,57 @@ function EmptyTableRow() {
   );
 }
 
+function normalizeApprovalStatus(value = "") {
+  const status = normalizeText(value);
+
+  if (!status) return "Approved";
+  if (status === "pending") return "For Approval";
+  if (status === "for approval") return "For Approval";
+  if (status === "for review") return "For Approval";
+  if (status === "approved") return "Approved";
+  if (status === "rejected" || status === "declined") return "Rejected";
+
+  return String(value || "Approved").trim();
+}
+
+function getAvailablePositionApprovalStatus(position = {}) {
+  const raw = position.raw || {};
+
+  return normalizeApprovalStatus(
+    position.approvalStatus ||
+      position.approval_status ||
+      position.recruitmentSettingsStatus ||
+      position.recruitment_settings_status ||
+      raw.approvalStatus ||
+      raw.approval_status ||
+      raw.recruitmentSettingsStatus ||
+      raw.recruitment_settings_status ||
+      "",
+  );
+}
+
+function getAvailablePositionApprovalRequestId(position = {}) {
+  const raw = position.raw || {};
+
+  return (
+    position.approvalRequestId ||
+    position.approval_request_id ||
+    position.requestId ||
+    position.request_id ||
+    raw.approvalRequestId ||
+    raw.approval_request_id ||
+    ""
+  );
+}
+
+function canShowApprovalActions(position = {}, canApprove = false) {
+  return (
+    canApprove &&
+    Boolean(getAvailablePositionApprovalRequestId(position)) &&
+    getAvailablePositionApprovalStatus(position) === "For Approval"
+  );
+}
+
 export default function AvailablePositionsTable({
   isLoading = false,
   paginatedPositions = [],
@@ -86,7 +140,14 @@ export default function AvailablePositionsTable({
   onPageChange,
   onEdit,
   onSetStatus,
+  onApproveRequest,
+  onRejectRequest,
+  statusTabs = [],
+  statusFilter = "All",
+  statusCounts = {},
+  onStatusFilterChange,
   isSaving = false,
+  canApproveAvailablePositions = false,
   activeStatus = "Active",
   inactiveStatus = "Inactive",
 }) {
@@ -98,6 +159,15 @@ export default function AvailablePositionsTable({
         </div>
       ) : (
         <>
+          <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:hidden">
+            <StatusFilterTabs
+              tabs={statusTabs}
+              activeValue={statusFilter}
+              counts={statusCounts}
+              onChange={onStatusFilterChange}
+            />
+          </div>
+
           <div className="space-y-3 lg:hidden">
             {paginatedPositions.length > 0 ? (
               paginatedPositions.map((position) => (
@@ -120,6 +190,13 @@ export default function AvailablePositionsTable({
 
           <div className="hidden lg:block">
             <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+              <StatusFilterTabs
+                tabs={statusTabs}
+                activeValue={statusFilter}
+                counts={statusCounts}
+                onChange={onStatusFilterChange}
+              />
+
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1380px] border-collapse bg-white text-left text-xs">
                   <thead className="sibs-data-table-head">
@@ -146,6 +223,10 @@ export default function AvailablePositionsTable({
 
                       <th className="sibs-data-table-th text-center">
                         Status
+                      </th>
+
+                      <th className="sibs-data-table-th text-center">
+                        Approval Status
                       </th>
 
                       <th className="sibs-data-table-th text-left">
@@ -191,6 +272,15 @@ export default function AvailablePositionsTable({
                           const account =
                             getAvailablePositionAccount(
                               position,
+                            );
+                          const approvalStatus =
+                            getAvailablePositionApprovalStatus(
+                              position,
+                            );
+                          const showApprovalActions =
+                            canShowApprovalActions(
+                              position,
+                              canApproveAvailablePositions,
                             );
 
                           return (
@@ -305,6 +395,14 @@ export default function AvailablePositionsTable({
                                 </div>
                               </td>
 
+                              <td className="px-4 py-2.5 text-center align-middle">
+                                <div className="flex justify-center">
+                                  <StatusBadge
+                                    status={approvalStatus}
+                                  />
+                                </div>
+                              </td>
+
                               <td className="px-4 py-2.5 align-middle">
                                 <p className="text-xs font-extrabold text-[#344054]">
                                   {formatDate(
@@ -333,6 +431,38 @@ export default function AvailablePositionsTable({
 
                               <td className="px-4 py-2.5 text-right align-middle">
                                 <div className="inline-flex items-center justify-end gap-1.5">
+                                  {showApprovalActions ? (
+                                    <>
+                                      <ActionButton
+                                        variant="active"
+                                        onClick={() =>
+                                          onApproveRequest?.(
+                                            position,
+                                          )
+                                        }
+                                        disabled={isSaving}
+                                        title="Approve available position"
+                                      >
+                                        <CheckCircle2 size={13} />
+                                        Approve
+                                      </ActionButton>
+
+                                      <ActionButton
+                                        variant="inactive"
+                                        onClick={() =>
+                                          onRejectRequest?.(
+                                            position,
+                                          )
+                                        }
+                                        disabled={isSaving}
+                                        title="Reject available position"
+                                      >
+                                        <XCircle size={13} />
+                                        Reject
+                                      </ActionButton>
+                                    </>
+                                  ) : null}
+
                                   {activeStatus ? (
                                     <ActionButton
                                       variant="active"

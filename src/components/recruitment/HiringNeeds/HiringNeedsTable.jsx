@@ -8,6 +8,7 @@ import { useHiringNeeds } from "../../../services/context/HiringNeedsContext";
 import { usePagination } from "../../../services/context/PaginationContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import HiringNeedsMobileCard from "./HiringNeedsMobileCard";
+import StatusFilterTabs from "../StatusFilterTabs";
 import {
   getHiringNeedsDateOrWeek,
   getHiringNeedsDepartmentAccount,
@@ -25,6 +26,12 @@ import {
 
 const HIRING_NEEDS_ENTITY = "hiring-needs";
 const DEFAULT_PAGE_LIMIT = 15;
+const STATUS_TABS = [
+  { label: "All PRFs", value: "All" },
+  { label: "For Approval", value: "For Approval" },
+  { label: "Approved", value: "Approved" },
+  { label: "Not Approved", value: "Not Approved" },
+];
 
 export default function HiringNeedsTable({ onView }) {
   const {
@@ -39,6 +46,7 @@ export default function HiringNeedsTable({ onView }) {
     pagination,
     search,
     filterValues,
+    setFilter,
   } = usePagination(HIRING_NEEDS_ENTITY);
 
   const limit =
@@ -103,6 +111,33 @@ export default function HiringNeedsTable({ onView }) {
     list,
     search,
   ]);
+
+  const statusCounts = useMemo(() => {
+    return (Array.isArray(list) ? list : []).reduce(
+      (counts, item) => {
+        const status = normalizeHiringNeedsStatus(
+          item.approvalStatus || item.approval_status,
+        );
+
+        return {
+          ...counts,
+          All: counts.All + 1,
+          [status]: Number(counts[status] || 0) + 1,
+        };
+      },
+      {
+        All: 0,
+        "For Approval": 0,
+        Approved: 0,
+        "Not Approved": 0,
+      },
+    );
+  }, [list]);
+
+  function handleStatusTabChange(value) {
+    setFilter("status", value);
+    setPage(1);
+  }
 
   const totalPages = Math.max(
     Math.ceil(filteredList.length / limit),
@@ -200,6 +235,13 @@ export default function HiringNeedsTable({ onView }) {
   return (
     <div className="px-4 pb-4 pt-0 font-jakarta sm:px-5 sm:pb-5">
       <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+        <StatusFilterTabs
+          tabs={STATUS_TABS}
+          activeValue={filterValues?.status || "All"}
+          counts={statusCounts}
+          onChange={handleStatusTabChange}
+        />
+
         {/* Mobile cards */}
         <div className="p-4 lg:hidden">
           {loading ? (
