@@ -1601,6 +1601,58 @@ export function ApplicationSection({
   );
 }
 
+function getDocumentExtension(document = {}) {
+  const filename = text(
+    document?.name ||
+      document?.fileName ||
+      document?.filename ||
+      document?.originalName,
+  ).toLowerCase();
+
+  const dotIndex = filename.lastIndexOf(".");
+  return dotIndex >= 0 ? filename.slice(dotIndex) : "";
+}
+
+function getDocumentPreviewMimeType(document = {}, responseType = "") {
+  const extension = getDocumentExtension(document);
+
+  const mimeByExtension = {
+    ".pdf": "application/pdf",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+  };
+
+  const savedMimeType = text(
+    document?.mimeType ||
+      document?.mimetype ||
+      document?.contentType ||
+      document?.type,
+  ).toLowerCase();
+
+  const responseMimeType = text(responseType).toLowerCase();
+
+  if (
+    savedMimeType &&
+    savedMimeType !== "application/octet-stream" &&
+    savedMimeType !== "binary/octet-stream"
+  ) {
+    return savedMimeType;
+  }
+
+  if (
+    responseMimeType &&
+    responseMimeType !== "application/octet-stream" &&
+    responseMimeType !== "binary/octet-stream"
+  ) {
+    return responseMimeType;
+  }
+
+  return mimeByExtension[extension] || "application/octet-stream";
+}
+
 function fileIcon(name) {
   const lower = text(name).toLowerCase();
   if (lower.endsWith(".pdf")) return "PDF";
@@ -1615,7 +1667,9 @@ function fileIcon(name) {
   if (
     lower.endsWith(".jpg") ||
     lower.endsWith(".jpeg") ||
-    lower.endsWith(".png")
+    lower.endsWith(".png") ||
+    lower.endsWith(".gif") ||
+    lower.endsWith(".webp")
   ) {
     return "IMG";
   }
@@ -1654,9 +1708,14 @@ function canDeleteEmployeeDocument(document) {
   const isManagedTalentPoolUpload =
     sourceKey === "talent-pool" &&
     sourceRecordId === "employee-upload-folder";
+  const isManagedRequirementUpload =
+    sourceKey === "candidate-pipeline" &&
+    sourceRecordId === "employee-requirement-folder";
 
   return (
-    (sourceKey === "employee-profile" || isManagedTalentPoolUpload) &&
+    (sourceKey === "employee-profile" ||
+      isManagedTalentPoolUpload ||
+      isManagedRequirementUpload) &&
     document?.readOnly !== true &&
     document?.canDelete !== false
   );
@@ -1713,7 +1772,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   const [dragActive, setDragActive] = useState(false);
 
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [newCategory, setNewCategory] = useState("Certificate");
   const [uploading, setUploading] = useState(false);
 
@@ -1915,22 +1974,25 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
     }
   }
 
-  function prepareSelectedFile(file) {
-    const validation = validateProfileDocumentFile(file);
+  function prepareSelectedFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
 
-    if (!validation.valid) {
-      onFeedback?.(validation.message, "error");
+    const invalid = files.find(
+      (file) => !validateProfileDocumentFile(file).valid,
+    );
+    if (invalid) {
+      onFeedback?.(validateProfileDocumentFile(invalid).message, "error");
       return;
     }
 
-    setSelectedFile(file);
+    setSelectedFiles(files);
     setNewCategory("Certificate");
     setUploadOpen(true);
   }
 
   function handleFileInputChange(event) {
-    const file = event.target.files?.[0];
-    if (file) prepareSelectedFile(file);
+    prepareSelectedFiles(event.target.files);
   }
 
   function handleDragOver(event) {
@@ -1950,54 +2012,38 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
     event.stopPropagation();
     setDragActive(false);
 
-    const file = event.dataTransfer?.files?.[0];
-    if (file) prepareSelectedFile(file);
+    prepareSelectedFiles(event.dataTransfer?.files);
   }
 
   function closeUploadModal() {
     if (uploading) return;
     setUploadOpen(false);
-    setSelectedFile(null);
+    setSelectedFiles([]);
   }
 
   async function uploadDocument(event) {
     event.preventDefault();
-
-    if (!sibsId || !selectedFile || uploading) return;
-
-    const validation = validateProfileDocumentFile(selectedFile);
-    if (!validation.valid) {
-      onFeedback?.(validation.message, "error");
-      return;
-    }
+    if (!sibsId || !selectedFiles.length || uploading) return;
 
     setUploading(true);
-
     try {
-      const result = await uploadEmployeeProfileDocument(
-        sibsId,
-        selectedFile,
-        newCategory,
-      );
-
-      if (!result?.success) {
-        onFeedback?.(
-          result?.message || "Failed to upload employee document.",
-          "error",
-        );
+      const results = [];
+      for (const file of selectedFiles) {
+        results.push(await uploadEmployeeProfileDocument(sibsId, file, newCategory));
+      }
+      const failed = results.find((result) => !result?.success);
+      if (failed) {
+        onFeedback?.(failed.message || "One or more files failed to upload.", "error");
         return;
       }
-
+      const uploadedCount = selectedFiles.length;
       setUploadOpen(false);
-      setSelectedFile(null);
+      setSelectedFiles([]);
       await loadDocumentsFromServer({ silent: true });
-      onFeedback?.(
-        result.message || "Employee document uploaded successfully.",
-        "success",
-      );
+      onFeedback?.(`${uploadedCount} document${uploadedCount === 1 ? "" : "s"} uploaded successfully.`, "success");
     } catch (error) {
-      console.error("Failed to upload employee document:", error);
-      onFeedback?.("Failed to upload employee document.", "error");
+      console.error("Failed to upload employee documents:", error);
+      onFeedback?.("Failed to upload employee documents.", "error");
     } finally {
       setUploading(false);
     }
@@ -2016,49 +2062,37 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   }
 
   async function handleRequirementFileChange(event) {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files || []);
     const requirement = selectedRequirement;
+    if (!files.length || !requirement?.id || !sibsId) return;
 
-    if (!file || !requirement?.id || !sibsId) return;
-
-    const validation = validateProfileDocumentFile(file);
-    if (!validation.valid) {
-      onFeedback?.(validation.message, "error");
+    const invalid = files.find((file) => !validateProfileDocumentFile(file).valid);
+    if (invalid) {
+      onFeedback?.(validateProfileDocumentFile(invalid).message, "error");
       setSelectedRequirement(null);
       return;
     }
 
     setUploadingRequirementId(requirement.id);
-
     try {
-      const result = await uploadEmployeePreEmploymentRequirement(
-        sibsId,
-        requirement.id,
-        file,
-      );
-
-      if (!result?.success) {
-        onFeedback?.(
-          result?.message || `Failed to upload ${requirement.name}.`,
-          "error",
-        );
+      const results = [];
+      for (const file of files) {
+        results.push(await uploadEmployeePreEmploymentRequirement(sibsId, requirement.id, file));
+      }
+      const failed = results.find((result) => !result?.success);
+      if (failed) {
+        onFeedback?.(failed.message || `One or more files failed to upload for ${requirement.name}.`, "error");
         return;
       }
-
       await loadDocumentsFromServer({ silent: true });
-      onFeedback?.(
-        result.message || `${requirement.name} uploaded successfully.`,
-        "success",
-      );
+      onFeedback?.(`${files.length} file${files.length === 1 ? "" : "s"} appended to ${requirement.name}.`, "success");
     } catch (error) {
-      console.error("Failed to upload pre-employment requirement:", error);
-      onFeedback?.(`Failed to upload ${requirement.name}.`, "error");
+      console.error("Failed to upload pre-employment files:", error);
+      onFeedback?.(`Failed to upload files for ${requirement.name}.`, "error");
     } finally {
       setUploadingRequirementId("");
       setSelectedRequirement(null);
-      if (requirementFileInputRef.current) {
-        requirementFileInputRef.current.value = "";
-      }
+      if (requirementFileInputRef.current) requirementFileInputRef.current.value = "";
     }
   }
 
@@ -2125,12 +2159,22 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         return;
       }
 
-      const objectUrl = URL.createObjectURL(result.blob);
+      const previewMimeType = getDocumentPreviewMimeType(
+        document,
+        result.contentType,
+      );
+
+      const previewBlob =
+        result.blob.type === previewMimeType
+          ? result.blob
+          : result.blob.slice(0, result.blob.size, previewMimeType);
+
+      const objectUrl = URL.createObjectURL(previewBlob);
       previewUrlRef.current = objectUrl;
       setPreview({
         document: {
           ...document,
-          mimeType: document?.mimeType || result.contentType,
+          mimeType: previewMimeType,
         },
         url: objectUrl,
       });
@@ -2234,6 +2278,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         ref={fileInputRef}
         type="file"
         accept={PROFILE_DOCUMENT_ACCEPT}
+        multiple
         onChange={handleFileInputChange}
         className="hidden"
       />
@@ -2241,6 +2286,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         ref={requirementFileInputRef}
         type="file"
         accept={PROFILE_DOCUMENT_ACCEPT}
+        multiple
         onChange={handleRequirementFileChange}
         className="hidden"
       />
@@ -2261,7 +2307,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         {[
           {
             id: "uploaded",
@@ -2286,7 +2332,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
               key={card.id}
               type="button"
               onClick={() => setActiveDocumentGroup(card.id)}
-              className={`h-full w-full min-w-0 rounded-2xl border p-5 text-left transition ${
+              className={`rounded-2xl border p-5 text-left transition ${
                 active
                   ? "border-[#042C51] bg-[#042C51] text-white shadow-md"
                   : "border-[#D6E0EA] bg-white text-[#042C51] hover:border-[#8EA3BF] hover:shadow-sm"
@@ -2386,8 +2432,12 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
 
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
                 {visibleRequirements.map((requirement) => {
-                  const document = requirement?.file || null;
-                  const isUploaded = Boolean(requirement?.uploaded || document);
+                  const files = Array.isArray(requirement?.files)
+                    ? requirement.files
+                    : requirement?.file
+                      ? [requirement.file]
+                      : [];
+                  const isUploaded = files.length > 0;
                   const isUploading = uploadingRequirementId === requirement.id;
                   const isDeleting = deletingRequirementId === requirement.id;
 
@@ -2415,39 +2465,51 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
                         </div>
                       </div>
 
-                      {document ? (
-                        <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
-                          <p className="truncate text-[10px] font-extrabold text-[#344054]">{document.name}</p>
-                          <p className="mt-1 text-[9px] font-semibold text-[#667085]">
-                            {document.fileSize || "—"} · {formatDate(document.uploadedAt)}
-                          </p>
+                      {files.length ? (
+                        <div className="mt-4 space-y-2">
+                          {files.map((document) => (
+                            <div
+                              key={getEmployeeDocumentKey(document)}
+                              className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3"
+                            >
+                              <p className="truncate text-[10px] font-extrabold text-[#344054]">
+                                {document.name}
+                              </p>
+                              <p className="mt-1 text-[9px] font-semibold text-[#667085]">
+                                {document.fileSize || "—"} · {formatDate(document.uploadedAt)}
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <button type="button" onClick={() => openDocumentPreview(document)} className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#D6E0EA] bg-white px-2.5 text-[9px] font-extrabold text-[#52637A]">
+                                  <Eye size={12} /> Preview
+                                </button>
+                                <button type="button" onClick={() => downloadDocument(document)} className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#D6E0EA] bg-white px-2.5 text-[9px] font-extrabold text-[#52637A]">
+                                  <Download size={12} /> Download
+                                </button>
+                                {canDeleteEmployeeDocument(document) ? (
+                                  <button type="button" onClick={() => setDeleteTarget(document)} className="inline-flex h-7 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 text-[9px] font-extrabold text-red-600">
+                                    <Trash2 size={12} /> Delete
+                                  </button>
+                                ) : null}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <div className="mt-4 rounded-xl border border-dashed border-[#C8D3DF] bg-[#F8FAFC] p-4 text-center">
                           <Upload size={18} className="mx-auto text-[#98A2B3]" />
-                          <p className="mt-2 text-[10px] font-bold text-[#667085]">No uploaded file yet.</p>
+                          <p className="mt-2 text-[10px] font-bold text-[#667085]">No uploaded files yet.</p>
                         </div>
                       )}
 
                       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#E6ECF2] pt-3">
-                        {document ? (
-                          <>
-                            <button type="button" onClick={() => openDocumentPreview(document)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6E0EA] px-3 text-[10px] font-extrabold text-[#52637A]">
-                              <Eye size={13} /> Preview
-                            </button>
-                            <button type="button" onClick={() => downloadDocument(document)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6E0EA] px-3 text-[10px] font-extrabold text-[#52637A]">
-                              <Download size={13} /> Download
-                            </button>
-                          </>
-                        ) : null}
                         <button type="button" onClick={() => openRequirementFilePicker(requirement)} disabled={isUploading || isDeleting} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#042C51] px-3 text-[10px] font-extrabold text-white disabled:opacity-60">
                           <Upload size={13} className="text-[#FF5C28]" />
-                          {isUploading ? "Uploading..." : document ? "Replace" : "Upload Files"}
+                          {isUploading ? "Uploading..." : "Upload Files"}
                         </button>
-                        {document ? (
-                          <button type="button" onClick={() => setRequirementDeleteTarget(requirement)} disabled={isUploading || isDeleting} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 text-[10px] font-extrabold text-red-600 disabled:opacity-60">
-                            <Trash2 size={13} /> {isDeleting ? "Deleting..." : "Delete"}
-                          </button>
+                        {files.length > 0 ? (
+                          <span className="text-[9px] font-bold text-[#667085]">
+                            {files.length} active file{files.length === 1 ? "" : "s"}
+                          </span>
                         ) : null}
                       </div>
                     </article>
@@ -2510,7 +2572,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         </section>
       )}
 
-      {uploadOpen && selectedFile && (
+      {uploadOpen && selectedFiles.length > 0 && (
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4"
           onClick={closeUploadModal}
@@ -2536,10 +2598,10 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
             <form onSubmit={uploadDocument} className="mt-4 space-y-4">
               <div className="rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] p-4">
                 <p className="break-all text-xs font-extrabold text-[#042C51]">
-                  {selectedFile.name}
+                  {selectedFiles.length === 1 ? selectedFiles[0].name : `${selectedFiles.length} files selected`}
                 </p>
                 <p className="mt-1 text-[10px] font-semibold text-[#667085]">
-                  {formatProfileDocumentSize(selectedFile.size)} · Saved in the
+                  {selectedFiles.length === 1 ? formatProfileDocumentSize(selectedFiles[0].size) : `${selectedFiles.length} files`} · Saved in the
                   employee Talent Pool UPLOADED FILES folder.
                 </p>
               </div>

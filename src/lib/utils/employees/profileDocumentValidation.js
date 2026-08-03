@@ -1,4 +1,4 @@
-export const MAX_PROFILE_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
+export const PROFILE_DOCUMENT_MAX_SIZE_BYTES = 25 * 1024 * 1024;
 
 export const PROFILE_DOCUMENT_ACCEPT = [
   ".pdf",
@@ -10,81 +10,148 @@ export const PROFILE_DOCUMENT_ACCEPT = [
   ".jpg",
   ".jpeg",
   ".png",
+  ".gif",
+  ".webp",
+  ".heic",
+  ".heif",
+  ".txt",
 ].join(",");
 
-export const PROFILE_DOCUMENT_TYPES = [
-  "Resume",
-  "Government ID",
-  "Contract",
+export const PROFILE_DOCUMENT_TYPES = Object.freeze([
   "Certificate",
-  "Training Record",
+  "Contract",
+  "Government ID",
+  "Medical Record",
+  "Memo",
+  "Performance Document",
+  "Pre-Employment Requirement",
+  "Training Document",
   "Other",
-];
+]);
 
 const ALLOWED_EXTENSIONS = new Set(
-  PROFILE_DOCUMENT_ACCEPT.split(",").map((item) => item.trim()),
+  PROFILE_DOCUMENT_ACCEPT.split(",").map((extension) =>
+    extension.trim().toLowerCase(),
+  ),
 );
 
-export function getProfileDocumentExtension(filename) {
-  const normalized = String(filename || "").trim().toLowerCase();
-  const dotIndex = normalized.lastIndexOf(".");
-  return dotIndex >= 0 ? normalized.slice(dotIndex) : "";
+const INLINE_PREVIEW_EXTENSIONS = new Set([
+  ".pdf",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+]);
+
+const INLINE_PREVIEW_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+]);
+
+function cleanText(value) {
+  return String(value ?? "").trim();
 }
 
-export function formatProfileDocumentSize(bytes) {
-  const value = Number(bytes || 0);
-  if (!Number.isFinite(value) || value <= 0) return "0 B";
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+function getFileExtension(value = "") {
+  const filename = cleanText(value).toLowerCase();
+  const lastDotIndex = filename.lastIndexOf(".");
+
+  if (lastDotIndex < 0) return "";
+
+  return filename.slice(lastDotIndex);
+}
+
+export function formatProfileDocumentSize(value) {
+  const bytes = Number(value);
+
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB"];
+  const unitIndex = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+
+  const amount = bytes / 1024 ** unitIndex;
+  const decimals = unitIndex === 0 || amount >= 10 ? 0 : 1;
+
+  return `${amount.toFixed(decimals)} ${units[unitIndex]}`;
 }
 
 export function validateProfileDocumentFile(file) {
   if (!file) {
     return {
       valid: false,
-      message: "Select a document to upload.",
+      message: "Select a document before uploading.",
     };
   }
 
-  const extension = getProfileDocumentExtension(file.name);
+  const filename = cleanText(file.name);
+  const extension = getFileExtension(filename);
+
+  if (!filename) {
+    return {
+      valid: false,
+      message: "The selected document has no filename.",
+    };
+  }
 
   if (!ALLOWED_EXTENSIONS.has(extension)) {
     return {
       valid: false,
       message:
-        "Unsupported file type. Use PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, or PNG.",
+        "Unsupported document type. Allowed files: PDF, Word, Excel, CSV, images, HEIC/HEIF, and TXT.",
     };
   }
 
-  if (!Number(file.size || 0)) {
+  const fileSize = Number(file.size || 0);
+
+  if (!Number.isFinite(fileSize) || fileSize <= 0) {
     return {
       valid: false,
       message: "The selected document is empty.",
     };
   }
 
-  if (Number(file.size) > MAX_PROFILE_DOCUMENT_SIZE_BYTES) {
+  if (fileSize > PROFILE_DOCUMENT_MAX_SIZE_BYTES) {
     return {
       valid: false,
-      message: "The selected document exceeds the 10 MB limit.",
+      message: `The document exceeds the ${formatProfileDocumentSize(
+        PROFILE_DOCUMENT_MAX_SIZE_BYTES,
+      )} upload limit.`,
     };
   }
 
   return {
     valid: true,
     message: "",
-    extension,
   };
 }
 
-export function isInlinePreviewSupported(document) {
-  const mimeType = String(document?.mimeType || "").toLowerCase();
-  const extension = getProfileDocumentExtension(document?.name);
+export function isInlinePreviewSupported(document = {}) {
+  const mimeType = cleanText(
+    document.mimeType ||
+      document.mimetype ||
+      document.contentType ||
+      document.type,
+  ).toLowerCase();
 
-  return (
-    mimeType === "application/pdf" ||
-    mimeType.startsWith("image/") ||
-    [".pdf", ".jpg", ".jpeg", ".png"].includes(extension)
+  if (INLINE_PREVIEW_MIME_TYPES.has(mimeType)) {
+    return true;
+  }
+
+  const filename = cleanText(
+    document.name ||
+      document.fileName ||
+      document.filename ||
+      document.originalName,
   );
+
+  return INLINE_PREVIEW_EXTENSIONS.has(getFileExtension(filename));
 }

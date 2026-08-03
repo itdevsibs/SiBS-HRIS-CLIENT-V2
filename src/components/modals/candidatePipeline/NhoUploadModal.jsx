@@ -58,7 +58,38 @@ const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
 );
 
 const ACCEPTED_FILE_TYPES =
-  ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif";
+  ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.txt";
+
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+const ACCEPTED_FILE_EXTENSIONS = new Set(
+  ACCEPTED_FILE_TYPES.split(",").map((extension) => extension.trim().toLowerCase()),
+);
+
+function getFileExtension(fileName = "") {
+  const value = cleanText(fileName).toLowerCase();
+  const dotIndex = value.lastIndexOf(".");
+  return dotIndex >= 0 ? value.slice(dotIndex) : "";
+}
+
+function validateSelectedRequirementFile(file) {
+  if (!file) return "No file selected.";
+
+  const extension = getFileExtension(file.name);
+
+  if (!ACCEPTED_FILE_EXTENSIONS.has(extension)) {
+    return `Unsupported file: ${file.name}. Allowed: PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, PNG, GIF, WEBP, HEIC, HEIF, and TXT.`;
+  }
+
+  if (!Number(file.size || 0)) {
+    return `Empty file: ${file.name}.`;
+  }
+
+  if (Number(file.size) > MAX_FILE_SIZE_BYTES) {
+    return `${file.name} exceeds the 25 MB per-file limit.`;
+  }
+
+  return "";
+}
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -426,25 +457,23 @@ function dedupeFiles(files = []) {
   const map = new Map();
 
   filterOfficialUploadedFiles(files).forEach((normalizedFile) => {
-    const key = normalizeRequirement(normalizedFile.requirement);
+    const requirementKey = normalizeRequirement(normalizedFile.requirement);
+    const fileIdentity = cleanText(
+      normalizedFile.storedPath ||
+        normalizedFile.filePath ||
+        normalizedFile.savedFileName ||
+        normalizedFile.filename ||
+        normalizedFile.fileUrl ||
+        normalizedFile.id ||
+        normalizedFile.fileName,
+    ).toLowerCase();
 
-    if (!key) return;
+    if (!requirementKey || !fileIdentity) return;
 
-    const currentFile = map.get(key);
+    const key = `${requirementKey}::${fileIdentity}`;
 
-    if (!currentFile) {
+    if (!map.has(key)) {
       map.set(key, normalizedFile);
-      return;
-    }
-
-    const currentDate = new Date(currentFile.uploadedAt || 0).getTime();
-    const nextDate = new Date(normalizedFile.uploadedAt || 0).getTime();
-
-    if (!Number.isFinite(currentDate) || nextDate >= currentDate) {
-      map.set(key, {
-        ...currentFile,
-        ...normalizedFile,
-      });
     }
   });
 
@@ -478,71 +507,82 @@ function sortUploadedFiles(files = []) {
 
 function RequirementCard({
   requirement,
-  uploadedFile,
+  uploadedFiles = [],
   disabled = false,
   onUpload,
   onSelect,
   onRemove,
+  onValidationError,
 }) {
   const inputRef = useRef(null);
-
-  const hasFile = Boolean(uploadedFile?.fileName || uploadedFile?.fileUrl);
-  const FileIcon = getFileIcon(uploadedFile?.fileName);
+  const hasFiles = uploadedFiles.length > 0;
   const major = isMajorRequirement(requirement);
 
   async function handleFileChange(event) {
-    const file = event.target.files?.[0];
+    const selectedFiles = Array.from(event.target.files || []);
 
-    if (!file) return;
+    if (selectedFiles.length === 0) return;
 
-    try {
+    const validFiles = [];
+    const errors = [];
+
+    for (const file of selectedFiles) {
+      const validationError = validateSelectedRequirementFile(file);
+
+      if (validationError) {
+        errors.push(validationError);
+        continue;
+      }
+
       const fileUrl = await readFileAsDataUrl(file);
 
-      const nextFile = normalizeUploadedFile({
-        id: `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        requirement,
-        fileName: file.name,
-        savedFileName: "",
-        filename: "",
-        fileSize: file.size,
-        fileType: file.type || "application/octet-stream",
-        fileUrl,
-        filePath: "",
-        storedPath: "",
-        uploadedAt: new Date().toISOString(),
-        rawFile: file,
-      });
-
-      onUpload(requirement, nextFile);
-    } finally {
-      event.target.value = "";
+      validFiles.push(
+        normalizeUploadedFile({
+          id: `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          requirement,
+          fileName: file.name,
+          savedFileName: "",
+          filename: "",
+          fileSize: file.size,
+          fileType: file.type || "application/octet-stream",
+          fileUrl,
+          filePath: "",
+          storedPath: "",
+          uploadedAt: new Date().toISOString(),
+          rawFile: file,
+        }),
+      );
     }
+
+    if (validFiles.length > 0) {
+      onUpload(requirement, validFiles);
+    }
+
+    if (errors.length > 0) {
+      onValidationError?.(errors.join("\n"));
+    }
+
+    event.target.value = "";
   }
 
   return (
     <div
       className={`rounded-xl border p-4 transition ${
-        hasFile
+        hasFiles
           ? "border-emerald-200 bg-emerald-50/50"
           : "border-[#D9E2EC] bg-[#F8FAFC]"
       }`}
     >
       <div className="flex min-w-0 items-start gap-3">
-        <button
-          type="button"
-          disabled={!hasFile || disabled}
-          onClick={() => {
-            if (hasFile) onSelect(uploadedFile);
-          }}
-          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition disabled:cursor-not-allowed ${
-            hasFile
+        <div
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+            hasFiles
               ? "border-emerald-500 bg-emerald-500 text-white"
               : "border-[#B9C7D6] bg-white"
           }`}
-          title={hasFile ? "View uploaded file" : "No file uploaded"}
         >
-          {hasFile && <Check size={14} strokeWidth={3} />}
-        </button>
+          {hasFiles && <Check size={14} strokeWidth={3} />}
+        </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-start justify-between gap-2">
@@ -553,32 +593,63 @@ function RequirementCard({
               {requirement}
             </p>
 
-            {major && (
-              <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                Major
-              </span>
-            )}
+            <div className="flex shrink-0 items-center gap-2">
+              {major && (
+                <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Major
+                </span>
+              )}
+
+              {hasFiles && (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700">
+                  {uploadedFiles.length} file{uploadedFiles.length === 1 ? "" : "s"}
+                </span>
+              )}
+            </div>
           </div>
 
-          {hasFile ? (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onSelect(uploadedFile)}
-              className="mt-2 flex w-full min-w-0 items-center gap-2 rounded-xl border border-emerald-100 bg-white px-3 py-2 text-left transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              <FileIcon size={17} className="shrink-0 text-emerald-700" />
+          {hasFiles ? (
+            <div className="mt-3 space-y-2">
+              {uploadedFiles.map((uploadedFile) => {
+                const FileIcon = getFileIcon(uploadedFile.fileName);
 
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-extrabold text-emerald-800">
-                  {uploadedFile.fileName || "Uploaded file"}
-                </span>
+                return (
+                  <div
+                    key={`${uploadedFile.id}-${uploadedFile.fileName}-${uploadedFile.fileUrl}`}
+                    className="flex min-w-0 items-center gap-2 rounded-xl border border-emerald-100 bg-white px-3 py-2"
+                  >
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => onSelect(uploadedFile)}
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      <FileIcon size={17} className="shrink-0 text-emerald-700" />
 
-                <span className="mt-0.5 block truncate text-[11px] font-bold text-emerald-700/80">
-                  {formatFileSize(uploadedFile.fileSize)}
-                </span>
-              </span>
-            </button>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-extrabold text-emerald-800">
+                          {uploadedFile.fileName || "Uploaded file"}
+                        </span>
+
+                        <span className="mt-0.5 block truncate text-[11px] font-bold text-emerald-700/80">
+                          {formatFileSize(uploadedFile.fileSize)}
+                        </span>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => onRemove(uploadedFile)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                      title="Remove this file"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="mt-3 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-3 py-3 text-xs font-bold text-sibs-tertiary-5">
               No uploaded file yet.
@@ -587,42 +658,27 @@ function RequirementCard({
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => inputRef.current?.click()}
-          className={`flex h-11 min-w-0 flex-1 items-center justify-between rounded-xl border border-dashed px-3 text-left text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-70 ${
-            hasFile
-              ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
-              : "border-[#B9C7D6] bg-white text-sibs-primary-1 hover:bg-[#F3F8FF]"
-          }`}
-        >
-          <span className="truncate">
-            {hasFile
-              ? "Replace uploaded file"
-              : "Upload file for this requirement"}
-          </span>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => inputRef.current?.click()}
+        className={`mt-3 flex h-11 w-full items-center justify-between rounded-xl border border-dashed px-3 text-left text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+          hasFiles
+            ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
+            : "border-[#B9C7D6] bg-white text-sibs-primary-1 hover:bg-[#F3F8FF]"
+        }`}
+      >
+        <span className="truncate">
+          {hasFiles ? "Add more files" : "Upload files for this requirement"}
+        </span>
 
-          <UploadCloud size={17} className="shrink-0" />
-        </button>
-
-        {hasFile && (
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => onRemove(requirement)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
-            title="Remove file"
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
-      </div>
+        <UploadCloud size={17} className="shrink-0" />
+      </button>
 
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept={ACCEPTED_FILE_TYPES}
         disabled={disabled}
         onChange={handleFileChange}
@@ -875,7 +931,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                     <button
                       type="button"
                       disabled={disabled}
-                      onClick={() => onRemove?.(file.requirement)}
+                      onClick={() => onRemove?.(file)}
                       className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
                       title="Remove file"
                     >
@@ -934,9 +990,13 @@ export default function NhoUploadModal({
     filterOfficialUploadedFiles(files).forEach((file) => {
       const key = normalizeRequirement(file.requirement);
 
-      if (key) {
-        map.set(key, file);
+      if (!key) return;
+
+      if (!map.has(key)) {
+        map.set(key, []);
       }
+
+      map.get(key).push(file);
     });
 
     return map;
@@ -1042,41 +1102,74 @@ export default function NhoUploadModal({
 
   if (!open) return null;
 
-  function handleUpload(requirement, filePayload) {
+  function handleUpload(requirement, filePayloads = []) {
     setFiles((previous) => {
-      const requirementKey = normalizeRequirement(requirement);
-
-      const withoutCurrentRequirement = previous.filter(
-        (item) => normalizeRequirement(item.requirement) !== requirementKey,
+      const nextFilesForRequirement = (Array.isArray(filePayloads)
+        ? filePayloads
+        : [filePayloads]
+      ).map((filePayload) =>
+        normalizeUploadedFile({
+          ...filePayload,
+          requirement,
+        }),
       );
 
-      const nextFile = normalizeUploadedFile({
-        ...filePayload,
-        requirement,
-      });
+      const nextFiles = dedupeFiles([
+        ...previous,
+        ...nextFilesForRequirement,
+      ]);
 
-      const nextFiles = dedupeFiles([nextFile, ...withoutCurrentRequirement]);
-
-      setSelectedFile(nextFile);
+      setSelectedFile(nextFilesForRequirement[0] || nextFiles[0] || null);
 
       return nextFiles;
     });
   }
 
-  function handleRemove(requirement) {
-    const requirementKey = normalizeRequirement(requirement);
+  function handleRemove(fileToRemove) {
+    const targetId = cleanText(fileToRemove?.id);
+    const targetRequirement = normalizeRequirement(fileToRemove?.requirement);
+    const targetIdentity = cleanText(
+      fileToRemove?.storedPath ||
+        fileToRemove?.filePath ||
+        fileToRemove?.savedFileName ||
+        fileToRemove?.filename ||
+        fileToRemove?.fileUrl ||
+        fileToRemove?.fileName,
+    ).toLowerCase();
 
     setFiles((previous) => {
-      const nextFiles = previous.filter(
-        (item) => normalizeRequirement(item.requirement) !== requirementKey,
-      );
+      const nextFiles = previous.filter((item) => {
+        if (targetId && cleanText(item?.id) === targetId) return false;
+
+        const sameRequirement =
+          normalizeRequirement(item?.requirement) === targetRequirement;
+        const itemIdentity = cleanText(
+          item?.storedPath ||
+            item?.filePath ||
+            item?.savedFileName ||
+            item?.filename ||
+            item?.fileUrl ||
+            item?.fileName,
+        ).toLowerCase();
+
+        return !(sameRequirement && targetIdentity && itemIdentity === targetIdentity);
+      });
 
       setSelectedFile((current) => {
-        if (normalizeRequirement(current?.requirement) === requirementKey) {
-          return nextFiles[0] || null;
-        }
+        const currentWasRemoved =
+          (targetId && cleanText(current?.id) === targetId) ||
+          (normalizeRequirement(current?.requirement) === targetRequirement &&
+            targetIdentity &&
+            cleanText(
+              current?.storedPath ||
+                current?.filePath ||
+                current?.savedFileName ||
+                current?.filename ||
+                current?.fileUrl ||
+                current?.fileName,
+            ).toLowerCase() === targetIdentity);
 
-        return current;
+        return currentWasRemoved ? nextFiles[0] || null : current;
       });
 
       return nextFiles;
@@ -1441,19 +1534,21 @@ export default function NhoUploadModal({
 
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                           {group.requirements.map((requirement) => {
-                            const uploadedFile = uploadedRequirementMap.get(
-                              normalizeRequirement(requirement),
-                            );
+                            const uploadedFiles =
+                              uploadedRequirementMap.get(
+                                normalizeRequirement(requirement),
+                              ) || [];
 
                             return (
                               <RequirementCard
                                 key={requirement}
                                 requirement={requirement}
-                                uploadedFile={uploadedFile}
+                                uploadedFiles={uploadedFiles}
                                 disabled={isSaving || isLoadingFiles}
                                 onUpload={handleUpload}
                                 onSelect={handleSelectFileForPreview}
                                 onRemove={handleRemove}
+                                onValidationError={setSaveError}
                               />
                             );
                           })}
