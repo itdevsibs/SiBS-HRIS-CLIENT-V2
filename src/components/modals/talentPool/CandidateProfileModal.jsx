@@ -50,6 +50,7 @@ import {
 
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
+import DocumentVaultManager from "../../documents/DocumentVaultManager.jsx";
 import NhoUploadModal from "../candidatePipeline/NhoUploadModal";
 import api from "../../../lib/axios/api-template";
 import {
@@ -3782,8 +3783,7 @@ export default function CandidateProfileModal() {
       label: "Documents",
       icon: FileText,
       children: [
-        { key: "documents.uploaded", label: "Uploaded Files" },
-        { key: "documents.preEmployment", label: "Pre-Employment Files" },
+        { key: "documents.vault", label: "Document Vault" },
       ],
     },
     {
@@ -5572,8 +5572,8 @@ export default function CandidateProfileModal() {
       <section className="space-y-4">
         <SectionTitle
           icon={FileText}
-          title="Uploaded Files"
-          description="Candidate audio recording and supporting attachments."
+          title="Other Files"
+          description="Candidate audio recording, resume, and supporting attachments."
         />
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -5669,6 +5669,24 @@ export default function CandidateProfileModal() {
         error={candidatePipelineFilesError}
         canUpload={canUploadFollowUpNhoRequirements}
         onUploadFollowUp={() => setShowNhoUploadModal(true)}
+      />
+    );
+  }
+
+  function renderDocumentVault() {
+    const otherFilesCount = [
+      activeCandidate.audioFileUrl,
+      activeCandidate.attachmentFileUrl,
+    ].filter(Boolean).length;
+
+    return (
+      <DocumentVaultManager
+        title="Document Vault Manager"
+        description="Manage Talent Pool attachments and Candidate Pipeline pre-employment files in one place."
+        otherFilesCount={otherFilesCount}
+        preEmploymentCount={displayedPreEmploymentFiles.length}
+        renderOtherFiles={renderUploadedFiles}
+        renderPreEmploymentFiles={renderPreEmploymentFiles}
       />
     );
   }
@@ -5884,10 +5902,7 @@ export default function CandidateProfileModal() {
     if (activeTab === "application.readiness") return renderReadiness();
     if (activeTab === "application.history") return renderApplicationHistory();
 
-    if (activeTab === "documents.uploaded") return renderUploadedFiles();
-    if (activeTab === "documents.preEmployment") {
-      return renderPreEmploymentFiles();
-    }
+    if (activeTab === "documents.vault") return renderDocumentVault();
 
     if (activeTab === "notes") return renderRemarks();
 
