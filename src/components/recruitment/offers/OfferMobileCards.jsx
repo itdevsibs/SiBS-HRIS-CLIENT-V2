@@ -3,6 +3,23 @@ import { formatCurrency } from "../../../lib/utils/offers/offerFormatters";
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import { useOffers } from "../../../services/context/OffersContext";
 
+function getFinalAccount(offer = {}) {
+  return (
+    offer.finalAccount ||
+    offer.final_account ||
+    offer.accountName ||
+    offer.account_name ||
+    offer.account ||
+    offer.offerDetails?.finalAccount ||
+    offer.offerDetails?.final_account ||
+    offer.offerDetails?.accountName ||
+    offer.offerDetails?.account_name ||
+    offer.offerDetails?.account ||
+    "—"
+  );
+}
+
+
 export default function OfferMobileCards({
   offersOverride,
   routeFilterActive = false,
@@ -43,9 +60,16 @@ export default function OfferMobileCards({
                   <h3 className="mt-1 truncate text-[13px] font-extrabold text-[#042C51]">
                     {offer.candidateName || "—"}
                   </h3>
-                  <p className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
-                    {offer.roleTitle || "—"} / {offer.account || "—"}
-                  </p>
+                  <div className="mt-2 space-y-1">
+                    <p className="truncate text-[11px] font-semibold text-[#667085]">
+                      <span className="font-extrabold text-[#344054]">Final Role:</span>{" "}
+                      {offer.roleTitle || "—"}
+                    </p>
+                    <p className="truncate text-[11px] font-semibold text-[#667085]">
+                      <span className="font-extrabold text-[#344054]">Final Account:</span>{" "}
+                      {getFinalAccount(offer)}
+                    </p>
+                  </div>
                 </div>
 
                 <span

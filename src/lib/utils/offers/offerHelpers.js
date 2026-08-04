@@ -2,6 +2,71 @@
 import { getOfferApprovalUsers } from "./offerApprovalSettings";
 import { getTodayDate, toNumber } from "./offerFormatters";
 
+
+function cleanOfferText(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeOfferComparableText(value) {
+  return cleanOfferText(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function sanitizeOfferRoleTitle(value, account = "") {
+  const rawValue = cleanOfferText(value);
+
+  if (!rawValue) {
+    return "—";
+  }
+
+  const normalizedAccount =
+    normalizeOfferComparableText(account);
+
+  const segments = rawValue
+    .split("/")
+    .map((segment) => cleanOfferText(segment))
+    .filter(Boolean);
+
+  const meaningfulSegments = segments.filter((segment) => {
+    const normalizedSegment =
+      normalizeOfferComparableText(segment);
+
+    if (!normalizedSegment) {
+      return false;
+    }
+
+    if (
+      normalizedSegment === "not assigned yet" ||
+      normalizedSegment === "not assigned" ||
+      normalizedSegment === "unassigned"
+    ) {
+      return false;
+    }
+
+    if (
+      normalizedAccount &&
+      normalizedSegment === normalizedAccount
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  return (
+    meaningfulSegments[0] ||
+    segments.find(
+      (segment) =>
+        !normalizeOfferComparableText(segment).includes(
+          "not assigned",
+        ),
+    ) ||
+    "—"
+  );
+}
+
 export function inputClass(extra = "") {
   return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
@@ -120,6 +185,8 @@ export function normalizePipelineCandidateToOffer(
 
   const candidateResponse =
     override.candidateResponse ||
+    candidate.offerResponseStatus ||
+    candidate.offer_response_status ||
     candidate.offerDecision ||
     candidate.candidateResponse ||
     "Pending";
@@ -137,7 +204,7 @@ export function normalizePipelineCandidateToOffer(
     candidateResponse === "Negotiation" ||
     candidateResponse === "Negotiate"
   ) {
-    status = "Negotiation";
+    status = "Negotiate";
   }
   if (contractSent && candidateResponse === "Pending") {
     status = "Contract Sent";
@@ -166,18 +233,25 @@ export function normalizePipelineCandidateToOffer(
       candidate.candidateName || candidate.name || "Unnamed Candidate",
     candidateEmail: candidate.candidateEmail || candidate.email || "",
 
-    roleTitle:
+    roleTitle: sanitizeOfferRoleTitle(
       offerDetails.roleTitle ||
-      candidate.roleTitle ||
-      candidate.position ||
-      candidate.finalRole ||
-      "Not assigned yet",
+        candidate.roleTitle ||
+        candidate.position ||
+        candidate.finalRole ||
+        "",
+      offerDetails.account ||
+        candidate.account ||
+        candidate.finalAccount ||
+        "",
+    ),
 
     account:
       offerDetails.account ||
-      candidate.account ||
       candidate.finalAccount ||
-      "Not assigned yet",
+      candidate.accountName ||
+      candidate.account_name ||
+      candidate.account ||
+      "—",
 
     hiringRequirementId:
       offerDetails.hiringRequirementId ||
