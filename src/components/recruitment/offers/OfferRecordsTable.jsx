@@ -5,6 +5,23 @@ import { useOffers } from "../../../services/context/OffersContext";
 
 const PAGE_SIZE = 10;
 
+function getFinalAccount(offer = {}) {
+  return (
+    offer.finalAccount ||
+    offer.final_account ||
+    offer.accountName ||
+    offer.account_name ||
+    offer.account ||
+    offer.offerDetails?.finalAccount ||
+    offer.offerDetails?.final_account ||
+    offer.offerDetails?.accountName ||
+    offer.offerDetails?.account_name ||
+    offer.offerDetails?.account ||
+    "—"
+  );
+}
+
+
 export default function OfferRecordsTable({
   offersOverride,
   routeFilterActive = false,
@@ -77,17 +94,19 @@ export default function OfferRecordsTable({
         <div className="overflow-x-auto">
         <table className="w-full min-w-[1120px] table-fixed border-collapse text-left text-xs">
           <colgroup>
-            <col className="w-[27%]" />
-            <col className="w-[25%]" />
-            <col className="w-[16%]" />
-            <col className="w-[14%]" />
+            <col className="w-[24%]" />
+            <col className="w-[19%]" />
             <col className="w-[18%]" />
+            <col className="w-[14%]" />
+            <col className="w-[11%]" />
+            <col className="w-[14%]" />
           </colgroup>
 
           <thead className="sibs-data-table-head">
             <tr className="sibs-data-table-head-row">
               <th className="sibs-data-table-th">Candidate</th>
-              <th className="sibs-data-table-th">Final Role / Account</th>
+              <th className="sibs-data-table-th">Final Role</th>
+              <th className="sibs-data-table-th">Final Account</th>
               <th className="sibs-data-table-th">Approval</th>
               <th className="sibs-data-table-th">Owner</th>
               <th className="sibs-data-table-th text-right">Actions</th>
@@ -135,8 +154,14 @@ export default function OfferRecordsTable({
                       >
                         {offer.roleTitle || "—"}
                       </p>
-                      <p className="mt-0.5 truncate text-[10px] font-semibold text-[#667085]">
-                        {offer.account || "—"}
+                    </td>
+
+                    <td className="px-4 py-3.5 align-middle">
+                      <p
+                        title={getFinalAccount(offer)}
+                        className="truncate text-xs font-bold text-[#344054]"
+                      >
+                        {getFinalAccount(offer)}
                       </p>
                     </td>
 
@@ -205,7 +230,7 @@ export default function OfferRecordsTable({
               })
             ) : (
               <tr>
-                <td colSpan={5} className="px-5 py-12 text-center">
+                <td colSpan={6} className="px-5 py-12 text-center">
                   <p className="text-sm font-extrabold text-[#042C51]">
                     {emptyMessage}
                   </p>
