@@ -1573,73 +1573,6 @@ export function ResignationManagementModal({
   const isFormal = form?.resignationType === "Formal";
   const isImmediate = form?.resignationType === "Immediate";
 
-  const hasEmployeeSibsId = Boolean(form?.employeeSibsId);
-const hasEmployeeName = Boolean(form?.employeeName);
-const hasResignationType = Boolean(form?.resignationType);
-
-const hasResignationDate =
-  hasSelectedEmployee && Boolean(form?.resignationDate);
-
-const hasLastWorkingDate =
-  hasSelectedEmployee && Boolean(form?.lastWorkingDate);
-
-const completedDateFields = [
-  hasResignationDate,
-  hasLastWorkingDate,
-].filter(Boolean).length;
-
-const hasDatesCompleted = completedDateFields === 2;
-
-const hasUploadedFile = Boolean(form?.uploadedFile?.name || form?.uploadedFile);
-const hasReason = Boolean(String(form?.reason || "").trim());
-const hasRemarks = Boolean(String(form?.remarks || "").trim());
-
-const requiredFieldChecks = [
-  {
-    label: "Employee SIBS ID",
-    complete: hasEmployeeSibsId,
-    statusText: hasEmployeeSibsId ? "Complete" : "Missing",
-  },
-  {
-    label: "Employee Name",
-    complete: hasEmployeeName,
-    statusText: hasEmployeeName ? "Complete" : "Missing",
-  },
-  {
-    label: "Type of Resignation",
-    complete: hasResignationType,
-    statusText: hasResignationType ? "Complete" : "Missing",
-  },
-  {
-    label: "Dates Completed",
-    complete: hasDatesCompleted,
-    statusText: hasDatesCompleted
-      ? "2/2 Complete"
-      : `${completedDateFields}/2 Missing`,
-  },
-  {
-    label: "Email Attachment",
-    complete: hasUploadedFile,
-    statusText: hasUploadedFile ? "Complete" : "Missing",
-  },
-  {
-    label: "Reason / Summary",
-    complete: hasReason,
-    statusText: hasReason ? "Complete" : "Missing",
-  },
-  {
-    label: "TL / OM Remarks",
-    complete: hasRemarks,
-    statusText: hasRemarks ? "Complete" : "Missing",
-  },
-];
-
-  const completedRequiredFields = requiredFieldChecks.filter(
-    (field) => field.complete,
-  ).length;
-
-  const totalRequiredFields = requiredFieldChecks.length;
-
   const selectedEmployee =
     managedEmployees.find(
       (employee) => String(employee?.sibsId) === String(form?.employeeSibsId),
@@ -1703,314 +1636,220 @@ const requiredFieldChecks = [
     <div
       role="dialog"
       aria-modal="true"
-      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1100] flex items-center justify-center p-2 font-jakarta sm:p-4"
+      aria-labelledby="resignation-management-title"
+      data-layout="compact-resignation-management-v2"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1100] flex items-center justify-center p-3 font-jakarta sm:p-4"
     >
       <form
         onSubmit={onSubmit}
-        className={`flex max-h-[96vh] w-full max-w-6xl flex-col overflow-hidden ${PANEL_EDGE} border border-[#D9E2EC] bg-white shadow-2xl sm:max-h-[94vh]`}
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-[680px] flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white shadow-[0_24px_70px_rgba(4,44,81,0.30)] sm:max-h-[92vh]"
       >
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-6 sm:py-5">
+        <header className="shrink-0 border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-6">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center ${EDGE} bg-[#DDE5EF] text-sibs-primary-1`}
+            <div className="min-w-0">
+              <h2
+                id="resignation-management-title"
+                className="truncate text-xl font-extrabold tracking-tight text-sibs-primary-1 sm:text-[22px]"
               >
-                <FileText size={22} />
-              </div>
+                Submit Resignation
+              </h2>
 
-              <div className="min-w-0">
-                <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
-                  New Resignation
-                </h2>
-
-                <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                  Select an employee first to enable the resignation filing
-                  details.
-                </p>
-              </div>
+              <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
+                Select an employee and enter the resignation request details.
+              </p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center ${EDGE} text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60`}
-              aria-label="Close"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#98A2B3] transition hover:bg-[#F2F6FA] hover:text-sibs-primary-1 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Close resignation modal"
             >
-              <X size={22} />
+              <X size={20} />
             </button>
           </div>
-        </div>
+        </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sibs-scrollbar sm:px-6 sm:py-6">
-          <div className="space-y-5">
-            <div
-              className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5`}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <h3 className="text-base font-extrabold text-sibs-primary-1">
-                    Employee Information
-                  </h3>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sibs-scrollbar sm:px-6">
+          <div className="space-y-4">
+            <EmployeePickerField
+              label="Employee SIBS ID *"
+              selectedSibsId={form?.employeeSibsId}
+              employees={managedEmployees}
+              loading={employeePickerLoading}
+              search={employeePickerSearch}
+              open={employeePickerOpen}
+              onOpenChange={onEmployeePickerOpenChange}
+              onSearchChange={(value) => {
+                onEmployeePickerSearchChange?.(value);
+                onSearchManagedEmployees?.(value);
+              }}
+              onSelect={onSelectManagedEmployee}
+            />
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    Choose an employee before completing the rest of the form.
+            {hasSelectedEmployee ? (
+              <section className="flex min-w-0 items-center gap-3 rounded-xl border border-[#E1E8F0] bg-[#F8FAFC] px-4 py-3">
+                <ProfileAvatar item={selectedEmployee} size="md" />
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Selected Employee
+                  </p>
+
+                  <p className="mt-0.5 truncate text-sm font-extrabold text-[#042C51]">
+                    {form?.employeeName}
+                  </p>
+
+                  <p className="mt-0.5 truncate text-xs font-semibold text-[#667085]">
+                    {form?.employeeSibsId}
+                    {form?.department ? ` · ${form.department}` : ""}
+                    {form?.account ? ` · ${form.account}` : ""}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  {hasSelectedEmployee ? (
-                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
-                      <CheckCircle2 size={14} />
-                      Employee selected
-                    </span>
-                  ) : (
-                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
-                      <Clock3 size={14} />
-                      Select employee first
-                    </span>
-                  )}
-                </div>
+                <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold text-emerald-700 sm:inline-flex">
+                  <CheckCircle2 size={12} />
+                  Selected
+                </span>
+              </section>
+            ) : (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-800">
+                Select an employee first. The remaining resignation fields will
+                become available after selection.
               </div>
+            )}
 
-              {hasSelectedEmployee && (
-                <div
-                  className={`mt-5 ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] p-4`}
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <ProfileAvatar item={selectedEmployee} size="lg" />
+            <ModalSelectField
+              label="Type of Resignation *"
+              value={form?.resignationType}
+              options={RESIGNATION_TYPES}
+              placeholder="Select type"
+              onSelect={handleTypeSelect}
+              disabled={detailsDisabled}
+            />
 
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold uppercase text-sibs-tertiary-5">
-                        Selected Employee
-                      </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormDateField
+                label="Resignation Date *"
+                name="resignationDate"
+                value={form?.resignationDate}
+                onChange={handleResignationDateChange}
+                disabled={detailsDisabled}
+                readOnly
+                placeholder="Select resignation date"
+              />
 
-                      <h4 className="mt-1 truncate text-base font-extrabold text-[#101828]">
-                        {form.employeeName}
-                      </h4>
-
-                      <p className="mt-1 truncate text-sm font-bold text-[#2F6CA5]">
-                        {form.employeeSibsId}
-                        {form.department ? ` · ${form.department}` : ""}
-                        {form.account ? ` · ${form.account}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-                <div className="min-w-0">
-                  <FormFieldLabel
-                    label="Employee SIBS ID"
-                    completed={hasEmployeeSibsId}
-                  />
-
-                  <EmployeePickerField
-                    label=""
-                    selectedSibsId={form.employeeSibsId}
-                    employees={managedEmployees}
-                    loading={employeePickerLoading}
-                    search={employeePickerSearch}
-                    open={employeePickerOpen}
-                    onOpenChange={onEmployeePickerOpenChange}
-                    onSearchChange={(value) => {
-                      onEmployeePickerSearchChange?.(value);
-                      onSearchManagedEmployees?.(value);
-                    }}
-                    onSelect={onSelectManagedEmployee}
-                  />
-                </div>
-
-                <FormInput
-                  label="Employee Name"
-                  name="employeeName"
-                  value={form.employeeName}
-                  onChange={onChange}
-                  placeholder="Employee name will auto-fill"
-                  readOnly
-                  completed={hasEmployeeName}
-                />
-
-                {!hasSelectedEmployee && (
-                  <div
-                    className={`md:col-span-2 ${EDGE} border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700`}
-                  >
-                    Please select an employee first. The resignation date, last
-                    working date, resignation type, email attachment, reason,
-                    and remarks are disabled until an employee is selected.
-                  </div>
-                )}
-
-                <div className="md:col-span-2">
-                  <ModalSelectField
-                    label="Type of Resignation *"
-                    value={form.resignationType}
-                    options={RESIGNATION_TYPES}
-                    placeholder="Select type"
-                    onSelect={handleTypeSelect}
-                    disabled={detailsDisabled}
-                    completed={hasResignationType}
-                  />
-                </div>
-
-                <FormDateField
-                  label="Resignation Date *"
-                  name="resignationDate"
-                  value={form.resignationDate}
-                  onChange={handleResignationDateChange}
-                  disabled={detailsDisabled}
-                  readOnly
-                  placeholder="Select resignation date"
-                  completed={hasResignationDate}
-                />
-
-                <FormDateField
-                  label="Last Working Date *"
-                  name="lastWorkingDate"
-                  value={form.lastWorkingDate}
-                  onChange={onChange}
-                  disabled={detailsDisabled}
-                  readOnly={isFormal}
-                  minDate={
-                    isImmediate ? getImmediateMinDate(form.resignationDate) : ""
-                  }
-                  maxDate={
-                    isImmediate ? getImmediateMaxDate(form.resignationDate) : ""
-                  }
-                  placeholder="Select last working date"
-                  completed={hasLastWorkingDate}
-                />
-
-                {isFormal && (
-                  <p className="md:col-span-2 text-xs text-sibs-tertiary-5">
-                    For formal resignation, the last working date is
-                    automatically set to 30 days from the resignation date.
-                  </p>
-                )}
-
-                {isImmediate && (
-                  <p className="md:col-span-2 text-xs text-sibs-tertiary-5">
-                    For immediate resignation, only dates within 1 to 29 days
-                    from the resignation date can be selected.
-                  </p>
-                )}
-
-                <div className="md:col-span-2">
-                  <FormFieldLabel
-                    label="Email Attachment"
-                    completed={hasUploadedFile}
-                  />
-
-                  <div className="space-y-2">
-                    <label
-                      className={`flex min-h-[74px] items-center justify-between gap-3 ${EDGE} ${FIELD_BORDER} px-4 py-3 text-sm transition ${
-                        detailsDisabled
-                          ? "cursor-not-allowed bg-[#F8FAFC] opacity-70"
-                          : "cursor-pointer bg-white hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
-                      }`}
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        {form.uploadedFile?.name ? (
-                          <FileTypeIcon filename={form.uploadedFile.name} />
-                        ) : (
-                          <Paperclip
-                            size={18}
-                            className="shrink-0 text-sibs-tertiary-5"
-                          />
-                        )}
-
-                        <span
-                          className={`min-w-0 truncate text-sm font-semibold ${
-                            form.uploadedFile?.name
-                              ? "text-gray-700"
-                              : "text-sibs-tertiary-5"
-                          }`}
-                        >
-                          {form.uploadedFile?.name ||
-                            (detailsDisabled
-                              ? "Select employee before uploading file"
-                              : "Choose resignation file")}
-                        </span>
-                      </div>
-
-                      <span
-                        className={`ml-4 shrink-0 ${EDGE} bg-[var(--sibs-tertiary-9)] px-3 py-1.5 text-xs font-bold text-sibs-primary-1`}
-                      >
-                        Browse
-                      </span>
-
-                      <input
-                        type="file"
-                        name="uploadedFile"
-                        onChange={onChange}
-                        disabled={detailsDisabled}
-                        className="hidden"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,image/heic,image/heif"
-                      />
-                    </label>
-
-                    <p className="text-xs text-sibs-tertiary-5">
-                      Accepted file types: .pdf, .doc, .docx, .jpg, .jpeg,
-                      .png, .heic
-                    </p>
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <FormTextarea
-                    label="Reason / Summary"
-                    name="reason"
-                    value={form.reason}
-                    onChange={onChange}
-                    rows={4}
-                    placeholder="Summarize the employee’s resignation reason based on the submitted email."
-                    disabled={detailsDisabled}
-                    completed={hasReason}
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <FormTextarea
-                    label="TL / OM Remarks"
-                    name="remarks"
-                    value={form.remarks}
-                    onChange={onChange}
-                    rows={3}
-                    placeholder="Add remarks before sending the resignation request for approval."
-                    disabled={detailsDisabled}
-                    completed={hasRemarks}
-                  />
-                </div>
-              </div>
+              <FormDateField
+                label="Last Working Date *"
+                name="lastWorkingDate"
+                value={form?.lastWorkingDate}
+                onChange={onChange}
+                disabled={detailsDisabled}
+                readOnly={isFormal}
+                minDate={
+                  isImmediate ? getImmediateMinDate(form?.resignationDate) : ""
+                }
+                maxDate={
+                  isImmediate ? getImmediateMaxDate(form?.resignationDate) : ""
+                }
+                placeholder="Select last working date"
+              />
             </div>
 
-            <div className="grid grid-cols-1 gap-5">
-              <div
-                className={`${PANEL_EDGE} border border-blue-100 bg-blue-50 p-4 sm:p-5`}
+            {isFormal ? (
+              <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700">
+                Formal resignation automatically sets the last working date to
+                30 days after the resignation date.
+              </p>
+            ) : null}
+
+            {isImmediate ? (
+              <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700">
+                Immediate resignation allows a last working date from 1 to 29
+                days after the resignation date.
+              </p>
+            ) : null}
+
+            <div>
+              <FormFieldLabel label="Email Attachment *" />
+
+              <label
+                className={`flex min-h-[50px] items-center justify-between gap-3 rounded-[10px] border border-[#D0D5DD] px-3.5 py-2.5 text-sm transition ${
+                  detailsDisabled
+                    ? "cursor-not-allowed bg-[#F8FAFC] opacity-70"
+                    : "cursor-pointer bg-white hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
+                }`}
               >
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Process Rule
-                </h3>
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <Paperclip
+                    size={17}
+                    className="shrink-0 text-[#2F6CA5]"
+                  />
 
-                <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
-                  Formal resignation automatically computes the last working
-                  date as 30 days from the resignation date. Immediate
-                  resignation requires selecting a last working date within 1 to
-                  29 days.
-                </p>
-              </div>
+                  <span
+                    className={`truncate text-sm font-semibold ${
+                      form?.uploadedFile?.name
+                        ? "text-[#344054]"
+                        : "text-[#667085]"
+                    }`}
+                  >
+                    {form?.uploadedFile?.name ||
+                      (detailsDisabled
+                        ? "Select employee before uploading file"
+                        : "Choose resignation file")}
+                  </span>
+                </span>
+
+                <span className="shrink-0 rounded-lg bg-[#D7E0EA] px-3 py-1.5 text-xs font-bold text-[#24496B]">
+                  Browse
+                </span>
+
+                <input
+                  type="file"
+                  name="uploadedFile"
+                  onChange={onChange}
+                  disabled={detailsDisabled}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,image/heic,image/heif"
+                />
+              </label>
+
+              <p className="mt-1.5 text-[10px] font-medium text-[#667085]">
+                Accepted file types: .pdf, .doc, .docx, .jpg, .jpeg, .png,
+                .heic
+              </p>
             </div>
+
+            <FormTextarea
+              label="Reason / Summary *"
+              name="reason"
+              value={form?.reason}
+              onChange={onChange}
+              rows={3}
+              placeholder="Summarize the employee’s resignation reason based on the submitted email."
+              disabled={detailsDisabled}
+            />
+
+            <FormTextarea
+              label="TL / OM Remarks *"
+              name="remarks"
+              value={form?.remarks}
+              onChange={onChange}
+              rows={2}
+              placeholder="Add remarks before sending the resignation request for approval."
+              disabled={detailsDisabled}
+            />
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+          <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className={`${EDGE} ${FIELD_BORDER} px-4 py-2.5 text-sm font-bold text-sibs-tertiary-5 transition hover:bg-[var(--sibs-tertiary-9)] disabled:cursor-not-allowed disabled:opacity-60`}
+              className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#2F6CA5] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -2018,17 +1857,25 @@ const requiredFieldChecks = [
             <button
               type="submit"
               disabled={submitting || !hasSelectedEmployee}
-              className={`${EDGE} bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60`}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#042C51] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#063C69] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "Submitting..." : "Submit Resignation"}
+              {submitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Resignation"
+              )}
             </button>
           </div>
-        </div>
+        </footer>
       </form>
     </div>,
     document.body,
   );
 }
+
 function getFirstValue(source, keys, fallback = "") {
   for (const key of keys) {
     const value = source?.[key];

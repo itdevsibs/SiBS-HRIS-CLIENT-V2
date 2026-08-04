@@ -7,6 +7,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
+import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 
 function getText(value) {
@@ -298,41 +299,68 @@ function WeeklyVersionDropdown({
     return weekRange ? `${label} | ${weekRange}` : label;
   }
 
-  const normalizedOptions = useMemo(
-    () =>
-      (options || [])
-        .map((week, index) => {
-          const label = formatWeeklyVersionDisplay(week);
-          const value =
-            week?.id ||
-            week?.weekKey ||
-            week?.week_key ||
-            `${week?.startDate || week?.weekStart || ""}__${
-              week?.endDate || week?.weekEnd || ""
-            }` ||
-            label ||
-            `week-${index}`;
+  const normalizedOptions = useMemo(() => {
+    const mappedOptions = (options || [])
+      .map((week, index) => {
+        const label = formatWeeklyVersionDisplay(week);
+        const value =
+          week?.id ||
+          week?.weekKey ||
+          week?.week_key ||
+          `${week?.startDate || week?.weekStart || ""}__${
+            week?.endDate || week?.weekEnd || ""
+          }` ||
+          label ||
+          `week-${index}`;
 
-          return {
-            raw: week,
-            label,
-            value,
-          };
-        })
-        .filter((option) => option.label && option.value)
-        .sort((a, b) => {
-          const dateA = new Date(a.raw?.startDate || a.raw?.weekStart || 0).getTime();
-          const dateB = new Date(b.raw?.startDate || b.raw?.weekStart || 0).getTime();
-          if (dateA && dateB && dateA !== dateB) return dateB - dateA;
+        return {
+          raw: week,
+          label,
+          value,
+        };
+      })
+      .filter((option) => option.label && option.value);
 
-          const yearA = Number(a.raw?.year || String(a.label || "").match(/\d{4}/)?.[0] || 0);
-          const yearB = Number(b.raw?.year || String(b.label || "").match(/\d{4}/)?.[0] || 0);
-          if (yearA !== yearB) return yearB - yearA;
+    const hasForecastOptions = mappedOptions.some(
+      (option) =>
+        option.raw?.isForecast ||
+        option.raw?.forecast ||
+        option.raw?.type === "forecast",
+    );
 
-          return 0;
-        }),
-    [options],
-  );
+    return mappedOptions.sort((a, b) => {
+      const dateA = new Date(
+        a.raw?.startDate || a.raw?.weekStart || a.raw?.week_start || 0,
+      ).getTime();
+      const dateB = new Date(
+        b.raw?.startDate || b.raw?.weekStart || b.raw?.week_start || 0,
+      ).getTime();
+
+      if (dateA && dateB && dateA !== dateB) {
+        return hasForecastOptions ? dateA - dateB : dateB - dateA;
+      }
+
+      const yearA = Number(
+        a.raw?.year || String(a.label || "").match(/\d{4}/)?.[0] || 0,
+      );
+      const yearB = Number(
+        b.raw?.year || String(b.label || "").match(/\d{4}/)?.[0] || 0,
+      );
+
+      if (yearA !== yearB) {
+        return hasForecastOptions ? yearA - yearB : yearB - yearA;
+      }
+
+      const weekA = Number(a.raw?.weekNumber || a.raw?.week_number || 0);
+      const weekB = Number(b.raw?.weekNumber || b.raw?.week_number || 0);
+
+      if (weekA !== weekB) {
+        return hasForecastOptions ? weekA - weekB : weekB - weekA;
+      }
+
+      return 0;
+    });
+  }, [options]);
 
   const selectedOption = useMemo(() => {
     return (
@@ -624,7 +652,8 @@ function CheckboxDropdown({
   );
 }
 
-export default function WorkforceHiringOverviewFilters() {
+export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } = {}) {
+  const workforceHiring = useWorkforceHiring();
   const {
     filters: {
       weeklyVersion,
@@ -637,6 +666,21 @@ export default function WorkforceHiringOverviewFilters() {
     },
     status,
   } = useWorkforceHiringView();
+
+  const registeredWeeklyVersion = workforceHiring?.weeklyVersion || {};
+  const usesForecastWeeks = weekMode === "forecast";
+  const weeklyVersionValue = usesForecastWeeks
+    ? registeredWeeklyVersion.selectedForecastWeekId || ""
+    : weeklyVersion;
+  const weeklyVersionOptions = usesForecastWeeks
+    ? registeredWeeklyVersion.forecastWeeklyVersions || []
+    : options?.weeklyVersions || [];
+  const weeklyVersionLoading = usesForecastWeeks
+    ? Boolean(registeredWeeklyVersion.forecastLoading)
+    : Boolean(status?.isLoadingWeeks);
+  const handleWeeklyVersionChange = usesForecastWeeks
+    ? registeredWeeklyVersion.setSelectedForecastWeekId
+    : setWeeklyVersion;
 
   const [, setOpenName] = useState("");
 
@@ -653,14 +697,17 @@ export default function WorkforceHiringOverviewFilters() {
         <div className="flex w-full flex-col gap-3 overflow-visible xl:w-auto xl:flex-row xl:items-end xl:gap-3">
           <div className="w-full xl:w-[350px] xl:flex-none">
             <WeeklyVersionDropdown
-              value={weeklyVersion}
+              value={weeklyVersionValue}
               onChange={(nextValue) => {
-                setWeeklyVersion?.(nextValue);
-                setCluster?.("All Clusters");
-                setAccount?.("All Accounts");
+                handleWeeklyVersionChange?.(nextValue);
+
+                if (!usesForecastWeeks) {
+                  setCluster?.("All Clusters");
+                  setAccount?.("All Accounts");
+                }
               }}
-              options={options?.weeklyVersions || []}
-              loading={status?.isLoadingWeeks}
+              options={weeklyVersionOptions}
+              loading={weeklyVersionLoading}
               onOpen={() => closeOtherDropdowns("week")}
             />
           </div>
@@ -730,3 +777,5 @@ export default function WorkforceHiringOverviewFilters() {
     </div>
   );
 }
+
+

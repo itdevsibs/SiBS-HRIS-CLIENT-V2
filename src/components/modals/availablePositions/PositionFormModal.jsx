@@ -404,7 +404,7 @@ export default function PositionFormModal({
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/65 p-2 backdrop-blur-[2px] sm:p-4"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/65 p-2 backdrop-blur-md sm:p-4"
       onClick={() => {
         if (!isSaving) onClose?.();
       }}
