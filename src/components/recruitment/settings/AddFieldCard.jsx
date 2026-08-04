@@ -417,7 +417,7 @@ export default function AddFieldCard() {
   }
 
   const modal = open ? (
-    <div className="fixed inset-0 z-[100000] overflow-y-auto bg-[#0F172A]/45 p-0 backdrop-blur-[1px] sm:p-4">
+    <div className="fixed inset-0 z-[100000] overflow-y-auto bg-[#0F172A]/45 p-0 backdrop-blur-md sm:p-4">
       <div className="flex min-h-full items-center justify-center">
         <div
           role="dialog"

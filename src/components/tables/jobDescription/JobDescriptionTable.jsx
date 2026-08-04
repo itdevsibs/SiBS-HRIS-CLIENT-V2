@@ -745,22 +745,42 @@ export default function JobDescriptionTable({
                           <div className="flex items-start gap-2">
                             <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
                             <div className="min-w-0">
-                              <p className="max-w-[340px] text-xs font-extrabold leading-5 text-[#042C51]">
+                              <p
+                                title={documentTitle}
+                                className="max-w-[340px] truncate text-xs font-extrabold leading-5 text-[#042C51]"
+                              >
                                 {documentTitle}
                               </p>
-                              <p className="mt-0.5 max-w-[340px] truncate text-[10px] font-semibold text-[#98A2B3]">
+                              <p
+                                title={roleTitle}
+                                className="mt-0.5 max-w-[340px] truncate text-[10px] font-semibold text-[#98A2B3]"
+                              >
                                 {roleTitle}
                               </p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3.5">
-                          <p className="text-xs font-extrabold text-[#042C51]">
+                          <p
+                            title={getDepartment(item) || ""}
+                            className="truncate text-xs font-extrabold text-[#042C51]"
+                          >
                             {getDepartment(item) || "--"}
                           </p>
-                          <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
+                          <p
+                            title={getAccount(item) || ""}
+                            className="mt-0.5 truncate text-[10px] font-semibold text-[#667085]"
+                          >
                             {getAccount(item) || "--"}
                           </p>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <span
+                            title={getLinkedHiringNeed(item) || ""}
+                            className="inline-flex max-w-[280px] truncate rounded-lg bg-[#F2F6FA] px-2.5 py-1.5 text-[10px] font-bold leading-4 text-[#475467]"
+                          >
+                            {getLinkedHiringNeed(item) || "--"}
+                          </span>
                         </td>
                         <td className="px-4 py-3.5 text-xs font-semibold text-[#475467]">
                           {getSupervisoryLevel(item) || "--"}

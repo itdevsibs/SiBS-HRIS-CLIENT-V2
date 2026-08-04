@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
+  ArrowRight,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Paperclip,
-  X,
-  ArrowRight,
+  FileText,
+  ShieldAlert,
+  Trash2,
+  Upload,
   UserRound,
+  X,
 } from "lucide-react";
 import {
   getEditResignationData,
@@ -412,12 +416,12 @@ function DatePickerInput({
           if (isDisabled) return;
           setOpen((prev) => !prev);
         }}
-        className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border px-4 text-left text-sm font-bold outline-none transition-all duration-200 active:scale-[0.99] ${
+        className={`flex h-10 w-full items-center justify-between gap-3 rounded-[10px] border px-3 text-left text-xs font-semibold outline-none transition-all duration-200 ${
           isDisabled
-            ? "cursor-not-allowed border-[#D7DEE8] bg-[#F8FAFC] text-sibs-tertiary-5"
+            ? "cursor-not-allowed border-[#D7DEE8] bg-[#F2F4F7] text-[#667085]"
             : open
-              ? "border-sibs-primary-1 bg-white text-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:border-sibs-primary-1/50 hover:shadow-sm"
+              ? "border-[#FF5C28] bg-white text-[#042C51] ring-4 ring-[#FF5C28]/10"
+              : "border-[#D7DEE8] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
@@ -460,6 +464,15 @@ function DatePickerInput({
   );
 }
 
+function WorkflowLabel({ children }) {
+  return (
+    <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-[#334155]">
+      {children}
+    </p>
+  );
+}
+
+
 export default function ResignationModal({
   open,
   onClose,
@@ -467,7 +480,6 @@ export default function ResignationModal({
   setStatusModal,
 }) {
   const [reasonOpen, setReasonOpen] = useState(false);
-  const [typeOpen, setTypeOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [form, setForm] = useState(getInitialForm());
@@ -500,7 +512,6 @@ export default function ResignationModal({
   const resetForm = () => {
     setForm(getInitialForm());
     setReasonOpen(false);
-    setTypeOpen(false);
     setPolicyModalOpen(false);
     setPolicyAccepted(false);
     setExtendOpenWorkingDate(false);
@@ -515,7 +526,6 @@ export default function ResignationModal({
     if (isClosing || submitting) return;
 
     setReasonOpen(false);
-    setTypeOpen(false);
     setPolicyModalOpen(false);
     setIsClosing(true);
 
@@ -556,8 +566,7 @@ export default function ResignationModal({
       setIsClosing(false);
       setForm(getInitialForm());
       setReasonOpen(false);
-      setTypeOpen(false);
-      setPolicyModalOpen(false);
+        setPolicyModalOpen(false);
       setPolicyAccepted(false);
       setExtendOpenWorkingDate(false);
       setExtendOpenRetract(false);
@@ -675,7 +684,6 @@ export default function ResignationModal({
 
     setPolicyAccepted(false);
     setPolicyModalOpen(false);
-    setTypeOpen(false);
   };
 
   const handleReasonSelect = (item) => {
@@ -917,445 +925,615 @@ export default function ResignationModal({
     return "grid-cols-1 md:grid-cols-3";
   })();
 
+  const employeeSibsId =
+    form?.employeeSibsId || form?.sibsId || form?.sibs_id || "Employee";
+  const employeeName =
+    form?.employeeName || form?.fullName || form?.full_name || "Current Employee";
+  const employeePosition =
+    form?.position || form?.jobTitle || form?.job_title || "Employee Self-Service";
+  const employeeDepartment =
+    form?.department || form?.departmentName || form?.department_name || "";
+  const employeeAccount =
+    form?.account || form?.accountName || form?.account_name || "";
+
+  const removeSelectedFile = () => {
+    setForm((prev) => ({
+      ...prev,
+      uploadedFile: null,
+    }));
+  };
+
   return (
     <>
       <div
-        className={`sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto px-4 py-6 ${
+        data-layout="employee-resignation-workflow-v5"
+        className={`fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-hidden bg-[#06294A]/75 p-2 font-jakarta backdrop-blur-sm sm:p-4 ${
           isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
         }`}
       >
-        <div
-          className={`flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ${
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="employee-resignation-title"
+          className={`flex max-h-[calc(100dvh-1rem)] w-full max-w-[672px] flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white shadow-[0_30px_90px_rgba(2,18,34,0.42)] sm:max-h-[calc(100dvh-2rem)] ${
             isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
           }`}
         >
-          <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-5 sm:px-6">
-            <div className="min-w-0">
-              <h2 className="text-xl font-bold text-sibs-primary-1 sm:text-2xl">
-                {isEdit ? "Edit Resignation" : "Submit Resignation"}
-              </h2>
+          <header className="shrink-0 bg-[#07355F] px-5 py-5 text-white sm:px-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-[0_8px_20px_rgba(255,92,40,0.28)]">
+                  <FileText size={20} strokeWidth={2.2} />
+                </span>
 
-              <p className="mt-1 text-sm text-sibs-tertiary-5">
-                {isEdit ? "Edit" : "Submit"} your resignation request details
-              </p>
-            </div>
+                <div className="min-w-0">
+                  <h2
+                    id="employee-resignation-title"
+                    className="truncate text-lg font-extrabold tracking-tight text-white sm:text-xl"
+                  >
+                    {isEdit
+                      ? "Manage Resignation Application"
+                      : "Employee Resignation Application"}
+                  </h2>
 
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={submitting || isClosing}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="Close modal"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <form
-            onSubmit={isEdit ? handleSubmitUpdate : handleSubmit}
-            className="flex-1 overflow-y-auto px-5 py-6 sm:px-6"
-          >
-            {!isEdit && (
-              <div className="mb-5">
-                <Field label="Type of Resignation *">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setTypeOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    >
-                      <span
-                        className={
-                          form.resignationType
-                            ? "text-sibs-primary-1"
-                            : "text-gray-400"
-                        }
-                      >
-                        {form.resignationType || "Select type"}
-                      </span>
-
-                      <ChevronDown
-                        size={18}
-                        className={`text-sibs-tertiary-5 transition-transform duration-200 ${
-                          typeOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-
-                    <AnimatedDropdown open={typeOpen}>
-                      {resignationTypes.map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => handleTypeSelect(item)}
-                          className={`block w-full px-4 py-3 text-left text-sm transition ${
-                            form.resignationType === item
-                              ? "bg-blue-50 font-medium text-sibs-primary-1"
-                              : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </AnimatedDropdown>
-                  </div>
-                </Field>
-              </div>
-            )}
-
-            {!isEdit && (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <Field label="Resignation Date *">
-                  <DatePickerInput
-                    value={form.resignationDate}
-                    onChange={handleResignationDateSelect}
-                    readOnly
-                  />
-                </Field>
-
-                <Field label="Last Working Date *">
-                  <DatePickerInput
-                    value={form.lastWorkingDate}
-                    onChange={handleLastWorkingDateSelect}
-                    readOnly={isFormal}
-                    min={
-                      isImmediate
-                        ? getImmediateMinDate(form.resignationDate)
-                        : undefined
-                    }
-                    max={
-                      isImmediate
-                        ? getImmediateMaxDate(form.resignationDate)
-                        : undefined
-                    }
-                  />
-                </Field>
-              </div>
-            )}
-
-            {isFormal && !isEdit && (
-              <p className="mt-3 text-xs text-sibs-tertiary-5">
-                For formal resignation, the last working date is automatically
-                set to 30 days from today.
-              </p>
-            )}
-
-            {isEdit && (
-              <ActionPanel
-                title="Extend Working Date"
-                description="Request to extend your current last working date"
-                checked={extendOpenWorkingDate}
-                onToggle={() => {
-                  setExtendOpenWorkingDate((prev) => {
-                    const next = !prev;
-
-                    if (next) {
-                      setExtendOpenRetract(false);
-                    }
-
-                    return next;
-                  });
-                }}
-              >
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <Field label="Resignation Date *">
-                    <DatePickerInput value={form.resignationDate} readOnly />
-                  </Field>
-
-                  <Field label="New Last Working Date *">
-                    <DatePickerInput
-                      value={newLastWorkingDate || ""}
-                      onChange={handleNewLastWorkingDateSelect}
-                      min={
-                        extendOpenWorkingDate && originalLastWorkingDate
-                          ? addDays(originalLastWorkingDate, 1)
-                          : undefined
-                      }
-                    />
-                  </Field>
+                  <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-300 sm:text-xs">
+                    Asia/Manila Timezone Aligned • SiBS Official HR Workflow
+                  </p>
                 </div>
-
-                <div className="mt-5" onClick={(e) => e.stopPropagation()}>
-                  <Field label="Reason for Extending *">
-                    <textarea
-                      name="reasonForExtending"
-                      value={reasonForExtending}
-                      onChange={(e) => setReasonForExtending(e.target.value)}
-                      rows={3}
-                      placeholder="Enter the reason for extending your last working date"
-                      required={extendOpenWorkingDate}
-                      className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    />
-                  </Field>
-                </div>
-              </ActionPanel>
-            )}
-
-            {isEdit && (
-              <div className="mt-5">
-                <ActionPanel
-                  title="Retract Resignation"
-                  description="Request to retract your resignation and cancel the resignation process."
-                  checked={extendOpenRetract}
-                  onToggle={() => {
-                    setExtendOpenRetract((prev) => {
-                      const next = !prev;
-
-                      if (next) {
-                        setExtendOpenWorkingDate(false);
-                      }
-
-                      return next;
-                    });
-                  }}
-                >
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <Field label="Reason for Retracting *">
-                      <textarea
-                        name="reasonForRetracting"
-                        value={reasonForRetracting}
-                        onChange={(e) =>
-                          setReasonForRetracting(e.target.value)
-                        }
-                        rows={3}
-                        placeholder="Enter the reason for retracting your resignation"
-                        required={extendOpenRetract}
-                        className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                      />
-                    </Field>
-                  </div>
-                </ActionPanel>
               </div>
-            )}
 
-            {isImmediate && (
-              <p className="mt-3 text-xs text-sibs-tertiary-5">
-                For immediate resignation, only dates within 1 to 29 days from
-                today can be selected.
-              </p>
-            )}
-
-            {!isEdit && (
-              <div className="mt-5">
-                <Field label="Reason *">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setReasonOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    >
-                      <span
-                        className={
-                          form.reason ? "text-sibs-primary-1" : "text-gray-400"
-                        }
-                      >
-                        {form.reason || "Select reason"}
-                      </span>
-
-                      <ChevronDown
-                        size={18}
-                        className={`text-sibs-tertiary-5 transition-transform duration-200 ${
-                          reasonOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-
-                    <AnimatedDropdown open={reasonOpen} maxHeight="max-h-60">
-                      {resignationReasons.map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => handleReasonSelect(item)}
-                          className={`block w-full px-4 py-3 text-left text-sm transition ${
-                            form.reason === item
-                              ? "bg-blue-50 font-medium text-sibs-primary-1"
-                              : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </AnimatedDropdown>
-                  </div>
-                </Field>
-              </div>
-            )}
-
-            {form.reason === "Other" && (
-              <div className="mt-5">
-                <Field label="Please specify *">
-                  <textarea
-                    name="otherReason"
-                    value={form.otherReason}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder="Enter specific reason"
-                    required
-                    className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  />
-                </Field>
-              </div>
-            )}
-
-            {isEdit && (
-              <div className={`mt-4 grid gap-4 ${hierarchyGridClass}`}>
-                {form.tlRemarks && (
-                  <ApproverCard
-                    title="TL / Manager"
-                    sibsId={form.tlSibsId}
-                    fullName={form.tlFullName || ""}
-                    isApproved={form.tlIsApproved}
-                    isDeclined={form.tlIsDeclined}
-                    remarks={form.tlRemarks}
-                  />
-                )}
-
-                {form.omRemarks && (
-                  <ApproverCard
-                    title="OM"
-                    sibsId={form.omSibsId}
-                    fullName={form.omFullName || ""}
-                    isApproved={form.omIsApproved}
-                    isDeclined={form.omIsDeclined}
-                    remarks={form.omRemarks}
-                  />
-                )}
-
-                {form.somRemarks && (
-                  <ApproverCard
-                    title="SOM"
-                    sibsId={form.somSibsId}
-                    fullName={form.somFullName || ""}
-                    isApproved={form.somIsApproved}
-                    isDeclined={form.somIsDeclined}
-                    remarks={form.somRemarks}
-                  />
-                )}
-              </div>
-            )}
-
-            {!isEdit && (
-              <div className="mt-5">
-                <Field label="Upload File *">
-                  <div className="space-y-2">
-                    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC]">
-                      <div className="flex min-w-0 items-center gap-3">
-                        {selectedFileName ? (
-                          <FileTypeIcon filename={selectedFileName} />
-                        ) : (
-                          <Paperclip
-                            size={18}
-                            className="shrink-0 text-sibs-tertiary-5"
-                          />
-                        )}
-
-                        <span
-                          className={`truncate text-sm ${
-                            selectedFileName
-                              ? "text-gray-700"
-                              : "text-sibs-tertiary-5"
-                          }`}
-                        >
-                          {selectedFileName || "Choose resignation file"}
-                        </span>
-                      </div>
-
-                      <span className="ml-4 shrink-0 rounded-lg bg-sibs-tertiary-9 px-3 py-1.5 text-xs font-medium text-sibs-primary-1">
-                        Browse
-                      </span>
-
-                      <input
-                        type="file"
-                        name="uploadedFile"
-                        onChange={handleChange}
-                        className="hidden"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,image/heic,image/heif"
-                        required
-                      />
-                    </label>
-
-                    <p className="text-xs text-sibs-tertiary-5">
-                      Accepted file types: .pdf, .doc, .docx, .jpg, .jpeg, .png,
-                      .heic
-                    </p>
-                  </div>
-                </Field>
-              </div>
-            )}
-
-            <div className="mt-6 flex flex-col-reverse items-stretch justify-end gap-3 border-t border-[#E6ECF2] pt-5 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={handleClose}
                 disabled={submitting || isClosing}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D7DEE8] bg-white px-4 text-sm font-medium text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-9 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close resignation modal"
               >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                disabled={submitting || isClosing}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {submitting
-                  ? isEdit
-                    ? "Updating..."
-                    : "Submitting..."
-                  : isEdit
-                    ? "Update Resignation"
-                    : "Submit Resignation"}
+                <X size={20} />
               </button>
             </div>
+          </header>
+
+          <div className="shrink-0 border-b border-[#DCE4ED] bg-[#F5F8FC] px-5 py-3 sm:px-6">
+            <div className="flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="rounded bg-[#E2E8F0] px-2 py-1 font-mono text-[10px] font-extrabold text-[#334155]">
+                  {employeeSibsId}
+                </span>
+
+                <strong className="truncate text-sm font-extrabold text-[#07355F]">
+                  {employeeName}
+                </strong>
+
+                <span className="hidden text-[#94A3B8] sm:inline">|</span>
+
+                <span className="truncate font-semibold text-[#475569]">
+                  {employeePosition}
+                </span>
+              </div>
+
+              {(employeeDepartment || employeeAccount) && (
+                <p className="truncate font-mono text-[10px] font-bold text-[#64748B]">
+                  {[employeeDepartment, employeeAccount].filter(Boolean).join(" • ")}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <form
+            onSubmit={isEdit ? handleSubmitUpdate : handleSubmit}
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sibs-scrollbar sm:px-6 sm:py-6">
+              {!isEdit ? (
+                <div className="space-y-5">
+                  <div>
+                    <WorkflowLabel>Resignation Type *</WorkflowLabel>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => handleTypeSelect("Formal")}
+                        className={`flex min-h-[78px] items-start gap-3 rounded-xl border p-3 text-left transition ${
+                          isFormal
+                            ? "border-teal-600 bg-teal-50/80 text-teal-900 ring-2 ring-teal-600/15"
+                            : "border-[#D8E0EA] bg-white text-[#334155] hover:border-teal-500/50 hover:bg-teal-50/30"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                            isFormal
+                              ? "bg-teal-600 text-white"
+                              : "bg-[#F1F5F9] text-[#64748B]"
+                          }`}
+                        >
+                          <CalendarDays size={17} />
+                        </span>
+
+                        <span className="min-w-0">
+                          <span className="block text-xs font-extrabold">
+                            Formal Notice
+                          </span>
+                          <span className="mt-1 block text-[11px] font-medium leading-4 text-[#64748B]">
+                            Standard 30-Day Notice Period (Auto-computed)
+                          </span>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTypeSelect("Immediate")}
+                        className={`flex min-h-[78px] items-start gap-3 rounded-xl border p-3 text-left transition ${
+                          isImmediate
+                            ? "border-amber-500 bg-amber-50/80 text-amber-900 ring-2 ring-amber-500/15"
+                            : "border-[#D8E0EA] bg-white text-[#334155] hover:border-amber-500/50 hover:bg-amber-50/30"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                            isImmediate
+                              ? "bg-amber-500 text-white"
+                              : "bg-[#F1F5F9] text-[#64748B]"
+                          }`}
+                        >
+                          <AlertTriangle size={17} />
+                        </span>
+
+                        <span className="min-w-0">
+                          <span className="flex flex-wrap items-center gap-1.5 text-xs font-extrabold">
+                            Immediate Notice
+                            <span className="rounded bg-amber-200 px-1.5 py-0.5 font-mono text-[9px] font-extrabold text-amber-800">
+                              &lt; 30 Days
+                            </span>
+                          </span>
+                          <span className="mt-1 block text-[11px] font-medium leading-4 text-[#64748B]">
+                            Requires Policy Acknowledgment & HR Approval
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {isImmediate && (
+                    <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-start gap-2">
+                        <ShieldAlert
+                          size={17}
+                          className="mt-0.5 shrink-0 text-amber-600"
+                        />
+                        <span className="font-semibold">
+                          Immediate Resignation Policy:{" "}
+                          <strong>
+                            {policyAccepted
+                              ? "Accepted & Verified"
+                              : "Pending Acknowledgment"}
+                          </strong>
+                        </span>
+                      </div>
+
+                      {!policyAccepted && (
+                        <button
+                          type="button"
+                          onClick={() => setPolicyModalOpen(true)}
+                          className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-[11px] font-extrabold text-white hover:bg-amber-700"
+                        >
+                          Review & Accept
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="Resignation Date *">
+                      <DatePickerInput
+                        value={form.resignationDate}
+                        onChange={handleResignationDateSelect}
+                        readOnly
+                      />
+                    </Field>
+
+                    <Field label="Requested Last Working Date *">
+                      <DatePickerInput
+                        value={form.lastWorkingDate}
+                        onChange={handleLastWorkingDateSelect}
+                        readOnly={isFormal}
+                        min={
+                          isImmediate
+                            ? getImmediateMinDate(form.resignationDate)
+                            : undefined
+                        }
+                        max={
+                          isImmediate
+                            ? getImmediateMaxDate(form.resignationDate)
+                            : undefined
+                        }
+                      />
+
+                      {isFormal && (
+                        <p className="mt-1.5 text-[10px] font-semibold leading-4 text-teal-700">
+                          ✓ Automatically computed exactly +30 days from the
+                          resignation date.
+                        </p>
+                      )}
+
+                      {isImmediate && (
+                        <p className="mt-1.5 text-[10px] font-semibold leading-4 text-amber-700">
+                          Select a date from 1 to 29 days after the resignation
+                          date.
+                        </p>
+                      )}
+                    </Field>
+                  </div>
+
+                  <Field label="Reason for Resignation *">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setReasonOpen((prev) => !prev)}
+                        className="flex h-10 w-full items-center justify-between rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-left text-xs font-semibold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+                      >
+                        <span
+                          className={
+                            form.reason ? "text-[#042C51]" : "text-[#98A2B3]"
+                          }
+                        >
+                          {form.reason || "Select reason"}
+                        </span>
+
+                        <ChevronDown
+                          size={16}
+                          className={`text-[#667085] transition-transform duration-200 ${
+                            reasonOpen ? "rotate-180 text-[#FF5C28]" : ""
+                          }`}
+                        />
+                      </button>
+
+                      <AnimatedDropdown open={reasonOpen} maxHeight="max-h-60">
+                        {resignationReasons.map((item) => (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => handleReasonSelect(item)}
+                            className={`block w-full px-3 py-2 text-left text-xs font-semibold transition ${
+                              form.reason === item
+                                ? "bg-sibs-primary-3 font-extrabold text-[#FF5C28]"
+                                : "text-[#042C51] hover:bg-sibs-primary-3/50 hover:text-[#FF5C28]"
+                            }`}
+                          >
+                            {item}
+                          </button>
+                        ))}
+                      </AnimatedDropdown>
+                    </div>
+                  </Field>
+
+                  {form.reason === "Other" && (
+                    <Field label="Specify Other Reason *">
+                      <input
+                        type="text"
+                        name="otherReason"
+                        value={form.otherReason}
+                        onChange={handleChange}
+                        placeholder="Provide specific details regarding your reason..."
+                        required
+                        className="h-11 w-full rounded-xl border border-[#CBD5E1] bg-white px-4 text-xs font-semibold text-[#334155] outline-none transition placeholder:text-[#94A3B8] focus:border-[#07355F] focus:ring-4 focus:ring-[#07355F]/10"
+                      />
+                    </Field>
+                  )}
+
+                  <Field label="Remarks / Additional Notes (Optional)">
+                    <textarea
+                      name="remarks"
+                      value={form.remarks}
+                      onChange={handleChange}
+                      rows={3}
+                      placeholder="Provide additional context, handover notes, or personal comments for HR..."
+                      className="w-full resize-none rounded-xl border border-[#CBD5E1] bg-white px-4 py-3 text-xs font-medium leading-5 text-[#334155] outline-none transition placeholder:text-[#94A3B8] focus:border-[#07355F] focus:ring-4 focus:ring-[#07355F]/10"
+                    />
+                  </Field>
+
+                  <Field label="Upload Resignation Letter / Supporting Files *">
+                    <label className="group relative flex min-h-[126px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#C8D5E5] bg-[#FAFCFF] px-4 py-5 text-center transition hover:border-[#07355F]/60 hover:bg-[#F4F8FC]">
+                      <input
+                        type="file"
+                        name="uploadedFile"
+                        onChange={handleChange}
+                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,image/heic,image/heif"
+                        required={!selectedFileName}
+                      />
+
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EEF3F8] text-[#64748B] transition group-hover:bg-[#E2ECF7] group-hover:text-[#07355F]">
+                        <Upload size={19} />
+                      </span>
+
+                      <p className="mt-2 text-xs font-extrabold text-[#334155]">
+                        {selectedFileName
+                          ? "Replace selected resignation file"
+                          : "Drag & drop formal resignation letter or "}
+                        {!selectedFileName && (
+                          <span className="text-blue-600 underline">
+                            browse computer
+                          </span>
+                        )}
+                      </p>
+
+                      <p className="mt-1 font-mono text-[9px] font-semibold text-[#94A3B8]">
+                        Accepted formats: .pdf, .docx, .doc, .jpg, .png, .heic
+                        (Max 10MB)
+                      </p>
+                    </label>
+
+                    {selectedFileName && (
+                      <div className="mt-2.5 flex items-center justify-between gap-3 rounded-xl border border-[#DCE4ED] bg-[#F8FAFC] px-3 py-2.5">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <FileText
+                            size={16}
+                            className="shrink-0 text-blue-600"
+                          />
+                          <span className="truncate text-xs font-bold text-[#334155]">
+                            {selectedFileName}
+                          </span>
+                          {form?.uploadedFile?.size ? (
+                            <span className="shrink-0 rounded border bg-white px-1.5 py-0.5 font-mono text-[9px] font-semibold text-[#64748B]">
+                              {Math.max(
+                                1,
+                                Math.round(form.uploadedFile.size / 1024),
+                              )}{" "}
+                              KB
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={removeSelectedFile}
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#94A3B8] transition hover:bg-rose-50 hover:text-rose-600"
+                          aria-label="Remove selected resignation file"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </Field>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <ActionPanel
+                    title="Extend Working Date"
+                    description="Request to extend your current last working date."
+                    checked={extendOpenWorkingDate}
+                    onToggle={() => {
+                      setExtendOpenWorkingDate((prev) => {
+                        const next = !prev;
+                        if (next) setExtendOpenRetract(false);
+                        return next;
+                      });
+                    }}
+                  >
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <Field label="Resignation Date *">
+                        <DatePickerInput value={form.resignationDate} readOnly />
+                      </Field>
+
+                      <Field label="New Last Working Date *">
+                        <DatePickerInput
+                          value={newLastWorkingDate || ""}
+                          onChange={handleNewLastWorkingDateSelect}
+                          min={
+                            extendOpenWorkingDate && originalLastWorkingDate
+                              ? addDays(originalLastWorkingDate, 1)
+                              : undefined
+                          }
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="mt-4" onClick={(event) => event.stopPropagation()}>
+                      <Field label="Reason for Extending *">
+                        <textarea
+                          name="reasonForExtending"
+                          value={reasonForExtending}
+                          onChange={(event) =>
+                            setReasonForExtending(event.target.value)
+                          }
+                          rows={3}
+                          placeholder="Enter the reason for extending your last working date"
+                          required={extendOpenWorkingDate}
+                          className="w-full resize-none rounded-xl border border-[#CBD5E1] bg-white px-4 py-3 text-xs font-medium outline-none focus:border-[#07355F] focus:ring-4 focus:ring-[#07355F]/10"
+                        />
+                      </Field>
+                    </div>
+                  </ActionPanel>
+
+                  <ActionPanel
+                    title="Retract Resignation"
+                    description="Request to cancel the active resignation process."
+                    checked={extendOpenRetract}
+                    onToggle={() => {
+                      setExtendOpenRetract((prev) => {
+                        const next = !prev;
+                        if (next) setExtendOpenWorkingDate(false);
+                        return next;
+                      });
+                    }}
+                  >
+                    <div onClick={(event) => event.stopPropagation()}>
+                      <Field label="Reason for Retracting *">
+                        <textarea
+                          name="reasonForRetracting"
+                          value={reasonForRetracting}
+                          onChange={(event) =>
+                            setReasonForRetracting(event.target.value)
+                          }
+                          rows={3}
+                          placeholder="Enter the reason for retracting your resignation"
+                          required={extendOpenRetract}
+                          className="w-full resize-none rounded-xl border border-[#CBD5E1] bg-white px-4 py-3 text-xs font-medium outline-none focus:border-[#07355F] focus:ring-4 focus:ring-[#07355F]/10"
+                        />
+                      </Field>
+                    </div>
+                  </ActionPanel>
+
+                  <div className={`grid gap-4 ${hierarchyGridClass}`}>
+                    {form.tlRemarks && (
+                      <ApproverCard
+                        title="TL / Manager"
+                        sibsId={form.tlSibsId}
+                        fullName={form.tlFullName || ""}
+                        isApproved={form.tlIsApproved}
+                        isDeclined={form.tlIsDeclined}
+                        remarks={form.tlRemarks}
+                      />
+                    )}
+
+                    {form.omRemarks && (
+                      <ApproverCard
+                        title="OM"
+                        sibsId={form.omSibsId}
+                        fullName={form.omFullName || ""}
+                        isApproved={form.omIsApproved}
+                        isDeclined={form.omIsDeclined}
+                        remarks={form.omRemarks}
+                      />
+                    )}
+
+                    {form.somRemarks && (
+                      <ApproverCard
+                        title="SOM"
+                        sibsId={form.somSibsId}
+                        fullName={form.somFullName || ""}
+                        isApproved={form.somIsApproved}
+                        isDeclined={form.somIsDeclined}
+                        remarks={form.somRemarks}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <footer className="shrink-0 border-t border-[#DCE4ED] bg-white px-5 py-4 sm:px-6">
+              <div className="flex flex-col-reverse items-stretch justify-between gap-2.5 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  disabled={submitting || isClosing}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-[#CBD5E1] bg-white px-4 text-xs font-extrabold text-[#475569] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={submitting || isClosing}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(255,92,40,0.24)] transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span>
+                    {submitting
+                      ? isEdit
+                        ? "Updating..."
+                        : "Submitting..."
+                      : isEdit
+                        ? "Submit Update Request"
+                        : "Submit Resignation Application"}
+                  </span>
+                  {!submitting && <ArrowRight size={15} />}
+                </button>
+              </div>
+            </footer>
           </form>
-        </div>
+        </section>
       </div>
 
       {policyModalOpen && (
-        <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10001] flex items-center justify-center px-4 py-6">
-          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl sibs-modal-pop-in">
-            <div className="px-6 pb-6 pt-6 text-center">
-              <h2 className="mx-auto max-w-[320px] text-xl font-bold leading-tight text-sibs-primary-1">
-                Important Notice Regarding Company Policy:
-              </h2>
+        <div className="sibs-modal-backdrop-in fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/80 p-4 font-jakarta backdrop-blur-md">
+          <section className="w-full max-w-md overflow-hidden rounded-[18px] border border-amber-200 bg-white shadow-2xl sibs-inner-modal-pop-in">
+            <header className="flex items-start justify-between gap-3 border-b border-[#E6ECF2] px-5 py-4">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                  <ShieldAlert size={21} />
+                </span>
 
-              <div className="mx-auto mt-4 max-w-[360px] space-y-3 text-sm leading-6 text-sibs-tertiary-5">
-                <p>
-                  As per company guidelines, all employees who intend to resign
-                  are required to submit a written notice at least 30 calendar
-                  days prior to their intended departure date. This allows us to
-                  effectively transition your responsibilities and ensure a
-                  smooth handover.
-                </p>
-
-                <p>
-                  Are you sure you would like to proceed without providing the
-                  full 30-day notice? Please consider whether adjusting your
-                  resignation date to meet this requirement would be beneficial
-                  for both you and the company.
-                </p>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#0F172A]">
+                    Immediate Resignation Policy
+                  </h3>
+                  <p className="mt-0.5 text-[11px] font-semibold text-amber-700">
+                    Notice Period is Less than 30 Days
+                  </p>
+                </div>
               </div>
 
-              <label className="mt-6 flex items-center justify-center gap-2 text-sm text-sibs-tertiary-5">
+              <button
+                type="button"
+                onClick={() => setPolicyModalOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#94A3B8] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                aria-label="Close immediate resignation policy"
+              >
+                <X size={17} />
+              </button>
+            </header>
+
+            <div className="px-5 py-5">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs font-medium leading-5 text-amber-900">
+                <p>
+                  A standard notice of <strong>30 calendar days</strong> is
+                  required for an orderly transition.
+                </p>
+
+                <ul className="mt-3 list-disc space-y-1.5 pl-4 text-[11px]">
+                  <li>
+                    Operations Manager and HR Admin approval are required.
+                  </li>
+                  <li>
+                    Unserved notice days may affect clearance or final-pay
+                    processing.
+                  </li>
+                  <li>
+                    Supporting documents may be requested by HR.
+                  </li>
+                </ul>
+              </div>
+
+              <label className="mt-4 flex items-start gap-2.5 text-xs font-semibold text-[#475569]">
                 <input
                   type="checkbox"
                   checked={policyAccepted}
-                  onChange={(e) => setPolicyAccepted(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#D0D5DD] text-sibs-primary-1 focus:ring-sibs-primary-1"
+                  onChange={(event) =>
+                    setPolicyAccepted(event.target.checked)
+                  }
+                  className="mt-0.5 h-4 w-4 rounded border-[#CBD5E1] text-amber-600 focus:ring-amber-500"
                 />
-                <span>I understand and agree with the policy</span>
+                <span>
+                  I understand the consequences and agree to proceed with an
+                  immediate resignation request.
+                </span>
               </label>
+            </div>
+
+            <footer className="flex flex-col-reverse gap-2.5 border-t border-[#E6ECF2] px-5 py-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setPolicyModalOpen(false);
+                  handleTypeSelect("Formal");
+                }}
+                className="h-10 rounded-xl border border-[#CBD5E1] bg-white px-4 text-xs font-extrabold text-[#475569] hover:bg-[#F8FAFC]"
+              >
+                Use Formal Notice
+              </button>
 
               <button
                 type="button"
                 onClick={() => setPolicyModalOpen(false)}
                 disabled={!policyAccepted}
-                className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-10 rounded-xl bg-amber-600 px-4 text-xs font-extrabold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Continue <ArrowRight size={16} />
+                I Understand & Accept
               </button>
-            </div>
-          </div>
+            </footer>
+          </section>
         </div>
       )}
     </>
@@ -1366,7 +1544,7 @@ function Field({ label, children }) {
   return (
     <div>
       {label ? (
-        <label className="mb-2 block text-sm font-medium text-sibs-primary-1">
+        <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
           {label}
         </label>
       ) : null}

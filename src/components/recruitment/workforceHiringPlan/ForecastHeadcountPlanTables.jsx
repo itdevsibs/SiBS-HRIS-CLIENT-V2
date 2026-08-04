@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   formatOverviewNumber,
   formatOverviewPercent,
@@ -703,6 +703,30 @@ export default function ForecastHeadcountPlanTable({
 
   const hasRows = forecastRows.length > 0;
 
+  const dragScrollRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleDragStart = (e) => {
+    if (!dragScrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - dragScrollRef.current.offsetLeft);
+    setScrollLeft(dragScrollRef.current.scrollLeft);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging || !dragScrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - dragScrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    dragScrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
   function openForecastWeekDetails(row, index) {
     const accountGroup = getForecastWeekAccountGroup(
       forecastData.accountRowsByWeek,
@@ -763,7 +787,16 @@ export default function ForecastHeadcountPlanTable({
         ) : null}
 
         <div className="p-4 sm:p-5">
-          <div className="sibs-data-table-shell !block overflow-x-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div
+            ref={dragScrollRef}
+            onMouseDown={handleDragStart}
+            onMouseMove={handleDragMove}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
+            className={`sibs-data-table-shell !block overflow-x-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
             <table className="w-[1980px] min-w-[1980px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
               <colgroup>
                 <col style={{ width: "210px" }} />

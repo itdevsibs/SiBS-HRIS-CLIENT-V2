@@ -209,73 +209,78 @@ export default function ForecastWorkforceHiringOverviewSummary({ rows = [] }) {
     [selectedForecastRow],
   );
 
+  const metrics = [
+    {
+      title: "Required HC",
+      value: formatKpiNumber(summary.requiredHeadcount),
+      subtitle: "Approved baseline",
+      icon: Users,
+      tone: "navy",
+    },
+    {
+      title: "Actual HC",
+      value: formatKpiNumber(summary.actualHeadcount),
+      subtitle: "Roster count",
+      icon: Users,
+      tone: "navy",
+    },
+    {
+      title: "Buffer %",
+      value: formatKpiPercent(summary.bufferPercentage, 2),
+      subtitle: "VS required HC",
+      icon: Gauge,
+      tone: summary.bufferPercentage < 0 ? "red" : "green",
+    },
+    {
+      title: "Absenteeism",
+      value: formatKpiPercent(summary.absenteeismPercentage, 2),
+      subtitle: "Absenteeism%",
+      icon: CalendarX2,
+      tone: "amber",
+    },
+    {
+      title: "Attrition",
+      value: formatKpiPercent(summary.attritionPercentage, 2),
+      subtitle: "Attrition%",
+      icon: UserRoundX,
+      tone: "red",
+    },
+    {
+      title: "Net Actual HC",
+      value: formatKpiNumber(Math.round(summary.netActualHc)),
+      subtitle: "Floor Availability",
+      icon: Users,
+      tone: "navy",
+    },
+    {
+      title: "Hiring Needed",
+      value: formatKpiNumber(Math.round(summary.hiringNeeded)),
+      subtitle: "Total Coverage Gap",
+      icon: UserPlus,
+      tone: "indigo",
+    },
+    {
+      title: "Hiring Rate",
+      value: formatKpiPercent(summary.hiringRate, 1),
+      subtitle: "Leads yield",
+      icon: TrendingUp,
+      tone: "teal",
+    },
+    {
+      title: "Hired Count",
+      value: formatKpiNumber(summary.hiredCount),
+      subtitle: "Deployed Hires",
+      icon: CheckCircle2,
+      tone: "green",
+    },
+  ];
+
   return (
-    <section>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-9">
-        <KpiCard
-          title="Required HC"
-          value={formatKpiNumber(summary.requiredHeadcount)}
-          subtitle="Approved baseline"
-          tone="blue"
-        />
-
-        <KpiCard
-          title="Actual HC"
-          value={formatKpiNumber(summary.actualHeadcount)}
-          subtitle="Roster count"
-          tone="blue"
-        />
-
-        <KpiCard
-          title="Buffer %"
-          value={formatKpiPercent(summary.bufferPercentage, 2)}
-          subtitle="VS required HC"
-          tone={summary.bufferPercentage < 0 ? "red" : "green2"}
-        />
-
-        <KpiCard
-          title="Absenteeism"
-          value={formatKpiNumber(Math.round(summary.absenteeism))}
-          sideValue={formatKpiPercent(summary.absenteeismPercentage, 2)}
-          subtitle="Absenteeism%"
-          tone="orange"
-        />
-
-        <KpiCard
-          title="Attrition"
-          value={formatKpiNumber(summary.attrition)}
-          sideValue={formatKpiPercent(summary.attritionPercentage, 2)}
-          subtitle="Attrition%"
-          tone="red"
-        />
-
-        <KpiCard
-          title="Net Actual HC"
-          value={formatKpiNumber(Math.round(summary.netActualHc))}
-          subtitle="Floor Availability"
-          tone="blue"
-        />
-
-        <KpiCard
-          title="Hiring Needed"
-          value={formatKpiNumber(Math.round(summary.hiringNeeded))}
-          subtitle="Total Coverage Gap"
-          tone="purple"
-        />
-
-        <KpiCard
-          title="Hiring Rate"
-          value={formatKpiPercent(summary.hiringRate, 2)}
-          subtitle="Leads yield"
-          tone="teal"
-        />
-
-        <KpiCard
-          title="Hired Count"
-          value={formatKpiNumber(summary.hiredCount)}
-          subtitle="Deployed Hires"
-          tone="green"
-        />
+    <section className="space-y-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 xl:gap-3 2xl:gap-4">
+        {metrics.map((metric, index) => (
+          <KpiCard key={metric.title} {...metric} delay={60 + index * 45} />
+        ))}
       </div>
     </section>
   );

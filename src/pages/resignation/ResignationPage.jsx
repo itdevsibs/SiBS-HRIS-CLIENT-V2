@@ -10,14 +10,9 @@ import {
 // Sidebar provided by root layout
 import Header from "../../components/layout/Header";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
-import {
-  getMyResignations,
-  saveResignation,
-} from "../../lib/axios/getResignation";
+import { getMyResignations } from "../../lib/axios/getResignation";
 import StatusModal from "../../components/modals/StatusModal";
-import ResignationTable from "../../components/tables/ResignationTable";
 import {
-  getTodayDate,
   formatDate,
   formatDateTime,
 } from "@/components/layout/FormatDateTime";
@@ -85,18 +80,9 @@ function UploadedFileCell({ filename, fileUrl }) {
 export default function ResignationPage() {
   const [loading, setLoading] = useState(true);
   const [openForm, setOpenForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState("");
 
   const [resignations, setResignations] = useState([]);
-  const [form, setForm] = useState({
-    resignationDate: getTodayDate(),
-    lastWorkingDate: "",
-    reason: "",
-    otherReason: "",
-    remarks: "",
-    uploadedFile: null,
-  });
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -166,78 +152,6 @@ export default function ResignationPage() {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value, files, type } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "file" ? files?.[0] || null : value,
-    }));
-  };
-
-  const resetForm = () => {
-    setForm({
-      resignationDate: getTodayDate(),
-      lastWorkingDate: "",
-      reason: "",
-      otherReason: "",
-      remarks: "",
-      uploadedFile: null,
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    try {
-      const result = await saveResignation({
-        reason: form.reason,
-        specifyOthers: form.reason === "Other" ? form.otherReason : null,
-        uploadedFile: form.uploadedFile || null,
-        resignationDate: form.resignationDate,
-        lastWorkingDate: form.lastWorkingDate,
-        remarks: form.remarks,
-      });
-
-      if (!result?.success) {
-        setStatusModal({
-          open: true,
-          type: "error",
-          title: "Submission Failed",
-          message: result?.message || "Failed to submit resignation.",
-        });
-        return;
-      }
-
-      setOpenForm(false);
-      resetForm();
-      await loadResignations();
-
-      setStatusModal({
-        open: true,
-        type: "success",
-        title: "Resignation Submitted",
-        message:
-          result?.message ||
-          "Your resignation request has been submitted successfully.",
-      });
-    } catch (error) {
-      console.error("Failed to submit resignation:", error);
-
-      setStatusModal({
-        open: true,
-        type: "error",
-        title: "Submission Failed",
-        message:
-          error?.response?.data?.message ||
-          error?.message ||
-          "Something went wrong while submitting your resignation.",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-[var(--sibs-tertiary-10)]">
@@ -271,10 +185,8 @@ export default function ResignationPage() {
         <ResignationModal
           open={openForm}
           onClose={() => setOpenForm(false)}
-          onSubmit={handleSubmit}
-          form={form}
-          onChange={handleChange}
-          submitting={submitting}
+          onSuccess={loadResignations}
+          setStatusModal={setStatusModal}
         />
 
         <StatusModal

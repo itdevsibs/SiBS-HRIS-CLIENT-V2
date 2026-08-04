@@ -69,7 +69,7 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/65 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/65 p-4 backdrop-blur-md"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

@@ -947,7 +947,10 @@ export default function EmployeeTable({
 
                         <td className="px-4 py-4 align-middle">
                           <div className="min-w-[170px]">
-                            <span className="inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                            <span
+                              title={getAccount(employee)}
+                              className="inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]"
+                            >
                               <span className="truncate">{getAccount(employee)}</span>
                             </span>
 

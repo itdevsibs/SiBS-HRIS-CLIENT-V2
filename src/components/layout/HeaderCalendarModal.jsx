@@ -2418,10 +2418,10 @@ export default function HeaderCalendarModal({ open, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/80 transition hover:cursor-pointer hover:bg-white/10 hover:text-white"
-              aria-label="Close calendar"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white active:scale-[0.97]"
+              aria-label="Close calendar modal"
             >
-              <X className="h-5 w-5" />
+              <X size={20} />
             </button>
           </div>
         </div>

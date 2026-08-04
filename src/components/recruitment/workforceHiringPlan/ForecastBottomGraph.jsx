@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ShieldAlert,
   TrendingUp,
@@ -73,7 +73,7 @@ function getWeekLabel(row = {}, index = 0) {
   const weekNumber =
     row?.weekNumber || row?.week_number || getWeekNumberFromDate(weekStart);
 
-  return weekNumber ? `W${weekNumber}` : `W${index + 1}`;
+  return weekNumber ? `Week ${weekNumber}` : `Week ${index + 1}`;
 }
 
 function getRowNumber(row = {}, keys = [], fallback = 0) {
@@ -431,6 +431,9 @@ function AttritionStageList({ drops = [] }) {
 
 function LeadsTrendChart({ rows = [] }) {
   const [activeIndex, setActiveIndex] = useState(null);
+  const [pointerPos, setPointerPos] = useState(null);
+  const containerRef = useRef(null);
+
   const width = 760;
   const height = 250;
   const padLeft = 46;
@@ -463,6 +466,50 @@ function LeadsTrendChart({ rows = [] }) {
     );
   }
 
+  function handleMouseMove(e) {
+    if (!containerRef.current || !rows.length) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const relativeX = ((e.clientX - rect.left) / rect.width) * width;
+    const chartW = width - padLeft - padRight;
+    const normalized = Math.min(Math.max((relativeX - padLeft) / chartW, 0), 1);
+    const nearestIndex = Math.round(normalized * (rows.length - 1));
+
+    setActiveIndex(nearestIndex);
+    setPointerPos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
+    });
+  }
+
+  function handleMouseLeave() {
+    setActiveIndex(null);
+    setPointerPos(null);
+  }
+
+  const tooltipStyle = useMemo(() => {
+    if (!pointerPos || activeIndex === null) return {};
+    const cardWidth = 175;
+    const cardHeight = 115;
+
+    const activeXPixels = (getX(activeIndex) / width) * pointerPos.width;
+    let left = activeXPixels + 14;
+
+    if (left + cardWidth > pointerPos.width - 12) {
+      left = activeXPixels - cardWidth - 14;
+    }
+    left = Math.max(12, Math.min(left, pointerPos.width - cardWidth - 12));
+
+    let top = pointerPos.y - cardHeight / 2;
+    top = Math.max(12, Math.min(top, pointerPos.height - cardHeight - 12));
+
+    return {
+      left: `${left}px`,
+      top: `${top}px`,
+    };
+  }, [pointerPos, activeIndex]);
+
   const interviewPath = rows
     .map(
       (row, index) =>
@@ -480,7 +527,12 @@ function LeadsTrendChart({ rows = [] }) {
   const activeRow = activeIndex !== null ? rows[activeIndex] : null;
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative flex min-h-0 flex-1 flex-col"
+    >
       <svg viewBox={`0 0 ${width} ${height}`} className="h-[245px] w-full">
         {ticks.map((tick) => {
           const y = getY(tick);
@@ -509,6 +561,19 @@ function LeadsTrendChart({ rows = [] }) {
           );
         })}
 
+        {activeIndex !== null ? (
+          <line
+            x1={getX(activeIndex)}
+            x2={getX(activeIndex)}
+            y1={padTop - 10}
+            y2={height - padBottom}
+            stroke="#042C51"
+            strokeWidth="1.3"
+            strokeDasharray="4 4"
+            pointerEvents="none"
+          />
+        ) : null}
+
         <path
           d={leadPath}
           fill="none"
@@ -530,14 +595,10 @@ function LeadsTrendChart({ rows = [] }) {
         {rows.map((row, index) => {
           const x = getX(index);
           const y = getY(row.interviewsCompleted);
+          const isActive = activeIndex === index;
 
           return (
-            <g
-              key={`${row.weekLabel}-${index}`}
-              onMouseEnter={() => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(null)}
-              className="cursor-pointer"
-            >
+            <g key={`${row.weekLabel}-${index}`} className="cursor-pointer">
               <rect
                 x={x - 16}
                 y={padTop - 10}
@@ -547,22 +608,29 @@ function LeadsTrendChart({ rows = [] }) {
               />
               <text
                 x={x}
-                y={y - 8}
+                y={y - (isActive ? 10 : 8)}
                 textAnchor="middle"
-                fill="#0F172A"
-                fontSize="11"
+                fill={isActive ? "#7C3AED" : "#0F172A"}
+                fontSize={isActive ? "12" : "11"}
                 fontWeight="800"
               >
                 {formatOverviewNumber(row.interviewsCompleted)}
               </text>
-              <circle cx={x} cy={y} r="5" fill="#7C3AED" stroke="#FFFFFF" strokeWidth="1.5" />
+              <circle
+                cx={x}
+                cy={y}
+                r={isActive ? "6.5" : "5"}
+                fill="#7C3AED"
+                stroke="#FFFFFF"
+                strokeWidth={isActive ? "2" : "1.5"}
+              />
               <text
                 x={x}
                 y={height - 5}
                 textAnchor="middle"
-                fill="#64748B"
+                fill={isActive ? "#042C51" : "#64748B"}
                 fontSize="10"
-                fontWeight="700"
+                fontWeight={isActive ? "800" : "700"}
               >
                 {row.weekLabel}
               </text>
@@ -572,22 +640,29 @@ function LeadsTrendChart({ rows = [] }) {
       </svg>
 
       {activeRow ? (
-        <div className="pointer-events-none absolute right-0 top-0 min-w-[124px] rounded-[8px] border border-purple-700 bg-[#042C51] px-2.5 py-2 text-[8px] font-semibold text-white shadow-xl">
-          <p className="border-b border-purple-700/70 pb-1 font-extrabold text-purple-300">
-            {activeRow.weekLabel} Details
+        <div
+          style={tooltipStyle}
+          className="pointer-events-none absolute z-20 min-w-[165px] rounded-xl border border-[#315779] bg-[#042C51]/95 p-3 text-xs font-semibold text-white shadow-2xl backdrop-blur-sm transition-all duration-75"
+        >
+          <p className="border-b border-[#315779] pb-1.5 font-jakarta text-[11px] font-extrabold uppercase tracking-wide text-[#D7E0EA]">
+            {activeRow.weekLabel.toUpperCase()} DETAILS
           </p>
-          <div className="mt-1 space-y-1 font-mono">
-            <p className="flex justify-between gap-3">
-              <span className="text-purple-300">Interviews:</span>
-              <strong>{formatOverviewNumber(activeRow.interviewsCompleted)}</strong>
+          <div className="mt-2 space-y-1.5 text-[11px]">
+            <p className="flex items-center justify-between gap-3">
+              <span className="text-[#D7E0EA]">Interviews:</span>
+              <strong className="font-extrabold text-violet-300">
+                {formatOverviewNumber(activeRow.interviewsCompleted)}
+              </strong>
             </p>
-            <p className="flex justify-between gap-3">
-              <span className="text-slate-300">Total Leads:</span>
-              <strong>{formatOverviewNumber(activeRow.leadsToInterview)}</strong>
+            <p className="flex items-center justify-between gap-3">
+              <span className="text-[#D7E0EA]">Total Leads:</span>
+              <strong className="font-extrabold text-slate-200">
+                {formatOverviewNumber(activeRow.leadsToInterview)}
+              </strong>
             </p>
-            <p className="flex justify-between gap-3">
-              <span className="text-emerald-300">Yield %:</span>
-              <strong className="text-emerald-400">
+            <p className="flex items-center justify-between gap-3">
+              <span className="text-[#D7E0EA]">Yield %:</span>
+              <strong className="font-extrabold text-emerald-400">
                 {formatPercent(activeRow.yieldPct, 1)}
               </strong>
             </p>
@@ -600,6 +675,9 @@ function LeadsTrendChart({ rows = [] }) {
 
 function HiringRateTrendChart({ rows = [] }) {
   const [activeIndex, setActiveIndex] = useState(null);
+  const [pointerPos, setPointerPos] = useState(null);
+  const containerRef = useRef(null);
+
   const width = 760;
   const height = 250;
   const padLeft = 50;
@@ -633,6 +711,50 @@ function HiringRateTrendChart({ rows = [] }) {
     );
   }
 
+  function handleMouseMove(e) {
+    if (!containerRef.current || !rows.length) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const relativeX = ((e.clientX - rect.left) / rect.width) * width;
+    const chartW = width - padLeft - padRight;
+    const normalized = Math.min(Math.max((relativeX - padLeft) / chartW, 0), 1);
+    const nearestIndex = Math.round(normalized * (rows.length - 1));
+
+    setActiveIndex(nearestIndex);
+    setPointerPos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
+    });
+  }
+
+  function handleMouseLeave() {
+    setActiveIndex(null);
+    setPointerPos(null);
+  }
+
+  const tooltipStyle = useMemo(() => {
+    if (!pointerPos || activeIndex === null) return {};
+    const cardWidth = 175;
+    const cardHeight = 115;
+
+    const activeXPixels = (getX(activeIndex) / width) * pointerPos.width;
+    let left = activeXPixels + 14;
+
+    if (left + cardWidth > pointerPos.width - 12) {
+      left = activeXPixels - cardWidth - 14;
+    }
+    left = Math.max(12, Math.min(left, pointerPos.width - cardWidth - 12));
+
+    let top = pointerPos.y - cardHeight / 2;
+    top = Math.max(12, Math.min(top, pointerPos.height - cardHeight - 12));
+
+    return {
+      left: `${left}px`,
+      top: `${top}px`,
+    };
+  }, [pointerPos, activeIndex]);
+
   const ratePath = rows
     .map(
       (row, index) =>
@@ -647,7 +769,12 @@ function HiringRateTrendChart({ rows = [] }) {
   const activeRow = activeIndex !== null ? rows[activeIndex] : null;
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative flex min-h-0 flex-1 flex-col"
+    >
       <svg viewBox={`0 0 ${width} ${height}`} className="h-[245px] w-full">
         {ticks.map((tick) => {
           const y = getY(tick);
@@ -676,6 +803,19 @@ function HiringRateTrendChart({ rows = [] }) {
           );
         })}
 
+        {activeIndex !== null ? (
+          <line
+            x1={getX(activeIndex)}
+            x2={getX(activeIndex)}
+            y1={padTop - 10}
+            y2={height - padBottom}
+            stroke="#042C51"
+            strokeWidth="1.3"
+            strokeDasharray="4 4"
+            pointerEvents="none"
+          />
+        ) : null}
+
         <line
           x1={padLeft}
           y1={targetY}
@@ -698,14 +838,10 @@ function HiringRateTrendChart({ rows = [] }) {
         {rows.map((row, index) => {
           const x = getX(index);
           const y = getY(row.hiringRate);
+          const isActive = activeIndex === index;
 
           return (
-            <g
-              key={`${row.weekLabel}-${index}`}
-              onMouseEnter={() => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(null)}
-              className="cursor-pointer"
-            >
+            <g key={`${row.weekLabel}-${index}`} className="cursor-pointer">
               <rect
                 x={x - 16}
                 y={padTop - 10}
@@ -715,22 +851,29 @@ function HiringRateTrendChart({ rows = [] }) {
               />
               <text
                 x={x}
-                y={y - 8}
+                y={y - (isActive ? 10 : 8)}
                 textAnchor="middle"
-                fill="#0F172A"
-                fontSize="11"
+                fill={isActive ? "#0D9488" : "#0F172A"}
+                fontSize={isActive ? "12" : "11"}
                 fontWeight="800"
               >
                 {formatPercent(row.hiringRate, 1)}
               </text>
-              <circle cx={x} cy={y} r="5" fill="#0D9488" stroke="#FFFFFF" strokeWidth="1.5" />
+              <circle
+                cx={x}
+                cy={y}
+                r={isActive ? "6.5" : "5"}
+                fill="#0D9488"
+                stroke="#FFFFFF"
+                strokeWidth={isActive ? "2" : "1.5"}
+              />
               <text
                 x={x}
                 y={height - 5}
                 textAnchor="middle"
-                fill="#64748B"
+                fill={isActive ? "#042C51" : "#64748B"}
                 fontSize="10"
-                fontWeight="700"
+                fontWeight={isActive ? "800" : "700"}
               >
                 {row.weekLabel}
               </text>
@@ -740,24 +883,29 @@ function HiringRateTrendChart({ rows = [] }) {
       </svg>
 
       {activeRow ? (
-        <div className="pointer-events-none absolute right-0 top-0 min-w-[128px] rounded-[8px] border border-teal-700 bg-[#042C51] px-2.5 py-2 text-[8px] font-semibold text-white shadow-xl">
-          <p className="border-b border-teal-700/70 pb-1 font-extrabold text-teal-300">
-            {activeRow.weekLabel} Yield Details
+        <div
+          style={tooltipStyle}
+          className="pointer-events-none absolute z-20 min-w-[165px] rounded-xl border border-[#315779] bg-[#042C51]/95 p-3 text-xs font-semibold text-white shadow-2xl backdrop-blur-sm transition-all duration-75"
+        >
+          <p className="border-b border-[#315779] pb-1.5 font-jakarta text-[11px] font-extrabold uppercase tracking-wide text-[#D7E0EA]">
+            {activeRow.weekLabel.toUpperCase()} YIELD DETAILS
           </p>
-          <div className="mt-1 space-y-1 font-mono">
-            <p className="flex justify-between gap-3">
-              <span className="text-teal-300">Hiring Rate:</span>
-              <strong>{formatPercent(activeRow.hiringRate, 1)}</strong>
+          <div className="mt-2 space-y-1.5 text-[11px]">
+            <p className="flex items-center justify-between gap-3">
+              <span className="text-[#D7E0EA]">Hiring Rate:</span>
+              <strong className="font-extrabold text-teal-300">
+                {formatPercent(activeRow.hiringRate, 1)}
+              </strong>
             </p>
-            <p className="flex justify-between gap-3">
-              <span className="text-amber-300">Target Floor:</span>
-              <strong className="text-amber-200">
+            <p className="flex items-center justify-between gap-3">
+              <span className="text-[#D7E0EA]">Target Floor:</span>
+              <strong className="font-extrabold text-amber-300">
                 {formatPercent(activeRow.targetFloor, 0)}
               </strong>
             </p>
-            <p className="flex justify-between gap-3">
-              <span className="text-emerald-300">Deployed Hires:</span>
-              <strong className="text-emerald-400">
+            <p className="flex items-center justify-between gap-3">
+              <span className="text-[#D7E0EA]">Deployed Hires:</span>
+              <strong className="font-extrabold text-emerald-400">
                 {formatOverviewNumber(activeRow.hiredCount)}
               </strong>
             </p>
