@@ -1,6 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
+function getPublicApiBaseUrl() {
+  const rawBaseUrl =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    "https://sibs-hris-server.getleadsource.com";
+
+  return String(rawBaseUrl)
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/api$/, "");
+}
+
+const PUBLIC_API_BASE_URL = getPublicApiBaseUrl();
+
+function getPublicOfferResponseUrl(token = "") {
+  return `${PUBLIC_API_BASE_URL}/api/candidate-pipeline/public/offer-response/${encodeURIComponent(
+    token,
+  )}`;
+}
+
 function money(value) {
   const n = Number(value);
   return Number.isFinite(n)
@@ -17,7 +37,7 @@ export default function PublicOfferResponsePage() {
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/candidate-pipeline/public/offer-response/${encodeURIComponent(token)}`)
+    fetch(getPublicOfferResponseUrl(token))
       .then(async (response) => {
         const payload = await response.json();
         if (!response.ok || payload?.success === false) throw new Error(payload?.message || "Unable to load offer.");
@@ -34,7 +54,7 @@ export default function PublicOfferResponsePage() {
     if (state.action === "negotiate" && !message.trim()) return;
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/candidate-pipeline/public/offer-response/${encodeURIComponent(token)}`, {
+      const response = await fetch(getPublicOfferResponseUrl(token), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: state.action, message: message.trim() }),
