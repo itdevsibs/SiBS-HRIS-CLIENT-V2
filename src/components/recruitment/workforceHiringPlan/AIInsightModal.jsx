@@ -1,5 +1,12 @@
 import React from "react";
-import { Send, Sparkles, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Bot,
+  RefreshCw,
+  Send,
+  Sparkles,
+  X,
+} from "lucide-react";
 import {
   normalizeAiList,
   parseAiDisplayBlocks,
@@ -17,12 +24,12 @@ function ChatFormattedText({ value, compact = false }) {
           return (
             <div
               key={`ai-numbered-${index}`}
-              className="flex gap-3 rounded-[12px] border border-[#E6ECF2] bg-white px-3 py-2"
+              className="flex gap-3 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2.5"
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-[11px] font-extrabold text-white">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#042C51] text-[11px] font-extrabold text-white">
                 {block.number}
               </span>
-              <p className="text-sm font-medium leading-7 text-[#344054]">
+              <p className="text-xs font-medium leading-6 text-[#344054]">
                 {block.text}
               </p>
             </div>
@@ -33,10 +40,10 @@ function ChatFormattedText({ value, compact = false }) {
           return (
             <div
               key={`ai-bullet-${index}`}
-              className="flex gap-3 rounded-[12px] bg-white px-3 py-2"
+              className="flex gap-3 rounded-xl bg-white px-3 py-2"
             >
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sibs-primary-1" />
-              <p className="text-sm font-medium leading-7 text-[#344054]">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#042C51]" />
+              <p className="text-xs font-medium leading-6 text-[#344054]">
                 {block.text}
               </p>
             </div>
@@ -46,7 +53,7 @@ function ChatFormattedText({ value, compact = false }) {
         return (
           <p
             key={`ai-paragraph-${index}`}
-            className="text-sm font-medium leading-7 text-[#344054]"
+            className="text-xs font-medium leading-6 text-[#344054]"
           >
             {block.text}
           </p>
@@ -64,13 +71,21 @@ function ChatMessageBubble({ role = "assistant", children }) {
       <div
         className={
           isUser
-            ? "max-w-[86%] rounded-[18px] rounded-br-[6px] bg-sibs-primary-1 px-4 py-3 text-sm font-bold leading-6 text-white shadow-sm"
-            : "max-w-[92%] rounded-[18px] rounded-bl-[6px] border border-[#DDE7F2] bg-white px-4 py-3 text-sm font-medium leading-7 text-[#344054] shadow-sm"
+            ? "max-w-[85%] rounded-2xl rounded-br-none bg-[#FF5C28] px-3.5 py-3 text-xs font-semibold leading-6 text-white shadow-sm"
+            : "max-w-[88%] rounded-2xl rounded-bl-none border border-slate-200 bg-slate-100 px-3.5 py-3 text-xs font-medium leading-6 text-slate-800 shadow-sm"
         }
       >
         {children}
       </div>
     </div>
+  );
+}
+
+function EmptyStateText({ children }) {
+  return (
+    <p className="text-[11px] font-semibold leading-5 text-slate-500">
+      {children}
+    </p>
   );
 }
 
@@ -95,201 +110,225 @@ export default function AIInsightModal({
   const cleanRecommendations = normalizeAiList(recommendations);
   const cleanRisks = normalizeAiList(risks);
 
+  const primaryRisk =
+    cleanRisks[0] ||
+    "No active capacity deficit risk was detected for the selected filters.";
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 px-3 py-4">
-      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[18px] bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <Sparkles size={14} />
-              AI Insight
+    <div
+      data-layout="ai-workforce-intelligence-advisor-v2"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-3 font-jakarta backdrop-blur-md sm:p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose?.();
+      }}
+    >
+      <section className="sibs-modal-pop-in flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <header className="flex shrink-0 items-start justify-between gap-4 bg-[#042C51] px-5 py-4 text-white">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF5C28] to-amber-500 shadow-md">
+              <Bot size={20} className="text-white" />
+            </span>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-sm font-extrabold text-white sm:text-base">
+                  AI Workforce Intelligence Advisor
+                </h2>
+
+                <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[9px] font-black uppercase text-[#042C51]">
+                  Live Telemetry
+                </span>
+              </div>
+
+              <p className="mt-1 text-[11px] font-medium leading-4 text-slate-300">
+                Automated capacity deficit modeling and batch scheduling recommendations.
+              </p>
             </div>
-
-            <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
-              Workforce Hiring Plan AI Insight
-            </h2>
-
-            <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-              Analysis generated from the selected week, cluster, and account filters.
-            </p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E6ECF2] bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
-            aria-label="Minimize AI insight"
-            title="Minimize"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-300 transition hover:bg-slate-700 hover:text-white"
+            aria-label="Close AI advisor"
           >
-            <X size={20} />
+            <X size={17} />
           </button>
-        </div>
+        </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sibs-scrollbar">
           {loading ? (
-            <div className="rounded-[14px] border border-blue-100 bg-blue-50 px-5 py-8 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-sibs-primary-1 shadow-sm">
-                <Sparkles className="animate-pulse" size={24} />
+            <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-8 text-center">
+              <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#042C51] shadow-sm">
+                <Sparkles className="animate-pulse" size={22} />
               </div>
 
-              <p className="text-base font-extrabold text-sibs-primary-1">
+              <p className="text-sm font-extrabold text-[#042C51]">
                 Analyzing workforce hiring plan...
               </p>
 
-              <p className="mt-2 text-sm font-semibold text-sibs-tertiary-5">
+              <p className="mt-2 text-xs font-semibold text-[#667085]">
                 Please wait while n8n reads the database and generates the AI insight.
               </p>
             </div>
           ) : error ? (
-            <div className="rounded-[14px] border border-red-100 bg-red-50 px-5 py-5">
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4">
               <p className="text-sm font-extrabold text-red-700">
                 Failed to generate AI insight
               </p>
-
-              <p className="mt-2 text-sm font-semibold text-red-600">
+              <p className="mt-2 text-xs font-semibold leading-5 text-red-600">
                 {error}
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              <section className="rounded-[14px] border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  Summary
+            <div className="space-y-4 text-xs">
+              <section className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+                <AlertTriangle
+                  size={20}
+                  className="mt-0.5 shrink-0 text-amber-600"
+                />
+
+                <div className="min-w-0 space-y-1">
+                  <strong className="block text-xs font-extrabold text-amber-900">
+                    Capacity Deficit Risk Alert
+                  </strong>
+                  <p className="text-[11px] font-medium leading-5 text-amber-800">
+                    {primaryRisk}
+                  </p>
+
+                  {cleanRisks.length > 1 ? (
+                    <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] font-medium leading-5 text-amber-800">
+                      {cleanRisks.slice(1).map((item, index) => (
+                        <li key={`risk-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-blue-200 bg-blue-50 p-3.5">
+                <strong className="flex items-center gap-2 text-xs font-extrabold text-[#042C51]">
+                  <Sparkles size={16} className="text-amber-500" />
+                  Recommended Mitigation Actions
+                </strong>
+
+                {cleanRecommendations.length > 0 ? (
+                  <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[11px] font-medium leading-5 text-slate-700">
+                    {cleanRecommendations.map((item, index) => (
+                      <li key={`recommendation-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="mt-2">
+                    <EmptyStateText>
+                      No mitigation recommendation was returned for the selected filters.
+                    </EmptyStateText>
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5">
+                <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  AI Executive Summary
                 </h3>
 
-                <div className="mt-3 rounded-[14px] bg-white px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.03)]">
+                <div className="mt-2 rounded-xl bg-white px-3.5 py-3">
                   {insight ? (
                     <ChatFormattedText value={insight} />
                   ) : (
-                    <p className="text-sm font-medium leading-7 text-[#344054]">
-                      No AI summary returned.
-                    </p>
+                    <EmptyStateText>No AI summary returned.</EmptyStateText>
                   )}
                 </div>
               </section>
 
-              {cleanRisks.length > 0 && (
-                <section className="rounded-[14px] border border-red-100 bg-red-50 p-4">
-                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-red-700">
-                    Key Risks
+              {cleanHighlights.length > 0 ? (
+                <section className="rounded-xl border border-indigo-100 bg-indigo-50 p-3.5">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                    Operational Highlights
                   </h3>
-                  <ul className="mt-3 space-y-2">
-                    {cleanRisks.map((item, index) => (
-                      <li
-                        key={`risk-${index}`}
-                        className="rounded-[10px] bg-white px-3 py-2 text-sm font-semibold leading-6 text-red-700"
-                      >
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
 
-              {cleanHighlights.length > 0 && (
-                <section className="rounded-[14px] border border-blue-100 bg-blue-50 p-4">
-                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Highlights
-                  </h3>
-                  <ul className="mt-3 space-y-2">
+                  <ul className="mt-2 space-y-2">
                     {cleanHighlights.map((item, index) => (
                       <li
                         key={`highlight-${index}`}
-                        className="rounded-[10px] bg-white px-3 py-2 text-sm font-semibold leading-6 text-[#344054]"
+                        className="rounded-lg bg-white px-3 py-2 text-[11px] font-semibold leading-5 text-[#344054]"
                       >
                         {item}
                       </li>
                     ))}
                   </ul>
                 </section>
-              )}
+              ) : null}
 
-              {cleanRecommendations.length > 0 && (
-                <section className="rounded-[14px] border border-emerald-100 bg-emerald-50 p-4">
-                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-emerald-700">
-                    Recommended Actions
-                  </h3>
-                  <ul className="mt-3 space-y-2">
-                    {cleanRecommendations.map((item, index) => (
-                      <li
-                        key={`recommendation-${index}`}
-                        className="rounded-[10px] bg-white px-3 py-2 text-sm font-semibold leading-6 text-emerald-700"
-                      >
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {conversation.length > 0 && (
-                <section className="rounded-[18px] border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              {conversation.length > 0 ? (
+                <section className="space-y-3 border-t border-[#E6ECF2] pt-4">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                      Conversation
+                    <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                      Advisor Conversation
                     </h3>
 
-                    <span className="rounded-full border border-[#DDE7F2] bg-white px-3 py-1 text-[11px] font-extrabold text-slate-500">
+                    <span className="rounded-full border border-[#DDE7F2] bg-white px-2.5 py-1 text-[10px] font-extrabold text-slate-500">
                       {conversation.length} message
-                      {conversation.length > 1 ? "s" : ""}
+                      {conversation.length === 1 ? "" : "s"}
                     </span>
                   </div>
 
-                  <div className="mt-4 space-y-4">
+                  <div className="space-y-3">
                     {conversation.map((item, index) => (
                       <div key={`ai-chat-${index}`} className="space-y-3">
-                        {item.question && (
+                        {item.question ? (
                           <ChatMessageBubble role="user">
                             {item.question}
                           </ChatMessageBubble>
-                        )}
+                        ) : null}
 
-                        {item.answer && (
+                        {item.answer ? (
                           <ChatMessageBubble role="assistant">
                             <ChatFormattedText value={item.answer} compact />
                           </ChatMessageBubble>
-                        )}
+                        ) : null}
                       </div>
                     ))}
                   </div>
                 </section>
-              )}
+              ) : null}
             </div>
           )}
         </div>
 
-        <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
+        <footer className="shrink-0 border-t border-slate-200 bg-slate-50 p-4">
           <form
             onSubmit={(event) => {
               event.preventDefault();
               onAskFollowUp();
             }}
-            className="flex flex-col gap-3"
+            className="space-y-3"
           >
             <div className="flex flex-col gap-2 sm:flex-row">
               <input
+                type="text"
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
                 disabled={loading}
-                placeholder="Message AI about this hiring plan..."
-                className="min-h-[44px] flex-1 rounded-[12px] border border-[#D9E2EC] bg-white px-4 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                placeholder="Ask AI Advisor a follow-up question..."
+                className="h-10 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3.5 text-xs font-semibold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-[#042C51] focus:ring-4 focus:ring-[#042C51]/10 disabled:cursor-not-allowed disabled:opacity-60"
               />
 
               <button
                 type="submit"
                 disabled={loading || !String(question || "").trim()}
-                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[12px] bg-sibs-primary-1 px-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0A3A63] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#063B6B] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Send size={15} />
+                <Send size={14} />
                 Ask
               </button>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-[10px] border border-[#D9E2EC] bg-white px-4 py-2.5 text-sm font-extrabold text-[#344054] transition hover:bg-slate-50"
+                className="h-9 rounded-lg border border-slate-300 bg-white px-4 text-xs font-extrabold text-[#344054] transition hover:bg-slate-100"
               >
                 Minimize
               </button>
@@ -298,15 +337,18 @@ export default function AIInsightModal({
                 type="button"
                 onClick={onRegenerate}
                 disabled={loading}
-                className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0A3A63] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#063B6B] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Sparkles size={16} />
+                <RefreshCw
+                  size={14}
+                  className={loading ? "animate-spin" : ""}
+                />
                 {loading ? "Analyzing..." : "Regenerate Insight"}
               </button>
             </div>
           </form>
-        </div>
-      </div>
+        </footer>
+      </section>
     </div>
   );
 }

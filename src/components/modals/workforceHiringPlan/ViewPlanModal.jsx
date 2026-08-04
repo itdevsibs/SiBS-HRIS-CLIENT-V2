@@ -1193,7 +1193,7 @@ export default function ViewPlanModal(props = {}) {
 
   return (
     <div
-      className={`fixed inset-0 z-[1000] flex items-center justify-center bg-sibs-primary-1/45 px-4 py-6 ${
+      className={`fixed inset-0 z-[1000] flex items-center justify-center bg-sibs-primary-1/45 backdrop-blur-md px-4 py-6 ${
         isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
       }`}
     >

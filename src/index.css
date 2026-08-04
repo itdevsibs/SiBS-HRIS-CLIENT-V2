@@ -737,7 +737,7 @@
   }
 
   .sibs-modal-blur {
-    @apply bg-black/65 backdrop-blur-[2px];
+    @apply bg-black/65 backdrop-blur-md;
   }
 
   .sibs-dashboard-shell {

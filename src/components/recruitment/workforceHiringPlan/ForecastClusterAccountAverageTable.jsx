@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import {
   formatOverviewNumber,
@@ -57,6 +57,30 @@ export default function ForecastClusterAccountAverageTable({
 
   const hasRows = filteredRows.length > 0;
 
+  const dragScrollRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleDragStart = (e) => {
+    if (!dragScrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - dragScrollRef.current.offsetLeft);
+    setScrollLeft(dragScrollRef.current.scrollLeft);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging || !dragScrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - dragScrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    dragScrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
   return (
     <section className="sibs-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
@@ -102,7 +126,16 @@ export default function ForecastClusterAccountAverageTable({
       ) : null}
 
       <div className="p-4 sm:p-5">
-        <div className="sibs-data-table-shell !block max-h-[610px] overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div
+          ref={dragScrollRef}
+          onMouseDown={handleDragStart}
+          onMouseMove={handleDragMove}
+          onMouseUp={handleDragEnd}
+          onMouseLeave={handleDragEnd}
+          className={`sibs-data-table-shell !block max-h-[610px] overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          }`}
+        >
           <table className="w-[2105px] min-w-[2105px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
             <colgroup>
               <col style={{ width: "150px" }} />

@@ -28,6 +28,7 @@ export default function KpiCard({
     >
       <div className="flex items-start justify-between gap-4">
         <span
+          title={title}
           className={`min-w-0 truncate text-[10px] font-extrabold uppercase tracking-normal ${palette.label}`}
         >
           {title}
@@ -57,7 +58,10 @@ export default function KpiCard({
           value={value}
           className={`block text-3xl font-extrabold leading-none tabular-nums tracking-normal ${palette.value}`}
         />
-        <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+        <p
+          title={subtitle}
+          className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]"
+        >
           {subtitle || "Current selected scope"}
         </p>
       </div>

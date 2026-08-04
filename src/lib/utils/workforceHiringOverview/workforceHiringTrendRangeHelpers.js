@@ -235,9 +235,14 @@ function getPointIdentity(source = {}, fallbackLabel = "") {
     (weekNumber ? `week-${weekNumber}` : "") ||
     label;
 
+  const formattedLabel =
+    weekNumber
+      ? `Week ${weekNumber}`
+      : label || fallbackLabel || "Week";
+
   return {
     key,
-    label: label || (weekNumber ? `Week ${weekNumber}` : fallbackLabel || "Week"),
+    label: formattedLabel,
     weekStart,
     weekEnd,
     weekNumber,
