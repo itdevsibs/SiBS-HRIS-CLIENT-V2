@@ -24,6 +24,7 @@ const PUBLIC_PATHS = [
   "/apply",
   "/public/talent-pool/apply",
   "/public/interview-date",
+  "/public/offer-response",
   "/recruitment/talent-pool/apply",
 ];
 
@@ -47,6 +48,7 @@ const IGNORE_AUTH_REDIRECT_ROUTES = [
   "/api/talent-pool/open-positions",
   "/api/talent-pool/public-applications",
   "/api/candidate-pipeline/public/interview-date",
+  "/api/candidate-pipeline/public/offer-response",
 ];
 
 function getCurrentPathname() {

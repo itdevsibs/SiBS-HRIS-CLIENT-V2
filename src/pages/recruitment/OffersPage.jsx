@@ -159,6 +159,112 @@ const ROUTE_FILTER_KEYS = [
   "open_offer",
 ];
 
+
+function OfferSkeletonBlock({ className = "" }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`animate-pulse rounded-xl bg-slate-200/80 ${className}`}
+    />
+  );
+}
+
+function OffersDecisionSkeleton() {
+  return (
+    <div
+      className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Processing offer decision"
+    >
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1 space-y-3">
+            <OfferSkeletonBlock className="h-4 w-32" />
+            <OfferSkeletonBlock className="h-8 w-full max-w-md" />
+            <OfferSkeletonBlock className="h-4 w-full max-w-2xl" />
+          </div>
+
+          <div className="flex shrink-0 gap-3">
+            <OfferSkeletonBlock className="h-11 w-36" />
+            <OfferSkeletonBlock className="h-11 w-40" />
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={`offer-stat-skeleton-${index}`}
+            className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 flex-1 space-y-3">
+                <OfferSkeletonBlock className="h-3 w-24" />
+                <OfferSkeletonBlock className="h-8 w-20" />
+                <OfferSkeletonBlock className="h-3 w-32" />
+              </div>
+
+              <OfferSkeletonBlock className="h-12 w-12 rounded-2xl" />
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+        <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <OfferSkeletonBlock className="h-11 md:col-span-2" />
+            <OfferSkeletonBlock className="h-11" />
+            <OfferSkeletonBlock className="h-11" />
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
+            <div className="grid grid-cols-6 gap-4 border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <OfferSkeletonBlock
+                  key={`offer-heading-skeleton-${index}`}
+                  className="h-3 w-full"
+                />
+              ))}
+            </div>
+
+            <div className="divide-y divide-[#E6ECF2]">
+              {Array.from({ length: 6 }).map((_, rowIndex) => (
+                <div
+                  key={`offer-row-skeleton-${rowIndex}`}
+                  className="grid grid-cols-6 gap-4 px-4 py-5"
+                >
+                  {Array.from({ length: 6 }).map((__, cellIndex) => (
+                    <OfferSkeletonBlock
+                      key={`offer-cell-skeleton-${rowIndex}-${cellIndex}`}
+                      className={
+                        cellIndex === 0
+                          ? "h-4 w-4/5"
+                          : "h-4 w-full"
+                      }
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <div className="space-y-3">
+          <OfferSkeletonBlock className="h-5 w-48" />
+          <OfferSkeletonBlock className="h-4 w-full" />
+          <OfferSkeletonBlock className="h-4 w-5/6" />
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function OffersPage() {
   const mainRef = useRef(null);
   const hasShownApprovalWarningRef = useRef(false);
@@ -172,6 +278,7 @@ export default function OffersPage() {
     approvalUsers = [],
     approvalUsersLoading = false,
     filteredOffers = [],
+    isProcessingOfferDecision = false,
   } = useOffers();
 
   const [statusModal, setStatusModal] = useState({
@@ -351,7 +458,30 @@ export default function OffersPage() {
     return undefined;
   }, [approvalUsers, approvalUsersLoading]);
 
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return undefined;
+    }
+
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverflow = document.documentElement.style.overflow;
+
+    if (isProcessingOfferDecision) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = htmlOverflow;
+    };
+  }, [isProcessingOfferDecision]);
+
   function handleCloseDetailsModal() {
+    if (isProcessingOfferDecision) {
+      return;
+    }
+
     setSelectedOffer(null);
   }
 
@@ -386,6 +516,9 @@ export default function OffersPage() {
       </div>
 
       <main ref={mainRef} className="sibs-dashboard-main-wide">
+        {isProcessingOfferDecision ? (
+          <OffersDecisionSkeleton />
+        ) : (
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <OfferHeader
             routeFilterActive={Boolean(routeCandidate)}
@@ -426,15 +559,19 @@ export default function OffersPage() {
 
           <OfferProcessRule />
         </div>
+        )}
       </main>
 
       <OfferDetailsModal
-        open={Boolean(selectedOffer)}
+        open={Boolean(selectedOffer) && !isProcessingOfferDecision}
         offer={selectedOffer}
         onClose={handleCloseDetailsModal}
       />
 
-      {typeof ConfirmationDialog === "function" ? <ConfirmationDialog /> : null}
+      {!isProcessingOfferDecision &&
+      typeof ConfirmationDialog === "function" ? (
+        <ConfirmationDialog />
+      ) : null}
 
       <StatusModal
         open={statusModal.open}

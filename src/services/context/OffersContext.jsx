@@ -835,6 +835,8 @@ export function OffersProvider({ children }) {
 
   const [apiCandidates, setApiCandidates] = useState([]);
   const [isLoadingOffers, setIsLoadingOffers] = useState(false);
+  const [isProcessingOfferDecision, setIsProcessingOfferDecision] =
+    useState(false);
   const [offersLoadError, setOffersLoadError] = useState("");
   const [storageSyncTick, setStorageSyncTick] = useState(0);
 
@@ -1227,6 +1229,10 @@ export function OffersProvider({ children }) {
   }
 
   async function handleApproval(offer, status) {
+    if (isProcessingOfferDecision) {
+      return;
+    }
+
     if (approvalUsersLoading) {
       openStatusModal({
         type: "error",
@@ -1297,6 +1303,8 @@ export function OffersProvider({ children }) {
 
     const nextCandidateResponse =
       nextApprovalStatus === "Approved" ? "Pending" : nextApprovalStatus;
+
+    setIsProcessingOfferDecision(true);
 
     try {
       const pipelineRecordId = getCandidatePipelineRecordId(offer);
@@ -1429,6 +1437,8 @@ export function OffersProvider({ children }) {
           error?.message ||
           "Failed to update offer approval.",
       });
+    } finally {
+      setIsProcessingOfferDecision(false);
     }
   }
 
@@ -1471,6 +1481,7 @@ export function OffersProvider({ children }) {
       getApprovalRecordForUser(getApprovalsObject(offer), approvalUser),
 
     isLoadingOffers,
+    isProcessingOfferDecision,
     offersLoadError,
     refreshOffers,
     openStatusModal,

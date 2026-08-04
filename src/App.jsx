@@ -4,10 +4,12 @@ import AppShell from "./AppShell";
 import Router from "./router";
 import "./index.css";
 
-function isStandalonePublicInterviewRoute(pathname = "") {
+function isStandalonePublicRoute(pathname = "") {
   return (
     pathname === "/public/interview-date" ||
-    pathname.startsWith("/public/interview-date/")
+    pathname.startsWith("/public/interview-date/") ||
+    pathname === "/public/offer-response" ||
+    pathname.startsWith("/public/offer-response/")
   );
 }
 
@@ -19,7 +21,7 @@ export default function App() {
    * It bypasses AppShell so authenticated providers, user-session checks,
    * admin login overlays, and sidebar logic are never mounted for candidates.
    */
-  if (isStandalonePublicInterviewRoute(location.pathname)) {
+  if (isStandalonePublicRoute(location.pathname)) {
     return <Router />;
   }
 

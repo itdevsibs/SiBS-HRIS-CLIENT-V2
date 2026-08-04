@@ -8,16 +8,19 @@ import {
 
 import App from "./App.jsx";
 import PublicInterviewDateSelectionPage from "./pages/recruitment/candidate-pipeline/PublicInterviewDateSelectionPage.jsx";
+import PublicOfferResponsePage from "./pages/recruitment/PublicOfferResponsePage.jsx";
 import "./index.css";
 
-function isPublicInterviewPath(pathname = "") {
+function isStandalonePublicPath(pathname = "") {
   return (
     pathname === "/public/interview-date" ||
-    pathname.startsWith("/public/interview-date/")
+    pathname.startsWith("/public/interview-date/") ||
+    pathname === "/public/offer-response" ||
+    pathname.startsWith("/public/offer-response/")
   );
 }
 
-export function PublicInterviewApp() {
+export function StandalonePublicApp() {
   return (
     <Routes>
       <Route
@@ -29,18 +32,23 @@ export function PublicInterviewApp() {
         path="/public/interview-date"
         element={<PublicInterviewDateSelectionPage />}
       />
+
+      <Route
+        path="/public/offer-response/:token"
+        element={<PublicOfferResponsePage />}
+      />
     </Routes>
   );
 }
 
-const isPublicInterviewRoute = isPublicInterviewPath(
+const isStandalonePublicRoute = isStandalonePublicPath(
   window.location.pathname,
 );
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      {isPublicInterviewRoute ? <PublicInterviewApp /> : <App />}
+      {isStandalonePublicRoute ? <StandalonePublicApp /> : <App />}
     </BrowserRouter>
   </React.StrictMode>,
 );
