@@ -53,6 +53,26 @@ function getDashboardPath(user) {
   return "/dashboard/admin";
 }
 
+function getSafePostLoginRedirect(search = "") {
+  const params = new URLSearchParams(search || "");
+  const redirect = String(params.get("redirect") || "").trim();
+
+  /*
+   * Only allow internal application paths. This prevents an external URL
+   * from being used as an open redirect.
+   */
+  if (
+    !redirect ||
+    !redirect.startsWith("/") ||
+    redirect.startsWith("//") ||
+    redirect.includes("\\")
+  ) {
+    return "";
+  }
+
+  return redirect;
+}
+
 function getLoginFailureMessage(result = {}) {
   if (result.message) {
     return result.message;
@@ -136,13 +156,13 @@ export default function LoginPage() {
 
       setUser(user, expiresAt, expiresInMs);
 
-      const protectedDestination = location.state?.from;
+      const postLoginRedirect =
+        getSafePostLoginRedirect(location.search);
 
-      if (protectedDestination?.pathname) {
-        navigate({ pathname: protectedDestination.pathname, search: protectedDestination.search || "", hash: protectedDestination.hash || "" }, { replace: true });
-      } else {
-        navigate(getDashboardPath(user), { replace: true });
-      }
+      navigate(
+        postLoginRedirect || getDashboardPath(user),
+        { replace: true },
+      );
     } catch (error) {
       console.error(
         "Login error:",

@@ -78,10 +78,6 @@ function getRouteCandidate(location) {
       params.get("offerId"),
       params.get("offer_id"),
     ),
-    pipelineId: firstText(
-      candidate.pipelineId, candidate.pipeline_id, candidate.pipelineDbId, candidate.dbId,
-      state.pipelineId, state.pipeline_id, params.get("pipelineId"), params.get("pipeline_id"),
-    ),
   };
 
   return Object.values(routeCandidate).some(Boolean) ? routeCandidate : null;
@@ -109,11 +105,14 @@ function offerMatchesRouteCandidate(offer, routeCandidate) {
     ],
     [
       routeCandidate.offerId,
-      firstText(offer?.offerId, offer?.offer_id),
-    ],
-    [
-      routeCandidate.pipelineId,
-      firstText(offer?.pipelineId, offer?.pipeline_id, offer?.pipelineDbId, offer?.dbId, offer?.candidatePipelineId, offer?.id),
+      firstText(
+        offer?.offerId,
+        offer?.offer_id,
+        offer?.id,
+        offer?.dbId,
+        offer?.candidatePipelineId,
+        offer?.candidate_pipeline_id,
+      ),
     ],
   ].filter(([routeValue]) => Boolean(routeValue));
 
@@ -156,14 +155,13 @@ const ROUTE_FILTER_KEYS = [
   "name",
   "offerId",
   "offer_id",
-  "pipelineId",
-  "pipeline_id",
+  "openOffer",
+  "open_offer",
 ];
 
 export default function OffersPage() {
   const mainRef = useRef(null);
   const hasShownApprovalWarningRef = useRef(false);
-  const autoOpenedRouteOfferRef = useRef("");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -198,6 +196,18 @@ export default function OffersPage() {
     [routeCandidate],
   );
 
+  const shouldOpenRouteOffer = useMemo(() => {
+    const params = new URLSearchParams(location.search || "");
+    const value = normalizeValue(
+      params.get("openOffer") ||
+        params.get("open_offer"),
+    );
+
+    return ["1", "true", "yes"].includes(value);
+  }, [location.search]);
+
+  const openedRouteOfferKeyRef = useRef("");
+
   const visibleOffers = useMemo(() => {
     const offers = Array.isArray(filteredOffers) ? filteredOffers : [];
 
@@ -207,14 +217,6 @@ export default function OffersPage() {
       offerMatchesRouteCandidate(offer, routeCandidate),
     );
   }, [filteredOffers, routeCandidate]);
-
-  useEffect(() => {
-    if (!routeCandidate || visibleOffers.length === 0) return;
-    const routeKey = JSON.stringify(routeCandidate);
-    if (autoOpenedRouteOfferRef.current === routeKey) return;
-    autoOpenedRouteOfferRef.current = routeKey;
-    setSelectedOffer(visibleOffers[0]);
-  }, [routeCandidate, setSelectedOffer, visibleOffers]);
 
   function closeStatusModal() {
     setStatusModal((previous) => ({
@@ -261,6 +263,68 @@ export default function OffersPage() {
       window.clearTimeout(timer);
     };
   }, [routeCandidateKey]);
+
+  useEffect(() => {
+    if (!shouldOpenRouteOffer || !routeCandidate) {
+      return;
+    }
+
+    const offers =
+      Array.isArray(filteredOffers)
+        ? filteredOffers
+        : [];
+
+    if (!offers.length) {
+      return;
+    }
+
+    const matchedOffer =
+      offers.find((offer) =>
+        offerMatchesRouteCandidate(
+          offer,
+          routeCandidate,
+        ),
+      ) || null;
+
+    if (!matchedOffer) {
+      return;
+    }
+
+    const matchedKey = firstText(
+      matchedOffer.offerId,
+      matchedOffer.offer_id,
+      matchedOffer.id,
+      matchedOffer.dbId,
+      matchedOffer.candidatePipelineId,
+      matchedOffer.candidate_pipeline_id,
+      matchedOffer.candidateApplicationId,
+      matchedOffer.candidate_application_id,
+      matchedOffer.candidateId,
+      matchedOffer.candidate_id,
+    );
+
+    const routeOpenKey =
+      `${routeCandidateKey}:${matchedKey}`;
+
+    if (
+      openedRouteOfferKeyRef.current ===
+      routeOpenKey
+    ) {
+      return;
+    }
+
+    openedRouteOfferKeyRef.current =
+      routeOpenKey;
+
+    setSelectedOffer(matchedOffer);
+    scrollToTop("auto");
+  }, [
+    filteredOffers,
+    routeCandidate,
+    routeCandidateKey,
+    setSelectedOffer,
+    shouldOpenRouteOffer,
+  ]);
 
   useEffect(() => {
     if (approvalUsersLoading) return;
