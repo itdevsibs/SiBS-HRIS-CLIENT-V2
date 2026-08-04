@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
 export default function StatusModal({
   open,
@@ -8,6 +8,10 @@ export default function StatusModal({
   title,
   message,
   onClose,
+  onConfirm,
+  onCancel,
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
   variant = "center", // center | compact
   lockScroll = false,
 }) {
@@ -27,7 +31,11 @@ export default function StatusModal({
 
     const handleEscape = (e) => {
       if (e.key === "Escape") {
-        onClose?.();
+        if (type === "confirm") {
+          onCancel?.();
+        } else {
+          onClose?.();
+        }
       }
     };
 
@@ -52,19 +60,33 @@ export default function StatusModal({
           previousOverflowRef.current.html || "";
       }
     };
-  }, [open, onClose, lockScroll]);
+  }, [open, onClose, onCancel, lockScroll, type]);
 
   if (!mounted || !open || typeof document === "undefined") return null;
 
   const isSuccess = type === "success";
+  const isConfirm = type === "confirm";
 
   const finalTitle =
-    title || (isSuccess ? "Success" : "Something went wrong");
+    title ||
+    (isConfirm
+      ? "Confirm Action"
+      : isSuccess
+        ? "Success"
+        : "Something went wrong");
 
-  const finalMessage = message || "Operation completed.";
+  const finalMessage =
+    message ||
+    (isConfirm
+      ? "Are you sure you want to continue?"
+      : "Operation completed.");
 
   const handleClose = () => {
-    onClose?.();
+    if (isConfirm) {
+      onCancel?.();
+    } else {
+      onClose?.();
+    }
 
     if (!lockScroll && typeof document !== "undefined") {
       window.setTimeout(() => {
@@ -90,10 +112,12 @@ export default function StatusModal({
             <div className="flex min-w-0 flex-row items-center gap-2">
               <div
                 className={`shrink-0 rounded-2xl p-3 ${
-                  isSuccess ? "bg-green-100" : "bg-red-100"
+                  isConfirm ? "bg-amber-100" : isSuccess ? "bg-green-100" : "bg-red-100"
                 }`}
               >
-                {isSuccess ? (
+                {isConfirm ? (
+                  <AlertTriangle size={24} className="text-amber-600" />
+                ) : isSuccess ? (
                   <CheckCircle2 size={24} className="text-green-600" />
                 ) : (
                   <XCircle size={24} className="text-red-600" />
@@ -110,13 +134,25 @@ export default function StatusModal({
             {finalMessage}
           </p>
 
-          <div className="mt-6 flex justify-end">
+          <div className="mt-6 flex justify-end gap-2">
+            {isConfirm && (
+              <button
+                type="button"
+                onClick={() => onCancel?.()}
+                className="rounded-xl border border-sibs-tertiary-9 bg-white px-4 py-2.5 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-slate-50 active:scale-[0.98]"
+              >
+                {cancelLabel}
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={handleClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 active:scale-[0.98]"
+              onClick={isConfirm ? () => onConfirm?.() : handleClose}
+              className={`rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98] ${
+                isConfirm ? "bg-red-600" : "bg-[var(--sibs-primary-1)]"
+              }`}
             >
-              OK
+              {isConfirm ? confirmLabel : "OK"}
             </button>
           </div>
         </div>
@@ -131,10 +167,12 @@ export default function StatusModal({
             <div className="flex flex-col items-center text-center">
               <div
                 className={`mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
-                  isSuccess ? "bg-green-100" : "bg-red-100"
+                  isConfirm ? "bg-amber-100" : isSuccess ? "bg-green-100" : "bg-red-100"
                 }`}
               >
-                {isSuccess ? (
+                {isConfirm ? (
+                  <AlertTriangle size={34} className="text-amber-600" />
+                ) : isSuccess ? (
                   <CheckCircle2 size={34} className="text-green-600" />
                 ) : (
                   <XCircle size={34} className="text-red-600" />
@@ -149,13 +187,27 @@ export default function StatusModal({
                 {finalMessage}
               </p>
 
-              <button
-                type="button"
-                onClick={handleClose}
-                className="mt-6 w-full rounded-xl bg-[var(--sibs-primary-1)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98]"
-              >
-                OK
-              </button>
+              <div className="mt-6 flex w-full gap-2">
+                {isConfirm && (
+                  <button
+                    type="button"
+                    onClick={() => onCancel?.()}
+                    className="flex-1 rounded-xl border border-sibs-tertiary-9 bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-slate-50 active:scale-[0.98]"
+                  >
+                    {cancelLabel}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={isConfirm ? () => onConfirm?.() : handleClose}
+                  className={`flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98] ${
+                    isConfirm ? "bg-red-600" : "bg-[var(--sibs-primary-1)]"
+                  }`}
+                >
+                  {isConfirm ? confirmLabel : "OK"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

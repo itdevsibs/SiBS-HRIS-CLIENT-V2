@@ -1083,18 +1083,20 @@ function getRequirementSortIndex(requirement = "") {
 }
 
 function getNhoFileIdentity(file = {}) {
+  const safeFile = file && typeof file === "object" ? file : {};
+
   return cleanText(
-    file.storedPath ||
-      file.stored_path ||
-      file.filePath ||
-      file.file_path ||
-      file.savedFileName ||
-      file.saved_file_name ||
-      file.filename ||
-      file.fileUrl ||
-      file.url ||
-      file.id ||
-      `${file.fileName || file.name || "file"}:${file.fileSize || file.size || 0}`,
+    safeFile.storedPath ||
+      safeFile.stored_path ||
+      safeFile.filePath ||
+      safeFile.file_path ||
+      safeFile.savedFileName ||
+      safeFile.saved_file_name ||
+      safeFile.filename ||
+      safeFile.fileUrl ||
+      safeFile.url ||
+      safeFile.id ||
+      `${safeFile.fileName || safeFile.name || "file"}:${safeFile.fileSize || safeFile.size || 0}`,
   ).toLowerCase();
 }
 
@@ -4443,6 +4445,10 @@ const CandidatePipelineModal = ({
   const [isSchedulingNho, setIsSchedulingNho] = useState(false);
   const [nhoFilesError, setNhoFilesError] = useState("");
   const [nhoFilesSuccess, setNhoFilesSuccess] = useState("");
+  const [deleteFileConfirmation, setDeleteFileConfirmation] = useState({
+    open: false,
+    file: null,
+  });
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -5729,7 +5735,36 @@ const CandidatePipelineModal = ({
     });
   }
 
-  function handleRequirementRemove(fileToRemove) {
+  function requestRequirementFileDelete(fileToRemove) {
+    if (!fileToRemove) return;
+
+    setDeleteFileConfirmation({
+      open: true,
+      file: fileToRemove,
+    });
+  }
+
+  function cancelRequirementFileDelete() {
+    setDeleteFileConfirmation({
+      open: false,
+      file: null,
+    });
+  }
+
+  async function confirmRequirementFileDelete() {
+    const fileToRemove = deleteFileConfirmation.file;
+
+    setDeleteFileConfirmation({
+      open: false,
+      file: null,
+    });
+
+    if (!fileToRemove) return;
+
+    await permanentlyRemoveRequirementFile(fileToRemove);
+  }
+
+  async function permanentlyRemoveRequirementFile(fileToRemove) {
     const uploadIdentity =
       nhoUploadSessionIdentityRef.current ||
       {};
@@ -5741,55 +5776,220 @@ const CandidatePipelineModal = ({
       return;
     }
 
+    const fileName =
+      cleanText(
+        fileToRemove?.fileName ||
+          fileToRemove?.savedFileName ||
+          fileToRemove?.filename,
+      ) ||
+      "this file";
+
     setNhoFilesError("");
     setNhoFilesSuccess("");
 
-    const targetIdentity =
-      getNhoFileIdentity(fileToRemove);
-    const targetId =
-      cleanText(fileToRemove?.id);
+    const removeFileFromLocalState = (
+      responseFiles = null,
+    ) => {
+      const targetIdentity =
+        getNhoFileIdentity(fileToRemove);
 
-    setCandidateFilesById((previous) => {
-      const currentFiles =
-        previous[
-          uploadIdentity.stateKey
-        ] || [];
+      const targetId =
+        cleanText(fileToRemove?.id);
 
-      const nextFiles =
-        currentFiles.filter((file) => {
-          if (
-            targetId &&
-            cleanText(file?.id) === targetId
-          ) {
-            return false;
-          }
+      setCandidateFilesById(
+        (previous) => {
+          const currentFiles =
+            previous[
+              uploadIdentity.stateKey
+            ] || [];
 
-          return (
-            getNhoFileIdentity(file) !==
-            targetIdentity
+          const nextFiles =
+            Array.isArray(responseFiles)
+              ? dedupeFiles(
+                  responseFiles,
+                  uploadIdentity.recordId,
+                )
+              : currentFiles.filter(
+                  (file) => {
+                    if (
+                      targetId &&
+                      cleanText(file?.id) ===
+                        targetId
+                    ) {
+                      return false;
+                    }
+
+                    return (
+                      getNhoFileIdentity(file) !==
+                      targetIdentity
+                    );
+                  },
+                );
+
+          setSelectedNhoFile(
+            (current) => {
+              const currentRemoved =
+                (targetId &&
+                  cleanText(current?.id) ===
+                    targetId) ||
+                (targetIdentity &&
+                  getNhoFileIdentity(
+                    current,
+                  ) ===
+                    targetIdentity);
+
+              return currentRemoved
+                ? nextFiles[0] ||
+                    null
+                : current;
+            },
           );
-        });
 
-      setSelectedNhoFile((current) => {
-        const currentRemoved =
-          (targetId &&
-            cleanText(current?.id) ===
-              targetId) ||
-          (targetIdentity &&
-            getNhoFileIdentity(current) ===
-              targetIdentity);
+          return {
+            ...previous,
+            [uploadIdentity.stateKey]:
+              nextFiles,
+          };
+        },
+      );
+    };
 
-        return currentRemoved
-          ? nextFiles[0] || null
-          : current;
+    /*
+     * Pending files have not reached the server yet, so they only need
+     * to be removed from local state.
+     */
+    if (
+      fileToRemove?.rawFile ||
+      !isPersistedNhoFile(
+        fileToRemove,
+      )
+    ) {
+      removeFileFromLocalState();
+
+      setNhoFilesSuccess(
+        `${fileName} was removed from the pending upload list.`,
+      );
+
+      return;
+    }
+
+    setIsSavingNhoFiles(true);
+
+    try {
+      const fileIdentity =
+        getNhoFileIdentity(
+          fileToRemove,
+        );
+
+      const response =
+        await api.delete(
+          `/api/candidate-pipeline/${encodeURIComponent(
+            uploadIdentity.recordId,
+          )}/nho/files/${encodeURIComponent(
+            cleanText(fileToRemove?.id) ||
+              fileIdentity,
+          )}`,
+          {
+            withCredentials: true,
+            data: {
+              fileIdentity,
+              storedPath:
+                fileToRemove?.storedPath ||
+                "",
+              filePath:
+                fileToRemove?.filePath ||
+                "",
+              savedFileName:
+                fileToRemove?.savedFileName ||
+                fileToRemove?.filename ||
+                "",
+              requirement:
+                fileToRemove?.requirement ||
+                "",
+            },
+          },
+        );
+
+      const payload =
+        unwrapCandidatePipelineResponse(
+          response,
+        );
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            "Unable to permanently delete the selected file.",
+        );
+      }
+
+      const responseFiles =
+        getFilesFromApiPayload(
+          payload,
+        );
+
+      removeFileFromLocalState(
+        responseFiles,
+      );
+
+      const responseCandidate =
+        lockCandidatePipelinePrimaryKey(
+          getCandidateFromApiPayload(
+            payload,
+          ) || {},
+          uploadIdentity.recordId,
+        );
+
+      if (
+        responseCandidate &&
+        typeof responseCandidate ===
+          "object"
+      ) {
+        setLocalCandidate(
+          (previous) => ({
+            ...(previous ||
+              activeCandidate),
+            ...responseCandidate,
+          }),
+        );
+
+        applyScheduledCandidateToPipelineState(
+          responseCandidate,
+        );
+      }
+
+      const successMessage =
+        payload?.message ||
+        `${fileName} was permanently deleted.`;
+
+      setNhoFilesSuccess(
+        successMessage,
+      );
+
+      showStatusModal({
+        type: "success",
+        title: "File Deleted",
+        message:
+          successMessage,
       });
+    } catch (error) {
+      const message =
+        getApiErrorMessage(
+          error,
+          "Unable to delete the physical file. No changes were made.",
+        );
 
-      return {
-        ...previous,
-        [uploadIdentity.stateKey]:
-          nextFiles,
-      };
-    });
+      setNhoFilesError(
+        message,
+      );
+
+      showStatusModal({
+        type: "error",
+        title: "Delete Failed",
+        message,
+      });
+    } finally {
+      setIsSavingNhoFiles(false);
+    }
   }
 
   async function moveCandidateToStage(
@@ -7025,7 +7225,7 @@ const CandidatePipelineModal = ({
 
   return (
     <>
-      {!statusModal.open && (
+      {(
         <>
           <div
             className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4"
@@ -7876,7 +8076,7 @@ const CandidatePipelineModal = ({
                     saveError={nhoFilesError}
                     saveSuccess={nhoFilesSuccess}
                     onUpload={handleRequirementUpload}
-                    onRemove={handleRequirementRemove}
+                    onRemove={requestRequirementFileDelete}
                     onSelectFile={setSelectedNhoFile}
                   />
                 )}
@@ -8116,6 +8316,24 @@ const CandidatePipelineModal = ({
           />
         </>
       )}
+
+      <StatusModal
+        open={deleteFileConfirmation.open}
+        type="confirm"
+        title="Delete File?"
+        message={`This will permanently remove ${
+          deleteFileConfirmation.file?.fileName ||
+          deleteFileConfirmation.file?.savedFileName ||
+          deleteFileConfirmation.file?.filename ||
+          "the selected document"
+        } from the Candidate Pipeline server folder. This action cannot be undone.`}
+        confirmLabel="Delete Permanently"
+        cancelLabel="Cancel"
+        variant="center"
+        onConfirm={confirmRequirementFileDelete}
+        onCancel={cancelRequirementFileDelete}
+        lockScroll={false}
+      />
 
       <StatusModal
         open={statusModal.open}

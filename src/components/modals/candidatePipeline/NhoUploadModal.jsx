@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import api from "../../../lib/axios/api-template";
+import StatusModal from "../StatusModal";
 
 const PREVIOUS_EMPLOYMENT_REQUIREMENTS = [
   "BIR 2316 Form",
@@ -971,6 +972,9 @@ export default function NhoUploadModal({
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deletingFile, setDeletingFile] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState({ open: false, type: "success", title: "", message: "" });
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -1125,55 +1129,55 @@ export default function NhoUploadModal({
     });
   }
 
-  function handleRemove(fileToRemove) {
-    const targetId = cleanText(fileToRemove?.id);
-    const targetRequirement = normalizeRequirement(fileToRemove?.requirement);
-    const targetIdentity = cleanText(
-      fileToRemove?.storedPath ||
-        fileToRemove?.filePath ||
-        fileToRemove?.savedFileName ||
-        fileToRemove?.filename ||
-        fileToRemove?.fileUrl ||
-        fileToRemove?.fileName,
-    ).toLowerCase();
-
+  function removeLocalFile(fileToRemove, responseFiles = null) {
+    const id = cleanText(fileToRemove?.id);
+    const identity = cleanText(fileToRemove?.storedPath || fileToRemove?.filePath || fileToRemove?.savedFileName || fileToRemove?.filename || fileToRemove?.fileUrl || fileToRemove?.fileName).toLowerCase();
+    const nextFromResponse = Array.isArray(responseFiles) ? dedupeFiles(responseFiles) : null;
     setFiles((previous) => {
-      const nextFiles = previous.filter((item) => {
-        if (targetId && cleanText(item?.id) === targetId) return false;
-
-        const sameRequirement =
-          normalizeRequirement(item?.requirement) === targetRequirement;
-        const itemIdentity = cleanText(
-          item?.storedPath ||
-            item?.filePath ||
-            item?.savedFileName ||
-            item?.filename ||
-            item?.fileUrl ||
-            item?.fileName,
-        ).toLowerCase();
-
-        return !(sameRequirement && targetIdentity && itemIdentity === targetIdentity);
+      const next = nextFromResponse || previous.filter((file) => {
+        if (id && cleanText(file?.id) === id) return false;
+        const itemIdentity = cleanText(file?.storedPath || file?.filePath || file?.savedFileName || file?.filename || file?.fileUrl || file?.fileName).toLowerCase();
+        return itemIdentity !== identity;
       });
-
       setSelectedFile((current) => {
-        const currentWasRemoved =
-          (targetId && cleanText(current?.id) === targetId) ||
-          (normalizeRequirement(current?.requirement) === targetRequirement &&
-            targetIdentity &&
-            cleanText(
-              current?.storedPath ||
-                current?.filePath ||
-                current?.savedFileName ||
-                current?.filename ||
-                current?.fileUrl ||
-                current?.fileName,
-            ).toLowerCase() === targetIdentity);
-
-        return currentWasRemoved ? nextFiles[0] || null : current;
+        const currentIdentity = cleanText(current?.storedPath || current?.filePath || current?.savedFileName || current?.filename || current?.fileUrl || current?.fileName).toLowerCase();
+        return (id && cleanText(current?.id) === id) || (identity && currentIdentity === identity) ? next[0] || null : current;
       });
-
-      return nextFiles;
+      return next;
     });
+  }
+
+  function handleRemove(fileToRemove) {
+    if (fileToRemove) setDeleteTarget(fileToRemove);
+  }
+
+  async function confirmDeleteFile() {
+    const file = deleteTarget;
+    if (!file || deletingFile) return;
+    setDeleteTarget(null);
+
+    if (file.rawFile) {
+      removeLocalFile(file);
+      setDeleteStatus({ open: true, type: "success", title: "File Removed", message: "The pending file was removed from the upload list." });
+      return;
+    }
+
+    setDeletingFile(true);
+    try {
+      const identity = cleanText(file?.storedPath || file?.filePath || file?.savedFileName || file?.filename || file?.fileUrl || file?.fileName).toLowerCase();
+      const response = await api.delete(`/api/candidate-pipeline/${encodeURIComponent(candidateId)}/nho/files/${encodeURIComponent(cleanText(file?.id) || identity)}`, {
+        withCredentials: true,
+        data: { fileIdentity: identity, storedPath: file?.storedPath || "", filePath: file?.filePath || "", savedFileName: file?.savedFileName || file?.filename || "", requirement: file?.requirement || "" },
+      });
+      const payload = response?.data ?? response;
+      if (payload?.success === false) throw new Error(payload?.message || "Unable to delete file.");
+      removeLocalFile(file, getFilesFromApiPayload(payload));
+      setDeleteStatus({ open: true, type: "success", title: "File Deleted", message: payload?.message || "The file was permanently deleted." });
+    } catch (error) {
+      setDeleteStatus({ open: true, type: "error", title: "Delete Failed", message: getApiErrorMessage(error, "Unable to delete the physical file. No changes were made.") });
+    } finally {
+      setDeletingFile(false);
+    }
   }
 
   function handleSelectFileForPreview(file) {
@@ -1604,6 +1608,8 @@ export default function NhoUploadModal({
           </div>
         </div>
       </div>
-    </div>
+          <StatusModal open={Boolean(deleteTarget)} type="confirm" title="Delete File?" message={`This will permanently remove ${deleteTarget?.fileName || deleteTarget?.savedFileName || "the selected document"} from the Candidate Pipeline server folder. This action cannot be undone.`} confirmLabel="Delete Permanently" cancelLabel="Cancel" variant="center" onConfirm={confirmDeleteFile} onCancel={() => setDeleteTarget(null)} lockScroll={false} />
+      <StatusModal open={deleteStatus.open} type={deleteStatus.type} title={deleteStatus.title} message={deleteStatus.message} variant="center" onClose={() => setDeleteStatus((value) => ({ ...value, open: false }))} lockScroll={false} />
+</div>
   );
 }
