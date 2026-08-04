@@ -78,6 +78,10 @@ function getRouteCandidate(location) {
       params.get("offerId"),
       params.get("offer_id"),
     ),
+    pipelineId: firstText(
+      candidate.pipelineId, candidate.pipeline_id, candidate.pipelineDbId, candidate.dbId,
+      state.pipelineId, state.pipeline_id, params.get("pipelineId"), params.get("pipeline_id"),
+    ),
   };
 
   return Object.values(routeCandidate).some(Boolean) ? routeCandidate : null;
@@ -106,6 +110,10 @@ function offerMatchesRouteCandidate(offer, routeCandidate) {
     [
       routeCandidate.offerId,
       firstText(offer?.offerId, offer?.offer_id),
+    ],
+    [
+      routeCandidate.pipelineId,
+      firstText(offer?.pipelineId, offer?.pipeline_id, offer?.pipelineDbId, offer?.dbId, offer?.candidatePipelineId, offer?.id),
     ],
   ].filter(([routeValue]) => Boolean(routeValue));
 
@@ -148,117 +156,14 @@ const ROUTE_FILTER_KEYS = [
   "name",
   "offerId",
   "offer_id",
+  "pipelineId",
+  "pipeline_id",
 ];
-
-
-function SkeletonBlock({ className = "" }) {
-  return (
-    <div
-      aria-hidden="true"
-      className={`animate-pulse rounded-xl bg-slate-200/80 ${className}`}
-    />
-  );
-}
-
-function OffersApprovalPageSkeleton() {
-  return (
-    <div
-      className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6"
-      aria-label="Processing offer approval"
-      aria-live="polite"
-      aria-busy="true"
-    >
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0 flex-1 space-y-3">
-            <SkeletonBlock className="h-4 w-32" />
-            <SkeletonBlock className="h-8 w-full max-w-md" />
-            <SkeletonBlock className="h-4 w-full max-w-2xl" />
-          </div>
-
-          <div className="flex shrink-0 gap-3">
-            <SkeletonBlock className="h-11 w-36" />
-            <SkeletonBlock className="h-11 w-40" />
-          </div>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            key={`offer-summary-skeleton-${index}`}
-            className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex-1 space-y-3">
-                <SkeletonBlock className="h-3 w-24" />
-                <SkeletonBlock className="h-8 w-20" />
-                <SkeletonBlock className="h-3 w-32" />
-              </div>
-
-              <SkeletonBlock className="h-12 w-12 rounded-2xl" />
-            </div>
-          </div>
-        ))}
-      </section>
-
-      <section className="sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-        <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <SkeletonBlock className="h-11 md:col-span-2" />
-            <SkeletonBlock className="h-11" />
-            <SkeletonBlock className="h-11" />
-          </div>
-        </div>
-
-        <div className="p-4 sm:p-5">
-          <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
-            <div className="grid grid-cols-6 gap-4 border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <SkeletonBlock
-                  key={`offer-header-skeleton-${index}`}
-                  className="h-3 w-full"
-                />
-              ))}
-            </div>
-
-            <div className="divide-y divide-[#E6ECF2]">
-              {Array.from({ length: 6 }).map((_, rowIndex) => (
-                <div
-                  key={`offer-row-skeleton-${rowIndex}`}
-                  className="grid grid-cols-6 gap-4 px-4 py-5"
-                >
-                  {Array.from({ length: 6 }).map((__, cellIndex) => (
-                    <SkeletonBlock
-                      key={`offer-cell-skeleton-${rowIndex}-${cellIndex}`}
-                      className={`h-4 ${
-                        cellIndex === 0 ? "w-4/5" : "w-full"
-                      }`}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <div className="space-y-3">
-          <SkeletonBlock className="h-5 w-48" />
-          <SkeletonBlock className="h-4 w-full" />
-          <SkeletonBlock className="h-4 w-5/6" />
-        </div>
-      </section>
-
-      <div className="fixed inset-0 z-[90] cursor-wait bg-white/20" />
-    </div>
-  );
-}
 
 export default function OffersPage() {
   const mainRef = useRef(null);
   const hasShownApprovalWarningRef = useRef(false);
+  const autoOpenedRouteOfferRef = useRef("");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -269,7 +174,6 @@ export default function OffersPage() {
     approvalUsers = [],
     approvalUsersLoading = false,
     filteredOffers = [],
-    isSubmittingApproval = false,
   } = useOffers();
 
   const [statusModal, setStatusModal] = useState({
@@ -303,6 +207,14 @@ export default function OffersPage() {
       offerMatchesRouteCandidate(offer, routeCandidate),
     );
   }, [filteredOffers, routeCandidate]);
+
+  useEffect(() => {
+    if (!routeCandidate || visibleOffers.length === 0) return;
+    const routeKey = JSON.stringify(routeCandidate);
+    if (autoOpenedRouteOfferRef.current === routeKey) return;
+    autoOpenedRouteOfferRef.current = routeKey;
+    setSelectedOffer(visibleOffers[0]);
+  }, [routeCandidate, setSelectedOffer, visibleOffers]);
 
   function closeStatusModal() {
     setStatusModal((previous) => ({
@@ -375,23 +287,6 @@ export default function OffersPage() {
     return undefined;
   }, [approvalUsers, approvalUsersLoading]);
 
-  useEffect(() => {
-    if (typeof document === "undefined") return undefined;
-
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
-    if (isSubmittingApproval) {
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overflow = "hidden";
-    }
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-    };
-  }, [isSubmittingApproval]);
-
   function handleCloseDetailsModal() {
     setSelectedOffer(null);
   }
@@ -427,9 +322,6 @@ export default function OffersPage() {
       </div>
 
       <main ref={mainRef} className="sibs-dashboard-main-wide">
-        {isSubmittingApproval ? (
-          <OffersApprovalPageSkeleton />
-        ) : (
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <OfferHeader
             routeFilterActive={Boolean(routeCandidate)}
@@ -470,18 +362,15 @@ export default function OffersPage() {
 
           <OfferProcessRule />
         </div>
-        )}
       </main>
 
       <OfferDetailsModal
-        open={Boolean(selectedOffer) && !isSubmittingApproval}
+        open={Boolean(selectedOffer)}
         offer={selectedOffer}
         onClose={handleCloseDetailsModal}
       />
 
-      {!isSubmittingApproval && typeof ConfirmationDialog === "function"
-        ? <ConfirmationDialog />
-        : null}
+      {typeof ConfirmationDialog === "function" ? <ConfirmationDialog /> : null}
 
       <StatusModal
         open={statusModal.open}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Activity, AlertCircle } from "lucide-react";
 import { useUser } from "../../services/context/UserContext";
 import { getLogin } from "../../lib/axios/getLogin";
@@ -78,6 +78,7 @@ function getLoginFailureMessage(result = {}) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUser } = useUser();
 
   const [sibsId, setSibsId] = useState("");
@@ -135,7 +136,13 @@ export default function LoginPage() {
 
       setUser(user, expiresAt, expiresInMs);
 
-      navigate(getDashboardPath(user), { replace: true });
+      const protectedDestination = location.state?.from;
+
+      if (protectedDestination?.pathname) {
+        navigate({ pathname: protectedDestination.pathname, search: protectedDestination.search || "", hash: protectedDestination.hash || "" }, { replace: true });
+      } else {
+        navigate(getDashboardPath(user), { replace: true });
+      }
     } catch (error) {
       console.error(
         "Login error:",
