@@ -726,7 +726,6 @@ function isOfferStageCandidate(candidate = {}) {
   const excludedStages = [
     "Initial Screening",
     "Online Assessment",
-    "Assessment Fit",
     "Interview Scheduled",
     "Interviewed",
     "Accepted",
@@ -836,6 +835,7 @@ export function OffersProvider({ children }) {
 
   const [apiCandidates, setApiCandidates] = useState([]);
   const [isLoadingOffers, setIsLoadingOffers] = useState(false);
+  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
   const [offersLoadError, setOffersLoadError] = useState("");
   const [storageSyncTick, setStorageSyncTick] = useState(0);
 
@@ -1228,6 +1228,10 @@ export function OffersProvider({ children }) {
   }
 
   async function handleApproval(offer, status) {
+    if (isSubmittingApproval) {
+      return;
+    }
+
     if (approvalUsersLoading) {
       openStatusModal({
         type: "error",
@@ -1299,6 +1303,8 @@ export function OffersProvider({ children }) {
 
     const nextCandidateResponse =
       nextApprovalStatus === "Approved" ? "Accepted" : "Pending";
+
+    setIsSubmittingApproval(true);
 
     try {
       const pipelineRecordId = getCandidatePipelineRecordId(offer);
@@ -1407,15 +1413,31 @@ export function OffersProvider({ children }) {
 
       window.dispatchEvent(new Event("ta-pipeline-candidates-updated"));
 
+      const emailDeliveryStatus = response?.offerEmailDeliveryStatus;
+      const emailDeliveryFailed =
+        nextApprovalStatus === "Approved" && emailDeliveryStatus === "failed";
+
       openStatusModal({
-        type: "success",
-        title: status === "Approved" ? "Offer Approved" : "Offer Rejected",
-        message:
+        type: emailDeliveryFailed ? "error" : "success",
+        title:
           nextApprovalStatus === "Approved"
-            ? "The offer was approved and the candidate was moved to Accepted."
+            ? emailDeliveryFailed
+              ? "Offer Approved — Email Failed"
+              : emailDeliveryStatus === "already_sent"
+                ? "Offer Approved — Email Already Sent"
+                : "Offer Approved and Email Sent"
+            : status === "Approved"
+              ? "Approval Saved"
+              : "Offer Rejected",
+        message:
+          response?.message ||
+          (nextApprovalStatus === "Approved"
+            ? emailDeliveryFailed
+              ? "The offer was approved, but the employment offer email could not be sent."
+              : "The offer was approved and the employment offer email was sent to the candidate."
             : nextApprovalStatus === "Rejected"
               ? "The offer was rejected successfully."
-              : "Your offer approval update was saved.",
+              : "Your offer approval update was saved."),
       });
     } catch (error) {
       console.error("Offer approval update error:", error);
@@ -1429,6 +1451,8 @@ export function OffersProvider({ children }) {
           error?.message ||
           "Failed to update offer approval.",
       });
+    } finally {
+      setIsSubmittingApproval(false);
     }
   }
 
@@ -1471,6 +1495,7 @@ export function OffersProvider({ children }) {
       getApprovalRecordForUser(getApprovalsObject(offer), approvalUser),
 
     isLoadingOffers,
+    isSubmittingApproval,
     offersLoadError,
     refreshOffers,
   };

@@ -78,6 +78,10 @@ function getRouteCandidate(location) {
       params.get("offerId"),
       params.get("offer_id"),
     ),
+    pipelineId: firstText(
+      candidate.pipelineId, candidate.pipeline_id, candidate.pipelineDbId, candidate.dbId,
+      state.pipelineId, state.pipeline_id, params.get("pipelineId"), params.get("pipeline_id"),
+    ),
   };
 
   return Object.values(routeCandidate).some(Boolean) ? routeCandidate : null;
@@ -106,6 +110,10 @@ function offerMatchesRouteCandidate(offer, routeCandidate) {
     [
       routeCandidate.offerId,
       firstText(offer?.offerId, offer?.offer_id),
+    ],
+    [
+      routeCandidate.pipelineId,
+      firstText(offer?.pipelineId, offer?.pipeline_id, offer?.pipelineDbId, offer?.dbId, offer?.candidatePipelineId, offer?.id),
     ],
   ].filter(([routeValue]) => Boolean(routeValue));
 
@@ -148,11 +156,14 @@ const ROUTE_FILTER_KEYS = [
   "name",
   "offerId",
   "offer_id",
+  "pipelineId",
+  "pipeline_id",
 ];
 
 export default function OffersPage() {
   const mainRef = useRef(null);
   const hasShownApprovalWarningRef = useRef(false);
+  const autoOpenedRouteOfferRef = useRef("");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -196,6 +207,14 @@ export default function OffersPage() {
       offerMatchesRouteCandidate(offer, routeCandidate),
     );
   }, [filteredOffers, routeCandidate]);
+
+  useEffect(() => {
+    if (!routeCandidate || visibleOffers.length === 0) return;
+    const routeKey = JSON.stringify(routeCandidate);
+    if (autoOpenedRouteOfferRef.current === routeKey) return;
+    autoOpenedRouteOfferRef.current = routeKey;
+    setSelectedOffer(visibleOffers[0]);
+  }, [routeCandidate, setSelectedOffer, visibleOffers]);
 
   function closeStatusModal() {
     setStatusModal((previous) => ({
