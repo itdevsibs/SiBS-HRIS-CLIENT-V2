@@ -31,7 +31,9 @@ function getFirstValue(...values) {
 }
 
 function safeText(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function normalizeJdStatus(status) {
@@ -85,7 +87,12 @@ function getDocumentTitle(item = {}) {
 }
 
 function getJdCode(item = {}) {
-  return getFirstValue(item.jdCode, item.jd_code, item.raw?.jdCode, item.raw?.jd_code);
+  return getFirstValue(
+    item.jdCode,
+    item.jd_code,
+    item.raw?.jdCode,
+    item.raw?.jd_code,
+  );
 }
 
 function getDepartment(item = {}) {
@@ -147,7 +154,8 @@ function getSupervisoryLevel(item = {}) {
   const normalized = safeText(supervisory);
 
   if (["yes", "true", "1"].includes(normalized)) return "Supervisory";
-  if (["no", "false", "0"].includes(normalized)) return "Individual Contributor";
+  if (["no", "false", "0"].includes(normalized))
+    return "Individual Contributor";
 
   return String(supervisory || "").trim();
 }
@@ -288,9 +296,7 @@ function JdStatusBadge({ status }) {
 function uniqueOptions(items, getter, allLabel) {
   const values = [
     ...new Set(
-      items
-        .map((item) => String(getter(item) || "").trim())
-        .filter(Boolean),
+      items.map((item) => String(getter(item) || "").trim()).filter(Boolean),
     ),
   ].sort((left, right) => left.localeCompare(right));
 
@@ -481,7 +487,8 @@ export default function JobDescriptionTable({
         !keyword ||
         searchableValues.some((value) => safeText(value).includes(keyword));
       const matchesDepartment =
-        departmentFilter === "All Departments" || department === departmentFilter;
+        departmentFilter === "All Departments" ||
+        department === departmentFilter;
       const matchesAccount =
         accountFilter === "All Accounts" || account === accountFilter;
       const matchesSupervisory =
@@ -568,7 +575,8 @@ export default function JobDescriptionTable({
       <div className="border-b border-[#E6ECF2] px-4 py-5 sm:px-5">
         <h2 className="sibs-section-title">Job Description Records</h2>
         <p className="sibs-section-subtitle">
-          Search and filter JD records by role, department, account, and supervisory level.
+          Search and filter JD records by role, department, account, and
+          supervisory level.
         </p>
       </div>
 
@@ -700,13 +708,19 @@ export default function JobDescriptionTable({
             <table className="w-full min-w-[1280px] border-collapse text-left text-xs">
               <thead className="sibs-data-table-head">
                 <tr className="sibs-data-table-head-row">
-                  <th className="sibs-data-table-th text-left">Role & Document Title</th>
-                  <th className="sibs-data-table-th text-left">Department / Account</th>
-                  <th className="sibs-data-table-th text-left">Linked Hiring Need</th>
-                  <th className="sibs-data-table-th text-left">Supervisory Level</th>
+                  <th className="sibs-data-table-th text-left">
+                    Role & Document Title
+                  </th>
+                  <th className="sibs-data-table-th text-left">
+                    Department / Account
+                  </th>
+                  <th className="sibs-data-table-th text-left">
+                    Supervisory Level
+                  </th>
                   <th className="sibs-data-table-th text-left">Status</th>
-                  <th className="sibs-data-table-th text-left">Date & Version</th>
-                  <th className="sibs-data-table-th text-right">Actions</th>
+                  <th className="sibs-data-table-th text-left">
+                    Date & Version
+                  </th>
                 </tr>
               </thead>
 
@@ -721,7 +735,9 @@ export default function JobDescriptionTable({
 
                     return (
                       <tr
-                        key={getRecordId(item) || `${roleTitle}-${documentTitle}`}
+                        key={
+                          getRecordId(item) || `${roleTitle}-${documentTitle}`
+                        }
                         onClick={() => handleOpenFullPageView(item)}
                         className="sibs-data-table-row cursor-pointer hover:bg-[#FFFDFC]"
                       >
@@ -746,11 +762,6 @@ export default function JobDescriptionTable({
                             {getAccount(item) || "--"}
                           </p>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <span className="inline-flex max-w-[280px] rounded-lg bg-[#F2F6FA] px-2.5 py-1.5 text-[10px] font-bold leading-4 text-[#475467]">
-                            {getLinkedHiringNeed(item) || "--"}
-                          </span>
-                        </td>
                         <td className="px-4 py-3.5 text-xs font-semibold text-[#475467]">
                           {getSupervisoryLevel(item) || "--"}
                         </td>
@@ -765,32 +776,6 @@ export default function JobDescriptionTable({
                             {formatDate(getDateValue(item))}
                           </p>
                         </td>
-                        <td className="px-4 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleOpenFullPageView(item);
-                              }}
-                              className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#F2F6FA] px-2.5 text-[10px] font-extrabold text-[#042C51] transition hover:bg-[#042C51] hover:text-white"
-                            >
-                              <Eye size={13} />
-                              View
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleOpenRevision(item);
-                              }}
-                              className="inline-flex h-8 items-center gap-1 rounded-lg bg-amber-50 px-2.5 text-[10px] font-extrabold text-amber-700 transition hover:bg-amber-600 hover:text-white"
-                            >
-                              <Edit3 size={13} />
-                              Revise
-                            </button>
-                          </div>
-                        </td>
                       </tr>
                     );
                   })
@@ -802,7 +787,8 @@ export default function JobDescriptionTable({
                         No Job Descriptions Found
                       </p>
                       <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                        No records matched the active search, filters, and status tab.
+                        No records matched the active search, filters, and
+                        status tab.
                       </p>
                       <button
                         type="button"
@@ -828,7 +814,9 @@ export default function JobDescriptionTable({
           totalRecords={filteredList.length}
           recordLabel="job descriptions"
           onPrevious={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-          onNext={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+          onNext={() =>
+            setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))
+          }
           showCount
           className="border-0 bg-transparent p-0 shadow-none"
         />
