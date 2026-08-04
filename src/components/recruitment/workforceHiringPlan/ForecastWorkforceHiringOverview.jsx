@@ -103,7 +103,6 @@ function buildSummaryFromForecastRow(row = {}) {
     ...EMPTY_SUMMARY,
     requiredHeadcount,
     actualHeadcount,
-
     bufferPercentage: getRowNumber(row, [
       "bufferPercentage",
       "buffer_percentage",
@@ -112,7 +111,6 @@ function buildSummaryFromForecastRow(row = {}) {
       "actualBufferPercent",
       "actual_buffer_percent",
     ]),
-
     absenteeism,
     absenteeismPercentage: getRowNumber(row, [
       "absenteeismPercentage",
@@ -122,7 +120,6 @@ function buildSummaryFromForecastRow(row = {}) {
       "averageAbsenteeismPercent",
       "average_absenteeism_percent",
     ]),
-
     attrition,
     attritionPercentage: getRowNumber(row, [
       "attritionPercentage",
@@ -132,30 +129,28 @@ function buildSummaryFromForecastRow(row = {}) {
       "attritionPercent",
       "attrition_percent",
     ]),
-
     netActualHc,
     hiringNeeded,
-
     hiringRate: getRowNumber(row, [
       "hiringRate",
       "hiring_rate",
       "hiringPlanPercent",
       "hiring_plan_percent",
     ]),
-
     hiredCount: getRowNumber(row, ["hiredCount", "hired_count", "hired"]),
   };
 }
 
-function getSelectedForecastRow(weeklyVersion = {}) {
-  const rows = Array.isArray(weeklyVersion.forecastRows)
-    ? weeklyVersion.forecastRows
-    : [];
+function getSelectedForecastRow(weeklyVersion = {}, sourceRows = []) {
+  const rows = Array.isArray(sourceRows) && sourceRows.length
+    ? sourceRows
+    : Array.isArray(weeklyVersion.forecastRows)
+      ? weeklyVersion.forecastRows
+      : [];
 
   if (!rows.length) return null;
 
   const selectedForecastWeek = weeklyVersion.selectedForecastWeek || null;
-
   const selectedWeekStart =
     selectedForecastWeek?.weekStart ||
     selectedForecastWeek?.week_start ||
@@ -198,12 +193,12 @@ function formatKpiPercent(value, decimals = 2) {
   return `${formatKpiNumber(value, decimals)}%`;
 }
 
-export default function ForecastWorkforceHiringOverviewSummary() {
+export default function ForecastWorkforceHiringOverviewSummary({ rows = [] }) {
   const { weeklyVersion } = useWorkforceHiring();
 
   const selectedForecastRow = useMemo(
-    () => getSelectedForecastRow(weeklyVersion),
-    [weeklyVersion],
+    () => getSelectedForecastRow(weeklyVersion, rows),
+    [rows, weeklyVersion],
   );
 
   const summary = useMemo(
@@ -215,37 +210,26 @@ export default function ForecastWorkforceHiringOverviewSummary() {
   );
 
   return (
-    <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="mb-4">
-        <h2 className="text-base font-bold uppercase tracking-tight text-slate-900">
-          Workforce Plan Overview (Aggregated)
-        </h2>
-        <p className="mt-1 text-sm font-medium text-sibs-primary-70">
-          Forecasted workforce hiring plan metrics based on the selected
-          forecast week, cluster, and account filters.
-        </p>
-      </div>
-
+    <section>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-9">
         <KpiCard
-          title="Required Headcount"
+          title="Required HC"
           value={formatKpiNumber(summary.requiredHeadcount)}
-          icon={Users}
+          subtitle="Approved baseline"
           tone="blue"
         />
 
         <KpiCard
-          title="Actual Headcount"
+          title="Actual HC"
           value={formatKpiNumber(summary.actualHeadcount)}
-          icon={Users}
+          subtitle="Roster count"
           tone="blue"
         />
 
         <KpiCard
-          title="Buffer Percentage"
+          title="Buffer %"
           value={formatKpiPercent(summary.bufferPercentage, 2)}
-          icon={Gauge}
-          subtitle="vs Required HC"
+          subtitle="VS required HC"
           tone={summary.bufferPercentage < 0 ? "red" : "green2"}
         />
 
@@ -253,8 +237,7 @@ export default function ForecastWorkforceHiringOverviewSummary() {
           title="Absenteeism"
           value={formatKpiNumber(Math.round(summary.absenteeism))}
           sideValue={formatKpiPercent(summary.absenteeismPercentage, 2)}
-          icon={CalendarX2}
-          subtitle="Absenteeism %"
+          subtitle="Absenteeism%"
           tone="orange"
         />
 
@@ -262,37 +245,35 @@ export default function ForecastWorkforceHiringOverviewSummary() {
           title="Attrition"
           value={formatKpiNumber(summary.attrition)}
           sideValue={formatKpiPercent(summary.attritionPercentage, 2)}
-          icon={UserRoundX}
-          subtitle="Attrition %"
+          subtitle="Attrition%"
           tone="red"
         />
 
         <KpiCard
           title="Net Actual HC"
           value={formatKpiNumber(Math.round(summary.netActualHc))}
-          icon={Users}
+          subtitle="Floor Availability"
           tone="blue"
         />
 
         <KpiCard
           title="Hiring Needed"
           value={formatKpiNumber(Math.round(summary.hiringNeeded))}
-          icon={UserPlus}
+          subtitle="Total Coverage Gap"
           tone="purple"
         />
 
         <KpiCard
           title="Hiring Rate"
           value={formatKpiPercent(summary.hiringRate, 2)}
-          icon={TrendingUp}
-          subtitle="Leads to JO"
+          subtitle="Leads yield"
           tone="teal"
         />
 
         <KpiCard
           title="Hired Count"
           value={formatKpiNumber(summary.hiredCount)}
-          icon={CheckCircle2}
+          subtitle="Deployed Hires"
           tone="green"
         />
       </div>

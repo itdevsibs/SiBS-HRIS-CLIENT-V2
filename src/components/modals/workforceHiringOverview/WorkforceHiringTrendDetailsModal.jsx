@@ -830,10 +830,10 @@ function TrendCheckboxDropdown({
 function getBufferColor(value) {
   const numberValue = safeNumber(value);
 
-  if (numberValue < 0) return "text-red-600";
-  if (numberValue > 0) return "text-emerald-600";
+  if (numberValue < 0) return "!font-jakarta !text-xs !font-black !text-rose-600";
+  if (numberValue > 0) return "!font-jakarta !text-xs !font-black !text-emerald-600";
 
-  return "text-sibs-primary-1";
+  return "font-black text-[#042C51]";
 }
 
 function getRowValue(row = {}, keys = []) {
@@ -1050,14 +1050,16 @@ function buildDetailedTableTotals(rows = []) {
 function getNegativePositiveColor(value) {
   const numberValue = safeNumber(value);
 
-  if (numberValue < 0) return "text-red-600";
-  if (numberValue > 0) return "text-emerald-600";
+  if (numberValue < 0) return "!font-jakarta !text-xs !font-black !text-rose-600";
+  if (numberValue > 0) return "!font-jakarta !text-xs !font-black !text-emerald-600";
 
-  return "text-sibs-primary-1";
+  return "font-black text-[#042C51]";
 }
 
 function getHiringNeededColor(value) {
-  return safeNumber(value) > 0 ? "text-red-600" : "text-emerald-600";
+  return safeNumber(value) > 0
+    ? "!font-jakarta !text-xs !font-black !text-rose-600"
+    : "text-slate-400";
 }
 
 function getRowNumber(row = {}, keys = [], fallback = 0) {
@@ -1082,6 +1084,32 @@ function getRowText(row = {}, keys = [], fallback = "—") {
   }
 
   return fallback;
+}
+
+function getRowClusterValue(row = {}) {
+  return getRowText(row, [
+    "cluster",
+    "clusterName",
+    "cluster_name",
+    "clusterLabel",
+    "cluster_label",
+    "tenantCluster",
+    "tenant_cluster",
+  ], "");
+}
+
+function getRowAccountValue(row = {}) {
+  return getRowText(row, [
+    "account",
+    "accountName",
+    "account_name",
+    "accountClient",
+    "account_client",
+    "clientAccount",
+    "client_account",
+    "departmentAccount",
+    "department_account",
+  ], "");
 }
 
 function MetricToggle({ active, colorClass, label, onClick }) {
@@ -1182,7 +1210,7 @@ function DraggableXScroll({ children, className = "" }) {
         onMouseMove={moveDragging}
         onClickCapture={handleClickCapture}
         className={[
-          "overflow-x-auto overscroll-x-contain",
+          "overflow-x-auto overscroll-x-contain sibs-scrollbar",
           "select-none [scrollbar-gutter:stable]",
           isDragging ? "cursor-grabbing" : "cursor-grab",
         ].join(" ")}
@@ -1193,28 +1221,52 @@ function DraggableXScroll({ children, className = "" }) {
   );
 }
 
-function DetailTh({ children, className = "", ...props }) {
+function DetailTh({
+  children,
+  rowSpan,
+  colSpan,
+  className = "",
+  group = false,
+  ...props
+}) {
   return (
     <th
       {...props}
-      className={[
-        "border border-slate-200 bg-slate-50 px-3 py-3 text-center align-middle text-[11px] font-extrabold uppercase leading-tight text-sibs-primary-1",
-        className,
-      ].join(" ")}
+      rowSpan={rowSpan}
+      colSpan={colSpan}
+      className={`sibs-data-table-th border border-slate-200 !px-3 text-center align-middle font-jakarta uppercase tracking-wider ${
+        group
+          ? "!bg-[#EBF3FA] !py-2 !text-[10px] !font-black !text-sibs-primary-1"
+          : "!bg-[#F8FAFC] !py-2.5 !text-[10px] !font-extrabold !text-slate-500"
+      } ${className}`}
     >
       {children}
     </th>
   );
 }
 
-function DetailTd({ children, className = "", ...props }) {
+const DETAIL_BOLD_NUMBER_CLASS = "!font-jakarta !text-xs !font-black !text-[#042C51]";
+
+function DetailTd({
+  children,
+  className = "",
+  align = "right",
+  numeric = true,
+  ...props
+}) {
+  const alignmentClass =
+    align === "left"
+      ? "text-left"
+      : align === "center"
+        ? "text-center"
+        : "text-right";
+
   return (
     <td
       {...props}
-      className={[
-        "border border-slate-200 px-3 py-2.5 text-center align-middle text-xs font-semibold text-sibs-primary-1",
-        className,
-      ].join(" ")}
+      className={`whitespace-nowrap border-b border-[#E6ECF2] px-3 py-2.5 align-middle text-xs leading-tight ${
+        numeric ? "font-mono tabular-nums" : "font-jakarta"
+      } ${alignmentClass} ${className}`}
     >
       {children}
     </td>
@@ -1226,17 +1278,25 @@ function SortHeaderButton({ label, active = false, direction = "asc", onClick })
     <button
       type="button"
       onClick={onClick}
+      onMouseDown={(event) => event.stopPropagation()}
       className={[
-        "group inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-extrabold uppercase leading-tight transition",
+        "group inline-flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-none bg-transparent p-0 font-jakarta text-[10px] font-black uppercase leading-tight tracking-wider transition-colors focus:outline-none focus-visible:text-sibs-primary-1",
         active
-          ? "bg-[#EAF2FB] text-sibs-primary-1"
-          : "text-sibs-primary-90 hover:bg-slate-100 hover:text-sibs-primary-1",
+          ? "text-sibs-primary-1"
+          : "text-[#042C51] hover:text-sibs-primary-2",
       ].join(" ")}
     >
       <span>{label}</span>
-      <span className="text-[10px] text-[#FF5C28]">
-        {active ? (direction === "asc" ? "▲" : "▼") : "↕"}
-      </span>
+      {active ? (
+        <span
+          aria-hidden="true"
+          className={`h-0 w-0 border-x-[3px] border-x-transparent ${
+            direction === "asc"
+              ? "border-b-[5px] border-b-[#042C51]"
+              : "border-t-[5px] border-t-[#042C51]"
+          }`}
+        />
+      ) : null}
     </button>
   );
 }
@@ -1314,7 +1374,7 @@ function SixWeekDetailedPerformanceTable({
   const [search, setSearch] = useState("");
   const [selectedCluster, setSelectedCluster] = useState("All Clusters");
   const [selectedRisk, setSelectedRisk] = useState("All Risks");
-  const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({ key: "cluster", direction: "asc" });
 
   const clusterOptions = useMemo(
     () => [
@@ -1494,11 +1554,54 @@ function SixWeekDetailedPerformanceTable({
           </div>
         ) : null}
 
-        <DraggableXScroll className="mt-4 border-[#C9D6E4]">
-          <table className="w-full min-w-[2600px] border-collapse">
+        <DraggableXScroll className="mt-4 border-slate-200 bg-white shadow-sm">
+          <table className="w-full min-w-[2600px] border-collapse text-left">
             <thead>
               <tr>
-                <DetailTh rowSpan={2}>
+                <DetailTh
+                  colSpan={2}
+                  group
+                  className="!border-r-slate-200"
+                >
+                  1. Identification & Scope
+                </DetailTh>
+                <DetailTh
+                  colSpan={5}
+                  group
+                  className="!border-r-slate-200"
+                >
+                  2. Capacity & Buffer Metrics
+                </DetailTh>
+                <DetailTh
+                  colSpan={4}
+                  group
+                  className="!border-r-slate-200"
+                >
+                  3. Current Week Loss
+                </DetailTh>
+                <DetailTh
+                  colSpan={5}
+                  group
+                  className="!border-r-slate-200"
+                >
+                  4. Post-Offer Funnel Counts
+                </DetailTh>
+                <DetailTh
+                  colSpan={10}
+                  group
+                  className="!border-r-slate-200"
+                >
+                  5. Attrition Between Stages
+                </DetailTh>
+                <DetailTh
+                  colSpan={2}
+                  group
+                >
+                  6. Hiring Yield
+                </DetailTh>
+              </tr>
+              <tr>
+                <DetailTh>
                   <SortHeaderButton
                     label="Cluster"
                     active={sortConfig.key === "cluster"}
@@ -1506,7 +1609,7 @@ function SixWeekDetailedPerformanceTable({
                     onClick={() => handleSort("cluster")}
                   />
                 </DetailTh>
-                <DetailTh rowSpan={2}>
+                <DetailTh className="border-r border-slate-200">
                   <SortHeaderButton
                     label="Account"
                     active={sortConfig.key === "account"}
@@ -1514,121 +1617,36 @@ function SixWeekDetailedPerformanceTable({
                     onClick={() => handleSort("account")}
                   />
                 </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Required
-                  <br />
-                  Headcount
-                </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Actual
-                  <br />
-                  Headcount
-                </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Buffer
-                  <br />%
-                </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Absenteeism
-                  <br />
-                  (6 Weeks Avg)
-                </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Absenteeism
-                  <br />%
-                </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Attrition
-                  <br />
-                  (6 Weeks Total)
-                </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Attrition
-                  <br />%
-                </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Net
-                  <br />
-                  Actual HC
-                </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Hiring
-                  <br />
-                  Needed
-                </DetailTh>
-                <DetailTh colSpan={5}>Hiring Funnel Counts</DetailTh>
-                <DetailTh colSpan={10}>Attrition Between Stages</DetailTh>
-                <DetailTh rowSpan={2}>
-                  Hired
-                  <br />
-                  Count
-                </DetailTh>
-                <DetailTh rowSpan={2}>
-                  Hiring Rate
-                  <br />
-                  (Leads to JO)
-                </DetailTh>
-              </tr>
-              <tr>
-                <DetailTh>
-                  Accepted
-                  <br />
-                  JO
-                </DetailTh>
-                <DetailTh>
-                  NHO
-                  <br />
-                  Count
-                </DetailTh>
-                <DetailTh>
-                  FST
-                  <br />
-                  Count
-                </DetailTh>
-                <DetailTh>
-                  PST
-                  <br />
-                  Count
-                </DetailTh>
-                <DetailTh>
-                  Go
-                  <br />
-                  Live
-                </DetailTh>
-                <DetailTh>
-                  JO - NHO
-                  <br />
-                  Count
-                </DetailTh>
+                <DetailTh>Required HC</DetailTh>
+                <DetailTh>Actual HC</DetailTh>
+                <DetailTh>Buffer %</DetailTh>
+                <DetailTh>Net Actual</DetailTh>
+                <DetailTh className="border-r border-slate-200">Hiring Needed</DetailTh>
+                <DetailTh>Absenteeism</DetailTh>
+                <DetailTh>Abs %</DetailTh>
+                <DetailTh>Attrition</DetailTh>
+                <DetailTh className="border-r border-slate-200">Att %</DetailTh>
+                <DetailTh>Accepted JO</DetailTh>
+                <DetailTh>NHO Count</DetailTh>
+                <DetailTh>FST Count</DetailTh>
+                <DetailTh>PST Count</DetailTh>
+                <DetailTh className="border-r border-slate-200">Go Live</DetailTh>
+                <DetailTh>JO - NHO Count</DetailTh>
                 <DetailTh>%</DetailTh>
-                <DetailTh>
-                  NHO - FST
-                  <br />
-                  Count
-                </DetailTh>
+                <DetailTh>NHO - FST Count</DetailTh>
                 <DetailTh>%</DetailTh>
-                <DetailTh>
-                  FST - PST
-                  <br />
-                  Count
-                </DetailTh>
+                <DetailTh>FST - PST Count</DetailTh>
                 <DetailTh>%</DetailTh>
-                <DetailTh>
-                  NHO - PST
-                  <br />
-                  Count
-                </DetailTh>
+                <DetailTh>NHO - PST Count</DetailTh>
                 <DetailTh>%</DetailTh>
-                <DetailTh>
-                  PST - Go Live
-                  <br />
-                  Count
-                </DetailTh>
-                <DetailTh>%</DetailTh>
+                <DetailTh>PST - Go Live Count</DetailTh>
+                <DetailTh className="border-r border-slate-200">%</DetailTh>
+                <DetailTh>Hired Count</DetailTh>
+                <DetailTh>Hiring Rate</DetailTh>
               </tr>
             </thead>
 
-            <tbody>
+            <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
               {hasRows ? (
                 filteredRows.map((row, index) => {
                   const cluster = getRowText(row, [
@@ -1826,36 +1844,52 @@ function SixWeekDetailedPerformanceTable({
                   ]);
 
                   return (
-                    <tr
+                                        <tr
                       key={`${cluster}-${account}-${index}`}
-                      className={index % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
+                      className="cursor-pointer transition-colors hover:bg-slate-50/80"
                     >
-                      <DetailTd>{cluster}</DetailTd>
-                      <DetailTd className="text-left">{account}</DetailTd>
-                      <DetailTd>{formatNumber(requiredHeadcount)}</DetailTd>
+                      <DetailTd className="max-w-[120px] truncate text-left font-jakarta text-xs font-normal text-slate-600">
+                        {cluster}
+                      </DetailTd>
+                      <DetailTd className={`max-w-[140px] truncate border-r border-slate-100 text-left ${DETAIL_BOLD_NUMBER_CLASS}`}>
+                        {account}
+                      </DetailTd>
+                      <DetailTd className={DETAIL_BOLD_NUMBER_CLASS}>
+                        {formatNumber(requiredHeadcount)}
+                      </DetailTd>
                       <DetailTd>{formatNumber(actualHeadcount)}</DetailTd>
                       <DetailTd
                         className={getNegativePositiveColor(bufferPercent)}
                       >
                         {formatPercent(bufferPercent)}
                       </DetailTd>
+                      <DetailTd className={DETAIL_BOLD_NUMBER_CLASS}>
+                        {formatNumber(netActualHeadcount)}
+                      </DetailTd>
+                      <DetailTd className="border-r border-slate-100">
+                        {hiringNeeded > 0 ? (
+                          <span className="inline-block rounded border border-rose-100 bg-rose-50 px-1.5 py-0.5 !font-jakarta !text-xs !font-black !text-rose-600">
+                            {formatNumber(hiringNeeded)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">0</span>
+                        )}
+                      </DetailTd>
                       <DetailTd>{formatNumber(absenteeismCount)}</DetailTd>
-                      <DetailTd className="text-blue-600">
+                      <DetailTd className={DETAIL_BOLD_NUMBER_CLASS}>
                         {formatPercent(absenteeismPercent)}
                       </DetailTd>
                       <DetailTd>{formatNumber(attritionCount)}</DetailTd>
-                      <DetailTd className="text-red-600">
+                      <DetailTd className={`border-r border-slate-100 ${DETAIL_BOLD_NUMBER_CLASS}`}>
                         {formatPercent(attritionPercent)}
                       </DetailTd>
-                      <DetailTd>{formatNumber(netActualHeadcount)}</DetailTd>
-                      <DetailTd className={getHiringNeededColor(hiringNeeded)}>
-                        {formatNumber(hiringNeeded)}
+                      <DetailTd className={DETAIL_BOLD_NUMBER_CLASS}>
+                        {formatNumber(acceptedJo)}
                       </DetailTd>
-                      <DetailTd>{formatNumber(acceptedJo)}</DetailTd>
                       <DetailTd>{formatNumber(nhoCount)}</DetailTd>
                       <DetailTd>{formatNumber(fstCount)}</DetailTd>
                       <DetailTd>{formatNumber(pstCount)}</DetailTd>
-                      <DetailTd className="text-emerald-600">
+                      <DetailTd className="border-r border-slate-100 !font-jakarta !text-xs !font-black !text-emerald-600">
                         {formatNumber(goLive)}
                       </DetailTd>
                       <DetailTd>{formatNumber(joNhoCount)}</DetailTd>
@@ -1867,8 +1901,10 @@ function SixWeekDetailedPerformanceTable({
                       <DetailTd>{formatNumber(nhoPstCount)}</DetailTd>
                       <DetailTd>{formatPercent(nhoPstPercent)}</DetailTd>
                       <DetailTd>{formatNumber(pstGoLiveCount)}</DetailTd>
-                      <DetailTd>{formatPercent(pstGoLivePercent)}</DetailTd>
-                      <DetailTd className="text-emerald-600">
+                      <DetailTd className="border-r border-slate-100">
+                        {formatPercent(pstGoLivePercent)}
+                      </DetailTd>
+                      <DetailTd className="!font-jakarta !text-xs !font-black !text-emerald-600">
                         {formatNumber(hiredCount)}
                       </DetailTd>
                       <DetailTd>{formatPercent(hiringRate)}</DetailTd>
@@ -1888,16 +1924,15 @@ function SixWeekDetailedPerformanceTable({
 
             {hasRows ? (
               <tfoot>
-                <tr className="bg-slate-100 font-extrabold">
-                  <DetailTd className="text-left">
-                    TOTAL /
-                    <br />
-                    AVERAGE
+                <tr className="border-t-2 border-slate-300 bg-[#EBF3FA] font-black text-[#042C51]">
+                  <DetailTd
+                    colSpan={2}
+                    className="border-r border-slate-300 text-left font-sans text-xs font-black uppercase tracking-wider text-[#042C51]"
+                  >
+                    TOTAL / AVERAGE
                   </DetailTd>
 
-                  <DetailTd />
-
-                  <DetailTd>
+                  <DetailTd className={DETAIL_BOLD_NUMBER_CLASS}>
                     {formatNumber(detailTotals.requiredHeadcount)}
                   </DetailTd>
                   <DetailTd>
@@ -1912,34 +1947,36 @@ function SixWeekDetailedPerformanceTable({
                     {formatPercent(detailTotals.bufferPercent)}
                   </DetailTd>
 
+                  <DetailTd className={DETAIL_BOLD_NUMBER_CLASS}>
+                    {formatNumber(detailTotals.netActualHeadcount)}
+                  </DetailTd>
+
+                  <DetailTd
+                    className={`border-r border-slate-300 ${getHiringNeededColor(detailTotals.hiringNeeded)}`}
+                  >
+                    {formatNumber(detailTotals.hiringNeeded)}
+                  </DetailTd>
+
                   <DetailTd>{formatNumber(detailTotals.absenteeism)}</DetailTd>
 
-                  <DetailTd className="text-blue-600">
+                  <DetailTd className={DETAIL_BOLD_NUMBER_CLASS}>
                     {formatPercent(detailTotals.absenteeismPercent)}
                   </DetailTd>
 
                   <DetailTd>{formatNumber(detailTotals.attrition)}</DetailTd>
 
-                  <DetailTd className="text-red-600">
+                  <DetailTd className={`border-r border-slate-300 ${DETAIL_BOLD_NUMBER_CLASS}`}>
                     {formatPercent(detailTotals.attritionPercent)}
                   </DetailTd>
 
-                  <DetailTd>
-                    {formatNumber(detailTotals.netActualHeadcount)}
+                  <DetailTd className={DETAIL_BOLD_NUMBER_CLASS}>
+                    {formatNumber(detailTotals.acceptedJo)}
                   </DetailTd>
-
-                  <DetailTd
-                    className={getHiringNeededColor(detailTotals.hiringNeeded)}
-                  >
-                    {formatNumber(detailTotals.hiringNeeded)}
-                  </DetailTd>
-
-                  <DetailTd>{formatNumber(detailTotals.acceptedJo)}</DetailTd>
                   <DetailTd>{formatNumber(detailTotals.nhoCount)}</DetailTd>
                   <DetailTd>{formatNumber(detailTotals.fstCount)}</DetailTd>
                   <DetailTd>{formatNumber(detailTotals.pstCount)}</DetailTd>
 
-                  <DetailTd className="text-emerald-600">
+                  <DetailTd className="border-r border-slate-300 !font-jakarta !text-xs !font-black !text-emerald-600">
                     {formatNumber(detailTotals.goLive)}
                   </DetailTd>
 
@@ -1956,11 +1993,11 @@ function SixWeekDetailedPerformanceTable({
                   <DetailTd>{formatPercent(detailTotals.nhoPstPercent)}</DetailTd>
 
                   <DetailTd>{formatNumber(detailTotals.pstGoLiveCount)}</DetailTd>
-                  <DetailTd>
+                  <DetailTd className="border-r border-slate-300">
                     {formatPercent(detailTotals.pstGoLivePercent)}
                   </DetailTd>
 
-                  <DetailTd className="text-emerald-600">
+                  <DetailTd className="!font-jakarta !text-xs !font-black !text-emerald-600">
                     {formatNumber(detailTotals.hiredCount)}
                   </DetailTd>
 
@@ -2557,7 +2594,7 @@ export default function WorkforceHiringTrendDetailsModal({
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-blue-900/70">
                         Absenteeism Average
                       </span>
-                      <strong className="mt-1 block text-xl font-black tabular-nums text-blue-700">
+                      <strong className="mt-1 block font-jakarta text-xl font-black tabular-nums text-blue-700">
                         {formatPercent(displaySummary.absenteeismPercentage)}
                       </strong>
                       <p className="mt-1 text-[10px] font-semibold text-blue-700/70">
@@ -2569,7 +2606,7 @@ export default function WorkforceHiringTrendDetailsModal({
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-orange-900/70">
                         Attrition Average
                       </span>
-                      <strong className="mt-1 block text-xl font-black tabular-nums text-orange-700">
+                      <strong className="mt-1 block font-jakarta text-xl font-black tabular-nums text-orange-700">
                         {formatPercent(displaySummary.attritionPercentage)}
                       </strong>
                       <p className="mt-1 text-[10px] font-semibold text-orange-700/70">
@@ -2592,7 +2629,7 @@ export default function WorkforceHiringTrendDetailsModal({
                         Buffer Average
                       </span>
                       <strong
-                        className={`mt-1 block text-xl font-black tabular-nums ${safeNumber(displaySummary.bufferPercentage) < 0
+                        className={`mt-1 block font-jakarta text-xl font-black tabular-nums ${safeNumber(displaySummary.bufferPercentage) < 0
                           ? "text-rose-700"
                           : "text-emerald-700"
                           }`}
@@ -2640,3 +2677,4 @@ export default function WorkforceHiringTrendDetailsModal({
     document.body,
   );
 }
+

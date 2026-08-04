@@ -1,27 +1,10 @@
 function getMetricTone(tone) {
-  if (tone === "orange") {
-    return {
-      label: "text-[#C2410C]",
-      value: "text-[#FF5C28]",
-      iconWrap: "bg-[#FFF3ED]",
-      icon: "text-[#FF5C28]",
-    };
-  }
-
-  if (tone === "emerald") {
-    return {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      iconWrap: "bg-[#ECFDF3]",
-      icon: "text-[#059669]",
-    };
-  }
-
+  const safeTone = tone === "emerald" ? "green" : tone || "navy";
   return {
-    label: "text-[#042C51]",
-    value: "text-[#042C51]",
-    iconWrap: "bg-[#EAF2FB]",
-    icon: "text-[#042C51]",
+    label: `sibs-tone-${safeTone}-label`,
+    value: `sibs-tone-${safeTone}-label`,
+    iconWrap: `sibs-tone-${safeTone}-icon`,
+    icon: "",
   };
 }
 

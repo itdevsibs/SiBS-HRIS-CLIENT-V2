@@ -317,7 +317,18 @@ function JobDescriptionMobileCard({ item, onView, onRevise }) {
   const version = getVersion(item) || "--";
 
   return (
-    <article className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:border-[#FF5C28]/35 hover:shadow-md">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={() => onView(item)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onView(item);
+        }
+      }}
+      className="cursor-pointer rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:border-[#FF5C28]/35 hover:bg-[#FFFDFC] hover:shadow-md"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-start gap-2">
@@ -378,7 +389,10 @@ function JobDescriptionMobileCard({ item, onView, onRevise }) {
       <div className="mt-4 flex justify-end gap-2 border-t border-[#EEF2F6] pt-3">
         <button
           type="button"
-          onClick={() => onView(item)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onView(item);
+          }}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#F2F6FA] px-3 text-xs font-extrabold text-[#042C51] transition hover:bg-[#042C51] hover:text-white"
         >
           <Eye size={14} />
@@ -386,7 +400,10 @@ function JobDescriptionMobileCard({ item, onView, onRevise }) {
         </button>
         <button
           type="button"
-          onClick={() => onRevise(item)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRevise(item);
+          }}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-amber-50 px-3 text-xs font-extrabold text-amber-700 transition hover:bg-amber-600 hover:text-white"
         >
           <Edit3 size={14} />
@@ -630,15 +647,18 @@ export default function JobDescriptionTable({
                   }`}
                 >
                   {tab.label}
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums ${
-                      active
-                        ? "bg-[#042C51] text-white"
-                        : "bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    {statusCounts[tab.key] || 0}
-                  </span>
+                  {tab.key === "approval" ? (
+                    <span
+                      className={[
+                        "rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums",
+                        active
+                          ? "bg-red-600 text-white"
+                          : "bg-red-100 text-red-700",
+                      ].join(" ")}
+                    >
+                      {statusCounts.approval || 0}
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
@@ -702,7 +722,8 @@ export default function JobDescriptionTable({
                     return (
                       <tr
                         key={getRecordId(item) || `${roleTitle}-${documentTitle}`}
-                        className="sibs-data-table-row"
+                        onClick={() => handleOpenFullPageView(item)}
+                        className="sibs-data-table-row cursor-pointer hover:bg-[#FFFDFC]"
                       >
                         <td className="px-4 py-3.5">
                           <div className="flex items-start gap-2">
@@ -748,7 +769,10 @@ export default function JobDescriptionTable({
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               type="button"
-                              onClick={() => handleOpenFullPageView(item)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleOpenFullPageView(item);
+                              }}
                               className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#F2F6FA] px-2.5 text-[10px] font-extrabold text-[#042C51] transition hover:bg-[#042C51] hover:text-white"
                             >
                               <Eye size={13} />
@@ -756,7 +780,10 @@ export default function JobDescriptionTable({
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleOpenRevision(item)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleOpenRevision(item);
+                              }}
                               className="inline-flex h-8 items-center gap-1 rounded-lg bg-amber-50 px-2.5 text-[10px] font-extrabold text-amber-700 transition hover:bg-amber-600 hover:text-white"
                             >
                               <Edit3 size={13} />

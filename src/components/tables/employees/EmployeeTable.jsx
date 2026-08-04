@@ -23,7 +23,7 @@ const columns = [
   "SIBS ID",
   "EMPLOYEE NAME",
   "ACCOUNT / SITE",
-  "DEPARTMENT / POSITION",
+  "DEPARTMENT",
   "CONTACT & EMAIL",
   "HR METADATA",
 ];
@@ -257,17 +257,21 @@ function getAccount(employee = {}) {
 }
 
 function getPosition(employee = {}) {
-  return (
-    getCleanValue(
-      employee.position,
-      employee.positionTitle,
-      employee.position_title,
-      employee.jobTitle,
-      employee.job_title,
-      employee.role,
-      employee.gy_pos_name,
-    ) || "No position"
+  const value = getCleanValue(
+    employee.position,
+    employee.positionTitle,
+    employee.position_title,
+    employee.jobTitle,
+    employee.job_title,
+    employee.role,
+    employee.gy_pos_name,
   );
+
+  if (!value || /^no\s*position$/i.test(value) || /^n\/?a$/i.test(value)) {
+    return "";
+  }
+
+  return value;
 }
 
 function getAssignedSite(employee = {}) {
@@ -450,12 +454,20 @@ function MobileEmployeeCard({ employee, onOpen }) {
 
         <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-            Department / Position
+            Department
           </p>
-          <p className="mt-1 break-words text-xs font-extrabold text-[#042C51]">
-            {getPosition(employee)}
-          </p>
-          <DetailLine icon={Building2}>{getDepartment(employee)}</DetailLine>
+          {getPosition(employee) ? (
+            <>
+              <p className="mt-1 break-words text-xs font-extrabold text-[#042C51]">
+                {getPosition(employee)}
+              </p>
+              <DetailLine icon={Building2}>{getDepartment(employee)}</DetailLine>
+            </>
+          ) : (
+            <p className="mt-1 break-words text-xs font-extrabold text-[#042C51]">
+              {getDepartment(employee)}
+            </p>
+          )}
         </div>
 
         <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
@@ -947,12 +959,20 @@ export default function EmployeeTable({
 
                         <td className="px-4 py-4 align-middle">
                           <div className="min-w-[210px]">
-                            <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
-                              {getPosition(employee)}
-                            </p>
-                            <div className="mt-1">
-                              <DetailLine icon={Briefcase}>{getDepartment(employee)}</DetailLine>
-                            </div>
+                            {getPosition(employee) ? (
+                              <>
+                                <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                                  {getPosition(employee)}
+                                </p>
+                                <div className="mt-1">
+                                  <DetailLine icon={Briefcase}>{getDepartment(employee)}</DetailLine>
+                                </div>
+                              </>
+                            ) : (
+                              <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                                {getDepartment(employee)}
+                              </p>
+                            )}
                           </div>
                         </td>
 

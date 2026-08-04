@@ -8,39 +8,38 @@ import {
   FileText,
   Target,
 } from "lucide-react";
-import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
+import { useActionItems } from "@/services/context/ActionItemsContext.jsx";
 
 function SummaryCard({
   title,
   value,
   icon: Icon,
   description,
-  valueClassName = "text-sibs-primary-1",
-  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  tone = "navy",
   delay = 0,
 }) {
   return (
     <div
-      className="sibs-page-card-in group rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      className="sibs-metric-card"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className={`truncate text-[10px] font-extrabold uppercase tracking-normal sibs-tone-${tone}-label`}>
             {title}
           </p>
-          <p className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}>
+          <p className={`mt-2.5 truncate text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}>
             {value}
           </p>
-          <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+          <p className="mt-1.5 truncate text-xs font-semibold text-[#667085]">
             {description}
           </p>
         </div>
 
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105 ${iconClassName}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}
         >
-          <Icon size={22} />
+          <Icon size={17} strokeWidth={2} />
         </div>
       </div>
     </div>
@@ -63,14 +62,14 @@ export default function ActionItemsStats() {
           value={stats.total}
           icon={FileText}
           description="Manual + suggested"
+          tone="navy"
         />
         <SummaryCard
           title="Active"
           value={stats.active}
           icon={Activity}
           description="Needs movement"
-          valueClassName="text-blue-600"
-          iconClassName="bg-blue-50 text-blue-600"
+          tone="indigo"
           delay={60}
         />
         <SummaryCard
@@ -78,8 +77,7 @@ export default function ActionItemsStats() {
           value={stats.planned}
           icon={Clock3}
           description="Not started"
-          valueClassName="text-amber-500"
-          iconClassName="bg-amber-50 text-amber-600"
+          tone="amber"
           delay={120}
         />
         <SummaryCard
@@ -87,8 +85,7 @@ export default function ActionItemsStats() {
           value={stats.completed}
           icon={CheckCircle2}
           description={`${stats.completionRate}% complete`}
-          valueClassName="text-emerald-600"
-          iconClassName="bg-emerald-50 text-emerald-600"
+          tone="green"
           delay={180}
         />
         <SummaryCard
@@ -96,8 +93,7 @@ export default function ActionItemsStats() {
           value={stats.highRisk}
           icon={AlertTriangle}
           description="Priority"
-          valueClassName="text-red-600"
-          iconClassName="bg-red-50 text-red-600"
+          tone="red"
           delay={240}
         />
         <SummaryCard
@@ -105,8 +101,7 @@ export default function ActionItemsStats() {
           value={stats.overdue}
           icon={CircleAlert}
           description="Needs review"
-          valueClassName="text-red-600"
-          iconClassName="bg-red-50 text-red-600"
+          tone="red"
           delay={300}
         />
         <SummaryCard
@@ -114,6 +109,7 @@ export default function ActionItemsStats() {
           value={moduleRiskTotal}
           icon={Target}
           description="Recruitment data"
+          tone="navy"
           delay={360}
         />
       </div>
