@@ -442,7 +442,57 @@ function buildMonthCells(viewDate) {
   });
 }
 
-function createBlankEvent(baseDate) {
+function firstCalendarValue(...values) {
+  return values.find((value) => String(value ?? "").trim()) || "";
+}
+
+function formatCalendarUserName(user) {
+  const lastName = String(
+    firstCalendarValue(user?.lastName, user?.last_name, user?.gy_emp_lname),
+  ).trim();
+  const firstName = String(
+    firstCalendarValue(user?.firstName, user?.first_name, user?.gy_emp_fname),
+  ).trim();
+  const middleName = String(
+    firstCalendarValue(user?.middleName, user?.middle_name, user?.gy_emp_mname),
+  ).trim();
+
+  if (lastName || firstName || middleName) {
+    return `${firstName} ${middleName} ${lastName}`
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  return String(
+    firstCalendarValue(
+      user?.fullName,
+      user?.full_name,
+      user?.gy_emp_fullname,
+      user?.name,
+      user?.displayName,
+    ),
+  ).trim();
+}
+
+function formatGoogleEmailDisplayName(email) {
+  const localPart = String(email || "").split("@")[0]?.trim();
+
+  if (!localPart) return "";
+
+  const nameParts = localPart
+    .replace(/[._-]+/g, " ")
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter((part) => part && !/^\d+$/.test(part));
+
+  if (!nameParts.length) return "";
+
+  return nameParts
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
+function createBlankEvent(baseDate, organizer = "") {
   return {
     id: "",
     title: "",
@@ -452,7 +502,7 @@ function createBlankEvent(baseDate) {
     startTime: "09:00 AM",
     endTime: "10:00 AM",
     account: "",
-    organizer: "",
+    organizer,
     location: "",
     notes: "",
     color: "peacock",
@@ -471,14 +521,21 @@ function createBlankEvent(baseDate) {
   };
 }
 
-function EventEditorModal({ event, onClose, onDelete, onSave }) {
+function EventEditorModal({
+  event,
+  organizerLabel = "",
+  onClose,
+  onDelete,
+  onSave,
+}) {
   const initialForm = useMemo(
     () => ({
-      ...createBlankEvent(formatDateKey(new Date())),
+      ...createBlankEvent(formatDateKey(new Date()), organizerLabel),
       ...event,
+      organizer: event?.organizer || organizerLabel,
       scheduleType: event?.scheduleType || "Event",
     }),
-    [event],
+    [event, organizerLabel],
   );
   const [form, setForm] = useState(initialForm);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -779,7 +836,7 @@ function EventEditorModal({ event, onClose, onDelete, onSave }) {
                   <div className="flex min-w-0 flex-wrap items-center gap-3">
                     <div className="min-w-[210px] flex-1">
                       <div className="flex items-center gap-1 text-sm font-black text-[#06325E]">
-                        {form.organizer || "Crister Canitan"}
+                        {form.organizer || organizerLabel || "Google Calendar"}
                         <span className="h-2 w-2 rounded-full bg-[#FF5C28]" />
                       </div>
                       <p className="text-[11px] font-semibold text-[#667085]">
@@ -1813,13 +1870,18 @@ function waitForGoogleCalendarSync(milliseconds) {
   });
 }
 
-export default function HeaderCalendarModal({ open, onClose }) {
+export default function HeaderCalendarModal({ open, user, onClose }) {
   const [viewDate, setViewDate] = useState(() => new Date());
   const [events, setEvents] = useState([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [calendarError, setCalendarError] = useState("");
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [googleCalendarEmail, setGoogleCalendarEmail] = useState("");
+  const [googleCalendarProfile, setGoogleCalendarProfile] = useState({
+    name: "",
+    givenName: "",
+    familyName: "",
+  });
   const [viewMode, setViewMode] = useState("Month");
   const [editingEvent, setEditingEvent] = useState(null);
   const [disconnectConfirmOpen, setDisconnectConfirmOpen] = useState(false);
@@ -1840,6 +1902,26 @@ export default function HeaderCalendarModal({ open, onClose }) {
     onClose,
     onCleanup: handlePortalCleanup,
   });
+
+  const organizerLabel = useMemo(() => {
+    const googleProfileName = firstCalendarValue(
+      googleCalendarProfile.name,
+      `${googleCalendarProfile.givenName || ""} ${
+        googleCalendarProfile.familyName || ""
+      }`,
+    );
+
+    return (
+      firstCalendarValue(
+        googleProfileName,
+        formatGoogleEmailDisplayName(googleCalendarEmail),
+        formatCalendarUserName(user),
+        googleCalendarEmail,
+        user?.email,
+        user?.gy_user_email,
+      ) || "Google Calendar"
+    );
+  }, [googleCalendarEmail, googleCalendarProfile, user]);
 
   const clearCalendarLoadingTimeout = useCallback(() => {
     if (calendarLoadingTimeoutRef.current) {
@@ -1907,14 +1989,23 @@ export default function HeaderCalendarModal({ open, onClose }) {
         lastLoadedRangeRef.current = "";
         setCalendarConnected(false);
         setGoogleCalendarEmail("");
+        setGoogleCalendarProfile({ name: "", givenName: "", familyName: "" });
         return {
           connected: false,
           googleEmail: "",
+          googleName: "",
+          googleGivenName: "",
+          googleFamilyName: "",
         };
       }
 
       const connected = Boolean(payload?.connected);
       const googleEmail = payload?.googleEmail || "";
+      const googleProfile = {
+        name: payload?.googleName || "",
+        givenName: payload?.googleGivenName || "",
+        familyName: payload?.googleFamilyName || "",
+      };
 
       calendarConnectedRef.current = connected;
 
@@ -1924,16 +2015,21 @@ export default function HeaderCalendarModal({ open, onClose }) {
 
       setCalendarConnected(connected);
       setGoogleCalendarEmail(googleEmail);
+      setGoogleCalendarProfile(googleProfile);
 
       return {
         connected,
         googleEmail,
+        googleName: googleProfile.name,
+        googleGivenName: googleProfile.givenName,
+        googleFamilyName: googleProfile.familyName,
       };
     } catch {
       calendarConnectedRef.current = false;
       lastLoadedRangeRef.current = "";
       setCalendarConnected(false);
       setGoogleCalendarEmail("");
+      setGoogleCalendarProfile({ name: "", givenName: "", familyName: "" });
 
       return {
         connected: false,
@@ -2010,6 +2106,11 @@ export default function HeaderCalendarModal({ open, onClose }) {
       calendarConnectedRef.current = true;
       setCalendarConnected(true);
       setGoogleCalendarEmail(statusResult.googleEmail || "");
+      setGoogleCalendarProfile({
+        name: statusResult.googleName || "",
+        givenName: statusResult.googleGivenName || "",
+        familyName: statusResult.googleFamilyName || "",
+      });
       setEvents(googleEvents.map(normalizeGoogleCalendarEvent));
     } catch (error) {
       if (calendarLoadRequestRef.current !== requestId) return;
@@ -2038,6 +2139,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
         stopCalendarLoading();
         setCalendarConnected(false);
         setGoogleCalendarEmail("");
+        setGoogleCalendarProfile({ name: "", givenName: "", familyName: "" });
         setCalendarError("Google Calendar connection failed.");
       }
     }
@@ -2297,6 +2399,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
       lastLoadedRangeRef.current = "";
       setCalendarConnected(false);
       setGoogleCalendarEmail("");
+      setGoogleCalendarProfile({ name: "", givenName: "", familyName: "" });
       setEvents([]);
       setEditingEvent(null);
       setDisconnectConfirmOpen(false);
@@ -2406,7 +2509,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                setEditingEvent(createBlankEvent(todayKey));
+                setEditingEvent(createBlankEvent(todayKey, organizerLabel));
               }}
               disabled={!calendarConnected}
               className="hidden h-9 items-center gap-2 rounded-[10px] bg-[#FF5C28] px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-[#E84F1F] disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
@@ -2527,7 +2630,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
                 eventsByDate={eventsByDate}
                 todayKey={todayKey}
                 onCreateEvent={(dateKey) =>
-                  setEditingEvent(createBlankEvent(dateKey))
+                  setEditingEvent(createBlankEvent(dateKey, organizerLabel))
                 }
                 onEditEvent={setEditingEvent}
               />
@@ -2540,7 +2643,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
                 eventsByDate={eventsByDate}
                 todayKey={todayKey}
                 onCreateEvent={(dateKey) =>
-                  setEditingEvent(createBlankEvent(dateKey))
+                  setEditingEvent(createBlankEvent(dateKey, organizerLabel))
                 }
                 onEditEvent={setEditingEvent}
               />
@@ -2575,6 +2678,7 @@ export default function HeaderCalendarModal({ open, onClose }) {
           <EventEditorModal
             key={`${editingEvent.id || "new"}-${editingEvent.date || ""}`}
             event={editingEvent}
+            organizerLabel={organizerLabel}
             onClose={() => setEditingEvent(null)}
             onDelete={handleDeleteEvent}
             onSave={handleSaveEvent}
