@@ -1164,6 +1164,7 @@ export default function Header() {
 
       <HeaderCalendarModal
         open={calendarOpen}
+        user={user}
         onClose={() => setCalendarOpen(false)}
       />
     </header>
