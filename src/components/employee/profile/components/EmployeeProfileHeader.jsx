@@ -1,5 +1,6 @@
 import {
   Briefcase,
+  CalendarCheck,
   CalendarDays,
   CheckCircle2,
   Edit3,
@@ -14,6 +15,7 @@ import {
   formatDisplayDate,
   getFullName,
   getProfileSibsId,
+  getRegularizationDate,
 } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 import EmployeeProfileAvatar from "./EmployeeProfileAvatar.jsx";
 
@@ -82,6 +84,7 @@ export default function EmployeeProfileHeader({
     employee?.site,
     employee?.gy_assignedloc,
   );
+  const regularizationDate = getRegularizationDate(employee);
 
   return (
     <section className="sibs-page-header-in sibs-card relative overflow-visible p-4">
@@ -129,6 +132,11 @@ export default function EmployeeProfileHeader({
               </HeaderFact>
               <HeaderFact icon={MapPin}>{location}</HeaderFact>
               <HeaderFact icon={RefreshCw}>{employee?.workSetup}</HeaderFact>
+              <HeaderFact icon={CalendarCheck}>
+                {regularizationDate
+                  ? `Regularization: ${formatDisplayDate(regularizationDate)}`
+                  : ""}
+              </HeaderFact>
             </div>
           </div>
         </div>
