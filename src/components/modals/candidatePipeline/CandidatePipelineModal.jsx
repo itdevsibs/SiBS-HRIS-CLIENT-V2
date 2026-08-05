@@ -72,6 +72,7 @@ import { useNavigate } from "react-router-dom";
 import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
+import RevisedOfferModal from "./RevisedOfferModal";
 import api from "../../../lib/axios/api-template";
 import {
   findMatchingFinalInterviewForm,
@@ -4438,6 +4439,8 @@ const CandidatePipelineModal = ({
     roleName: "",
   });
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [showRevisedOfferModal, setShowRevisedOfferModal] = useState(false);
+  const [isSubmittingRevisedOffer, setIsSubmittingRevisedOffer] = useState(false);
   const [showNhoScheduleModal, setShowNhoScheduleModal] = useState(false);
   const [nhoScheduleDate, setNhoScheduleDate] = useState(() =>
     toDateInputValue(getFirstSelectableNhoFriday()),
@@ -4556,6 +4559,8 @@ const CandidatePipelineModal = ({
     setHasSelectedPrfStatusThisSession(false);
     setIsResendingAssessmentEmail(false);
     setShowAssessmentModal(false);
+    setShowRevisedOfferModal(false);
+    setIsSubmittingRevisedOffer(false);
     setShowNhoScheduleModal(false);
     setIsSchedulingNho(false);
     setNhoScheduleDate(
@@ -4788,6 +4793,57 @@ const CandidatePipelineModal = ({
   const isInterviewScheduled = currentStage === "Interview Scheduled";
   const isInterviewed = currentStage === "Interviewed";
   const isOffered = currentStage === "Offered";
+
+  const normalizedOfferDecision = cleanText(
+    activeCandidate.latestOfferVersion?.candidateResponse ||
+      activeCandidate.latestOfferVersion?.candidate_response ||
+      activeCandidate.offerDecision ||
+      activeCandidate.offer_decision ||
+      activeCandidate.candidateResponse ||
+      activeCandidate.candidate_response,
+  ).toLowerCase();
+
+  const normalizedOfferRevisionStatus = cleanText(
+    activeCandidate.latestOfferVersion?.approvalStatus ||
+      activeCandidate.latestOfferVersion?.approval_status ||
+      activeCandidate.offerRevisionStatus ||
+      activeCandidate.offer_revision_status ||
+      activeCandidate.offerStatus ||
+      activeCandidate.offer_status,
+  ).toLowerCase();
+
+  const isOfferNegotiationRequested =
+    normalizedOfferDecision === "negotiate" ||
+    normalizedOfferDecision === "negotiation requested";
+
+  const isRevisedOfferPendingApproval = [
+    "pending",
+    "for review",
+    "for_review",
+    "revised_offer_pending_approval",
+  ].includes(normalizedOfferRevisionStatus);
+
+  const hasFinalOfferDecision = [
+    "accepted",
+    "rejected",
+  ].includes(normalizedOfferDecision);
+
+  const currentOfferBasicDailyRate = Number(
+    activeCandidate.latestApprovedOfferVersion?.basicDailyRate ??
+      activeCandidate.latestApprovedOfferVersion?.basic_daily_rate ??
+      activeCandidate.offerDetails?.basicPay ??
+      activeCandidate.offerDetails?.basic_daily_rate ??
+      0,
+  );
+
+  const currentOfferDailyDeMinimis = Number(
+    activeCandidate.latestApprovedOfferVersion?.dailyDeMinimis ??
+      activeCandidate.latestApprovedOfferVersion?.daily_de_minimis ??
+      activeCandidate.offerDetails?.deminimisDailyRate ??
+      activeCandidate.offerDetails?.daily_de_minimis ??
+      0,
+  );
+
   const isAccepted =
     currentStage === "Accepted" ||
     currentStage === "Accepted (For NHO)";
@@ -5582,6 +5638,104 @@ const CandidatePipelineModal = ({
     onOpenScheduleModal?.(activeCandidate);
   }
 
+  async function handleSubmitRevisedOffer(revisedOffer) {
+    const candidateId = cleanText(candidateNhoUploadId);
+
+    if (!candidateId) {
+      showStatusModal({
+        type: "error",
+        title: "Unable to Create Revised Offer",
+        message: "Candidate Pipeline ID is missing.",
+      });
+      return;
+    }
+
+    if (isSubmittingRevisedOffer) return;
+
+    setIsSubmittingRevisedOffer(true);
+
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateId,
+        )}/offer-revisions`,
+        {
+          basicDailyRate: revisedOffer.basicDailyRate,
+          basic_daily_rate: revisedOffer.basicDailyRate,
+          dailyDeMinimis: revisedOffer.dailyDeMinimis,
+          daily_de_minimis: revisedOffer.dailyDeMinimis,
+          remarks: revisedOffer.remarks || "",
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload = unwrapCandidatePipelineResponse(response);
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            "Failed to submit the revised offer for approval.",
+        );
+      }
+
+      const apiCandidate = getCandidateFromApiPayload(payload) || {};
+      const offerVersion =
+        payload?.offerVersion ||
+        payload?.offer_version ||
+        payload?.data?.offerVersion ||
+        payload?.data?.offer_version ||
+        {};
+
+      syncCandidateAfterAction(
+        {
+          ...apiCandidate,
+          offerDecision: "Negotiate",
+          offer_decision: "Negotiate",
+          offerRevisionStatus: "revised_offer_pending_approval",
+          offer_revision_status: "revised_offer_pending_approval",
+          latestOfferVersion: {
+            ...(activeCandidate.latestOfferVersion || {}),
+            ...offerVersion,
+            approvalStatus:
+              offerVersion.approvalStatus ||
+              offerVersion.approval_status ||
+              "pending",
+            approval_status:
+              offerVersion.approval_status ||
+              offerVersion.approvalStatus ||
+              "pending",
+            candidateResponse: "pending",
+            candidate_response: "pending",
+          },
+        },
+        { payload },
+      );
+
+      setShowRevisedOfferModal(false);
+
+      showStatusModal({
+        type: "success",
+        title: "Revised Offer Submitted",
+        message:
+          payload?.message ||
+          "The revised offer was submitted for approval and the approver notification was sent.",
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Revised Offer Submission Failed",
+        message: getApiErrorMessage(
+          error,
+          "Failed to submit the revised offer for approval.",
+        ),
+      });
+    } finally {
+      setIsSubmittingRevisedOffer(false);
+    }
+  }
+
   function handleGoToOffer() {
     const params =
       buildOffersPageCandidateParams(activeCandidate);
@@ -5621,6 +5775,7 @@ const CandidatePipelineModal = ({
      * on the Offers page.
      */
     setShowAssessmentModal(false);
+    setShowRevisedOfferModal(false);
     setShowAssessmentEmailModal(false);
     setShowTalentPoolDetails(false);
     setSelectedNhoFile(null);
@@ -8026,30 +8181,103 @@ const CandidatePipelineModal = ({
                                   <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
                                     Candidate Offer Response
                                   </p>
-                                  <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                                    Use these buttons only when the candidate
-                                    cannot access the email link or TA needs to
-                                    record the response manually.
-                                  </p>
-                                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                                    {offerDecisionOptions.map((decision) => (
+
+                                  {isRevisedOfferPendingApproval ? (
+                                    <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
+                                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div className="min-w-0">
+                                          <p className="text-sm font-extrabold text-sibs-primary-1">
+                                            Revised Offer Pending Approval
+                                          </p>
+                                          <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                                            The new compensation has already been submitted and is waiting for approval.
+                                          </p>
+                                        </div>
+
+                                        <span className="w-fit shrink-0 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-extrabold text-blue-700">
+                                          For Review
+                                        </span>
+                                      </div>
+
                                       <button
-                                        key={decision}
+                                        type="button"
+                                        disabled
+                                        className="mt-3 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-xl border border-blue-100 bg-white px-4 text-sm font-extrabold text-blue-400 opacity-80"
+                                      >
+                                        Waiting for Approval
+                                      </button>
+                                    </div>
+                                  ) : isOfferNegotiationRequested ? (
+                                    <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 p-4">
+                                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div className="min-w-0">
+                                          <p className="text-sm font-extrabold text-amber-800">
+                                            Negotiation Requested
+                                          </p>
+                                          <p className="mt-1 text-xs font-semibold leading-5 text-amber-700">
+                                            The candidate requested changes to the approved offer. Create a revised offer with the new Basic Daily Rate and Daily De Minimis.
+                                          </p>
+                                        </div>
+
+                                        <span className="w-fit shrink-0 rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-extrabold text-amber-700">
+                                          Negotiate
+                                        </span>
+                                      </div>
+
+                                      <button
                                         type="button"
                                         onClick={() =>
-                                          onOfferDecision?.(
-                                            activeCandidate,
-                                            decision,
-                                          )
+                                          setShowRevisedOfferModal(true)
                                         }
-                                        className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-bold transition ${getOfferDecisionClass(
-                                          decision,
+                                        className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+                                      >
+                                        <ArrowRight size={16} />
+                                        Create Revised Offer
+                                      </button>
+                                    </div>
+                                  ) : hasFinalOfferDecision ? (
+                                    <div className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                                      <p className="text-sm font-extrabold text-[#101828]">
+                                        Candidate response recorded
+                                      </p>
+                                      <span
+                                        className={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getOfferDecisionClass(
+                                          activeCandidate.offerDecision ||
+                                            activeCandidate.offer_decision,
                                         )}`}
                                       >
-                                        {decision}
-                                      </button>
-                                    ))}
-                                  </div>
+                                        {activeCandidate.offerDecision ||
+                                          activeCandidate.offer_decision}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                                        Use these buttons only when the candidate
+                                        cannot access the email link or TA needs to
+                                        record the response manually.
+                                      </p>
+                                      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                        {offerDecisionOptions.map((decision) => (
+                                          <button
+                                            key={decision}
+                                            type="button"
+                                            onClick={() =>
+                                              onOfferDecision?.(
+                                                activeCandidate,
+                                                decision,
+                                              )
+                                            }
+                                            className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-bold transition ${getOfferDecisionClass(
+                                              decision,
+                                            )}`}
+                                          >
+                                            {decision}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -8278,6 +8506,20 @@ const CandidatePipelineModal = ({
           </div>
         </div>
       </div>
+
+      <RevisedOfferModal
+        open={showRevisedOfferModal}
+        candidate={activeCandidate}
+        currentBasicDailyRate={currentOfferBasicDailyRate}
+        currentDailyDeMinimis={currentOfferDailyDeMinimis}
+        isSubmitting={isSubmittingRevisedOffer}
+        onClose={() => {
+          if (!isSubmittingRevisedOffer) {
+            setShowRevisedOfferModal(false);
+          }
+        }}
+        onSubmit={handleSubmitRevisedOffer}
+      />
 
       <NhoScheduleModal
         open={showNhoScheduleModal}
