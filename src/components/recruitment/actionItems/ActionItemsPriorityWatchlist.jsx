@@ -1,69 +1,48 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
-import {
-  getDaysLeft,
-  getRiskClass,
-} from "../../../lib/utils/actionItems/actionItemsHelpers.js";
+import { useActionItemsReport } from "../../../services/context/ActionItemsReportContext.jsx";
+import { formatDate, getDaysLeft, sortActionItems } from "../../../lib/utils/actionItems/actionItemsHelpers.js";
 
 export default function ActionItemsPriorityWatchlist() {
-  const { topRisks, setSelectedItem } = useActionItems();
+  const { setSelectedItem } = useActionItems();
+  const { filteredActionItems } = useActionItemsReport();
+  const risks = useMemo(
+    () => sortActionItems(filteredActionItems.filter((item) => item.status !== "Completed" && item.status !== "Cancelled")).slice(0, 4),
+    [filteredActionItems],
+  );
 
   return (
-    <section
-      className="sibs-profile-tab-panel rounded-xl border border-red-100 bg-red-50 p-5 shadow-sm sm:p-6"
-      style={{ animationDelay: "180ms" }}
-    >
-      <div className="mb-5 flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-red-600">
-          <AlertTriangle size={22} />
-        </div>
+    <section className="rounded-xl border border-rose-100 bg-rose-50/70 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-red-700">Priority Watchlist</h3>
-          <p className="mt-1 text-sm font-medium leading-6 text-red-700/80">
-            Most urgent open items based on risk level and deadline.
-          </p>
+          <h3 className="flex items-center gap-1.5 text-sm font-black text-rose-700"><AlertTriangle size={16} /> Priority Watchlist</h3>
+          <p className="mt-1 text-[11px] font-semibold text-rose-700/75">Most urgent open actions by risk and deadline.</p>
         </div>
+        <span className="rounded border border-rose-200 bg-white px-2 py-1 text-[9px] font-black uppercase text-rose-700">Action Required</span>
       </div>
 
-      <div className="space-y-3">
-        {topRisks.length > 0 ? (
-          topRisks.map((item, index) => (
-            <button
-              type="button"
-              key={`${item.sourceType}-${item.id}-${item.actionId}`}
-              onClick={() => setSelectedItem(item)}
-              className="sibs-page-card-in w-full rounded-xl border border-red-100 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#FAFBFC] hover:shadow-sm active:scale-[0.98]"
-              style={{ animationDelay: `${index * 60}ms` }}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-red-600">
-                    {item.actionId} · {item.module || "Recruitment"}
-                  </p>
-                  <p className="mt-1 line-clamp-2 text-sm font-bold leading-5 text-[#101828]">
-                    {item.actionItem}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getRiskClass(
-                    item.riskLevel,
-                  )}`}
-                >
-                  {item.riskLevel}
-                </span>
-              </div>
-              <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
-                {getDaysLeft(item.deadline)}
-              </p>
-            </button>
-          ))
-        ) : (
-          <div className="rounded-xl border border-emerald-100 bg-white p-5 text-center">
-            <CheckCircle2 className="mx-auto text-emerald-600" size={28} />
-            <p className="mt-2 text-sm font-bold text-emerald-700">
-              No open high-priority items.
-            </p>
+      <div className="divide-y divide-rose-100 rounded-xl border border-rose-100 bg-white">
+        {risks.length ? risks.map((item) => (
+          <button
+            type="button"
+            key={`${item.sourceType}-${item.id}-${item.actionId}`}
+            onClick={() => setSelectedItem(item)}
+            className="flex w-full flex-col gap-2 px-3 py-3 text-left transition hover:bg-[#F8FAFC] sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="line-clamp-1 text-xs font-extrabold text-[#042C51]">{item.actionItem}</p>
+              <p className="mt-1 text-[10px] font-semibold text-[#667085]">{item.account} · {item.roleTitle || item.roleAccount} · Owner: {item.owner}</p>
+            </div>
+            <div className="shrink-0 text-left sm:text-right">
+              <p className="font-mono text-[10px] font-black text-rose-700">{formatDate(item.deadline)}</p>
+              <p className="mt-0.5 text-[9px] font-bold text-rose-600">{getDaysLeft(item.deadline)}</p>
+            </div>
+          </button>
+        )) : (
+          <div className="p-6 text-center">
+            <CheckCircle2 size={25} className="mx-auto text-emerald-600" />
+            <p className="mt-2 text-xs font-black text-emerald-700">No open priority items in this scope.</p>
           </div>
         )}
       </div>

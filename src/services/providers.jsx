@@ -14,9 +14,9 @@ import { CandidatePipelineProvider } from "./context/CandidatePipelineContext";
 import { OffersProvider } from "./context/OffersContext";
 import { HiringNeedsProvider } from "./context/HiringNeedsContext";
 import { OnboardingProvider } from "./context/OnboardingContext";
-import { ActionItemsProvider } from "./context/ActionItemsContext";
 import { SourcingProvider } from "./context/SourcingContext";
 import { WorkforceHiringProvider } from "./context/WorkforceHiringContext";
+import ActionItemsDataBridge from "./context/ActionItemsDataBridgeContext";
 
 import { ResignationListProvider } from "./context/ResignationListContext";
 
@@ -37,15 +37,15 @@ export default function Providers({ children }) {
                         <OffersProvider>
                           <HiringNeedsProvider>
                             <OnboardingProvider>
-                              <ActionItemsProvider>
-                                <SourcingProvider>
-                                  <WorkforceHiringProvider>
+                              <SourcingProvider>
+                                <WorkforceHiringProvider>
+                                  <ActionItemsDataBridge>
                                     <ResignationListProvider>
                                       {children}
                                     </ResignationListProvider>
-                                  </WorkforceHiringProvider>
-                                </SourcingProvider>
-                              </ActionItemsProvider>
+                                  </ActionItemsDataBridge>
+                                </WorkforceHiringProvider>
+                              </SourcingProvider>
                             </OnboardingProvider>
                           </HiringNeedsProvider>
                         </OffersProvider>

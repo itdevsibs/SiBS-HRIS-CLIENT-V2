@@ -123,37 +123,40 @@ export default function AIInsightModal({
       }}
     >
       <section className="sibs-modal-pop-in flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <header className="flex shrink-0 items-start justify-between gap-4 bg-[#042C51] px-5 py-4 text-white">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF5C28] to-amber-500 shadow-md">
-              <Bot size={20} className="text-white" />
-            </span>
-
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="truncate text-sm font-extrabold text-white sm:text-base">
-                  AI Workforce Intelligence Advisor
-                </h2>
-
-                <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[9px] font-black uppercase text-[#042C51]">
-                  Live Telemetry
-                </span>
+        <header className="shrink-0 border-b border-[#19496F] bg-[#042C51] px-5 py-4 text-white sm:px-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF5C28] to-amber-500 text-white shadow-sm">
+                <Bot size={20} />
               </div>
 
-              <p className="mt-1 text-[11px] font-medium leading-4 text-slate-300">
-                Automated capacity deficit modeling and batch scheduling recommendations.
-              </p>
-            </div>
-          </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-extrabold text-white">
+                    AI Workforce Intelligence Advisor
+                  </h2>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-300 transition hover:bg-slate-700 hover:text-white"
-            aria-label="Close AI advisor"
-          >
-            <X size={17} />
-          </button>
+                  <span className="rounded bg-amber-400 px-2 py-0.5 text-[9px] font-extrabold uppercase text-[#042C51]">
+                    Live Telemetry
+                  </span>
+                </div>
+
+                <p className="mt-0.5 text-xs font-semibold text-blue-100">
+                  Automated capacity deficit modeling and batch scheduling recommendations.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close AI advisor"
+              title="Close"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sibs-scrollbar">

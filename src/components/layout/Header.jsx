@@ -547,7 +547,7 @@ function getEmployeeDetails(employee) {
     .join(" • ");
 }
 
-function normalizeEmployeeResults(result) {
+function normalizeEmployeeResults(result, searchKeyword = "") {
   const rows = Array.isArray(result?.data)
     ? result.data
     : Array.isArray(result?.data?.data)
@@ -560,7 +560,9 @@ function normalizeEmployeeResults(result) {
             ? result.rows
             : [];
 
-  return rows
+  const cleanKeyword = String(searchKeyword ?? "").trim().toLowerCase();
+
+  const mapped = rows
     .map((employee) => ({
       type: "employee",
       employee,
@@ -570,7 +572,24 @@ function normalizeEmployeeResults(result) {
       details: getEmployeeDetails(employee),
       breadcrumb: "Employees › Employee Data",
     }))
-    .filter((item) => item.sibsId)
+    .filter((item) => item.sibsId);
+
+  if (!cleanKeyword) return mapped.slice(0, 6);
+
+  return mapped
+    .sort((a, b) => {
+      const nameA = a.label.toLowerCase();
+      const nameB = b.label.toLowerCase();
+      const idA = a.sibsId.toLowerCase();
+      const idB = b.sibsId.toLowerCase();
+
+      const directA = nameA.includes(cleanKeyword) || idA.includes(cleanKeyword);
+      const directB = nameB.includes(cleanKeyword) || idB.includes(cleanKeyword);
+
+      if (directA && !directB) return -1;
+      if (!directA && directB) return 1;
+      return 0;
+    })
     .slice(0, 6);
 }
 
@@ -671,6 +690,88 @@ function SearchResultButton({
   );
 }
 
+const RECENT_SEARCHES_STORAGE_KEY = "sibs_hris_recent_searches";
+
+function getRecentSearchesFromStorage() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_SEARCHES_STORAGE_KEY);
+    const parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, 5) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentSearchToStorage(term) {
+  if (!term || typeof term !== "string" || typeof window === "undefined") return [];
+  const cleanTerm = term.trim();
+  if (cleanTerm.length < 2) return getRecentSearchesFromStorage();
+  try {
+    const existing = getRecentSearchesFromStorage().filter(
+      (t) => String(t).toLowerCase() !== cleanTerm.toLowerCase(),
+    );
+    const updated = [cleanTerm, ...existing].slice(0, 5);
+    localStorage.setItem(RECENT_SEARCHES_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return getRecentSearchesFromStorage();
+  }
+}
+
+function removeRecentSearchFromStorage(term) {
+  if (typeof window === "undefined") return [];
+  try {
+    const updated = getRecentSearchesFromStorage().filter(
+      (t) => String(t).toLowerCase() !== String(term).toLowerCase(),
+    );
+    localStorage.setItem(RECENT_SEARCHES_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+function clearRecentSearchesFromStorage() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(RECENT_SEARCHES_STORAGE_KEY);
+  } catch {
+    // Ignore
+  }
+}
+
+const QUICK_SEARCH_CATEGORIES = [
+  {
+    label: "Employees",
+    description: "Directory & Records",
+    path: "/employee/employee-data",
+    icon: Users,
+    color: "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100",
+  },
+  {
+    label: "Positions",
+    description: "Available Positions",
+    path: "/recruitment/available-positions",
+    icon: BriefcaseBusiness,
+    color: "bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100",
+  },
+  {
+    label: "Pipeline",
+    description: "Candidate Stages",
+    path: "/recruitment/candidate-pipeline",
+    icon: Table2,
+    color: "bg-purple-50 text-purple-600 border-purple-200 hover:bg-purple-100",
+  },
+  {
+    label: "Job Descriptions",
+    description: "Canonical JDs",
+    path: "/recruitment/job-description",
+    icon: FileText,
+    color: "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100",
+  },
+];
+
 export default function Header() {
   const { user, loading } = useUser();
   const navigate = useNavigate();
@@ -682,6 +783,7 @@ export default function Header() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(getRecentSearchesFromStorage);
   const [employeeResults, setEmployeeResults] = useState([]);
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeError, setEmployeeError] = useState("");
@@ -760,6 +862,19 @@ export default function Header() {
     setActiveIndex(-1);
   }, [pathname]);
 
+  useEffect(() => {
+    function handleGlobalKeyDown(event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        setSearchOpen(true);
+      }
+    }
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
+
   const normalizedQuery = normalizeText(query);
 
   const moduleResults = useMemo(() => {
@@ -802,49 +917,35 @@ export default function Header() {
 
         const result = await getEmployee(1, trimmedQuery, "All", {
           department: "All",
-          includeDepartments: false,
-          includeAccounts: false,
         });
 
         if (cancelled || employeeRequestRef.current !== requestNumber) return;
 
-        if (result?.status === 401) {
-          navigate("/login", { replace: true });
-          return;
-        }
-
-        if (!result?.success) {
-          setEmployeeResults([]);
-          setEmployeeError(
-            result?.message || "Employee search is temporarily unavailable.",
-          );
-          return;
-        }
-
-        setEmployeeResults(normalizeEmployeeResults(result));
+        setEmployeeResults(normalizeEmployeeResults(result, trimmedQuery));
       } catch (error) {
         if (cancelled || employeeRequestRef.current !== requestNumber) return;
 
-        console.error("Header employee search error:", error);
         setEmployeeResults([]);
-        setEmployeeError("Employee search is temporarily unavailable.");
+        setEmployeeError(
+          error?.response?.data?.message || "Failed to search employee directory.",
+        );
       } finally {
         if (!cancelled && employeeRequestRef.current === requestNumber) {
           setEmployeeLoading(false);
         }
       }
-    }, 300);
+    }, 250);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [employeeSearchAllowed, navigate, query]);
+  }, [employeeSearchAllowed, query]);
 
-  const allResults = useMemo(
-    () => [...moduleResults, ...employeeResults],
-    [moduleResults, employeeResults],
-  );
+  const allResults = useMemo(() => {
+    if (!normalizedQuery) return [];
+    return [...moduleResults, ...employeeResults];
+  }, [normalizedQuery, moduleResults, employeeResults]);
 
   useEffect(() => {
     setActiveIndex(allResults.length > 0 ? 0 : -1);
@@ -864,6 +965,11 @@ export default function Header() {
   function selectSearchResult(item) {
     if (!item) return;
 
+    if (query.trim()) {
+      const updated = saveRecentSearchToStorage(query.trim());
+      setRecentSearches(updated);
+    }
+
     closeSearch({ clear: true });
 
     if (item.type === "employee") {
@@ -874,6 +980,24 @@ export default function Header() {
     }
 
     navigate(item.path);
+  }
+
+  function handleRecentSearchClick(term) {
+    setQuery(term);
+    setSearchOpen(true);
+    saveRecentSearchToStorage(term);
+    searchInputRef.current?.focus();
+  }
+
+  function handleRemoveRecent(term, event) {
+    event.stopPropagation();
+    const updated = removeRecentSearchFromStorage(term);
+    setRecentSearches(updated);
+  }
+
+  function handleClearAllRecent() {
+    clearRecentSearchesFromStorage();
+    setRecentSearches([]);
   }
 
   function handleSearchKeyDown(event) {
@@ -943,23 +1067,25 @@ export default function Header() {
     }${user?.middleName ? ` ${user.middleName}` : ""}`.trim() || "User"
   ).toUpperCase();
 
-  const showSearchPanel = searchOpen && Boolean(normalizedQuery);
+  const showSearchPanel = searchOpen;
+  const isQueryEmpty = !query.trim();
   const noResults =
+    !isQueryEmpty &&
     !employeeLoading &&
     moduleResults.length === 0 &&
     employeeResults.length === 0 &&
     (!employeeSearchAllowed || query.trim().length >= 2);
 
   return (
-    <header className="relative z-[70] flex h-[74px] shrink-0 items-center border-b border-[#D7E0E9] bg-white px-2 font-jakarta shadow-sm sm:h-[86px] sm:px-6">
-      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-1.5 pl-14 sm:gap-4 sm:pl-0">
+    <header className="relative z-[70] flex h-[74px] shrink-0 items-center border-b border-[#D7E0E9] bg-[#FAFCFF] px-2 font-jakarta shadow-sm sm:h-[86px] sm:px-6">
+      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-1.5 pl-14 lg:gap-4 lg:pl-0">
         <div
           ref={searchRootRef}
-          className="relative z-[10000] min-w-[118px] flex-[1_1_auto] sm:max-w-[560px]"
+          className="relative z-[10000] min-w-[118px] flex-[1_1_auto] lg:max-w-[560px]"
         >
           <div
             className={[
-              "relative flex h-9 min-w-0 items-center rounded-lg border bg-[#F1F5F9] transition-all duration-150 sm:h-10",
+              "relative flex h-9 min-w-0 items-center rounded-xl border bg-[#F1F5F9] transition-all duration-150 sm:h-10",
               showSearchPanel
                 ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
                 : "border-transparent hover:border-[#FF5C28]/40 focus-within:border-[#FF5C28] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#FF5C28]/10",
@@ -969,18 +1095,20 @@ export default function Header() {
 
             <input
               ref={searchInputRef}
-              type="search"
+              type="text"
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
-                setSearchOpen(Boolean(event.target.value.trim()));
+                setSearchOpen(true);
               }}
               onFocus={() => {
-                if (query.trim()) setSearchOpen(true);
+                setSearchOpen(true);
               }}
               onKeyDown={handleSearchKeyDown}
               placeholder={
-                compactSearch ? "Search..." : "Search modules or employees..."
+                compactSearch
+                  ? "Search..."
+                  : "Search employees, JD, positions, accounts, or modules (Ctrl+K)"
               }
               autoComplete="off"
               role="combobox"
@@ -1013,107 +1141,189 @@ export default function Header() {
             <div
               id="header-global-search-results"
               role="listbox"
-              className="absolute left-0 right-0 top-[calc(100%+10px)] max-h-[520px] overflow-hidden rounded-xl border border-[#D7E0E9] bg-white shadow-[0_18px_50px_rgba(4,44,81,0.18)] sm:right-auto sm:w-[560px]"
+              className="fixed inset-x-3 top-[70px] z-[9999] max-h-[80vh] overflow-hidden rounded-2xl border border-[#D7E0E9] bg-white p-3 shadow-2xl lg:absolute lg:inset-auto lg:left-0 lg:top-[calc(100%+10px)] lg:max-h-[540px] lg:w-[560px] lg:p-3.5 lg:shadow-[0_18px_50px_rgba(4,44,81,0.18)]"
             >
-              <div className="thin-scroll max-h-[520px] overflow-y-auto py-2">
-                {moduleResults.length > 0 ? (
-                  <section>
-                    <div className="flex items-center justify-between px-3 pb-1.5 pt-1">
-                      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#98A2B3]">
-                        Modules
-                      </p>
-                      <span className="text-[9px] font-bold text-[#667085]">
-                        {moduleResults.length} result
-                        {moduleResults.length === 1 ? "" : "s"}
+              {isQueryEmpty ? (
+                <div className="space-y-4">
+                  {recentSearches.length > 0 ? (
+                    <div>
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#667085]">
+                          Recent Searches
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleClearAllRecent}
+                          className="text-[10px] font-bold text-[#FF5C28] hover:underline"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {recentSearches.map((term) => (
+                          <span
+                            key={term}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 text-xs font-bold text-[#042C51] transition hover:bg-[#EEF4FA]"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleRecentSearchClick(term)}
+                              className="hover:underline"
+                            >
+                              {term}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleRemoveRecent(term, e)}
+                              className="text-[#98A2B3] hover:text-[#042C51]"
+                              aria-label={`Remove ${term}`}
+                            >
+                              <X size={13} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div>
+                    <div className="mb-2.5 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#667085]">
+                        Popular Quick Categories
                       </span>
                     </div>
 
-                    <div className="divide-y divide-[#EEF2F6]">
-                      {moduleResults.map((item, index) => (
-                        <SearchResultButton
-                          key={`module-${item.path}`}
-                          item={item}
-                          index={index}
-                          active={activeIndex === index}
-                          onHover={setActiveIndex}
-                          onSelect={selectSearchResult}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                {employeeSearchAllowed && query.trim().length >= 2 ? (
-                  <section
-                    className={moduleResults.length ? "mt-2 border-t border-[#E6ECF2] pt-2" : ""}
-                  >
-                    <div className="flex items-center justify-between px-3 pb-1.5 pt-1">
-                      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#98A2B3]">
-                        Employees
-                      </p>
-
-                      {employeeLoading ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#667085]">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          Searching
-                        </span>
-                      ) : (
-                        <span className="text-[9px] font-bold text-[#667085]">
-                          {employeeResults.length} result
-                          {employeeResults.length === 1 ? "" : "s"}
-                        </span>
-                      )}
-                    </div>
-
-                    {employeeError ? (
-                      <div className="mx-3 mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-semibold text-amber-700">
-                        {employeeError}
-                      </div>
-                    ) : null}
-
-                    <div className="divide-y divide-[#EEF2F6]">
-                      {employeeResults.map((item, employeeIndex) => {
-                        const resultIndex = moduleResults.length + employeeIndex;
-
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {QUICK_SEARCH_CATEGORIES.map((cat) => {
+                        const Icon = cat.icon;
                         return (
-                          <SearchResultButton
-                            key={`employee-${item.sibsId}`}
-                            item={item}
-                            index={resultIndex}
-                            active={activeIndex === resultIndex}
-                            onHover={setActiveIndex}
-                            onSelect={selectSearchResult}
-                          />
+                          <button
+                            key={cat.label}
+                            type="button"
+                            onClick={() => {
+                              navigate(cat.path);
+                              setSearchOpen(false);
+                            }}
+                            className="flex flex-col items-center gap-1.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 text-center transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:shadow-sm sm:p-3"
+                          >
+                            <div className={`flex h-8 w-8 items-center justify-center rounded-xl border sm:h-9 sm:w-9 ${cat.color}`}>
+                              <Icon size={17} />
+                            </div>
+                            <span className="text-[11px] font-extrabold text-[#042C51]">
+                              {cat.label}
+                            </span>
+                            <span className="line-clamp-1 text-[9px] font-semibold text-[#667085]">
+                              {cat.description}
+                            </span>
+                          </button>
                         );
                       })}
                     </div>
-                  </section>
-                ) : null}
-
-                {employeeSearchAllowed && query.trim().length === 1 ? (
-                  <div className="mx-3 my-2 flex items-center gap-2 rounded-lg bg-[#F7F9FC] px-3 py-2 text-[10px] font-semibold text-[#667085]">
-                    <UserRound className="h-3.5 w-3.5 text-sibs-primary-1" />
-                    Type one more character to search employees.
                   </div>
-                ) : null}
+                </div>
+              ) : (
+                <div className="thin-scroll max-h-[500px] overflow-y-auto py-1">
+                  {moduleResults.length > 0 ? (
+                    <section>
+                      <div className="flex items-center justify-between px-3 pb-1.5 pt-1">
+                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#98A2B3]">
+                          Modules
+                        </p>
+                        <span className="text-[9px] font-bold text-[#667085]">
+                          {moduleResults.length} result
+                          {moduleResults.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
 
-                {noResults ? (
-                  <div className="px-5 py-8 text-center">
-                    <Search className="mx-auto h-6 w-6 text-[#98A2B3]" />
-                    <p className="mt-2 text-xs font-extrabold text-[#344054]">
-                      No matching result
-                    </p>
-                    <p className="mt-1 text-[10px] leading-relaxed text-[#667085]">
-                      Try a module name, employee name, SIBS ID, department, or
-                      account.
-                    </p>
-                  </div>
-                ) : null}
-              </div>
+                      <div className="divide-y divide-[#EEF2F6]">
+                        {moduleResults.map((item, index) => (
+                          <SearchResultButton
+                            key={`module-${item.path}`}
+                            item={item}
+                            index={index}
+                            active={activeIndex === index}
+                            onHover={setActiveIndex}
+                            onSelect={selectSearchResult}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
 
-              <div className="hidden items-center justify-between border-t border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[9px] font-semibold text-[#667085] sm:flex">
+                  {employeeSearchAllowed && query.trim().length >= 2 ? (
+                    <section
+                      className={moduleResults.length ? "mt-2 border-t border-[#E6ECF2] pt-2" : ""}
+                    >
+                      <div className="flex items-center justify-between px-3 pb-1.5 pt-1">
+                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#98A2B3]">
+                          Employees
+                        </p>
+
+                        {employeeLoading ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#667085]">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Searching
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold text-[#667085]">
+                            {employeeResults.length} result
+                            {employeeResults.length === 1 ? "" : "s"}
+                          </span>
+                        )}
+                      </div>
+
+                      {employeeError ? (
+                        <div className="mx-3 mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-semibold text-amber-700">
+                          {employeeError}
+                        </div>
+                      ) : null}
+
+                      <div className="divide-y divide-[#EEF2F6]">
+                        {employeeResults.map((item, employeeIndex) => {
+                          const resultIndex = moduleResults.length + employeeIndex;
+
+                          return (
+                            <SearchResultButton
+                              key={`employee-${item.sibsId}`}
+                              item={item}
+                              index={resultIndex}
+                              active={activeIndex === resultIndex}
+                              onHover={setActiveIndex}
+                              onSelect={selectSearchResult}
+                            />
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {employeeSearchAllowed && query.trim().length === 1 ? (
+                    <div className="mx-3 my-2 flex items-center gap-2 rounded-lg bg-[#F7F9FC] px-3 py-2 text-[10px] font-semibold text-[#667085]">
+                      <UserRound className="h-3.5 w-3.5 text-sibs-primary-1" />
+                      Type one more character to search employees.
+                    </div>
+                  ) : null}
+
+                  {noResults ? (
+                    <div className="px-5 py-8 text-center">
+                      <Search className="mx-auto h-6 w-6 text-[#98A2B3]" />
+                      <p className="mt-2 text-xs font-extrabold text-[#344054]">
+                        No matching result
+                      </p>
+                      <p className="mt-1 text-[10px] leading-relaxed text-[#667085]">
+                        Try a module name, employee name, SIBS ID, department, or
+                        account.
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              <div className="mt-2 hidden items-center justify-between border-t border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[9px] font-semibold text-[#667085] sm:flex">
                 <span>↑ ↓ Navigate</span>
                 <span>Enter Open</span>
+                <span>Ctrl + K Focus</span>
                 <span>Esc Close</span>
               </div>
             </div>

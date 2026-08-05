@@ -1,11 +1,18 @@
-export function getTodayDate() {
-  return new Date().toISOString().split("T")[0];
+function formatLocalDateInput(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-export function getDateAfterDays(days = 3) {
-  const date = new Date();
+export function getTodayDate(referenceDate = new Date()) {
+  return formatLocalDateInput(new Date(referenceDate));
+}
+
+export function getDateAfterDays(days = 3, referenceDate = new Date()) {
+  const date = new Date(referenceDate);
   date.setDate(date.getDate() + days);
-  return date.toISOString().split("T")[0];
+  return formatLocalDateInput(date);
 }
 
 export function generateActionId(nextNumber) {
@@ -37,11 +44,18 @@ export function normalizeText(value) {
 
 export function getCandidateStatus(record) {
   return normalizeText(
-    record?.status ||
-      record?.pipelineStatus ||
-      record?.currentStage ||
+    record?.currentStage ||
+      record?.current_stage ||
+      record?.currentPipelineStage ||
+      record?.current_pipeline_stage ||
+      record?.pipelineStage ||
+      record?.pipeline_stage ||
       record?.stage ||
+      record?.status ||
+      record?.pipelineStatus ||
+      record?.pipeline_status ||
       record?.finalStatus ||
+      record?.final_status ||
       "",
   );
 }
@@ -151,7 +165,7 @@ export function getCompletionPercent(filled, requirement) {
 
   if (total <= 0) return 0;
 
-  return Math.min(100, Math.max(0, Math.round((value / total) * 100)));
+  return Math.max(0, Math.round((value / total) * 100));
 }
 
 export function sortActionItems(items = []) {

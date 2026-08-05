@@ -1262,43 +1262,17 @@ export default function AvailablePositionsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-    scrollToTop("auto");
-
-    const timer = window.setTimeout(() => {
-      scrollToTop("auto");
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
   }, [search, statusFilter, departmentFilter, accountFilter, locationFilter]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
-      scrollToTop("auto");
     }
   }, [currentPage, totalPages]);
 
   function handlePageChange(nextPage) {
     const safePage = Math.min(Math.max(nextPage, 1), totalPages);
-
-    if (safePage === currentPage) {
-      scrollToTop("auto");
-
-      window.setTimeout(() => {
-        scrollToTop("auto");
-      }, 0);
-
-      return;
-    }
-
     setCurrentPage(safePage);
-    scrollToTop("auto");
-
-    window.setTimeout(() => {
-      scrollToTop("auto");
-    }, 0);
   }
 
   const hasActiveFilters =
@@ -1397,7 +1371,7 @@ export default function AvailablePositionsPage() {
             </section>
           ) : null}
 
-          <section className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
+          <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
             <div className="border-b border-[#E6ECF2] bg-white px-4 py-5 sm:px-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>

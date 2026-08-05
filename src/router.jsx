@@ -35,7 +35,7 @@ import PublicOfferResponsePage from "./pages/recruitment/PublicOfferResponsePage
 import OnboardingPage from "./pages/recruitment/OnboardingPage";
 import CandidateExperiencePage from "./pages/recruitment/CandidateExperiencePage";
 import SourcingAnalyticsPage from "./pages/recruitment/SourcingAnalyticsPage";
-import ActionItemsPage from "./pages/recruitment/ActionItemPage";
+import ActionItemsPage from "./pages/recruitment/ActionItemsPage";
 import WeeklyReportsPage from "./pages/recruitment/WeeklyReportsPage";
 import AvailablePositionsPage from "./pages/recruitment/AvailablePositionsPage";
 

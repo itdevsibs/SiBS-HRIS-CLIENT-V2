@@ -46,12 +46,9 @@ export const GAP_OPTIONS = [
   "Reporting",
 ];
 
+// Static special options only. Real TA owners are merged from live contexts.
 export const OWNER_OPTIONS = [
   "All Owners",
-  "Maria Reyes",
-  "John Dela Cruz",
-  "Kim Domingo",
-  "Paul Garcia",
   "Current User",
   "System Suggested",
 ];
@@ -59,6 +56,12 @@ export const OWNER_OPTIONS = [
 export const EMPTY_ACTION_FORM = {
   weeklyPlanItemId: "",
   hiringNeedId: "",
+  sourceModule: "Workforce Hiring Plan",
+  sourceRecordId: "",
+  currentStatusRowId: "",
+  roleAccountKey: "",
+  cluster: "",
+  reportingWeek: "",
   roleAccount: "",
   roleTitle: "",
   account: "",
@@ -71,6 +74,20 @@ export const EMPTY_ACTION_FORM = {
   riskLevel: "Medium",
   linkedGap: "Pipeline",
   remarks: "",
+  atRiskReason: "",
+  latestStatusNote: "",
+};
+
+export const ACTION_ITEM_SOURCE_ROUTES = {
+  "Public Talent Pool": "/recruitment/talent-pool/apply",
+  "Talent Pool": "/recruitment/talent-pool",
+  "Hiring Needs": "/recruitment/hiring-needs",
+  "Job Description": "/recruitment/job-description",
+  "Candidate Pipeline": "/recruitment/candidate-pipeline",
+  Offers: "/recruitment/offers",
+  Onboarding: "/recruitment/onboarding",
+  "Workforce Hiring Plan": "/recruitment/workforce-hiring-plan",
+  Reports: "/recruitment/weekly-reports",
 };
 
 export const ACTION_ITEMS_REFRESH_EVENTS = [
@@ -78,6 +95,10 @@ export const ACTION_ITEMS_REFRESH_EVENTS = [
   "focus",
   "ta-public-submission-created",
   "ta-pipeline-sync-updated",
+  "ta-pipeline-candidates-updated",
   "ta-offers-updated",
   "ta-onboarding-updated",
+  "ta-hiring-needs-updated",
+  "ta-workforce-hiring-plan-updated",
+  "ta-weekly-hiring-action-items-updated",
 ];

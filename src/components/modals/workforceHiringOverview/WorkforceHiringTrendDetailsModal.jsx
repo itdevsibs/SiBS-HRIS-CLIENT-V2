@@ -2381,7 +2381,7 @@ export default function WorkforceHiringTrendDetailsModal({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-sm font-black uppercase tracking-wide text-white sm:text-base">
-                    {rangeLabel} Trend Details Diagnostic Center
+                    {rangeLabel} Trend Details
                   </h2>
                   <span className="rounded-full bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider text-white">
                     Executive Suite

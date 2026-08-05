@@ -124,6 +124,39 @@ export function formatDisplayDate(value) {
   });
 }
 
+export function getRegularizationDate(employee) {
+  const explicitDate = firstValue(
+    employee?.regularizationDate,
+    employee?.regularization_date,
+    employee?.regularizedDate,
+    employee?.regularized_date,
+    employee?.dateOfRegularization,
+    employee?.date_of_regularization,
+    employee?.regular_date,
+    employee?.gy_reg_date,
+    employee?.gy_emp_regdate,
+  );
+
+  if (explicitDate) return explicitDate;
+
+  const hireDateVal = firstValue(
+    employee?.hireDate,
+    employee?.hire_date,
+    employee?.dateHired,
+    employee?.date_hired,
+    employee?.gy_emp_hiredate,
+  );
+
+  if (!hireDateVal) return "";
+
+  const hireDateObj = new Date(hireDateVal);
+  if (Number.isNaN(hireDateObj.getTime())) return "";
+
+  const regDateObj = new Date(hireDateObj);
+  regDateObj.setMonth(regDateObj.getMonth() + 6);
+  return regDateObj.toISOString();
+}
+
 export function toInputDate(value) {
   if (!value) return "";
   const rawValue = String(value).trim();

@@ -16,7 +16,6 @@ import {
   getAvailablePositionAccount,
   getAvailablePositionDepartment,
   getAvailablePositionLinkedJd,
-  getAvailablePositionSkills,
   getAvailablePositionUpdatedAt,
   getAvailablePositionUpdatedBy,
 } from "../../../lib/utils/availablePositions/availablePositionsPresentation";
@@ -52,7 +51,7 @@ function ActionButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 text-[10px] font-extrabold transition disabled:cursor-not-allowed disabled:opacity-45 ${variantClass}`}
+      className={`inline-flex h-7 items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-2 text-[9.5px] font-extrabold transition disabled:cursor-not-allowed disabled:opacity-40 ${variantClass}`}
     >
       {children}
     </button>
@@ -62,7 +61,7 @@ function ActionButton({
 function EmptyTableRow() {
   return (
     <tr>
-      <td colSpan={9} className="px-5 py-14 text-center">
+      <td colSpan={8} className="px-5 py-14 text-center">
         <div className="mx-auto max-w-sm rounded-2xl border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-5 py-8">
           <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
 
@@ -198,7 +197,7 @@ export default function AvailablePositionsTable({
               />
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1380px] border-collapse bg-white text-left text-xs">
+                <table className="w-full border-collapse bg-white text-left text-xs">
                   <thead className="sibs-data-table-head">
                     <tr className="sibs-data-table-head-row">
                       <th className="sibs-data-table-th text-left">
@@ -214,11 +213,7 @@ export default function AvailablePositionsTable({
                       </th>
 
                       <th className="sibs-data-table-th text-left">
-                        Location / Site
-                      </th>
-
-                      <th className="sibs-data-table-th text-left">
-                        Core Skills
+                        Location
                       </th>
 
                       <th className="sibs-data-table-th text-center">
@@ -258,12 +253,6 @@ export default function AvailablePositionsTable({
                               position,
                             );
 
-                          const skillSummary =
-                            getAvailablePositionSkills(
-                              position,
-                              3,
-                            );
-
                           const department =
                             getAvailablePositionDepartment(
                               position,
@@ -300,9 +289,9 @@ export default function AvailablePositionsTable({
                                 </span>
                               </td>
 
-                              <td className="px-4 py-2.5 align-middle">
+                              <td className="px-3 py-2.5 align-middle">
                                 <p
-                                  className="max-w-[280px] truncate text-xs font-extrabold text-[#042C51]"
+                                  className="max-w-[220px] truncate text-xs font-extrabold text-[#042C51]"
                                   title={
                                     position.positionTitle || ""
                                   }
@@ -311,39 +300,39 @@ export default function AvailablePositionsTable({
                                 </p>
 
                                 <p
-                                  className="mt-0.5 max-w-[280px] truncate text-[10px] font-semibold text-[#667085]"
+                                  className="mt-0.5 max-w-[220px] truncate text-[10px] font-semibold text-[#667085]"
                                   title={department}
                                 >
                                   {department}
                                 </p>
 
                                 <p
-                                  className="mt-0.5 max-w-[280px] truncate text-[10px] font-semibold text-[#98A2B3]"
+                                  className="mt-0.5 max-w-[220px] truncate text-[10px] font-semibold text-[#98A2B3]"
                                   title={account}
                                 >
                                   {account}
                                 </p>
                               </td>
 
-                              <td className="px-4 py-2.5 align-middle">
+                              <td className="px-3 py-2.5 align-middle">
                                 <p
-                                  className="max-w-[260px] truncate text-xs font-extrabold text-[#042C51]"
+                                  className="max-w-[200px] truncate text-xs font-extrabold text-[#042C51]"
                                   title={linkedJd.documentTitle}
                                 >
                                   {linkedJd.documentTitle}
                                 </p>
 
                                 <p
-                                  className="mt-0.5 max-w-[260px] truncate text-[10px] font-semibold text-[#98A2B3]"
+                                  className="mt-0.5 max-w-[200px] truncate text-[10px] font-semibold text-[#98A2B3]"
                                   title={linkedJd.code}
                                 >
                                   {linkedJd.code}
                                 </p>
                               </td>
 
-                              <td className="px-4 py-2.5 align-middle">
+                              <td className="px-3 py-2.5 align-middle">
                                 <p
-                                  className="max-w-[180px] truncate text-xs font-semibold text-[#475467]"
+                                  className="max-w-[130px] truncate text-xs font-semibold text-[#475467]"
                                   title={
                                     position.locationSite || ""
                                   }
@@ -352,42 +341,7 @@ export default function AvailablePositionsTable({
                                 </p>
                               </td>
 
-                              <td className="px-4 py-2.5 align-middle">
-                                <div className="flex max-w-[250px] flex-wrap gap-1">
-                                  {skillSummary.visible.length >
-                                  0 ? (
-                                    <>
-                                      {skillSummary.visible.map(
-                                        (skill) => (
-                                          <span
-                                            key={skill}
-                                            className="inline-flex rounded-md bg-[#F2F6FA] px-2 py-1 text-[9px] font-extrabold text-[#475467]"
-                                          >
-                                            {skill}
-                                          </span>
-                                        ),
-                                      )}
-
-                                      {skillSummary.hiddenCount >
-                                      0 ? (
-                                        <span className="inline-flex rounded-md bg-[#EAF2FB] px-2 py-1 text-[9px] font-extrabold text-[#042C51]">
-                                          +
-                                          {
-                                            skillSummary.hiddenCount
-                                          }{" "}
-                                          more
-                                        </span>
-                                      ) : null}
-                                    </>
-                                  ) : (
-                                    <span className="text-[10px] font-semibold text-[#98A2B3]">
-                                      No skills listed
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-
-                              <td className="px-4 py-2.5 text-center align-middle">
+                              <td className="px-3 py-2.5 text-center align-middle">
                                 <div className="flex justify-center">
                                   <StatusBadge
                                     status={position.status}
@@ -395,7 +349,7 @@ export default function AvailablePositionsTable({
                                 </div>
                               </td>
 
-                              <td className="px-4 py-2.5 text-center align-middle">
+                              <td className="px-3 py-2.5 text-center align-middle">
                                 <div className="flex justify-center">
                                   <StatusBadge
                                     status={approvalStatus}
@@ -403,7 +357,7 @@ export default function AvailablePositionsTable({
                                 </div>
                               </td>
 
-                              <td className="px-4 py-2.5 align-middle">
+                              <td className="px-3 py-2.5 align-middle">
                                 <p className="text-xs font-extrabold text-[#344054]">
                                   {formatDate(
                                     getAvailablePositionUpdatedAt(
@@ -413,7 +367,7 @@ export default function AvailablePositionsTable({
                                 </p>
 
                                 <p
-                                  className="mt-0.5 max-w-[180px] truncate text-[10px] font-bold text-[#667085]"
+                                  className="mt-0.5 max-w-[130px] truncate text-[10px] font-bold text-[#667085]"
                                   title={formatPersonName(
                                     getAvailablePositionUpdatedBy(
                                       position,
@@ -429,8 +383,8 @@ export default function AvailablePositionsTable({
                                 </p>
                               </td>
 
-                              <td className="px-4 py-2.5 text-right align-middle">
-                                <div className="inline-flex items-center justify-end gap-1.5">
+                              <td className="px-3 py-2.5 text-right align-middle">
+                                <div className="inline-flex items-center justify-end gap-1">
                                   {showApprovalActions ? (
                                     <>
                                       <ActionButton
@@ -443,7 +397,7 @@ export default function AvailablePositionsTable({
                                         disabled={isSaving}
                                         title="Approve available position"
                                       >
-                                        <CheckCircle2 size={13} />
+                                        <CheckCircle2 size={12} />
                                         Approve
                                       </ActionButton>
 
@@ -457,7 +411,7 @@ export default function AvailablePositionsTable({
                                         disabled={isSaving}
                                         title="Reject available position"
                                       >
-                                        <XCircle size={13} />
+                                        <XCircle size={12} />
                                         Reject
                                       </ActionButton>
                                     </>
