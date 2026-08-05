@@ -1,128 +1,196 @@
-import { ArrowUpRight } from "lucide-react";
-import { formatCurrency } from "../../../lib/utils/offers/offerFormatters";
+import { Check, Eye, History, X } from "lucide-react";
+
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
+import {
+  getLatestNegotiationSummary,
+  getOfferEvaluationScores,
+} from "../../../lib/utils/offers/offerEvaluationHistory";
 import { useOffers } from "../../../services/context/OffersContext";
 
-function getFinalAccount(offer = {}) {
-  return (
-    offer.finalAccount ||
-    offer.final_account ||
-    offer.accountName ||
-    offer.account_name ||
-    offer.account ||
-    offer.offerDetails?.finalAccount ||
-    offer.offerDetails?.final_account ||
-    offer.offerDetails?.accountName ||
-    offer.offerDetails?.account_name ||
-    offer.offerDetails?.account ||
-    "—"
-  );
-}
-
-
 export default function OfferMobileCards({
-  offersOverride,
-  routeFilterActive = false,
+  offersOverride = null,
   emptyMessage = "No offered candidates found from Candidate Pipeline.",
 }) {
   const {
     filteredOffers = [],
     setSelectedOffer,
+    handleApproval,
+    canCurrentUserApproveOffer,
     getOfferApprovalStatus,
   } = useOffers();
 
-  const offers = Array.isArray(offersOverride)
+  const displayedOffers = Array.isArray(offersOverride)
     ? offersOverride
-    : Array.isArray(filteredOffers)
-      ? filteredOffers
-      : [];
+    : filteredOffers;
+
+  function openOffer(offer, section = "") {
+    setSelectedOffer(
+      section
+        ? {
+            ...offer,
+            __openSection: section,
+          }
+        : offer,
+    );
+  }
+
+  if (!displayedOffers.length) {
+    return (
+      <div className="rounded-2xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-4 py-10 text-center text-sm font-bold text-[#667085] lg:hidden">
+        {emptyMessage}
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-3 font-jakarta lg:hidden">
-      {offers.length > 0 ? (
-        offers.map((offer) => {
-          const approvalStatus = getOfferApprovalStatus
-            ? getOfferApprovalStatus(offer)
-            : offer.offerApprovalStatus || offer.status || "For Review";
+    <div className="space-y-4 lg:hidden">
+      {displayedOffers.map((offer) => {
+        const approvalStatus = getOfferApprovalStatus
+          ? getOfferApprovalStatus(offer)
+          : offer.offerApprovalStatus || offer.status || "For Review";
+        const authorized =
+          typeof canCurrentUserApproveOffer === "function"
+            ? canCurrentUserApproveOffer(offer)
+            : Boolean(canCurrentUserApproveOffer);
+        const scores = getOfferEvaluationScores(offer);
+        const negotiation = getLatestNegotiationSummary(offer);
 
-          return (
+        return (
+          <article
+            key={`mobile-${offer.offerId}-${offer.candidateApplicationId}-${offer.id}`}
+            className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm"
+          >
             <button
-              key={`${offer.offerId}-${offer.candidateApplicationId}`}
               type="button"
-              onClick={() => setSelectedOffer(offer)}
-              className="group w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#FF5C28]/20 active:scale-[0.995]"
+              onClick={() => openOffer(offer)}
+              className="block w-full text-left"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="sibs-kicker truncate text-[#FF5C28]">
-                    {offer.offerId || "Offer"}
-                  </p>
-                  <h3 className="mt-1 truncate text-[13px] font-extrabold text-[#042C51]">
+                <div className="min-w-0">
+                  <p className="break-words text-base font-extrabold text-[#101828]">
                     {offer.candidateName || "—"}
-                  </h3>
-                  <div className="mt-2 space-y-1">
-                    <p className="truncate text-[11px] font-semibold text-[#667085]">
-                      <span className="font-extrabold text-[#344054]">Final Role:</span>{" "}
-                      {offer.roleTitle || "—"}
-                    </p>
-                    <p className="truncate text-[11px] font-semibold text-[#667085]">
-                      <span className="font-extrabold text-[#344054]">Final Account:</span>{" "}
-                      {getFinalAccount(offer)}
-                    </p>
-                  </div>
+                  </p>
+                  <p className="mt-1 break-words text-xs font-semibold text-[#475467]">
+                    {offer.offerId || "—"} • {offer.candidateId || "—"}
+                  </p>
                 </div>
 
                 <span
-                  className={`inline-flex max-w-[145px] shrink-0 items-center justify-center rounded-lg border px-2 py-1 text-center text-[10px] font-extrabold leading-4 ${getStatusClass(
+                  className={`shrink-0 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
                     approvalStatus,
                   )}`}
                 >
-                  <span className="line-clamp-2 break-words">
-                    {approvalStatus}
-                  </span>
-                </span>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="sibs-info-tile min-w-0">
-                  <p className="sibs-kicker text-[#667085]">Basic Pay</p>
-                  <p className="mt-1 truncate text-xs font-extrabold text-[#344054]">
-                    {formatCurrency(offer.basicPay)}
-                  </p>
-                </div>
-
-                <div className="sibs-info-tile min-w-0">
-                  <p className="sibs-kicker text-[#667085]">De Minimis</p>
-                  <p className="mt-1 truncate text-xs font-extrabold text-[#344054]">
-                    {formatCurrency(
-                      offer.deminimisDailyRate ?? offer.deMinimis ?? offer.deminimis,
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#F1F5F9] pt-3">
-                <p className="min-w-0 truncate text-[10px] font-semibold text-[#667085]">
-                  Owner: <span className="font-extrabold text-[#042C51]">{offer.owner || "—"}</span>
-                </p>
-
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-[#042C51] transition group-hover:bg-[#FF5C28] group-hover:text-white">
-                  <ArrowUpRight size={15} />
+                  {approvalStatus}
                 </span>
               </div>
             </button>
-          );
-        })
-      ) : (
-        <div className="sibs-empty-panel">
-          {emptyMessage}
-          {routeFilterActive ? (
-            <span className="mt-1 block font-semibold">
-              Clear the selected candidate to return to all offers.
-            </span>
-          ) : null}
-        </div>
-      )}
+
+            <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl bg-[#F8FAFC] p-3 sm:grid-cols-2">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                  Final Role / Account
+                </p>
+                <p className="mt-1 break-words text-sm font-extrabold text-[#101828]">
+                  {offer.roleTitle || "—"}
+                </p>
+                <p className="mt-1 break-words text-xs font-bold text-[#475467]">
+                  {offer.account || "—"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                  Owner
+                </p>
+                <p className="mt-1 break-words text-sm font-bold text-[#344054]">
+                  {offer.owner || "—"}
+                </p>
+              </div>
+            </div>
+
+            <section className="mt-3 rounded-xl border border-[#E6ECF2] bg-white p-3">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Evaluation Scores
+              </p>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {[
+                  ["Assessment", scores.assessment.display],
+                  ["Job Evaluation", scores.jobEvaluation.display],
+                  ["Final Interview", scores.finalInterview.display],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-lg bg-[#F8FAFC] p-2.5">
+                    <p className="text-[10px] font-bold text-[#667085]">
+                      {label}
+                    </p>
+                    <p className="mt-1 text-xs font-extrabold text-[#042C51]">
+                      {value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Negotiation
+                </p>
+                <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold text-sibs-primary-1">
+                  Version {negotiation.versionNumber}
+                </span>
+              </div>
+              <p className="mt-2 text-xs font-bold text-[#475467]">
+                {negotiation.hasNegotiation
+                  ? negotiation.status
+                  : "Original Offer"}
+              </p>
+              <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-[#667085]">
+                {negotiation.remark || "No negotiation history"}
+              </p>
+              <button
+                type="button"
+                onClick={() => openOffer(offer, "negotiation-history")}
+                className="mt-2 inline-flex h-9 items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 text-xs font-extrabold text-sibs-primary-1"
+              >
+                <History size={14} />
+                View History
+              </button>
+            </section>
+
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => openOffer(offer)}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                <Eye size={16} />
+                View
+              </button>
+
+              {approvalStatus === "For Review" && authorized ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleApproval?.(offer, "Rejected")}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600"
+                  >
+                    <X size={15} />
+                    Decline
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApproval?.(offer, "Approved")}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white"
+                  >
+                    <Check size={15} />
+                    Approve
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
