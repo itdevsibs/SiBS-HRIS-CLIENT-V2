@@ -1,89 +1,57 @@
 import React from "react";
+import { CalendarDays, CheckCircle2, Eye, UserRound } from "lucide-react";
 import {
   formatDate,
-  getGapClass,
-  getModuleClass,
+  getDaysLeft,
   getRiskClass,
   getStatusClass,
 } from "../../../lib/utils/actionItems/actionItemsHelpers.js";
 
-export default function ActionItemMobileCard({ item, onView }) {
+export default function ActionItemMobileCard({ item, onOpen, onComplete }) {
+  const systemGenerated = item.systemGenerated || String(item.sourceType || "").toLowerCase().includes("system");
   return (
-    <button
-      type="button"
-      onClick={() => onView(item)}
-      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
-    >
+    <article className="sibs-card rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs font-bold text-sibs-primary-1">
-              {item.actionId}
-            </p>
-            {item.systemGenerated ? (
-              <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700">
-                Suggested
-              </span>
-            ) : null}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="rounded bg-[#F2F4F7] px-1.5 py-0.5 font-mono text-[9px] font-black text-[#042C51]">{item.actionId}</span>
+            <span className={`rounded border px-1.5 py-0.5 text-[8px] font-black uppercase ${systemGenerated ? "border-purple-100 bg-purple-50 text-purple-700" : "border-blue-100 bg-blue-50 text-blue-700"}`}>
+              {systemGenerated ? "System" : "Manual"}
+            </span>
           </div>
-          <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-6 text-[#101828]">
-            {item.actionItem}
-          </h3>
-          <p className="mt-1 break-words text-xs font-semibold text-sibs-tertiary-5">
-            {item.roleTitle || "—"} / {item.account || "—"}
-          </p>
+          <h3 className="mt-2 text-sm font-extrabold leading-5 text-[#042C51]">{item.actionItem}</h3>
         </div>
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            item.status,
-          )}`}
-        >
-          {item.status}
+        <span className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-black ${getRiskClass(item.riskLevel)}`}>{item.riskLevel}</span>
+      </div>
+
+      <div className="mt-3 rounded-lg bg-[#F8FAFC] p-3">
+        <p className="text-xs font-bold text-[#042C51]">{item.account || "—"}</p>
+        <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">{item.roleTitle || item.roleAccount || "—"}</p>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-semibold text-[#667085]">
+        <div className="flex items-center gap-1.5"><UserRound size={13} /> {item.owner || "—"}</div>
+        <div className="flex items-center gap-1.5"><CalendarDays size={13} /> {formatDate(item.deadline)}</div>
+        <span className={`w-fit rounded-full border px-2 py-1 font-black ${getStatusClass(item.status)}`}>{item.status}</span>
+        <span className="text-right font-black text-[#667085]">
+          {item.status === "Completed"
+            ? `Completed${item.completedDate ? ` ${formatDate(item.completedDate)}` : ""}`
+            : getDaysLeft(item.deadline)}
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Owner
-          </p>
-          <p className="mt-1 truncate text-xs font-bold text-[#344054]">
-            {item.owner}
-          </p>
-        </div>
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Deadline
-          </p>
-          <p className="mt-1 text-xs font-bold text-[#344054]">
-            {formatDate(item.deadline)}
-          </p>
-        </div>
-      </div>
+      {item.remarks ? <p className="mt-3 line-clamp-2 text-[11px] font-semibold leading-4 text-[#667085]">{item.remarks}</p> : null}
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <span
-          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getModuleClass(
-            item.module,
-          )}`}
-        >
-          {item.module || "Recruitment"}
-        </span>
-        <span
-          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getRiskClass(
-            item.riskLevel,
-          )}`}
-        >
-          {item.riskLevel} Risk
-        </span>
-        <span
-          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getGapClass(
-            item.linkedGap,
-          )}`}
-        >
-          {item.linkedGap}
-        </span>
+      <div className="mt-4 flex justify-end gap-2 border-t border-[#E6ECF2] pt-3">
+        {!systemGenerated && item.status !== "Completed" ? (
+          <button type="button" onClick={onComplete} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-[10px] font-black text-white">
+            <CheckCircle2 size={13} /> Resolve
+          </button>
+        ) : null}
+        <button type="button" onClick={onOpen} className="inline-flex items-center gap-1 rounded-lg bg-[#042C51] px-3 py-2 text-[10px] font-black text-white">
+          <Eye size={13} /> Details
+        </button>
       </div>
-    </button>
+    </article>
   );
 }

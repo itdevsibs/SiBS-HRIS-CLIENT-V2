@@ -835,7 +835,7 @@ function CandidateProfileHorizontalNavigation({
       className="rounded-2xl border border-[#E6ECF2] bg-white p-2.5 shadow-sm"
       aria-label="Candidate profile navigation"
     >
-      <div className="flex min-w-0 gap-1 overflow-x-auto pb-1 no-scrollbar">
+      <div className="sibs-scrollbar flex min-w-0 gap-1 overflow-x-auto pb-2">
         {tabs.map((tab) => {
           const Icon = tab.icon || FileText;
           const active = tab.key === activePrimaryKey;
@@ -846,7 +846,7 @@ function CandidateProfileHorizontalNavigation({
               type="button"
               onClick={() => handlePrimaryClick(tab)}
               aria-current={active ? "page" : undefined}
-              className={`inline-flex h-9 min-w-max items-center justify-center gap-1.5 rounded-lg border px-3.5 text-xs font-bold transition-all ${
+              className={`inline-flex h-9 min-w-max shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3.5 text-xs font-bold transition-all ${
                 active
                   ? "border-[#BFD3F2] bg-[#E9F0FC] text-[#042C51] shadow-sm"
                   : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900"
@@ -863,7 +863,7 @@ function CandidateProfileHorizontalNavigation({
       </div>
 
       {secondaryTabs.length > 0 && (
-        <div className="mt-2 flex items-center gap-1.5 overflow-x-auto border-t border-[#F1F5F9] pt-2 no-scrollbar">
+        <div className="sibs-scrollbar mt-2 flex items-center gap-1.5 overflow-x-auto border-t border-[#F1F5F9] pt-2 pb-1">
           <span className="shrink-0 px-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
             Subsections:
           </span>
@@ -877,7 +877,7 @@ function CandidateProfileHorizontalNavigation({
                 type="button"
                 onClick={() => onTabChange?.(child.key)}
                 aria-selected={active}
-                className={`h-7 min-w-max rounded-full px-3 text-[10px] font-bold transition-all ${
+                className={`h-7 min-w-max shrink-0 rounded-full px-3 text-[10px] font-bold transition-all ${
                   active
                     ? "bg-[#042C51] text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"

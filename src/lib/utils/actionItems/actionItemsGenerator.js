@@ -283,38 +283,49 @@ export function buildManualActionItem({
   today = getTodayDate(),
 }) {
   const linkedModule =
-    form.linkedGap === "Approval"
+    form.sourceModule ||
+    (form.hiringNeedId
       ? "Hiring Needs"
-      : form.linkedGap === "JD"
-        ? "Job Description"
-        : form.linkedGap === "Offer"
-          ? "Offers"
-          : form.linkedGap === "Onboarding"
-            ? "Onboarding"
-            : form.weeklyPlanItemId
-              ? "Workforce Hiring Plan"
-              : "Candidate Pipeline";
+      : form.weeklyPlanItemId
+        ? "Workforce Hiring Plan"
+        : form.linkedGap === "Approval"
+          ? "Hiring Needs"
+          : form.linkedGap === "JD"
+            ? "Job Description"
+            : form.linkedGap === "Offer"
+              ? "Offers"
+              : form.linkedGap === "Onboarding"
+                ? "Onboarding"
+                : "Candidate Pipeline");
 
   return {
     id: now,
     actionId: generateActionId(nextNumber),
-    actionItem: form.actionItem.trim(),
+    actionItem: String(form.actionItem || "").trim(),
     roleAccount: form.roleAccount,
     roleTitle: form.roleTitle,
     account: form.account,
+    cluster: form.cluster || "Unassigned Cluster",
     owner: form.owner,
     deadline: form.deadline,
     status: form.status,
     riskLevel: form.riskLevel,
     linkedGap: form.linkedGap,
     module: linkedModule,
+    sourceModule: form.sourceModule || linkedModule,
     sourceType: "Manual",
-    remarks: form.remarks.trim(),
+    sourceRecordId: form.sourceRecordId || "",
+    currentStatusRowId: form.currentStatusRowId || "",
+    roleAccountKey: form.roleAccountKey || "",
+    reportingWeek: form.reportingWeek || "",
+    atRiskReason: form.atRiskReason || "",
+    latestStatusNote: form.latestStatusNote || "",
+    remarks: String(form.remarks || "").trim(),
     requirement: Number(form.requirement || 0),
     filled: Number(form.filled || 0),
     createdDate: today,
     completedDate: form.status === "Completed" ? today : null,
-    weeklyPlanItemId: form.weeklyPlanItemId,
-    hiringNeedId: form.hiringNeedId,
+    weeklyPlanItemId: form.weeklyPlanItemId || "",
+    hiringNeedId: form.hiringNeedId || "",
   };
 }

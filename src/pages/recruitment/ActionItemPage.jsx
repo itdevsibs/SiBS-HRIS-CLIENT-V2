@@ -27,25 +27,24 @@ export default function ActionItemsPage() {
   }, []);
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
-      <main
-        ref={mainRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
-      >
-        <div className="mx-auto max-w-[1600px] space-y-5">
+      <main ref={mainRef} className="sibs-dashboard-main">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5">
           <ActionItemsHeader />
           <ActionItemsStats />
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <ActionItemsHealth />
-            <ActionItemsPriorityWatchlist />
-          </div>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+            <div className="space-y-5 lg:col-span-8">
+              <ActionItemsHealth />
+              <ActionItemsPriorityWatchlist />
+            </div>
 
-          <ActionItemsModuleSignals />
+            <ActionItemsModuleSignals />
+          </div>
 
           <section
             className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"

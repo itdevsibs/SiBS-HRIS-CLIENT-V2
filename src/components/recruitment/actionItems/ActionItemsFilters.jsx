@@ -1,13 +1,14 @@
 import React from "react";
+import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
 import { Filter, Search } from "lucide-react";
 import { usePagination } from "../../../services/context/PaginationContext.jsx";
 import {
   GAP_OPTIONS,
   MODULE_OPTIONS,
-  OWNER_OPTIONS,
   RISK_OPTIONS,
   STATUS_OPTIONS,
 } from "../../../lib/utils/actionItems/actionItemsConstants.js";
+import ThemedDropdown from "../../layout/dropdown/ThemedDropdown.jsx";
 
 const ENTITY_KEY = "action-items";
 
@@ -15,27 +16,30 @@ function FilterSelect({ label, filterKey, options }) {
   const { filterValues, setFilter } = usePagination(ENTITY_KEY);
   const currentValue = filterValues?.[filterKey] || options[0];
 
+  const formattedOptions = (options || []).map((opt) => ({
+    label: opt,
+    value: opt,
+  }));
+
   return (
-    <div className="w-full">
-      <label className="mb-1.5 block text-sm font-bold text-[#101828]">
+    <div className="w-full min-w-0 flex-[1_1_180px]">
+      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
         {label}
       </label>
-      <select
+      <ThemedDropdown
         value={currentValue}
-        onChange={(event) => setFilter(filterKey, event.target.value)}
-        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+        options={formattedOptions}
+        onChange={(val) => setFilter(filterKey, val)}
+        searchable={false}
+        showPlaceholderOption={false}
+        className="w-full"
+      />
     </div>
   );
 }
 
 export default function ActionItemsFilters() {
+  const { ownerOptions } = useActionItems();
   const {
     searchInput,
     setSearchInput,
@@ -65,34 +69,24 @@ export default function ActionItemsFilters() {
   }
 
   return (
-    <div className="border-b border-[#E6ECF2] bg-white px-4 py-5 sm:px-5 lg:px-6">
-      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-lg font-bold text-sibs-primary-1">
-            Action Item List
-          </h2>
-          <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-            Search and filter manual and system-suggested actions.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-[1fr_170px_150px_200px_190px_190px_110px] 2xl:items-end">
-        <div>
-          <label className="mb-1.5 block text-sm font-bold text-[#101828]">
+    <div className="bg-white font-jakarta">
+      <div className="flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
+        <div className="relative w-full min-w-0 xl:min-w-[280px] xl:flex-[1_1_360px]">
+          <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
             Search
           </label>
-          <div className="relative">
+          <div className="group relative">
             <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+              size={17}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
             />
             <input
+              type="text"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && commitSearch()}
-              placeholder="Search then press Enter..."
-              className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              placeholder="Search action, role, account, owner..."
+              className="h-10 w-full rounded-xl border border-[#D0D5DD] bg-white px-3.5 pl-9 text-xs font-semibold text-[#101828] outline-none transition focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
             />
           </div>
         </div>
@@ -101,17 +95,19 @@ export default function ActionItemsFilters() {
         <FilterSelect label="Risk" filterKey="risk" options={RISK_OPTIONS} />
         <FilterSelect label="Module" filterKey="module" options={MODULE_OPTIONS} />
         <FilterSelect label="Gap" filterKey="gap" options={GAP_OPTIONS} />
-        <FilterSelect label="Owner" filterKey="owner" options={OWNER_OPTIONS} />
+        <FilterSelect label="Owner" filterKey="owner" options={ownerOptions} />
 
-        <button
-          type="button"
-          onClick={handleClearAll}
-          disabled={!hasActiveFilters}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Filter size={17} />
-          Clear
-        </button>
+        <div className="flex w-full min-w-0 items-end xl:w-auto xl:flex-none">
+          <button
+            type="button"
+            onClick={handleClearAll}
+            disabled={!hasActiveFilters}
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D0D5DD] bg-white px-4 text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+          >
+            <Filter size={15} />
+            Clear
+          </button>
+        </div>
       </div>
     </div>
   );

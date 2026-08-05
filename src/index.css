@@ -124,6 +124,11 @@
   button {
     transition: all 0.2s ease;
   }
+
+  :focus-visible {
+    outline: 2px solid #FF5C28 !important;
+    outline-offset: 2px !important;
+  }
 }
 
 /* =========================

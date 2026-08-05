@@ -1,117 +1,58 @@
 import React from "react";
 import {
-  Activity,
+  AlertCircle,
   AlertTriangle,
-  CheckCircle2,
-  CircleAlert,
+  CheckSquare,
   Clock3,
-  FileText,
-  Target,
+  Layers3,
+  ShieldAlert,
+  Sparkles,
 } from "lucide-react";
-import { useActionItems } from "@/services/context/ActionItemsContext.jsx";
+import { useActionItemsReport } from "../../../services/context/ActionItemsReportContext.jsx";
 
-function SummaryCard({
-  title,
-  value,
-  icon: Icon,
-  description,
-  tone = "navy",
-  delay = 0,
-}) {
+function SummaryCard({ title, value, icon: Icon, description, tone = "navy", delay = 0, featured = false }) {
   return (
-    <div
-      className="sibs-metric-card"
+    <article
+      className={`sibs-metric-card sibs-page-card-in flex min-h-[110px] flex-col justify-between ${
+        featured ? "!border-transparent !bg-gradient-to-br !from-[#042C51] !to-[#0A467E] text-white" : ""
+      }`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <p className={`truncate text-[10px] font-extrabold uppercase tracking-normal sibs-tone-${tone}-label`}>
-            {title}
-          </p>
-          <p className={`mt-2.5 truncate text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}>
-            {value}
-          </p>
-          <p className="mt-1.5 truncate text-xs font-semibold text-[#667085]">
-            {description}
-          </p>
-        </div>
+      <div className="flex items-start justify-between gap-3">
+        <p className={`min-w-0 truncate text-[10px] font-extrabold uppercase tracking-normal ${featured ? "text-white" : `sibs-tone-${tone}-label`}`}>
+          {title}
+        </p>
 
-        <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}
-        >
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${featured ? "bg-white/10 text-[#FF5C28]" : `sibs-tone-${tone}-icon`}`}>
           <Icon size={17} strokeWidth={2} />
-        </div>
+        </span>
       </div>
-    </div>
+
+      <div className="mt-2">
+        <p className={`text-3xl font-extrabold leading-none tabular-nums tracking-normal ${featured ? "text-white" : `sibs-tone-${tone}-label`}`}>
+          {value}
+        </p>
+        <p className={`mt-1.5 text-xs font-bold ${featured ? "text-slate-200" : "text-[#667085]"}`}>
+          {description}
+        </p>
+      </div>
+    </article>
   );
 }
 
 export default function ActionItemsStats() {
-  const { stats, moduleRiskTotal } = useActionItems();
+  const { executionMetrics } = useActionItemsReport();
 
   return (
-    <section
-      className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
-      style={{ animationDelay: "60ms" }}
-    >
-      <h2 className="text-base font-bold text-[#101828]">Action Items Summary</h2>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7">
-        <SummaryCard
-          title="Total Actions"
-          value={stats.total}
-          icon={FileText}
-          description="Manual + suggested"
-          tone="navy"
-        />
-        <SummaryCard
-          title="Active"
-          value={stats.active}
-          icon={Activity}
-          description="Needs movement"
-          tone="indigo"
-          delay={60}
-        />
-        <SummaryCard
-          title="Planned"
-          value={stats.planned}
-          icon={Clock3}
-          description="Not started"
-          tone="amber"
-          delay={120}
-        />
-        <SummaryCard
-          title="Completed"
-          value={stats.completed}
-          icon={CheckCircle2}
-          description={`${stats.completionRate}% complete`}
-          tone="green"
-          delay={180}
-        />
-        <SummaryCard
-          title="High Risk"
-          value={stats.highRisk}
-          icon={AlertTriangle}
-          description="Priority"
-          tone="red"
-          delay={240}
-        />
-        <SummaryCard
-          title="Overdue"
-          value={stats.overdue}
-          icon={CircleAlert}
-          description="Needs review"
-          tone="red"
-          delay={300}
-        />
-        <SummaryCard
-          title="Module Signals"
-          value={moduleRiskTotal}
-          icon={Target}
-          description="Recruitment data"
-          tone="navy"
-          delay={360}
-        />
+    <section className="sibs-profile-tab-panel" style={{ animationDelay: "60ms" }}>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+        <SummaryCard title="At-Risk Accounts" value={executionMetrics.atRiskAccounts} icon={ShieldAlert} description="Critical attention" tone="red" />
+        <SummaryCard title="Missing Action" value={executionMetrics.missingActionAccounts} icon={AlertCircle} description="Uncovered gaps" tone="amber" delay={50} />
+        <SummaryCard title="Planned" value={executionMetrics.planned} icon={Layers3} description="Queued actions" tone="indigo" delay={100} />
+        <SummaryCard title="Ongoing" value={executionMetrics.ongoing} icon={Clock3} description="In progress" tone="amber" delay={150} />
+        <SummaryCard title="Overdue" value={executionMetrics.overdue} icon={AlertTriangle} description="Breached deadline" tone="red" delay={200} />
+        <SummaryCard title="Completed" value={executionMetrics.completed} icon={CheckSquare} description="Resolved actions" tone="green" delay={250} />
+        <SummaryCard title="System Suggested" value={executionMetrics.systemSuggested} icon={Sparkles} description="Signals + auto tasks" featured delay={300} />
       </div>
     </section>
   );

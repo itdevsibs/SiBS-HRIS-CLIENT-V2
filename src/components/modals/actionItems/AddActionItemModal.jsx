@@ -11,9 +11,7 @@ import {
 } from "lucide-react";
 import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
 import {
-  EMPTY_ACTION_FORM,
   GAP_OPTIONS,
-  OWNER_OPTIONS,
   RISK_OPTIONS,
 } from "../../../lib/utils/actionItems/actionItemsConstants.js";
 
@@ -80,7 +78,9 @@ export default function AddActionItemModal() {
     actionForm,
     setActionForm,
     linkedActionOptions,
+    ownerOptions,
     selectLinkedRecord,
+    resetActionForm,
     addActionItem,
   } = useActionItems();
 
@@ -128,7 +128,7 @@ export default function AddActionItemModal() {
   }
 
   function handleReset() {
-    setActionForm({ ...EMPTY_ACTION_FORM });
+    resetActionForm();
   }
 
   return (
@@ -292,9 +292,9 @@ export default function AddActionItemModal() {
                       className={inputClass}
                     >
                       <option value="">Select owner</option>
-                      {OWNER_OPTIONS.filter(
-                        (option) => option !== "All Owners",
-                      ).map((owner) => (
+                      {ownerOptions
+                        .filter((option) => option !== "All Owners")
+                        .map((owner) => (
                         <option key={owner} value={owner}>
                           {owner}
                         </option>
