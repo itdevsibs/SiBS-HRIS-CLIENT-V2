@@ -24,11 +24,6 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
-function getApprovalLabel(user = {}) {
-  return cleanText(
-    user.displayName || user.display_name || user.name,
-  ).toUpperCase();
-}
 
 function getRateDisplay(value) {
   return value === null || value === undefined || value === ""
@@ -162,11 +157,10 @@ function VersionRateChange({ label, previousValue, currentValue }) {
 
 export default function OfferDetailsModal({ open, offer, onClose }) {
   const {
-    approvalUsers = [],
     getOfferApprovalStatus,
-    getApprovalRecordForUser,
     handleApproval,
     canCurrentUserApproveOffer,
+    isSubmittingApproval = false,
     refreshOffers,
     openStatusModal,
     setSelectedOffer,
@@ -287,16 +281,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     ? getOfferApprovalStatus(offer)
     : offer.offerApprovalStatus || offer.status || "For Review";
 
-  const approvedBy = approvalUsers.filter((approver) => {
-    const approval = getApprovalRecordForUser?.(offer, approver);
-    return approval?.status === "Approved";
-  });
-
-  const rejectedBy = approvalUsers.filter((approver) => {
-    const approval = getApprovalRecordForUser?.(offer, approver);
-    return approval?.status === "Rejected";
-  });
-
   const isAuthorizedApprover =
     typeof canCurrentUserApproveOffer === "function"
       ? canCurrentUserApproveOffer(offer)
@@ -325,9 +309,11 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     cleanText(responseStatus).toLowerCase(),
   );
 
-  const isProcessingApproval = Boolean(approvalAction);
+  const isProcessingApproval = Boolean(isSubmittingApproval);
   const isBusy = savingRevision || isProcessingApproval;
-  const processingAction = savingRevision ? "Revision" : approvalAction;
+  const processingAction = savingRevision
+    ? "Revision"
+    : approvalAction || "Approved";
 
   function handleClose() {
     if (isBusy) return;
@@ -512,98 +498,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   >
                     {approvalStatus}
                   </span>
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="text-sm font-extrabold text-[#042C51]">
-                      Offer Approval
-                    </h3>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-[#667085] sm:text-sm">
-                      Managed by database approval users from Recruitment Settings.
-                    </p>
-                  </div>
-
-                  <span
-                    className={`w-fit rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
-                      approvalStatus,
-                    )}`}
-                  >
-                    {approvalStatus}
-                  </span>
-                </div>
-
-                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
-                    Required Approvers
-                  </p>
-                  <p className="mt-2 text-sm font-bold leading-6 text-sibs-primary-1">
-                    {approvalUsers.length > 0
-                      ? approvalUsers.map(getApprovalLabel).join(", ")
-                      : "No approval users configured"}
-                  </p>
-                </div>
-
-                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
-                    Approved By
-                  </p>
-                  <p className="mt-2 text-sm font-bold leading-6 text-sibs-primary-1">
-                    {approvedBy.length > 0
-                      ? approvedBy.map(getApprovalLabel).join(", ")
-                      : "Waiting for approval"}
-                  </p>
-
-                  {rejectedBy.length > 0 ? (
-                    <>
-                      <p className="mt-4 text-[10px] font-extrabold uppercase tracking-normal text-red-600">
-                        Rejected By
-                      </p>
-                      <p className="mt-2 text-sm font-bold leading-6 text-red-600">
-                        {rejectedBy.map(getApprovalLabel).join(", ")}
-                      </p>
-                    </>
-                  ) : null}
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-extrabold text-[#042C51]">
-                  Evaluation Results
-                </h3>
-                <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
-                  Scores carried forward from Candidate Pipeline.
-                </p>
-
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
-                  <EvaluationResultItem
-                    label="Assessment Score"
-                    value={evaluationScores.assessment.display}
-                    detail={evaluationScores.assessment.result}
-                  />
-                  <EvaluationResultItem
-                    label="Job Evaluation Score"
-                    value={evaluationScores.jobEvaluation.display}
-                    detail={
-                      evaluationScores.jobEvaluation.rank
-                        ? `Rank ${evaluationScores.jobEvaluation.rank}`
-                        : ""
-                    }
-                  />
-                  <EvaluationResultItem
-                    label="Final Interview Score"
-                    value={evaluationScores.finalInterview.display}
-                    detail={[
-                      evaluationScores.finalInterview.result,
-                      evaluationScores.finalInterview.passingScore !== null
-                        ? `Passing score: ${evaluationScores.finalInterview.passingScore}`
-                        : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  />
                 </div>
               </section>
 
@@ -879,7 +773,43 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 </div>
               </section>
 
+              <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+                <h3 className="text-sm font-extrabold text-[#042C51]">
+                  Evaluation Results
+                </h3>
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                  Scores carried forward from Candidate Pipeline.
+                </p>
 
+                <div className="mt-4 space-y-3">
+                  <EvaluationResultItem
+                    label="Assessment Score"
+                    value={evaluationScores.assessment.display}
+                    detail={evaluationScores.assessment.result}
+                  />
+                  <EvaluationResultItem
+                    label="Job Evaluation Score"
+                    value={evaluationScores.jobEvaluation.display}
+                    detail={
+                      evaluationScores.jobEvaluation.rank
+                        ? `Rank ${evaluationScores.jobEvaluation.rank}`
+                        : ""
+                    }
+                  />
+                  <EvaluationResultItem
+                    label="Final Interview Score"
+                    value={evaluationScores.finalInterview.display}
+                    detail={[
+                      evaluationScores.finalInterview.result,
+                      evaluationScores.finalInterview.passingScore !== null
+                        ? `Passing score: ${evaluationScores.finalInterview.passingScore}`
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  />
+                </div>
+              </section>
             </aside>
           </div>
         </div>
