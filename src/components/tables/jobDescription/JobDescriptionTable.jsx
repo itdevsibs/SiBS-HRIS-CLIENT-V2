@@ -774,14 +774,7 @@ export default function JobDescriptionTable({
                             {getAccount(item) || "--"}
                           </p>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <span
-                            title={getLinkedHiringNeed(item) || ""}
-                            className="inline-flex max-w-[280px] truncate rounded-lg bg-[#F2F6FA] px-2.5 py-1.5 text-[10px] font-bold leading-4 text-[#475467]"
-                          >
-                            {getLinkedHiringNeed(item) || "--"}
-                          </span>
-                        </td>
+
                         <td className="px-4 py-3.5 text-xs font-semibold text-[#475467]">
                           {getSupervisoryLevel(item) || "--"}
                         </td>
