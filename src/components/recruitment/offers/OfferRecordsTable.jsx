@@ -1,29 +1,102 @@
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  History,
+  X,
+} from "lucide-react";
+
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
+import {
+  getLatestNegotiationSummary,
+  getOfferEvaluationScores,
+} from "../../../lib/utils/offers/offerEvaluationHistory";
 import { useOffers } from "../../../services/context/OffersContext";
 
-const PAGE_SIZE = 10;
-
-function getFinalAccount(offer = {}) {
+function ApprovalActionButtons({ offer, onApproveReject }) {
   return (
-    offer.finalAccount ||
-    offer.final_account ||
-    offer.accountName ||
-    offer.account_name ||
-    offer.account ||
-    offer.offerDetails?.finalAccount ||
-    offer.offerDetails?.final_account ||
-    offer.offerDetails?.accountName ||
-    offer.offerDetails?.account_name ||
-    offer.offerDetails?.account ||
-    "—"
+    <>
+      <button
+        type="button"
+        onClick={() => onApproveReject?.(offer, "Rejected")}
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
+        title="Decline offer"
+      >
+        <X size={16} />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onApproveReject?.(offer, "Approved")}
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white transition hover:opacity-90"
+        title="Approve offer"
+      >
+        <Check size={16} />
+      </button>
+    </>
   );
 }
 
+function EvaluationScoreLines({ offer }) {
+  const scores = getOfferEvaluationScores(offer);
+
+  return (
+    <div className="min-w-0 space-y-1.5">
+      {[
+        ["Assessment", scores.assessment.display],
+        ["Job Evaluation", scores.jobEvaluation.display],
+        ["Final Interview", scores.finalInterview.display],
+      ].map(([label, value]) => (
+        <div key={label} className="flex min-w-0 items-center justify-between gap-3">
+          <span className="truncate text-[11px] font-bold text-[#667085]">
+            {label}
+          </span>
+          <span className="shrink-0 text-xs font-extrabold text-[#042C51]">
+            {value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NegotiationSummary({ offer, onViewHistory }) {
+  const summary = getLatestNegotiationSummary(offer);
+
+  return (
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-sibs-primary-1">
+          Version {summary.versionNumber}
+        </span>
+
+        <span className="truncate text-[11px] font-extrabold text-[#475467]">
+          {summary.hasNegotiation ? summary.status : "Original Offer"}
+        </span>
+      </div>
+
+      <p
+        title={summary.remark || "No negotiation history"}
+        className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-[#667085]"
+      >
+        {summary.remark || "No negotiation history"}
+      </p>
+
+      <button
+        type="button"
+        onClick={onViewHistory}
+        className="mt-2 inline-flex items-center gap-1.5 text-xs font-extrabold text-sibs-primary-1 transition hover:underline"
+      >
+        <History size={14} />
+        View History
+      </button>
+    </div>
+  );
+}
 
 export default function OfferRecordsTable({
-  offersOverride,
+  offersOverride = null,
   routeFilterActive = false,
   emptyMessage = "No offered candidates found from Candidate Pipeline.",
 }) {
@@ -36,193 +109,189 @@ export default function OfferRecordsTable({
     getOfferApprovalStatus,
   } = useOffers();
 
-  const offers = useMemo(() => {
-    if (Array.isArray(offersOverride)) return offersOverride;
-    if (Array.isArray(filteredOffers)) return filteredOffers;
-    return [];
-  }, [filteredOffers, offersOverride]);
+  const displayedOffers = Array.isArray(offersOverride)
+    ? offersOverride
+    : filteredOffers;
 
-  const offerKey = useMemo(
-    () =>
-      offers
-        .map(
-          (offer) =>
-            offer.offerId ||
-            offer.candidateApplicationId ||
-            offer.candidateId ||
-            offer.candidateName ||
-            "",
-        )
-        .join("|"),
-    [offers],
-  );
+  const totalOffers = routeFilterActive
+    ? displayedOffers.length
+    : offerList.length;
 
-  const totalPages = Math.max(1, Math.ceil(offers.length / PAGE_SIZE));
-
-  const [pageState, setPageState] = useState({
-    key: offerKey,
-    routeFilterActive,
-    page: 1,
-  });
-
-  const currentPage =
-    pageState.key === offerKey &&
-    pageState.routeFilterActive === routeFilterActive
-      ? Math.min(pageState.page, totalPages)
-      : 1;
-
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const pageOffers = offers.slice(pageStart, pageStart + PAGE_SIZE);
-  const totalOfferRecords =
-    !routeFilterActive && Array.isArray(offerList) && offerList.length > 0
-      ? offerList.length
-      : offers.length;
-
-  function openOffer(offer) {
-    setSelectedOffer(offer);
+  function getApprovalStatus(offer) {
+    return getOfferApprovalStatus
+      ? getOfferApprovalStatus(offer)
+      : offer.offerApprovalStatus || offer.status || "For Review";
   }
 
-  function handleRowKeyDown(event, offer) {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    openOffer(offer);
+  function isAuthorizedApproverForOffer(offer) {
+    return typeof canCurrentUserApproveOffer === "function"
+      ? canCurrentUserApproveOffer(offer)
+      : Boolean(canCurrentUserApproveOffer);
+  }
+
+  function openOffer(offer, section = "") {
+    setSelectedOffer(
+      section
+        ? {
+            ...offer,
+            __openSection: section,
+          }
+        : offer,
+    );
   }
 
   return (
-    <div className="hidden font-jakarta lg:block">
-      <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-        <div className="overflow-x-auto">
-        <table className="w-full min-w-[1120px] table-fixed border-collapse text-left text-xs">
+    <div className="hidden lg:block">
+      <div className="overflow-x-auto rounded-[24px] border border-[#D9E2EC] bg-white">
+        <table className="min-w-[1380px] table-fixed border-separate border-spacing-0 text-left">
           <colgroup>
-            <col className="w-[24%]" />
-            <col className="w-[19%]" />
+            <col className="w-[17%]" />
+            <col className="w-[15%]" />
             <col className="w-[18%]" />
-            <col className="w-[14%]" />
-            <col className="w-[11%]" />
+            <col className="w-[17%]" />
+            <col className="w-[10%]" />
+            <col className="w-[9%]" />
             <col className="w-[14%]" />
           </colgroup>
 
-          <thead className="sibs-data-table-head">
-            <tr className="sibs-data-table-head-row">
-              <th className="sibs-data-table-th">Candidate</th>
-              <th className="sibs-data-table-th">Final Role</th>
-              <th className="sibs-data-table-th">Final Account</th>
-              <th className="sibs-data-table-th">Approval</th>
-              <th className="sibs-data-table-th">Owner</th>
-              <th className="sibs-data-table-th text-right">Actions</th>
+          <thead>
+            <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-[0.04em] text-[#174A7C]">
+              <th className="rounded-tl-[24px] px-5 py-5">Candidate</th>
+              <th className="px-5 py-5">Final Role / Account</th>
+              <th className="px-5 py-5">Evaluation Scores</th>
+              <th className="px-5 py-5">Negotiation</th>
+              <th className="px-5 py-5">Approval</th>
+              <th className="px-5 py-5">Owner</th>
+              <th className="rounded-tr-[24px] px-5 py-5 text-right">
+                Actions
+              </th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[#E6ECF2]">
-            {pageOffers.length > 0 ? (
-              pageOffers.map((offer) => {
-                const approvalStatus = getOfferApprovalStatus
-                  ? getOfferApprovalStatus(offer)
-                  : offer.offerApprovalStatus || offer.status || "For Review";
-
+          <tbody>
+            {displayedOffers.length > 0 ? (
+              displayedOffers.map((offer, index) => {
+                const approvalStatus = getApprovalStatus(offer);
+                const isLastRow = index === displayedOffers.length - 1;
                 const isAuthorizedApprover =
-                  typeof canCurrentUserApproveOffer === "function"
-                    ? canCurrentUserApproveOffer(offer)
-                    : Boolean(canCurrentUserApproveOffer);
+                  isAuthorizedApproverForOffer(offer);
+                const rowBorderClass = isLastRow
+                  ? ""
+                  : "border-b border-[#E6ECF2]";
 
                 return (
                   <tr
-                    key={`${offer.offerId}-${offer.candidateApplicationId}`}
-                    className="sibs-data-table-row align-middle"
-                    role="button"
-                    tabIndex={0}
+                    key={`${offer.offerId}-${offer.candidateApplicationId}-${offer.id}`}
+                    className="cursor-pointer align-middle transition hover:bg-[#FAFBFC]"
                     onClick={() => openOffer(offer)}
-                    onKeyDown={(event) => handleRowKeyDown(event, offer)}
-                    aria-label={`View offer for ${offer.candidateName || "candidate"}`}
                   >
-                    <td className="px-4 py-3.5 align-middle">
-                      <p
-                        title={offer.candidateName}
-                        className="truncate text-xs font-extrabold text-[#042C51]"
-                      >
-                        {offer.candidateName || "—"}
-                      </p>
-                      <p className="mt-0.5 truncate text-[10px] font-semibold text-[#667085]">
-                        {offer.offerId || "—"} • {offer.candidateId || "—"}
-                      </p>
+                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                      <div className="min-w-0">
+                        <p
+                          title={offer.candidateName}
+                          className="truncate whitespace-nowrap text-[15px] font-extrabold text-[#101828]"
+                        >
+                          {offer.candidateName || "—"}
+                        </p>
+                        <p className="mt-1 truncate whitespace-nowrap text-xs font-semibold text-[#475467]">
+                          {offer.offerId || "—"} • {offer.candidateId || "—"}
+                        </p>
+                      </div>
                     </td>
 
-                    <td className="px-4 py-3.5 align-middle">
-                      <p
-                        title={offer.roleTitle}
-                        className="truncate text-xs font-extrabold text-[#042C51]"
-                      >
-                        {offer.roleTitle || "—"}
-                      </p>
+                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                      <div className="min-w-0">
+                        <p
+                          title={offer.roleTitle}
+                          className="truncate whitespace-nowrap text-[14px] font-extrabold text-[#101828]"
+                        >
+                          {offer.roleTitle || "—"}
+                        </p>
+                        <p
+                          title={offer.account}
+                          className="mt-1 truncate whitespace-nowrap text-xs font-semibold text-[#475467]"
+                        >
+                          {offer.account || "—"}
+                        </p>
+                      </div>
                     </td>
 
-                    <td className="px-4 py-3.5 align-middle">
-                      <p
-                        title={getFinalAccount(offer)}
-                        className="truncate text-xs font-bold text-[#344054]"
-                      >
-                        {getFinalAccount(offer)}
-                      </p>
+                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                      <EvaluationScoreLines offer={offer} />
                     </td>
 
-                    <td className="px-4 py-3.5 align-middle">
+                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                      <NegotiationSummary
+                        offer={offer}
+                        onViewHistory={(event) => {
+                          event.stopPropagation();
+                          openOffer(offer, "negotiation-history");
+                        }}
+                      />
+                    </td>
+
+                    <td className={`px-5 py-5 ${rowBorderClass}`}>
                       <span
                         title={approvalStatus}
-                        className={`inline-flex max-w-full items-center rounded-lg border px-2.5 py-1 text-[10px] font-extrabold ${getStatusClass(
+                        className={`inline-flex h-9 max-w-full items-center rounded-full border px-3 text-xs font-extrabold ${getStatusClass(
                           approvalStatus,
                         )}`}
                       >
-                        <span className="truncate">{approvalStatus}</span>
+                        <span className="truncate whitespace-nowrap">
+                          {approvalStatus}
+                        </span>
                       </span>
                     </td>
 
-                    <td className="px-4 py-3.5 align-middle">
-                      <p className="truncate text-xs font-bold text-[#344054]">
+                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                      <p
+                        title={offer.owner}
+                        className="truncate whitespace-nowrap text-sm font-bold text-[#344054]"
+                      >
                         {offer.owner || "—"}
                       </p>
                     </td>
 
-                    <td className="px-4 py-3.5 text-right align-middle">
+                    <td className={`px-5 py-5 text-right ${rowBorderClass}`}>
                       <div
-                        className="flex items-center justify-end gap-1.5"
+                        className="flex min-w-0 items-center justify-end gap-2"
                         onClick={(event) => event.stopPropagation()}
-                        onKeyDown={(event) => event.stopPropagation()}
                       >
                         <button
                           type="button"
                           onClick={() => openOffer(offer)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/20"
+                          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
                           title="View offer details"
                         >
-                          <Eye size={14} />
+                          <Eye size={16} />
                         </button>
 
                         {approvalStatus === "For Review" &&
-                        isAuthorizedApprover ? (
-                          <ApprovalActionButtons
-                            offer={offer}
-                            onApproveReject={handleApproval}
-                          />
-                        ) : null}
+                          isAuthorizedApprover && (
+                            <ApprovalActionButtons
+                              offer={offer}
+                              onApproveReject={handleApproval}
+                            />
+                          )}
 
                         {approvalStatus === "For Review" &&
-                        !isAuthorizedApprover ? (
-                          <span className="inline-flex h-8 max-w-[160px] items-center rounded-lg border border-amber-100 bg-amber-50 px-2.5 text-[10px] font-extrabold text-amber-700">
-                            <span className="truncate">Waiting for approver</span>
-                          </span>
-                        ) : null}
+                          !isAuthorizedApprover && (
+                            <span className="inline-flex h-10 max-w-[170px] items-center justify-center rounded-xl border border-amber-100 bg-amber-50 px-3 text-xs font-extrabold text-amber-700">
+                              Waiting for approver
+                            </span>
+                          )}
 
-                        {approvalStatus === "Approved" ? (
-                          <span className="inline-flex h-8 max-w-[145px] items-center rounded-lg border border-blue-100 bg-blue-50 px-2.5 text-[10px] font-extrabold text-blue-700">
-                            <span className="truncate">Ready in Pipeline</span>
+                        {approvalStatus === "Approved" && (
+                          <span className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-3 text-xs font-extrabold text-blue-700">
+                            Ready in Pipeline
                           </span>
-                        ) : null}
+                        )}
 
-                        {approvalStatus === "Rejected" ? (
-                          <span className="inline-flex h-8 items-center rounded-lg border border-red-100 bg-red-50 px-2.5 text-[10px] font-extrabold text-red-700">
+                        {approvalStatus === "Rejected" && (
+                          <span className="inline-flex h-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 px-3 text-xs font-extrabold text-red-700">
                             Rejected
                           </span>
-                        ) : null}
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -230,98 +299,46 @@ export default function OfferRecordsTable({
               })
             ) : (
               <tr>
-                <td colSpan={6} className="px-5 py-12 text-center">
-                  <p className="text-sm font-extrabold text-[#042C51]">
-                    {emptyMessage}
-                  </p>
-                  {routeFilterActive ? (
-                    <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                      Clear the selected candidate to return to all offers.
-                    </p>
-                  ) : null}
+                <td
+                  colSpan={7}
+                  className="px-6 py-14 text-center text-sm font-bold text-[#667085]"
+                >
+                  {emptyMessage}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-        </div>
       </div>
 
-      <div className="sibs-pagination sibs-pagination--compact mt-4">
-        <p className="sibs-pagination__summary">
-          Showing <span>{pageOffers.length}</span> loaded{" "}
-          {routeFilterActive ? "selected candidate offers" : "offered candidates"}
-          {totalOfferRecords > 0 ? (
-            <>
-              {" "}
-              out of <span>{totalOfferRecords}</span>
-            </>
-          ) : null}
+      <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <p className="text-sm font-semibold text-[#475467]">
+          Showing {displayedOffers.length} of {totalOffers} offered candidates
         </p>
 
-        <div className="sibs-pagination__controls">
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() =>
-              setPageState({
-                key: offerKey,
-                routeFilterActive,
-                page: Math.max(1, currentPage - 1),
-              })
-            }
-            disabled={currentPage === 1}
-            className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
-            aria-label="Go to previous page"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50"
+            aria-label="Previous page"
           >
-            <ChevronLeft size={15} />
-            <span>Previous</span>
+            <ChevronLeft size={16} />
           </button>
-
-          <span className="sibs-pagination__page is-active h-10 px-3 sm:px-4">
-            Page {currentPage}
-            {totalPages > 1 ? ` of ${totalPages}` : ""}
-          </span>
-
           <button
             type="button"
-            onClick={() =>
-              setPageState({
-                key: offerKey,
-                routeFilterActive,
-                page: Math.min(totalPages, currentPage + 1),
-              })
-            }
-            disabled={currentPage === totalPages}
-            className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
-            aria-label="Go to next page"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-bold text-white"
           >
-            <span>Next</span>
-            <ChevronRight size={15} />
+            1
+          </button>
+          <button
+            type="button"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50"
+            aria-label="Next page"
+          >
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>
     </div>
-  );
-}
-
-function ApprovalActionButtons({ offer, onApproveReject }) {
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-      <button
-        type="button"
-        onClick={() => onApproveReject(offer, "Approved")}
-        className="inline-flex h-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-extrabold text-emerald-700 transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-      >
-        Approve
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onApproveReject(offer, "Rejected")}
-        className="inline-flex h-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 px-2.5 text-[10px] font-extrabold text-red-700 transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-200"
-      >
-        Reject
-      </button>
-    </span>
   );
 }
