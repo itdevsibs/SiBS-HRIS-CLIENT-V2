@@ -632,15 +632,49 @@ function normalizeCandidateForOffers(candidate = {}) {
 
     offerDecision:
       safeCandidate.offerDecision ||
-      safeCandidate.candidateResponse ||
       safeCandidate.offer_decision ||
+      safeCandidate.offerResponseStatus ||
+      safeCandidate.offer_response_status ||
+      safeCandidate.candidateResponse ||
+      safeCandidate.candidate_response ||
       "",
 
-    candidateResponse:
+    offerResponseStatus:
+      safeCandidate.offerResponseStatus ||
+      safeCandidate.offer_response_status ||
       safeCandidate.candidateResponse ||
+      safeCandidate.candidate_response ||
       safeCandidate.offerDecision ||
       safeCandidate.offer_decision ||
       "Pending",
+
+    offer_response_status:
+      safeCandidate.offerResponseStatus ||
+      safeCandidate.offer_response_status ||
+      safeCandidate.candidateResponse ||
+      safeCandidate.candidate_response ||
+      safeCandidate.offerDecision ||
+      safeCandidate.offer_decision ||
+      "Pending",
+
+    candidateResponse:
+      safeCandidate.offerResponseStatus ||
+      safeCandidate.offer_response_status ||
+      safeCandidate.candidateResponse ||
+      safeCandidate.candidate_response ||
+      safeCandidate.offerDecision ||
+      safeCandidate.offer_decision ||
+      "Pending",
+
+    offerNegotiationMessage:
+      safeCandidate.offerNegotiationMessage ||
+      safeCandidate.offer_negotiation_message ||
+      "",
+
+    offer_negotiation_message:
+      safeCandidate.offerNegotiationMessage ||
+      safeCandidate.offer_negotiation_message ||
+      "",
 
     offerEmailSent: Boolean(
       safeCandidate.offerEmailSent ||
@@ -835,8 +869,6 @@ export function OffersProvider({ children }) {
 
   const [apiCandidates, setApiCandidates] = useState([]);
   const [isLoadingOffers, setIsLoadingOffers] = useState(false);
-  const [isProcessingOfferDecision, setIsProcessingOfferDecision] =
-    useState(false);
   const [offersLoadError, setOffersLoadError] = useState("");
   const [storageSyncTick, setStorageSyncTick] = useState(0);
 
@@ -947,12 +979,37 @@ export function OffersProvider({ children }) {
       refreshOffers();
     }
 
+    const refreshTimer = window.setInterval(() => {
+      if (
+        document.visibilityState === "visible" &&
+        !isLoadingOffers
+      ) {
+        refreshOffers();
+      }
+    }, 10000);
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        refreshOffers();
+      }
+    }
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange,
+    );
+
     window.addEventListener("storage", handleSyncEvent);
     window.addEventListener("focus", handleSyncEvent);
     window.addEventListener("ta-pipeline-candidates-updated", handleSyncEvent);
     window.addEventListener("ta-offers-updated", handleSyncEvent);
 
     return () => {
+      window.clearInterval(refreshTimer);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
       window.removeEventListener("storage", handleSyncEvent);
       window.removeEventListener("focus", handleSyncEvent);
       window.removeEventListener(
@@ -961,7 +1018,7 @@ export function OffersProvider({ children }) {
       );
       window.removeEventListener("ta-offers-updated", handleSyncEvent);
     };
-  }, [refreshOffers]);
+  }, [isLoadingOffers, refreshOffers]);
 
   const currentApprovalUser = useMemo(() => {
     return findCurrentApprovalUser({
@@ -1229,10 +1286,6 @@ export function OffersProvider({ children }) {
   }
 
   async function handleApproval(offer, status) {
-    if (isProcessingOfferDecision) {
-      return;
-    }
-
     if (approvalUsersLoading) {
       openStatusModal({
         type: "error",
@@ -1303,8 +1356,6 @@ export function OffersProvider({ children }) {
 
     const nextCandidateResponse =
       nextApprovalStatus === "Approved" ? "Pending" : nextApprovalStatus;
-
-    setIsProcessingOfferDecision(true);
 
     try {
       const pipelineRecordId = getCandidatePipelineRecordId(offer);
@@ -1437,8 +1488,6 @@ export function OffersProvider({ children }) {
           error?.message ||
           "Failed to update offer approval.",
       });
-    } finally {
-      setIsProcessingOfferDecision(false);
     }
   }
 
@@ -1481,7 +1530,6 @@ export function OffersProvider({ children }) {
       getApprovalRecordForUser(getApprovalsObject(offer), approvalUser),
 
     isLoadingOffers,
-    isProcessingOfferDecision,
     offersLoadError,
     refreshOffers,
     openStatusModal,
