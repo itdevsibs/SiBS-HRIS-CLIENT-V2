@@ -47,11 +47,66 @@ import ApprovalRequest from "./pages/communication/ApprovalRequest";
 import KronosDatasPage from "./pages/kronos-datas/KronosDatasPage";
 import WorkforceHiringOverviewPage from "./pages/recruitment/WorkforceHiringOverviewPage";
 
+const DEFAULT_PUBLIC_APPLICATION_HOST = "sibsapply.getleadsource.com";
+
+function normalizeHostname(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "");
+}
+
+function getPublicApplicationHosts() {
+  const configuredHosts =
+    import.meta.env.VITE_PUBLIC_APPLICATION_HOSTS ||
+    import.meta.env.VITE_PUBLIC_APPLICATION_HOST ||
+    DEFAULT_PUBLIC_APPLICATION_HOST;
+
+  return String(configuredHosts)
+    .split(",")
+    .map(normalizeHostname)
+    .filter(Boolean);
+}
+
+export function isPublicApplicationHostname(hostname) {
+  const normalizedHostname = normalizeHostname(hostname);
+
+  if (!normalizedHostname) {
+    return false;
+  }
+
+  return getPublicApplicationHosts().includes(normalizedHostname);
+}
+
 function PrivateRoute({ children }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
 }
 
-export default function Router() {
+function PublicApplicationRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<TalentPoolApplyPage />} />
+
+      {/* Keep old public links working, but show the clean root URL. */}
+      <Route path="/apply" element={<Navigate to="/" replace />} />
+      <Route
+        path="/recruitment/talent-pool/apply"
+        element={<Navigate to="/" replace />}
+      />
+      <Route
+        path="/public/talent-pool/apply"
+        element={<Navigate to="/" replace />}
+      />
+
+      {/* Do not expose HRIS routes through the public application hostname. */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+function MainApplicationRoutes() {
   return (
     <Routes>
       {/* AUTH / PUBLIC */}
@@ -69,7 +124,6 @@ export default function Router() {
         path="/online-assessment"
         element={<FinalInterviewForms publicMode />}
       />
-
 
       {/* PUBLIC CANDIDATE INTERVIEW SCHEDULING */}
       <Route
@@ -109,12 +163,6 @@ export default function Router() {
       <Route
         path="/approval-requests"
         element={<Navigate to="/approval-request" replace />}
-      />
-
-      {/* PUBLIC RECRUITMENT FORM */}
-      <Route
-        path="/recruitment/talent-pool/apply"
-        element={<TalentPoolApplyPage />}
       />
 
       {/* DASHBOARDS */}
@@ -423,15 +471,6 @@ export default function Router() {
       />
 
       <Route
-        path="/kronos-attendance"
-        element={
-          <PrivateRoute>
-            <KronosAttendancePage />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
         path="/approval-request/job-description/view/:id"
         element={
           <PrivateRoute>
@@ -453,4 +492,15 @@ export default function Router() {
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
+}
+
+export default function Router() {
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname : "";
+
+  if (isPublicApplicationHostname(hostname)) {
+    return <PublicApplicationRoutes />;
+  }
+
+  return <MainApplicationRoutes />;
 }
