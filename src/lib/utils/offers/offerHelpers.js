@@ -184,11 +184,15 @@ export function normalizePipelineCandidateToOffer(
   );
 
   const candidateResponse =
-    override.candidateResponse ||
     candidate.offerResponseStatus ||
     candidate.offer_response_status ||
-    candidate.offerDecision ||
     candidate.candidateResponse ||
+    candidate.candidate_response ||
+    candidate.offerDecision ||
+    candidate.offer_decision ||
+    override.offerResponseStatus ||
+    override.offer_response_status ||
+    override.candidateResponse ||
     "Pending";
 
   const approvalSummary = getOfferApprovalSummary({ approvals });
@@ -279,6 +283,21 @@ export function normalizePipelineCandidateToOffer(
       override.contractSentAt || candidate.offerEmailSentAt || null,
 
     candidateResponse,
+    candidate_response: candidateResponse,
+    offerResponseStatus: candidateResponse,
+    offer_response_status: candidateResponse,
+    offerNegotiationMessage:
+      candidate.offerNegotiationMessage ||
+      candidate.offer_negotiation_message ||
+      override.offerNegotiationMessage ||
+      override.offer_negotiation_message ||
+      "",
+    offer_negotiation_message:
+      candidate.offerNegotiationMessage ||
+      candidate.offer_negotiation_message ||
+      override.offerNegotiationMessage ||
+      override.offer_negotiation_message ||
+      "",
     responseDate: override.responseDate || candidate.offerDecisionAt || null,
 
     declineCategory: candidate.dropOffCategory || "",

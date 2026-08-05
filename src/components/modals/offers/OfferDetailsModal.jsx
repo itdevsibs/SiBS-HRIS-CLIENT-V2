@@ -68,8 +68,19 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
   const responseStatus =
     offer.offerResponseStatus ||
+    offer.offer_response_status ||
     offer.candidateResponse ||
+    offer.candidate_response ||
+    offer.offerDecision ||
+    offer.offer_decision ||
     "Pending";
+
+  const negotiationMessage =
+    offer.offerNegotiationMessage ||
+    offer.offer_negotiation_message ||
+    offer.offerDetails?.offerNegotiationMessage ||
+    offer.offerDetails?.offer_negotiation_message ||
+    "";
 
   const canSubmitRevision =
     responseStatus === "Negotiate" ||
