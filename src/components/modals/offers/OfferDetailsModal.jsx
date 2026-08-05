@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, X, XCircle } from "lucide-react";
+import { Check, Loader2, X, XCircle } from "lucide-react";
 import api from "../../../lib/axios/api-template";
 
 import DetailRow from "../../recruitment/offers/common/DetailRow";
@@ -14,6 +14,53 @@ function cleanText(value) {
 
 function getApprovalLabel(user = {}) {
   return cleanText(user.displayName || user.display_name || user.name).toUpperCase();
+}
+
+function OfferApprovalLoadingOverlay({ action = "" }) {
+  const isApproving = action === "Approved";
+
+  return (
+    <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-[2px]">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label={isApproving ? "Approving offer" : "Declining offer"}
+        className="w-full max-w-md rounded-2xl border border-[#D6DEE8] bg-white p-5 shadow-2xl sm:p-6"
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FB] text-sibs-primary-1">
+            <Loader2 size={22} className="animate-spin" />
+          </div>
+
+          <div className="min-w-0">
+            <h3 className="text-base font-extrabold text-sibs-primary-1">
+              {isApproving ? "Approving Offer" : "Declining Offer"}
+            </h3>
+
+            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
+              {isApproving
+                ? "Please wait while the approval is saved and the offer records are refreshed."
+                : "Please wait while the decline decision is saved and the offer records are refreshed."}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-3 animate-pulse">
+          <div className="h-3 w-2/5 rounded-full bg-slate-200" />
+          <div className="h-11 rounded-xl bg-slate-100" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="h-16 rounded-xl bg-slate-100" />
+            <div className="h-16 rounded-xl bg-slate-100" />
+          </div>
+          <div className="h-3 w-3/5 rounded-full bg-slate-200" />
+        </div>
+
+        <p className="mt-5 text-center text-sm font-extrabold text-sibs-primary-1">
+          {isApproving ? "Approving offer..." : "Declining offer..."}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default function OfferDetailsModal({ open, offer, onClose }) {
@@ -31,12 +78,14 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   const [revisedDeminimis, setRevisedDeminimis] = useState("");
   const [revisedRemarks, setRevisedRemarks] = useState("");
   const [savingRevision, setSavingRevision] = useState(false);
+  const [approvalAction, setApprovalAction] = useState("");
 
   useEffect(() => {
     if (!offer) return;
     setRevisedBasicPay(String(offer.basicPay ?? ""));
     setRevisedDeminimis(String(offer.deminimisDailyRate ?? ""));
     setRevisedRemarks("");
+    setApprovalAction("");
   }, [offer]);
 
   if (!open || !offer) return null;
@@ -85,6 +134,47 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   const canSubmitRevision =
     responseStatus === "Negotiate" ||
     responseStatus === "Negotiation";
+
+  const isProcessingApproval = Boolean(approvalAction);
+  const isBusy = savingRevision || isProcessingApproval;
+
+  function handleClose() {
+    if (isBusy) return;
+    onClose?.();
+  }
+
+  async function handleOfferApproval(status) {
+    if (!canReviewOffer || isBusy || typeof handleApproval !== "function") {
+      return;
+    }
+
+    setApprovalAction(status);
+
+    try {
+      const result = await handleApproval(offer, status);
+
+      if (result?.success === false) {
+        throw new Error(
+          result?.message ||
+            `Unable to ${status === "Approved" ? "approve" : "decline"} the offer.`,
+        );
+      }
+    } catch (error) {
+      openStatusModal?.({
+        type: "error",
+        title:
+          status === "Approved"
+            ? "Offer Approval Failed"
+            : "Offer Decline Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          `Unable to ${status === "Approved" ? "approve" : "decline"} the offer.`,
+      });
+    } finally {
+      setApprovalAction("");
+    }
+  }
 
   async function submitRevision() {
     const pipelineId =
@@ -140,12 +230,16 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   return (
     <div
       className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white font-jakarta shadow-xl"
+        className="relative flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white font-jakarta shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {isProcessingApproval ? (
+          <OfferApprovalLoadingOverlay action={approvalAction} />
+        ) : null}
+
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-4 text-white sm:px-6">
           <div>
             <h2 className="text-lg font-extrabold tracking-normal sm:text-xl">
@@ -159,8 +253,9 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
           <button
             type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+            onClick={handleClose}
+            disabled={isBusy}
+            className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X size={20} />
           </button>
@@ -265,19 +360,29 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <label className="text-xs font-extrabold text-[#042C51]">
                       Revised Basic Daily Rate
-                      <input type="number" min="0" step="0.01" value={revisedBasicPay} onChange={(event) => setRevisedBasicPay(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-slate-300 bg-white px-3" />
+                      <input type="number" min="0" step="0.01" value={revisedBasicPay} disabled={isBusy} onChange={(event) => setRevisedBasicPay(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-slate-300 bg-white px-3" />
                     </label>
                     <label className="text-xs font-extrabold text-[#042C51]">
                       Revised Daily De Minimis
-                      <input type="number" min="0" step="0.01" value={revisedDeminimis} onChange={(event) => setRevisedDeminimis(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-slate-300 bg-white px-3" />
+                      <input type="number" min="0" step="0.01" value={revisedDeminimis} disabled={isBusy} onChange={(event) => setRevisedDeminimis(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-slate-300 bg-white px-3" />
                     </label>
                   </div>
                   <label className="mt-3 block text-xs font-extrabold text-[#042C51]">
                     Internal Remarks
-                    <textarea rows={3} value={revisedRemarks} onChange={(event) => setRevisedRemarks(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-300 bg-white p-3" />
+                    <textarea rows={3} value={revisedRemarks} disabled={isBusy} onChange={(event) => setRevisedRemarks(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-300 bg-white p-3" />
                   </label>
-                  <button type="button" disabled={savingRevision} onClick={submitRevision} className="mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-5 text-xs font-extrabold text-white disabled:opacity-50">
-                    {savingRevision ? "Submitting..." : "Submit Revised Offer for Approval"}
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={submitRevision}
+                    className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {savingRevision ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : null}
+                    {savingRevision
+                      ? "Submitting..."
+                      : "Submit Revised Offer for Approval"}
                   </button>
                 </section>
               ) : null}
@@ -343,12 +448,13 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
           </div>
         </div>
 
-        <div className="border-t border-[#E6ECF2] px-5 py-4 sm:px-6">
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
-              onClick={onClose}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-5 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+              onClick={handleClose}
+              disabled={isBusy}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Close
             </button>
@@ -357,20 +463,34 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               <>
                 <button
                   type="button"
-                  onClick={() => handleApproval?.(offer, "Rejected")}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-5 text-xs font-extrabold text-red-700 transition hover:border-red-300 hover:bg-red-100"
+                  disabled={isBusy}
+                  onClick={() => handleOfferApproval("Rejected")}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-extrabold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <XCircle size={16} />
-                  Decline
+                  {approvalAction === "Rejected" ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <XCircle size={16} />
+                  )}
+                  {approvalAction === "Rejected"
+                    ? "Declining..."
+                    : "Decline"}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleApproval?.(offer, "Approved")}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-emerald-600 bg-emerald-600 px-5 text-xs font-extrabold text-white transition hover:border-emerald-700 hover:bg-emerald-700"
+                  disabled={isBusy}
+                  onClick={() => handleOfferApproval("Approved")}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Check size={16} />
-                  Approve
+                  {approvalAction === "Approved" ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Check size={16} />
+                  )}
+                  {approvalAction === "Approved"
+                    ? "Approving..."
+                    : "Approve"}
                 </button>
               </>
             ) : null}
