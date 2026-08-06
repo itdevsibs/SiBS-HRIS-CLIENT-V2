@@ -77,7 +77,7 @@ export default function RevisedOfferModal({
       nextDailyDeMinimis === Number(currentDailyDeMinimis || 0)
     ) {
       setErrorMessage(
-        "The revised compensation must be different from the current offer.",
+        "The new compensation must be different from the current offer.",
       );
       return;
     }
@@ -96,6 +96,12 @@ export default function RevisedOfferModal({
     event.currentTarget.blur();
   }
 
+  function preventNumberArrowChange(event) {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+    }
+  }
+
   return (
     <div
       className="sibs-modal-blur fixed inset-0 z-[13000] flex h-dvh items-center justify-center px-4 py-4"
@@ -109,10 +115,10 @@ export default function RevisedOfferModal({
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <h2 className="text-xl font-extrabold text-sibs-primary-1">
-              Create Revised Offer
+              Create New Offer
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
-              Enter the revised compensation and submit it for approval.
+              Enter the new compensation and submit it for approval.
             </p>
           </div>
 
@@ -197,6 +203,7 @@ export default function RevisedOfferModal({
                     value={basicDailyRate}
                     disabled={isSubmitting}
                     onWheel={preventNumberWheel}
+                    onKeyDown={preventNumberArrowChange}
                     onChange={(event) => setBasicDailyRate(event.target.value)}
                     placeholder="Enter new basic daily rate"
                     className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -215,6 +222,7 @@ export default function RevisedOfferModal({
                     value={dailyDeMinimis}
                     disabled={isSubmitting}
                     onWheel={preventNumberWheel}
+                    onKeyDown={preventNumberArrowChange}
                     onChange={(event) => setDailyDeMinimis(event.target.value)}
                     placeholder="Enter new daily de minimis"
                     className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -242,7 +250,7 @@ export default function RevisedOfferModal({
               disabled={isSubmitting}
               onChange={(event) => setRemarks(event.target.value)}
               rows={4}
-              placeholder="Add a reason or justification for the revised offer..."
+              placeholder="Add a reason or justification for the new offer..."
               className="mt-2 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
             />
           </label>
@@ -272,7 +280,7 @@ export default function RevisedOfferModal({
             {isSubmitting && <Loader2 size={16} className="animate-spin" />}
             {isSubmitting
               ? "Submitting..."
-              : "Submit Revised Offer for Approval"}
+              : "Submit New Offer for Approval"}
           </button>
         </div>
       </form>

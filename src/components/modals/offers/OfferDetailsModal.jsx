@@ -11,7 +11,6 @@ import {
 import api from "../../../lib/axios/api-template";
 
 import DetailRow from "../../recruitment/offers/common/DetailRow";
-import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
 
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import { formatCurrency } from "../../../lib/utils/offers/offerFormatters";
@@ -158,12 +157,6 @@ function VersionRateChange({ label, previousValue, currentValue }) {
 }
 
 export default function OfferDetailsModal({ open, offer, onClose }) {
-  const [employmentOfferPreview, setEmploymentOfferPreview] = useState({
-    open: false,
-    filename: "",
-    requestUrl: "",
-  });
-
   const {
     getOfferApprovalStatus,
     handleApproval,
@@ -186,8 +179,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   useEffect(() => {
     if (!offer) return;
 
-    setRevisedBasicPay(String(offer.basicPay ?? ""));
-    setRevisedDeminimis(String(offer.deminimisDailyRate ?? ""));
+    /*
+     * A negotiated offer must be entered explicitly. Do not prefill the
+     * current approved compensation because that can be submitted by mistake.
+     */
+    setRevisedBasicPay("");
+    setRevisedDeminimis("");
     setRevisedRemarks("");
     setApprovalAction("");
     setLoadedOfferVersions([]);
@@ -361,6 +358,17 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     }
   }
 
+  function preventCompensationWheel(event) {
+    event.preventDefault();
+    event.currentTarget.blur();
+  }
+
+  function preventCompensationArrowChange(event) {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+    }
+  }
+
   async function submitRevision() {
     const pipelineId =
       offer.candidatePipelineId ||
@@ -370,14 +378,32 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
     if (!pipelineId || isBusy) return;
 
+    if (String(revisedBasicPay).trim() === "") {
+      openStatusModal?.({
+        type: "error",
+        title: "New Basic Daily Rate Required",
+        message: "Please enter the new Basic Daily Rate.",
+      });
+      return;
+    }
+
+    if (String(revisedDeminimis).trim() === "") {
+      openStatusModal?.({
+        type: "error",
+        title: "New Daily De Minimis Required",
+        message: "Please enter the new Daily De Minimis.",
+      });
+      return;
+    }
+
     const nextBasicPay = Number(revisedBasicPay);
     const nextDeminimis = Number(revisedDeminimis);
 
     if (!Number.isFinite(nextBasicPay) || nextBasicPay < 0) {
       openStatusModal?.({
         type: "error",
-        title: "Invalid Basic Daily Rate",
-        message: "Enter a valid non-negative Basic Daily Rate.",
+        title: "Invalid New Basic Daily Rate",
+        message: "Enter a valid non-negative new Basic Daily Rate.",
       });
       return;
     }
@@ -385,8 +411,8 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     if (!Number.isFinite(nextDeminimis) || nextDeminimis < 0) {
       openStatusModal?.({
         type: "error",
-        title: "Invalid Daily De Minimis",
-        message: "Enter a valid non-negative Daily De Minimis.",
+        title: "Invalid New Daily De Minimis",
+        message: "Enter a valid non-negative new Daily De Minimis.",
       });
       return;
     }
@@ -459,19 +485,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
         className="relative flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white font-jakarta shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <EmploymentOfferPdfPreviewModal
-          open={employmentOfferPreview.open}
-          filename={employmentOfferPreview.filename}
-          requestUrl={employmentOfferPreview.requestUrl}
-          onClose={() =>
-            setEmploymentOfferPreview({
-              open: false,
-              filename: "",
-              requestUrl: "",
-            })
-          }
-        />
-
         {isBusy ? <ProcessingOverlay action={processingAction} /> : null}
 
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-4 text-white sm:px-6">
@@ -533,32 +546,40 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <label className="text-xs font-extrabold text-[#042C51]">
-                      Revised Basic Daily Rate
+                      New Basic Daily Rate
                       <input
                         type="number"
                         min="0"
                         step="0.01"
+                        inputMode="decimal"
                         value={revisedBasicPay}
                         disabled={isBusy}
+                        onWheel={preventCompensationWheel}
+                        onKeyDown={preventCompensationArrowChange}
                         onChange={(event) =>
                           setRevisedBasicPay(event.target.value)
                         }
-                        className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold outline-none focus:border-sibs-primary-1"
+                        placeholder="Enter new basic daily rate"
+                        className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       />
                     </label>
 
                     <label className="text-xs font-extrabold text-[#042C51]">
-                      Revised Daily De Minimis
+                      New Daily De Minimis
                       <input
                         type="number"
                         min="0"
                         step="0.01"
+                        inputMode="decimal"
                         value={revisedDeminimis}
                         disabled={isBusy}
+                        onWheel={preventCompensationWheel}
+                        onKeyDown={preventCompensationArrowChange}
                         onChange={(event) =>
                           setRevisedDeminimis(event.target.value)
                         }
-                        className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold outline-none focus:border-sibs-primary-1"
+                        placeholder="Enter new daily de minimis"
+                        className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       />
                     </label>
                   </div>
@@ -585,7 +606,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     ) : null}
                     {savingRevision
                       ? "Submitting..."
-                      : "Submit Revised Offer for Approval"}
+                      : "Submit New Offer for Approval"}
                   </button>
                 </section>
               ) : null}
@@ -745,20 +766,13 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                               offer.candidate_pipeline_id ||
                               offer.dbId ||
                               offer.id;
-
-                            setEmploymentOfferPreview({
-                              open: true,
-                              filename:
-                                version.pdfFilename ||
-                                version.pdf_filename ||
-                                `Employment Offer Version ${version.versionNumber}.pdf`,
-                              requestUrl:
-                                `/api/candidate-pipeline/${encodeURIComponent(
-                                  pipelineId,
-                                )}/offer-versions/${encodeURIComponent(
-                                  version.versionNumber,
-                                )}/pdf`,
-                            });
+                            const baseUrl = cleanText(api.defaults?.baseURL).replace(/\/$/, "");
+                            const pdfUrl = `${baseUrl}/api/candidate-pipeline/${encodeURIComponent(
+                              pipelineId,
+                            )}/offer-versions/${encodeURIComponent(
+                              version.versionNumber,
+                            )}/pdf`;
+                            window.open(pdfUrl, "_blank", "noopener,noreferrer");
                           }}
                           className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-blue-100"
                         >
