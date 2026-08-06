@@ -11,6 +11,7 @@ import {
 import api from "../../../lib/axios/api-template";
 
 import DetailRow from "../../recruitment/offers/common/DetailRow";
+import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
 
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import { formatCurrency } from "../../../lib/utils/offers/offerFormatters";
@@ -157,6 +158,12 @@ function VersionRateChange({ label, previousValue, currentValue }) {
 }
 
 export default function OfferDetailsModal({ open, offer, onClose }) {
+  const [employmentOfferPreview, setEmploymentOfferPreview] = useState({
+    open: false,
+    filename: "",
+    requestUrl: "",
+  });
+
   const {
     getOfferApprovalStatus,
     handleApproval,
@@ -452,6 +459,19 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
         className="relative flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white font-jakarta shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
+        <EmploymentOfferPdfPreviewModal
+          open={employmentOfferPreview.open}
+          filename={employmentOfferPreview.filename}
+          requestUrl={employmentOfferPreview.requestUrl}
+          onClose={() =>
+            setEmploymentOfferPreview({
+              open: false,
+              filename: "",
+              requestUrl: "",
+            })
+          }
+        />
+
         {isBusy ? <ProcessingOverlay action={processingAction} /> : null}
 
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-4 text-white sm:px-6">
@@ -725,13 +745,20 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                               offer.candidate_pipeline_id ||
                               offer.dbId ||
                               offer.id;
-                            const baseUrl = cleanText(api.defaults?.baseURL).replace(/\/$/, "");
-                            const pdfUrl = `${baseUrl}/api/candidate-pipeline/${encodeURIComponent(
-                              pipelineId,
-                            )}/offer-versions/${encodeURIComponent(
-                              version.versionNumber,
-                            )}/pdf`;
-                            window.open(pdfUrl, "_blank", "noopener,noreferrer");
+
+                            setEmploymentOfferPreview({
+                              open: true,
+                              filename:
+                                version.pdfFilename ||
+                                version.pdf_filename ||
+                                `Employment Offer Version ${version.versionNumber}.pdf`,
+                              requestUrl:
+                                `/api/candidate-pipeline/${encodeURIComponent(
+                                  pipelineId,
+                                )}/offer-versions/${encodeURIComponent(
+                                  version.versionNumber,
+                                )}/pdf`,
+                            });
                           }}
                           className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-blue-100"
                         >
