@@ -8240,11 +8240,26 @@ const CandidatePipelineModal = ({
                                       type="button"
                                       title={finalInterviewFormLink}
                                       onClick={() => {
-                                        window.open(
-                                          finalInterviewFormLink,
-                                          "_blank",
-                                          "noopener,noreferrer",
-                                        );
+                                        try {
+                                          const parsedUrl = new URL(
+                                            finalInterviewFormLink,
+                                            window.location.origin,
+                                          );
+
+                                          const internalRoute =
+                                            `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+
+                                          /*
+                                           * Use the current React application tab so the
+                                           * authenticated UserContext/session is preserved.
+                                           * Opening this route in a new tab can initialize
+                                           * before the frontend auth state is restored and
+                                           * redirect the user to Login.
+                                           */
+                                          navigate(internalRoute);
+                                        } catch {
+                                          navigate(finalInterviewFormLink);
+                                        }
                                       }}
                                       className="mt-2 block w-full min-w-0 truncate rounded-lg border border-blue-100 bg-white px-3 py-2 text-left text-xs font-semibold text-blue-600 underline transition hover:cursor-pointer hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                                     >
