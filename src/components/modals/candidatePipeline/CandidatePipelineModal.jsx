@@ -73,6 +73,7 @@ import { useCandidatePipeline } from "../../../services/context/CandidatePipelin
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
 import RevisedOfferModal from "./RevisedOfferModal";
+import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
 import api from "../../../lib/axios/api-template";
 import {
   findMatchingFinalInterviewForm,
@@ -4724,6 +4725,11 @@ const CandidatePipelineModal = ({
   const [isSubmittingRevisedOffer, setIsSubmittingRevisedOffer] = useState(false);
   const [loadedOfferVersions, setLoadedOfferVersions] = useState([]);
   const [isLoadingOfferVersions, setIsLoadingOfferVersions] = useState(false);
+  const [employmentOfferPreview, setEmploymentOfferPreview] = useState({
+    open: false,
+    filename: "",
+    requestUrl: "",
+  });
   const [showNhoScheduleModal, setShowNhoScheduleModal] = useState(false);
   const [nhoScheduleDate, setNhoScheduleDate] = useState(() =>
     toDateInputValue(getFirstSelectableNhoFriday()),
@@ -4848,6 +4854,11 @@ const CandidatePipelineModal = ({
       getCandidateOfferVersions(sessionCandidate || {}),
     );
     setIsLoadingOfferVersions(false);
+    setEmploymentOfferPreview({
+      open: false,
+      filename: "",
+      requestUrl: "",
+    });
     setShowNhoScheduleModal(false);
     setIsSchedulingNho(false);
     setNhoScheduleDate(
@@ -8124,11 +8135,18 @@ const CandidatePipelineModal = ({
                                         <button
                                           type="button"
                                           onClick={() => {
-                                            window.open(
-                                              timelineOfferPdfUrl,
-                                              "_blank",
-                                              "noopener,noreferrer",
-                                            );
+                                            setEmploymentOfferPreview({
+                                              open: true,
+                                              filename:
+                                                timelineOfferPdfFilename ||
+                                                `Employment Offer Version ${timelineOfferVersionNumber}.pdf`,
+                                              requestUrl:
+                                                `/api/candidate-pipeline/${encodeURIComponent(
+                                                  candidateNhoUploadId,
+                                                )}/offer-versions/${encodeURIComponent(
+                                                  timelineOfferVersionNumber,
+                                                )}/pdf`,
+                                            });
                                           }}
                                           className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-blue-700 transition hover:bg-blue-100"
                                         >
@@ -9022,6 +9040,19 @@ const CandidatePipelineModal = ({
           </div>
         </div>
       </div>
+
+      <EmploymentOfferPdfPreviewModal
+        open={employmentOfferPreview.open}
+        filename={employmentOfferPreview.filename}
+        requestUrl={employmentOfferPreview.requestUrl}
+        onClose={() =>
+          setEmploymentOfferPreview({
+            open: false,
+            filename: "",
+            requestUrl: "",
+          })
+        }
+      />
 
       <RevisedOfferModal
         open={showRevisedOfferModal}
