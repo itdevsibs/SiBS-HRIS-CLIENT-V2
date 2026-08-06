@@ -3,6 +3,13 @@ import { ChevronRight } from "lucide-react";
 
 import { formatDisplayDate } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 
+export const DEFAULT_QUICK_ACTIONS = [
+  { label: "Request COE (Certificate of Employment)", action: "sync" },
+  { label: "Export Profile", action: "print" },
+  { label: "Synchronize Employee Record", action: "sync" },
+  { label: "Generate Performance Snapshot", action: "print" },
+];
+
 function ContextCard({ title, children }) {
   return (
     <section className="sibs-page-card-in sibs-card p-4">
@@ -14,10 +21,29 @@ function ContextCard({ title, children }) {
   );
 }
 
+function normalizeQuickAction(item) {
+  if (Array.isArray(item)) {
+    return {
+      label: item[0],
+      action: item[1],
+      target: item[2] || "",
+    };
+  }
+
+  return {
+    label: item?.label || "Profile Action",
+    action: item?.action || "",
+    target: item?.target || "",
+  };
+}
+
 export default function EmployeeProfileContextPanel({
   employee,
   onNavigate,
   onAction,
+  showAuditTrail = true,
+  quickActions = DEFAULT_QUICK_ACTIONS,
+  healthNavigateTarget = "documents",
 }) {
   const score = useMemo(() => {
     let total = 75;
@@ -35,12 +61,17 @@ export default function EmployeeProfileContextPanel({
 
   const circumference = 2 * Math.PI * 48;
   const dashOffset = circumference * (1 - score / 100);
-  const quickActions = [
-    ["Request COE (Certificate of Employment)", "sync"],
-    ["Export Profile", "print"],
-    ["Synchronize Employee Record", "sync"],
-    ["Generate Performance Snapshot", "print"],
-  ];
+
+  function handleQuickAction(item) {
+    const action = normalizeQuickAction(item);
+
+    if (action.target) {
+      onNavigate?.(action.target);
+      return;
+    }
+
+    onAction?.(action.action, action);
+  }
 
   return (
     <aside className="space-y-5 xl:sticky xl:top-4">
@@ -80,7 +111,7 @@ export default function EmployeeProfileContextPanel({
 
           <button
             type="button"
-            onClick={() => onNavigate("documents")}
+            onClick={() => onNavigate?.(healthNavigateTarget)}
             className="w-full rounded-xl border border-slate-100 bg-[#F8FAFC] p-2.5 text-center transition hover:bg-[#E9F0FC]"
           >
             <p className="text-xs font-bold text-[#042C51]">
@@ -95,55 +126,61 @@ export default function EmployeeProfileContextPanel({
 
       <ContextCard title="Profile Quick Actions">
         <div className="space-y-1.5">
-          {quickActions.map(([label, action]) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => onAction(action)}
-              className="flex w-full items-center justify-between rounded-lg bg-[#F1F5F9] px-3 py-2 text-left text-[11px] font-bold text-[#042C51] transition hover:bg-[#E9F0FC]"
-            >
-              <span>{label}</span>
-              <ChevronRight size={14} className="shrink-0 text-[#FF5C28]" />
-            </button>
-          ))}
+          {quickActions.map((item, index) => {
+            const action = normalizeQuickAction(item);
+
+            return (
+              <button
+                key={`${action.label}-${index}`}
+                type="button"
+                onClick={() => handleQuickAction(item)}
+                className="flex w-full items-center justify-between rounded-lg bg-[#F1F5F9] px-3 py-2 text-left text-[11px] font-bold text-[#042C51] transition hover:bg-[#E9F0FC]"
+              >
+                <span>{action.label}</span>
+                <ChevronRight size={14} className="shrink-0 text-[#FF5C28]" />
+              </button>
+            );
+          })}
         </div>
       </ContextCard>
 
-      <ContextCard title="Audit Trail Logs">
-        <div className="space-y-2.5 text-[9px] font-semibold text-[#667085]">
-          <div className="flex items-start gap-2">
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF5C28]" />
-            <div>
-              <p className="font-bold text-slate-800">Employee record opened</p>
-              <p className="text-slate-400">Current HRIS session</p>
+      {showAuditTrail ? (
+        <ContextCard title="Audit Trail Logs">
+          <div className="space-y-2.5 text-[9px] font-semibold text-[#667085]">
+            <div className="flex items-start gap-2">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF5C28]" />
+              <div>
+                <p className="font-bold text-slate-800">Employee record opened</p>
+                <p className="text-slate-400">Current HRIS session</p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-start gap-2">
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
-            <div>
-              <p className="font-bold text-slate-800">
-                Profile state synchronized
-              </p>
-              <p className="text-slate-400">
-                {formatDisplayDate(employee?.updatedAt || employee?.updated_at)}
-              </p>
+            <div className="flex items-start gap-2">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
+              <div>
+                <p className="font-bold text-slate-800">
+                  Profile state synchronized
+                </p>
+                <p className="text-slate-400">
+                  {formatDisplayDate(employee?.updatedAt || employee?.updated_at)}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-start gap-2">
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
-            <div>
-              <p className="font-bold text-slate-800">
-                Official profile available
-              </p>
-              <p className="text-slate-400">
-                Access is controlled by the existing HRIS permissions.
-              </p>
+            <div className="flex items-start gap-2">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
+              <div>
+                <p className="font-bold text-slate-800">
+                  Official profile available
+                </p>
+                <p className="text-slate-400">
+                  Access is controlled by the existing HRIS permissions.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      </ContextCard>
+        </ContextCard>
+      ) : null}
     </aside>
   );
 }

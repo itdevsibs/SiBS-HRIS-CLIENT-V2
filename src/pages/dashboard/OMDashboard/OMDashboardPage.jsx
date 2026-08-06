@@ -256,19 +256,19 @@ function MetricCard({ item, delay = 0 }) {
       className="sibs-metric-card flex flex-col justify-between overflow-hidden p-3.5"
       style={getAnimationStyle(delay)}
     >
-      <div className="flex items-start justify-between gap-3">
-        <span className={`text-[10px] font-extrabold uppercase tracking-normal ${item.labelClass || "text-[#042C51]"}`}>
+      <div className="flex items-start justify-between gap-2">
+        <span className={`min-w-0 line-clamp-2 text-[10px] font-extrabold uppercase tracking-tight ${item.labelClass || "text-[#042C51]"}`}>
           {item.label}
         </span>
-        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.iconClass}`}>
-          <Icon size={17} strokeWidth={2} />
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${item.iconClass}`}>
+          <Icon size={16} strokeWidth={2} />
         </span>
       </div>
       <div className="mt-2">
-        <p className={`text-3xl font-extrabold leading-none tabular-nums tracking-tight ${item.valueClass}`}>
+        <p className={`text-2xl sm:text-3xl font-extrabold leading-none tabular-nums tracking-tight ${item.valueClass}`}>
           {item.value}
         </p>
-        <p className="mt-1.5 text-xs font-bold leading-4 text-[#667085]">
+        <p className="mt-1.5 truncate text-xs font-bold leading-4 text-[#667085]">
           {item.description}
         </p>
       </div>
@@ -520,7 +520,7 @@ export default function OMDashboardPage() {
 
           {refreshing ? <div className="flex justify-end gap-2 text-xs font-bold text-[#667085]"><LoaderCircle className="h-4 w-4 animate-spin text-[#FF5C28]" /> Refreshing manager-scoped data...</div> : null}
 
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-7">
             {metricCards.map((item, index) => (
               <MetricCard
                 key={item.label}

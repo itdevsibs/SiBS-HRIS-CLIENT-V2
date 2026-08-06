@@ -12,7 +12,7 @@ export function FieldLabel({ children, required = false }) {
 export function StatusBadge({ status }) {
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusTone(
+      className={`inline-flex h-7 min-w-[82px] items-center justify-center whitespace-nowrap rounded-full border px-2 text-center text-[9.5px] font-extrabold leading-none ${getStatusTone(
         status,
       )}`}
     >

@@ -2257,8 +2257,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                 </div>
 
                 <p className="mt-0.5 text-xs font-semibold leading-relaxed text-blue-100">
-                  Create a backend-connected Requisition or Downsize
-                  request and route it for approval.
+                  Create a Requisition or Downsize request and route it for approval.
                 </p>
               </div>
             </div>

@@ -21,7 +21,7 @@ export default function ActionItemsHeader() {
           </div>
 
           <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
-            Recruitment Action Items &amp; Blockers
+            Action Items
           </h1>
           <p className="max-w-5xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
             Weekly performance, current hiring status, accountable actions, and report delivery in one execution workflow.

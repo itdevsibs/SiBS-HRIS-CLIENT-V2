@@ -34,8 +34,8 @@ export default function ActionItemsPriorityWatchlist() {
               <p className="line-clamp-1 text-xs font-extrabold text-[#042C51]">{item.actionItem}</p>
               <p className="mt-1 text-[10px] font-semibold text-[#667085]">{item.account} · {item.roleTitle || item.roleAccount} · Owner: {item.owner}</p>
             </div>
-            <div className="shrink-0 text-left sm:text-right">
-              <p className="font-mono text-[10px] font-black text-rose-700">{formatDate(item.deadline)}</p>
+            <div className="shrink-0 text-left sm:text-right font-jakarta">
+              <p className="text-[10px] font-extrabold text-rose-700">{formatDate(item.deadline)}</p>
               <p className="mt-0.5 text-[9px] font-bold text-rose-600">{getDaysLeft(item.deadline)}</p>
             </div>
           </button>

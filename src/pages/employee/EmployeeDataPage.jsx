@@ -13,6 +13,7 @@ import {
   updateEmployeeProfile,
   updateEmployeeProfileSection,
 } from "../../lib/axios/getEmployee";
+import { getTalentPoolApplications } from "../../lib/axios/getTalentPool";
 import { buildChangedProfilePayload } from "../../lib/utils/employees/employeeProfilePayload.js";
 import {
   buildEmployeeProfileSectionPayload,
@@ -30,6 +31,7 @@ import EmployeeProfileContextPanel from "../../components/employee/profile/compo
 import EmployeeProfileHeader from "../../components/employee/profile/components/EmployeeProfileHeader.jsx";
 import EmployeeProfileNavigation from "../../components/employee/profile/components/EmployeeProfileNavigation.jsx";
 import EmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 function normalizeRole(value) {
@@ -73,7 +75,6 @@ function canEditProfileDetails(user) {
     )
   );
 }
-
 
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
@@ -128,9 +129,41 @@ export default function EmployeeDataPage() {
         }
 
         const baseEmployee = buildEditableEmployee(employeeResult.data);
-        const mergedEmployee = sectionsResult?.success && sectionsResult?.data
+        let mergedEmployee = sectionsResult?.success && sectionsResult?.data
           ? mergeEmployeeProfileSections(baseEmployee, sectionsResult.data)
           : baseEmployee;
+
+        // Auto-link candidate recruitment history from Talent Pool if statusHistory is empty
+        if (
+          (!Array.isArray(mergedEmployee.statusHistory) || mergedEmployee.statusHistory.length === 0) &&
+          (!Array.isArray(mergedEmployee.applicationHistory) || mergedEmployee.applicationHistory.length === 0)
+        ) {
+          try {
+            const searchQuery = mergedEmployee.email || mergedEmployee.firstName || sibsId;
+            if (searchQuery) {
+              const tpRes = await getTalentPoolApplications({ search: searchQuery, limit: 10 });
+              const matchedCandidate = Array.isArray(tpRes?.data)
+                ? tpRes.data.find(
+                    (cand) =>
+                      (cand.email && cand.email.toLowerCase() === String(mergedEmployee.email).toLowerCase()) ||
+                      cand.id === sibsId ||
+                      cand.sibsId === sibsId ||
+                      (cand.candidateFirstName &&
+                        cand.candidateFirstName.toLowerCase() === String(mergedEmployee.firstName).toLowerCase()),
+                  ) || tpRes.data[0]
+                : null;
+
+              if (matchedCandidate?.applicationHistory && Array.isArray(matchedCandidate.applicationHistory)) {
+                mergedEmployee = {
+                  ...mergedEmployee,
+                  applicationHistory: matchedCandidate.applicationHistory,
+                };
+              }
+            }
+          } catch (tpErr) {
+            console.warn("Could not auto-fetch candidate history for employee:", tpErr);
+          }
+        }
 
         setEmployee(buildEditableEmployee(mergedEmployee));
 
@@ -424,7 +457,7 @@ export default function EmployeeDataPage() {
     >
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#E8EDF3] px-3 py-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden sibs-scrollbar bg-[#E8EDF3] px-3 py-4 sm:p-6">
         <div className="mx-auto w-full max-w-[1600px]">
           <div className="mb-4 flex items-center justify-between gap-4">
             <button
@@ -583,5 +616,3 @@ export default function EmployeeDataPage() {
     </div>
   );
 }
-
-
