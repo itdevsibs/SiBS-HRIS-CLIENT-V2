@@ -287,6 +287,48 @@ function isTerminalOfferApprovalStatus(value = "") {
   return Boolean(normalizeTerminalOfferStatus(value));
 }
 
+function isAcceptedOfferRecord(offer = {}) {
+  const safeOffer =
+    offer && typeof offer === "object"
+      ? offer
+      : {};
+
+  const stageValues = [
+    safeOffer.currentStage,
+    safeOffer.current_stage,
+    safeOffer.currentPipelineStage,
+    safeOffer.current_pipeline_stage,
+    safeOffer.pipelineStage,
+    safeOffer.pipeline_stage,
+    safeOffer.stage,
+  ]
+    .map((value) => cleanText(value).toLowerCase())
+    .filter(Boolean);
+
+  if (
+    stageValues.some(
+      (value) =>
+        value === "accepted" ||
+        value === "accepted (for nho)",
+    )
+  ) {
+    return true;
+  }
+
+  const candidateResponse = cleanText(
+    safeOffer.candidateResponse ||
+      safeOffer.candidate_response ||
+      safeOffer.offerDecision ||
+      safeOffer.offer_decision ||
+      safeOffer.latestOfferVersion?.candidateResponse ||
+      safeOffer.latestOfferVersion?.candidate_response ||
+      safeOffer.latest_offer_version?.candidateResponse ||
+      safeOffer.latest_offer_version?.candidate_response,
+  ).toLowerCase();
+
+  return candidateResponse === "accepted";
+}
+
 function getOfferApprovalSummaryFromUsers(offer = {}, approvalUsers = []) {
   const directTerminalStatus = normalizeTerminalOfferStatus(
     getDirectOfferApprovalStatus(offer),
@@ -754,8 +796,19 @@ function isOfferStageCandidate(candidate = {}) {
   const stage = getCandidateStage(normalizedCandidate);
   const rawStatus = getCandidateStatus(candidate);
   const normalizedStatus = getCandidateStatus(normalizedCandidate);
-  const directApprovalStatus = getDirectOfferApprovalStatus(normalizedCandidate);
-  const decisionStatus = getOfferDecisionStatus(normalizedCandidate);
+
+  /*
+   * Approval, rejection, and negotiation are offer-workflow statuses.
+   * They must not remove the candidate from the active Offers page.
+   * The record leaves this page only after the candidate accepts or
+   * the Candidate Pipeline has already moved beyond Offered.
+   */
+  if (
+    isAcceptedOfferRecord(candidate) ||
+    isAcceptedOfferRecord(normalizedCandidate)
+  ) {
+    return false;
+  }
 
   const excludedStages = [
     "Initial Screening",
@@ -763,6 +816,7 @@ function isOfferStageCandidate(candidate = {}) {
     "Interview Scheduled",
     "Interviewed",
     "Accepted",
+    "Accepted (For NHO)",
     "For NHO",
     "For Onboarding - Incomplete Requirements",
     "Onboarding",
@@ -771,8 +825,6 @@ function isOfferStageCandidate(candidate = {}) {
     "Drop-offs",
   ];
 
-  if (isTerminalOfferApprovalStatus(directApprovalStatus)) return false;
-  if (isTerminalOfferApprovalStatus(decisionStatus)) return false;
   if (excludedStages.includes(stage)) return false;
 
   if (stage === "Offered") return true;
@@ -782,15 +834,34 @@ function isOfferStageCandidate(candidate = {}) {
     if (normalizedStatus === "Offered") return true;
   }
 
-  return false;
+  /*
+   * Some negotiation responses temporarily replace the generic status
+   * while the pipeline stage remains absent in a partial API payload.
+   * Keep those records visible until Accepted is received.
+   */
+  const decisionStatus = getOfferDecisionStatus(
+    normalizedCandidate,
+  ).toLowerCase();
+
+  return [
+    "negotiate",
+    "negotiation requested",
+    "pending",
+    "for review",
+    "for_review",
+    "approved",
+    "rejected",
+    "declined",
+  ].includes(decisionStatus);
 }
 
 function shouldDisplayOfferRecord(offer = {}, approvalUsers = []) {
-  if (!isOfferStageCandidate(offer)) return false;
+  void approvalUsers;
 
-  const approvalStatus = getOfferApprovalSummaryFromUsers(offer, approvalUsers);
-
-  return !isTerminalOfferApprovalStatus(approvalStatus);
+  return (
+    isOfferStageCandidate(offer) &&
+    !isAcceptedOfferRecord(offer)
+  );
 }
 
 function updateCandidateStorageFromOffer(updatedOffer) {
