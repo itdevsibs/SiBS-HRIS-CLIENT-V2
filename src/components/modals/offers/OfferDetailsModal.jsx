@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
+  FileText,
   History,
   Loader2,
   X,
@@ -714,6 +715,30 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                           </p>
                         </div>
                       </div>
+
+                      {version.pdfAvailable || version.pdfFilename ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const pipelineId =
+                              offer.candidatePipelineId ||
+                              offer.candidate_pipeline_id ||
+                              offer.dbId ||
+                              offer.id;
+                            const baseUrl = cleanText(api.defaults?.baseURL).replace(/\/$/, "");
+                            const pdfUrl = `${baseUrl}/api/candidate-pipeline/${encodeURIComponent(
+                              pipelineId,
+                            )}/offer-versions/${encodeURIComponent(
+                              version.versionNumber,
+                            )}/pdf`;
+                            window.open(pdfUrl, "_blank", "noopener,noreferrer");
+                          }}
+                          className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-blue-100"
+                        >
+                          <FileText size={16} />
+                          Open Employment Offer PDF
+                        </button>
+                      ) : null}
                     </article>
                   ))}
                 </div>

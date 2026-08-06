@@ -3847,17 +3847,33 @@ const SIBS_ASSESSMENT_PUBLIC_LINK =
   "https://link.sibscareers.online/l/4HqL27kZ3";
 
 function getCurrentAppOrigin() {
-  const configuredOrigin = getAssessmentClientBaseUrl();
+  /*
+   * Use the actual browser origin so local development opens the PDF through
+   * localhost, while the deployed frontend automatically uses the production
+   * HRIS domain.
+   *
+   * Local:
+   *   http://localhost:5173
+   *
+   * Production:
+   *   https://sibs-hris.getleadsource.com
+   */
+  if (
+    typeof window !== "undefined" &&
+    window.location?.origin
+  ) {
+    return String(window.location.origin).replace(/\/+$/, "");
+  }
 
-  try {
-    const parsedOrigin = new URL(configuredOrigin);
-    const hostname = parsedOrigin.hostname.toLowerCase();
+  const configuredOrigin = cleanText(
+    import.meta.env.VITE_CLIENT_APP_URL ||
+      import.meta.env.VITE_APP_URL ||
+      import.meta.env.VITE_PUBLIC_APP_URL ||
+      import.meta.env.VITE_FRONTEND_URL,
+  );
 
-    if (!["localhost", "127.0.0.1", "0.0.0.0"].includes(hostname)) {
-      return configuredOrigin;
-    }
-  } catch {
-    // Fall through to the production client URL.
+  if (configuredOrigin) {
+    return configuredOrigin.replace(/\/+$/, "");
   }
 
   return "https://sibs-hris.getleadsource.com";
@@ -4337,6 +4353,271 @@ function AssessmentEmailFormatModal({
   );
 }
 
+
+function getCandidateOfferVersions(candidate = {}) {
+  const directVersions =
+    candidate.offerVersions ||
+    candidate.offer_versions ||
+    candidate.candidateOfferVersions ||
+    candidate.candidate_offer_versions ||
+    [];
+
+  const parsedVersions = Array.isArray(directVersions)
+    ? directVersions
+    : safeJsonParseValue(directVersions, []);
+
+  const latestVersion =
+    candidate.latestOfferVersion ||
+    candidate.latest_offer_version ||
+    null;
+
+  const merged = [
+    ...(Array.isArray(parsedVersions) ? parsedVersions : []),
+    ...(latestVersion ? [latestVersion] : []),
+  ];
+
+  const versionMap = new Map();
+
+  merged.filter(Boolean).forEach((version) => {
+    const versionNumber = Number(
+      version.versionNumber ??
+        version.version_number ??
+        version.offerVersion ??
+        version.offer_version ??
+        0,
+    );
+
+    const key = versionNumber > 0
+      ? `version:${versionNumber}`
+      : cleanText(
+          version.id ||
+            version.offerVersionId ||
+            version.offer_version_id ||
+            version.pdfFilename ||
+            version.pdf_filename,
+        );
+
+    if (!key) return;
+
+    versionMap.set(key, {
+      ...version,
+      versionNumber:
+        versionNumber > 0 ? versionNumber : "",
+      version_number:
+        versionNumber > 0 ? versionNumber : "",
+    });
+  });
+
+  return Array.from(versionMap.values()).sort(
+    (first, second) =>
+      Number(second.versionNumber || second.version_number || 0) -
+      Number(first.versionNumber || first.version_number || 0),
+  );
+}
+
+function getOfferVersionNumber(version = {}) {
+  const value = Number(
+    version.versionNumber ??
+      version.version_number ??
+      version.offerVersion ??
+      version.offer_version ??
+      0,
+  );
+
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function getOfferVersionPdfFilename(version = {}) {
+  return cleanText(
+    version.pdfFilename ||
+      version.pdf_filename ||
+      version.employmentOfferPdfFilename ||
+      version.employment_offer_pdf_filename ||
+      "",
+  );
+}
+
+function isOfferVersionPdfAvailable(version = {}) {
+  return Boolean(
+    version.pdfAvailable ||
+      version.pdf_available ||
+      version.hasPdf ||
+      version.has_pdf ||
+      getOfferVersionPdfFilename(version) ||
+      version.pdfRelativePath ||
+      version.pdf_relative_path ||
+      version.pdfUrl ||
+      version.pdf_url,
+  );
+}
+
+function getTimelineOfferVersionNumber(item = {}) {
+  const directValue = Number(
+    item.offerVersion ??
+      item.offer_version ??
+      item.versionNumber ??
+      item.version_number ??
+      item.extra?.offerVersion ??
+      item.extra?.offer_version ??
+      item.extra?.versionNumber ??
+      item.extra?.version_number ??
+      0,
+  );
+
+  if (Number.isFinite(directValue) && directValue > 0) {
+    return directValue;
+  }
+
+  const combinedText = [
+    item.reason,
+    item.remarks,
+    item.description,
+    item.message,
+  ]
+    .map(cleanText)
+    .filter(Boolean)
+    .join(" ");
+
+  const match = combinedText.match(
+    /(?:offer\s*)?(?:version|revision)\s*#?\s*(\d+)/i,
+  );
+
+  return match ? Number(match[1]) : 0;
+}
+
+function isOfferTimelineEntry(item = {}) {
+  const stageText = getHistoryTitle(item).toLowerCase();
+  const combinedText = [
+    item.reason,
+    item.remarks,
+    item.description,
+    item.message,
+  ]
+    .map(cleanText)
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    stageText === "offered" ||
+    stageText.includes("offer") ||
+    combinedText.includes("offer approval") ||
+    combinedText.includes("offer prepared") ||
+    combinedText.includes("offer revision") ||
+    combinedText.includes("revised offer")
+  );
+}
+
+function shouldDisplayEmploymentOfferPdf(item = {}) {
+  if (!isOfferTimelineEntry(item)) return false;
+
+  const combinedText = [
+    item.reason,
+    item.remarks,
+    item.description,
+    item.message,
+  ]
+    .map(cleanText)
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    combinedText.includes("approval notification") ||
+    combinedText.includes("notification email sent") ||
+    combinedText.includes("submitted for approval") ||
+    combinedText.includes("revised offer submitted") ||
+    combinedText.includes("offer details prepared") ||
+    combinedText.includes("offer prepared")
+  );
+}
+
+function findTimelineOfferVersion(
+  item = {},
+  offerVersions = [],
+) {
+  const requestedVersion =
+    getTimelineOfferVersionNumber(item);
+
+  if (requestedVersion > 0) {
+    const exactVersion = offerVersions.find(
+      (version) =>
+        getOfferVersionNumber(version) ===
+        requestedVersion,
+    );
+
+    if (exactVersion) return exactVersion;
+  }
+
+  return (
+    offerVersions.find(
+      (version) =>
+        isOfferVersionPdfAvailable(version),
+    ) ||
+    null
+  );
+}
+
+function getEmploymentOfferPdfApiOrigin() {
+  const configuredApiOrigin = cleanText(
+    import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL,
+  )
+    .replace(/\/+$/, "")
+    .replace(/\/api$/i, "");
+
+  if (
+    typeof window !== "undefined" &&
+    window.location?.hostname
+  ) {
+    const hostname = String(
+      window.location.hostname,
+    ).toLowerCase();
+
+    const isLocalFrontend = [
+      "localhost",
+      "127.0.0.1",
+      "0.0.0.0",
+      "::1",
+    ].includes(hostname);
+
+    /*
+     * Vite does not currently proxy /api. When the client runs on
+     * localhost:5173, open the PDF directly from the configured backend
+     * (normally localhost:5000) instead of loading the React login page.
+     */
+    if (isLocalFrontend) {
+      return (
+        configuredApiOrigin ||
+        "http://localhost:5000"
+      );
+    }
+
+    /*
+     * Production serves /api through the same public HRIS domain.
+     */
+    return String(window.location.origin)
+      .replace(/\/+$/, "");
+  }
+
+  return (
+    configuredApiOrigin ||
+    "https://sibs-hris.getleadsource.com"
+  );
+}
+
+function buildEmploymentOfferPdfUrl(
+  candidatePipelineId = "",
+  versionNumber = "",
+) {
+  const candidateId = cleanText(candidatePipelineId);
+  const version = cleanText(versionNumber);
+
+  if (!candidateId || !version) return "";
+
+  return `${getEmploymentOfferPdfApiOrigin()}/api/candidate-pipeline/${encodeURIComponent(
+    candidateId,
+  )}/offer-versions/${encodeURIComponent(version)}/pdf`;
+}
+
 const CandidatePipelineModal = ({
   open,
   candidate,
@@ -4441,6 +4722,8 @@ const CandidatePipelineModal = ({
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [showRevisedOfferModal, setShowRevisedOfferModal] = useState(false);
   const [isSubmittingRevisedOffer, setIsSubmittingRevisedOffer] = useState(false);
+  const [loadedOfferVersions, setLoadedOfferVersions] = useState([]);
+  const [isLoadingOfferVersions, setIsLoadingOfferVersions] = useState(false);
   const [showNhoScheduleModal, setShowNhoScheduleModal] = useState(false);
   const [nhoScheduleDate, setNhoScheduleDate] = useState(() =>
     toDateInputValue(getFirstSelectableNhoFriday()),
@@ -4561,6 +4844,10 @@ const CandidatePipelineModal = ({
     setShowAssessmentModal(false);
     setShowRevisedOfferModal(false);
     setIsSubmittingRevisedOffer(false);
+    setLoadedOfferVersions(
+      getCandidateOfferVersions(sessionCandidate || {}),
+    );
+    setIsLoadingOfferVersions(false);
     setShowNhoScheduleModal(false);
     setIsSchedulingNho(false);
     setNhoScheduleDate(
@@ -4735,6 +5022,141 @@ const CandidatePipelineModal = ({
     if (!candidateUploadKey) return [];
     return candidateFilesById[candidateUploadKey] || [];
   }, [candidateFilesById, candidateUploadKey]);
+
+  const candidateOfferVersions = useMemo(() => {
+    const versionsFromCandidate =
+      getCandidateOfferVersions(activeCandidate);
+
+    const versionMap = new Map();
+
+    [
+      ...versionsFromCandidate,
+      ...loadedOfferVersions,
+    ].forEach((version) => {
+      const versionNumber =
+        getOfferVersionNumber(version);
+
+      const key = versionNumber > 0
+        ? `version:${versionNumber}`
+        : cleanText(
+            version.id ||
+              version.offerVersionId ||
+              version.offer_version_id ||
+              getOfferVersionPdfFilename(version),
+          );
+
+      if (!key) return;
+
+      versionMap.set(key, {
+        ...(versionMap.get(key) || {}),
+        ...version,
+      });
+    });
+
+    return Array.from(versionMap.values()).sort(
+      (first, second) =>
+        getOfferVersionNumber(second) -
+        getOfferVersionNumber(first),
+    );
+  }, [activeCandidate, loadedOfferVersions]);
+
+  useEffect(() => {
+    let isActive = true;
+    const abortController = new AbortController();
+
+    async function loadOfferVersions() {
+      if (!open || !candidateNhoUploadId) {
+        setLoadedOfferVersions([]);
+        return;
+      }
+
+      const candidateVersions =
+        getCandidateOfferVersions(activeCandidate);
+
+      if (
+        candidateVersions.some(
+          (version) =>
+            isOfferVersionPdfAvailable(version),
+        )
+      ) {
+        setLoadedOfferVersions(candidateVersions);
+      }
+
+      setIsLoadingOfferVersions(true);
+
+      try {
+        const response = await api.get(
+          `/api/candidate-pipeline/${encodeURIComponent(
+            candidateNhoUploadId,
+          )}/offer-versions`,
+          {
+            withCredentials: true,
+            signal: abortController.signal,
+            params: {
+              _t: Date.now(),
+            },
+          },
+        );
+
+        if (!isActive || abortController.signal.aborted) {
+          return;
+        }
+
+        const payload =
+          unwrapCandidatePipelineResponse(response);
+
+        const versions =
+          payload?.offerVersions ||
+          payload?.offer_versions ||
+          payload?.data?.offerVersions ||
+          payload?.data?.offer_versions ||
+          payload?.versions ||
+          payload?.data?.versions ||
+          [];
+
+        if (Array.isArray(versions)) {
+          setLoadedOfferVersions(versions);
+        }
+      } catch (error) {
+        if (
+          !isActive ||
+          abortController.signal.aborted ||
+          error?.code === "ERR_CANCELED" ||
+          error?.name === "CanceledError"
+        ) {
+          return;
+        }
+
+        /*
+         * Keep candidate-provided offer versions as the fallback.
+         * The timeline remains usable even when the optional history
+         * endpoint is unavailable.
+         */
+        setLoadedOfferVersions((current) =>
+          current.length
+            ? current
+            : getCandidateOfferVersions(
+                activeCandidateRef.current || {},
+              ),
+        );
+      } finally {
+        if (isActive && !abortController.signal.aborted) {
+          setIsLoadingOfferVersions(false);
+        }
+      }
+    }
+
+    loadOfferVersions();
+
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
+  }, [
+    open,
+    candidateNhoUploadId,
+  ]);
+
 
   const sortedCandidateFiles = useMemo(
     () => sortUploadedFiles(candidateFiles),
@@ -7598,6 +8020,34 @@ const CandidatePipelineModal = ({
                                 )
                               : "";
 
+                          const timelineOfferVersion =
+                            shouldDisplayEmploymentOfferPdf(
+                              timelineItem,
+                            )
+                              ? findTimelineOfferVersion(
+                                  timelineItem,
+                                  candidateOfferVersions,
+                                )
+                              : null;
+
+                          const timelineOfferVersionNumber =
+                            getOfferVersionNumber(
+                              timelineOfferVersion || {},
+                            );
+
+                          const timelineOfferPdfFilename =
+                            getOfferVersionPdfFilename(
+                              timelineOfferVersion || {},
+                            );
+
+                          const timelineOfferPdfUrl =
+                            timelineOfferVersionNumber > 0
+                              ? buildEmploymentOfferPdfUrl(
+                                  candidateNhoUploadId,
+                                  timelineOfferVersionNumber,
+                                )
+                              : "";
+
                           return (
                             <div
                               key={`${item.stage}-${index}`}
@@ -7636,6 +8086,72 @@ const CandidatePipelineModal = ({
                                     {item.remarks}
                                   </p>
                                 )}
+
+                                {timelineOfferVersion &&
+                                  timelineOfferPdfUrl &&
+                                  isOfferVersionPdfAvailable(
+                                    timelineOfferVersion,
+                                  ) && (
+                                    <div className="mt-3 rounded-xl border border-blue-100 bg-white p-3 shadow-sm">
+                                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex min-w-0 items-start gap-3">
+                                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                                            <FileText size={19} />
+                                          </div>
+
+                                          <div className="min-w-0">
+                                            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                                              Employment Offer PDF
+                                            </p>
+
+                                            <p
+                                              title={
+                                                timelineOfferPdfFilename ||
+                                                `Employment Offer Version ${timelineOfferVersionNumber}`
+                                              }
+                                              className="mt-1 truncate text-xs font-extrabold text-[#101828]"
+                                            >
+                                              {timelineOfferPdfFilename ||
+                                                `Employment Offer Version ${timelineOfferVersionNumber}.pdf`}
+                                            </p>
+
+                                            <p className="mt-1 text-[11px] font-bold text-sibs-tertiary-5">
+                                              Offer Version {timelineOfferVersionNumber}
+                                            </p>
+                                          </div>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            window.open(
+                                              timelineOfferPdfUrl,
+                                              "_blank",
+                                              "noopener,noreferrer",
+                                            );
+                                          }}
+                                          className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-blue-700 transition hover:bg-blue-100"
+                                        >
+                                          <Eye size={15} />
+                                          Open PDF
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {!timelineOfferVersion &&
+                                  isLoadingOfferVersions &&
+                                  shouldDisplayEmploymentOfferPdf(
+                                    timelineItem,
+                                  ) && (
+                                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-3 text-xs font-bold text-sibs-tertiary-5">
+                                      <Loader2
+                                        size={15}
+                                        className="animate-spin"
+                                      />
+                                      Loading Employment Offer PDF...
+                                    </div>
+                                  )}
 
                                 {timelineAssessmentScore && (
                                   <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-3">
