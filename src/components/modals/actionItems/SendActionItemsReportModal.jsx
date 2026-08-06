@@ -213,8 +213,14 @@ export default function SendActionItemsReportModal() {
               </p>
             </div>
           </div>
-          <button type="button" onClick={closeEmailModal} disabled={sending || downloading} className="rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white disabled:opacity-50" aria-label="Close email report modal">
-            <X size={19} />
+          <button
+            type="button"
+            onClick={closeEmailModal}
+            disabled={sending || downloading}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white disabled:opacity-50 active:scale-[0.98]"
+            aria-label="Close email report modal"
+          >
+            <X size={18} />
           </button>
         </header>
 

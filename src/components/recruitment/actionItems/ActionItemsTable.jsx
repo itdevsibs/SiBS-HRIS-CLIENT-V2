@@ -120,11 +120,14 @@ export default function ActionItemsTable() {
     <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
       <div
         ref={dragScrollRef}
+        tabIndex={0}
+        role="region"
+        aria-label="Action Items Registry table scroll area"
         onMouseDown={handleDragStart}
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
-        className={`hidden overflow-x-auto lg:block select-none ${
+        className={`hidden overflow-x-auto sibs-scrollbar focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/20 lg:block ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
       >
@@ -143,7 +146,7 @@ export default function ActionItemsTable() {
               ].map(([label, alignment], idx, arr) => (
                 <th
                   key={label}
-                  className={`border-r border-[#E6ECF2] px-3 py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#667085] ${
+                  className={`border-r border-[#E6ECF2] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#667085] ${
                     idx === arr.length - 1 ? "border-r-0" : ""
                   } ${alignment}`}
                 >
@@ -152,7 +155,7 @@ export default function ActionItemsTable() {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[#E6ECF2] font-jakarta">
             {paginatedItems.length ? (
               paginatedItems.map((item) => {
                 const systemGenerated = item.systemGenerated || String(item.sourceType || "").toLowerCase().includes("system");
@@ -160,38 +163,38 @@ export default function ActionItemsTable() {
                   <tr
                     key={`${item.sourceType}-${item.id}-${item.actionId}`}
                     onClick={() => setSelectedItem(item)}
-                    className="sibs-data-table-row cursor-pointer border-b border-[#E6ECF2] transition hover:bg-[#F8FAFC]"
+                    className="sibs-data-table-row cursor-pointer transition hover:bg-[#F8FAFC]"
                   >
-                    <td className="max-w-[360px] border-r border-[#E6ECF2] px-4 py-3">
+                    <td className="max-w-[360px] border-r border-[#E6ECF2] px-3.5 py-2.5 align-middle">
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-[#F2F4F7] px-1.5 py-0.5 font-mono text-[9px] font-black text-[#042C51]">{item.actionId}</span>
-                        <span className={`rounded border px-1.5 py-0.5 text-[8px] font-black uppercase ${systemGenerated ? "border-purple-100 bg-purple-50 text-purple-700" : "border-blue-100 bg-blue-50 text-blue-700"}`}>
+                        <span className="rounded bg-[#F2F4F7] px-1.5 py-0.5 font-jakarta text-[9px] font-extrabold text-[#042C51]">{item.actionId}</span>
+                        <span className={`rounded border px-1.5 py-0.5 text-[8px] font-extrabold uppercase ${systemGenerated ? "border-purple-100 bg-purple-50 text-purple-700" : "border-blue-100 bg-blue-50 text-blue-700"}`}>
                           {systemGenerated ? "System" : "Manual"}
                         </span>
                       </div>
                       <p className="mt-1 line-clamp-2 text-xs font-extrabold leading-5 text-[#042C51]" title={item.actionItem}>{item.actionItem}</p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-3.5 py-3">
-                      <p className="text-xs font-bold text-[#042C51]">{item.account || "—"}</p>
-                      <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">{item.roleTitle || item.roleAccount || "—"}</p>
+                    <td className="border-r border-[#E6ECF2] px-3.5 py-2.5 align-middle">
+                      <p className="text-xs font-extrabold text-[#042C51]">{item.account || "—"}</p>
+                      <p className="mt-0.5 text-[10px] font-semibold uppercase text-[#667085]">{item.roleTitle || item.roleAccount || "—"}</p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-3 py-3 text-xs font-bold text-[#475467]">{item.owner || "—"}</td>
-                    <td className="border-r border-[#E6ECF2] px-3 py-3">
-                      <p className="font-mono text-[10px] font-bold text-[#475467]">{formatDate(item.deadline)}</p>
-                      <p className="mt-0.5 text-[9px] font-black text-[#667085]">
+                    <td className="border-r border-[#E6ECF2] px-3 py-2.5 align-middle text-xs font-bold text-[#042C51]">{item.owner || "—"}</td>
+                    <td className="border-r border-[#E6ECF2] px-3 py-2.5 align-middle">
+                      <p className="text-xs font-extrabold text-[#042C51]">{formatDate(item.deadline)}</p>
+                      <p className="mt-0.5 text-[9px] font-extrabold text-[#667085]">
                         {item.status === "Completed"
                           ? `Completed${item.completedDate ? ` ${formatDate(item.completedDate)}` : ""}`
                           : getDaysLeft(item.deadline)}
                       </p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-3 py-3">
-                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${getStatusClass(item.status)}`}>{item.status}</span>
+                    <td className="border-r border-[#E6ECF2] px-3 py-2.5 align-middle">
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getStatusClass(item.status)}`}>{item.status}</span>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-3 py-3">
-                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${getRiskClass(item.riskLevel)}`}>{item.riskLevel}</span>
+                    <td className="border-r border-[#E6ECF2] px-3 py-2.5 align-middle">
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getRiskClass(item.riskLevel)}`}>{item.riskLevel}</span>
                     </td>
-                    <td className="max-w-[300px] border-r border-[#E6ECF2] px-4 py-3">
-                      <p className="line-clamp-2 text-[11px] font-semibold leading-4 text-[#667085]" title={item.remarks}>{item.remarks || "No remarks logged"}</p>
+                    <td className="max-w-[300px] border-r border-[#E6ECF2] px-3.5 py-2.5 align-middle">
+                      <p className="line-clamp-2 text-xs font-semibold leading-4 text-[#667085]" title={item.remarks}>{item.remarks || "No remarks logged"}</p>
                     </td>
                     <td className="px-3 py-3 text-right" onClick={(event) => event.stopPropagation()}>
                       <div className="flex justify-end gap-1.5">

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import {
   Briefcase,
   Building2,
@@ -818,7 +819,7 @@ export default function EmployeeTable({
       <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
         {tabs.length > 1 ? (
           <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
-            <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4">
+            <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
               {tabs.map((tab) => {
                 const TabIcon = tab.icon || UserRoundCheck;
                 const isActive = activeTab === tab.label;
@@ -828,10 +829,10 @@ export default function EmployeeTable({
                     key={tab.label}
                     type="button"
                     onClick={() => onTabChange?.(tab.label)}
-                    className={`inline-flex h-10 shrink-0 items-center gap-2 border-b-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition ${
+                    className={`relative inline-flex h-10 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
                       isActive
-                        ? "rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
-                        : "border-transparent text-[#667085] hover:text-[#042C51]"
+                        ? "rounded-t-xl bg-white text-[#042C51]"
+                        : "text-[#667085] hover:text-[#042C51]"
                     }`}
                   >
                     <TabIcon size={15} className="shrink-0" />
@@ -839,7 +840,7 @@ export default function EmployeeTable({
 
                     {Number(tab.count || 0) > 0 ? (
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums ${
+                        className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors ${
                           isActive
                             ? "bg-[#042C51] text-white"
                             : "bg-slate-200 text-slate-600"
@@ -847,6 +848,14 @@ export default function EmployeeTable({
                       >
                         {tab.count}
                       </span>
+                    ) : null}
+
+                    {isActive ? (
+                      <motion.div
+                        layoutId="employeeDirectoryTabIndicator"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
                     ) : null}
                   </button>
                 );
@@ -879,22 +888,31 @@ export default function EmployeeTable({
           }`}
         >
           <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
-            <table className="w-full min-w-[1180px] border-collapse text-left">
+            <table className="w-full min-w-[1180px] table-fixed border-collapse text-left">
               <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
                 <tr className="border-b border-[#E6ECF2]">
-                  {columns.map((column) => (
-                    <th
-                      key={column}
-                      scope="col"
-                      className="px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]"
-                    >
-                      {column}
-                    </th>
-                  ))}
+                  <th scope="col" className="w-[12%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                    SIBS ID
+                  </th>
+                  <th scope="col" className="w-[26%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                    EMPLOYEE NAME
+                  </th>
+                  <th scope="col" className="w-[20%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                    ACCOUNT / SITE
+                  </th>
+                  <th scope="col" className="w-[18%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                    DEPARTMENT
+                  </th>
+                  <th scope="col" className="w-[14%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                    CONTACT & EMAIL
+                  </th>
+                  <th scope="col" className="w-[10%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                    HR METADATA
+                  </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-[#EEF2F6]">
+              <tbody key={activeTab} className="divide-y divide-[#EEF2F6]">
                 {loading ? (
                   Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                     <tr key={`employee-skeleton-${index}`}>
@@ -921,7 +939,8 @@ export default function EmployeeTable({
                         onClick={() => goToEmployee(employee)}
                         onKeyDown={(event) => handleRowKeyDown(event, employee)}
                         aria-label={`Open employee profile for ${getEmployeeName(employee)}`}
-                        className="group cursor-pointer transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                        className="group sibs-page-card-in cursor-pointer transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                        style={{ animationDelay: `${index * 30}ms` }}
                       >
                         <td className="whitespace-nowrap px-4 py-4 align-middle text-xs font-extrabold text-[#FF5C28]">
                           {getSibsId(employee) || "N/A"}

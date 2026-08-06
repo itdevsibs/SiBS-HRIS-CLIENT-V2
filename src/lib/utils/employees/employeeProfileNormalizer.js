@@ -295,11 +295,30 @@ export function normalizeEmployeeData(employee) {
     organizations: normalizeList(employee?.organizations),
     references: normalizeList(employee?.references),
 
+    candidateId: firstValue(
+      employee?.candidateId,
+      employee?.candidate_id,
+      employee?.candidateCode,
+      employee?.id,
+    ),
+    candidateStatus: firstValue(
+      employee?.candidateStatus,
+      employee?.candidate_status,
+      employee?.status,
+    ),
+    age: firstValue(employee?.age, employee?.ageAsOfApplication),
+    encodedBy: firstValue(employee?.encodedBy, employee?.encoded_by),
     appliedPosition: firstValue(
       employee?.appliedPosition,
       employee?.applied_position,
       employee?.position,
       employee?.jobTitle,
+    ),
+    preferredLocation: firstValue(
+      employee?.preferredLocation,
+      employee?.preferred_location,
+      employee?.site,
+      employee?.preferredSite,
     ),
     preferredAccount: firstValue(
       employee?.preferredAccount,
@@ -308,12 +327,26 @@ export function normalizeEmployeeData(employee) {
       employee?.accountName,
     ),
     source: firstValue(employee?.source, employee?.candidateSource),
+    howDidYouHearAboutUs: firstValue(
+      employee?.howDidYouHearAboutUs,
+      employee?.how_did_you_hear_about_us,
+      employee?.sourceDetails,
+    ),
+    referredBy: firstValue(employee?.referredBy, employee?.referred_by),
+    pipelineId: firstValue(employee?.pipelineId, employee?.pipeline_id),
+    pipelineStatus: firstValue(
+      employee?.pipelineStatus,
+      employee?.pipeline_status,
+    ),
     pipelineStage: firstValue(
       employee?.pipelineStage,
       employee?.currentPipelineStage,
       employee?.currentStage,
       employee?.stage,
     ),
+    finalRole: firstValue(employee?.finalRole, employee?.final_role),
+    finalAccount: firstValue(employee?.finalAccount, employee?.final_account),
+    taOwner: firstValue(employee?.taOwner, employee?.ta_owner),
     prfMatchStatus: firstValue(
       employee?.prfMatchStatus,
       employee?.prf_match_status,
@@ -325,6 +358,11 @@ export function normalizeEmployeeData(employee) {
     ),
     availability: firstValue(employee?.availability, employee?.availableDate),
     recruiter: firstValue(employee?.recruiter, employee?.recruiterName),
+    createdAt: firstValue(
+      employee?.createdAt,
+      employee?.created_at,
+      employee?.appliedDate,
+    ),
     assessmentStatus: firstValue(
       employee?.assessmentStatus,
       employee?.assessment_status,
@@ -334,6 +372,47 @@ export function normalizeEmployeeData(employee) {
       employee?.assessmentRemarks,
       employee?.assessment_remarks,
       employee?.evaluationRemarks,
+    ),
+    vaccinated: firstValue(
+      employee?.vaccinated,
+      employee?.is_vaccinated,
+      "Yes",
+    ),
+    onSiteReady: firstValue(
+      employee?.onSiteReady,
+      employee?.on_site_ready,
+      employee?.willingOnSite,
+      "Yes",
+    ),
+    graveyardShift: firstValue(
+      employee?.graveyardShift,
+      employee?.graveyard_shift,
+      employee?.willingGraveyard,
+      "Yes",
+    ),
+    employmentType: firstValue(
+      employee?.employmentType,
+      employee?.employment_type,
+      employee?.employmentInterest,
+      "Full Time",
+    ),
+    remoteAccess: firstValue(
+      employee?.remoteAccess,
+      employee?.remote_access,
+      employee?.remoteWorkAccess,
+      "Yes",
+    ),
+    drugTest: firstValue(
+      employee?.drugTest,
+      employee?.drug_test,
+      employee?.willingDrugTest,
+      "Yes",
+    ),
+    backgroundCheck: firstValue(
+      employee?.backgroundCheck,
+      employee?.background_check,
+      employee?.willingBackgroundCheck,
+      "Yes",
     ),
     remarks: firstValue(employee?.remarks, employee?.recruitmentRemarks),
     statusHistory: normalizeList(

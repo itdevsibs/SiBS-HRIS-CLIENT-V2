@@ -54,13 +54,13 @@ function CoverageControl({ row, coverage, onCreateAction }) {
   if (coverage.state === "assigned") {
     return (
       <span
-        className="inline-flex shrink-0 items-center gap-1 rounded border border-blue-100 bg-blue-50 px-2 py-1 text-[9px] font-extrabold text-blue-700"
+        className="inline-flex h-7 w-[130px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2 text-[9.5px] font-extrabold text-blue-700"
         title={
           coverage.activeAction?.actionItem ||
           "A Planned or Ongoing action currently covers this requirement."
         }
       >
-        <CheckCircle2 size={11} />
+        <CheckCircle2 size={12} />
         Action Assigned
       </span>
     );
@@ -73,12 +73,12 @@ function CoverageControl({ row, coverage, onCreateAction }) {
       "completed action";
 
     return (
-      <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+      <div className="flex flex-col items-end justify-center gap-1 text-right">
         <span
-          className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[9px] font-extrabold text-amber-700"
+          className="inline-flex h-6 w-[130px] shrink-0 items-center justify-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 text-[9px] font-extrabold text-amber-700"
           title={`${actionId} was completed, but the hiring gap remains open.`}
         >
-          <RefreshCw size={11} />
+          <RefreshCw size={10} />
           Follow-up Needed
         </span>
 
@@ -88,7 +88,7 @@ function CoverageControl({ row, coverage, onCreateAction }) {
             event.stopPropagation();
             onCreateAction?.(row);
           }}
-          className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-[#FF5C28] bg-white px-2.5 text-[9px] font-extrabold text-[#FF5C28] transition hover:bg-[#FFF0EB]"
+          className="inline-flex h-7 w-[130px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2 text-[9.5px] font-extrabold text-amber-700 transition hover:border-amber-300 hover:bg-amber-100"
           title={`Create a follow-up action after ${actionId}.`}
         >
           <Plus size={11} />
@@ -106,7 +106,7 @@ function CoverageControl({ row, coverage, onCreateAction }) {
           event.stopPropagation();
           onCreateAction?.(row);
         }}
-        className="inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-lg bg-[#FF5C28] px-3 text-[9px] font-extrabold text-white shadow-sm transition hover:bg-[#E04F20]"
+        className="inline-flex h-7 w-[130px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2 text-[9.5px] font-extrabold text-red-700 transition hover:border-red-300 hover:bg-red-100"
         title="No Planned or Ongoing action covers this at-risk requirement."
       >
         <Plus size={12} />
@@ -116,8 +116,8 @@ function CoverageControl({ row, coverage, onCreateAction }) {
   }
 
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded border border-emerald-100 bg-emerald-50 px-2 py-1 text-[9px] font-extrabold text-emerald-700">
-      <CheckCircle2 size={11} />
+    <span className="inline-flex h-7 w-[130px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2 text-[9.5px] font-extrabold text-emerald-700">
+      <CheckCircle2 size={12} />
       No Action Needed
     </span>
   );
@@ -142,12 +142,12 @@ function RequirementMobileCard({ row, onCreateAction }) {
         </div>
 
         <span
-          className={`inline-flex shrink-0 items-center gap-1 rounded border px-2 py-1 text-[9px] font-extrabold ${getRiskBadge(
+          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold ${getRiskBadge(
             row,
           )}`}
         >
           <CircleAlert size={11} />
-          {row.atRisk ? "Y" : "N"}
+          {row.atRisk ? "Yes" : "No"}
         </span>
       </div>
 
@@ -250,16 +250,16 @@ export default function ActionItemsCurrentStatus() {
     <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
       <header className="flex flex-col gap-2 border-b border-[#E6ECF2] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-sm font-extrabold text-[#042C51] sm:text-base">
+          <h2 className="sibs-section-title">
             Current Status – Active Open Requirements
           </h2>
-          <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+          <p className="sibs-section-subtitle">
             Master account-level capacity ledger across active open requirements,
             fill rates, at-risk reasons, and action coverage.
           </p>
         </div>
 
-        <span className="inline-flex w-fit shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
+        <span className="inline-flex w-fit shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
           {rows.length} Records
         </span>
       </header>
@@ -268,15 +268,18 @@ export default function ActionItemsCurrentStatus() {
         <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
           <div
             ref={dragScrollRef}
+            tabIndex={0}
+            role="region"
+            aria-label="Current Status table scroll area"
             onMouseDown={handleDragStart}
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
             onMouseLeave={handleDragEnd}
-            className={`hidden overflow-x-auto lg:block select-none ${
+            className={`hidden overflow-x-auto sibs-scrollbar focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/20 lg:block ${
               isDragging ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
-        <table className="w-full min-w-[1550px] border-collapse font-jakarta text-xs whitespace-nowrap text-left">
+        <table className="w-full min-w-[1850px] border-collapse font-jakarta text-xs whitespace-nowrap text-left">
           <thead className="bg-[#F8FAFC]">
             <tr className="border-b border-[#E6ECF2]">
               {[
@@ -315,8 +318,7 @@ export default function ActionItemsCurrentStatus() {
                 return (
                   <tr
                     key={row.id || row.roleAccountKey}
-                    onClick={() => selectReportRow?.(row)}
-                    className="cursor-pointer transition hover:bg-[#F8FAFC]"
+                    className="transition hover:bg-[#F8FAFC]"
                   >
                     <td className="border-r border-[#E6ECF2] px-3.5 py-3">
                       <p className="text-sm font-extrabold text-[#042C51] truncate">
@@ -369,23 +371,23 @@ export default function ActionItemsCurrentStatus() {
                     </WorkforceBodyTd>
                     <td className="border-r border-[#E6ECF2] px-3 py-3 text-center align-middle">
                       <span
-                        className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[9px] font-extrabold ${getRiskBadge(
+                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold ${getRiskBadge(
                           row,
                         )}`}
                       >
                         <CircleAlert size={11} />
-                        {row.atRisk ? "Y" : "N"}
+                        {row.atRisk ? "Yes" : "No"}
                       </span>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-3 py-3 whitespace-normal align-middle">
-                      <p className="text-[10px] font-bold leading-4 text-rose-600 line-clamp-2">
+                    <td className="min-w-[240px] border-r border-[#E6ECF2] px-3.5 py-3 whitespace-normal align-middle">
+                      <p className="text-[10px] font-bold leading-4 text-rose-600">
                         {safeText(row.reason, "No active risk trigger")}
                       </p>
                     </td>
-                    <td className="px-3 py-3 whitespace-normal align-middle">
+                    <td className="min-w-[360px] px-3.5 py-3 whitespace-normal align-middle">
                       <div className="flex items-center justify-between gap-3">
                         <p
-                          className="line-clamp-2 min-w-0 text-[10px] font-semibold leading-4 text-[#667085]"
+                          className="min-w-0 flex-1 text-[10px] font-semibold leading-4 text-[#667085]"
                           title={safeText(
                             row.latestStatusNotes,
                             "No status note recorded.",
@@ -397,11 +399,13 @@ export default function ActionItemsCurrentStatus() {
                           )}
                         </p>
 
-                        <CoverageControl
-                          row={row}
-                          coverage={row.actionCoverage}
-                          onCreateAction={openAddModalForStatusRow}
-                        />
+                        <div className="flex shrink-0 w-[140px] items-center justify-end text-right font-jakarta">
+                          <CoverageControl
+                            row={row}
+                            coverage={row.actionCoverage}
+                            onCreateAction={openAddModalForStatusRow}
+                          />
+                        </div>
                       </div>
                     </td>
                   </tr>

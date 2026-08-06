@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import {
   AlertCircle,
   AlertTriangle,
@@ -639,7 +640,7 @@ export default function JobDescriptionTable({
         />
 
         <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-          <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4">
+          <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
             {STATUS_TABS.map((tab) => {
               const active = selectedStatusTab === tab.key;
 
@@ -648,17 +649,17 @@ export default function JobDescriptionTable({
                   key={tab.key}
                   type="button"
                   onClick={() => updateFilter(setSelectedStatusTab, tab.key)}
-                  className={`inline-flex h-10 shrink-0 items-center gap-2 border-b-2 px-4 text-[10px] font-extrabold uppercase tracking-normal transition ${
+                  className={`relative inline-flex h-10 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold uppercase tracking-normal transition-colors ${
                     active
-                      ? "rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
-                      : "border-transparent text-[#667085] hover:text-[#042C51]"
+                      ? "rounded-t-xl bg-white text-[#042C51]"
+                      : "text-[#667085] hover:text-[#042C51]"
                   }`}
                 >
                   {tab.label}
                   {tab.key === "approval" ? (
                     <span
                       className={[
-                        "rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums",
+                        "rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors",
                         active
                           ? "bg-red-600 text-white"
                           : "bg-red-100 text-red-700",
@@ -666,6 +667,14 @@ export default function JobDescriptionTable({
                     >
                       {statusCounts.approval || 0}
                     </span>
+                  ) : null}
+
+                  {active ? (
+                    <motion.div
+                      layoutId="jdActiveTabIndicator"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
                   ) : null}
                 </button>
               );
@@ -705,28 +714,28 @@ export default function JobDescriptionTable({
           </div>
 
           <div className="hidden overflow-x-auto lg:block">
-            <table className="w-full min-w-[1280px] border-collapse text-left text-xs">
+            <table className="w-full min-w-[1180px] table-fixed border-collapse text-left text-xs">
               <thead className="sibs-data-table-head">
                 <tr className="sibs-data-table-head-row">
-                  <th className="sibs-data-table-th text-left">
+                  <th className="sibs-data-table-th w-[32%] text-left">
                     Role & Document Title
                   </th>
-                  <th className="sibs-data-table-th text-left">
+                  <th className="sibs-data-table-th w-[26%] text-left">
                     Department / Account
                   </th>
-                  <th className="sibs-data-table-th text-left">
+                  <th className="sibs-data-table-th w-[18%] text-left">
                     Supervisory Level
                   </th>
-                  <th className="sibs-data-table-th text-left">Status</th>
-                  <th className="sibs-data-table-th text-left">
+                  <th className="sibs-data-table-th w-[12%] text-left">Status</th>
+                  <th className="sibs-data-table-th w-[12%] text-left">
                     Date & Version
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-[#E6ECF2]">
+              <tbody key={selectedStatusTab} className="divide-y divide-[#E6ECF2]">
                 {paginatedList.length > 0 ? (
-                  paginatedList.map((item) => {
+                  paginatedList.map((item, index) => {
                     const status = getRealJdStatus(item);
                     const roleTitle =
                       getRoleTitle(item) || "Untitled Job Description";
@@ -739,7 +748,8 @@ export default function JobDescriptionTable({
                           getRecordId(item) || `${roleTitle}-${documentTitle}`
                         }
                         onClick={() => handleOpenFullPageView(item)}
-                        className="sibs-data-table-row cursor-pointer hover:bg-[#FFFDFC]"
+                        className="sibs-data-table-row sibs-page-card-in cursor-pointer hover:bg-[#FFFDFC]"
+                        style={{ animationDelay: `${index * 30}ms` }}
                       >
                         <td className="px-4 py-3.5">
                           <div className="flex items-start gap-2">

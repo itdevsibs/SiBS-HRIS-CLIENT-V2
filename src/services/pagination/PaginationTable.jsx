@@ -636,10 +636,9 @@ export default function PaginationTable({
             </button>
 
             <span
-              className={`inline-flex h-10 items-center justify-center whitespace-nowrap ${EDGE} border border-[#FF5C28] bg-[#FF5C28] px-3 font-jakarta text-xs font-extrabold text-white shadow-sm sm:px-4`}
+              className={`inline-flex h-10 items-center justify-center whitespace-nowrap ${EDGE} border border-[#FF5C28] bg-[#FF5C28] px-3.5 font-jakarta text-xs font-extrabold text-white shadow-sm sm:px-4`}
             >
-              Page {safeCurrentPage}
-              {safeTotalPages > 1 ? ` of ${safeTotalPages}` : ""}
+              {safeCurrentPage}
             </span>
 
             <button

@@ -234,7 +234,7 @@ export default function AvailablePositionsTable({
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-[#E6ECF2]">
+                  <tbody key={statusFilter} className="divide-y divide-[#E6ECF2]">
                     {paginatedPositions.length > 0 ? (
                       paginatedPositions.map(
                         (position, index) => {

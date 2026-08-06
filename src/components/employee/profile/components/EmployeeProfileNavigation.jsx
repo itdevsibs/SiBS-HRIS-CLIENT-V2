@@ -1,9 +1,13 @@
 import { PROFILE_TABS } from "../../../../lib/utils/employees/employeeProfileSchemas.js";
 import { getActivePrimaryKey } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 
-export default function EmployeeProfileNavigation({ activeTab, onTabChange }) {
+export default function EmployeeProfileNavigation({
+  activeTab,
+  onTabChange,
+  tabs = PROFILE_TABS,
+}) {
   const activePrimaryKey = getActivePrimaryKey(activeTab);
-  const activePrimary = PROFILE_TABS.find((tab) => tab.key === activePrimaryKey);
+  const activePrimary = tabs.find((tab) => tab.key === activePrimaryKey);
   const secondaryTabs = activePrimary?.children || [];
 
   function handlePrimaryClick(tab) {
@@ -12,12 +16,9 @@ export default function EmployeeProfileNavigation({ activeTab, onTabChange }) {
   }
 
   return (
-    <nav
-      className="sibs-card p-2.5"
-      aria-label="Employee profile navigation"
-    >
-      <div className="flex min-w-0 gap-1 overflow-x-auto pb-1 no-scrollbar">
-        {PROFILE_TABS.map((tab) => {
+    <nav className="sibs-card p-2.5" aria-label="Employee profile navigation">
+      <div className="flex min-w-0 gap-1 overflow-x-auto pb-1.5 sibs-scrollbar">
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = tab.key === activePrimaryKey;
 
@@ -44,7 +45,7 @@ export default function EmployeeProfileNavigation({ activeTab, onTabChange }) {
       </div>
 
       {secondaryTabs.length > 0 ? (
-        <div className="mt-2 flex items-center gap-1.5 overflow-x-auto border-t border-[#F1F5F9] pt-2 no-scrollbar">
+        <div className="mt-2 flex items-center gap-1.5 overflow-x-auto border-t border-[#F1F5F9] pt-2 pb-1 sibs-scrollbar">
           <span className="shrink-0 px-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
             Subsections:
           </span>

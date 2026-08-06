@@ -133,93 +133,95 @@ export default function AdminLoginModal() {
   return (
     <>
       <div
-        className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-4 py-6"
+        className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-4"
         onClick={onClose}
+        role="presentation"
       >
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="admin-login-title"
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-[448px] overflow-hidden rounded-[14px] border border-[#C9D6E4] bg-white shadow-2xl"
+          className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-[448px] flex-col overflow-hidden rounded-3xl border border-white/70 bg-white font-jakarta shadow-2xl"
         >
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="absolute right-5 top-5 z-10 flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-sibs-tertiary-10 disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="Close modal"
-          >
-            <X size={20} strokeWidth={2} />
-          </button>
+          <header className="bg-[#042C51] px-5 py-4 text-white sm:px-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#FF5C28]/30 bg-[#FF5C28]/15 text-[#FF5C28]">
+                  <Activity size={20} />
+                </div>
 
-          <div className="border-b border-[#C9D6E4] px-6 py-5">
-            <div className="flex items-center gap-4 pr-8">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sibs-primary-1">
-                <Activity size={26} strokeWidth={2} />
+                <div className="min-w-0">
+                  <h2
+                    id="admin-login-title"
+                    className="text-base font-black leading-6 text-white"
+                  >
+                    {targetAccessLabel} Login
+                  </h2>
+
+                  <p className="mt-0.5 text-xs font-semibold leading-5 text-slate-300">
+                    Enter your password to access {targetAccessLabel} mode.
+                  </p>
+                </div>
               </div>
 
-              <div className="min-w-0">
-                <h2
-                  id="admin-login-title"
-                  className="text-[25px] font-bold leading-tight text-sibs-primary-1"
-                >
-                  {targetAccessLabel} Login
-                </h2>
-
-                <p className="mt-1 text-[14px] font-normal leading-5 text-sibs-tertiary-5">
-                  Enter your password to access {targetAccessLabel} mode
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-6 pt-4">
-            <div className="flex min-h-[46px] items-center rounded-xl border border-[#AFC2D8] bg-sibs-tertiary-10 px-4 text-sm text-sibs-tertiary-5">
-              <span>Target Access:</span>
-
-              <span className="ml-2 font-bold text-sibs-primary-1">
-                {targetAccessLabel}
-              </span>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="px-6 pb-6 pt-6">
-            <div>
-              <label className="mb-2 block text-sm font-normal text-sibs-primary-1">
-                Password
-              </label>
-
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={`Enter ${targetAccessLabel} password`}
-                disabled={loading}
-                autoComplete="current-password"
-                className="h-[46px] w-full rounded-xl border border-[#9FB5D0] bg-white px-4 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-[#A5AFBD] focus:border-sibs-primary-1 focus:ring-2 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
-              />
-            </div>
-
-            <div className="mt-7 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="h-[46px] rounded-xl border border-[#9FB5D0] bg-white px-4 text-sm font-semibold text-sibs-primary-1 transition hover:bg-sibs-tertiary-10 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close modal"
               >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="h-[46px] rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? "Logging in..." : `Login as ${targetAccessLabel}`}
+                <X size={18} />
               </button>
             </div>
-          </form>
+          </header>
+
+          <main className="bg-[#F8FAFC] p-5 sm:p-6">
+            <div className="flex min-h-[46px] items-center rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-semibold text-[#042C51]">
+              <span>Target Access:</span>
+              <span className="ml-1.5 font-extrabold text-[#042C51]">
+                {targetAccessLabel}
+              </span>
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-5 space-y-5">
+              <div>
+                <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
+                  Password
+                </label>
+
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={`Enter ${targetAccessLabel} password`}
+                  disabled={loading}
+                  autoComplete="current-password"
+                  className="h-10 w-full rounded-xl border border-[#D0D5DD] bg-white px-3.5 text-xs font-semibold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-[#042C51] focus:ring-4 focus:ring-[#042C51]/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={loading}
+                  className="h-10 rounded-xl border border-[#D0D5DD] bg-white px-4 text-xs font-extrabold text-[#344054] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="h-10 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#063968] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? "Logging in..." : `Login as ${targetAccessLabel}`}
+                </button>
+              </div>
+            </form>
+          </main>
         </div>
       </div>
 
