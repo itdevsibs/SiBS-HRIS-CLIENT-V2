@@ -1,5 +1,7 @@
 // src/lib/axios/publicTalentPool.js
 import axios from "axios";
+import { normalizePhoneNumberForSubmit } from "../utils/talentPool/phoneNumber";
+import { serializeTrainingEntries } from "../utils/talentPool/trainingEntries";
 
 /* =========================================
    PUBLIC TALENT POOL API
@@ -97,10 +99,26 @@ function appendPublicApplicationFormData(formData, form = {}) {
 
   appendValue(formData, "workExperience", form.workExperience);
 
-  appendValue(formData, "phone1", form.phone1 || form.phoneNumber1);
-  appendValue(formData, "phone2", form.phone2 || form.phoneNumber2);
-  appendValue(formData, "phoneNumber1", form.phoneNumber1 || form.phone1);
-  appendValue(formData, "phoneNumber2", form.phoneNumber2 || form.phone2);
+  appendValue(
+    formData,
+    "phone1",
+    normalizePhoneNumberForSubmit(form.phone1 || form.phoneNumber1),
+  );
+  appendValue(
+    formData,
+    "phone2",
+    normalizePhoneNumberForSubmit(form.phone2 || form.phoneNumber2),
+  );
+  appendValue(
+    formData,
+    "phoneNumber1",
+    normalizePhoneNumberForSubmit(form.phoneNumber1 || form.phone1),
+  );
+  appendValue(
+    formData,
+    "phoneNumber2",
+    normalizePhoneNumberForSubmit(form.phoneNumber2 || form.phone2),
+  );
 
   appendValue(
     formData,
@@ -173,7 +191,11 @@ function appendPublicApplicationFormData(formData, form = {}) {
     form.affiliations || form.affiliationsAndCertifications,
   );
 
-  appendValue(formData, "trainingAttended", form.trainingAttended);
+  appendValue(
+    formData,
+    "trainingAttended",
+    serializeTrainingEntries(form.trainingAttended),
+  );
 
   appendValue(formData, "fullyVaccinated", form.fullyVaccinated);
   appendValue(formData, "comfortableOnSite", form.comfortableOnSite);
@@ -184,19 +206,22 @@ function appendPublicApplicationFormData(formData, form = {}) {
   appendValue(formData, "willingBackgroundCheck", form.willingBackgroundCheck);
 
   const references = normalizeArray(form.references).length
-    ? normalizeArray(form.references)
+    ? normalizeArray(form.references).map((reference) => ({
+        ...reference,
+        phone: normalizePhoneNumberForSubmit(reference?.phone),
+      }))
     : [
         {
           name: form.reference1Name,
-          phone: form.reference1Phone,
+          phone: normalizePhoneNumberForSubmit(form.reference1Phone),
         },
         {
           name: form.reference2Name,
-          phone: form.reference2Phone,
+          phone: normalizePhoneNumberForSubmit(form.reference2Phone),
         },
         {
           name: form.reference3Name,
-          phone: form.reference3Phone,
+          phone: normalizePhoneNumberForSubmit(form.reference3Phone),
         },
       ];
 
@@ -208,7 +233,7 @@ function appendPublicApplicationFormData(formData, form = {}) {
   appendValue(
     formData,
     "reference1Phone",
-    form.reference1Phone || references[0]?.phone,
+    normalizePhoneNumberForSubmit(form.reference1Phone || references[0]?.phone),
   );
   appendValue(
     formData,
@@ -218,7 +243,7 @@ function appendPublicApplicationFormData(formData, form = {}) {
   appendValue(
     formData,
     "reference2Phone",
-    form.reference2Phone || references[1]?.phone,
+    normalizePhoneNumberForSubmit(form.reference2Phone || references[1]?.phone),
   );
   appendValue(
     formData,
@@ -228,7 +253,7 @@ function appendPublicApplicationFormData(formData, form = {}) {
   appendValue(
     formData,
     "reference3Phone",
-    form.reference3Phone || references[2]?.phone,
+    normalizePhoneNumberForSubmit(form.reference3Phone || references[2]?.phone),
   );
 
   appendJson(formData, "references", references);
