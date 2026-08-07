@@ -1057,6 +1057,13 @@ export default function NhoUploadModal({
           {
             withCredentials: true,
             params: {
+              /*
+               * Pre-Employment File Uploads supports multiple files per
+               * requirement. Request every physical file saved for the
+               * candidate instead of the default one-current-file-per-
+               * requirement response.
+               */
+              includeAllFiles: 1,
               _t: Date.now(),
             },
           },

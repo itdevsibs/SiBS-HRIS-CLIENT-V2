@@ -23,7 +23,6 @@ import {
   ShieldCheck,
   Sparkles,
   StickyNote,
-  Trash2,
   UploadCloud,
   UserRound,
   UserRoundPen,
@@ -2588,8 +2587,6 @@ function NhoRequirementCard({
   files = [],
   selectedFileId = "",
   onSelect,
-  onDelete,
-  deletingFileId = "",
 }) {
   const hasFiles = files.length > 0;
   const isMajor = isMajorPreEmploymentRequirement(requirement);
@@ -2688,15 +2685,6 @@ function NhoRequirementCard({
                       </span>
                     </button>
 
-                    <button
-                      type="button"
-                      disabled={deletingFileId === file.id}
-                      onClick={() => onDelete?.(file)}
-                      className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 text-xs font-extrabold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <Trash2 size={13} />
-                      {deletingFileId === file.id ? "Deleting..." : "Delete"}
-                    </button>
                   </div>
                 );
               })}
@@ -2957,8 +2945,6 @@ function CandidateNhoFilesSection({
   error = "",
   canUpload = false,
   onUploadFollowUp,
-  onDeleteFile,
-  deletingFileId = "",
 }) {
   const majorProgress = useMemo(
     () => calculateMajorRequirementProgress(files),
@@ -3139,8 +3125,6 @@ function CandidateNhoFilesSection({
                           files={getFilesForRequirement(files, requirement)}
                           selectedFileId={selectedFile?.id || ""}
                           onSelect={onSelectFile}
-                          onDelete={onDeleteFile}
-                          deletingFileId={deletingFileId}
                         />
                       ))}
                     </div>
@@ -3326,8 +3310,6 @@ export default function CandidateProfileModal() {
 
   const [selectedNhoFile, setSelectedNhoFile] = useState(null);
   const [showNhoUploadModal, setShowNhoUploadModal] = useState(false);
-  const [nhoDeleteTarget, setNhoDeleteTarget] = useState(null);
-  const [deletingNhoFileId, setDeletingNhoFileId] = useState("");
   const [isMovingToOnboarding, setIsMovingToOnboarding] = useState(false);
 
   const [statusUpdateOpen, setStatusUpdateOpen] = useState(false);
@@ -5817,33 +5799,6 @@ export default function CandidateProfileModal() {
     );
   }
 
-  async function confirmTalentPoolNhoDelete() {
-    const file = nhoDeleteTarget;
-    const pipelineId = resolvedPipelineId || candidatePipelineLookupId;
-    setNhoDeleteTarget(null);
-    if (!file || !pipelineId) return;
-
-    const identity = cleanText(file?.storedPath || file?.filePath || file?.savedFileName || file?.filename || file?.fileUrl || file?.fileName).toLowerCase();
-    setDeletingNhoFileId(cleanText(file?.id) || identity);
-    try {
-      const response = await api.delete(`/api/candidate-pipeline/${encodeURIComponent(pipelineId)}/nho/files/${encodeURIComponent(cleanText(file?.id) || identity)}`, {
-        withCredentials: true,
-        data: { fileIdentity: identity, storedPath: file?.storedPath || "", filePath: file?.filePath || "", savedFileName: file?.savedFileName || file?.filename || "", requirement: file?.requirement || "" },
-      });
-      const payload = response?.data ?? response;
-      if (payload?.success === false) throw new Error(payload?.message || "Unable to delete file.");
-      const source = payload?.data || payload || {};
-      const nextFiles = [source?.files, source?.nhoFiles, source?.candidate?.nhoFiles, payload?.files].find(Array.isArray) || [];
-      setCandidatePipelineFiles(nextFiles);
-      setSelectedNhoFile((current) => cleanText(current?.id) === cleanText(file?.id) ? nextFiles[0] || null : current);
-      await refreshTalentPool?.();
-      showStatusModal({ type: "success", title: "File Deleted", message: payload?.message || "The file was permanently deleted." });
-    } catch (error) {
-      showStatusModal({ type: "error", title: "Delete Failed", message: error?.response?.data?.message || error?.message || "Unable to delete the physical file. No changes were made." });
-    } finally {
-      setDeletingNhoFileId("");
-    }
-  }
 
   function renderPreEmploymentFiles() {
     return (
@@ -5855,8 +5810,6 @@ export default function CandidateProfileModal() {
         error={candidatePipelineFilesError}
         canUpload={canUploadFollowUpNhoRequirements}
         onUploadFollowUp={() => setShowNhoUploadModal(true)}
-        onDeleteFile={setNhoDeleteTarget}
-        deletingFileId={deletingNhoFileId}
       />
     );
   }
@@ -6585,19 +6538,6 @@ export default function CandidateProfileModal() {
           onSave={handleTalentPoolNhoSave}
         />
       )}
-
-      <StatusModal
-        open={Boolean(nhoDeleteTarget)}
-        type="confirm"
-        title="Delete File?"
-        message={`This will permanently remove ${nhoDeleteTarget?.fileName || nhoDeleteTarget?.savedFileName || "the selected document"} from the Candidate Pipeline server folder. This action cannot be undone.`}
-        confirmLabel="Delete Permanently"
-        cancelLabel="Cancel"
-        variant="center"
-        onConfirm={confirmTalentPoolNhoDelete}
-        onCancel={() => setNhoDeleteTarget(null)}
-        lockScroll={false}
-      />
 
       <StatusModal
         open={statusModal.open}
