@@ -7,6 +7,7 @@ import {
   ChevronDown,
   UserX,
   X,
+  Loader2,
 } from "lucide-react";
 
 function cleanText(value) {
@@ -167,6 +168,7 @@ const DropOffModal = ({
   onSubmit,
 }) => {
   const [categoryError, setCategoryError] = useState("");
+  const [processSubmitting, setProcessSubmitting] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -203,7 +205,13 @@ const DropOffModal = ({
       return;
     }
 
-    onSubmit?.(event);
+    if (processSubmitting) return;
+
+    setProcessSubmitting(true);
+
+    Promise.resolve(onSubmit?.(event)).finally(() => {
+      setProcessSubmitting(false);
+    });
   }
 
   return (
@@ -229,6 +237,7 @@ const DropOffModal = ({
           <button
             type="button"
             onClick={onClose}
+            disabled={processSubmitting}
             className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
             aria-label="Close Drop-off modal"
           >
@@ -261,6 +270,7 @@ const DropOffModal = ({
                 value={form?.category || ""}
                 options={dropOffCategoryOptions}
                 placeholder="Select category"
+                disabled={processSubmitting}
                 hasError={Boolean(categoryError)}
                 onChange={handleCategoryChange}
               />
@@ -284,6 +294,7 @@ const DropOffModal = ({
               <textarea
                 id="drop-off-reason"
                 required
+                disabled={processSubmitting}
                 rows={4}
                 value={form?.reason || ""}
                 onChange={(event) =>
@@ -308,6 +319,7 @@ const DropOffModal = ({
               <textarea
                 id="drop-off-remarks"
                 rows={3}
+                disabled={processSubmitting}
                 value={form?.remarks || ""}
                 onChange={(event) =>
                   setForm({
@@ -327,6 +339,7 @@ const DropOffModal = ({
             <button
               type="button"
               onClick={onClose}
+              disabled={processSubmitting}
               className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
             >
               Cancel
@@ -334,11 +347,20 @@ const DropOffModal = ({
 
             <button
               type="submit"
-              disabled={!selectedCategory || !dropOffReason}
+              disabled={processSubmitting || !selectedCategory || !dropOffReason}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none"
             >
-              <UserX size={16} />
-              Confirm Drop-off
+              {processSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <UserX size={16} />
+                  Confirm Drop-off
+                </>
+              )}
             </button>
           </div>
         </div>

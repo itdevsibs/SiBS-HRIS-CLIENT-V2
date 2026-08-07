@@ -18,6 +18,7 @@ import {
   Trash2,
   Check,
   Loader2,
+  RefreshCcw,
 } from "lucide-react";
 
 import DetailRow from "../../layout/common/DetailRow";
@@ -212,7 +213,7 @@ function safeJsonParseValue(value, fallback = null) {
   }
 }
 
-function getLatestFinalInterviewSubmission(candidate = {}) {
+function getFinalInterviewSubmissions(candidate = {}) {
   const submittedForms =
     candidate.finalInterviewSubmittedForms ||
     candidate.final_interview_submitted_forms ||
@@ -226,8 +227,81 @@ function getLatestFinalInterviewSubmission(candidate = {}) {
     ? submittedForms
     : safeJsonParseValue(submittedForms, []);
 
-  return [...(parsedForms || [])]
-    .filter(Boolean)
+  return [...(parsedForms || [])].filter(Boolean);
+}
+
+function getFinalInterviewSubmissionId(submission = {}) {
+  return cleanText(
+    submission.id ||
+      submission.submissionId ||
+      submission.submission_id ||
+      submission.formSubmissionId ||
+      submission.form_submission_id ||
+      "",
+  );
+}
+
+function getFinalInterviewAttemptNo(submission = {}, fallback = 1) {
+  const value = Number(
+    submission.attemptNo ||
+      submission.attempt_no ||
+      submission.attempt ||
+      fallback,
+  );
+
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function isFinalInterviewSubmissionStarted(submission = {}) {
+  const status = cleanText(
+    submission.status ||
+      submission.interviewStatus ||
+      submission.interview_status ||
+      "",
+  ).toLowerCase();
+
+  return Boolean(
+    ["in progress", "started", "completed"].includes(status) ||
+      submission.startedAt ||
+      submission.startedAtIso ||
+      submission.started_at ||
+      submission.started_at_iso ||
+      submission.submittedAt ||
+      submission.submittedAtIso ||
+      submission.submitted_at ||
+      submission.submitted_at_iso ||
+      submission.completedAt ||
+      submission.completedAtIso ||
+      submission.completed_at ||
+      submission.completed_at_iso,
+  );
+}
+
+function isFinalInterviewSubmissionCompleted(submission = {}) {
+  const status = cleanText(
+    submission.status ||
+      submission.interviewStatus ||
+      submission.interview_status ||
+      "",
+  ).toLowerCase();
+
+  return Boolean(
+    status === "completed" ||
+      submission.submittedAt ||
+      submission.submittedAtIso ||
+      submission.submitted_at ||
+      submission.submitted_at_iso ||
+      submission.completedAt ||
+      submission.completedAtIso ||
+      submission.completed_at ||
+      submission.completed_at_iso,
+  );
+}
+
+function getLatestFinalInterviewSubmission(candidate = {}) {
+  const parsedForms = getFinalInterviewSubmissions(candidate);
+
+  return [...parsedForms]
     .sort((a, b) => {
       const aTime = new Date(
         a.submittedAtIso ||
@@ -2559,30 +2633,24 @@ function UpdateAssessmentModal({
     const initialStatus =
       candidate?.assessmentStatus || candidate?.assessment_status || "Not Take";
 
-    const initialScore =
-      candidate?.assessmentScore ??
-      candidate?.assessment_score ??
-      candidate?.assessmentScorePercent ??
-      candidate?.assessment_score_percent ??
-      "";
-
-    const initialScoreText =
-      initialScore === null || initialScore === undefined
-        ? ""
-        : String(initialScore);
-
-    const initialResult = cleanText(
-      candidate?.assessmentResult || candidate?.assessment_result || "",
-    );
-
+    /*
+     * Each Update Assessment session is a NEW assessment entry.
+     *
+     * Never preload assessmentScore / assessmentResult from the candidate
+     * record. Those values belong to the previous assessment attempt and stay
+     * available only in the candidate history/timeline.
+     *
+     * HR must select Taken and enter a fresh score. The result will then be
+     * suggested from that newly-entered score by handleAssessmentScoreChange().
+     */
     setAssessmentStatus(initialStatus);
-    setAssessmentScore(initialScoreText);
-    setAssessmentResult(
-      initialStatus === "Taken"
-        ? initialResult || getSuggestedAssessmentResult(initialScoreText)
-        : "",
+    setAssessmentScore("");
+    setAssessmentResult("");
+    setAssessmentRemarks(
+      candidate?.assessmentRemarks ||
+        candidate?.assessment_remarks ||
+        "",
     );
-    setAssessmentRemarks(candidate?.assessmentRemarks || candidate?.assessment_remarks || "");
     setAssessmentFile(null);
     setErrorMessage("");
     setOpenAssessmentDropdown("");
@@ -2592,10 +2660,6 @@ function UpdateAssessmentModal({
     candidate?.candidateId,
     candidate?.assessmentStatus,
     candidate?.assessment_status,
-    candidate?.assessmentResult,
-    candidate?.assessment_result,
-    candidate?.assessmentScore,
-    candidate?.assessment_score,
     candidate?.assessmentRemarks,
     candidate?.assessment_remarks,
   ]);
@@ -3397,8 +3461,13 @@ function getFirstSelectableNhoFriday(referenceDate = new Date()) {
     safeDate.getDate(),
   );
 
-  const daysUntilFriday =
+  let daysUntilFriday =
     (5 - result.getDay() + 7) % 7;
+
+  // If today is Friday, the next available NHO is NEXT Friday.
+  if (daysUntilFriday === 0) {
+    daysUntilFriday = 7;
+  }
 
   result.setDate(
     result.getDate() + daysUntilFriday,
@@ -3646,10 +3715,7 @@ function NhoScheduleModal({
             </p>
 
             <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-              This week&apos;s Friday is
-              used when it has not passed.
-              Otherwise, selection begins
-              next Friday.
+              The next available Friday is used. If today is Friday, scheduling begins next Friday.
             </p>
           </div>
 
@@ -4735,6 +4801,19 @@ const CandidatePipelineModal = ({
     toDateInputValue(getFirstSelectableNhoFriday()),
   );
   const [isSchedulingNho, setIsSchedulingNho] = useState(false);
+  const [isResendingNhoEmail, setIsResendingNhoEmail] = useState(false);
+  const [isCreatingFinalInterviewRetake, setIsCreatingFinalInterviewRetake] = useState(false);
+
+  const isCandidateProcessRunning =
+    isSavingNhoFiles ||
+    isSendingAssessmentEmail ||
+    isProceedingInitialScreening ||
+    isResendingAssessmentEmail ||
+    isResendingDropOffEmail ||
+    isSubmittingRevisedOffer ||
+    isSchedulingNho ||
+    isResendingNhoEmail ||
+    isCreatingFinalInterviewRetake;
   const [nhoFilesError, setNhoFilesError] = useState("");
   const [nhoFilesSuccess, setNhoFilesSuccess] = useState("");
   const [deleteFileConfirmation, setDeleteFileConfirmation] = useState({
@@ -4861,6 +4940,7 @@ const CandidatePipelineModal = ({
     });
     setShowNhoScheduleModal(false);
     setIsSchedulingNho(false);
+    setIsResendingNhoEmail(false);
     setNhoScheduleDate(
       getCandidateNhoStartDateInput(
         sessionCandidate || {},
@@ -5217,9 +5297,16 @@ const CandidatePipelineModal = ({
 
   const isLeadStage = false;
   const isInitialScreening = currentStage === "Initial Screening";
+  /*
+   * A candidate restored from Drop-off can return to Initial Screening with
+   * an already-saved PRF result. The modal session flag resets whenever the
+   * modal is reopened, so it must not be required to show the Proceed button.
+   *
+   * If the candidate is currently in Initial Screening and the saved/current
+   * PRF status is Matched or Not Matched, the action is valid immediately.
+   */
   const canProceedInitialScreening =
     isInitialScreening &&
-    hasSelectedPrfStatusThisSession &&
     ["Matched", "Not Matched"].includes(activePrfStatus);
   const isOnlineAssessment = currentStage === "Online Assessment";
   const isAssessmentFit = currentStage === "Assessment Fit";
@@ -7327,7 +7414,75 @@ const CandidatePipelineModal = ({
     setShowNhoScheduleModal(true);
   }
 
-  async function handleConfirmScheduleNho() {
+  async function handleResendNhoScheduleEmail() {
+    const candidateId = cleanText(candidateNhoUploadId);
+
+    if (!candidateId || isResendingNhoEmail) {
+      return;
+    }
+
+    setIsResendingNhoEmail(true);
+
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateId,
+        )}/nho/resend-email`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload = unwrapCandidatePipelineResponse(response);
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message || "Failed to resend the NHO schedule email.",
+        );
+      }
+
+      const apiCandidate = lockCandidatePipelinePrimaryKey(
+        getCandidateFromApiPayload(payload) || {},
+        candidateNhoUploadIdentity.recordId,
+      );
+
+      if (apiCandidate?.id || apiCandidate?.candidateId) {
+        setLocalCandidate((current) =>
+          lockCandidatePipelinePrimaryKey(
+            {
+              ...(current || activeCandidate),
+              ...apiCandidate,
+            },
+            candidateNhoUploadIdentity.recordId,
+          ),
+        );
+      }
+
+      showStatusModal({
+        type: "success",
+        title: "NHO Email Resent",
+        message:
+          payload?.message ||
+          `NHO schedule email resent to ${
+            activeCandidate?.email || "the candidate"
+          }.`,
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "NHO Email Resend Failed",
+        message: getApiErrorMessage(
+          error,
+          "Failed to resend the NHO schedule email.",
+        ),
+      });
+    } finally {
+      setIsResendingNhoEmail(false);
+    }
+  }
+
+async function handleConfirmScheduleNho() {
     const candidateId =
       cleanText(candidateNhoUploadId);
 
@@ -7361,7 +7516,7 @@ const CandidatePipelineModal = ({
         type: "error",
         title: "Invalid NHO Start Date",
         message:
-          "Please select an available Friday starting from the current week's Friday.",
+          "Please select an available Friday. If today is Friday, the earliest option is next Friday.",
       });
 
       return;
@@ -7562,36 +7717,34 @@ const CandidatePipelineModal = ({
   }
 
  function openFinalInterviewForm() {
-    const submittedForms = Array.isArray(
-      activeCandidate.finalInterviewSubmittedForms,
-    )
-      ? activeCandidate.finalInterviewSubmittedForms
-      : [];
-
-    const latestSubmission = [...submittedForms].sort((a, b) => {
-      const aTime = new Date(
-        a.submittedAtIso ||
-          a.submittedAt ||
-          a.submitted_at ||
-          a.createdAt ||
-          a.created_at ||
-          0,
-      ).getTime();
-
-      const bTime = new Date(
-        b.submittedAtIso ||
-          b.submittedAt ||
-          b.submitted_at ||
-          b.createdAt ||
-          b.created_at ||
-          0,
-      ).getTime();
-
-      return (
-        (Number.isFinite(bTime) ? bTime : 0) -
-        (Number.isFinite(aTime) ? aTime : 0)
+    const submittedForms =
+      getFinalInterviewSubmissions(
+        activeCandidate,
       );
-    })[0];
+
+    /*
+     * Continue Interview must reopen the newest attempt by attempt number.
+     * A retake that is In Progress may not have a submittedAt timestamp yet,
+     * so sorting only by submission time can incorrectly reopen Attempt 1.
+     */
+    const sortedAttempts = submittedForms
+      .map((submission, index) => ({
+        submission,
+        attemptNo: getFinalInterviewAttemptNo(
+          submission,
+          index + 1,
+        ),
+      }))
+      .sort(
+        (first, second) =>
+          second.attemptNo - first.attemptNo,
+      );
+
+    const latestAttempt =
+      sortedAttempts[0] || null;
+
+    const latestSubmission =
+      latestAttempt?.submission || null;
 
     const candidatePositionId =
       getCandidateAppliedPositionId(
@@ -7610,8 +7763,17 @@ const CandidatePipelineModal = ({
       );
 
     const preferredFormId =
+      latestSubmission?.templateFormId ||
+      latestSubmission?.template_form_id ||
       activeCandidate.finalInterviewFormId ||
       activeCandidate.final_interview_form_id ||
+      latestSubmission?.formId ||
+      latestSubmission?.form_id ||
+      "";
+
+    const currentAttemptFormId =
+      latestSubmission?.formInstanceId ||
+      latestSubmission?.form_instance_id ||
       latestSubmission?.formId ||
       latestSubmission?.form_id ||
       "";
@@ -7637,7 +7799,7 @@ const CandidatePipelineModal = ({
       candidatePositionTitle ||
       "";
 
-    const formId =
+    const templateFormId =
       getFinalInterviewFormId(
         matchedSettingsForm,
       ) ||
@@ -7647,6 +7809,10 @@ const CandidatePipelineModal = ({
           ? `final-interview-${positionId}`
           : "default-job-evaluation"
       );
+
+    const formId =
+      currentAttemptFormId ||
+      templateFormId;
 
     const submissionId =
       latestSubmission?.id ||
@@ -7674,6 +7840,10 @@ const CandidatePipelineModal = ({
 
     if (positionTitle) {
       params.set("positionTitle", positionTitle);
+    }
+
+    if (templateFormId) {
+      params.set("templateFormId", templateFormId);
     }
 
     if (formId) {
@@ -7704,7 +7874,7 @@ const CandidatePipelineModal = ({
           },
           matchedFinalInterviewForm:
             matchedSettingsForm,
-          allowEditSubmitted: true,
+          allowEditSubmitted: false,
         },
       },
     );
@@ -7716,9 +7886,37 @@ const CandidatePipelineModal = ({
       return;
     }
 
-    const response = await handleStartInterview(
-      activeCandidate,
-    );
+    const candidatePositionId =
+      getCandidateAppliedPositionId(activeCandidate);
+
+    const candidatePositionTitle =
+      getCandidateAppliedPositionTitle(activeCandidate);
+
+    const preferredFinalInterviewFormId =
+      activeCandidate.finalInterviewFormId ||
+      activeCandidate.final_interview_form_id ||
+      "";
+
+    const matchedFinalInterviewForm =
+      findMatchingFinalInterviewForm({
+        preferredFormId: preferredFinalInterviewFormId,
+        positionId: candidatePositionId,
+        positionTitle: candidatePositionTitle,
+      });
+
+    const response = await handleStartInterview({
+      ...activeCandidate,
+      finalInterviewTemplateFormId:
+        getFinalInterviewFormId(
+          matchedFinalInterviewForm,
+        ) ||
+        preferredFinalInterviewFormId ||
+        (
+          candidatePositionId
+            ? `final-interview-${candidatePositionId}`
+            : "default-job-evaluation"
+        ),
+    });
 
     if (!response?.success) {
       /*
@@ -7728,16 +7926,274 @@ const CandidatePipelineModal = ({
       return;
     }
 
+    const responsePayload =
+      response?.data && typeof response.data === "object"
+        ? response.data
+        : response;
+
+    const newSubmission =
+      responsePayload?.submission ||
+      response?.submission ||
+      {};
+
+    const newSubmissionId =
+      responsePayload?.submissionId ||
+      response?.submissionId ||
+      newSubmission?.id ||
+      newSubmission?.submissionId ||
+      newSubmission?.submission_id ||
+      "";
+
+    const newAttemptNo =
+      responsePayload?.attemptNo ||
+      response?.attemptNo ||
+      newSubmission?.attemptNo ||
+      newSubmission?.attempt_no ||
+      newSubmission?.attempt ||
+      "";
+
+    const newSavedFormLink =
+      responsePayload?.savedFormLink ||
+      response?.savedFormLink ||
+      newSubmission?.savedFormLink ||
+      newSubmission?.saved_form_link ||
+      "";
+
     /*
-     * Start Interview is a direct transition.
-     * Do not show a success modal before opening the interview form.
+     * Always open the submission returned by Start Interview. Do not call the
+     * generic latest-submission resolver here because activeCandidate may
+     * still contain the previous completed Job Evaluation until refresh.
      */
-    openFinalInterviewForm();
+    if (newSavedFormLink) {
+      navigate(newSavedFormLink, {
+        state: {
+          candidate:
+            responsePayload?.candidate ||
+            response?.candidate ||
+            responsePayload?.data ||
+            activeCandidate,
+          allowEditSubmitted: false,
+          finalInterviewRetake:
+            Boolean(
+              newSubmission?.isRetake ||
+                newSubmission?.is_retake ||
+                Number(newAttemptNo) > 1,
+            ),
+          submissionId: newSubmissionId,
+          attemptNo: newAttemptNo,
+        },
+      });
+      return;
+    }
+
+    /*
+     * Fallback for older API responses: construct the new URL using only the
+     * newly returned submission ID. Never reuse the previous submission ID.
+     */
+    if (newSubmissionId) {
+      const positionId =
+        newSubmission?.positionId ||
+        newSubmission?.position_id ||
+        getCandidateAppliedPositionId(activeCandidate);
+
+      const formId =
+        newSubmission?.formId ||
+        newSubmission?.form_id ||
+        activeCandidate.finalInterviewFormId ||
+        activeCandidate.final_interview_form_id ||
+        "default-job-evaluation";
+
+      const params = new URLSearchParams();
+
+      params.set(
+        "candidateId",
+        activeCandidate.candidateId || "",
+      );
+      params.set(
+        "candidateApplicationId",
+        activeCandidate.candidateApplicationId ||
+          activeCandidate.id ||
+          "",
+      );
+      params.set("submissionId", newSubmissionId);
+      params.set("formId", formId);
+      params.set("mode", "edit");
+      params.set("continue", "1");
+
+      if (positionId) {
+        params.set("positionId", positionId);
+      }
+
+      if (newAttemptNo) {
+        params.set("attempt", String(newAttemptNo));
+      }
+
+      navigate(
+        `/recruitment/final-interview-form?${params.toString()}`,
+        {
+          state: {
+            candidate: activeCandidate,
+            allowEditSubmitted: false,
+            submissionId: newSubmissionId,
+            attemptNo: newAttemptNo,
+          },
+        },
+      );
+      return;
+    }
+
+    showStatusModal({
+      type: "error",
+      title: "Unable to start Final Interview",
+      message:
+        "A new Job Evaluation could not be created. Please try again.",
+    });
+  }
+
+  async function handleRetakeFinalInterview() {
+    if (isCreatingFinalInterviewRetake) return;
+
+    const confirmed = window.confirm(
+      "Create a new Final Interview attempt?\n\n" +
+        "The previous interview scores, remarks, and Job Evaluation will remain available.",
+    );
+
+    if (!confirmed) return;
+
+    const submittedForms = Array.isArray(
+      activeCandidate.finalInterviewSubmittedForms,
+    )
+      ? activeCandidate.finalInterviewSubmittedForms
+      : [];
+
+    const latestSubmission = [...submittedForms].sort((a, b) => {
+      const aTime = new Date(
+        a.submittedAtIso ||
+          a.completedAtIso ||
+          a.createdAtIso ||
+          a.submittedAt ||
+          a.createdAt ||
+          0,
+      ).getTime();
+
+      const bTime = new Date(
+        b.submittedAtIso ||
+          b.completedAtIso ||
+          b.createdAtIso ||
+          b.submittedAt ||
+          b.createdAt ||
+          0,
+      ).getTime();
+
+      return (
+        (Number.isFinite(bTime) ? bTime : 0) -
+        (Number.isFinite(aTime) ? aTime : 0)
+      );
+    })[0] || {};
+
+    const candidateRecordId =
+      activeCandidate.dbId ||
+      activeCandidate.id ||
+      activeCandidate.pipelineId ||
+      activeCandidate.pipeline_id ||
+      "";
+
+    if (!candidateRecordId) {
+      showStatusModal({
+        type: "error",
+        title: "Retake unavailable",
+        message: "Candidate Pipeline record ID is missing.",
+      });
+      return;
+    }
+
+    try {
+      setIsCreatingFinalInterviewRetake(true);
+
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateRecordId,
+        )}/final-interview/retake`,
+        {
+          candidateId: activeCandidate.candidateId || "",
+          candidateApplicationId:
+            activeCandidate.candidateApplicationId ||
+            activeCandidate.id ||
+            "",
+          positionId:
+            latestSubmission.positionId ||
+            latestSubmission.position_id ||
+            getCandidateAppliedPositionId(activeCandidate),
+          formId:
+            latestSubmission.formId ||
+            latestSubmission.form_id ||
+            activeCandidate.finalInterviewFormId ||
+            activeCandidate.final_interview_form_id ||
+            "",
+          formName:
+            latestSubmission.formName ||
+            latestSubmission.form_name ||
+            "Job Evaluation Form",
+          remarks:
+            "HR created a new Final Interview retake attempt.",
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload = response?.data || {};
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            "Failed to create the Final Interview retake.",
+        );
+      }
+
+      const savedFormLink =
+        payload.savedFormLink ||
+        payload.retake?.savedFormLink ||
+        payload.data?.savedFormLink ||
+        "";
+
+      if (!savedFormLink) {
+        throw new Error(
+          "The retake was created, but no Job Evaluation link was returned.",
+        );
+      }
+
+      navigate(savedFormLink, {
+        state: {
+          candidate: payload.candidate || payload.data || activeCandidate,
+          allowEditSubmitted: false,
+          finalInterviewRetake: true,
+          attemptNo: payload.attemptNo || payload.retake?.attemptNo,
+        },
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Retake Final Interview failed",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to create a new Final Interview attempt.",
+      });
+    } finally {
+      setIsCreatingFinalInterviewRetake(false);
+    }
   }
 
   const nhoScheduleSection = (
     <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      {isCandidateProcessRunning && (
+        <div
+          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
+          aria-hidden="true"
+        />
+      )}
+<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h3 className="truncate text-sm font-bold text-sibs-primary-1">
             NHO Schedule
@@ -7982,6 +8438,216 @@ const CandidatePipelineModal = ({
                             activeCandidate,
                           );
 
+                          const finalInterviewAttempts =
+                            getFinalInterviewSubmissions(
+                              activeCandidate,
+                            )
+                              .map((submission, submissionIndex) => ({
+                                submission,
+                                attemptNo:
+                                  getFinalInterviewAttemptNo(
+                                    submission,
+                                    submissionIndex + 1,
+                                  ),
+                              }))
+                              .sort(
+                                (first, second) =>
+                                  first.attemptNo - second.attemptNo,
+                              );
+
+                          const latestFinalInterviewAttemptNo =
+                            finalInterviewAttempts.reduce(
+                              (latest, entry) =>
+                                Math.max(latest, entry.attemptNo),
+                              0,
+                            );
+
+                          const latestFinalInterviewAttempt =
+                            finalInterviewAttempts.find(
+                              (entry) =>
+                                entry.attemptNo ===
+                                latestFinalInterviewAttemptNo,
+                            ) || null;
+
+                          const previousCompletedFinalInterviewAttempt =
+                            [...finalInterviewAttempts]
+                              .filter(
+                                (entry) =>
+                                  entry.attemptNo <
+                                    latestFinalInterviewAttemptNo &&
+                                  isFinalInterviewSubmissionCompleted(
+                                    entry.submission,
+                                  ),
+                              )
+                              .sort(
+                                (first, second) =>
+                                  second.attemptNo -
+                                  first.attemptNo,
+                              )[0] || null;
+
+                          const displayedFinalInterviewAttempts =
+                            [
+                              previousCompletedFinalInterviewAttempt,
+                              latestFinalInterviewAttempt,
+                            ].filter(
+                              (entry, entryIndex, entries) =>
+                                entry &&
+                                entries.findIndex(
+                                  (candidateEntry) =>
+                                    candidateEntry?.attemptNo ===
+                                    entry.attemptNo,
+                                ) === entryIndex,
+                            );
+
+                          const timelineSubmissionId =
+                            getFinalInterviewSubmissionId(
+                              timelineItem,
+                            ) ||
+                            getFinalInterviewSubmissionId(
+                              timelineItem?.extra || {},
+                            );
+
+                          const matchingTimelineSubmission =
+                            timelineSubmissionId
+                              ? finalInterviewAttempts.find(
+                                  (entry) =>
+                                    getFinalInterviewSubmissionId(
+                                      entry.submission,
+                                    ) === timelineSubmissionId,
+                                )?.submission || null
+                              : null;
+
+                          const timelineReasonKey = cleanText(
+                            timelineItem?.reason,
+                          ).toLowerCase();
+
+                          const isFinalInterviewStartEntry =
+                            Boolean(timelineSubmissionId) &&
+                            (
+                              timelineReasonKey.includes(
+                                "final interview attempt",
+                              ) &&
+                              timelineReasonKey.includes("started")
+                            );
+
+                          const timelineInterviewResponse =
+                            cleanText(
+                              timelineItem?.interviewResponse ||
+                                timelineItem?.interview_response ||
+                                timelineItem?.responseStatus ||
+                                timelineItem?.response_status ||
+                                timelineItem?.extra?.interviewResponse ||
+                                timelineItem?.extra?.interview_response ||
+                                timelineItem?.extra?.responseStatus ||
+                                timelineItem?.extra?.response_status ||
+                                "",
+                            );
+
+                          const timelineInterviewSchedule =
+                            timelineItem?.selectedInterviewDate ||
+                            timelineItem?.selected_interview_date ||
+                            timelineItem?.finalInterviewDate ||
+                            timelineItem?.final_interview_date ||
+                            timelineItem?.interviewDate ||
+                            timelineItem?.interview_date ||
+                            timelineItem?.extra?.selectedInterviewDate ||
+                            timelineItem?.extra?.selected_interview_date ||
+                            timelineItem?.extra?.finalInterviewDate ||
+                            timelineItem?.extra?.final_interview_date ||
+                            timelineItem?.extra?.interviewDate ||
+                            timelineItem?.extra?.interview_date ||
+                            "";
+
+                          const timelineInterviewType =
+                            cleanText(
+                              timelineItem?.interviewType ||
+                                timelineItem?.interview_type ||
+                                timelineItem?.extra?.interviewType ||
+                                timelineItem?.extra?.interview_type ||
+                                (
+                                  timelineInterviewResponse
+                                    ? activeCandidate.interviewType ||
+                                      activeCandidate.interview_type
+                                    : ""
+                                ) ||
+                                "",
+                            );
+
+                          const timelineOnlineInterviewLink =
+                            cleanText(
+                              timelineItem?.onlineInterviewLink ||
+                                timelineItem?.online_interview_link ||
+                                timelineItem?.extra?.onlineInterviewLink ||
+                                timelineItem?.extra?.online_interview_link ||
+                                "",
+                            );
+
+                          const timelineInterviewRespondedAt =
+                            timelineItem?.respondedAt ||
+                            timelineItem?.responded_at ||
+                            timelineItem?.extra?.respondedAt ||
+                            timelineItem?.extra?.responded_at ||
+                            "";
+
+                          const shouldShowInterviewScheduleHistory =
+                            Boolean(
+                              timelineInterviewResponse ||
+                                timelineInterviewSchedule,
+                            ) &&
+                            (
+                              cleanText(
+                                timelineItem?.extra?.source ||
+                                  timelineItem?.source ||
+                                  "",
+                              )
+                                .toLowerCase()
+                                .includes("candidate public interview response") ||
+                              ["accepted", "rescheduled", "declined"].includes(
+                                timelineInterviewResponse.toLowerCase(),
+                              )
+                            );
+
+                          const timelineScheduleText = String(
+                            [
+                              timelineItem?.stage,
+                              timelineItem?.title,
+                              timelineItem?.reason,
+                              timelineItem?.remarks,
+                              timelineItem?.description,
+                            ]
+                              .filter(Boolean)
+                              .join(" "),
+                          )
+                            .trim()
+                            .toLowerCase()
+                            .replace(/[-_]+/g, " ")
+                            .replace(/\s+/g, " ");
+
+                          const timelineScheduleStage = String(
+                            timelineItem?.stage ||
+                              timelineItem?.currentStage ||
+                              timelineItem?.current_stage ||
+                              "",
+                          )
+                            .trim()
+                            .toLowerCase()
+                            .replace(/[-_]+/g, " ")
+                            .replace(/\s+/g, " ");
+
+                          const isInterviewScheduleEmailEntry =
+                            timelineScheduleStage === "interview scheduled" &&
+                            (
+                              timelineScheduleText.includes(
+                                "interview schedule saved",
+                              ) ||
+                              timelineScheduleText.includes(
+                                "email sent to",
+                              ) ||
+                              timelineScheduleText.includes(
+                                "proposed interview schedule",
+                              )
+                            );
+
                           const finalInterviewScoreSummary = getTimelineFinalInterviewScoreSummary(
                             timelineItem,
                             activeCandidate,
@@ -8007,10 +8673,16 @@ const CandidatePipelineModal = ({
                             );
 
                           const shouldShowJobEvaluationScore =
+                            !isFinalInterviewStartEntry &&
+                            !isInterviewScheduleEmailEntry &&
+                            !shouldShowInterviewScheduleHistory &&
                             isLatestFinalInterviewTimelineItem &&
                             Boolean(jobEvaluationScore);
 
                           const shouldShowFinalInterviewResult =
+                            !isFinalInterviewStartEntry &&
+                            !isInterviewScheduleEmailEntry &&
+                            !shouldShowInterviewScheduleHistory &&
                             isLatestFinalInterviewTimelineItem &&
                             Boolean(
                               finalInterviewResult ||
@@ -8097,6 +8769,268 @@ const CandidatePipelineModal = ({
                                     {item.remarks}
                                   </p>
                                 )}
+
+                                {shouldShowInterviewScheduleHistory && (
+                                  <div className="mt-3 rounded-xl border border-blue-100 bg-white p-3">
+                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                                      Interview Schedule History
+                                    </p>
+
+                                    <div className="mt-3 divide-y divide-[#EEF2F6]">
+                                      <div className="flex flex-col gap-1 py-2 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
+                                        <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                          Candidate Response
+                                        </span>
+                                        <span className="text-xs font-extrabold text-[#101828]">
+                                          {timelineInterviewResponse || "—"}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                          Interview Schedule
+                                        </span>
+                                        <span className="text-xs font-extrabold text-[#101828] sm:text-right">
+                                          {formatDateTime(
+                                            timelineInterviewSchedule,
+                                          ) || "—"}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                          Interview Type
+                                        </span>
+                                        <span className="text-xs font-extrabold text-[#101828]">
+                                          {timelineInterviewType || "—"}
+                                        </span>
+                                      </div>
+
+                                      {timelineInterviewRespondedAt && (
+                                        <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
+                                          <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                            Responded At
+                                          </span>
+                                          <span className="text-xs font-extrabold text-[#101828] sm:text-right">
+                                            {formatDateTime(
+                                              timelineInterviewRespondedAt,
+                                            ) || "—"}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {timelineInterviewType
+                                        .toLowerCase()
+                                        .includes("online") &&
+                                        timelineOnlineInterviewLink && (
+                                          <div className="py-2 last:pb-0">
+                                            <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                              Online Interview Link
+                                            </p>
+                                            <p
+                                              title={timelineOnlineInterviewLink}
+                                              className="mt-1 truncate text-xs font-semibold text-blue-600"
+                                            >
+                                              {timelineOnlineInterviewLink}
+                                            </p>
+                                          </div>
+                                        )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {isFinalInterviewStartEntry &&
+                                  finalInterviewAttempts.length > 0 && (
+                                    <div className="mt-3 rounded-xl border border-violet-100 bg-white p-3">
+                                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                                        Final Interview Attempts
+                                      </p>
+
+                                      <div className="mt-3 space-y-3">
+                                        {displayedFinalInterviewAttempts.map(
+                                          ({
+                                            submission,
+                                            attemptNo,
+                                          }) => {
+                                            const isPreviousAttempt =
+                                              attemptNo <
+                                              latestFinalInterviewAttemptNo;
+
+                                            const isCurrentAttempt =
+                                              attemptNo ===
+                                              latestFinalInterviewAttemptNo;
+
+                                            const isStarted =
+                                              isFinalInterviewSubmissionStarted(
+                                                submission,
+                                              );
+
+                                            const isCompleted =
+                                              isFinalInterviewSubmissionCompleted(
+                                                submission,
+                                              );
+
+                                            const attemptScoreSummary =
+                                              safeJsonParseValue(
+                                                submission.scoreSummary ||
+                                                  submission.score_summary ||
+                                                  {},
+                                                {},
+                                              ) || {};
+
+                                            const attemptJobEvaluationScore =
+                                              isCompleted
+                                                ? getJobEvaluationScoreDisplay(
+                                                    attemptScoreSummary,
+                                                  )
+                                                : "";
+
+                                            const attemptResult =
+                                              isCompleted
+                                                ? getFinalInterviewResult(
+                                                    attemptScoreSummary,
+                                                  ) ||
+                                                  submission.finalInterviewResult ||
+                                                  submission.final_interview_result ||
+                                                  "Completed"
+                                                : "";
+
+                                            const attemptFinalScore =
+                                              isCompleted
+                                                ? getFinalInterviewScoreDisplay(
+                                                    attemptScoreSummary,
+                                                  ) ||
+                                                  cleanText(
+                                                    submission.finalInterviewScore ||
+                                                      submission.final_interview_score ||
+                                                      "",
+                                                  )
+                                                : "";
+
+                                            const attemptLink =
+                                              cleanText(
+                                                submission.savedFormLink ||
+                                                  submission.saved_form_link ||
+                                                  "",
+                                              );
+
+                                            const attemptStatus =
+                                              isCompleted
+                                                ? "Completed"
+                                                : isStarted
+                                                  ? "In Progress"
+                                                  : "Not yet started";
+
+                                            return (
+                                              <div
+                                                key={
+                                                  getFinalInterviewSubmissionId(
+                                                    submission,
+                                                  ) ||
+                                                  `final-interview-attempt-${attemptNo}`
+                                                }
+                                                className={`rounded-xl border p-3 ${
+                                                  isCurrentAttempt
+                                                    ? "border-blue-100 bg-blue-50"
+                                                    : "border-[#E6ECF2] bg-[#F8FAFC]"
+                                                }`}
+                                              >
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                  <p className="text-xs font-extrabold text-[#101828]">
+                                                    {isPreviousAttempt
+                                                      ? `Previous Final Interview — Attempt ${attemptNo}`
+                                                      : `Current Final Interview — Attempt ${attemptNo}`}
+                                                  </p>
+
+                                                  <span className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-extrabold text-[#475467]">
+                                                    {attemptStatus}
+                                                  </span>
+                                                </div>
+
+                                                {isCompleted && (
+                                                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                                    <div className="rounded-lg border border-violet-100 bg-white p-3">
+                                                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-violet-700">
+                                                        {isPreviousAttempt
+                                                          ? "Previous Job Evaluation Score"
+                                                          : "Job Evaluation Score"}
+                                                      </p>
+                                                      <p className="mt-1 text-xs font-extrabold text-violet-700">
+                                                        {attemptJobEvaluationScore ||
+                                                          "Score recorded"}
+                                                      </p>
+                                                    </div>
+
+                                                    <div className="rounded-lg border border-blue-100 bg-white p-3">
+                                                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                                                        {isPreviousAttempt
+                                                          ? "Previous Final Interview Result"
+                                                          : "Final Interview Result"}
+                                                      </p>
+                                                      <div className="mt-1 flex flex-wrap gap-2 text-xs font-extrabold text-sibs-primary-1">
+                                                        <span>
+                                                          {attemptResult ||
+                                                            "Completed"}
+                                                        </span>
+                                                        {attemptFinalScore && (
+                                                          <span>
+                                                            Score:{" "}
+                                                            {attemptFinalScore}
+                                                          </span>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                )}
+
+                                                {!isCompleted &&
+                                                  isCurrentAttempt &&
+                                                  isStarted && (
+                                                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+                                                        Job Evaluation Status
+                                                      </p>
+                                                      <p className="mt-1 text-xs font-extrabold text-amber-800">
+                                                        In Progress — no score yet
+                                                      </p>
+                                                    </div>
+                                                  )}
+
+                                                {attemptLink &&
+                                                  isStarted && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        try {
+                                                          const parsedUrl =
+                                                            new URL(
+                                                              attemptLink,
+                                                              window.location.origin,
+                                                            );
+
+                                                          navigate(
+                                                            `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`,
+                                                          );
+                                                        } catch {
+                                                          navigate(
+                                                            attemptLink,
+                                                          );
+                                                        }
+                                                      }}
+                                                      className="mt-3 block w-full min-w-0 truncate rounded-lg border border-blue-100 bg-white px-3 py-2 text-left text-xs font-semibold text-blue-600 underline transition hover:border-blue-200 hover:bg-blue-50"
+                                                    >
+                                                      {isPreviousAttempt
+                                                        ? "Open Previous Job Evaluation"
+                                                        : "Open Current Job Evaluation"}
+                                                    </button>
+                                                  )}
+                                              </div>
+                                            );
+                                          },
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
 
                                 {timelineOfferVersion &&
                                   timelineOfferPdfUrl &&
@@ -8230,7 +9164,10 @@ const CandidatePipelineModal = ({
                                   </div>
                                 )}
 
-                                {finalInterviewFormLink && (
+                                {finalInterviewFormLink &&
+                                  !isInterviewScheduleEmailEntry &&
+                                  !shouldShowInterviewScheduleHistory &&
+                                  !isFinalInterviewStartEntry && (
                                   <div className="mt-3">
                                     <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
                                       Job Evaluation Link
@@ -8991,6 +9928,24 @@ const CandidatePipelineModal = ({
                 </button>
               )}
 
+              {forNHO && (
+                <button
+                  type="button"
+                  disabled={isResendingNhoEmail}
+                  onClick={handleResendNhoScheduleEmail}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isResendingNhoEmail ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Mail size={16} />
+                  )}
+                  {isResendingNhoEmail
+                    ? "Resending NHO Email..."
+                    : "Resend NHO Email"}
+                </button>
+              )}
+
               {canShowNhoUploads && (
                 <button
                   type="button"
@@ -9020,6 +9975,24 @@ const CandidatePipelineModal = ({
                     Move to Onboarding
                   </button>
                 )}
+
+              {isInterviewed && (
+                <button
+                  type="button"
+                  disabled={isCreatingFinalInterviewRetake}
+                  onClick={handleRetakeFinalInterview}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-5 text-sm font-bold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isCreatingFinalInterviewRetake ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <RefreshCcw size={16} />
+                  )}
+                  {isCreatingFinalInterviewRetake
+                    ? "Creating Retake..."
+                    : "Retake Final Interview"}
+                </button>
+              )}
 
               {isInterviewed && nextStage && (
                 <button

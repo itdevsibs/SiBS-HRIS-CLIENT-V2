@@ -10,6 +10,7 @@ const PUBLIC_PATHS = [
   "/public/talent-pool/apply",
   "/public/interview-date",
   "/public/offer-response",
+  "/public/nho-schedule-response",
   "/recruitment/talent-pool/apply",
 ];
 

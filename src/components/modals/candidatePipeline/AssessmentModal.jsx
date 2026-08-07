@@ -137,19 +137,22 @@ export default function AssessmentModal({
       cleanText(activeCandidate.assessment_status) ||
       "Not Take";
 
-    const initialResult =
-      cleanText(activeCandidate.assessmentResult) ||
-      cleanText(activeCandidate.assessment_result) ||
-      "";
-
     const initialRemarks =
       cleanText(activeCandidate.assessmentRemarks) ||
       cleanText(activeCandidate.assessment_remarks) ||
       "";
 
+    /*
+     * Updating an assessment must always require a fresh score.
+     * Keep the saved assessment status/remarks for context, but never preload
+     * the previous score or result into a new update session.
+     *
+     * After HR enters a new score, the existing score-change logic will
+     * suggest the appropriate Assessment Result again.
+     */
     setAssessmentStatus(initialStatus || "Not Take");
-    setAssessmentResult(initialResult);
-    setAssessmentScore(getInitialScore(activeCandidate));
+    setAssessmentResult("");
+    setAssessmentScore("");
     setAssessmentRemarks(initialRemarks);
     setAssessmentFile(null);
 
@@ -266,7 +269,13 @@ export default function AssessmentModal({
 
   return (
     <div className="sibs-modal-blur fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6">
-      <form
+      {saving && (
+        <div
+          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
+          aria-hidden="true"
+        />
+      )}
+<form
         onSubmit={handleSubmit}
         className="flex max-h-[92vh] w-full max-w-[580px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
       >

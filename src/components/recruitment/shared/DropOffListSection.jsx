@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
-  Eye,
   Loader2,
   Search,
   X,
@@ -85,6 +84,7 @@ export default function DropOffListSection({
     startX: 0,
     scrollLeft: 0,
   });
+  const suppressDropOffRowClickRef = useRef(false);
   const [isDropOffTableDragging, setIsDropOffTableDragging] = useState(false);
 
   const normalizedSearchQuery = normalizeDropOffSearchValue(searchQuery);
@@ -103,7 +103,7 @@ export default function DropOffListSection({
     if (event.pointerType !== "mouse" || event.button !== 0) return;
 
     const interactiveElement = event.target.closest(
-      "button, a, input, select, textarea, [role='button']",
+      "button, a, input, select, textarea",
     );
 
     if (interactiveElement) return;
@@ -138,6 +138,10 @@ export default function DropOffListSection({
 
     const distance = event.clientX - dragState.startX;
 
+    if (Math.abs(distance) > 5) {
+      suppressDropOffRowClickRef.current = true;
+    }
+
     container.scrollLeft = dragState.scrollLeft - distance;
     event.preventDefault();
   }
@@ -166,6 +170,22 @@ export default function DropOffListSection({
     };
 
     setIsDropOffTableDragging(false);
+  }
+
+  function openDropOffCandidate(candidate) {
+    if (suppressDropOffRowClickRef.current) {
+      suppressDropOffRowClickRef.current = false;
+      return;
+    }
+
+    onViewCandidate?.(candidate);
+  }
+
+  function handleDropOffCandidateKeyDown(event, candidate) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    onViewCandidate?.(candidate);
   }
 
   return (
@@ -330,18 +350,18 @@ export default function DropOffListSection({
                   }`}
                   aria-label="Drop-off candidates table. Drag left or right to view all drop-off columns."
                 >
-                  <table className="w-full min-w-[1520px] table-fixed border-separate border-spacing-0 text-left">
+                  <table className="w-full min-w-[1320px] table-fixed border-separate border-spacing-0 text-left">
                     <thead className="sibs-data-table-head">
                       <tr className="sibs-data-table-head-row">
-                        <th className="sibs-data-table-th w-[15%] text-left">
+                        <th className="sibs-data-table-th w-[18%] text-left">
                           Candidate
                         </th>
 
-                        <th className="sibs-data-table-th w-[17%] text-left">
+                        <th className="sibs-data-table-th w-[19%] text-left">
                           Applied Position
                         </th>
 
-                        <th className="sibs-data-table-th w-[18%] text-left">
+                        <th className="sibs-data-table-th w-[21%] text-left">
                           Preferred Location / Final Account
                         </th>
 
@@ -353,10 +373,8 @@ export default function DropOffListSection({
                           Drop-off Reason
                         </th>
 
-                        <th className="sibs-data-table-th w-[11%] text-left">Date</th>
-
-                        <th className="sibs-data-table-th w-[130px] whitespace-nowrap text-center">
-                          Actions
+                        <th className="sibs-data-table-th w-[10%] text-left">
+                          Date
                         </th>
                       </tr>
                     </thead>
@@ -369,7 +387,13 @@ export default function DropOffListSection({
                             candidate.talentPoolRecordId ||
                             getDropOffDate(candidate)
                           }`}
-                          className="transition hover:bg-[#FFF9F6]"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openDropOffCandidate(candidate)}
+                          onKeyDown={(event) =>
+                            handleDropOffCandidateKeyDown(event, candidate)
+                          }
+                          className="cursor-pointer transition hover:bg-[#FFF9F6] focus:bg-[#FFF9F6] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#FF5C28]/30"
                         >
                           <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
                             <p className="truncate text-xs font-extrabold text-[#042C51]">
@@ -435,16 +459,6 @@ export default function DropOffListSection({
                             </p>
                           </td>
 
-                          <td className="w-[130px] border-b border-[#E6ECF2] px-4 py-3.5 text-center align-middle">
-                            <button
-                              type="button"
-                              onClick={() => onViewCandidate?.(candidate)}
-                              className="mx-auto inline-flex h-9 min-w-[86px] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
-                            >
-                              <Eye size={14} />
-                              View
-                            </button>
-                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -454,13 +468,15 @@ export default function DropOffListSection({
 
               <div className="space-y-3 lg:hidden">
                 {filteredCandidates.map((candidate) => (
-                  <div
+                  <button
+                    type="button"
                     key={`${getDropOffCandidateId(candidate)}-${
                       candidate.pipelineRecordId ||
                       candidate.talentPoolRecordId ||
                       getDropOffDate(candidate)
                     }-mobile`}
-                    className="rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm transition hover:border-[#FF5C28]/35 hover:bg-[#FFFCFA] hover:shadow-md"
+                    onClick={() => onViewCandidate?.(candidate)}
+                    className="block w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left font-jakarta shadow-sm transition hover:border-[#FF5C28]/35 hover:bg-[#FFFCFA] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/10"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -512,21 +528,12 @@ export default function DropOffListSection({
                       {getDropOffReason(candidate)}
                     </p>
 
-                    <div className="mt-4 flex items-center justify-between gap-3">
+                    <div className="mt-4">
                       <p className="text-xs font-semibold text-[#667085]">
                         {formatDropOffDate(getDropOffDate(candidate))}
                       </p>
-
-                      <button
-                        type="button"
-                        onClick={() => onViewCandidate?.(candidate)}
-                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
-                      >
-                        <Eye size={14} />
-                        View
-                      </button>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </>

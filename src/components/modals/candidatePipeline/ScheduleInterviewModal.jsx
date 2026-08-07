@@ -958,9 +958,26 @@ const ScheduleInterviewModal = ({
   onClose,
   onSubmit,
 }) => {
+  const [processSubmitting, setProcessSubmitting] = useState(false);
+
   if (!open || !candidate) return null;
 
   const isUpdatingSchedule = candidate.currentStage === "Interview Scheduled";
+
+  async function handleProcessSubmit(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (isSaving || processSubmitting) return;
+
+    setProcessSubmitting(true);
+
+    try {
+      await onSubmit?.(event);
+    } finally {
+      setProcessSubmitting(false);
+    }
+  }
 
   return (
     <div
@@ -968,7 +985,7 @@ const ScheduleInterviewModal = ({
       onClick={(event) => event.stopPropagation()}
       onMouseDown={(event) => event.stopPropagation()}
     >
-      <div
+<div
         className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -989,7 +1006,7 @@ const ScheduleInterviewModal = ({
 
           <button
             type="button"
-            disabled={isSaving}
+            disabled={isSaving || processSubmitting}
             onClick={onClose}
             className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -997,7 +1014,12 @@ const ScheduleInterviewModal = ({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <form
+          onSubmit={handleProcessSubmit}
+          className={`flex-1 overflow-y-auto p-4 sm:p-6 ${
+            isSaving || processSubmitting ? "pointer-events-none opacity-70" : ""
+          }`}
+        >
           <div className="space-y-5">
             <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
               <h3 className="text-lg font-bold text-sibs-primary-1">
@@ -1113,7 +1135,7 @@ const ScheduleInterviewModal = ({
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <button
               type="button"
-              disabled={isSaving}
+              disabled={isSaving || processSubmitting}
               onClick={onClose}
               className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -1122,17 +1144,17 @@ const ScheduleInterviewModal = ({
 
             <button
               type="button"
-              disabled={isSaving}
-              aria-busy={isSaving}
-              onClick={onSubmit}
+              disabled={isSaving || processSubmitting}
+              aria-busy={isSaving || processSubmitting}
+              onClick={handleProcessSubmit}
               className="inline-flex h-11 min-w-[154px] items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isSaving ? (
+              {isSaving || processSubmitting ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
                 <CalendarDays size={16} />
               )}
-              {isSaving
+              {isSaving || processSubmitting
                 ? isUpdatingSchedule
                   ? "Updating Schedule..."
                   : "Saving Schedule..."

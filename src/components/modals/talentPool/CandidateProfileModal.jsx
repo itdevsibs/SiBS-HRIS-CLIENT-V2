@@ -4263,16 +4263,6 @@ export default function CandidateProfileModal() {
     event?.preventDefault?.();
     event?.stopPropagation?.();
 
-    if (isDropOffCandidate) {
-      showStatusModal({
-        type: "error",
-        title: "Cannot Move Candidate",
-        message:
-          "This candidate is marked as Drop-off. Please update the candidate status before moving to the pipeline.",
-      });
-      return;
-    }
-
     if (isDoNotReprocess) {
       showStatusModal({
         type: "error",
@@ -6290,9 +6280,9 @@ export default function CandidateProfileModal() {
           <div className="relative z-[40] flex flex-col-reverse gap-4 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
             <p className="inline-flex w-fit max-w-full items-center rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-1.5 text-xs font-extrabold leading-5 text-[#344054]">
               {isDropOffCandidate ? (
-                <span className="font-extrabold text-red-600">
-                  Candidate is marked as Drop-off. Update the candidate status
-                  before using Candidate Pipeline actions.
+                <span className="font-extrabold text-amber-700">
+                  Candidate is marked as Drop-off. Use Move to Pipeline to
+                  continue from the last completed process stage.
                 </span>
               ) : canMoveToOnboarding ? (
                 <span className="font-extrabold text-emerald-600">
@@ -6373,15 +6363,16 @@ export default function CandidateProfileModal() {
               )}
 
               {!isAlreadyInPipeline &&
-                !isDoNotReprocess &&
-                !isDropOffCandidate && (
+                !isDoNotReprocess && (
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}
                   className="relative z-[60] inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/20 active:scale-[0.98]"
                 >
                   <ArrowRight size={16} />
-                  Move to Pipeline
+                  {isDropOffCandidate
+                    ? "Resume in Pipeline"
+                    : "Move to Pipeline"}
                 </button>
               )}
             </div>

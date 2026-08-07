@@ -1354,7 +1354,7 @@ export default function NhoUploadModal({
     <div
       className="sibs-modal-blur fixed inset-0 z-[10010] flex h-dvh items-center justify-center px-4 py-4"
       onClick={() => {
-        if (!isSaving) onClose?.();
+        if (!isSaving && !deletingFile) onClose?.();
       }}
     >
       <div
@@ -1374,7 +1374,7 @@ export default function NhoUploadModal({
 
           <button
             type="button"
-            disabled={isSaving}
+            disabled={isSaving || deletingFile}
             onClick={onClose}
             className="rounded-xl p-2 text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -1382,7 +1382,11 @@ export default function NhoUploadModal({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+        <div
+          className={`min-h-0 flex-1 overflow-y-auto p-5 sm:p-7 ${
+            isSaving || deletingFile ? "pointer-events-none opacity-70" : ""
+          }`}
+        >
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="min-w-0 space-y-5">
               <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
@@ -1548,7 +1552,7 @@ export default function NhoUploadModal({
                                 key={requirement}
                                 requirement={requirement}
                                 uploadedFiles={uploadedFiles}
-                                disabled={isSaving || isLoadingFiles}
+                                disabled={isSaving || deletingFile || isLoadingFiles}
                                 onUpload={handleUpload}
                                 onSelect={handleSelectFileForPreview}
                                 onRemove={handleRemove}
@@ -1563,7 +1567,7 @@ export default function NhoUploadModal({
 
                   <UploadedFilesList
                     files={files}
-                    disabled={isSaving || isLoadingFiles}
+                    disabled={isSaving || deletingFile || isLoadingFiles}
                     onSelect={handleSelectFileForPreview}
                     onRemove={handleRemove}
                   />
@@ -1588,7 +1592,7 @@ export default function NhoUploadModal({
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
-                disabled={isSaving}
+                disabled={isSaving || deletingFile}
                 onClick={onClose}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -1597,7 +1601,7 @@ export default function NhoUploadModal({
 
               <button
                 type="button"
-                disabled={isSaving || isLoadingFiles}
+                disabled={isSaving || deletingFile || isLoadingFiles}
                 onClick={handleSaveUploads}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
               >
