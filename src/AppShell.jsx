@@ -10,6 +10,8 @@ const PUBLIC_ROUTES_WITHOUT_SIDEBAR = [
   "/recruitment/talent-pool/apply",
   "/public/interview-date",
   "/public/offer-response",
+  "/public/candidate-experience-survey",
+  "/recruitment/candidate-experience/survey",
 ];
 
 function shouldHideSidebar(pathname) {

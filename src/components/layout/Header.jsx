@@ -1078,7 +1078,7 @@ export default function Header() {
 
   return (
     <header className="relative z-[70] flex h-[74px] shrink-0 items-center border-b border-[#D7E0E9] bg-[#FAFCFF] px-2 font-jakarta shadow-sm sm:h-[86px] sm:px-6">
-      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-1.5 pl-14 lg:gap-4 lg:pl-0">
+      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-1.5 pl-14 sm:pl-11 lg:gap-4 lg:pl-0">
         <div
           ref={searchRootRef}
           className="relative z-[10000] min-w-[118px] flex-[1_1_auto] lg:max-w-[560px]"
