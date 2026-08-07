@@ -37,6 +37,29 @@ export function serializeTrainingEntries(value) {
 }
 
 export function ensureTrainingEntryRows(value) {
-  const entries = normalizeTrainingEntries(value);
-  return entries.length ? entries : [""];
+  let entries = value;
+
+  if (typeof value === "string") {
+    const cleanValue = cleanTrainingText(value);
+
+    if (!cleanValue) return [""];
+
+    try {
+      const parsed = JSON.parse(cleanValue);
+      entries = Array.isArray(parsed) ? parsed : splitLegacyTrainingText(value);
+    } catch {
+      entries = splitLegacyTrainingText(value);
+    }
+  }
+
+  if (!Array.isArray(entries)) {
+    entries = entries === undefined || entries === null ? [] : [entries];
+  }
+
+  const rows = entries.map((entry) => String(entry ?? ""));
+  return rows.length ? rows : [""];
+}
+
+export function canRemoveTrainingEntryRow(index, rowCount) {
+  return Number(rowCount) > 1 && Number(index) < Number(rowCount) - 1;
 }
