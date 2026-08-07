@@ -424,6 +424,7 @@ function JobDescriptionMobileCard({ item, onView, onRevise }) {
 export default function JobDescriptionTable({
   jobDescriptionList = [],
   onRevise,
+  canApproveJobDescriptions = false,
 }) {
   const navigate = useNavigate();
   const { setPagination } = usePagination(JOB_DESCRIPTION_ENTITY);
@@ -434,6 +435,14 @@ export default function JobDescriptionTable({
   const [accountFilter, setAccountFilter] = useState("All Accounts");
   const [supervisoryFilter, setSupervisoryFilter] = useState("All Levels");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const visibleStatusTabs = useMemo(
+    () =>
+      STATUS_TABS.filter(
+        (tab) => tab.key !== "approval" || canApproveJobDescriptions,
+      ),
+    [canApproveJobDescriptions],
+  );
 
   const departmentOptions = useMemo(
     () => uniqueOptions(jobDescriptionList, getDepartment, "All Departments"),
@@ -463,6 +472,13 @@ export default function JobDescriptionTable({
 
     return counts;
   }, [jobDescriptionList]);
+
+  useEffect(() => {
+    if (!canApproveJobDescriptions && selectedStatusTab === "approval") {
+      setSelectedStatusTab("all");
+      setCurrentPage(1);
+    }
+  }, [canApproveJobDescriptions, selectedStatusTab]);
 
   const filteredList = useMemo(() => {
     const keyword = safeText(searchTerm);

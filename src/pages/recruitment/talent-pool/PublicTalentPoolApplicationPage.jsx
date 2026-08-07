@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   Send,
@@ -16,13 +22,15 @@ import {
   ChevronRight,
   CalendarDays,
   Search,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 import StatusModal from "@/components/modals/StatusModal";
 import {
   getTalentPoolFormOptions,
-  getTalentPoolOpenPositions,
   submitPublicTalentPoolApplication,
 } from "@/lib/axios/publicTalentPool";
+import { getPublicApprovedJobDescriptions } from "@/lib/axios/getPublicJobDescription";
 
 const acceptedAudioTypes =
   ".mp3,.wav,.wave,.m4a,.aac,.ogg,.oga,.webm,.mp4,.mpeg,.mpga,.flac,.amr,.3gp,.opus,.aif,.aiff,.caf,.wma,audio/*,video/mp4,video/3gpp";
@@ -482,18 +490,14 @@ function normalizeEducationSchool(section = {}) {
     schoolName: draft.schoolName.trim().toUpperCase(),
     address: draft.address.trim().toUpperCase(),
     course: draft.course.trim().toUpperCase(),
-    schoolYearGraduated: normalizeSchoolYearValue(
-      draft.schoolYearGraduated,
-    ),
+    schoolYearGraduated: normalizeSchoolYearValue(draft.schoolYearGraduated),
   };
 }
 
 function getEducationDetailsDraft(details = {}) {
   const draft = createEmptyEducationDetails();
 
-  draft.attendedSeniorHighSchool = Boolean(
-    details?.attendedSeniorHighSchool,
-  );
+  draft.attendedSeniorHighSchool = Boolean(details?.attendedSeniorHighSchool);
 
   EDUCATION_SECTION_KEYS.forEach((sectionKey) => {
     draft[sectionKey] = getEducationSchoolDraft(details?.[sectionKey]);
@@ -529,8 +533,7 @@ function prepareEducationDetailsForAttainment(details, attainment) {
 
   if (
     config.seniorHighMode === "required" ||
-    (config.seniorHighMode === "optional" &&
-      current.attendedSeniorHighSchool)
+    (config.seniorHighMode === "optional" && current.attendedSeniorHighSchool)
   ) {
     allowedSectionKeys.add("seniorHighSchool");
   }
@@ -586,7 +589,8 @@ function validateEducationDetails(attainment, details) {
   );
 
   for (const section of sections) {
-    const values = normalizedDetails[section.key] || createEmptyEducationSchool();
+    const values =
+      normalizedDetails[section.key] || createEmptyEducationSchool();
 
     if (!values.schoolName) {
       return `${section.title} name is required.`;
@@ -670,7 +674,6 @@ function createEmptyPublicForm() {
     consent: false,
   };
 }
-
 
 function getFileExtension(file) {
   const name = String(file?.name || "");
@@ -805,10 +808,13 @@ function normalizeExperienceFieldValue(field, value) {
 }
 
 function normalizeExperienceValues(experience = {}) {
-  return Object.entries(experience).reduce((normalizedExperience, [field, value]) => {
-    normalizedExperience[field] = normalizeExperienceFieldValue(field, value);
-    return normalizedExperience;
-  }, {});
+  return Object.entries(experience).reduce(
+    (normalizedExperience, [field, value]) => {
+      normalizedExperience[field] = normalizeExperienceFieldValue(field, value);
+      return normalizedExperience;
+    },
+    {},
+  );
 }
 
 function toArray(value) {
@@ -913,12 +919,15 @@ function AutoResizeTextarea({
 }) {
   const textareaRef = useRef(null);
 
-  const resizeTextarea = useCallback((textarea) => {
-    if (!textarea) return;
+  const resizeTextarea = useCallback(
+    (textarea) => {
+      if (!textarea) return;
 
-    textarea.style.height = "auto";
-    textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
-  }, [minHeight]);
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
+    },
+    [minHeight],
+  );
 
   useEffect(() => {
     resizeTextarea(textareaRef.current);
@@ -1033,6 +1042,7 @@ function normalizeDropdownOptions(options = []) {
       if (!cleanText(optionValue) && !cleanText(optionLabel)) return null;
 
       return {
+        ...(option && typeof option === "object" ? option : {}),
         id: option?.id || optionValue || optionLabel,
         value: optionValue || optionLabel,
         label: optionLabel || optionValue,
@@ -1071,20 +1081,120 @@ function normalizeOptionsPayload(payload) {
   };
 }
 
-function normalizePosition(position) {
-  return {
-    id: position?.id || position?.positionId || position?.positionTitle,
-    positionId: position?.positionId || position?.position_id || "",
-    positionTitle:
-      position?.positionTitle ||
-      position?.position_title ||
-      position?.title ||
-      position?.name ||
+function getPositionKey(position = {}) {
+  return String(
+    position.id ||
+      position.jdId ||
+      position.jd_id ||
+      position.positionId ||
+      position.position_id ||
+      position.positionTitle ||
+      position.position_title ||
       "",
-    department: position?.department || "",
-    locationSite: position?.locationSite || position?.location_site || "",
-    status: position?.status || "",
+  );
+}
+
+function normalizeJobTitleForMatch(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getJobDescriptionId(jobDescription = {}) {
+  return (
+    jobDescription.rawId ||
+    jobDescription.raw_id ||
+    jobDescription.jdId ||
+    jobDescription.jd_id ||
+    jobDescription.id ||
+    jobDescription.raw?.id ||
+    ""
+  );
+}
+
+function normalizeApprovedJobDescriptionPosition(jobDescription = {}) {
+  const jdId = getJobDescriptionId(jobDescription);
+
+  const positionTitle = cleanText(
+    jobDescription.roleTitle ||
+      jobDescription.role_title ||
+      jobDescription.documentTitle ||
+      jobDescription.document_title ||
+      jobDescription.title ||
+      jobDescription.raw?.roleTitle ||
+      jobDescription.raw?.role_title ||
+      jobDescription.raw?.documentTitle ||
+      jobDescription.raw?.document_title,
+  );
+
+  const documentTitle = cleanText(
+    jobDescription.documentTitle ||
+      jobDescription.document_title ||
+      jobDescription.raw?.documentTitle ||
+      jobDescription.raw?.document_title ||
+      positionTitle,
+  );
+
+  return {
+    id: jdId || positionTitle,
+    positionId: jdId,
+    positionTitle,
+    jdId,
+    jdCode: cleanText(
+      jobDescription.jdCode ||
+        jobDescription.jd_code ||
+        jobDescription.raw?.jdCode ||
+        jobDescription.raw?.jd_code,
+    ),
+    documentTitle,
+    department: cleanText(
+      jobDescription.department ||
+        jobDescription.departmentName ||
+        jobDescription.department_name ||
+        jobDescription.raw?.department ||
+        jobDescription.raw?.departmentName ||
+        jobDescription.raw?.department_name,
+    ),
+    locationSite: cleanText(
+      jobDescription.locationSite ||
+        jobDescription.location_site ||
+        jobDescription.location ||
+        jobDescription.raw?.locationSite ||
+        jobDescription.raw?.location_site ||
+        jobDescription.raw?.location,
+    ),
+    status: "Approved",
   };
+}
+
+function buildApprovedPositionOptions(jobDescriptions = []) {
+  const seenTitles = new Set();
+
+  return toArray(jobDescriptions)
+    .map(normalizeApprovedJobDescriptionPosition)
+    .filter((position) => position.positionTitle && position.jdId)
+    .filter((position) => {
+      const titleKey = normalizeJobTitleForMatch(position.positionTitle);
+
+      if (!titleKey || seenTitles.has(titleKey)) {
+        return false;
+      }
+
+      seenTitles.add(titleKey);
+      return true;
+    })
+    .sort((firstPosition, secondPosition) =>
+      firstPosition.positionTitle.localeCompare(
+        secondPosition.positionTitle,
+        undefined,
+        {
+          sensitivity: "base",
+        },
+      ),
+    );
 }
 
 function FieldLabel({ children }) {
@@ -1156,7 +1266,7 @@ function SectionCard({
             )}
           </div>
         </div>
-        
+
         {step ? (
           <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
             Step {step} of {totalSteps}
@@ -1185,6 +1295,7 @@ function HiringNeedsDropdown({
   required = true,
   disabled = false,
   zIndex = "z-[90]",
+  renderOptionAction = null,
 }) {
   const dropdownRef = useRef(null);
   const dropdownPanelRef = useRef(null);
@@ -1307,46 +1418,286 @@ function HiringNeedsDropdown({
 
       {open && !disabled
         ? createPortal(
-        <div
-          ref={dropdownPanelRef}
-          className="sibs-profile-dropdown-panel fixed z-[100000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
-          style={{
-            left: `${panelPosition.left}px`,
-            top: `${panelPosition.top}px`,
-            width: `${panelPosition.width}px`,
-          }}
-        >
-          <div className="max-h-72 overflow-y-auto">
-            {normalizedOptions.length > 0 ? (
-              normalizedOptions.map((option) => {
-                const active = String(option.value) === String(value || "");
+            <div
+              ref={dropdownPanelRef}
+              className="sibs-profile-dropdown-panel fixed z-[100000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+              style={{
+                left: `${panelPosition.left}px`,
+                top: `${panelPosition.top}px`,
+                width: `${panelPosition.width}px`,
+              }}
+            >
+              <div className="max-h-72 overflow-y-auto">
+                {normalizedOptions.length > 0 ? (
+                  normalizedOptions.map((option) => {
+                    const active = String(option.value) === String(value || "");
 
-                return (
-                  <button
-                    key={option.id || option.value}
-                    type="button"
-                    onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-3 py-2.5 text-left text-xs font-semibold transition ${
-                      active
-                        ? "bg-[#FFF0EB] text-[#FF5C28]"
-                        : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-                    }`}
-                  >
-                    <span className="block min-w-0 truncate">
-                      {option.label}
-                    </span>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="px-3 py-2.5 text-xs font-semibold text-[#98A2B3]">
-                No options found.
+                    return (
+                      <div
+                        key={option.id || option.value}
+                        className={`flex w-full min-w-0 items-stretch border-b border-[#EEF2F6] last:border-b-0 ${
+                          active ? "bg-[#FFF0EB]" : "bg-white"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSelect(option.value)}
+                          className={`min-w-0 flex-1 px-3 py-2.5 text-left text-xs font-semibold transition ${
+                            active
+                              ? "text-[#FF5C28]"
+                              : "text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                          }`}
+                        >
+                          <span className="block min-w-0 truncate">
+                            {option.label}
+                          </span>
+                        </button>
+
+                        {typeof renderOptionAction === "function" ? (
+                          <div className="flex shrink-0 items-center border-l border-[#EEF2F6] px-1.5">
+                            {renderOptionAction(option)}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="px-3 py-2.5 text-xs font-semibold text-[#98A2B3]">
+                    No options found.
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>,
-        document.body,
-      )
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}
+
+function PositionJobDescriptionDropdown({
+  value,
+  onChange,
+  positions = [],
+  placeholder = "Select open position",
+  disabled = false,
+  onOpenJobDescription,
+  openingKeys = [],
+}) {
+  const dropdownRef = useRef(null);
+  const dropdownPanelRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [panelPosition, setPanelPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+
+  const cleanPositions = toArray(positions).filter((position) =>
+    cleanText(position?.positionTitle || position?.position_title),
+  );
+
+  const selectedPosition = cleanPositions.find(
+    (position) =>
+      String(position?.positionTitle || position?.position_title || "") ===
+      String(value || ""),
+  );
+
+  const displayText =
+    selectedPosition?.positionTitle ||
+    selectedPosition?.position_title ||
+    placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        !dropdownRef.current?.contains(event.target) &&
+        !dropdownPanelRef.current?.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open || !dropdownRef.current) return;
+
+    function updatePanelPosition() {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const gutter = 12;
+      const panelWidth = rect.width;
+      const maxLeft = window.innerWidth - panelWidth - gutter;
+
+      setPanelPosition({
+        top: rect.bottom + 8,
+        left: Math.max(gutter, Math.min(rect.left, maxLeft)),
+        width: panelWidth,
+      });
+    }
+
+    updatePanelPosition();
+
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition, true);
+    };
+  }, [open]);
+
+  function handleSelect(position) {
+    const positionTitle = cleanText(
+      position?.positionTitle || position?.position_title,
+    );
+
+    if (!positionTitle) return;
+
+    onChange(positionTitle);
+    setOpen(false);
+  }
+
+  return (
+    <div
+      ref={dropdownRef}
+      className={`relative min-w-0 ${open ? "z-[200]" : "z-[1]"}`}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-[#F8FAFC] px-3 text-left text-xs font-semibold outline-none transition ${
+          open
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-[#F8FAFC] text-[#98A2B3] opacity-70"
+            : "text-[#042C51]"
+        }`}
+      >
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            selectedPosition ? "text-[#042C51]" : "text-[#98A2B3]"
+          }`}
+        >
+          {displayText}
+        </span>
+
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <input
+        tabIndex={-1}
+        value={value || ""}
+        onChange={() => {}}
+        required
+        className="pointer-events-none absolute bottom-0 left-0 h-px w-px opacity-0"
+      />
+
+      {open && !disabled
+        ? createPortal(
+            <div
+              ref={dropdownPanelRef}
+              className="fixed z-[100000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+              style={{
+                left: `${panelPosition.left}px`,
+                top: `${panelPosition.top}px`,
+                width: `${panelPosition.width}px`,
+              }}
+            >
+              <div className="max-h-72 overflow-y-auto">
+                {cleanPositions.length > 0 ? (
+                  cleanPositions.map((position) => {
+                    const positionTitle = cleanText(
+                      position?.positionTitle || position?.position_title,
+                    );
+
+                    const active =
+                      String(positionTitle) === String(value || "");
+
+                    const positionKey =
+                      getPositionKey(position) || positionTitle;
+
+                    const isOpening = openingKeys.includes(positionKey);
+
+                    return (
+                      <div
+                        key={positionKey}
+                        className={`flex w-full min-w-0 items-center border-b border-[#EEF2F6] last:border-b-0 ${
+                          active ? "bg-[#FFF0EB]" : "bg-white"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSelect(position)}
+                          className={`min-w-0 flex-1 px-3 py-3 text-left text-xs font-semibold transition ${
+                            active
+                              ? "text-[#FF5C28]"
+                              : "text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                          }`}
+                        >
+                          <span className="block min-w-0 truncate">
+                            {positionTitle}
+                          </span>
+                        </button>
+
+                        <div className="flex shrink-0 items-center px-2">
+                          <button
+                            type="button"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              onOpenJobDescription?.(position);
+                            }}
+                            disabled={isOpening}
+                            title={`Open ${positionTitle} job description`}
+                            aria-label={`Open ${positionTitle} job description`}
+                            className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-transparent text-[#7A8CA1] transition hover:border-[#E6ECF2] hover:bg-[#F8FAFC] hover:text-[#E84A17] focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/10 disabled:cursor-wait disabled:border-transparent disabled:bg-transparent disabled:text-[#B6C0CC]"
+                          >
+                            {isOpening ? (
+                              <Loader2
+                                size={15}
+                                strokeWidth={2.2}
+                                className="animate-spin"
+                              />
+                            ) : (
+                              <ExternalLink size={15} strokeWidth={2.2} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="px-3 py-3 text-xs font-semibold text-[#98A2B3]">
+                    No approved positions found.
+                  </div>
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
         : null}
     </div>
   );
@@ -1437,9 +1788,7 @@ function CalendarHeaderDropdown({
                       : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                   }`}
                 >
-                  <span className="block min-w-0 truncate">
-                    {option.label}
-                  </span>
+                  <span className="block min-w-0 truncate">{option.label}</span>
                 </button>
               );
             })}
@@ -1645,109 +1994,109 @@ function CalendarDatePicker({
 
       {open && !disabled
         ? createPortal(
-        <div
-          ref={calendarPanelRef}
-          className="fixed z-[100000] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
-          style={{
-            left: `${panelPosition.left}px`,
-            top: `${panelPosition.top}px`,
-            width: `${panelPosition.width}px`,
-          }}
-        >
-          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
-            <button
-              type="button"
-              onClick={goPreviousMonth}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+            <div
+              ref={calendarPanelRef}
+              className="fixed z-[100000] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+              style={{
+                left: `${panelPosition.left}px`,
+                top: `${panelPosition.top}px`,
+                width: `${panelPosition.width}px`,
+              }}
             >
-              <ChevronLeft size={18} />
-            </button>
-
-            <div className="grid min-w-0 flex-1 grid-cols-[1fr_96px] gap-2 px-3">
-              <CalendarHeaderDropdown
-                value={displayDate.getMonth()}
-                options={monthOptions}
-                onChange={handleMonthChange}
-                className="z-[100002]"
-                menuClassName="w-[180px]"
-              />
-
-              <CalendarHeaderDropdown
-                value={displayDate.getFullYear()}
-                options={yearOptions}
-                onChange={handleYearChange}
-                className="z-[100001]"
-                menuClassName="w-[120px]"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={goNextMonth}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-
-          <div className="px-4 py-4">
-            <div className="grid grid-cols-7 gap-1">
-              {weekdayLabels.map((dayLabel) => (
-                <div
-                  key={dayLabel}
-                  className="flex h-8 items-center justify-center text-xs font-extrabold text-[#174A7C]"
+              <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+                <button
+                  type="button"
+                  onClick={goPreviousMonth}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
                 >
-                  {dayLabel}
+                  <ChevronLeft size={18} />
+                </button>
+
+                <div className="grid min-w-0 flex-1 grid-cols-[1fr_96px] gap-2 px-3">
+                  <CalendarHeaderDropdown
+                    value={displayDate.getMonth()}
+                    options={monthOptions}
+                    onChange={handleMonthChange}
+                    className="z-[100002]"
+                    menuClassName="w-[180px]"
+                  />
+
+                  <CalendarHeaderDropdown
+                    value={displayDate.getFullYear()}
+                    options={yearOptions}
+                    onChange={handleYearChange}
+                    className="z-[100001]"
+                    menuClassName="w-[120px]"
+                  />
                 </div>
-              ))}
 
-              {calendarDays.map((day) => {
-                const active =
-                  selectedDate && isSameDate(day.date, selectedDate);
-                const currentDay = isSameDate(day.date, today);
+                <button
+                  type="button"
+                  onClick={goNextMonth}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
 
-                return (
-                  <button
-                    key={day.dateValue}
-                    type="button"
-                    onClick={() => handleSelectDate(day.date)}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
-                      active
-                        ? "bg-[#E7F0FA] text-sibs-primary-1 ring-2 ring-sibs-primary-1/20"
-                        : currentDay
-                          ? "bg-[#F2F6FA] text-sibs-primary-1"
-                          : day.isCurrentMonth
-                            ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
-                            : "text-[#98A7BA] hover:bg-[#F7FAFC]"
-                    }`}
-                  >
-                    {day.dayNumber}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+              <div className="px-4 py-4">
+                <div className="grid grid-cols-7 gap-1">
+                  {weekdayLabels.map((dayLabel) => (
+                    <div
+                      key={dayLabel}
+                      className="flex h-8 items-center justify-center text-xs font-extrabold text-[#174A7C]"
+                    >
+                      {dayLabel}
+                    </div>
+                  ))}
 
-          <div className="flex items-center justify-between border-t border-[#E6ECF2] px-5 py-3">
-            <button
-              type="button"
-              onClick={handleClear}
-              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
-            >
-              Clear
-            </button>
+                  {calendarDays.map((day) => {
+                    const active =
+                      selectedDate && isSameDate(day.date, selectedDate);
+                    const currentDay = isSameDate(day.date, today);
 
-            <button
-              type="button"
-              onClick={handleToday}
-              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
-            >
-              Today
-            </button>
-          </div>
-        </div>,
-        document.body,
-      )
+                    return (
+                      <button
+                        key={day.dateValue}
+                        type="button"
+                        onClick={() => handleSelectDate(day.date)}
+                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                          active
+                            ? "bg-[#E7F0FA] text-sibs-primary-1 ring-2 ring-sibs-primary-1/20"
+                            : currentDay
+                              ? "bg-[#F2F6FA] text-sibs-primary-1"
+                              : day.isCurrentMonth
+                                ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                                : "text-[#98A7BA] hover:bg-[#F7FAFC]"
+                        }`}
+                      >
+                        {day.dayNumber}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-[#E6ECF2] px-5 py-3">
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+                >
+                  Clear
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleToday}
+                  className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+                >
+                  Today
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )
         : null}
     </div>
   );
@@ -1911,10 +2260,7 @@ function SchoolYearSearchableDropdown({
             : "border-[#DCE6F1] hover:border-[#FF5C28]/40"
         }`}
       >
-        <Search
-          size={17}
-          className="shrink-0 text-[var(--sibs-primary-1)]"
-        />
+        <Search size={17} className="shrink-0 text-[var(--sibs-primary-1)]" />
 
         <input
           ref={searchInputRef}
@@ -1935,7 +2281,9 @@ function SchoolYearSearchableDropdown({
         <button
           type="button"
           onClick={handleToggle}
-          aria-label={open ? "Close school year options" : "Open school year options"}
+          aria-label={
+            open ? "Close school year options" : "Open school year options"
+          }
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-[#F2F6FA]"
         >
           <ChevronDown
@@ -2022,7 +2370,8 @@ function EducationSchoolFields({ section, value, onChange }) {
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <FieldLabel>
-            {section.schoolNameLabel || `${section.title} Name`} <RequiredMark />
+            {section.schoolNameLabel || `${section.title} Name`}{" "}
+            <RequiredMark />
           </FieldLabel>
           <AutoResizeTextarea
             required
@@ -2274,7 +2623,6 @@ function ChoiceCardGroup({
   );
 }
 
-
 function RadioCardGroup({
   name,
   value,
@@ -2374,6 +2722,7 @@ function DatabaseSelect({
   required = true,
   disabled = false,
   zIndex = "z-[90]",
+  renderOptionAction = null,
 }) {
   return (
     <HiringNeedsDropdown
@@ -2384,6 +2733,7 @@ function DatabaseSelect({
       placeholder={placeholder}
       zIndex={zIndex}
       onChange={onChange}
+      renderOptionAction={renderOptionAction}
     />
   );
 }
@@ -2585,7 +2935,8 @@ export default function PublicTalentPoolApplicationPage() {
   });
 
   const selectedAudioFile = audioFileRef.current || form.audioFile;
-  const selectedAttachmentFile = attachmentFileRef.current || form.attachmentFile;
+  const selectedAttachmentFile =
+    attachmentFileRef.current || form.attachmentFile;
 
   useEffect(() => {
     const styleId = "public-talent-pool-hide-sidebar-style";
@@ -2627,6 +2978,26 @@ export default function PublicTalentPoolApplicationPage() {
         body.public-talent-pool-form-page {
           overflow-x: hidden !important;
         }
+
+        body.public-talent-pool-form-page button:not(:disabled),
+        body.public-talent-pool-form-page a[href],
+        body.public-talent-pool-form-page [role="button"]:not([aria-disabled="true"]),
+        body.public-talent-pool-form-page input[type="checkbox"]:not(:disabled),
+        body.public-talent-pool-form-page input[type="radio"]:not(:disabled),
+        body.public-talent-pool-form-page input[type="file"]:not(:disabled),
+        body.public-talent-pool-form-page select:not(:disabled),
+        body.public-talent-pool-form-page label:has(input[type="checkbox"]:not(:disabled)),
+        body.public-talent-pool-form-page label:has(input[type="radio"]:not(:disabled)),
+        body.public-talent-pool-form-page label:has(input[type="file"]:not(:disabled)) {
+          cursor: pointer !important;
+        }
+
+        body.public-talent-pool-form-page button:disabled,
+        body.public-talent-pool-form-page [aria-disabled="true"],
+        body.public-talent-pool-form-page input:disabled,
+        body.public-talent-pool-form-page select:disabled {
+          cursor: not-allowed !important;
+        }
       `;
 
     return () => {
@@ -2643,10 +3014,15 @@ export default function PublicTalentPoolApplicationPage() {
       setLoadError("");
 
       try {
-        const [optionsResponse, positionsResponse] = await Promise.all([
-          getTalentPoolFormOptions(),
-          getTalentPoolOpenPositions(),
-        ]);
+        const [optionsResponse, approvedJobDescriptionsResponse] =
+          await Promise.all([
+            getTalentPoolFormOptions(),
+            getPublicApprovedJobDescriptions({
+              page: 1,
+              limit: 500,
+              search: "",
+            }),
+          ]);
 
         if (!isMounted) return;
 
@@ -2656,25 +3032,23 @@ export default function PublicTalentPoolApplicationPage() {
           );
         }
 
-        if (!positionsResponse?.success) {
+        if (!approvedJobDescriptionsResponse?.success) {
           throw new Error(
-            positionsResponse?.message || "Failed to load open positions.",
+            approvedJobDescriptionsResponse?.message ||
+              "Failed to load approved job descriptions.",
           );
         }
 
         setFormOptions(normalizeOptionsPayload(optionsResponse?.data));
 
-        const positions = Array.isArray(positionsResponse?.data)
-          ? positionsResponse.data
+        const approvedJobDescriptions = Array.isArray(
+          approvedJobDescriptionsResponse?.data,
+        )
+          ? approvedJobDescriptionsResponse.data
           : [];
 
         setActivePositionOptions(
-          positions
-            .map(normalizePosition)
-            .filter(
-              (position) =>
-                position.positionTitle && position.status === "Active",
-            ),
+          buildApprovedPositionOptions(approvedJobDescriptions),
         );
       } catch (error) {
         console.error("Load public talent pool form data error:", error);
@@ -2683,6 +3057,7 @@ export default function PublicTalentPoolApplicationPage() {
 
         const errorMessage =
           error?.response?.data?.message ||
+          error?.response?.data?.error ||
           error?.message ||
           "Failed to load form data from database.";
 
@@ -2725,14 +3100,6 @@ export default function PublicTalentPoolApplicationPage() {
     [form.hearAboutUs, formOptions.hearAboutUs],
   );
 
-  const openPositionOptions = useMemo(() => {
-    return activePositionOptions.map((position) => ({
-      id: position.id || position.positionId || position.positionTitle,
-      value: position.positionTitle,
-      label: position.positionTitle,
-    }));
-  }, [activePositionOptions]);
-
   const completionPercentage = useMemo(() => {
     const educationComplete =
       Boolean(form.highestEducationalAttainment) &&
@@ -2768,11 +3135,11 @@ export default function PublicTalentPoolApplicationPage() {
       checks.push(
         Boolean(
           form.lengthOfWorkExperience &&
-            form.years.trim() &&
-            form.role.trim() &&
-            form.company.trim() &&
-            form.monthlyCompensation.trim() &&
-            form.reasonForLeaving.trim(),
+          form.years.trim() &&
+          form.role.trim() &&
+          form.company.trim() &&
+          form.monthlyCompensation.trim() &&
+          form.reasonForLeaving.trim(),
         ),
       );
 
@@ -2780,15 +3147,15 @@ export default function PublicTalentPoolApplicationPage() {
         checks.push(
           Boolean(
             form.otherExperiences.length &&
-              form.otherExperiences.every(
-                (experience) =>
-                  experience.lengthOfWorkExperience &&
-                  experience.years.trim() &&
-                  experience.role.trim() &&
-                  experience.company.trim() &&
-                  experience.monthlyCompensation.trim() &&
-                  experience.reasonForLeaving.trim(),
-              ),
+            form.otherExperiences.every(
+              (experience) =>
+                experience.lengthOfWorkExperience &&
+                experience.years.trim() &&
+                experience.role.trim() &&
+                experience.company.trim() &&
+                experience.monthlyCompensation.trim() &&
+                experience.reasonForLeaving.trim(),
+            ),
           ),
         );
       }
@@ -2823,6 +3190,33 @@ export default function PublicTalentPoolApplicationPage() {
       title,
       message,
     });
+  }
+
+  function handleOpenPositionJobDescription(position) {
+    const positionTitle = cleanText(
+      position?.positionTitle || position?.position_title || position?.label,
+    );
+
+    const jdId =
+      position?.jdId ||
+      position?.jd_id ||
+      position?.jobDescriptionId ||
+      position?.job_description_id ||
+      "";
+
+    if (!positionTitle || !jdId) {
+      showStatusModal({
+        type: "error",
+        title: "Job description unavailable",
+        message:
+          "This position is not linked to an approved public job description.",
+      });
+      return;
+    }
+
+    const jobDescriptionUrl = `/job-description/${encodeURIComponent(jdId)}`;
+
+    window.open(jobDescriptionUrl, "_blank", "noopener,noreferrer");
   }
 
   function closeStatusModal() {
@@ -3020,9 +3414,7 @@ export default function PublicTalentPoolApplicationPage() {
         ...previous,
         otherExperiences: nextOtherExperiences,
         hasOtherExperience:
-          nextOtherExperiences.length > 0
-            ? previous.hasOtherExperience
-            : "No",
+          nextOtherExperiences.length > 0 ? previous.hasOtherExperience : "No",
       };
     });
   }
@@ -3066,8 +3458,8 @@ export default function PublicTalentPoolApplicationPage() {
     if (!activePositionOptions.length) {
       showStatusModal({
         type: "error",
-        title: "No active positions",
-        message: "No active open positions are configured in the database.",
+        title: "No approved positions",
+        message: "No approved public job descriptions are available.",
       });
       return false;
     }
@@ -3076,7 +3468,8 @@ export default function PublicTalentPoolApplicationPage() {
       showStatusModal({
         type: "error",
         title: "Missing source options",
-        message: "No application source options are configured in the database.",
+        message:
+          "No application source options are configured in the database.",
       });
       return false;
     }
@@ -3095,8 +3488,7 @@ export default function PublicTalentPoolApplicationPage() {
       showStatusModal({
         type: "error",
         title: "Referrer name required",
-        message:
-          "Please enter the name of the employee who referred you.",
+        message: "Please enter the name of the employee who referred you.",
       });
       return false;
     }
@@ -3190,7 +3582,6 @@ export default function PublicTalentPoolApplicationPage() {
       });
       return false;
     }
-
 
     const educationValidationMessage = validateEducationDetails(
       form.highestEducationalAttainment,
@@ -3597,7 +3988,8 @@ export default function PublicTalentPoolApplicationPage() {
                   through email.
                   {submittedRecord?.candidateId && (
                     <>
-                      {" "}Your Candidate ID is{" "}
+                      {" "}
+                      Your Candidate ID is{" "}
                       <span className="font-extrabold">
                         {submittedRecord.candidateId}
                       </span>
@@ -3613,586 +4005,573 @@ export default function PublicTalentPoolApplicationPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {isLoadingData ? (
             <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-[#174A7C] shadow-sm">
-              Loading form options and active positions from the database...
+              Loading form options and approved job descriptions from the
+              database...
             </div>
           ) : null}
 
-            <SectionCard
-              icon={BriefcaseBusiness}
-              step={1}
-              title="Application Source and Position"
-              description="Tell us where you learned about SiBS and what position you are applying for."
-            >
-              <div className="space-y-4">
-                <div>
-                  <FieldLabel>
-                    How did you first hear about us? <RequiredMark />
-                  </FieldLabel>
-                  <MultiSelectCheckboxGroup
-                    options={formOptions.hearAboutUs}
-                    values={form.hearAboutUs}
-                    onChange={handleHearAboutUsChange}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <FieldLabel>
-                      Check our open positions <RequiredMark />
-                    </FieldLabel>
-                    <DatabaseSelect
-                      required
-                      value={form.openPosition}
-                      disabled={isLoadingData || !activePositionOptions.length}
-                      options={openPositionOptions}
-                      placeholder={
-                        isLoadingData
-                          ? "Loading positions..."
-                          : activePositionOptions.length
-                            ? "Select open position"
-                            : "No active positions found"
-                      }
-                      onChange={(value) =>
-                        updateFormField("openPosition", value)
-                      }
-                      zIndex="z-[200]"
-                    />
-                    <p className="mt-2 text-xs font-semibold text-gray-500">
-                      Only active positions from the database are shown here.
-                    </p>
-                  </div>
-
-                  <div>
-                    <FieldLabel>Nickname</FieldLabel>
-                    <input
-                      value={form.nickname}
-                      onChange={(e) =>
-                        updateFormField("nickname", e.target.value)
-                      }
-                      placeholder="Preferred nickname"
-                      className={inputClass()}
-                    />
-                  </div>
-
-                  <div>
-                    <FieldLabel>
-                      Which location are you applying for? <RequiredMark />
-                    </FieldLabel>
-                    <DatabaseSelect
-                      required
-                      value={form.applyingLocation}
-                      options={formOptions.locations}
-                      placeholder="Select location"
-                      onChange={(value) =>
-                        updateFormField("applyingLocation", value)
-                      }
-                      zIndex="z-[190]"
-                    />
-                  </div>
-
-                  {hasEmployeeReferralProgram && (
-                    <>
-                      <div>
-                        <FieldLabel>
-                          Who referred you to us? <RequiredMark />
-                        </FieldLabel>
-                        <input
-                          required
-                          value={form.referredBy}
-                          onChange={(e) =>
-                            updateFormField("referredBy", e.target.value)
-                          }
-                          placeholder="Referrer name"
-                          className={inputClass()}
-                        />
-                      </div>
-
-                      <div>
-                        <FieldLabel>
-                          Employee ID <RequiredMark />
-                        </FieldLabel>
-                        <input
-                          required
-                          value={form.employeeId}
-                          onChange={(e) =>
-                            updateFormField("employeeId", e.target.value)
-                          }
-                          placeholder="Referrer employee ID"
-                          className={inputClass()}
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
+          <SectionCard
+            icon={BriefcaseBusiness}
+            step={1}
+            title="Application Source and Position"
+            description="Tell us where you learned about SiBS and what position you are applying for."
+          >
+            <div className="space-y-4">
+              <div>
+                <FieldLabel>
+                  How did you first hear about us? <RequiredMark />
+                </FieldLabel>
+                <MultiSelectCheckboxGroup
+                  options={formOptions.hearAboutUs}
+                  values={form.hearAboutUs}
+                  onChange={handleHearAboutUsChange}
+                />
               </div>
-            </SectionCard>
 
-            <SectionCard
-              icon={UserPlus}
-              step={2}
-              title="Personal Information"
-              description="Enter your legal name, contact details, and address."
-            >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <FieldLabel>
-                    First Name <RequiredMark />
-                  </FieldLabel>
-                  <input
-                    value={form.firstName}
-                    onChange={(e) =>
-                      updateFormField("firstName", e.target.value)
-                    }
-                    placeholder="Enter first name"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Middle Name</FieldLabel>
-                  <input
-                    value={form.middleName}
-                    onChange={(e) =>
-                      updateFormField("middleName", e.target.value)
-                    }
-                    placeholder="Enter middle name"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>
-                    Last Name <RequiredMark />
-                  </FieldLabel>
-                  <input
-                    value={form.lastName}
-                    onChange={(e) =>
-                      updateFormField("lastName", e.target.value)
-                    }
-                    placeholder="Enter last name"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Suffix</FieldLabel>
-                  <input
-                    value={form.suffix}
-                    onChange={(e) =>
-                      updateFormField("suffix", e.target.value)
-                    }
-                    placeholder="Jr., Sr., III"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>
-                    Date of Birth <RequiredMark />
+                    Check our open positions <RequiredMark />
                   </FieldLabel>
 
-                  <CalendarDatePicker
-                    value={form.dateOfBirth}
-                    onChange={(value) => updateFormField("dateOfBirth", value)}
-                    placeholder="Select date"
-                    hasError={isMinor}
-                  />
-
-                  {age !== null && (
-                    <p
-                      className={`mt-2 text-xs font-bold ${
-                        isMinor ? "text-red-600" : "text-emerald-600"
-                      }`}
-                    >
-                      Age as of application date: {age}
-                      {isMinor ? " — Applicant is below 18 years old." : ""}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <FieldLabel>
-                    Email <RequiredMark />
-                  </FieldLabel>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => updateFormField("email", e.target.value)}
-                    placeholder="Enter email"
-                    className={inputClass("", { uppercase: false })}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Phone 1</FieldLabel>
-                  <input
-                    value={form.phone1}
-                    onChange={(e) => updateFormField("phone1", e.target.value)}
-                    placeholder="09xxxxxxxxx"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Phone 2</FieldLabel>
-                  <input
-                    value={form.phone2}
-                    onChange={(e) => updateFormField("phone2", e.target.value)}
-                    placeholder="Optional"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div className="md:col-span-4">
-                  <FieldLabel>
-                    Physical Address <RequiredMark />
-                  </FieldLabel>
-                  <AutoResizeTextarea
-                    required
-                    value={form.physicalAddress}
-                    onChange={(e) =>
-                      updateFormField("physicalAddress", e.target.value)
+                  <PositionJobDescriptionDropdown
+                    value={form.openPosition}
+                    disabled={isLoadingData || !activePositionOptions.length}
+                    positions={activePositionOptions}
+                    placeholder={
+                      isLoadingData
+                        ? "Loading positions..."
+                        : activePositionOptions.length
+                          ? "Select open position"
+                          : "No approved positions found"
                     }
-                    placeholder="Complete physical address"
-                    className={textareaClass("min-h-11 leading-6")}
+                    onChange={(value) => updateFormField("openPosition", value)}
+                    onOpenJobDescription={handleOpenPositionJobDescription}
+                  />
+
+                  <p className="mt-2 text-xs font-semibold text-gray-500">
+                    Use the button at the right of any position to open that
+                    position's job description in a new tab.
+                  </p>
+                </div>
+
+                <div>
+                  <FieldLabel>Nickname</FieldLabel>
+                  <input
+                    value={form.nickname}
+                    onChange={(e) =>
+                      updateFormField("nickname", e.target.value)
+                    }
+                    placeholder="Preferred nickname"
+                    className={inputClass()}
                   />
                 </div>
-              </div>
-            </SectionCard>
 
-            <SectionCard
-              icon={BriefcaseBusiness}
-              step={3}
-              title="Work Experience"
-              description="Additional work experience fields will appear when you select Has work Experience."
-            >
-              <div className="space-y-4">
                 <div>
                   <FieldLabel>
-                    Work experience <RequiredMark />
+                    Which location are you applying for? <RequiredMark />
                   </FieldLabel>
                   <DatabaseSelect
                     required
-                    value={form.workExperience}
-                    options={formOptions.workExperience}
-                    placeholder="Select work experience"
-                    onChange={(value) => updateFormField("workExperience", value)}
-                    zIndex="z-[180]"
+                    value={form.applyingLocation}
+                    options={formOptions.locations}
+                    placeholder="Select location"
+                    onChange={(value) =>
+                      updateFormField("applyingLocation", value)
+                    }
+                    zIndex="z-[190]"
                   />
                 </div>
 
-                {hasRelevantExperience && (
-                  <div className="space-y-4">
-                    <ExperienceFields
-                      title="Industry or Relevant Experience"
-                      lengthOptions={formOptions.lengthOfExperience}
-                      experience={{
-                        industryRelevantExperience:
-                          form.industryRelevantExperience,
-                        lengthOfWorkExperience: form.lengthOfWorkExperience,
-                        years: form.years,
-                        role: form.role,
-                        company: form.company,
-                        monthlyCompensation: form.monthlyCompensation,
-                        reasonForLeaving: form.reasonForLeaving,
-                      }}
-                      onChange={updatePrimaryExperience}
-                    />
-
-                    <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px] md:items-end">
-                        <div>
-                          <FieldLabel>Do you have other experience?</FieldLabel>
-                          <YesNoSelect
-                            required={false}
-                            value={form.hasOtherExperience}
-                            options={formOptions.yesNo}
-                            onChange={handleOtherExperienceAnswer}
-                          />
-                        </div>
-
-                        {form.hasOtherExperience === "Yes" && (
-                          <button
-                            type="button"
-                            onClick={addOtherExperience}
-                            className="inline-flex h-10 items-center justify-center rounded-[10px] bg-[#FF5C28] px-4 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F]"
-                          >
-                            Add Other Experience
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {form.hasOtherExperience === "Yes" &&
-                      form.otherExperiences.map((experience, index) => (
-                        <ExperienceFields
-                          key={`other-experience-${index}`}
-                          title={`Other Experience ${index + 1}`}
-                          lengthOptions={formOptions.lengthOfExperience}
-                          experience={experience}
-                          onChange={(nextExperience) =>
-                            updateOtherExperience(index, nextExperience)
-                          }
-                          showRemove
-                          onRemove={() => removeOtherExperience(index)}
-                        />
-                      ))}
-                  </div>
-                )}
-              </div>
-            </SectionCard>
-
-            <div ref={educationSectionRef}>
-              <SectionCard
-                icon={GraduationCap}
-                step={4}
-                title="Education, Affiliations, and Training"
-                description="Select educational attainment and complete the school details required for that level."
-              >
-                <div className="space-y-5">
-                  <div>
-                    <FieldLabel>
-                      Highest Educational Attainment <RequiredMark />
-                    </FieldLabel>
-                    <DatabaseSelect
-                      required
-                      value={form.highestEducationalAttainment}
-                      options={formOptions.educationalAttainment}
-                      placeholder="Select educational attainment"
-                      onChange={handleEducationalAttainmentChange}
-                      zIndex="z-[170]"
-                    />
-                  </div>
-
-                  <EducationDetailsFields
-                    attainment={form.highestEducationalAttainment}
-                    details={form.educationDetails}
-                    onChange={updateEducationDetails}
-                  />
-
-                  <div>
-                    <FieldLabel>Affiliations and Certifications</FieldLabel>
-                    <MultiSelectCheckboxGroup
-                      options={formOptions.affiliationCertification}
-                      values={form.affiliationsAndCertifications}
-                      onChange={(values) =>
-                        updateFormField("affiliationsAndCertifications", values)
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <FieldLabel>Training Attended</FieldLabel>
-                    <textarea
-                      value={form.trainingAttended}
-                      onChange={(e) =>
-                        updateFormField("trainingAttended", e.target.value)
-                      }
-                      placeholder="List trainings attended"
-                      rows={4}
-                      className={textareaClass()}
-                    />
-                  </div>
-                </div>
-              </SectionCard>
-            </div>
-
-            <SectionCard
-              icon={ShieldCheck}
-              step={5}
-              title="Work Readiness Questions"
-              description="These questions help Talent Acquisition review work setup and compliance readiness."
-            >
-              <div className="space-y-3">
-                <WorkReadinessQuestion
-                  question="Are you fully vaccinated?"
-                  name="work-readiness-fully-vaccinated"
-                  value={form.fullyVaccinated}
-                  options={formOptions.yesNo}
-                  onChange={(value) =>
-                    updateFormField("fullyVaccinated", value)
-                  }
-                />
-
-                <WorkReadinessQuestion
-                  question="Are you comfortable working on site?"
-                  name="work-readiness-comfortable-on-site"
-                  value={form.comfortableOnSite}
-                  options={formOptions.yesNo}
-                  onChange={(value) =>
-                    updateFormField("comfortableOnSite", value)
-                  }
-                />
-
-                <WorkReadinessQuestion
-                  question="Are you willing to work in graveyard shift?"
-                  name="work-readiness-willing-graveyard"
-                  value={form.willingGraveyard}
-                  options={formOptions.yesNo}
-                  onChange={(value) =>
-                    updateFormField("willingGraveyard", value)
-                  }
-                />
-
-                <WorkReadinessQuestion
-                  question="Full-time, part-time, or either?"
-                  name="work-readiness-employment-interest"
-                  value={form.employmentInterest}
-                  options={formOptions.employmentInterest}
-                  onChange={(value) =>
-                    updateFormField("employmentInterest", value)
-                  }
-                  optionClassName="min-w-[104px]"
-                />
-
-                <WorkReadinessQuestion
-                  question="If this is a remote position, do you have access to a computer, Internet connection, and a private space to work remotely?"
-                  name="work-readiness-remote-work-access"
-                  value={form.remoteWorkAccess}
-                  options={formOptions.yesNo}
-                  onChange={(value) =>
-                    updateFormField("remoteWorkAccess", value)
-                  }
-                />
-
-                <WorkReadinessQuestion
-                  question="Are you willing to undertake a drug test as part of this hiring process?"
-                  name="work-readiness-willing-drug-test"
-                  value={form.willingDrugTest}
-                  options={formOptions.yesNo}
-                  onChange={(value) =>
-                    updateFormField("willingDrugTest", value)
-                  }
-                />
-
-                <WorkReadinessQuestion
-                  question="Are you willing to allow SiBS to undergo a background check as part of this hiring process?"
-                  name="work-readiness-background-check"
-                  value={form.willingBackgroundCheck}
-                  options={formOptions.yesNo}
-                  onChange={(value) =>
-                    updateFormField("willingBackgroundCheck", value)
-                  }
-                />
-              </div>
-            </SectionCard>
-
-            <SectionCard
-              icon={Users}
-              step={6}
-              title="Character References"
-              description="Provide three people who can confirm your employment, education, or character background."
-            >
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                {[
-                  {
-                    number: 1,
-                    name: form.reference1Name,
-                    phone: form.reference1Phone,
-                    nameField: "reference1Name",
-                    phoneField: "reference1Phone",
-                  },
-                  {
-                    number: 2,
-                    name: form.reference2Name,
-                    phone: form.reference2Phone,
-                    nameField: "reference2Name",
-                    phoneField: "reference2Phone",
-                  },
-                  {
-                    number: 3,
-                    name: form.reference3Name,
-                    phone: form.reference3Phone,
-                    nameField: "reference3Name",
-                    phoneField: "reference3Phone",
-                  },
-                ].map((reference) => (
-                  <div
-                    key={reference.number}
-                    className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4"
-                  >
-                    <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-[#FFF0EB] text-[10px] font-extrabold text-[#FF5C28]">
-                        {reference.number}
-                      </span>
-                      <span className="text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
-                        Reference {reference.number}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <FieldLabel>
-                          Full Name <RequiredMark />
-                        </FieldLabel>
-                        <input
-                          value={reference.name}
-                          onChange={(event) =>
-                            updateFormField(
-                              reference.nameField,
-                              event.target.value,
-                            )
-                          }
-                          placeholder="Reference name"
-                          className={inputClass()}
-                        />
-                      </div>
-
-                      <div>
-                        <FieldLabel>
-                          Phone Number <RequiredMark />
-                        </FieldLabel>
-                        <input
-                          value={reference.phone}
-                          onChange={(event) =>
-                            updateFormField(
-                              reference.phoneField,
-                              event.target.value,
-                            )
-                          }
-                          placeholder="Reference phone"
-                          className={inputClass()}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-
-            <div ref={fileSectionRef}>
-              <SectionCard
-                icon={Mic}
-                step={7}
-                title="Audio and File Upload"
-                description="Upload a single audio file answering the listed questions and one supporting document/file."
-              >
-                <div className="space-y-5">
-                  <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-4 text-xs font-bold leading-6 text-amber-800 sm:text-sm">
-                    <p className="font-extrabold">
-                      Your audio file must answer these questions:
-                    </p>
-
-                    {formOptions.audioQuestions.length ? (
-                      <ul className="mt-2 list-disc space-y-1 pl-5">
-                        {formOptions.audioQuestions.map((question) => (
-                          <li key={question.id || getOptionValue(question)}>
-                            {getOptionLabel(question)}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="mt-2">
-                        No audio questions configured in the database.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {hasEmployeeReferralProgram && (
+                  <>
                     <div>
                       <FieldLabel>
-                        Upload single audio file <RequiredMark />
+                        Who referred you to us? <RequiredMark />
                       </FieldLabel>
+                      <input
+                        required
+                        value={form.referredBy}
+                        onChange={(e) =>
+                          updateFormField("referredBy", e.target.value)
+                        }
+                        placeholder="Referrer name"
+                        className={inputClass()}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel>
+                        Employee ID <RequiredMark />
+                      </FieldLabel>
+                      <input
+                        required
+                        value={form.employeeId}
+                        onChange={(e) =>
+                          updateFormField("employeeId", e.target.value)
+                        }
+                        placeholder="Referrer employee ID"
+                        className={inputClass()}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            icon={UserPlus}
+            step={2}
+            title="Personal Information"
+            description="Enter your legal name, contact details, and address."
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div>
+                <FieldLabel>
+                  First Name <RequiredMark />
+                </FieldLabel>
+                <input
+                  value={form.firstName}
+                  onChange={(e) => updateFormField("firstName", e.target.value)}
+                  placeholder="Enter first name"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div>
+                <FieldLabel>Middle Name</FieldLabel>
+                <input
+                  value={form.middleName}
+                  onChange={(e) =>
+                    updateFormField("middleName", e.target.value)
+                  }
+                  placeholder="Enter middle name"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div>
+                <FieldLabel>
+                  Last Name <RequiredMark />
+                </FieldLabel>
+                <input
+                  value={form.lastName}
+                  onChange={(e) => updateFormField("lastName", e.target.value)}
+                  placeholder="Enter last name"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div>
+                <FieldLabel>Suffix</FieldLabel>
+                <input
+                  value={form.suffix}
+                  onChange={(e) => updateFormField("suffix", e.target.value)}
+                  placeholder="Jr., Sr., III"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div>
+                <FieldLabel>
+                  Date of Birth <RequiredMark />
+                </FieldLabel>
+
+                <CalendarDatePicker
+                  value={form.dateOfBirth}
+                  onChange={(value) => updateFormField("dateOfBirth", value)}
+                  placeholder="Select date"
+                  hasError={isMinor}
+                />
+
+                {age !== null && (
+                  <p
+                    className={`mt-2 text-xs font-bold ${
+                      isMinor ? "text-red-600" : "text-emerald-600"
+                    }`}
+                  >
+                    Age as of application date: {age}
+                    {isMinor ? " — Applicant is below 18 years old." : ""}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <FieldLabel>
+                  Email <RequiredMark />
+                </FieldLabel>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => updateFormField("email", e.target.value)}
+                  placeholder="Enter email"
+                  className={inputClass("", { uppercase: false })}
+                />
+              </div>
+
+              <div>
+                <FieldLabel>Phone 1</FieldLabel>
+                <input
+                  value={form.phone1}
+                  onChange={(e) => updateFormField("phone1", e.target.value)}
+                  placeholder="09xxxxxxxxx"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div>
+                <FieldLabel>Phone 2</FieldLabel>
+                <input
+                  value={form.phone2}
+                  onChange={(e) => updateFormField("phone2", e.target.value)}
+                  placeholder="Optional"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div className="md:col-span-4">
+                <FieldLabel>
+                  Physical Address <RequiredMark />
+                </FieldLabel>
+                <AutoResizeTextarea
+                  required
+                  value={form.physicalAddress}
+                  onChange={(e) =>
+                    updateFormField("physicalAddress", e.target.value)
+                  }
+                  placeholder="Complete physical address"
+                  className={textareaClass("min-h-11 leading-6")}
+                />
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            icon={BriefcaseBusiness}
+            step={3}
+            title="Work Experience"
+            description="Additional work experience fields will appear when you select Has work Experience."
+          >
+            <div className="space-y-4">
+              <div>
+                <FieldLabel>
+                  Work experience <RequiredMark />
+                </FieldLabel>
+                <DatabaseSelect
+                  required
+                  value={form.workExperience}
+                  options={formOptions.workExperience}
+                  placeholder="Select work experience"
+                  onChange={(value) => updateFormField("workExperience", value)}
+                  zIndex="z-[180]"
+                />
+              </div>
+
+              {hasRelevantExperience && (
+                <div className="space-y-4">
+                  <ExperienceFields
+                    title="Industry or Relevant Experience"
+                    lengthOptions={formOptions.lengthOfExperience}
+                    experience={{
+                      industryRelevantExperience:
+                        form.industryRelevantExperience,
+                      lengthOfWorkExperience: form.lengthOfWorkExperience,
+                      years: form.years,
+                      role: form.role,
+                      company: form.company,
+                      monthlyCompensation: form.monthlyCompensation,
+                      reasonForLeaving: form.reasonForLeaving,
+                    }}
+                    onChange={updatePrimaryExperience}
+                  />
+
+                  <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px] md:items-end">
+                      <div>
+                        <FieldLabel>Do you have other experience?</FieldLabel>
+                        <YesNoSelect
+                          required={false}
+                          value={form.hasOtherExperience}
+                          options={formOptions.yesNo}
+                          onChange={handleOtherExperienceAnswer}
+                        />
+                      </div>
+
+                      {form.hasOtherExperience === "Yes" && (
+                        <button
+                          type="button"
+                          onClick={addOtherExperience}
+                          className="inline-flex h-10 items-center justify-center rounded-[10px] bg-[#FF5C28] px-4 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F]"
+                        >
+                          Add Other Experience
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {form.hasOtherExperience === "Yes" &&
+                    form.otherExperiences.map((experience, index) => (
+                      <ExperienceFields
+                        key={`other-experience-${index}`}
+                        title={`Other Experience ${index + 1}`}
+                        lengthOptions={formOptions.lengthOfExperience}
+                        experience={experience}
+                        onChange={(nextExperience) =>
+                          updateOtherExperience(index, nextExperience)
+                        }
+                        showRemove
+                        onRemove={() => removeOtherExperience(index)}
+                      />
+                    ))}
+                </div>
+              )}
+            </div>
+          </SectionCard>
+
+          <div ref={educationSectionRef}>
+            <SectionCard
+              icon={GraduationCap}
+              step={4}
+              title="Education, Affiliations, and Training"
+              description="Select educational attainment and complete the school details required for that level."
+            >
+              <div className="space-y-5">
+                <div>
+                  <FieldLabel>
+                    Highest Educational Attainment <RequiredMark />
+                  </FieldLabel>
+                  <DatabaseSelect
+                    required
+                    value={form.highestEducationalAttainment}
+                    options={formOptions.educationalAttainment}
+                    placeholder="Select educational attainment"
+                    onChange={handleEducationalAttainmentChange}
+                    zIndex="z-[170]"
+                  />
+                </div>
+
+                <EducationDetailsFields
+                  attainment={form.highestEducationalAttainment}
+                  details={form.educationDetails}
+                  onChange={updateEducationDetails}
+                />
+
+                <div>
+                  <FieldLabel>Affiliations and Certifications</FieldLabel>
+                  <MultiSelectCheckboxGroup
+                    options={formOptions.affiliationCertification}
+                    values={form.affiliationsAndCertifications}
+                    onChange={(values) =>
+                      updateFormField("affiliationsAndCertifications", values)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Training Attended</FieldLabel>
+                  <textarea
+                    value={form.trainingAttended}
+                    onChange={(e) =>
+                      updateFormField("trainingAttended", e.target.value)
+                    }
+                    placeholder="List trainings attended"
+                    rows={4}
+                    className={textareaClass()}
+                  />
+                </div>
+              </div>
+            </SectionCard>
+          </div>
+
+          <SectionCard
+            icon={ShieldCheck}
+            step={5}
+            title="Work Readiness Questions"
+            description="These questions help Talent Acquisition review work setup and compliance readiness."
+          >
+            <div className="space-y-3">
+              <WorkReadinessQuestion
+                question="Are you fully vaccinated?"
+                name="work-readiness-fully-vaccinated"
+                value={form.fullyVaccinated}
+                options={formOptions.yesNo}
+                onChange={(value) => updateFormField("fullyVaccinated", value)}
+              />
+
+              <WorkReadinessQuestion
+                question="Are you comfortable working on site?"
+                name="work-readiness-comfortable-on-site"
+                value={form.comfortableOnSite}
+                options={formOptions.yesNo}
+                onChange={(value) =>
+                  updateFormField("comfortableOnSite", value)
+                }
+              />
+
+              <WorkReadinessQuestion
+                question="Are you willing to work in graveyard shift?"
+                name="work-readiness-willing-graveyard"
+                value={form.willingGraveyard}
+                options={formOptions.yesNo}
+                onChange={(value) => updateFormField("willingGraveyard", value)}
+              />
+
+              <WorkReadinessQuestion
+                question="Full-time, part-time, or either?"
+                name="work-readiness-employment-interest"
+                value={form.employmentInterest}
+                options={formOptions.employmentInterest}
+                onChange={(value) =>
+                  updateFormField("employmentInterest", value)
+                }
+                optionClassName="min-w-[104px]"
+              />
+
+              <WorkReadinessQuestion
+                question="If this is a remote position, do you have access to a computer, Internet connection, and a private space to work remotely?"
+                name="work-readiness-remote-work-access"
+                value={form.remoteWorkAccess}
+                options={formOptions.yesNo}
+                onChange={(value) => updateFormField("remoteWorkAccess", value)}
+              />
+
+              <WorkReadinessQuestion
+                question="Are you willing to undertake a drug test as part of this hiring process?"
+                name="work-readiness-willing-drug-test"
+                value={form.willingDrugTest}
+                options={formOptions.yesNo}
+                onChange={(value) => updateFormField("willingDrugTest", value)}
+              />
+
+              <WorkReadinessQuestion
+                question="Are you willing to allow SiBS to undergo a background check as part of this hiring process?"
+                name="work-readiness-background-check"
+                value={form.willingBackgroundCheck}
+                options={formOptions.yesNo}
+                onChange={(value) =>
+                  updateFormField("willingBackgroundCheck", value)
+                }
+              />
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            icon={Users}
+            step={6}
+            title="Character References"
+            description="Provide three people who can confirm your employment, education, or character background."
+          >
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              {[
+                {
+                  number: 1,
+                  name: form.reference1Name,
+                  phone: form.reference1Phone,
+                  nameField: "reference1Name",
+                  phoneField: "reference1Phone",
+                },
+                {
+                  number: 2,
+                  name: form.reference2Name,
+                  phone: form.reference2Phone,
+                  nameField: "reference2Name",
+                  phoneField: "reference2Phone",
+                },
+                {
+                  number: 3,
+                  name: form.reference3Name,
+                  phone: form.reference3Phone,
+                  nameField: "reference3Name",
+                  phoneField: "reference3Phone",
+                },
+              ].map((reference) => (
+                <div
+                  key={reference.number}
+                  className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4"
+                >
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-[#FFF0EB] text-[10px] font-extrabold text-[#FF5C28]">
+                      {reference.number}
+                    </span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                      Reference {reference.number}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <FieldLabel>
+                        Full Name <RequiredMark />
+                      </FieldLabel>
+                      <input
+                        value={reference.name}
+                        onChange={(event) =>
+                          updateFormField(
+                            reference.nameField,
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Reference name"
+                        className={inputClass()}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel>
+                        Phone Number <RequiredMark />
+                      </FieldLabel>
+                      <input
+                        value={reference.phone}
+                        onChange={(event) =>
+                          updateFormField(
+                            reference.phoneField,
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Reference phone"
+                        className={inputClass()}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+
+          <div ref={fileSectionRef}>
+            <SectionCard
+              icon={Mic}
+              step={7}
+              title="Audio and File Upload"
+              description="Upload a single audio file answering the listed questions and one supporting document/file."
+            >
+              <div className="space-y-5">
+                <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-4 text-xs font-bold leading-6 text-amber-800 sm:text-sm">
+                  <p className="font-extrabold">
+                    Your audio file must answer these questions:
+                  </p>
+
+                  {formOptions.audioQuestions.length ? (
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {formOptions.audioQuestions.map((question) => (
+                        <li key={question.id || getOptionValue(question)}>
+                          {getOptionLabel(question)}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2">
+                      No audio questions configured in the database.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div>
+                    <FieldLabel>
+                      Upload single audio file <RequiredMark />
+                    </FieldLabel>
                     <label
                       className={`flex min-h-[190px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAudio && !selectedAudioFile
@@ -4219,8 +4598,8 @@ export default function PublicTalentPoolApplicationPage() {
                         </p>
                       )}
                       <p className="mt-1 text-xs font-semibold text-[#667085]">
-                        Accepted: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC,
-                        AMR, 3GP, OPUS, AIFF, CAF, WMA
+                        Accepted: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC, AMR,
+                        3GP, OPUS, AIFF, CAF, WMA
                       </p>
                       <input
                         ref={audioInputRef}
@@ -4247,10 +4626,10 @@ export default function PublicTalentPoolApplicationPage() {
                     )}
                   </div>
 
-                    <div>
-                      <FieldLabel>
-                        Upload supporting file <RequiredMark />
-                      </FieldLabel>
+                  <div>
+                    <FieldLabel>
+                      Upload supporting file <RequiredMark />
+                    </FieldLabel>
                     <label
                       className={`flex min-h-[190px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAttachment && !selectedAttachmentFile
@@ -4273,7 +4652,8 @@ export default function PublicTalentPoolApplicationPage() {
                       </p>
                       {selectedAttachmentFile && (
                         <p className="mt-1 text-xs font-bold text-emerald-700">
-                          File selected • {formatFileSize(selectedAttachmentFile)}
+                          File selected •{" "}
+                          {formatFileSize(selectedAttachmentFile)}
                         </p>
                       )}
                       <p className="mt-1 text-xs font-semibold text-[#667085]">
@@ -4297,101 +4677,101 @@ export default function PublicTalentPoolApplicationPage() {
                       />
                     </label>
 
-                      {highlightAttachment && !selectedAttachmentFile && (
-                        <p className="mt-2 text-sm font-bold text-red-600">
-                          Please upload your supporting file before submitting.
-                        </p>
-                      )}
-                    </div>
+                    {highlightAttachment && !selectedAttachmentFile && (
+                      <p className="mt-2 text-sm font-bold text-red-600">
+                        Please upload your supporting file before submitting.
+                      </p>
+                    )}
                   </div>
                 </div>
-              </SectionCard>
-            </div>
+              </div>
+            </SectionCard>
+          </div>
 
-            <div ref={consentRef}>
-              <SectionCard
-                icon={ShieldCheck}
-                step={8}
-                title="Terms and Privacy Consent"
-                description="Review the consent statement before submitting your candidate profile."
-              >
-                <label
-                  className={`group flex cursor-pointer items-start gap-3 rounded-[10px] border p-3.5 transition ${
-                    highlightConsent && !form.consent
-                      ? "border-red-300 bg-red-50 ring-4 ring-red-100"
+          <div ref={consentRef}>
+            <SectionCard
+              icon={ShieldCheck}
+              step={8}
+              title="Terms and Privacy Consent"
+              description="Review the consent statement before submitting your candidate profile."
+            >
+              <label
+                className={`group flex cursor-pointer items-start gap-3 rounded-[10px] border p-3.5 transition ${
+                  highlightConsent && !form.consent
+                    ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                     : form.consent
                       ? "border-[#FF5C28] bg-[#FFF0EB]"
-                        : "border-[#DCE6F1] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]"
+                      : "border-[#DCE6F1] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={form.consent}
+                  onChange={(event) => {
+                    updateFormField("consent", event.target.checked);
+                    setHighlightConsent(false);
+                  }}
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
+                />
+
+                <span
+                  className={`text-[13px] font-bold leading-6 transition ${
+                    highlightConsent && !form.consent
+                      ? "text-red-700"
+                      : form.consent
+                        ? "text-[#042C51]"
+                        : "text-[#344054] group-hover:text-[#FF5C28]"
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={form.consent}
-                    onChange={(event) => {
-                      updateFormField("consent", event.target.checked);
-                      setHighlightConsent(false);
-                    }}
-                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
-                  />
+                  I agree to terms &amp; conditions provided by the company. By
+                  providing my phone number, I agree to receive text messages
+                  from the business.
+                </span>
+              </label>
 
-                  <span
-                    className={`text-[13px] font-bold leading-6 transition ${
-                      highlightConsent && !form.consent
-                        ? "text-red-700"
-                        : form.consent
-                          ? "text-[#042C51]"
-                          : "text-[#344054] group-hover:text-[#FF5C28]"
-                    }`}
-                  >
-                    I agree to terms &amp; conditions provided by the company. By
-                    providing my phone number, I agree to receive text messages
-                    from the business.
-                  </span>
-                </label>
+              {highlightConsent && !form.consent ? (
+                <p className="mt-3 text-sm font-bold text-red-600">
+                  Please check this consent box before submitting.
+                </p>
+              ) : null}
+            </SectionCard>
+          </div>
 
-                {highlightConsent && !form.consent ? (
-                  <p className="mt-3 text-sm font-bold text-red-600">
-                    Please check this consent box before submitting.
-                  </p>
-                ) : null}
-              </SectionCard>
+          <section className="flex flex-col gap-4 rounded-[12px] border border-[#DCE6F1] bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                Ready to submit
+              </p>
+              <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+                Your form is {completionPercentage}% complete.
+              </p>
+              <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                Review your information and uploaded files before sending the
+                application to Talent Acquisition.
+              </p>
             </div>
 
-            <section className="flex flex-col gap-4 rounded-[12px] border border-[#DCE6F1] bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-              <div className="min-w-0">
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                  Ready to submit
-                </p>
-                <p className="mt-1 text-sm font-extrabold text-[#042C51]">
-                  Your form is {completionPercentage}% complete.
-                </p>
-                <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
-                  Review your information and uploaded files before sending the
-                  application to Talent Acquisition.
-                </p>
-              </div>
+            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={isSubmitting}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RotateCcw size={16} />
+                Reset Form
+              </button>
 
-              <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  disabled={isSubmitting}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <RotateCcw size={16} />
-                  Reset Form
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={!canSubmit}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-md shadow-[#FF5C28]/15 transition hover:-translate-y-0.5 hover:bg-[#E94F1F] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-                >
-                  <Send size={16} />
-                  {isSubmitting ? "Submitting..." : "Submit Application"}
-                </button>
-              </div>
-            </section>
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-md shadow-[#FF5C28]/15 transition hover:-translate-y-0.5 hover:bg-[#E94F1F] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+              >
+                <Send size={16} />
+                {isSubmitting ? "Submitting..." : "Submit Application"}
+              </button>
+            </div>
+          </section>
         </form>
       </main>
 

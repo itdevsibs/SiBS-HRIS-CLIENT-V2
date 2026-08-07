@@ -33,7 +33,10 @@ const STATUS_TABS = [
   { label: "Not Approved", value: "Not Approved" },
 ];
 
-export default function HiringNeedsTable({ onView }) {
+export default function HiringNeedsTable({
+  onView,
+  canApproveHiringNeeds = false,
+}) {
   const {
     list,
     loading,
@@ -51,6 +54,14 @@ export default function HiringNeedsTable({ onView }) {
 
   const limit =
     Number(pagination?.limit) || DEFAULT_PAGE_LIMIT;
+
+  const visibleStatusTabs = useMemo(
+    () =>
+      STATUS_TABS.filter(
+        (tab) => tab.value !== "For Approval" || canApproveHiringNeeds,
+      ),
+    [canApproveHiringNeeds],
+  );
 
   const filteredList = useMemo(() => {
     const keyword = String(search || "")
@@ -138,6 +149,16 @@ export default function HiringNeedsTable({ onView }) {
     setFilter("status", value);
     setPage(1);
   }
+
+  useEffect(() => {
+    if (
+      !canApproveHiringNeeds &&
+      (filterValues?.status || "All") === "For Approval"
+    ) {
+      setFilter("status", "All");
+      setPage(1);
+    }
+  }, [canApproveHiringNeeds, filterValues?.status, setFilter, setPage]);
 
   const totalPages = Math.max(
     Math.ceil(filteredList.length / limit),
@@ -235,11 +256,11 @@ export default function HiringNeedsTable({ onView }) {
   return (
     <div className="px-4 pb-4 pt-0 font-jakarta sm:px-5 sm:pb-5">
       <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-        <StatusFilterTabs
-          tabs={STATUS_TABS}
-          activeValue={filterValues?.status || "All"}
-          counts={statusCounts}
-          onChange={handleStatusTabChange}
+          <StatusFilterTabs
+            tabs={visibleStatusTabs}
+            activeValue={filterValues?.status || "All"}
+            counts={statusCounts}
+            onChange={handleStatusTabChange}
         />
 
         {/* Mobile cards */}
