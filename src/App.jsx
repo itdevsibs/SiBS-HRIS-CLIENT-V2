@@ -9,7 +9,9 @@ function isStandalonePublicRoute(pathname = "") {
     pathname === "/public/interview-date" ||
     pathname.startsWith("/public/interview-date/") ||
     pathname === "/public/offer-response" ||
-    pathname.startsWith("/public/offer-response/")
+    pathname.startsWith("/public/offer-response/") ||
+    pathname === "/public/nho-schedule-response" ||
+    pathname.startsWith("/public/nho-schedule-response/")
   );
 }
 

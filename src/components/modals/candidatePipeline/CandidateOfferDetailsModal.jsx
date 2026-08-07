@@ -593,7 +593,7 @@ function StartDatePicker({ value, onChange }) {
   );
 }
 
-export default function OfferDetailsModal({
+export default function CandidateOfferDetailsModal({
   open,
   candidate,
   form,
@@ -646,8 +646,22 @@ export default function OfferDetailsModal({
       return;
     }
 
-    setStartDateInitiated(Boolean(cleanText(form?.startDate)));
-  }, [open]);
+    /*
+     * Every new Offer Details for Approval session must require fresh
+     * compensation and start-date input. Do not reuse values from a previous
+     * offer, negotiation, candidate record, or previous modal session.
+     *
+     * Keep role/account/remarks and the rest of the parent form unchanged.
+     */
+    setForm((previous) => ({
+      ...previous,
+      basicPay: "",
+      deminimisDailyRate: "",
+      startDate: "",
+    }));
+
+    setStartDateInitiated(false);
+  }, [open, setForm]);
 
   useEffect(() => {
     let active = true;
@@ -839,7 +853,13 @@ export default function OfferDetailsModal({
       <div
         className="sibs-modal-blur fixed inset-0 z-[10020] flex h-dvh items-center justify-center px-4 py-4"
       >
+      {submitting || isSavingReprofile && (
         <div
+          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
+          aria-hidden="true"
+        />
+      )}
+<div
           className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
           onClick={(event) => event.stopPropagation()}
         >
@@ -879,7 +899,7 @@ export default function OfferDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              disabled={submitting}
+              disabled={submitting || isSavingReprofile}
               className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
             >
               <X size={20} />
@@ -1078,7 +1098,7 @@ export default function OfferDetailsModal({
               <button
                 type="button"
                 onClick={onClose}
-                disabled={submitting}
+                disabled={submitting || isSavingReprofile}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-extrabold text-gray-600 transition hover:bg-gray-50"
               >
                 Cancel
@@ -1087,7 +1107,7 @@ export default function OfferDetailsModal({
               <button
                 type="button"
                 onClick={handleProceedClick}
-                disabled={submitting}
+                disabled={submitting || isSavingReprofile}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90"
               >
                 {submitting ? (

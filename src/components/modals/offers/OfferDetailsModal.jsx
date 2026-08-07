@@ -142,12 +142,18 @@ function VersionRateChange({ label, previousValue, currentValue }) {
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {hasPrevious ? (
           <>
+            <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+              Previous Offer
+            </span>
             <span className="text-sm font-bold text-[#667085]">
               {getRateDisplay(previousValue)}
             </span>
             <ArrowRight size={15} className="text-sibs-primary-1" />
           </>
         ) : null}
+        <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+          Current Offer
+        </span>
         <span className="text-sm font-extrabold text-[#042C51]">
           {getRateDisplay(currentValue)}
         </span>
@@ -280,11 +286,27 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     [loadedOfferVersions, offer],
   );
 
+  /*
+   * The newest offer version is the single source of truth for this modal.
+   * Older versions remain stored for audit purposes but are intentionally not
+   * displayed here, so the left offer card and right Offer Summary can never
+   * show values from different revisions.
+   */
+  const latestOfferVersion = offerHistory[0] || null;
+
+  const displayedOfferHistory = latestOfferVersion
+    ? [latestOfferVersion]
+    : [];
+
   if (!open || !offer) return null;
 
-  const approvalStatus = getOfferApprovalStatus
-    ? getOfferApprovalStatus(offer)
-    : offer.offerApprovalStatus || offer.status || "For Review";
+  const approvalStatus =
+    latestOfferVersion?.approvalStatus ||
+    (
+      getOfferApprovalStatus
+        ? getOfferApprovalStatus(offer)
+        : offer.offerApprovalStatus || offer.status || "For Review"
+    );
 
   const isAuthorizedApprover =
     typeof canCurrentUserApproveOffer === "function"
@@ -295,6 +317,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     approvalStatus === "For Review" && isAuthorizedApprover;
 
   const responseStatus =
+    latestOfferVersion?.candidateResponse ||
     offer.offerResponseStatus ||
     offer.offer_response_status ||
     offer.candidateResponse ||
@@ -304,6 +327,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     "Pending";
 
   const negotiationMessage =
+    latestOfferVersion?.candidateMessage ||
     offer.offerNegotiationMessage ||
     offer.offer_negotiation_message ||
     offer.offerDetails?.offerNegotiationMessage ||
@@ -624,12 +648,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       </h3>
                     </div>
                     <p className="mt-1 text-xs font-semibold leading-5 text-[#667085] sm:text-sm">
-                      Original offer and every revised offer version, newest first.
+                      Current offer compared with the previous offer.
                     </p>
                   </div>
 
                   <span className="w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
-                    {offerHistory.length} version{offerHistory.length === 1 ? "" : "s"}
+                    Current Offer
                   </span>
                 </div>
 
@@ -641,7 +665,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 ) : null}
 
                 <div className="mt-5 space-y-4">
-                  {offerHistory.map((version) => (
+                  {displayedOfferHistory.map((version) => (
                     <article
                       key={`${version.id || "version"}-${version.versionNumber}`}
                       className="rounded-2xl border border-[#D9E2EC] bg-white p-4"
@@ -650,7 +674,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="rounded-full bg-[#042C51] px-3 py-1 text-[10px] font-extrabold uppercase text-white">
-                              Version {version.versionNumber}
+                              Current Offer
                             </span>
                             <span
                               className={`rounded-full border px-3 py-1 text-[10px] font-extrabold uppercase ${getVersionTone(
@@ -659,15 +683,9 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                             >
                               {version.approvalStatus || "For Review"}
                             </span>
-                            {version.versionNumber === 1 ? (
-                              <span className="text-[10px] font-extrabold uppercase text-[#667085]">
-                                Original Offer
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-extrabold uppercase text-[#667085]">
-                                Revised Offer
-                              </span>
-                            )}
+                            <span className="text-[10px] font-extrabold uppercase text-[#667085]">
+                              Previous Offer → Current Offer
+                            </span>
                           </div>
 
                           <p className="mt-2 text-xs font-semibold text-[#667085]">
@@ -807,35 +825,73 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     label="Hiring Requirement"
                     value={offer.hiringRequirementId}
                   />
-                  <DetailRow label="Final Role" value={offer.roleTitle} />
-                  <DetailRow label="Final Account" value={offer.account} />
+                  <DetailRow
+                    label="Final Role"
+                    value={
+                      latestOfferVersion?.roleTitle ||
+                      offer.roleTitle
+                    }
+                  />
+                  <DetailRow
+                    label="Final Account"
+                    value={
+                      latestOfferVersion?.account ||
+                      offer.account
+                    }
+                  />
                   <DetailRow
                     label="Basic Pay"
-                    value={formatCurrency(offer.basicPay)}
+                    value={formatCurrency(
+                      latestOfferVersion?.basicDailyRate ??
+                        offer.basicPay,
+                    )}
                   />
                   <DetailRow
                     label="Deminimis / Daily Rate"
-                    value={formatCurrency(offer.deminimisDailyRate)}
+                    value={formatCurrency(
+                      latestOfferVersion?.dailyDeMinimis ??
+                        offer.deminimisDailyRate,
+                    )}
                   />
                   <DetailRow
                     label="Total Daily Rate"
                     value={formatCurrency(
-                      offer.dailyRate ||
-                        Number(offer.basicPay || 0) +
-                          Number(offer.deminimisDailyRate || 0),
+                      latestOfferVersion?.totalDailyRate ??
+                        (
+                          Number(
+                            latestOfferVersion?.basicDailyRate ??
+                              offer.basicPay ??
+                              0,
+                          ) +
+                          Number(
+                            latestOfferVersion?.dailyDeMinimis ??
+                              offer.deminimisDailyRate ??
+                              0,
+                          )
+                        ),
                     )}
                   />
                   <DetailRow
                     label="Contract Sent"
                     value={
-                      offer.contractSent || offer.offerEmailSent ? "Yes" : "No"
+                      latestOfferVersion?.offerEmailSent ||
+                      offer.contractSent ||
+                      offer.offerEmailSent
+                        ? "Yes"
+                        : "No"
                     }
                   />
                   <DetailRow
                     label="Candidate Response"
                     value={responseStatus}
                   />
-                  <DetailRow label="Owner" value={offer.owner} />
+                  <DetailRow
+                    label="Owner"
+                    value={
+                      latestOfferVersion?.submittedBy ||
+                      offer.owner
+                    }
+                  />
                 </div>
               </section>
 

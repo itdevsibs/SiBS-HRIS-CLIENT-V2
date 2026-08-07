@@ -25,6 +25,7 @@ const PUBLIC_PATHS = [
   "/public/talent-pool/apply",
   "/public/interview-date",
   "/public/offer-response",
+  "/public/nho-schedule-response",
   "/recruitment/talent-pool/apply",
 ];
 
@@ -49,6 +50,7 @@ const IGNORE_AUTH_REDIRECT_ROUTES = [
   "/api/talent-pool/public-applications",
   "/api/candidate-pipeline/public/interview-date",
   "/api/candidate-pipeline/public/offer-response",
+  "/api/candidate-pipeline/public/nho-response",
 ];
 
 function getCurrentPathname() {

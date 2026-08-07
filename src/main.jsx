@@ -9,6 +9,7 @@ import {
 import App from "./App.jsx";
 import PublicInterviewDateSelectionPage from "./pages/recruitment/candidate-pipeline/PublicInterviewDateSelectionPage.jsx";
 import PublicOfferResponsePage from "./pages/recruitment/PublicOfferResponsePage.jsx";
+import PublicNhoScheduleResponsePage from "./pages/recruitment/PublicNhoScheduleResponsePage.jsx";
 import "./index.css";
 
 function isStandalonePublicPath(pathname = "") {
@@ -16,7 +17,9 @@ function isStandalonePublicPath(pathname = "") {
     pathname === "/public/interview-date" ||
     pathname.startsWith("/public/interview-date/") ||
     pathname === "/public/offer-response" ||
-    pathname.startsWith("/public/offer-response/")
+    pathname.startsWith("/public/offer-response/") ||
+    pathname === "/public/nho-schedule-response" ||
+    pathname.startsWith("/public/nho-schedule-response/")
   );
 }
 
@@ -36,6 +39,10 @@ export function StandalonePublicApp() {
       <Route
         path="/public/offer-response/:token"
         element={<PublicOfferResponsePage />}
+      />
+      <Route
+        path="/public/nho-schedule-response/:token"
+        element={<PublicNhoScheduleResponsePage />}
       />
     </Routes>
   );

@@ -21,7 +21,7 @@ import MoveStageModal from "../../components/modals/candidatePipeline/MoveStageM
 import ScheduleInterviewModal from "../../components/modals/candidatePipeline/ScheduleInterviewModal";
 import AssessmentModal from "../../components/modals/candidatePipeline/AssessmentModal";
 import DropOffModal from "../../components/modals/candidatePipeline/DropOffModal";
-import OfferDetailsModal from "../../components/modals/candidatePipeline/OfferDetailsModal";
+import CandidateOfferDetailsModal from "../../components/modals/candidatePipeline/CandidateOfferDetailsModal";
 import CandidatePipelineModal from "../../components/modals/candidatePipeline/CandidatePipelineModal";
 import PipelineCardsBoard from "../../components/recruitment/candidatePipeline/PipelineCardBoard";
 import InterviewCalendar from "../../components/recruitment/candidatePipeline/InterviewCalendar";
@@ -735,7 +735,7 @@ export default function CandidatePipelinePage() {
         onSendEmail={handleSendAssessmentEmail}
       />
 
-      <OfferDetailsModal
+      <CandidateOfferDetailsModal
         open={!!offerCandidate}
         candidate={offerCandidate}
         form={offerForm}

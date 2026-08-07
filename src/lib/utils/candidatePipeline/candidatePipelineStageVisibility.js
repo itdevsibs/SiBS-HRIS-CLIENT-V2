@@ -223,6 +223,31 @@ export function getVisibleCandidateTimeline(
   const currentRank =
     getPipelineStageVisibilityRank(currentStage);
 
+  const hasDropOffHistory = rows.some((item) => {
+    const text = normalizeStageKey(
+      getTimelineText(item),
+    );
+
+    return (
+      text.includes("drop off") ||
+      text.includes("dropoff") ||
+      item?.restoredFromDropOff === true ||
+      item?.restored_from_drop_off === true ||
+      item?.extra?.restoredFromDropOff === true ||
+      item?.extra?.restored_from_drop_off === true
+    );
+  });
+
+  /*
+   * Drop-off and resume actions are historical events, not a reason to hide
+   * previous recruitment stages. Always show the complete audit trail once a
+   * candidate has entered Drop-off, even when the candidate is later restored
+   * to an earlier stage such as Initial Screening.
+   */
+  if (hasDropOffHistory) {
+    return rows;
+  }
+
   /*
    * Unknown custom stages keep their full timeline because filtering
    * without a known stage order could hide legitimate information.

@@ -107,7 +107,13 @@ export default function RevisedOfferModal({
       className="sibs-modal-blur fixed inset-0 z-[13000] flex h-dvh items-center justify-center px-4 py-4"
       onClick={handleClose}
     >
-      <form
+      {isSubmitting && (
+        <div
+          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
+          aria-hidden="true"
+        />
+      )}
+<form
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
         className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"

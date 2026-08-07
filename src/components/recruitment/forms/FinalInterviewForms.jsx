@@ -948,11 +948,19 @@ function getLatestSubmittedForm(candidate = {}, submissionId = "") {
   if (!submittedForms.length) return null;
 
   if (submissionId) {
-    const exact = submittedForms.find(
-      (item) => String(item.id) === String(submissionId),
-    );
+    const exact = submittedForms.find((item) => {
+      const itemId =
+        item?.id ||
+        item?.submissionId ||
+        item?.submission_id ||
+        item?.formSubmissionId ||
+        item?.form_submission_id ||
+        "";
 
-    if (exact) return exact;
+      return String(itemId) === String(submissionId);
+    });
+
+    return exact || null;
   }
 
   return [...submittedForms].sort(
@@ -1176,6 +1184,7 @@ function ScoreSummaryCard({
   jobEvaluationScore,
   finalInterviewRatingScore,
   passingScore,
+  showBreakdown = true,
 }) {
   const finalInterviewHasScore =
     finalInterviewRatingScore.answeredRatingFields > 0;
@@ -1264,7 +1273,8 @@ function ScoreSummaryCard({
         />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
+      {showBreakdown && (
+        <div className="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
         <BreakdownPanel
           title="Job Evaluation Breakdown"
           subtitle="Score distribution by default JE sections."
@@ -1360,6 +1370,7 @@ function ScoreSummaryCard({
           />
         </BreakdownPanel>
       </div>
+      )}
     </section>
   );
 }
@@ -1996,6 +2007,10 @@ export default function FinalInterviewForms({ publicMode = false }) {
   const positionId = searchParams.get("positionId") || "";
   const positionTitleFromUrl =
     searchParams.get("positionTitle") || "";
+  const templateFormId =
+    searchParams.get("templateFormId") ||
+    searchParams.get("template_form_id") ||
+    "";
   const formId = searchParams.get("formId") || "";
   const submissionId = searchParams.get("submissionId") || "";
   const mode = searchParams.get("mode") || "";
@@ -2278,6 +2293,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
     candidateApplicationIdFromUrl,
     positionId,
     positionTitleFromUrl,
+    templateFormId,
     formId,
     submissionId,
     mode,
@@ -2368,7 +2384,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
     return findMatchingFinalInterviewForm({
       settings,
       forms,
-      preferredFormId: formId,
+      preferredFormId: templateFormId || formId,
       positionId:
         positionId ||
         candidatePositionId,
@@ -2377,6 +2393,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
     });
   }, [
     settings,
+    templateFormId,
     formId,
     positionId,
     positionTitleFromUrl,
@@ -2423,13 +2440,19 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
   const effectiveFormId = useMemo(() => {
     return (
-      activeFormId ||
       formId ||
+      activeFormId ||
+      templateFormId ||
       (effectivePositionId
         ? `final-interview-${effectivePositionId}`
         : DEFAULT_JOB_EVALUATION_FORM_ID)
     );
-  }, [formId, activeFormId, effectivePositionId]);
+  }, [
+    formId,
+    activeFormId,
+    templateFormId,
+    effectivePositionId,
+  ]);
 
   const savedSubmission = useMemo(() => {
     return getLatestSubmittedForm(currentCandidate, submissionId);
@@ -3183,7 +3206,13 @@ export default function FinalInterviewForms({ publicMode = false }) {
         className={pageShellClass}
         style={{ overflowAnchor: "none" }}
       >
-        <div className="mx-auto max-w-[1180px] space-y-5">
+      {isSubmitting && (
+        <div
+          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
+          aria-hidden="true"
+        />
+      )}
+<div className="mx-auto max-w-[1180px] space-y-5">
           <section className="rounded-2xl border border-[#E6ECF2] bg-white p-6 shadow-sm">
             <div className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               {isSubmittedView ? "Finished Assessment" : "Job Evaluation"}
@@ -3592,19 +3621,31 @@ export default function FinalInterviewForms({ publicMode = false }) {
                 </div>
               )
             ) : !requestedViewMode ? (
-              <div className="mt-8 flex justify-end">
-                <button
+              <div className="mt-8">
+                <ScoreSummaryCard
+                  answers={answers}
+                  jobEvaluationScore={jobEvaluationScore}
+                  finalInterviewRatingScore={finalInterviewRatingScore}
+                  passingScore={passingScore}
+                  showBreakdown={false}
+                />
+
+                <div className="mt-5 flex justify-end">
+                  <button
                   type="submit"
                   disabled={isSubmitting}
                   className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
                 >
                   {isSubmitting ? "Submitting..." : "Submit Job Evaluation Form"}
-                </button>
+                  </button>
+                </div>
               </div>
             ) : null}
           </form>
         </div>
       </div>
+
+
 
       <StatusModal
         open={statusModal.open}

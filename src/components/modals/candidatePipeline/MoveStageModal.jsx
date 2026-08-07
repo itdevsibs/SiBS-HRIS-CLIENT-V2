@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ArrowRight, X } from "lucide-react";
 
 import {
@@ -15,6 +15,8 @@ const MoveStageModal = ({
   onClose,
   onSubmit,
 }) => {
+  const [processSubmitting, setProcessSubmitting] = useState(false);
+
   if (!open || !candidate) return null;
 
   const nextStage = getNextStage(candidate.currentStage);
@@ -24,7 +26,13 @@ const MoveStageModal = ({
     <div
       className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-4 py-4"
     >
-      <div
+      {processSubmitting && (
+        <div
+          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
+          aria-hidden="true"
+        />
+      )}
+<div
         className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -41,13 +49,27 @@ const MoveStageModal = ({
           <button
             type="button"
             onClick={onClose}
+            disabled={processSubmitting}
             className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
           >
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (processSubmitting) return;
+
+            setProcessSubmitting(true);
+            try {
+              await onSubmit?.(event);
+            } finally {
+              setProcessSubmitting(false);
+            }
+          }}
+          className="flex-1 overflow-y-auto p-4 sm:p-6"
+        >
           <div className="space-y-5">
             <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
               <h3 className="text-lg font-bold text-sibs-primary-1">

@@ -32,6 +32,7 @@ import CandidatePipelinePage from "./pages/recruitment/CandidatePipelinePage";
 import PublicInterviewDateSelectionPage from "./pages/recruitment/candidate-pipeline/PublicInterviewDateSelectionPage";
 import OffersPage from "./pages/recruitment/OffersPage";
 import PublicOfferResponsePage from "./pages/recruitment/PublicOfferResponsePage";
+import PublicNhoScheduleResponsePage from "./pages/recruitment/PublicNhoScheduleResponsePage";
 import OnboardingPage from "./pages/recruitment/OnboardingPage";
 import CandidateExperiencePage from "./pages/recruitment/CandidateExperiencePage";
 import SourcingAnalyticsPage from "./pages/recruitment/SourcingAnalyticsPage";
@@ -117,6 +118,10 @@ function MainApplicationRoutes() {
       <Route
         path="/public/offer-response/:token"
         element={<PublicOfferResponsePage />}
+      />
+      <Route
+        path="/public/nho-schedule-response/:token"
+        element={<PublicNhoScheduleResponsePage />}
       />
 
       {/* PUBLIC ONLINE ASSESSMENT / JOB EVALUATION FORM */}

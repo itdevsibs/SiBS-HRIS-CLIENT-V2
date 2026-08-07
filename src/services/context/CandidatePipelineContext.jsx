@@ -3281,7 +3281,28 @@ export function CandidatePipelineProvider({ children }) {
     const id = getCandidateRecordId(candidate);
 
     return runCandidateAction(
-      () => startCandidatePipelineInterview(id),
+      () =>
+        startCandidatePipelineInterview(id, {
+          candidateId: candidate.candidateId || candidate.candidate_id || "",
+          candidateApplicationId:
+            candidate.candidateApplicationId ||
+            candidate.candidate_application_id ||
+            candidate.applicationId ||
+            candidate.id ||
+            "",
+          positionId:
+            candidate.positionId ||
+            candidate.position_id ||
+            candidate.openPositionId ||
+            candidate.open_position_id ||
+            "",
+          templateFormId:
+            candidate.finalInterviewTemplateFormId ||
+            candidate.final_interview_template_form_id ||
+            candidate.finalInterviewFormId ||
+            candidate.final_interview_form_id ||
+            "",
+        }),
       {
         refresh: true,
         /*
