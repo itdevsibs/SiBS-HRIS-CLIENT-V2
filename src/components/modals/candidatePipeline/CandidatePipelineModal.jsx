@@ -7058,19 +7058,22 @@ const CandidatePipelineModal = ({
         savePayload?.data?.fileServerVerified === true;
 
       /*
-       * Older deployed routes may save successfully without returning
-       * fileServerVerified. Confirm the actual saved server files by
-       * reading them back instead of showing a false Save Failed modal.
+       * The current backend verifies each newly uploaded NHO file on the
+       * physical file server before returning success and sets
+       * fileServerVerified=true.
+       *
+       * Once that flag is true, do NOT run a second client-side filename /
+       * filesize read-back comparison. The persisted metadata can be
+       * normalized differently from the browser File object (saved filename,
+       * original filename, size representation, etc.), which previously caused
+       * a false "Save Failed" message even though the file was already saved.
+       *
+       * Keep the read-back fallback only for older backend deployments that
+       * do not return fileServerVerified.
        */
       if (
         newFiles.length > 0 &&
-        (
-          !responseVerified ||
-          getMissingReadBackNhoFiles(
-            newFiles,
-            responseFiles,
-          ).length > 0
-        )
+        !responseVerified
       ) {
         const readBack =
           await verifyNhoFilesByReadBack({
