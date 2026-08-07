@@ -3201,9 +3201,8 @@ export default function PublicTalentPoolApplicationPage() {
     if (isLoadingData) return false;
     if (isSubmitting) return false;
     if (loadError) return false;
-    if (isMinor) return false;
     return true;
-  }, [isLoadingData, isMinor, isSubmitting, loadError]);
+  }, [isLoadingData, isSubmitting, loadError]);
 
   function showStatusModal({ type = "success", title = "", message = "" }) {
     setStatusModal({
@@ -3717,15 +3716,6 @@ export default function PublicTalentPoolApplicationPage() {
         title: "Missing required field",
         message:
           "Please answer if you are willing to undergo a background check.",
-      });
-      return false;
-    }
-
-    if (isMinor) {
-      showStatusModal({
-        type: "error",
-        title: "Applicant is below 18",
-        message: "Applicant is below 18 years old as of date of application.",
       });
       return false;
     }
