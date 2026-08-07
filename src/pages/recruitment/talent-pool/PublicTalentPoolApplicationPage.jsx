@@ -24,6 +24,8 @@ import {
   Search,
   ExternalLink,
   Loader2,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import StatusModal from "@/components/modals/StatusModal";
 import {
@@ -31,6 +33,15 @@ import {
   submitPublicTalentPoolApplication,
 } from "@/lib/axios/publicTalentPool";
 import { getPublicApprovedJobDescriptions } from "@/lib/axios/getPublicJobDescription";
+import {
+  ensureTrainingEntryRows,
+  normalizeTrainingEntries,
+} from "@/lib/utils/talentPool/trainingEntries";
+import {
+  normalizePhoneNumberForSubmit,
+  normalizePhoneNumberInput,
+} from "@/lib/utils/talentPool/phoneNumber";
+import { resolveCalendarSelectionChange } from "@/lib/utils/talentPool/calendarDateSelection";
 
 const acceptedAudioTypes =
   ".mp3,.wav,.wave,.m4a,.aac,.ogg,.oga,.webm,.mp4,.mpeg,.mpga,.flac,.amr,.3gp,.opus,.aif,.aiff,.caf,.wma,audio/*,video/mp4,video/3gpp";
@@ -652,7 +663,7 @@ function createEmptyPublicForm() {
     highestEducationalAttainment: "",
     educationDetails: createEmptyEducationDetails(),
     affiliationsAndCertifications: [],
-    trainingAttended: "",
+    trainingAttended: [""],
 
     fullyVaccinated: "",
     comfortableOnSite: "",
@@ -754,21 +765,15 @@ const uppercasePublicTextFields = new Set([
   "middleName",
   "suffix",
   "physicalAddress",
-  "phone1",
-  "phone2",
   "industryRelevantExperience",
   "years",
   "role",
   "company",
   "monthlyCompensation",
   "reasonForLeaving",
-  "trainingAttended",
   "reference1Name",
-  "reference1Phone",
   "reference2Name",
-  "reference2Phone",
   "reference3Name",
-  "reference3Phone",
 ]);
 
 const uppercaseExperienceFields = new Set([
@@ -1914,15 +1919,31 @@ function CalendarDatePicker({
   }
 
   function handleMonthChange(monthIndex) {
-    setDisplayDate(
-      (previous) => new Date(previous.getFullYear(), Number(monthIndex), 1),
-    );
+    const nextDate = resolveCalendarSelectionChange({
+      selectedDate,
+      displayDate,
+      nextMonth: Number(monthIndex),
+    });
+
+    setDisplayDate(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1));
+
+    if (selectedDate) {
+      onChange(toDateInputValue(nextDate));
+    }
   }
 
   function handleYearChange(year) {
-    setDisplayDate(
-      (previous) => new Date(Number(year), previous.getMonth(), 1),
-    );
+    const nextDate = resolveCalendarSelectionChange({
+      selectedDate,
+      displayDate,
+      nextYear: Number(year),
+    });
+
+    setDisplayDate(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1));
+
+    if (selectedDate) {
+      onChange(toDateInputValue(nextDate));
+    }
   }
 
   function handleSelectDate(date) {
@@ -3252,6 +3273,40 @@ export default function PublicTalentPoolApplicationPage() {
     }));
   }
 
+  function updateTrainingAttended(index, value) {
+    setForm((previous) => {
+      const rows = ensureTrainingEntryRows(previous.trainingAttended);
+      const nextRows = rows.map((item, itemIndex) =>
+        itemIndex === index ? value : item,
+      );
+
+      return {
+        ...previous,
+        trainingAttended: nextRows,
+      };
+    });
+  }
+
+  function addTrainingAttended() {
+    setForm((previous) => ({
+      ...previous,
+      trainingAttended: [...ensureTrainingEntryRows(previous.trainingAttended), ""],
+    }));
+  }
+
+  function removeTrainingAttended(index) {
+    setForm((previous) => {
+      const nextRows = ensureTrainingEntryRows(previous.trainingAttended).filter(
+        (_, itemIndex) => itemIndex !== index,
+      );
+
+      return {
+        ...previous,
+        trainingAttended: nextRows.length ? nextRows : [""],
+      };
+    });
+  }
+
   function handleHearAboutUsChange(values) {
     const hasEmployeeReferralProgram = isEmployeeReferralProgramSelected(
       values,
@@ -3814,7 +3869,13 @@ export default function PublicTalentPoolApplicationPage() {
       ...normalizePublicFormFields(form),
       referredBy: hasEmployeeReferralProgram ? form.referredBy : "",
       employeeId: hasEmployeeReferralProgram ? form.employeeId : "",
+      phone1: normalizePhoneNumberForSubmit(form.phone1),
+      phone2: normalizePhoneNumberForSubmit(form.phone2),
+      reference1Phone: normalizePhoneNumberForSubmit(form.reference1Phone),
+      reference2Phone: normalizePhoneNumberForSubmit(form.reference2Phone),
+      reference3Phone: normalizePhoneNumberForSubmit(form.reference3Phone),
       educationDetails: normalizeEducationDetails(form.educationDetails),
+      trainingAttended: normalizeTrainingEntries(form.trainingAttended),
       otherExperiences: form.otherExperiences.map(normalizeExperienceValues),
       audioFile: audioFileRef.current || form.audioFile,
       attachmentFile: attachmentFileRef.current || form.attachmentFile,
@@ -4214,8 +4275,15 @@ export default function PublicTalentPoolApplicationPage() {
                 <FieldLabel>Phone 1</FieldLabel>
                 <input
                   value={form.phone1}
-                  onChange={(e) => updateFormField("phone1", e.target.value)}
+                  onChange={(e) =>
+                    updateFormField(
+                      "phone1",
+                      normalizePhoneNumberInput(e.target.value),
+                    )
+                  }
                   placeholder="09xxxxxxxxx"
+                  inputMode="numeric"
+                  maxLength={11}
                   className={inputClass()}
                 />
               </div>
@@ -4224,8 +4292,15 @@ export default function PublicTalentPoolApplicationPage() {
                 <FieldLabel>Phone 2</FieldLabel>
                 <input
                   value={form.phone2}
-                  onChange={(e) => updateFormField("phone2", e.target.value)}
+                  onChange={(e) =>
+                    updateFormField(
+                      "phone2",
+                      normalizePhoneNumberInput(e.target.value),
+                    )
+                  }
                   placeholder="Optional"
+                  inputMode="numeric"
+                  maxLength={11}
                   className={inputClass()}
                 />
               </div>
@@ -4370,15 +4445,53 @@ export default function PublicTalentPoolApplicationPage() {
 
                 <div>
                   <FieldLabel>Training Attended</FieldLabel>
-                  <textarea
-                    value={form.trainingAttended}
-                    onChange={(e) =>
-                      updateFormField("trainingAttended", e.target.value)
-                    }
-                    placeholder="List trainings attended"
-                    rows={4}
-                    className={textareaClass()}
-                  />
+                  <div className="space-y-2">
+                    {ensureTrainingEntryRows(form.trainingAttended).map(
+                      (training, index) => (
+                        <div
+                          key={`training-attended-${index}`}
+                          className="flex items-center gap-2"
+                        >
+                          <input
+                            type="text"
+                            value={training}
+                            onChange={(event) =>
+                              updateTrainingAttended(index, event.target.value)
+                            }
+                            placeholder="LIST TRAINING ATTENDED"
+                            className={inputClass("flex-1")}
+                          />
+
+                          {index ===
+                          ensureTrainingEntryRows(form.trainingAttended).length -
+                            1 ? (
+                            <button
+                              type="button"
+                              onClick={addTrainingAttended}
+                              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                              aria-label="Add training attended"
+                              title="Add training"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          ) : null}
+
+                          {ensureTrainingEntryRows(form.trainingAttended).length >
+                          1 ? (
+                            <button
+                              type="button"
+                              onClick={() => removeTrainingAttended(index)}
+                              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-red-100 bg-red-50 text-red-600 transition hover:border-red-200 hover:bg-red-100"
+                              aria-label="Remove training attended"
+                              title="Remove training"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          ) : null}
+                        </div>
+                      ),
+                    )}
+                  </div>
                 </div>
               </div>
             </SectionCard>
@@ -4526,10 +4639,12 @@ export default function PublicTalentPoolApplicationPage() {
                         onChange={(event) =>
                           updateFormField(
                             reference.phoneField,
-                            event.target.value,
+                            normalizePhoneNumberInput(event.target.value),
                           )
                         }
                         placeholder="Reference phone"
+                        inputMode="numeric"
+                        maxLength={11}
                         className={inputClass()}
                       />
                     </div>
