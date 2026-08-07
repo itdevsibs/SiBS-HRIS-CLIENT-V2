@@ -3107,7 +3107,6 @@ export default function PublicTalentPoolApplicationPage() {
   }, []);
 
   const age = calculateAge(form.dateOfBirth);
-  const isMinor = age !== null && age < 18;
 
   const hasRelevantExperience =
     form.workExperience ===
@@ -4234,17 +4233,11 @@ export default function PublicTalentPoolApplicationPage() {
                   value={form.dateOfBirth}
                   onChange={(value) => updateFormField("dateOfBirth", value)}
                   placeholder="Select date"
-                  hasError={isMinor}
                 />
 
                 {age !== null && (
-                  <p
-                    className={`mt-2 text-xs font-bold ${
-                      isMinor ? "text-red-600" : "text-emerald-600"
-                    }`}
-                  >
+                  <p className="mt-2 text-xs font-bold text-[#667085]">
                     Age as of application date: {age}
-                    {isMinor ? " — Applicant is below 18 years old." : ""}
                   </p>
                 )}
               </div>
