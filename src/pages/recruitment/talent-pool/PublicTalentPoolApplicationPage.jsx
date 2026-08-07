@@ -34,6 +34,7 @@ import {
 } from "@/lib/axios/publicTalentPool";
 import { getPublicApprovedJobDescriptions } from "@/lib/axios/getPublicJobDescription";
 import {
+  canRemoveTrainingEntryRow,
   ensureTrainingEntryRows,
   normalizeTrainingEntries,
 } from "@/lib/utils/talentPool/trainingEntries";
@@ -4476,8 +4477,11 @@ export default function PublicTalentPoolApplicationPage() {
                             </button>
                           ) : null}
 
-                          {ensureTrainingEntryRows(form.trainingAttended).length >
-                          1 ? (
+                          {canRemoveTrainingEntryRow(
+                            index,
+                            ensureTrainingEntryRows(form.trainingAttended)
+                              .length,
+                          ) ? (
                             <button
                               type="button"
                               onClick={() => removeTrainingAttended(index)}
