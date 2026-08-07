@@ -33,7 +33,8 @@ import PublicInterviewDateSelectionPage from "./pages/recruitment/candidate-pipe
 import OffersPage from "./pages/recruitment/OffersPage";
 import PublicOfferResponsePage from "./pages/recruitment/PublicOfferResponsePage";
 import OnboardingPage from "./pages/recruitment/OnboardingPage";
-import CandidateExperiencePage from "./pages/recruitment/CandidateExperiencePage";
+import CandidateExperiencePage from "./pages/recruitment/candidateExperience/CandidateExperiencePage";
+import CandidateExperienceSurveyPage from "./pages/recruitment/candidateExperience/public/CandidateExperienceSurveyPage";
 import SourcingAnalyticsPage from "./pages/recruitment/SourcingAnalyticsPage";
 import ActionItemsPage from "./pages/recruitment/ActionItemsPage";
 import WeeklyReportsPage from "./pages/recruitment/WeeklyReportsPage";
@@ -147,6 +148,20 @@ function MainApplicationRoutes() {
       <Route
         path="/public/interview-date/:token"
         element={<PublicInterviewDateSelectionPage />}
+      />
+
+      {/* PUBLIC CANDIDATE EXPERIENCE SURVEY */}
+      <Route
+        path="/public/candidate-experience-survey"
+        element={<CandidateExperienceSurveyPage />}
+      />
+      <Route
+        path="/public/candidate-experience-survey/:token"
+        element={<CandidateExperienceSurveyPage />}
+      />
+      <Route
+        path="/recruitment/candidate-experience/survey"
+        element={<CandidateExperienceSurveyPage />}
       />
 
       {/* PUBLIC TALENT POOL APPLICATION FORM */}

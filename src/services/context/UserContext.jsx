@@ -57,6 +57,7 @@ const PUBLIC_PATHS = [
   "/public/talent-pool/apply",
   "/public/interview-date",
   "/public/offer-response",
+  "/public/candidate-experience",
   "/recruitment/talent-pool/apply",
 ];
 

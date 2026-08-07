@@ -1019,7 +1019,7 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
-          className="fixed left-4 top-[19px] z-[85] flex h-9 w-9 items-center justify-center rounded-xl border border-[#083A69] bg-sibs-primary-1 shadow-[0_6px_16px_rgba(0,48,142,0.24)] lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg"
+          className="fixed left-4 top-[19px] z-[85] flex h-9 w-9 items-center justify-center rounded-xl border border-[#083A69] bg-sibs-primary-1 shadow-[0_6px_16px_rgba(0,48,142,0.24)] lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg sm:left-6 sm:top-[25px]"
           aria-label="Open sidebar"
         >
           <Menu size={18} className="text-white max-[360px]:h-4 max-[360px]:w-4" />

@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   Check,
+  CheckCircle2,
   ChevronDown,
   Download,
   Eye,
@@ -5093,57 +5094,121 @@ export default function CandidateProfileModal() {
   }
 
   function renderPipelineLink() {
-  return (
-    <section className="space-y-4">
-      <SectionTitle
-        icon={Network}
-        title="Pipeline Link"
-        description="Current pipeline status, assignment, and TA ownership."
-      />
+    const pipelineStages = [
+      "Sourcing",
+      "Initial Screening",
+      "Evaluation",
+      "Final Interview",
+      "Onboarding",
+      "Completed",
+    ];
+    const activeStage = currentStage || activeCandidate.pipelineStage || "Sourcing";
+    const currentIndex = Math.max(
+      pipelineStages.findIndex(
+        (stage) => stage.toLowerCase() === String(activeStage).toLowerCase(),
+      ),
+      0,
+    );
 
-      {pipelineCandidateDetailsLoading && (
-        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
-          Loading Candidate Pipeline details...
+    return (
+      <section className="space-y-4">
+        <SectionTitle
+          icon={Network}
+          title="Pipeline Link"
+          description="Current pipeline status, assignment, and TA ownership."
+        />
+
+        <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+            • Active Recruitment Funnel Tracker
+          </p>
+          <div className="relative py-6">
+            <div className="absolute left-8 right-8 top-[42px] hidden h-1 bg-slate-100 md:block" />
+            <div className="relative grid grid-cols-2 gap-6 md:grid-cols-6">
+              {pipelineStages.map((stage, index) => {
+                const state =
+                  index < currentIndex
+                    ? "completed"
+                    : index === currentIndex
+                    ? "active"
+                    : "pending";
+                return (
+                  <div
+                    key={stage}
+                    className="flex flex-col items-center text-center"
+                  >
+                    <span
+                      className={`z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-extrabold ${
+                        state === "completed"
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : state === "active"
+                          ? "border-[#042C51] bg-[#042C51] text-white ring-4 ring-[#E9F0FC]"
+                          : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      {state === "completed" ? (
+                        <CheckCircle2 size={18} />
+                      ) : (
+                        index + 1
+                      )}
+                    </span>
+                    <span
+                      className={`mt-2 max-w-[110px] text-[10px] font-extrabold ${
+                        state === "active" ? "text-[#042C51]" : "text-[#667085]"
+                      }`}
+                    >
+                      {stage}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      )}
 
-      {pipelineCandidateDetailsError && (
-        <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
-          {pipelineCandidateDetailsError}
-        </div>
-      )}
+        {pipelineCandidateDetailsLoading && (
+          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+            Loading Candidate Pipeline details...
+          </div>
+        )}
 
-      <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
-        <ProfileDetail
-          label="Pipeline ID"
-          value={resolvedPipelineId || candidatePipelineLookupId || "—"}
-        />
+        {pipelineCandidateDetailsError && (
+          <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
+            {pipelineCandidateDetailsError}
+          </div>
+        )}
 
-        <ProfileDetail
-          label="Pipeline Status"
-          value={activeCandidate.pipelineStatus || "—"}
-        />
+        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+          <ProfileDetail
+            label="Pipeline ID"
+            value={resolvedPipelineId || candidatePipelineLookupId || "—"}
+          />
 
-        <ProfileDetail label="Current Stage" value={currentStage || "—"} />
+          <ProfileDetail
+            label="Pipeline Status"
+            value={activeCandidate.pipelineStatus || "—"}
+          />
 
-        <ProfileDetail
-          label="Final Role"
-          value={activeCandidate.currentAppliedRole || "Not assigned yet"}
-        />
+          <ProfileDetail label="Current Stage" value={currentStage || "—"} />
 
-        <ProfileDetail
-          label="Final Account"
-          value={activeCandidate.currentAppliedAccount || "Not assigned yet"}
-        />
+          <ProfileDetail
+            label="Final Role"
+            value={activeCandidate.currentAppliedRole || "Not assigned yet"}
+          />
 
-        <ProfileDetail
-          label="TA Owner"
-          value={activeCandidate.currentTaOwner || "—"}
-        />
-      </ProfileGrid>
-    </section>
-  );
-}
+          <ProfileDetail
+            label="Final Account"
+            value={activeCandidate.currentAppliedAccount || "Not assigned yet"}
+          />
+
+          <ProfileDetail
+            label="TA Owner"
+            value={activeCandidate.currentTaOwner || "—"}
+          />
+        </ProfileGrid>
+      </section>
+    );
+  }
 
   function renderEducation() {
     const attainment = getCandidateEducationAttainment(activeCandidate);
