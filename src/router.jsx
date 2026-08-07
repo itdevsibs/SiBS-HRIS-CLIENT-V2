@@ -46,6 +46,7 @@ import AccountSettingsPage from "./pages/Settings/AccountSettingsPage";
 import ApprovalRequest from "./pages/communication/ApprovalRequest";
 import KronosDatasPage from "./pages/kronos-datas/KronosDatasPage";
 import WorkforceHiringOverviewPage from "./pages/recruitment/WorkforceHiringOverviewPage";
+import PublicJobDescriptionPage from "./pages/recruitment/talent-pool/PublicJobDescriptionPage";
 
 const DEFAULT_PUBLIC_APPLICATION_HOST = "sibsapply.getleadsource.com";
 
@@ -89,7 +90,24 @@ function PublicApplicationRoutes() {
     <Routes>
       <Route path="/" element={<TalentPoolApplyPage />} />
 
-      {/* Keep old public links working, but show the clean root URL. */}
+      {/* Public job-description pages opened from the application form. */}
+      <Route
+        path="/job-description/:id"
+        element={<PublicJobDescriptionPage />}
+      />
+      <Route
+        path="/public/job-description/:id"
+        element={<PublicJobDescriptionPage />}
+      />
+
+      {/* A JD URL without an ID returns to the public application form. */}
+      <Route path="/job-description" element={<Navigate to="/" replace />} />
+      <Route
+        path="/public/job-description"
+        element={<Navigate to="/" replace />}
+      />
+
+      {/* Keep old public application links working. */}
       <Route path="/apply" element={<Navigate to="/" replace />} />
       <Route
         path="/recruitment/talent-pool/apply"
@@ -100,7 +118,7 @@ function PublicApplicationRoutes() {
         element={<Navigate to="/" replace />}
       />
 
-      {/* Do not expose HRIS routes through the public application hostname. */}
+      {/* Do not expose private HRIS routes through the public hostname. */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -142,6 +160,24 @@ function MainApplicationRoutes() {
       <Route
         path="/public/talent-pool/apply"
         element={<TalentPoolApplyPage />}
+      />
+
+      {/* PUBLIC JOB DESCRIPTION - localhost and main HRIS hostname */}
+      <Route
+        path="/job-description/:id"
+        element={<PublicJobDescriptionPage />}
+      />
+      <Route
+        path="/public/job-description/:id"
+        element={<PublicJobDescriptionPage />}
+      />
+      <Route
+        path="/job-description"
+        element={<Navigate to="/apply" replace />}
+      />
+      <Route
+        path="/public/job-description"
+        element={<Navigate to="/apply" replace />}
       />
 
       {/* ROUTE ALIASES */}

@@ -25,6 +25,7 @@ import JobDescriptionTable from "../../components/tables/jobDescription/JobDescr
 import AddDescriptionModal from "../../components/modals/jobDescription/AddJobDescription";
 import ViewJobDescriptionModal from "../../components/modals/jobDescription/ViewJobDescriptionDetailsModal";
 import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
+import useApprovalRuleAccess from "../../hooks/useApprovalRuleAccess";
 
 const emptyRevisionForm = {
   revisedBySibsId: "",
@@ -292,6 +293,10 @@ export default function JobDescriptionPage() {
 
   const [jobDescriptionList, setJobDescriptionList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { canApprove: canApproveJobDescriptions } = useApprovalRuleAccess(
+    "jobDescription",
+    user,
+  );
 
   const [revisionItem, setRevisionItem] = useState(null);
   const [revisionForm, setRevisionForm] = useState(emptyRevisionForm);
@@ -877,6 +882,7 @@ export default function JobDescriptionPage() {
           >
             <JobDescriptionTable
               jobDescriptionList={jobDescriptionList}
+              canApproveJobDescriptions={canApproveJobDescriptions}
               onView={handleViewJobDescription}
               onRevise={handleOpenRevision}
               onPageChange={forceScrollToTop}

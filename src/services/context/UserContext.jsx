@@ -50,6 +50,10 @@ const PUBLIC_PATHS = [
   "/login",
   "/online-assessment",
   "/apply",
+
+  "/job-description",
+  "/public/job-description",
+
   "/public/talent-pool/apply",
   "/public/interview-date",
   "/public/offer-response",
@@ -114,13 +118,9 @@ function writeStoredServerTokenExpiry(value) {
 }
 
 function clearStoredServerTokenExpiry() {
-  getSessionStorage()?.removeItem(
-    SERVER_TOKEN_EXPIRY_SESSION_KEY,
-  );
+  getSessionStorage()?.removeItem(SERVER_TOKEN_EXPIRY_SESSION_KEY);
 
-  getLocalStorage()?.removeItem(
-    SERVER_TOKEN_EXPIRY_LOCAL_KEY,
-  );
+  getLocalStorage()?.removeItem(SERVER_TOKEN_EXPIRY_LOCAL_KEY);
 }
 
 function readStoredIdleDuration() {
@@ -150,13 +150,9 @@ function writeStoredIdleDuration() {
 }
 
 function clearStoredIdleDuration() {
-  getSessionStorage()?.removeItem(
-    SESSION_IDLE_DURATION_SESSION_KEY,
-  );
+  getSessionStorage()?.removeItem(SESSION_IDLE_DURATION_SESSION_KEY);
 
-  getLocalStorage()?.removeItem(
-    SESSION_IDLE_DURATION_LOCAL_KEY,
-  );
+  getLocalStorage()?.removeItem(SESSION_IDLE_DURATION_LOCAL_KEY);
 }
 
 function getServerRefreshLeadMs(remainingMs) {
@@ -189,20 +185,14 @@ export function UserProvider({ children }) {
   const initialSessionRef = useRef(undefined);
 
   if (initialSessionRef.current === undefined) {
-    initialSessionRef.current = publicRoute
-      ? null
-      : readCachedAuthSession();
+    initialSessionRef.current = publicRoute ? null : readCachedAuthSession();
   }
 
   const initialSession = initialSessionRef.current;
 
-  const [user, setUserState] = useState(
-    initialSession?.user || null,
-  );
+  const [user, setUserState] = useState(initialSession?.user || null);
 
-  const [loading, setLoading] = useState(
-    !initialSession?.user,
-  );
+  const [loading, setLoading] = useState(!initialSession?.user);
 
   const mountedRef = useRef(true);
   const userRef = useRef(initialSession?.user || null);
@@ -220,24 +210,19 @@ export function UserProvider({ children }) {
   const justLoggedInRef = useRef(false);
 
   const lastHandledActivityRef = useRef(0);
-  const idleDurationRef = useRef(
-    readStoredIdleDuration(),
-  );
+  const idleDurationRef = useRef(readStoredIdleDuration());
 
-  const replaceUser = useCallback(
-    (nextUser, { cache = true } = {}) => {
-      userRef.current = nextUser;
+  const replaceUser = useCallback((nextUser, { cache = true } = {}) => {
+    userRef.current = nextUser;
 
-      if (cache) {
-        writeCachedUser(nextUser);
-      }
+    if (cache) {
+      writeCachedUser(nextUser);
+    }
 
-      if (mountedRef.current) {
-        setUserState(nextUser);
-      }
-    },
-    [],
-  );
+    if (mountedRef.current) {
+      setUserState(nextUser);
+    }
+  }, []);
 
   const clearLogoutTimer = useCallback(() => {
     if (logoutTimerRef.current) {
@@ -248,9 +233,7 @@ export function UserProvider({ children }) {
 
   const clearServerRefreshTimer = useCallback(() => {
     if (serverRefreshTimerRef.current) {
-      window.clearTimeout(
-        serverRefreshTimerRef.current,
-      );
+      window.clearTimeout(serverRefreshTimerRef.current);
 
       serverRefreshTimerRef.current = null;
     }
@@ -267,6 +250,41 @@ export function UserProvider({ children }) {
     refreshControllerRef.current = null;
     refreshPromiseRef.current = null;
   }, []);
+
+  const suspendAuthForPublicRoute = useCallback(() => {
+    /*
+     * Public pages must NEVER destroy the existing HRIS login.
+     *
+     * A public JD is intentionally opened in another browser tab.
+     * That tab may not have the same sessionStorage values as the
+     * authenticated HRIS tab, while authentication cookies are shared.
+     *
+     * Stop only this tab's auth work:
+     * - pending /me request
+     * - pending refresh request
+     * - inactivity logout timer
+     * - server token refresh timer
+     *
+     * Do NOT:
+     * - clear cached auth state
+     * - clear expiry storage
+     * - replace the logged-in user with null
+     * - call the backend logout endpoint
+     */
+    abortUserFetch();
+    abortServerRefresh();
+    clearLogoutTimer();
+    clearServerRefreshTimer();
+
+    if (mountedRef.current) {
+      setLoading(false);
+    }
+  }, [
+    abortServerRefresh,
+    abortUserFetch,
+    clearLogoutTimer,
+    clearServerRefreshTimer,
+  ]);
 
   const clearLocalAuthState = useCallback(() => {
     abortUserFetch();
@@ -294,15 +312,21 @@ export function UserProvider({ children }) {
   ]);
 
   const forceLogout = useCallback(async () => {
+    /*
+     * A public page must never invalidate the authenticated HRIS session.
+     *
+     * This guard MUST happen before clearLocalAuthState() because an
+     * inactivity timer created on a private route can fire immediately
+     * after navigating to a public route.
+     */
+    if (isPublicPath(window.location.pathname)) {
+      return;
+    }
+
     if (logoutInProgressRef.current) return;
 
     logoutInProgressRef.current = true;
     clearLocalAuthState();
-
-    if (isPublicPath(window.location.pathname)) {
-      logoutInProgressRef.current = false;
-      return;
-    }
 
     try {
       await handleLogout(true);
@@ -371,8 +395,8 @@ export function UserProvider({ children }) {
         return false;
       }
 
-      const expiresAt = normalizeExpiry(expiresAtValue) ||
-        readStoredServerTokenExpiry();
+      const expiresAt =
+        normalizeExpiry(expiresAtValue) || readStoredServerTokenExpiry();
 
       if (!expiresAt) {
         return false;
@@ -400,11 +424,7 @@ export function UserProvider({ children }) {
 
       return true;
     },
-    [
-      clearServerRefreshTimer,
-      forceLogout,
-      validateInactivityExpiry,
-    ],
+    [clearServerRefreshTimer, forceLogout, validateInactivityExpiry],
   );
 
   const scheduleServerRefreshRetry = useCallback(() => {
@@ -470,14 +490,11 @@ export function UserProvider({ children }) {
 
           if (response.data?.success === false) {
             throw new Error(
-              response.data?.message ||
-                "Unable to refresh the session.",
+              response.data?.message || "Unable to refresh the session.",
             );
           }
 
-          const expiresAt = normalizeExpiry(
-            response.data?.expiresAt,
-          );
+          const expiresAt = normalizeExpiry(response.data?.expiresAt);
 
           if (!expiresAt || expiresAt <= Date.now()) {
             throw new Error(
@@ -588,8 +605,7 @@ export function UserProvider({ children }) {
         return false;
       }
 
-      const newExpiry =
-        activityAt + idleDurationRef.current;
+      const newExpiry = activityAt + idleDurationRef.current;
 
       writeStoredExpiry(newExpiry);
       startLogoutTimer();
@@ -626,9 +642,17 @@ export function UserProvider({ children }) {
   const fetchUser = useCallback(
     async ({ background = false } = {}) => {
       if (isPublicPath(window.location.pathname)) {
+        /*
+         * Public pages do not participate in authenticated HRIS validation.
+         * Preserve the existing login for any already-open HRIS tab.
+         */
         clearLogoutTimer();
-        replaceUser(null);
-        setLoading(false);
+        clearServerRefreshTimer();
+
+        if (mountedRef.current) {
+          setLoading(false);
+        }
+
         return null;
       }
 
@@ -636,9 +660,7 @@ export function UserProvider({ children }) {
         return null;
       }
 
-      const cachedUser =
-        userRef.current ||
-        readCachedAuthSession()?.user;
+      const cachedUser = userRef.current || readCachedAuthSession()?.user;
 
       if (cachedUser && !userRef.current) {
         replaceUser(cachedUser);
@@ -661,32 +683,21 @@ export function UserProvider({ children }) {
       }
 
       try {
-        const response = await api.get(
-          "/api/users/me",
-          {
-            withCredentials: true,
-            timeout: USER_REQUEST_TIMEOUT,
-            signal: controller.signal,
-            skipAuthRedirect: true,
-          },
-        );
+        const response = await api.get("/api/users/me", {
+          withCredentials: true,
+          timeout: USER_REQUEST_TIMEOUT,
+          signal: controller.signal,
+          skipAuthRedirect: true,
+        });
 
-        if (
-          requestEpoch !== fetchEpochRef.current ||
-          !mountedRef.current
-        ) {
+        if (requestEpoch !== fetchEpochRef.current || !mountedRef.current) {
           return null;
         }
 
-        if (
-          response.data?.success &&
-          response.data?.user
-        ) {
+        if (response.data?.success && response.data?.user) {
           replaceUser(response.data.user);
 
-          const expiresAt = normalizeExpiry(
-            response.data?.expiresAt,
-          );
+          const expiresAt = normalizeExpiry(response.data?.expiresAt);
 
           if (expiresAt > Date.now()) {
             writeStoredServerTokenExpiry(expiresAt);
@@ -728,10 +739,7 @@ export function UserProvider({ children }) {
           fetchControllerRef.current = null;
         }
 
-        if (
-          requestEpoch === fetchEpochRef.current &&
-          mountedRef.current
-        ) {
+        if (requestEpoch === fetchEpochRef.current && mountedRef.current) {
           setLoading(false);
         }
       }
@@ -739,6 +747,7 @@ export function UserProvider({ children }) {
     [
       abortUserFetch,
       clearLogoutTimer,
+      clearServerRefreshTimer,
       ensureServerTokenReady,
       forceLogout,
       replaceUser,
@@ -768,38 +777,39 @@ export function UserProvider({ children }) {
 
   useEffect(() => {
     const handleLogoutStart = () => {
+      /*
+       * Ignore shared Axios logout events while this tab is on a public
+       * route. A public JD/API failure must not clear the HRIS session
+       * that is active in another tab.
+       */
+      if (isPublicPath(window.location.pathname)) {
+        return;
+      }
+
       clearLocalAuthState();
     };
 
-    window.addEventListener(
-      AUTH_LOGOUT_START_EVENT,
-      handleLogoutStart,
-    );
+    window.addEventListener(AUTH_LOGOUT_START_EVENT, handleLogoutStart);
 
     return () => {
-      window.removeEventListener(
-        AUTH_LOGOUT_START_EVENT,
-        handleLogoutStart,
-      );
+      window.removeEventListener(AUTH_LOGOUT_START_EVENT, handleLogoutStart);
     };
   }, [clearLocalAuthState]);
 
   useEffect(() => {
     if (publicRoute) {
-      clearLocalAuthState();
+      suspendAuthForPublicRoute();
       return undefined;
     }
 
-    idleDurationRef.current =
-      readStoredIdleDuration();
+    idleDurationRef.current = readStoredIdleDuration();
 
     if (justLoggedInRef.current && userRef.current) {
       justLoggedInRef.current = false;
       setLoading(false);
       startLogoutTimer();
 
-      const serverExpiresAt =
-        readStoredServerTokenExpiry();
+      const serverExpiresAt = readStoredServerTokenExpiry();
 
       if (serverExpiresAt > Date.now()) {
         scheduleServerRefresh(serverExpiresAt);
@@ -815,8 +825,7 @@ export function UserProvider({ children }) {
       setLoading(false);
       startLogoutTimer();
 
-      const serverExpiresAt =
-        readStoredServerTokenExpiry();
+      const serverExpiresAt = readStoredServerTokenExpiry();
 
       if (serverExpiresAt > Date.now()) {
         scheduleServerRefresh(serverExpiresAt);
@@ -833,12 +842,12 @@ export function UserProvider({ children }) {
     };
   }, [
     abortUserFetch,
-    clearLocalAuthState,
     fetchUser,
     publicRoute,
     replaceUser,
     scheduleServerRefresh,
     startLogoutTimer,
+    suspendAuthForPublicRoute,
   ]);
 
   useEffect(() => {
@@ -863,10 +872,7 @@ export function UserProvider({ children }) {
 
       const now = Date.now();
 
-      if (
-        now - lastHandledActivityRef.current <
-        ACTIVITY_THROTTLE_MS
-      ) {
+      if (now - lastHandledActivityRef.current < ACTIVITY_THROTTLE_MS) {
         return;
       }
 
@@ -881,19 +887,12 @@ export function UserProvider({ children }) {
     }
 
     ACTIVITY_EVENTS.forEach((eventName) => {
-      window.addEventListener(
-        eventName,
-        handleUserActivity,
-        { passive: true },
-      );
+      window.addEventListener(eventName, handleUserActivity, { passive: true });
     });
 
     window.addEventListener("focus", handleUserActivity);
 
-    document.addEventListener(
-      "visibilitychange",
-      handleVisibilityChange,
-    );
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     startLogoutTimer();
 
@@ -905,21 +904,12 @@ export function UserProvider({ children }) {
 
     return () => {
       ACTIVITY_EVENTS.forEach((eventName) => {
-        window.removeEventListener(
-          eventName,
-          handleUserActivity,
-        );
+        window.removeEventListener(eventName, handleUserActivity);
       });
 
-      window.removeEventListener(
-        "focus",
-        handleUserActivity,
-      );
+      window.removeEventListener("focus", handleUserActivity);
 
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange,
-      );
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
     extendSessionFromActivity,
@@ -930,10 +920,7 @@ export function UserProvider({ children }) {
   ]);
 
   const updateUser = useCallback(
-    (
-      newUser,
-      serverExpiresAt = null,
-    ) => {
+    (newUser, serverExpiresAt = null) => {
       abortUserFetch();
       abortServerRefresh();
       clearServerRefreshTimer();
@@ -944,26 +931,19 @@ export function UserProvider({ children }) {
       }
 
       const now = Date.now();
-      const normalizedServerExpiry = normalizeExpiry(
-        serverExpiresAt,
-      );
+      const normalizedServerExpiry = normalizeExpiry(serverExpiresAt);
 
       /*
        * The inactivity window is always one hour. The JWT may be much shorter
        * during testing (for example 10 seconds), but it is refreshed
        * independently and must never shorten the user's inactivity session.
        */
-      idleDurationRef.current =
-        writeStoredIdleDuration(SESSION_DURATION_MS);
+      idleDurationRef.current = writeStoredIdleDuration(SESSION_DURATION_MS);
 
-      writeStoredExpiry(
-        now + SESSION_DURATION_MS,
-      );
+      writeStoredExpiry(now + SESSION_DURATION_MS);
 
       if (normalizedServerExpiry > now) {
-        writeStoredServerTokenExpiry(
-          normalizedServerExpiry,
-        );
+        writeStoredServerTokenExpiry(normalizedServerExpiry);
       } else {
         clearStoredServerTokenExpiry();
       }
@@ -976,9 +956,7 @@ export function UserProvider({ children }) {
       startLogoutTimer();
 
       if (normalizedServerExpiry > now) {
-        scheduleServerRefresh(
-          normalizedServerExpiry,
-        );
+        scheduleServerRefresh(normalizedServerExpiry);
       }
     },
     [

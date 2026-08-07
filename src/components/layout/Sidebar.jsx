@@ -98,20 +98,6 @@ function getAdminAccess(user = {}) {
   );
 }
 
-function getLocalStorageValue(keys = []) {
-  if (typeof window === "undefined") return "";
-
-  for (const key of keys) {
-    const value = window.localStorage.getItem(key);
-
-    if (value !== null && value !== undefined && String(value).trim() !== "") {
-      return value;
-    }
-  }
-
-  return "";
-}
-
 function getCurrentUserSibsId(user = {}) {
   return normalizeSibsId(
     user?.sibsId ||
@@ -125,19 +111,6 @@ function getCurrentUserSibsId(user = {}) {
       user?.employeeCode ||
       user?.employee_code ||
       user?.username ||
-      getLocalStorageValue([
-        "sibsId",
-        "sibs_id",
-        "employeeSibsId",
-        "employee_sibs_id",
-        "gy_emp_code",
-        "gy_user_code",
-        "userCode",
-        "user_code",
-        "employeeCode",
-        "employee_code",
-        "username",
-      ]) ||
       "",
   );
 }

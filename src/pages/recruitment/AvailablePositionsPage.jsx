@@ -1138,6 +1138,13 @@ export default function AvailablePositionsPage() {
     setCurrentPage(1);
   }
 
+  useEffect(() => {
+    if (!canApproveAvailablePositions && statusFilter === "For Approval") {
+      setStatusFilter("All");
+      setCurrentPage(1);
+    }
+  }, [canApproveAvailablePositions, statusFilter]);
+
   function handleClearFilters() {
     setSearch("");
     setStatusFilter("All");
