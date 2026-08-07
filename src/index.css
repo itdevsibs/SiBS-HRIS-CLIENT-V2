@@ -1176,7 +1176,7 @@
 
 .sibs-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: var(--sibs-primary-1) transparent;
+  scrollbar-color: #cbd5e1 transparent;
 }
 
 .sibs-scrollbar::-webkit-scrollbar {
@@ -1190,11 +1190,11 @@
 
 .sibs-scrollbar::-webkit-scrollbar-thumb {
   border-radius: 9999px;
-  background: var(--sibs-primary-1);
+  background: #cbd5e1;
 }
 
 .sibs-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--sibs-tertiary-3);
+  background: #94a3b8;
 }
 
 /* =========================

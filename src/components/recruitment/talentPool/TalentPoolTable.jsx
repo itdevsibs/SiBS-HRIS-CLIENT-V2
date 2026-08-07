@@ -60,6 +60,7 @@ export default function TalentPoolTable() {
   const {
     filteredCandidates,
     setSelectedCandidate,
+    statusFilter,
     isLoading,
     loadError,
   } = useTalentPool();
@@ -189,9 +190,9 @@ export default function TalentPoolTable() {
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody key={statusFilter || "All"}>
                   {paginatedCandidates.length > 0 ? (
-                    paginatedCandidates.map((candidate) => {
+                    paginatedCandidates.map((candidate, index) => {
                       const appliedPosition =
                         candidate.openPosition ||
                         candidate.roleCapability ||
@@ -224,7 +225,8 @@ export default function TalentPoolTable() {
                           tabIndex={0}
                           onClick={() => openCandidate(candidate)}
                           onKeyDown={(event) => handleRowKeyDown(event, candidate)}
-                          className="cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25"
+                          className="sibs-page-card-in cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25"
+                          style={{ animationDelay: `${index * 30}ms` }}
                         >
                           <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
                             <div className="min-w-0">

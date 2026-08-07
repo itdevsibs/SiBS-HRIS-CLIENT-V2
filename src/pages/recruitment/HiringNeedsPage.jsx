@@ -31,20 +31,6 @@ function normalizeSibsId(value) {
   return cleanText(value).replace(/^SIBS[-_ ]?/i, "");
 }
 
-function getLocalStorageValue(keys = []) {
-  if (typeof window === "undefined") return "";
-
-  for (const key of keys) {
-    const value = window.localStorage.getItem(key);
-
-    if (cleanText(value)) {
-      return value;
-    }
-  }
-
-  return "";
-}
-
 function getCurrentUserSibsId(user = {}) {
   return normalizeSibsId(
     user?.sibsId ||
@@ -54,23 +40,10 @@ function getCurrentUserSibsId(user = {}) {
     user?.gy_emp_code ||
     user?.gy_user_code ||
     user?.userCode ||
-    user?.user_code ||
-    user?.employeeCode ||
-    user?.employee_code ||
-    user?.username ||
-    getLocalStorageValue([
-      "sibsId",
-      "sibs_id",
-      "employeeSibsId",
-      "employee_sibs_id",
-      "gy_emp_code",
-      "gy_user_code",
-      "userCode",
-      "user_code",
-      "employeeCode",
-      "employee_code",
-      "username",
-    ]),
+      user?.user_code ||
+      user?.employeeCode ||
+      user?.employee_code ||
+      user?.username,
   );
 }
 
@@ -407,7 +380,10 @@ export default function HiringNeedsPage() {
             style={{ animationDelay: "180ms" }}
           >
             <HiringNeedsFilters />
-            <HiringNeedsTable onView={setSelectedItem} />
+            <HiringNeedsTable
+              canApproveHiringNeeds={canApproveHiringNeeds}
+              onView={setSelectedItem}
+            />
           </section>
 
           <section

@@ -28,13 +28,13 @@ function ActionItemsContent() {
       <ActionItemsWeeklyPerformance />
       <ActionItemsCurrentStatus />
 
-      <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+      <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm font-jakarta">
         <header className="flex flex-col gap-2 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-sm font-extrabold text-[#042C51] sm:text-base">
+            <h2 className="sibs-section-title">
               Action Items – JIT Delivery Focus Registry
             </h2>
-            <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+            <p className="sibs-section-subtitle">
               Accountable actions linked to the current reporting scope. Open a record to review source details and progress.
             </p>
           </div>
@@ -45,14 +45,14 @@ function ActionItemsContent() {
         </div>
       </section>
 
-      <section className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5 font-jakarta">
         <div className="mb-4">
-          <h2 className="text-sm font-black uppercase tracking-wider text-[#042C51]">Operational Insights & Supporting Analytics</h2>
-          <p className="mt-1 text-xs font-semibold text-[#667085]">
+          <h2 className="sibs-section-title">Operational Insights &amp; Supporting Analytics</h2>
+          <p className="sibs-section-subtitle">
             Supporting health distribution, SLA watchlist, and module-level signals.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
           <div className="space-y-5 lg:col-span-8">
             <ActionItemsHealth />
             <ActionItemsPriorityWatchlist />

@@ -38,14 +38,14 @@ export default function ActionItemsWeeklyPerformance() {
     <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
       <header className="flex flex-col gap-2 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-sm font-extrabold text-[#042C51] sm:text-base">
+          <h2 className="sibs-section-title">
             Weekly Performance - Previous Sprint Results
           </h2>
-          <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
-            Master account-level candidate movement and delivery for {previousWeekLabel}. Select a row to filter the sections below.
+          <p className="sibs-section-subtitle">
+            Master account-level candidate movement and delivery for {previousWeekLabel}.
           </p>
         </div>
-        <span className="inline-flex w-fit shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
+        <span className="inline-flex w-fit shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
           {filteredWeeklyPerformanceRows.length} Records
         </span>
       </header>
@@ -54,15 +54,18 @@ export default function ActionItemsWeeklyPerformance() {
         <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
           <div
             ref={dragScrollRef}
+            tabIndex={0}
+            role="region"
+            aria-label="Weekly Performance table scroll area"
             onMouseDown={handleDragStart}
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
             onMouseLeave={handleDragEnd}
-            className={`sibs-scrollbar overflow-x-auto select-none ${
+            className={`sibs-scrollbar overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/20 ${
               isDragging ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
-        <table className="w-full min-w-[1450px] border-collapse font-jakarta text-xs whitespace-nowrap text-left">
+        <table className="w-full min-w-[1750px] border-collapse font-jakarta text-xs whitespace-nowrap text-left">
 
           <thead className="bg-[#F8FAFC]">
             <tr className="border-b border-[#E6ECF2]">
@@ -97,17 +100,10 @@ export default function ActionItemsWeeklyPerformance() {
           <tbody className="divide-y divide-[#E6ECF2]">
             {filteredWeeklyPerformanceRows.length ? (
               filteredWeeklyPerformanceRows.map((row) => {
-                const selected =
-                  selectedRoleAccount?.roleAccountKey === row.roleAccountKey;
                 return (
                   <tr
                     key={row.id}
-                    onClick={() => selectReportRow(row)}
-                    className={`cursor-pointer transition ${
-                      selected
-                        ? "bg-blue-50/80"
-                        : "hover:bg-[#F8FAFC]"
-                    }`}
+                    className="hover:bg-[#F8FAFC] transition"
                   >
                     <td className="border-r border-[#E6ECF2] px-3.5 py-3">
                       <p className="text-sm font-extrabold text-[#042C51] truncate">
@@ -157,9 +153,9 @@ export default function ActionItemsWeeklyPerformance() {
                           {row.targetHires ?? "—"}
                         </WorkforceBodyTd>
 
-                        <td className="border-r border-[#E6ECF2] px-3 py-3 text-center align-middle">
+                        <td className="min-w-[180px] border-r border-[#E6ECF2] px-3.5 py-3 text-center align-middle">
                           <span
-                            className={`inline-flex rounded px-2 py-1 text-[10px] font-extrabold ${
+                            className={`inline-flex rounded px-2.5 py-1 text-[10px] font-extrabold ${
                               Number(row.hired || 0) >= Number(row.targetHires || 0)
                                 ? "bg-emerald-50 text-emerald-700"
                                 : "bg-amber-50 text-amber-700"
@@ -169,9 +165,8 @@ export default function ActionItemsWeeklyPerformance() {
                           </span>
                         </td>
 
-                        <td className="px-3.5 py-3 text-[10px] font-bold leading-4 text-[#667085] whitespace-normal align-middle">
+                        <td className="min-w-[320px] px-3.5 py-3 text-[10px] font-bold leading-4 text-[#667085] whitespace-normal align-middle">
                           <span
-                            className="line-clamp-2"
                             title={row.keyIssueLastWeek}
                           >
                             {row.keyIssueLastWeek}

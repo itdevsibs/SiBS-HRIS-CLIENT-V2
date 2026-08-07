@@ -33,7 +33,10 @@ const STATUS_TABS = [
   { label: "Not Approved", value: "Not Approved" },
 ];
 
-export default function HiringNeedsTable({ onView }) {
+export default function HiringNeedsTable({
+  onView,
+  canApproveHiringNeeds = false,
+}) {
   const {
     list,
     loading,
@@ -51,6 +54,14 @@ export default function HiringNeedsTable({ onView }) {
 
   const limit =
     Number(pagination?.limit) || DEFAULT_PAGE_LIMIT;
+
+  const visibleStatusTabs = useMemo(
+    () =>
+      STATUS_TABS.filter(
+        (tab) => tab.value !== "For Approval" || canApproveHiringNeeds,
+      ),
+    [canApproveHiringNeeds],
+  );
 
   const filteredList = useMemo(() => {
     const keyword = String(search || "")
@@ -138,6 +149,16 @@ export default function HiringNeedsTable({ onView }) {
     setFilter("status", value);
     setPage(1);
   }
+
+  useEffect(() => {
+    if (
+      !canApproveHiringNeeds &&
+      (filterValues?.status || "All") === "For Approval"
+    ) {
+      setFilter("status", "All");
+      setPage(1);
+    }
+  }, [canApproveHiringNeeds, filterValues?.status, setFilter, setPage]);
 
   const totalPages = Math.max(
     Math.ceil(filteredList.length / limit),
@@ -235,11 +256,11 @@ export default function HiringNeedsTable({ onView }) {
   return (
     <div className="px-4 pb-4 pt-0 font-jakarta sm:px-5 sm:pb-5">
       <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-        <StatusFilterTabs
-          tabs={STATUS_TABS}
-          activeValue={filterValues?.status || "All"}
-          counts={statusCounts}
-          onChange={handleStatusTabChange}
+          <StatusFilterTabs
+            tabs={visibleStatusTabs}
+            activeValue={filterValues?.status || "All"}
+            counts={statusCounts}
+            onChange={handleStatusTabChange}
         />
 
         {/* Mobile cards */}
@@ -283,44 +304,44 @@ export default function HiringNeedsTable({ onView }) {
 
         {/* Desktop table */}
         <div className="hidden overflow-x-auto lg:block">
-          <table className="w-full min-w-[1180px] border-collapse bg-white text-left text-xs">
+          <table className="w-full min-w-[1180px] table-fixed border-collapse bg-white text-left text-xs">
             <thead className="sibs-data-table-head">
               <tr className="sibs-data-table-head-row">
-                <th className="sibs-data-table-th text-left">
+                <th className="sibs-data-table-th w-[15%] text-left">
                   ID / Request Type
                 </th>
 
-                <th className="sibs-data-table-th text-left">
+                <th className="sibs-data-table-th w-[18%] text-left">
                   Department / Account
                 </th>
 
-                <th className="sibs-data-table-th text-left">
+                <th className="sibs-data-table-th w-[22%] text-left">
                   Job Description / Request
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th w-[8%] text-center">
                   Headcount
                 </th>
 
-                <th className="sibs-data-table-th text-left">
+                <th className="sibs-data-table-th w-[15%] text-left">
                   Reason
                 </th>
 
-                <th className="sibs-data-table-th text-left">
+                <th className="sibs-data-table-th w-[8%] text-left">
                   Location / Site
                 </th>
 
-                <th className="sibs-data-table-th text-left">
+                <th className="sibs-data-table-th w-[7%] text-left">
                   Date Needed / Week
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th w-[7%] text-center">
                   Approval Status
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-[#E6ECF2]">
+            <tbody key={filterValues?.status || "All"} className="divide-y divide-[#E6ECF2]">
               {loading ? (
                 <tr>
                   <td

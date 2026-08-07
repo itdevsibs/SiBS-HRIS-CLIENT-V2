@@ -150,6 +150,10 @@ export default function AvailablePositionsTable({
   activeStatus = "Active",
   inactiveStatus = "Inactive",
 }) {
+  const visibleStatusTabs = statusTabs.filter(
+    (tab) => tab.value !== "For Approval" || canApproveAvailablePositions,
+  );
+
   return (
     <div className="relative z-[1] font-jakarta">
       {isLoading ? (
@@ -160,7 +164,7 @@ export default function AvailablePositionsTable({
         <>
           <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:hidden">
             <StatusFilterTabs
-              tabs={statusTabs}
+              tabs={visibleStatusTabs}
               activeValue={statusFilter}
               counts={statusCounts}
               onChange={onStatusFilterChange}
@@ -190,7 +194,7 @@ export default function AvailablePositionsTable({
           <div className="hidden lg:block">
             <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
               <StatusFilterTabs
-                tabs={statusTabs}
+                tabs={visibleStatusTabs}
                 activeValue={statusFilter}
                 counts={statusCounts}
                 onChange={onStatusFilterChange}
@@ -234,7 +238,7 @@ export default function AvailablePositionsTable({
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-[#E6ECF2]">
+                  <tbody key={statusFilter} className="divide-y divide-[#E6ECF2]">
                     {paginatedPositions.length > 0 ? (
                       paginatedPositions.map(
                         (position, index) => {
