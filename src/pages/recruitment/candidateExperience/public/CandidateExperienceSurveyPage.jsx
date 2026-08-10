@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Send, Sparkles } from "lucide-react";
+import { Mail, Phone, Send, Sparkles, UserRound } from "lucide-react";
 import { useParams } from "react-router-dom";
 import SurveyHeader from "@/components/recruitment/candidateExperience/survey/SurveyHeader.jsx";
 import SurveyCandidateContext from "@/components/recruitment/candidateExperience/survey/SurveyCandidateContext.jsx";
@@ -26,6 +26,13 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
   const [feedback, setFeedback] = useState("");
   const [feedbackTag, setFeedbackTag] = useState("");
   const [formError, setFormError] = useState("");
+  const [candidateDetails, setCandidateDetails] = useState({
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+  });
 
   useEffect(() => {
     document.body.classList.add("public-candidate-experience-survey");
@@ -44,11 +51,26 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
     event.preventDefault();
     setFormError("");
 
+    if (!token) {
+      if (!candidateDetails.firstName.trim()) return setFormError("First name is required.");
+      if (!candidateDetails.lastName.trim()) return setFormError("Last name is required.");
+      if (!candidateDetails.email.trim()) return setFormError("Email is required.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidateDetails.email.trim())) {
+        return setFormError("Enter a valid email address.");
+      }
+      if (!candidateDetails.phoneNumber.trim()) return setFormError("Phone number is required.");
+    }
+
     if (!rating) return setFormError("Select an overall candidate experience rating from 1 to 5.");
     const selectedCategoryText = Array.isArray(categories) ? categories.join(", ") : String(categories || "").trim();
     if (!selectedCategoryText) return setFormError("Select at least one experience category.");
 
     const response = await submit({
+      firstName: candidateDetails.firstName.trim(),
+      middleName: candidateDetails.middleName.trim(),
+      lastName: candidateDetails.lastName.trim(),
+      email: candidateDetails.email.trim(),
+      phoneNumber: candidateDetails.phoneNumber.trim(),
       experienceRating: rating,
       rating,
       feedbackCategory: selectedCategoryText,
@@ -125,7 +147,14 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
           />
         ) : survey ? (
           <div className="space-y-6">
-            <SurveyCandidateContext survey={survey} />
+            {token ? (
+              <SurveyCandidateContext survey={survey} />
+            ) : (
+              <CandidateIdentityForm
+                value={candidateDetails}
+                onChange={setCandidateDetails}
+              />
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-6 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
@@ -164,5 +193,108 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
         © {new Date().getFullYear()} The Siblings Solutions • SiBS HRIS Talent Acquisition • All candidate responses are processed confidentially.
       </footer>
     </div>
+  );
+}
+
+
+function CandidateIdentityForm({ value, onChange }) {
+  const updateUppercase = (field, nextValue) => {
+    onChange((current) => ({
+      ...current,
+      [field]: String(nextValue || "").toUpperCase(),
+    }));
+  };
+
+  const updatePlain = (field, nextValue) => {
+    onChange((current) => ({
+      ...current,
+      [field]: nextValue,
+    }));
+  };
+
+  const updatePhone = (nextValue) => {
+    const sanitized = String(nextValue || "").replace(/[^0-9+()\-\s]/g, "").slice(0, 25);
+    updatePlain("phoneNumber", sanitized);
+  };
+
+  return (
+    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+      <div className="mb-5 flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#042C51] text-white">
+          <UserRound size={18} />
+        </span>
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Candidate Information</p>
+          <h3 className="text-sm font-black text-[#042C51]">Tell us who you are</h3>
+          <p className="mt-0.5 text-[10px] font-medium text-slate-500">Please complete your details before submitting the survey.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <SurveyInput
+          label="First Name"
+          required
+          value={value.firstName}
+          onChange={(event) => updateUppercase("firstName", event.target.value)}
+          placeholder="FIRST NAME"
+          autoComplete="given-name"
+        />
+        <SurveyInput
+          label="Middle Name"
+          value={value.middleName}
+          onChange={(event) => updateUppercase("middleName", event.target.value)}
+          placeholder="MIDDLE NAME"
+          autoComplete="additional-name"
+        />
+        <SurveyInput
+          label="Last Name"
+          required
+          value={value.lastName}
+          onChange={(event) => updateUppercase("lastName", event.target.value)}
+          placeholder="LAST NAME"
+          autoComplete="family-name"
+        />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <SurveyInput
+          icon={Mail}
+          label="Email"
+          required
+          type="email"
+          value={value.email}
+          onChange={(event) => updatePlain("email", event.target.value)}
+          placeholder="name@example.com"
+          autoComplete="email"
+        />
+        <SurveyInput
+          icon={Phone}
+          label="Phone Number"
+          required
+          type="tel"
+          value={value.phoneNumber}
+          onChange={(event) => updatePhone(event.target.value)}
+          placeholder="09XX XXX XXXX"
+          autoComplete="tel"
+          inputMode="tel"
+        />
+      </div>
+    </section>
+  );
+}
+
+function SurveyInput({ icon: Icon, label, required = false, ...inputProps }) {
+  return (
+    <label className="block">
+      <span className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#042C51]">
+        {Icon ? <Icon size={12} className="text-slate-400" /> : null}
+        {label}
+        {required ? <span className="text-[#FF5C28]">*</span> : null}
+      </span>
+      <input
+        {...inputProps}
+        className="h-11 w-full rounded-xl border border-[#DCE5EE] bg-[#F8FAFC] px-3.5 text-xs font-bold text-[#042C51] outline-none transition placeholder:font-semibold placeholder:text-slate-300 focus:border-[#0A467E] focus:bg-white focus:ring-2 focus:ring-[#0A467E]/10"
+      />
+    </label>
   );
 }

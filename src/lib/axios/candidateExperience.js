@@ -94,3 +94,17 @@ export async function submitPublicCandidateExperienceSurvey(token, payload = {})
     return errorResponse(error, "Your feedback could not be submitted. Please try again.");
   }
 }
+
+export async function submitOpenPublicCandidateExperienceSurvey(payload = {}) {
+  try {
+    const res = await api.post(
+      "/api/public/candidate-experience",
+      payload,
+      { skipAuthRedirect: true },
+    );
+    return res.data;
+  } catch (error) {
+    console.error("SUBMIT OPEN PUBLIC CANDIDATE EXPERIENCE SURVEY API ERROR:", error);
+    return errorResponse(error, "Your feedback could not be submitted. Please try again.");
+  }
+}

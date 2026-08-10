@@ -15,6 +15,7 @@ import PublicNhoScheduleResponsePage from "./pages/recruitment/PublicNhoSchedule
 
 import PublicTalentPoolApplicationPage from "./pages/recruitment/talent-pool/PublicTalentPoolApplicationPage.jsx";
 import PublicJobDescriptionPage from "./pages/recruitment/talent-pool/PublicJobDescriptionPage.jsx";
+import CandidateExperienceSurveyPage from "./pages/recruitment/candidateExperience/public/CandidateExperienceSurveyPage.jsx";
 
 import "./index.css";
 
@@ -99,7 +100,13 @@ function isStandalonePublicPath(pathname = "", hostname = "") {
 
     /* ================= NHO ================= */
     pathname === "/public/nho-schedule-response" ||
-    pathname.startsWith("/public/nho-schedule-response/")
+    pathname.startsWith("/public/nho-schedule-response/") ||
+
+    /* ================= CANDIDATE EXPERIENCE ================= */
+    pathname === "/public/candidate-experience-survey" ||
+    pathname.startsWith("/public/candidate-experience-survey/") ||
+    pathname === "/recruitment/candidate-experience/survey" ||
+    pathname.startsWith("/recruitment/candidate-experience/survey/")
   );
 }
 
@@ -221,6 +228,25 @@ export function StandalonePublicApp() {
         <Route
           path="/public/nho-schedule-response"
           element={<PublicNhoScheduleResponsePage />}
+        />
+
+        {/* =========================================
+            PUBLIC CANDIDATE EXPERIENCE SURVEY
+        ========================================= */}
+
+        <Route
+          path="/public/candidate-experience-survey/:token"
+          element={<CandidateExperienceSurveyPage />}
+        />
+
+        <Route
+          path="/public/candidate-experience-survey"
+          element={<CandidateExperienceSurveyPage />}
+        />
+
+        <Route
+          path="/recruitment/candidate-experience/survey"
+          element={<CandidateExperienceSurveyPage />}
         />
 
         {/* =========================================

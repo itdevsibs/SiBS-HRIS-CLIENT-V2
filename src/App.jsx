@@ -11,7 +11,11 @@ function isStandalonePublicRoute(pathname = "") {
     pathname === "/public/offer-response" ||
     pathname.startsWith("/public/offer-response/") ||
     pathname === "/public/nho-schedule-response" ||
-    pathname.startsWith("/public/nho-schedule-response/")
+    pathname.startsWith("/public/nho-schedule-response/") ||
+    pathname === "/public/candidate-experience-survey" ||
+    pathname.startsWith("/public/candidate-experience-survey/") ||
+    pathname === "/recruitment/candidate-experience/survey" ||
+    pathname.startsWith("/recruitment/candidate-experience/survey/")
   );
 }
 

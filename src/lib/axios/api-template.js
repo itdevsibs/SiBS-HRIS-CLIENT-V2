@@ -26,6 +26,8 @@ const PUBLIC_PATHS = [
   "/public/interview-date",
   "/public/offer-response",
   "/public/nho-schedule-response",
+  "/public/candidate-experience-survey",
+  "/recruitment/candidate-experience/survey",
   "/recruitment/talent-pool/apply",
 ];
 
@@ -51,6 +53,7 @@ const IGNORE_AUTH_REDIRECT_ROUTES = [
   "/api/candidate-pipeline/public/interview-date",
   "/api/candidate-pipeline/public/offer-response",
   "/api/candidate-pipeline/public/nho-response",
+  "/api/public/candidate-experience",
 ];
 
 function getCurrentPathname() {
