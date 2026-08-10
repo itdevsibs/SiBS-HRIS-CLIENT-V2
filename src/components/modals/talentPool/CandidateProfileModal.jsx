@@ -1059,14 +1059,19 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
     safeFile.stored_file_name ||
     "";
 
+  /*
+   * Persisted pre-employment files must display the exact physical
+   * file-server name. Fall back to the original browser name only when the
+   * file has not been saved yet and therefore has no savedFileName.
+   */
   const fileName =
+    savedFileName ||
     safeFile.fileName ||
     safeFile.name ||
     safeFile.originalName ||
     safeFile.originalname ||
     safeFile.attachmentFileName ||
     safeFile.audioFileName ||
-    savedFileName ||
     "";
 
   const fileUrl =
@@ -3503,11 +3508,22 @@ export default function CandidateProfileModal() {
             {
               withCredentials: true,
               params: {
+                /*
+                 * Candidate Profile is a complete file viewer. Request every
+                 * physical file saved for every pre-employment requirement,
+                 * including multiple files under the same requirement.
+                 */
+                includeAllFiles: 1,
                 _t: Date.now(),
               },
             },
           );
 
+          /*
+           * Keep the full response array. normalizeCandidateFiles only removes
+           * true duplicates by physical file identity; it does not collapse
+           * files merely because they share the same requirement.
+           */
           responseFiles = getNhoFilesFromApiResponse(nhoResponse);
         } catch (error) {
           if (!pipelineLocalFiles.length && !localFiles.length) {
