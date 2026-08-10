@@ -13,9 +13,9 @@ const EDGE = "rounded-[10px]";
 const INLINE_CONTROLS_CLASS =
   "flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end";
 const INLINE_SEARCH_CLASS =
-  "relative w-full min-w-0 xl:min-w-[280px] xl:flex-[1_1_360px]";
-const INLINE_FILTER_CLASS = "w-full xl:w-[180px] xl:flex-none";
-const INLINE_SEARCHABLE_FILTER_CLASS = "w-full xl:w-[210px] xl:flex-none";
+  "relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]";
+const INLINE_FILTER_CLASS = "w-full xl:w-[135px] 2xl:w-[180px] xl:flex-none";
+const INLINE_SEARCHABLE_FILTER_CLASS = "w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none";
 const INLINE_RIGHT_CONTENT_CLASS =
   "flex w-full min-w-0 items-end xl:w-auto xl:flex-none";
 
@@ -53,7 +53,7 @@ function getOptionLabel(option) {
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
+    <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-[#101828]">
       {children}
     </label>
   );
@@ -370,8 +370,8 @@ export default function PaginationTable({
                 }
                 onKeyDown={onSearchKeyDown}
                 placeholder={searchPlaceholder}
-                className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 font-jakarta text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
-                  isTaInlineLayout ? "h-10" : "h-11"
+                className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+                  isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                 }`}
               />
             </div>
@@ -421,8 +421,8 @@ export default function PaginationTable({
                     placeholder={filter.placeholder || "Search..."}
                     autoComplete="off"
                     disabled={filter.disabled}
-                    className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-10 font-jakarta text-xs font-bold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
-                      isTaInlineLayout ? "h-10" : "h-11"
+                    className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-10 font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                     }`}
                   />
 
@@ -430,12 +430,11 @@ export default function PaginationTable({
                     type="button"
                     onClick={() => toggleDropdown(filter.key)}
                     disabled={filter.disabled}
-                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label={`Toggle ${label || filter.key} dropdown`}
                   >
                     <ChevronDown
-                      size={17}
-                      className={`transition-transform duration-300 ${
+                      className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 transition-transform duration-300 ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />
@@ -446,8 +445,8 @@ export default function PaginationTable({
                   type="button"
                   onClick={() => toggleDropdown(filter.key)}
                   disabled={filter.disabled}
-                  className={`flex w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
-                    isTaInlineLayout ? "h-10" : "h-11"
+                  className={`flex w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                   }`}
                   aria-expanded={isOpen}
                 >
@@ -472,10 +471,10 @@ export default function PaginationTable({
                       onClick={() =>
                         selectDropdownValue(filter, "All")
                       }
-                      className={`block w-full px-4 py-2.5 text-left text-xs transition ${
+                      className={`block w-full px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
                         filter.value === "All"
                           ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                          : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                          : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                       }`}
                     >
                       <span className="block truncate">
@@ -497,10 +496,10 @@ export default function PaginationTable({
                           onClick={() =>
                             selectDropdownValue(filter, optionValue)
                           }
-                          className={`block w-full px-4 py-2.5 text-left text-xs transition ${
+                          className={`block w-full px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
                             checked
                               ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                              : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                              : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                           }`}
                         >
                           <span className="block truncate">
@@ -602,9 +601,9 @@ export default function PaginationTable({
       ) : null}
 
       {showPagination ? (
-        <div className="mt-5 flex flex-col gap-3 border-t border-[#F1F5F9] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-3 2xl:mt-5 flex flex-col gap-2.5 border-t border-[#F1F5F9] pt-2.5 2xl:pt-4 sm:flex-row sm:items-center sm:justify-between">
           {showCount ? (
-            <p className="m-0 text-center font-jakarta text-xs font-semibold leading-relaxed text-[#667085] sm:text-left">
+            <p className="m-0 text-center font-jakarta sibs-text-micro font-semibold leading-relaxed text-[#667085] sm:text-left">
               Showing{" "}
               <span className="font-extrabold text-[#042C51]">
                 {loadedCount}
@@ -624,19 +623,19 @@ export default function PaginationTable({
             <span />
           )}
 
-          <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:w-auto">
+          <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 sm:w-auto">
             <button
               type="button"
               disabled={loading || !hasPreviousPage}
               onClick={handlePrevious}
-              className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-3 font-jakarta text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] sm:px-4`}
+              className={`inline-flex h-8 2xl:h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-2.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51]`}
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0" />
               <span className="truncate">Previous</span>
             </button>
 
             <span
-              className={`inline-flex h-10 items-center justify-center whitespace-nowrap ${EDGE} border border-[#FF5C28] bg-[#FF5C28] px-3.5 font-jakarta text-xs font-extrabold text-white shadow-sm sm:px-4`}
+              className={`inline-flex h-8 2xl:h-10 items-center justify-center whitespace-nowrap ${EDGE} border border-[#FF5C28] bg-[#FF5C28] px-3 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm`}
             >
               {safeCurrentPage}
             </span>
@@ -645,10 +644,10 @@ export default function PaginationTable({
               type="button"
               disabled={loading || !hasNextPage}
               onClick={handleNext}
-              className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-3 font-jakarta text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] sm:px-4`}
+              className={`inline-flex h-8 2xl:h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-2.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51]`}
             >
               <span className="truncate">Next</span>
-              <ChevronRight size={16} />
+              <ChevronRight className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0" />
             </button>
           </div>
         </div>

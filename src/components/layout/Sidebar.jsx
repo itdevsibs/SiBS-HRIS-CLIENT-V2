@@ -336,10 +336,10 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
       <MotionDiv
         whileHover={{ rotate: -3, scale: 1.05 }}
         transition={{ type: "spring", stiffness: 260, damping: 18 }}
-        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-sibs-primary-2 shadow-[0_10px_24px_rgba(255,92,40,0.22)]"
+        className="relative flex h-10 w-10 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-[13px] 2xl:rounded-[15px] bg-sibs-primary-2 shadow-[0_10px_24px_rgba(255,92,40,0.22)]"
       >
         <MotionDiv
-          className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-sibs-primary-1"
+          className="absolute -right-1 -top-1 h-3 w-3 2xl:h-3.5 2xl:w-3.5 rounded-full border-2 border-sibs-primary-1"
           animate={{
             backgroundColor: ["#FFFFFF", "#FFB29A", "#FFFFFF"],
             boxShadow: [
@@ -356,7 +356,7 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
         />
 
         <MotionSpan
-          className="relative text-[20px] font-semibold leading-none tracking-[-0.04em] text-white"
+          className="relative text-[18px] 2xl:text-[20px] font-semibold leading-none tracking-[-0.04em] text-white"
           animate={{
             textShadow: [
               "0 0 0px rgba(255,255,255,0)",
@@ -377,15 +377,15 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
       {showText && (
         <div className="min-w-0 leading-none">
           <div className="flex min-w-0 items-baseline whitespace-nowrap">
-            <span className="text-[22px] font-semibold tracking-[-0.035em] text-white">
+            <span className="text-[19px] 2xl:text-[22px] font-semibold tracking-[-0.035em] text-white">
               SiBS&nbsp;
             </span>
-            <span className="text-[22px] font-semibold tracking-[-0.035em] text-sibs-primary-2">
+            <span className="text-[19px] 2xl:text-[22px] font-semibold tracking-[-0.035em] text-sibs-primary-2">
               HRIS
             </span>
           </div>
 
-          <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-300/80">
+          <p className="mt-0.5 2xl:mt-1 text-[8.5px] 2xl:text-[9px] font-semibold uppercase tracking-[0.15em] 2xl:tracking-[0.18em] text-slate-300/80">
             Human Resource System
           </p>
         </div>
@@ -966,7 +966,7 @@ export default function Sidebar() {
           title={!isMobile && collapsed ? badgeTitle || item.name : badgeTitle}
           aria-label={badgeTitle ? `${item.name}, ${badgeTitle}` : item.name}
           className={[
-            "group relative flex min-w-0 select-none items-center justify-between gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-semibold leading-4 transition-all duration-150",
+            "group relative flex min-w-0 select-none items-center justify-between gap-2.5 rounded-lg px-2.5 2xl:px-3 py-2 2xl:py-2.5 text-left sibs-text-xs font-semibold transition-all duration-150",
             isActive
               ? "bg-sibs-primary-2 text-white font-bold shadow-md shadow-sibs-primary-2/15 cursor-default hover:bg-sibs-primary-2 hover:text-white"
               : "text-slate-300 hover:bg-[#063560] hover:text-white",
@@ -976,11 +976,10 @@ export default function Sidebar() {
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <div className="relative shrink-0">
               <Icon
-                size={16}
                 strokeWidth={1.9}
                 draggable={false}
                 className={[
-                  "pointer-events-none shrink-0 transition",
+                  "pointer-events-none h-4 w-4 shrink-0 transition",
                   isActive
                     ? "text-white"
                     : "text-slate-400 group-hover:text-white",
@@ -1008,7 +1007,7 @@ export default function Sidebar() {
 
           {badgeText && (!collapsed || isMobile) && (
             <span
-              className={`ml-auto inline-flex h-5 shrink-0 items-center justify-center rounded px-2 text-[10px] font-bold uppercase leading-none tracking-wide ${badgeClass}`}
+              className={`ml-auto inline-flex h-5 shrink-0 items-center justify-center rounded px-1.5 2xl:px-2 sibs-text-micro font-bold uppercase leading-none tracking-wide ${badgeClass}`}
             >
               {badgeText}
             </span>
@@ -1049,7 +1048,7 @@ export default function Sidebar() {
         onDragStart={(event) => event.preventDefault()}
         className={[
           "fixed left-0 top-0 z-[80] flex h-dvh shrink-0 select-none flex-col border-r border-[#083A69] bg-sibs-primary-1 font-jakarta text-white shadow-xl transition-all duration-300",
-          !isMobile && collapsed ? "w-20" : "w-[260px]",
+          !isMobile && collapsed ? "w-20" : "w-[240px] 2xl:w-[260px]",
           isMobile
             ? mobileOpen
               ? "translate-x-0 shadow-2xl"
@@ -1060,7 +1059,7 @@ export default function Sidebar() {
       >
         <div
           className={[
-            "relative flex min-h-[86px] shrink-0 items-center gap-2 border-b border-[#083A69] px-5 py-5",
+            "relative flex h-[74px] 2xl:h-[86px] min-h-[74px] 2xl:min-h-[86px] shrink-0 items-center gap-2 border-b border-[#083A69] px-4 py-3 2xl:px-5 2xl:py-5",
             !isMobile && collapsed ? "justify-center" : "justify-between",
           ].join(" ")}
         >
@@ -1110,7 +1109,7 @@ export default function Sidebar() {
             <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
           </div>
         ) : (
-          <div className="no-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-3 pb-5 pt-4">
+          <div className="no-scrollbar min-h-0 flex-1 space-y-4 2xl:space-y-6 overflow-y-auto overflow-x-hidden px-3 pb-5 pt-3 2xl:pt-4">
             <Section
               title={coreSectionTitle}
               short={coreSectionShort}
@@ -1184,14 +1183,14 @@ function Section({ title, short, collapsed, children }) {
     <section className="select-none">
       <p
         className={[
-          "mb-2 px-3 text-[10px] font-black uppercase leading-none tracking-widest text-slate-400",
+          "mb-1.5 2xl:mb-2 px-2.5 2xl:px-3 sibs-text-micro font-black uppercase leading-none tracking-widest text-slate-400",
           collapsed ? "px-0 text-center text-[9px]" : "",
         ].join(" ")}
       >
         {collapsed ? short : title}
       </p>
 
-      <nav className="space-y-0.5">{children}</nav>
+      <nav className="space-y-1">{children}</nav>
     </section>
   );
 }

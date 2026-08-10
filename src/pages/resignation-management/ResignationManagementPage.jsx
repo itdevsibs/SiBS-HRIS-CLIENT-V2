@@ -491,7 +491,7 @@ function ResignationSummaryCards({ stats, loading }) {
   };
 
   return (
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {cards.map((card, index) => {
         const IconComponent = card.icon;
         const tone = tones[card.tone] || tones.navy;
@@ -499,38 +499,38 @@ function ResignationSummaryCards({ stats, loading }) {
         return (
           <article
             key={card.title}
-            className="sibs-metric-card"
+            className="sibs-metric-card flex min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
             style={{
               animationDelay: `${index * 55}ms`,
               animationFillMode: "both",
             }}
           >
-            <div className="flex h-full items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
+            <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+              <div className="min-w-0 flex-1 self-stretch">
                 <p
-                  className={`m-0 truncate text-xs font-extrabold uppercase ${tone.label}`}
+                  className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${tone.label}`}
                 >
                   {card.title}
                 </p>
 
                 <p
-                  className={`mt-3 text-3xl font-extrabold leading-none tabular-nums ${tone.value}`}
+                  className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${tone.value}`}
                 >
                   {loading ? "..." : card.value}
                 </p>
 
-                <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+                <p className="mt-1 line-clamp-2 sibs-text-micro font-bold leading-4 text-[#667085]">
                   {card.description}
                 </p>
               </div>
 
               <span
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tone.iconWrap} ${tone.icon}`}
+                className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${tone.iconWrap} ${tone.icon}`}
               >
                 {loading ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 animate-spin" />
                 ) : (
-                  <IconComponent size={17} strokeWidth={2} />
+                  <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
                 )}
               </span>
             </div>
@@ -544,21 +544,21 @@ function ResignationSummaryCards({ stats, loading }) {
 function ApprovalStageRow({ stage, approver, role, status }) {
   return (
     <tr className="border-b border-[#edf1f5] last:border-b-0">
-      <td className="px-4 py-3 text-sm font-semibold text-sibs-primary-1">
+      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-semibold text-[#042C51]">
         {stage}
       </td>
 
-      <td className="px-4 py-3 text-sm font-medium text-[#344054]">
+      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-medium text-[#344054]">
         {approver}
       </td>
 
-      <td className="px-4 py-3 text-sm font-medium text-sibs-tertiary-5">
+      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-medium text-[#52637A]">
         {role}
       </td>
 
-      <td className="px-4 py-3">
+      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3">
         <span
-          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStageClass(
+          className={`inline-flex rounded-full border px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold ${getStageClass(
             status,
           )}`}
         >
@@ -583,7 +583,7 @@ function ResignationProcessStep({
     <div className="relative min-w-0 flex-1">
       <div className="flex min-w-0 flex-col items-center text-center">
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-full border-4 border-white text-xs font-extrabold shadow-sm transition-all duration-300 ${
+          className={`flex h-8 w-8 2xl:h-9.5 2xl:w-9.5 items-center justify-center rounded-full border-2 2xl:border-4 border-white text-xs font-extrabold shadow-sm transition-all duration-300 ${
             done
               ? "bg-[#042C51] text-white"
               : active
@@ -591,19 +591,23 @@ function ResignationProcessStep({
                 : "bg-[#EEF2F6] text-[#98A2B3]"
           }`}
         >
-          {done ? <CheckCircle2 size={17} /> : <IconComponent size={17} />}
+          {done ? (
+            <CheckCircle2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
+          ) : (
+            <IconComponent className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
+          )}
         </div>
 
-        <div className="mt-2 min-w-0">
+        <div className="mt-1.5 2xl:mt-2 min-w-0">
           <p
-            className={`text-[11px] font-extrabold ${
+            className={`sibs-text-micro font-extrabold ${
               done || active ? "text-[#042C51]" : "text-[#98A2B3]"
             }`}
           >
             {number}. {title}
           </p>
 
-          <p className="mt-1 text-[10px] font-semibold leading-4 text-[#667085]">
+          <p className="mt-0.5 sibs-text-micro font-semibold leading-snug text-[#667085]">
             {description}
           </p>
         </div>
@@ -696,26 +700,26 @@ function ResignationAnalytics({ data = [], loading = false }) {
 
   return (
     <section className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[1.4fr_0.8fr]">
-      <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-5`}>
+      <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-3.5 2xl:p-5`}>
         <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase text-sibs-primary-1">
-              <ListChecks size={14} />
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#042C51]">
+              <ListChecks className="h-3.5 w-3.5" />
               Process Flow
             </div>
 
-            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
+            <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
               Resignation Process
             </h2>
 
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+            <p className="sibs-text-xs font-semibold text-[#667085]">
               From employee email submission to TL/OM filing, approval request,
               notice period, and HR/Admin completion.
             </p>
           </div>
 
           <span
-            className={`mt-2 w-fit ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054] sm:mt-0`}
+            className={`mt-2 w-fit shrink-0 whitespace-nowrap ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1.5 2xl:px-4 2xl:py-2 sibs-text-xs font-bold text-[#344054] sm:mt-0`}
           >
             Sequential Approval
           </span>
@@ -808,19 +812,19 @@ function ResignationAnalytics({ data = [], loading = false }) {
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-5">
-        <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-5`}>
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-extrabold uppercase text-red-700">
-                <TrendingDown size={14} />
+        <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-3.5 2xl:p-5`}>
+          <div className="mb-3 2xl:mb-4 flex items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-red-700">
+                <TrendingDown className="h-3.5 w-3.5" />
                 Trend
               </div>
 
-              <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
+              <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
                 Resignation Trend
               </h2>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              <p className="sibs-text-xs font-semibold text-[#667085]">
                 Monthly filed resignations
               </p>
             </div>
@@ -886,12 +890,12 @@ function ResignationAnalytics({ data = [], loading = false }) {
           )}
         </div>
 
-        <div className={`${EDGE} border border-blue-100 bg-blue-50 p-5`}>
-          <h3 className="text-base font-extrabold text-sibs-primary-1">
+        <div className={`${EDGE} border border-blue-100 bg-blue-50 p-3.5 2xl:p-5`}>
+          <h3 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
             Approval Routing
           </h3>
 
-          <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
+          <p className="mt-2 2xl:mt-3 sibs-text-xs font-semibold leading-relaxed text-[#344054]">
             All resignation approval decisions are handled in the Approval
             Request module. This page is only for filing, monitoring, process
             tracking, analytics, and full resignation listing.
@@ -971,6 +975,14 @@ function ResignationFilters({
 function ResignationTableCard({
   data,
   loading,
+  search,
+  setSearch,
+  statusFilter,
+  setStatusFilter,
+  typeFilter,
+  setTypeFilter,
+  hasActiveFilters,
+  onClearFilters,
   onView,
   onOpenAttachments,
 }) {
@@ -1008,35 +1020,86 @@ function ResignationTableCard({
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] px-4 py-4 sm:px-5">
+    <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] bg-white px-3 py-2 2xl:px-5 2xl:py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <h2 className="sibs-section-title">
+          <div className="min-w-0 space-y-0.5">
+            <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
               Employee Resignation Records
             </h2>
 
-            <p className="sibs-section-subtitle">
+            <p className="sibs-text-xs font-semibold text-[#667085]">
               View filing details and submitted resignation attachments.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
-        <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+      <div className="relative overflow-visible p-3.5 sm:p-5">
+        <PaginationTable
+          filterLayout="ta-inline"
+          showFilterPanel={false}
+          showFilterHeader={false}
+          showPagination={false}
+          showSearch
+          searchValue={search}
+          searchPlaceholder="Search employee, SIBS ID, department, type, status, reason..."
+          onSearchChange={(value) => setSearch(value)}
+          filters={[
+            {
+              key: "status",
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: STATUS_OPTIONS.map((option) => ({
+                label: option === "All" ? "All Statuses" : option,
+                value: option,
+              })),
+              allLabel: "All Statuses",
+              label: "Status",
+              searchable: false,
+              includeAll: false,
+            },
+            {
+              key: "type",
+              value: typeFilter,
+              onChange: setTypeFilter,
+              options: TYPE_OPTIONS.map((option) => ({
+                label: option === "All" ? "All Types" : option,
+                value: option,
+              })),
+              allLabel: "All Types",
+              label: "Type",
+              searchable: false,
+              includeAll: false,
+            },
+          ]}
+          rightContent={
+            hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={onClearFilters}
+                className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] xl:w-auto"
+              >
+                Clear
+              </button>
+            ) : null
+          }
+          className="border-0 bg-transparent p-0 shadow-none"
+        />
+
+        <div className="mt-5 hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
           <div className="max-h-[620px] overflow-auto sibs-scrollbar">
             <table className="w-full min-w-[1380px] border-collapse bg-white text-left">
               <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
                 <tr className="border-b border-[#E6ECF2]">
-                  <th className="sibs-data-table-th w-[240px] whitespace-nowrap py-3 text-left">Employee</th>
-                  <th className="sibs-data-table-th w-[190px] whitespace-nowrap py-3 text-left">Filed By</th>
-                  <th className="sibs-data-table-th w-[110px] whitespace-nowrap py-3 text-center">Type</th>
-                  <th className="sibs-data-table-th w-[140px] whitespace-nowrap py-3 text-center">Resignation Date</th>
-                  <th className="sibs-data-table-th w-[150px] whitespace-nowrap py-3 text-center">Last Working Date</th>
-                  <th className="sibs-data-table-th w-[150px] whitespace-nowrap py-3 text-center">Status</th>
-                  <th className="sibs-data-table-th w-[220px] whitespace-nowrap py-3 text-left">Reason</th>
-                  <th className="sibs-data-table-th w-[170px] whitespace-nowrap py-3 text-center">Attachments</th>
+                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[240px] whitespace-nowrap text-left">Employee</th>
+                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[190px] whitespace-nowrap text-left">Filed By</th>
+                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[110px] whitespace-nowrap text-center">Type</th>
+                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[140px] whitespace-nowrap text-center">Resignation Date</th>
+                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Last Working Date</th>
+                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Status</th>
+                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[220px] whitespace-nowrap text-left">Reason</th>
+                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[170px] whitespace-nowrap text-center">Attachments</th>
                 </tr>
               </thead>
 
@@ -1153,34 +1216,34 @@ function ResignationRow({ item, onView, onOpenAttachments }) {
       title="Open resignation details"
       className="sibs-data-table-row"
     >
-      <td className="border-t border-[#EEF2F6] px-4 py-3.5 align-middle">
+      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 align-middle">
         <div className="flex min-w-0 items-center gap-3">
           <ProfileAvatar item={item} />
           <div className="min-w-0">
-            <p title={employeeName} className="truncate text-xs font-extrabold text-[#101828]">{employeeName}</p>
-            <p className="mt-1 truncate text-[11px] font-bold text-[#667085]">{getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}</p>
+            <p title={employeeName} className="truncate sibs-text-xs font-extrabold text-[#101828]">{employeeName}</p>
+            <p className="mt-0.5 truncate sibs-text-micro font-bold text-[#667085]">{getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}</p>
           </div>
         </div>
       </td>
-      <td className="border-t border-[#EEF2F6] px-4 py-3.5 align-middle">
-        <p className="truncate text-xs font-extrabold text-[#344054]">{filedBy}</p>
-        <p className="mt-1 truncate text-[11px] font-bold text-[#667085]">{filedByRole}</p>
+      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 align-middle">
+        <p className="truncate sibs-text-xs font-extrabold text-[#344054]">{filedBy}</p>
+        <p className="mt-0.5 truncate sibs-text-micro font-bold text-[#667085]">{filedByRole}</p>
       </td>
-      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center align-middle">
-        <span className="inline-flex rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 text-[11px] font-extrabold text-[#344054]">{resignationType}</span>
+      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center align-middle">
+        <span className="inline-flex rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 sibs-text-micro font-extrabold text-[#344054]">{resignationType}</span>
       </td>
-      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center text-xs font-bold text-[#344054]">{formatDate(resignationDate)}</td>
-      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center text-xs font-bold text-[#344054]">{formatDate(lastWorkingDate)}</td>
-      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center">
-        <span className={`inline-flex min-w-[124px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-extrabold ${getStatusClass(status)}`}>
+      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-bold text-[#344054]">{formatDate(resignationDate)}</td>
+      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-bold text-[#344054]">{formatDate(lastWorkingDate)}</td>
+      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center">
+        <span className={`inline-flex min-w-[124px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 sibs-text-micro font-extrabold ${getStatusClass(status)}`}>
           {renderStatusIcon(status, 12)}
           {status}
         </span>
       </td>
-      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-xs font-semibold text-[#344054]">
+      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-semibold text-[#344054]">
         <p title={reason} className="truncate">{reason}</p>
       </td>
-      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center">
+      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center">
         <button
           type="button"
           onClick={(event) => {
@@ -1739,79 +1802,79 @@ export default function ResignationManagementPage() {
   }
 
   return (
-    <div className={`flex h-screen flex-1 flex-col ${FLAT_BG} font-jakarta`}>
+    <div className="sibs-dashboard-shell flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
       <main
         ref={mainScrollRef}
-        className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8"
+        className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6 lg:p-7"
       >
-        <section
-          className="sibs-page-header-in sibs-page-card-in relative mb-5 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6"
-          style={{ animationDelay: "0ms", animationFillMode: "both" }}
-        >
-          <span className="sibs-top-accent" aria-hidden="true" />
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+          <section
+            className="sibs-page-header-in sibs-page-card-in relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
+          >
+            <span className="sibs-top-accent" aria-hidden="true" />
 
-          <div className="mt-1 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#042C51]">
-                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
-                  Resignation Management View
-                </span>
-
-                <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
-                  Module: Core HR
-                </span>
-
-                {isViewOnly && (
-                  <span className="inline-flex rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#667085]">
-                    Read-Only Access
+            <div className="mt-0.5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    Resignation Management View
                   </span>
-                )}
+
+                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#FF5C28]">
+                    Module: Core HR
+                  </span>
+
+                  {isViewOnly && (
+                    <span className="inline-flex rounded border border-slate-200 bg-slate-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#667085]">
+                      Read-Only Access
+                    </span>
+                  )}
+                </div>
+
+                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                  Resignation Management
+                </h1>
+
+                <p className="max-w-3xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                  {isViewOnly
+                    ? "View and monitor resignation requests. Approval decisions remain in Approval Request."
+                    : "File, monitor, analyze, and track resignation records. Approval decisions remain in Approval Request."}
+                </p>
               </div>
 
-              <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
-                Resignation Management
-              </h1>
-
-              <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
-                {isViewOnly
-                  ? "View and monitor resignation requests. Approval decisions remain in Approval Request."
-                  : "File, monitor, analyze, and track resignation records. Approval decisions remain in Approval Request."}
-              </p>
-            </div>
-
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={resignationLoading}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {resignationLoading ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <RefreshCcw size={16} />
-                )}
-                Refresh
-              </button>
-
-              {canCreateResignation && (
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                 <button
                   type="button"
-                  onClick={handleOpenAddResignation}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+                  onClick={handleRefresh}
+                  disabled={resignationLoading}
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Plus size={16} />
-                  New Resignation
+                  {resignationLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 animate-spin" />
+                  ) : (
+                    <RefreshCcw className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
+                  )}
+                  Refresh
                 </button>
-              )}
-            </div>
-          </div>
-        </section>
 
-        <div className="space-y-5">
+                {canCreateResignation && (
+                  <button
+                    type="button"
+                    onClick={handleOpenAddResignation}
+                    className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+                  >
+                    <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
+                    New Resignation
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+
           <div className="relative z-[20] sibs-profile-tab-panel">
             <ResignationSummaryCards
               stats={stats}
@@ -1827,7 +1890,9 @@ export default function ResignationManagementPage() {
           </div>
 
           <div className="relative z-[10] sibs-profile-tab-panel">
-            <ResignationFilters
+            <ResignationTableCard
+              data={filteredResignations}
+              loading={resignationLoading}
               search={search}
               setSearch={setSearch}
               statusFilter={statusFilter}
@@ -1836,13 +1901,6 @@ export default function ResignationManagementPage() {
               setTypeFilter={setTypeFilter}
               hasActiveFilters={hasActiveFilters}
               onClearFilters={handleClearFilters}
-            />
-          </div>
-
-          <div className="relative z-[0] sibs-profile-tab-panel">
-            <ResignationTableCard
-              data={filteredResignations}
-              loading={resignationLoading}
               onView={setSelectedResignation}
               onOpenAttachments={handleOpenAttachments}
             />

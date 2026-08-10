@@ -12,8 +12,8 @@ export const DEFAULT_QUICK_ACTIONS = [
 
 function ContextCard({ title, children }) {
   return (
-    <section className="sibs-page-card-in sibs-card p-4">
-      <h3 className="mb-3 border-b border-[#F1F5F9] pb-2 text-[11px] font-black uppercase tracking-wider text-[#042C51]">
+    <section className="sibs-page-card-in sibs-card p-3.5 2xl:p-4">
+      <h3 className="mb-2.5 2xl:mb-3 border-b border-[#F1F5F9] pb-2 text-[10px] 2xl:text-[11px] font-black uppercase tracking-wider text-[#042C51]">
         {title}
       </h3>
       {children}
@@ -74,10 +74,10 @@ export default function EmployeeProfileContextPanel({
   }
 
   return (
-    <aside className="space-y-5 xl:sticky xl:top-4">
+    <aside className="space-y-4 2xl:space-y-5 xl:sticky xl:top-4">
       <ContextCard title="Profile Health Check">
-        <div className="space-y-4 text-center">
-          <div className="relative mx-auto flex h-28 w-28 items-center justify-center">
+        <div className="space-y-3 2xl:space-y-4 text-center">
+          <div className="relative mx-auto flex h-24 w-24 2xl:h-28 2xl:w-28 items-center justify-center">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 112 112">
               <circle
                 cx="56"
@@ -102,7 +102,7 @@ export default function EmployeeProfileContextPanel({
             </svg>
 
             <div className="absolute text-center">
-              <p className="text-xl font-black text-[#042C51]">{score}%</p>
+              <p className="text-lg 2xl:text-xl font-black text-[#042C51]">{score}%</p>
               <p className="text-[8px] font-black uppercase text-slate-400">
                 Completed
               </p>
@@ -112,12 +112,12 @@ export default function EmployeeProfileContextPanel({
           <button
             type="button"
             onClick={() => onNavigate?.(healthNavigateTarget)}
-            className="w-full rounded-xl border border-slate-100 bg-[#F8FAFC] p-2.5 text-center transition hover:bg-[#E9F0FC]"
+            className="w-full rounded-xl border border-slate-100 bg-[#F8FAFC] p-2 2xl:p-2.5 text-center transition hover:bg-[#E9F0FC]"
           >
             <p className="text-xs font-bold text-[#042C51]">
               Primary records complete
             </p>
-            <p className="mt-1 text-[10px] text-slate-400">
+            <p className="mt-0.5 text-[10px] text-slate-400">
               Review the employee&apos;s attached documents and declarations.
             </p>
           </button>
@@ -134,9 +134,9 @@ export default function EmployeeProfileContextPanel({
                 key={`${action.label}-${index}`}
                 type="button"
                 onClick={() => handleQuickAction(item)}
-                className="flex w-full items-center justify-between rounded-lg bg-[#F1F5F9] px-3 py-2 text-left text-[11px] font-bold text-[#042C51] transition hover:bg-[#E9F0FC]"
+                className="flex w-full items-center justify-between rounded-lg bg-[#F1F5F9] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left text-[10px] 2xl:text-[11px] font-bold text-[#042C51] transition hover:bg-[#E9F0FC]"
               >
-                <span>{action.label}</span>
+                <span className="truncate pr-2">{action.label}</span>
                 <ChevronRight size={14} className="shrink-0 text-[#FF5C28]" />
               </button>
             );

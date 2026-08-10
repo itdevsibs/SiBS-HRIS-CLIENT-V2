@@ -23,9 +23,9 @@ function HeaderFact({ icon: Icon, children }) {
   if (!children) return null;
 
   return (
-    <span className="inline-flex min-w-0 items-center gap-1 text-[10px] font-semibold text-[#667085]">
-      <Icon size={12} className="shrink-0 text-[#042C51]" />
-      <span className="truncate">{children}</span>
+    <span className="inline-flex min-w-0 items-center gap-1 text-[10px] 2xl:text-xs font-semibold text-[#667085]">
+      <Icon size={13} className="shrink-0 text-[#042C51]" />
+      <span className="truncate max-w-[200px] 2xl:max-w-none">{children}</span>
     </span>
   );
 }
@@ -87,11 +87,11 @@ export default function EmployeeProfileHeader({
   const regularizationDate = getRegularizationDate(employee);
 
   return (
-    <section className="sibs-page-header-in sibs-card relative overflow-visible p-4">
+    <section className="sibs-page-header-in sibs-card relative overflow-visible p-3.5 2xl:p-4">
       <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
 
-      <div className="mt-1 flex flex-col items-center justify-between gap-5 lg:flex-row lg:items-start">
-        <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+      <div className="mt-0.5 flex flex-col items-center justify-between gap-4 2xl:gap-5 lg:flex-row lg:items-start">
+        <div className="flex min-w-0 flex-col items-center gap-3.5 2xl:gap-4 text-center sm:flex-row sm:text-left">
           <EmployeeProfileAvatar
             employee={employee}
             apiUrl={apiUrl}
@@ -100,16 +100,16 @@ export default function EmployeeProfileHeader({
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              <h1 className="break-words text-lg font-black leading-tight tracking-tight text-[#042C51]">
+              <h1 className="break-words text-base 2xl:text-lg font-black leading-tight tracking-tight text-[#042C51]">
                 {fullName}
               </h1>
 
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-700">
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold uppercase text-emerald-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 {employee?.employmentStatus || employee?.status || "Active"}
               </span>
 
-              <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] font-extrabold uppercase text-[#042C51]">
+              <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold uppercase text-[#042C51]">
                 {getProfileSibsId(employee) || "SIBS ID N/A"}
               </span>
             </div>
@@ -120,7 +120,7 @@ export default function EmployeeProfileHeader({
               </p>
             ) : null}
 
-            <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 sm:justify-start">
+            <div className="mt-2 flex flex-wrap justify-center gap-x-3.5 2xl:gap-x-4 gap-y-1 sm:justify-start">
               <HeaderFact icon={Briefcase}>{department}</HeaderFact>
               <HeaderFact icon={CalendarDays}>
                 {employee?.hireDate
@@ -141,7 +141,7 @@ export default function EmployeeProfileHeader({
           </div>
         </div>
 
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center shrink-0">
           {canEdit ? (
             isEditing ? (
               <>
@@ -149,16 +149,16 @@ export default function EmployeeProfileHeader({
                   type="button"
                   onClick={onSave}
                   disabled={isSaving}
-                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                  className="inline-flex h-8 2xl:h-9 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
                 >
-                  <CheckCircle2 size={14} />
+                  <CheckCircle2 size={13} className="2xl:h-[14px] 2xl:w-[14px]" />
                   {isSaving ? "Saving..." : "Save Profile"}
                 </button>
                 <button
                   type="button"
                   onClick={onCancel}
                   disabled={isSaving}
-                  className="inline-flex h-9 items-center justify-center rounded-lg bg-slate-100 px-3 text-xs font-black text-[#667085] transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8 2xl:h-9 items-center justify-center rounded-lg bg-slate-100 px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-[#667085] transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -167,9 +167,9 @@ export default function EmployeeProfileHeader({
               <button
                 type="button"
                 onClick={onEdit}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-3 text-xs font-black text-white shadow-sm transition hover:bg-[#063560]"
+                className="inline-flex h-8 2xl:h-9 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-white shadow-sm transition hover:bg-[#063560]"
               >
-                <Edit3 size={14} className="text-[#FF5C28]" />
+                <Edit3 size={13} className="text-[#FF5C28] 2xl:h-[14px] 2xl:w-[14px]" />
                 Edit Profile Record
               </button>
             )
@@ -177,7 +177,7 @@ export default function EmployeeProfileHeader({
             <button
               type="button"
               onClick={onRequestChange}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3 text-xs font-black text-[#042C51] transition hover:bg-slate-50"
+              className="inline-flex h-8 2xl:h-9 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-[#042C51] transition hover:bg-slate-50"
             >
               Request a Change
             </button>
@@ -187,11 +187,11 @@ export default function EmployeeProfileHeader({
             <button
               type="button"
               onClick={onToggleMore}
-              className="flex h-9 w-full items-center justify-center rounded-lg bg-slate-100 px-2.5 text-slate-600 transition hover:bg-slate-200 sm:w-9"
+              className="flex h-8 2xl:h-9 w-full items-center justify-center rounded-lg bg-slate-100 px-2 text-slate-600 transition hover:bg-slate-200 sm:w-8 2xl:sm:w-9"
               aria-label="More employee actions"
               aria-expanded={moreOpen}
             >
-              <MoreHorizontal size={17} />
+              <MoreHorizontal size={16} className="2xl:h-[17px] 2xl:w-[17px]" />
             </button>
 
             {moreOpen ? morePanel : null}
