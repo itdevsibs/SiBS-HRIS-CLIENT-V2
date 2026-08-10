@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getPublicCandidateExperienceSurvey,
   submitPublicCandidateExperienceSurvey,
+  submitOpenPublicCandidateExperienceSurvey,
 } from "@/lib/axios/candidateExperience";
 
 export function usePublicCandidateSurvey(token) {
@@ -15,14 +16,8 @@ export function usePublicCandidateSurvey(token) {
   const load = useCallback(async () => {
     if (!token) {
       setSurvey({
-        candidateName: "Sample Candidate",
-        candidateEmail: "candidate.sample@example.com",
-        roleTitle: "Customer Support Representative",
-        account: "Healthcare Operations",
-        outcome: "Completed",
-        surveyStatus: "Sent",
+        publicOpenSurvey: true,
         submitted: false,
-        isDemoPreview: true,
       });
       setError("");
       setLoading(false);
@@ -48,20 +43,21 @@ export function usePublicCandidateSurvey(token) {
   const submit = useCallback(async (payload) => {
     if (submitting) return { success: false, message: "Survey is submitting..." };
 
-    if (!token || survey?.isDemoPreview) {
+    if (!token) {
       setSubmitting(true);
       setError("");
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      setSubmission({
-        id: `CEX-PREVIEW-${Math.floor(1000 + Math.random() * 9000)}`,
-        experienceRating: payload.experienceRating || 5,
-        feedbackCategory: payload.feedbackCategory || "Recruitment Process",
-        feedback: payload.feedback || "Sample candidate feedback submission.",
-        submittedAt: new Date().toISOString(),
-      });
-      setSubmitted(true);
-      setSubmitting(false);
-      return { success: true };
+      try {
+        const response = await submitOpenPublicCandidateExperienceSurvey(payload);
+        if (response?.success === false) {
+          setError(response.message || "Your feedback could not be submitted.");
+          return response;
+        }
+        setSubmission(response?.data || response?.submission || response);
+        setSubmitted(true);
+        return { success: true, data: response?.data || response?.submission || response };
+      } finally {
+        setSubmitting(false);
+      }
     }
 
     setSubmitting(true);
@@ -78,7 +74,7 @@ export function usePublicCandidateSurvey(token) {
     } finally {
       setSubmitting(false);
     }
-  }, [token, submitting, survey?.isDemoPreview]);
+  }, [token, submitting]);
 
   return useMemo(() => ({
     survey,
