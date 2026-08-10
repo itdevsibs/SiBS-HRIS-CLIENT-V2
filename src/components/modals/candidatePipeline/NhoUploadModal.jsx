@@ -256,12 +256,17 @@ function normalizeUploadedFile(file = {}) {
     file.stored_file_name ||
     "";
 
+  /*
+   * Use the physical server filename for persisted files. Pending browser
+   * uploads do not have savedFileName yet, so they continue to show their
+   * original local filename until Save completes.
+   */
   const fileName =
+    savedFileName ||
     file.fileName ||
     file.name ||
     file.originalName ||
     file.originalname ||
-    savedFileName ||
     "";
 
   const fileUrl =
@@ -1136,20 +1141,140 @@ export default function NhoUploadModal({
     });
   }
 
-  function removeLocalFile(fileToRemove, responseFiles = null) {
-    const id = cleanText(fileToRemove?.id);
-    const identity = cleanText(fileToRemove?.storedPath || fileToRemove?.filePath || fileToRemove?.savedFileName || fileToRemove?.filename || fileToRemove?.fileUrl || fileToRemove?.fileName).toLowerCase();
-    const nextFromResponse = Array.isArray(responseFiles) ? dedupeFiles(responseFiles) : null;
+  function removeLocalFile(
+    fileToRemove,
+    responseFiles = null,
+  ) {
+    const id =
+      cleanText(fileToRemove?.id);
+
+    const identity =
+      cleanText(
+        fileToRemove?.storedPath ||
+          fileToRemove?.filePath ||
+          fileToRemove?.savedFileName ||
+          fileToRemove?.filename ||
+          fileToRemove?.fileUrl ||
+          fileToRemove?.fileName,
+      ).toLowerCase();
+
+    const nextFromResponse =
+      Array.isArray(responseFiles)
+        ? dedupeFiles(responseFiles)
+        : null;
+
     setFiles((previous) => {
-      const next = nextFromResponse || previous.filter((file) => {
-        if (id && cleanText(file?.id) === id) return false;
-        const itemIdentity = cleanText(file?.storedPath || file?.filePath || file?.savedFileName || file?.filename || file?.fileUrl || file?.fileName).toLowerCase();
-        return itemIdentity !== identity;
-      });
-      setSelectedFile((current) => {
-        const currentIdentity = cleanText(current?.storedPath || current?.filePath || current?.savedFileName || current?.filename || current?.fileUrl || current?.fileName).toLowerCase();
-        return (id && cleanText(current?.id) === id) || (identity && currentIdentity === identity) ? next[0] || null : current;
-      });
+      const next =
+        nextFromResponse ||
+        previous.filter((file) => {
+          if (
+            id &&
+            cleanText(file?.id) ===
+              id
+          ) {
+            return false;
+          }
+
+          const itemIdentity =
+            cleanText(
+              file?.storedPath ||
+                file?.filePath ||
+                file?.savedFileName ||
+                file?.filename ||
+                file?.fileUrl ||
+                file?.fileName,
+            ).toLowerCase();
+
+          return (
+            itemIdentity !==
+            identity
+          );
+        });
+
+      setSelectedFile(
+        (current) => {
+          const currentIdentity =
+            cleanText(
+              current?.storedPath ||
+                current?.filePath ||
+                current?.savedFileName ||
+                current?.filename ||
+                current?.fileUrl ||
+                current?.fileName,
+            ).toLowerCase();
+
+          const currentRemoved =
+            (id &&
+              cleanText(current?.id) ===
+                id) ||
+            (identity &&
+              currentIdentity ===
+                identity);
+
+          if (currentRemoved) {
+            /*
+             * Prefer another remaining file from the SAME requirement so the
+             * preview does not jump to an unrelated requirement.
+             */
+            const sameRequirementFile =
+              next.find(
+                (candidateFile) =>
+                  normalizeRequirement(
+                    candidateFile.requirement,
+                  ) ===
+                  normalizeRequirement(
+                    fileToRemove?.requirement,
+                  ),
+              );
+
+            return (
+              sameRequirementFile ||
+              next[0] ||
+              null
+            );
+          }
+
+          /*
+           * If the response replaced objects with freshly loaded versions,
+           * keep the selected file only when it still exists.
+           */
+          if (current) {
+            const stillExists =
+              next.find(
+                (candidateFile) => {
+                  const candidateIdentity =
+                    cleanText(
+                      candidateFile?.storedPath ||
+                        candidateFile?.filePath ||
+                        candidateFile?.savedFileName ||
+                        candidateFile?.filename ||
+                        candidateFile?.fileUrl ||
+                        candidateFile?.fileName,
+                    ).toLowerCase();
+
+                  return (
+                    (cleanText(current?.id) &&
+                      cleanText(candidateFile?.id) ===
+                        cleanText(current?.id)) ||
+                    (currentIdentity &&
+                      candidateIdentity ===
+                        currentIdentity)
+                  );
+                },
+              );
+
+            if (stillExists) {
+              return stillExists;
+            }
+          }
+
+          return (
+            next[0] ||
+            null
+          );
+        },
+      );
+
       return next;
     });
   }
@@ -1172,14 +1297,86 @@ export default function NhoUploadModal({
     setDeletingFile(true);
     try {
       const identity = cleanText(file?.storedPath || file?.filePath || file?.savedFileName || file?.filename || file?.fileUrl || file?.fileName).toLowerCase();
-      const response = await api.delete(`/api/candidate-pipeline/${encodeURIComponent(candidateId)}/nho/files/${encodeURIComponent(cleanText(file?.id) || identity)}`, {
-        withCredentials: true,
-        data: { fileIdentity: identity, storedPath: file?.storedPath || "", filePath: file?.filePath || "", savedFileName: file?.savedFileName || file?.filename || "", requirement: file?.requirement || "" },
+      const response = await api.delete(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateId,
+        )}/nho/files/${encodeURIComponent(
+          cleanText(file?.id) ||
+            identity,
+        )}`,
+        {
+          withCredentials: true,
+          data: {
+            fileIdentity:
+              identity,
+            storedPath:
+              file?.storedPath ||
+              "",
+            filePath:
+              file?.filePath ||
+              "",
+            savedFileName:
+              file?.savedFileName ||
+              file?.filename ||
+              "",
+            requirement:
+              file?.requirement ||
+              "",
+          },
+        },
+      );
+
+      const payload =
+        response?.data ??
+        response;
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            "Unable to delete file.",
+        );
+      }
+
+      /*
+       * Always refresh the complete physical file list after a permanent
+       * delete. The normal DELETE metadata response may come from an older
+       * deployment or historical DB state that previously collapsed multiple
+       * files under one requirement.
+       */
+      const refreshedResponse =
+        await api.get(
+          `/api/candidate-pipeline/${encodeURIComponent(
+            candidateId,
+          )}/nho/files`,
+          {
+            withCredentials: true,
+            params: {
+              includeAllFiles: 1,
+              _t: Date.now(),
+            },
+          },
+        );
+
+      const refreshedFiles =
+        filterOfficialUploadedFiles(
+          getFilesFromApiPayload(
+            refreshedResponse,
+          ),
+        );
+
+      removeLocalFile(
+        file,
+        refreshedFiles,
+      );
+
+      setDeleteStatus({
+        open: true,
+        type: "success",
+        title: "File Deleted",
+        message:
+          payload?.message ||
+          "The file was permanently deleted.",
       });
-      const payload = response?.data ?? response;
-      if (payload?.success === false) throw new Error(payload?.message || "Unable to delete file.");
-      removeLocalFile(file, getFilesFromApiPayload(payload));
-      setDeleteStatus({ open: true, type: "success", title: "File Deleted", message: payload?.message || "The file was permanently deleted." });
     } catch (error) {
       setDeleteStatus({ open: true, type: "error", title: "Delete Failed", message: getApiErrorMessage(error, "Unable to delete the physical file. No changes were made.") });
     } finally {

@@ -745,6 +745,42 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function getCandidatePipelineDeleteFileDisplay(file = {}) {
+  const requirement =
+    getOfficialRequirementFromFile(file) ||
+    cleanText(
+      file.requirement ||
+        file.label ||
+        file.category ||
+        file.title,
+    );
+
+  if (requirement) {
+    return `the selected file for ${requirement}`;
+  }
+
+  const rawName = cleanText(
+    file.fileName ||
+      file.savedFileName ||
+      file.filename ||
+      file.name,
+  );
+
+  if (!rawName) return "the selected document";
+
+  const extensionMatch = rawName.match(/(\.[a-zA-Z0-9]{1,10})$/);
+  const extension = extensionMatch?.[1] || "";
+  const baseName = extension
+    ? rawName.slice(0, -extension.length)
+    : rawName;
+
+  if (rawName.length <= 56) {
+    return `"${rawName}"`;
+  }
+
+  return `"${baseName.slice(0, 44).trim()}...${extension}"`;
+}
+
 function getHistoryTitle(item = {}) {
   return cleanText(
     item.stage ||
@@ -990,12 +1026,17 @@ function normalizeUploadedFile(file = {}, candidateId = "") {
     file.stored_file_name ||
     "";
 
+  /*
+   * Keep Candidate Pipeline display names aligned with the actual physical
+   * file stored on the server. Unsaved local uploads fall back to the
+   * original browser filename until the backend returns savedFileName.
+   */
   const fileName =
+    savedFileName ||
     file.fileName ||
     file.name ||
     file.originalName ||
     file.originalname ||
-    savedFileName ||
     "";
 
   const rawFileUrl =
@@ -10101,12 +10142,9 @@ async function handleConfirmScheduleNho() {
         open={deleteFileConfirmation.open}
         type="confirm"
         title="Delete File?"
-        message={`This will permanently remove ${
-          deleteFileConfirmation.file?.fileName ||
-          deleteFileConfirmation.file?.savedFileName ||
-          deleteFileConfirmation.file?.filename ||
-          "the selected document"
-        } from the Candidate Pipeline server folder. This action cannot be undone.`}
+        message={`This will permanently remove ${getCandidatePipelineDeleteFileDisplay(
+          deleteFileConfirmation.file || {},
+        )} from the Candidate Pipeline server folder. This action cannot be undone.`}
         confirmLabel="Delete Permanently"
         cancelLabel="Cancel"
         variant="center"
