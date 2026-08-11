@@ -173,6 +173,8 @@ function getCandidateName(candidate = {}) {
   return cleanText(candidate.name || candidate.candidateName) || "Candidate";
 }
 
+const NEW_APPLICANT_STAGE = "New Applicant";
+
 const RESUMABLE_PIPELINE_STAGES = [
   "Initial Screening",
   "Online Assessment",
@@ -449,19 +451,33 @@ export default function MoveToPipeLineModal() {
     [pipelineTarget],
   );
 
+  const hasPipelineHistory = completedStages.length > 0;
+
+  const resumeStageOptions = useMemo(
+    () =>
+      hasPipelineHistory
+        ? completedStages
+        : [NEW_APPLICANT_STAGE],
+    [completedStages, hasPipelineHistory],
+  );
+
   const dropOffResume = Boolean(
     pipelineTarget && isDropOffCandidate(pipelineTarget),
   );
 
-  const defaultResumeStage =
-    completedStages[completedStages.length - 1] || "Initial Screening";
+  const defaultResumeStage = hasPipelineHistory
+    ? completedStages[completedStages.length - 1]
+    : NEW_APPLICANT_STAGE;
 
   if (!pipelineTarget) return null;
 
   const form = moveToPipelineForm || {};
-  const selectedResumeStage = cleanText(
+  const requestedResumeStage = cleanText(
     form.resumeStage || form.currentStage || defaultResumeStage,
   );
+  const selectedResumeStage = resumeStageOptions.includes(requestedResumeStage)
+    ? requestedResumeStage
+    : defaultResumeStage;
 
   const ownerSource = form.taOwner || currentTaOwner;
   const ownerName = toDisplayPersonName(ownerSource, "Current User");
@@ -606,11 +622,11 @@ export default function MoveToPipeLineModal() {
 
     if (
       dropOffResume &&
-      (!selectedResumeStage || !completedStages.includes(selectedResumeStage))
+      (!selectedResumeStage || !resumeStageOptions.includes(selectedResumeStage))
     ) {
       showError(
         "Candidate not moved",
-        "Select a completed pipeline stage for this candidate.",
+        "Select New Applicant or a previously completed pipeline stage for this candidate.",
       );
       return;
     }
@@ -689,6 +705,19 @@ export default function MoveToPipeLineModal() {
         return;
       }
 
+      if (dropOffResume && targetStage === NEW_APPLICANT_STAGE) {
+        await refreshAfterChange(response.data || payload);
+
+        setStatusModal({
+          open: true,
+          type: "success",
+          title: "Candidate restored to New Applicant",
+          message: `${candidateName} was returned to Talent Pool as New Applicant.`,
+          closeParent: true,
+        });
+        return;
+      }
+
       window.dispatchEvent(
         new CustomEvent("ta-pipeline-candidates-updated", {
           detail: response.data || payload,
@@ -736,7 +765,9 @@ export default function MoveToPipeLineModal() {
           <div>
             <h2 className="text-lg font-bold text-sibs-primary-1">
               {dropOffResume
-                ? "Resume Candidate in Pipeline"
+                ? hasPipelineHistory
+                  ? "Resume Candidate in Pipeline"
+                  : "Resume Candidate in Talent Pool"
                 : "Move to Candidate Pipeline"}
             </h2>
 
@@ -759,7 +790,9 @@ export default function MoveToPipeLineModal() {
         <form onSubmit={handleMoveCandidate} className="space-y-4 p-5">
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
             {dropOffResume
-              ? "Select a stage already entered by the candidate. Future or unvisited stages are not available."
+              ? hasPipelineHistory
+                ? "Select New Applicant to return the candidate to Talent Pool, or choose a stage already entered by the candidate. Future or unvisited stages are not available."
+                : "This candidate has not yet entered Candidate Pipeline. Resume the candidate as New Applicant in Talent Pool."
               : "This will create a pipeline application directly under Initial Screening. Department and account details are captured automatically from the candidate's available position record when present."}
           </div>
 
@@ -785,7 +818,7 @@ export default function MoveToPipeLineModal() {
               <FieldLabel>Resume Stage</FieldLabel>
               <ResumeStageDropdown
                 value={selectedResumeStage}
-                options={completedStages}
+                options={resumeStageOptions}
                 disabled={isBusy}
                 onChange={(nextStage) =>
                   setMoveToPipelineForm({
@@ -796,7 +829,9 @@ export default function MoveToPipeLineModal() {
               />
 
               <p className="mt-1.5 text-xs font-semibold text-sibs-tertiary-5">
-                Only stages already recorded before Drop-off are available.
+                {hasPipelineHistory
+                  ? "Select New Applicant to return the candidate to Talent Pool, or choose a stage already recorded before Drop-off."
+                  : "New Applicant is the only available stage because this candidate has not yet entered Candidate Pipeline."}
               </p>
             </div>
           )}
@@ -852,7 +887,7 @@ export default function MoveToPipeLineModal() {
                 isBusy ||
                 (dropOffResume &&
                   (!selectedResumeStage ||
-                    !completedStages.includes(selectedResumeStage)))
+                    !resumeStageOptions.includes(selectedResumeStage)))
               }
               onClick={handleMoveCandidate}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
