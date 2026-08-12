@@ -257,6 +257,67 @@ function getAccount(employee = {}) {
   );
 }
 
+function getEmployeeAccounts(employee = {}) {
+  const accounts = [];
+  const seen = new Set();
+
+  function addAccount(value) {
+    const accountName =
+      typeof value === "string" || typeof value === "number"
+        ? getCleanValue(value)
+        : getCleanValue(
+            value?.account,
+            value?.accountName,
+            value?.account_name,
+            value?.gy_acc_name,
+          );
+
+    if (!accountName || accountName === "Unassigned") return;
+
+    const key = accountName.toLowerCase();
+
+    if (seen.has(key)) return;
+
+    seen.add(key);
+    accounts.push(accountName);
+  }
+
+  addAccount(getAccount(employee));
+
+  const assignedAccounts =
+    employee.assignedAccounts ||
+    employee.assigned_accounts ||
+    [];
+
+  if (Array.isArray(assignedAccounts)) {
+    assignedAccounts.forEach(addAccount);
+  }
+
+  return accounts.length ? accounts : ["Unassigned"];
+}
+
+function EmployeeAccountChips({ employee, compact = false }) {
+  const accounts = getEmployeeAccounts(employee);
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {accounts.map((account) => (
+        <span
+          key={account}
+          title={account}
+          className={`inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] font-extrabold uppercase tracking-wide text-[#042C51] ${
+            compact
+              ? "px-2 py-0.5 text-[9px]"
+              : "px-2.5 py-1 text-[10px]"
+          }`}
+        >
+          <span className="whitespace-normal break-words">{account}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function getPosition(employee = {}) {
   const value = getCleanValue(
     employee.position,
@@ -447,10 +508,12 @@ function MobileEmployeeCard({ employee, onOpen }) {
           <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
             Account / Site
           </p>
-          <p className="mt-1 text-xs font-extrabold text-[#042C51]">
-            {getAccount(employee)}
-          </p>
-          <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
+          <div className="mt-2">
+            <EmployeeAccountChips employee={employee} />
+          </div>
+          <div className="mt-2">
+            <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
+          </div>
         </div>
 
         <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
@@ -560,7 +623,7 @@ export default function EmployeeTable({
       .filter((option) => option.value && option.label);
 
     const loadedOptions = employees
-      .map((employee) => getAccount(employee))
+      .flatMap((employee) => getEmployeeAccounts(employee))
       .filter((account) => account && account !== "Unassigned")
       .map((account) => ({ label: account, value: account }));
 
@@ -966,14 +1029,9 @@ export default function EmployeeTable({
 
                         <td className="px-4 py-4 align-middle">
                           <div className="min-w-[170px]">
-                            <span
-                              title={getAccount(employee)}
-                              className="inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]"
-                            >
-                              <span className="truncate">{getAccount(employee)}</span>
-                            </span>
+                            <EmployeeAccountChips employee={employee} compact />
 
-                            <div className="mt-1">
+                            <div className="mt-2">
                               <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
                             </div>
                           </div>
