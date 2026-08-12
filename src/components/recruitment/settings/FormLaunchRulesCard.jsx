@@ -10,7 +10,7 @@ const launchRules = [
 
 export default function FormLaunchRulesCard() {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-extrabold text-[#101828]">
           Form Launch Rules
@@ -29,7 +29,7 @@ export default function FormLaunchRulesCard() {
               defaultChecked
               className="mt-0.5 h-4 w-4 accent-sibs-primary-1"
             />
-            <span className="text-sm font-bold leading-5 text-[#344054]">
+            <span className="text-xs font-bold leading-5 text-[#344054]">
               {rule}
             </span>
           </label>

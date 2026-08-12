@@ -1,136 +1,312 @@
-import React, { Fragment, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  CheckCircle2,
+  ArrowLeft,
   ChevronDown,
-  Edit3,
-  GripVertical,
+  ChevronUp,
+  Eye,
+  Layers,
+  Lightbulb,
   Loader2,
+  Plus,
   RefreshCw,
+  Save,
   Search,
+  Sparkles,
   Trash2,
-  XCircle,
 } from "lucide-react";
 
 import { useRecruitmentSettings } from "../../../services/context/RecruitmentSettingsContext";
-import FormDetailsCard from "./FormDetailsCard";
-import AddFieldCard from "./AddFieldCard";
 
-function statusClass(status) {
+const FORM_STATUS_OPTIONS = ["Active", "Inactive", "Draft"];
+const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
+
+const SECTION_PRESETS = [
+  {
+    title: "Communication",
+    subtitle: "Grammar, tone & active listening",
+    questions: [
+      {
+        label:
+          "Demonstrates clear vocal articulation, accent neutralization, and active listening skills during scenario simulation.",
+        type: "Rating",
+        required: true,
+      },
+      {
+        label:
+          "Provide detailed feedback on candidate's tone, pacing, and confidence during mock call.",
+        type: "Text",
+        required: true,
+      },
+    ],
+  },
+  {
+    title: "Problem Solving",
+    subtitle: "Scenario handling & reasoning",
+    questions: [
+      {
+        label:
+          "Explains a structured approach to diagnosing customer issues and choosing the best resolution path.",
+        type: "Rating",
+        required: true,
+      },
+      {
+        label:
+          "Documents the candidate's reasoning quality, escalation judgment, and ownership mindset.",
+        type: "Text",
+        required: true,
+      },
+    ],
+  },
+  {
+    title: "Technical / Tools",
+    subtitle: "CRM knowledge & Pass/Fail rules",
+    questions: [
+      {
+        label:
+          "Demonstrates familiarity with required systems, documentation standards, and workflow navigation.",
+        type: "Rating",
+        required: true,
+      },
+      {
+        label: "System navigation and tool proficiency verification.",
+        type: "Rating",
+        required: true,
+      },
+    ],
+  },
+  {
+    title: "Culture & Attendance",
+    subtitle: "Shift flexibility & values fit",
+    questions: [
+      {
+        label:
+          "SIBS core values alignment: Commitment to team collaboration, schedule flexibility, and continuous learning.",
+        type: "Rating",
+        required: true,
+      },
+    ],
+  },
+];
+
+function asText(value, fallback = "-") {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+function getPositionId(position = {}) {
+  return (
+    position.id ||
+    position.positionId ||
+    position.position_id ||
+    position.databaseId ||
+    position.database_id ||
+    ""
+  );
+}
+
+function getPositionCode(position = {}) {
+  return asText(
+    position.code ||
+      position.positionCode ||
+      position.position_code ||
+      position.positionId ||
+      position.id,
+  );
+}
+
+function getPositionTitle(position = {}) {
+  return asText(position.position || position.title || position.positionTitle);
+}
+
+function getPositionDepartment(position = {}) {
+  return asText(position.department || position.departmentName);
+}
+
+function getPositionSite(position = {}) {
+  return asText(position.location || position.site || position.branch);
+}
+
+function getFormName(form = {}, position = {}) {
+  return asText(
+    form.name ||
+      form.formName ||
+      form.form_name ||
+      `${getPositionTitle(position)} - Final Interview Form`,
+  );
+}
+
+function getFormStatus(form = {}) {
+  return asText(form.status, "Active");
+}
+
+function getPassingScore(form = {}) {
+  return Number(form.passingScore ?? form.passing_score ?? 80) || 80;
+}
+
+function getFormFields(form = {}) {
+  if (Array.isArray(form.fields)) return form.fields;
+  if (Array.isArray(form.questions)) return form.questions;
+  return [];
+}
+
+function getCriteriaCount(form = {}) {
+  return getFormFields(form).length;
+}
+
+function statusBadgeClass(status) {
   if (status === "Active") {
-    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
   if (status === "Inactive") {
-    return "border-red-100 bg-red-50 text-red-600";
+    return "border-red-200 bg-red-50 text-red-600";
   }
 
-  return "border-amber-100 bg-amber-50 text-amber-700";
+  return "border-amber-200 bg-amber-50 text-amber-700";
 }
 
-function questionTypeClass(type) {
-  const normalized = String(type || "").trim().toLowerCase();
+function groupFieldsBySection(fields = []) {
+  const groups = new Map();
 
-  if (normalized === "rating") {
-    return "border-blue-100 bg-blue-50 text-blue-700";
-  }
+  fields.forEach((field) => {
+    const section = asText(field.section, "Untitled Section");
 
-  if (normalized === "paragraph" || normalized === "text") {
-    return "border-violet-100 bg-violet-50 text-violet-700";
-  }
+    if (!groups.has(section)) {
+      groups.set(section, {
+        section,
+        enabled: true,
+        questions: [],
+      });
+    }
 
-  if (normalized === "dropdown") {
-    return "border-amber-100 bg-amber-50 text-amber-700";
-  }
+    const group = groups.get(section);
+    group.questions.push(field);
 
-  if (normalized === "checkbox") {
-    return "border-cyan-100 bg-cyan-50 text-cyan-700";
-  }
+    if (field.enabled === false) {
+      group.enabled = false;
+    }
+  });
 
-  if (normalized === "number") {
-    return "border-orange-100 bg-orange-50 text-orange-700";
-  }
-
-  if (normalized === "date") {
-    return "border-indigo-100 bg-indigo-50 text-indigo-700";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-700";
+  return Array.from(groups.values());
 }
 
-function QuestionList({ group, onEditQuestion }) {
+function getFieldTypeOptions(fieldTypes = []) {
+  const options = Array.isArray(fieldTypes) ? fieldTypes : [];
+  const normalized = options
+    .map((option) =>
+      typeof option === "string"
+        ? option
+        : option?.value || option?.label || option?.name,
+    )
+    .filter(Boolean);
+
+  return normalized.length ? normalized : ["Rating", "Text", "Pass/Fail"];
+}
+
+function StatusFilterButton({ active, children, count, onClick }) {
   return (
-    <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-5">
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-            Saved Questions
-          </p>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-extrabold transition ${
+        active
+          ? "border border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
+          : "border border-[#D6DEE8] bg-white text-[#475467] hover:border-[#BFD8F1] hover:bg-[#EFF6FF] hover:text-sibs-primary-1"
+      }`}
+    >
+      {children}
+      {Number.isFinite(count) && count > 0 && (
+        <span
+          className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-100 px-1.5 text-[10px] font-extrabold text-red-600"
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
 
-          <p className="mt-1 text-sm font-semibold text-[#475467]">
-            {group.questions.length} saved question
-            {group.questions.length === 1 ? "" : "s"} under{" "}
-            <span className="font-extrabold text-[#101828]">
-              {group.section}
-            </span>
-            .
-          </p>
-        </div>
+function StepButton({ number, label, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border px-4 text-xs font-extrabold transition ${
+        active
+          ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
+          : "border-transparent bg-white text-[#344054] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+      }`}
+    >
+      <span
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-extrabold ${
+          active ? "bg-[#FF5C28] text-white" : "bg-[#E8EEF5] text-[#667085]"
+        }`}
+      >
+        {number}
+      </span>
+      <span className="truncate">{label}</span>
+    </button>
+  );
+}
 
+function BeginnerGuide({ hidden, onToggle }) {
+  if (hidden) {
+    return (
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-xs font-extrabold text-[#C75A00] underline"
+        >
+          Show Guide
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-amber-300 bg-[#FFFBEA] p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 text-xs font-extrabold uppercase text-[#9A4A00]">
+          <Sparkles size={15} className="text-[#FF5C28]" />
+          <Lightbulb size={14} className="text-amber-500" />
+          Beginner's Guide: How to Create an Interview Form
+        </p>
+
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-xs font-extrabold text-[#C75A00] underline"
+        >
+          Hide Guide
+        </button>
       </div>
 
-      <div className="space-y-3">
-        {group.questions.map((question, questionIndex) => (
+      <div className="grid gap-3 lg:grid-cols-3">
+        {[
+          [
+            "Step 1: Basic Info",
+            "Give your form a name, set the status, and define the passing score required to recommend a candidate.",
+          ],
+          [
+            "Step 2: Add Sections",
+            "Group evaluation topics and use presets when you want standard pre-written sections.",
+          ],
+          [
+            "Step 3: Define Questions",
+            "Add criteria questions and select whether interviewers rate on a scale or leave feedback.",
+          ],
+        ].map(([title, copy]) => (
           <div
-            key={
-              question.id ||
-              `${group.section}-${question.label}-${questionIndex}`
-            }
-            className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-[0_1px_3px_rgba(16,24,40,0.04)]"
+            key={title}
+            className="rounded-xl border border-amber-200 bg-white px-4 py-3"
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex min-w-0 flex-1 items-start gap-3">
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold text-white">
-                  {questionIndex + 1}
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <p className="break-words text-sm font-extrabold leading-6 text-[#101828]">
-                    {question.label || "Untitled question"}
-                  </p>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span
-                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${questionTypeClass(
-                        question.type,
-                      )}`}
-                    >
-                      {question.type || "Text"}
-                    </span>
-
-
-                    <span
-                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${
-                        question.enabled !== false
-                          ? "border-emerald-100 bg-emerald-50 text-emerald-700"
-                          : "border-slate-200 bg-slate-50 text-slate-600"
-                      }`}
-                    >
-                      {question.enabled !== false ? "Enabled" : "Disabled"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onEditQuestion(question)}
-                className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 text-xs font-extrabold text-blue-700 transition hover:border-blue-200 hover:bg-blue-100"
-                title="Edit this question"
-              >
-                <Edit3 size={15} />
-                Edit
-              </button>
-            </div>
+            <p className="text-xs font-extrabold text-sibs-primary-1">
+              {title}
+            </p>
+            <p className="mt-1 text-xs font-medium leading-5 text-[#475467]">
+              {copy}
+            </p>
           </div>
         ))}
       </div>
@@ -140,486 +316,1102 @@ function QuestionList({ group, onEditQuestion }) {
 
 export default function FormBuilderCard() {
   const {
-    activePositionId,
-    setActivePositionId,
-    positionSearch,
-    setPositionSearch,
-    filteredPositions,
+    availablePositions,
     positionsLoading,
     positionsError,
     refreshAvailablePositions,
-    search,
-    setSearch,
-    filteredFields,
-    saveStatus,
+    activePosition,
+    activePositionId,
+    setActivePositionId,
+    activeForm,
+    settings,
+    getFinalInterviewForm,
+    formName,
+    formStatus,
+    passingScore,
+    formDescription,
+    setFormName,
+    setFormStatus,
+    setPassingScore,
+    setFormDescription,
+    fields,
+    fieldTypes,
     formSavingStatus,
     formSaveError,
     questionsSaving,
     questionsSaveError,
-    handleToggleFieldGroup,
+    handleSaveSettings,
+    handleAddFieldGroup,
+    handleUpdateFieldFromModal,
+    handleDeleteField,
     handleDeleteFieldGroup,
-    handleEditField,
   } = useRecruitmentSettings();
 
-  const [expandedSections, setExpandedSections] = useState(() => new Set());
+  const [mode, setMode] = useState("table");
+  const [step, setStep] = useState(1);
+  const [showAllSteps, setShowAllSteps] = useState(false);
+  const [formsSearch, setFormsSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [guideHidden, setGuideHidden] = useState(false);
 
-  const groupedFields = useMemo(() => {
-    const groups = new Map();
+  const allPositions = Array.isArray(availablePositions)
+    ? availablePositions
+    : [];
 
-    (Array.isArray(filteredFields) ? filteredFields : []).forEach((field) => {
-      const section = field.section || "Untitled Section";
+  const formsForTable = useMemo(() => {
+    const keyword = formsSearch.trim().toLowerCase();
 
-      if (!groups.has(section)) {
-        groups.set(section, {
-          section,
-          questions: [],
-          enabled: true,
-        });
-      }
+    return allPositions
+      .map((position) => {
+        const form =
+          getFinalInterviewForm?.(getPositionId(position)) ||
+          getFinalInterviewForm?.(position.code) ||
+          {};
 
-      const group = groups.get(section);
+        return {
+          position,
+          form,
+          status: getFormStatus(form),
+        };
+      })
+      .filter(({ position, form, status }) => {
+        const statusMatch = statusFilter === "All" || status === statusFilter;
 
-      group.questions.push(field);
+        if (!statusMatch) return false;
+        if (!keyword) return true;
 
-      if (field.enabled === false) {
-        group.enabled = false;
-      }
+        return [
+          getPositionTitle(position),
+          getPositionCode(position),
+          getPositionDepartment(position),
+          getPositionSite(position),
+          getFormName(form, position),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(keyword);
+      });
+  }, [allPositions, formsSearch, getFinalInterviewForm, statusFilter]);
 
+  const statusCounts = useMemo(() => {
+    const counts = {
+      All: allPositions.length,
+      Active: 0,
+      Inactive: 0,
+      Draft: 0,
+    };
+
+    allPositions.forEach((position) => {
+      const form =
+        getFinalInterviewForm?.(getPositionId(position)) ||
+        getFinalInterviewForm?.(position.code) ||
+        {};
+
+      const status = getFormStatus(form);
+      counts[status] = (counts[status] || 0) + 1;
     });
 
-    return Array.from(groups.values());
-  }, [filteredFields]);
+    return counts;
+  }, [allPositions, getFinalInterviewForm]);
 
-  function toggleSection(section) {
-    const cleanSection = String(section || "").trim();
+  const groupedSections = useMemo(() => groupFieldsBySection(fields), [fields]);
+  const typeOptions = useMemo(
+    () => getFieldTypeOptions(fieldTypes),
+    [fieldTypes],
+  );
 
-    if (!cleanSection) return;
+  const selectedPosition =
+    activePosition ||
+    allPositions.find(
+      (position) =>
+        String(getPositionId(position)) === String(activePositionId),
+    ) ||
+    allPositions[0] ||
+    {};
 
-    setExpandedSections((previous) => {
-      const next = new Set(previous);
+  const selectedForm = activeForm || {};
+  const totalCriteria = groupedSections.reduce(
+    (total, group) => total + group.questions.length,
+    0,
+  );
 
-      if (next.has(cleanSection)) {
-        next.delete(cleanSection);
-      } else {
-        next.add(cleanSection);
-      }
+  function openPreview(position = selectedPosition, form = selectedForm) {
+    const positionId = getPositionId(position);
+    const formId = form?.id || form?.formId || "";
+    const query = new URLSearchParams({
+      positionId: String(positionId || ""),
+      formId: String(formId || ""),
+      mode: "preview",
+    });
 
-      return next;
+    window.open(
+      `/recruitment/final-interview-form?${query.toString()}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  }
+
+  function openEditor(position) {
+    setActivePositionId?.(getPositionId(position));
+    setMode("editor");
+    setStep(1);
+    setShowAllSteps(false);
+    setGuideHidden(false);
+  }
+
+  async function saveForm() {
+    await handleSaveSettings?.();
+  }
+
+  function addBlankSection() {
+    const nextNumber = groupedSections.length + 1;
+    handleAddFieldGroup?.(`New Evaluation Section ${nextNumber}`, [
+      {
+        label: "New criteria field",
+        type: "Rating",
+        required: true,
+      },
+    ]);
+  }
+
+  function addFieldToSection(section) {
+    handleAddFieldGroup?.(section, [
+      {
+        label: "New criteria field",
+        type: "Rating",
+        required: true,
+      },
+    ]);
+  }
+
+  function updateFieldOnBlur(field, patch) {
+    handleUpdateFieldFromModal?.(field.id, {
+      ...field,
+      ...patch,
+      section: patch.section ?? field.section,
+      label: patch.label ?? field.label,
+      type: patch.type ?? field.type,
+      required: patch.required ?? field.required ?? true,
     });
   }
 
-  function stopRowClick(event) {
-    event.stopPropagation();
+  function resizeCriteriaTextarea(element) {
+    if (!element) return;
+
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
   }
 
-  return (
-    <div className="flex h-[calc(100vh-330px)] min-h-[680px] min-w-0 flex-col overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-      <div className="shrink-0 border-b border-[#E6ECF2] bg-white p-5">
-        <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div className="min-w-0">
-            <h3 className="text-base font-extrabold text-[#101828]">
+  const saveBusy =
+    Boolean(questionsSaving) || /saving/i.test(formSavingStatus || "");
+  const configuredCount = Array.isArray(settings?.forms)
+    ? settings.forms.length
+    : formsForTable.length;
+
+  if (mode === "table") {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <div className="mb-5 flex flex-col gap-3 border-b border-[#E6ECF2] pb-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold text-sibs-tertiary-5">
+              <span>Settings</span>
+              <span>/</span>
+              <span className="text-sibs-primary-1">
+                Position-based Final Interview Forms
+              </span>
+            </div>
+            <h3 className="text-[22px] font-extrabold leading-tight text-sibs-primary-1">
               Position-based Final Interview Forms
             </h3>
-
-            <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-              Select a role from Available Positions, then create or update its
-              final interview questions.
+            <p className="mt-1 text-[13px] font-medium leading-5 text-[#475467]">
+              Manage position interview forms, scoring rubrics, passing
+              thresholds, and custom question fields.
             </p>
           </div>
 
-          <div className="flex w-full shrink-0 flex-col gap-2 sm:flex-row xl:w-auto">
-            <span className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-sibs-primary-1">
-              {filteredPositions.length} active positions
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-9 items-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-xs font-extrabold text-blue-700">
+              {configuredCount} configured forms
             </span>
-
             <button
               type="button"
               onClick={() => refreshAvailablePositions?.()}
               disabled={positionsLoading}
-              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#F2F6FA] text-sibs-primary-1 transition hover:bg-[#E8EEF5] disabled:cursor-not-allowed disabled:opacity-60"
+              title="Refresh forms"
             >
               <RefreshCw
                 size={16}
                 className={positionsLoading ? "animate-spin" : ""}
               />
-              Refresh
             </button>
+          </div>
+        </div>
 
-            <div className="relative w-full sm:min-w-[320px] xl:w-[420px]">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-              />
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full lg:max-w-[520px]">
+            <Search
+              size={17}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+            />
+            <input
+              value={formsSearch}
+              onChange={(event) => setFormsSearch(event.target.value)}
+              className="h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-4 pl-11 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+              placeholder="Search forms by role title, position code, department..."
+            />
+          </div>
 
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search questions..."
-                className="h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-10 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-extrabold text-[#475467]">
+              Status:
+            </span>
+            {TABLE_STATUS_OPTIONS.map((status) => (
+              <StatusFilterButton
+                key={status}
+                active={statusFilter === status}
+                count={status === "All" ? undefined : statusCounts[status]}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status}
+              </StatusFilterButton>
+            ))}
+          </div>
+        </div>
+
+        {positionsError && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-700">
+            {positionsError}
+          </div>
+        )}
+
+        <div className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white">
+          <div className="overflow-x-auto">
+            <table className="min-w-[980px] w-full border-collapse">
+              <thead>
+                <tr className="bg-[#F8FAFC] text-left text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
+                  <th className="px-5 py-4">Position Title & Code</th>
+                  <th className="px-5 py-4">Department & Site</th>
+                  <th className="px-5 py-4">Form Name</th>
+                  <th className="px-5 py-4">Passing Score</th>
+                  <th className="px-5 py-4">Criteria</th>
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4 text-right">Preview</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E6ECF2]">
+                {formsForTable.map(({ position, form }) => {
+                  const status = getFormStatus(form);
+
+                  return (
+                    <tr
+                      key={getPositionId(position)}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openEditor(position)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openEditor(position);
+                        }
+                      }}
+                      className="cursor-pointer bg-white text-[13px] outline-none transition hover:bg-[#F8FAFC] focus:bg-[#F8FAFC]"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-start gap-3">
+                          <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#FF5C28]" />
+                          <div className="min-w-0">
+                            <p className="max-w-[220px] truncate text-[13px] font-extrabold text-sibs-primary-1">
+                              {getPositionTitle(position)}
+                            </p>
+                            <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
+                              {getPositionCode(position)}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="text-[13px] font-extrabold text-sibs-primary-1">
+                          {getPositionDepartment(position)}
+                        </p>
+                        <p className="mt-1 text-xs font-medium text-[#475467]">
+                          {getPositionSite(position)}
+                        </p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="max-w-[260px] truncate text-[13px] font-medium text-sibs-primary-1">
+                          {getFormName(form, position)}
+                        </p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                          {getPassingScore(form)}%
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex rounded-lg bg-[#F1F5F9] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                          {getCriteriaCount(form)} Fields
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold uppercase ${statusBadgeClass(status)}`}
+                        >
+                          {status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openPreview(position, form);
+                            }}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-sibs-tertiary-5 transition hover:bg-[#F1F7FD] hover:text-sibs-primary-1"
+                            title="Preview form"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {positionsLoading && !formsForTable.length && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-14 text-center">
+                      <div className="inline-flex items-center gap-2 text-sm font-extrabold text-sibs-primary-1">
+                        <Loader2 size={18} className="animate-spin" />
+                        Loading final interview forms...
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!positionsLoading && !formsForTable.length && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-14 text-center">
+                      <p className="text-sm font-extrabold text-sibs-tertiary-5">
+                        No final interview forms match the selected filters.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const showStepOne = showAllSteps || step === 1;
+  const showStepTwo = showAllSteps || step === 2;
+  const showStepThree = showAllSteps || step === 3;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <div className="mb-5 flex flex-col gap-3 border-b border-[#E6ECF2] pb-5 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] font-extrabold text-sibs-tertiary-5">
+            <span>Settings</span>
+            <span>/</span>
+            <button
+              type="button"
+              onClick={() => setMode("table")}
+              className="text-sibs-primary-1 hover:underline"
+            >
+              Position-based Final Interview Forms
+            </button>
+            <span>/</span>
+            <span className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-sibs-primary-1">
+              {getPositionTitle(selectedPosition)}
+            </span>
+          </div>
+          <h3 className="text-[22px] font-extrabold leading-tight text-sibs-primary-1">
+            Position-based Final Interview Forms
+          </h3>
+          <p className="mt-1 text-[13px] font-medium leading-5 text-[#475467]">
+            Manage position interview forms, scoring rubrics, passing
+            thresholds, and custom question fields.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMode("table")}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#EFF6FF]"
+          >
+            <ArrowLeft size={15} className="text-[#FF5C28]" />
+            Back to Forms Table
+          </button>
+          <button
+            type="button"
+            onClick={() => refreshAvailablePositions?.()}
+            disabled={positionsLoading}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#F2F6FA] text-sibs-primary-1 transition hover:bg-[#E8EEF5] disabled:cursor-not-allowed disabled:opacity-60"
+            title="Refresh forms"
+          >
+            <RefreshCw
+              size={16}
+              className={positionsLoading ? "animate-spin" : ""}
+            />
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:flex-row lg:items-center lg:justify-between">
+        <button
+          type="button"
+          onClick={() => setMode("table")}
+          className="inline-flex h-10 items-center gap-2 text-xs font-extrabold text-sibs-primary-1 hover:text-[#FF5C28]"
+        >
+          <ArrowLeft size={15} className="text-[#FF5C28]" />
+          Return to Position Forms Table
+        </button>
+
+        <label className="flex flex-col gap-2 text-xs font-bold text-sibs-tertiary-5 sm:flex-row sm:items-center">
+          Currently Editing Role:
+          <select
+            value={getPositionId(selectedPosition)}
+            onChange={(event) => {
+              setActivePositionId?.(event.target.value);
+              setStep(1);
+              setShowAllSteps(false);
+            }}
+            className="h-10 min-w-[320px] rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+          >
+            {allPositions.map((position) => (
+              <option
+                key={getPositionId(position)}
+                value={getPositionId(position)}
+              >
+                {getPositionTitle(position)} ({getPositionCode(position)})
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="mb-5 rounded-2xl bg-sibs-primary-1 p-5 text-white">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="rounded-md bg-[#FF5C28] px-2 py-1 text-xs font-extrabold uppercase">
+                Form Builder
+              </span>
+              <span className="text-sm font-extrabold">
+                {getPositionCode(selectedPosition)}
+              </span>
             </div>
+            <h4 className="text-xl font-extrabold leading-tight">
+              {getPositionTitle(selectedPosition)}
+            </h4>
+            <p className="mt-1 text-[13px] font-medium leading-5 text-white/90">
+              {getPositionCode(selectedPosition)} -{" "}
+              {getPositionDepartment(selectedPosition)} -{" "}
+              {getPositionSite(selectedPosition)} - Passing Score:{" "}
+              <span className="font-extrabold text-amber-300">
+                {passingScore || 80}%
+              </span>{" "}
+              - Total Questions: {totalCriteria} Fields
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => openPreview()}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-xs font-extrabold text-white transition hover:bg-white/15"
+            >
+              <Eye size={15} className="text-[#FF5C28]" />
+              Test Live Evaluation
+            </button>
+            <button
+              type="button"
+              onClick={() => void saveForm()}
+              disabled={saveBusy}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E64E1D] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {saveBusy ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Save size={15} />
+              )}
+              Save Form
+            </button>
           </div>
         </div>
       </div>
 
-      {(formSavingStatus ||
-        saveStatus ||
-        formSaveError ||
-        questionsSaveError) && (
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-5 py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {formSavingStatus && (
-              <span
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-extrabold ${
-                  formSavingStatus.toLowerCase().includes("failed") ||
-                  formSavingStatus.toLowerCase().includes("not saved")
-                    ? "border-red-200 bg-red-50 text-red-700"
-                    : formSavingStatus.toLowerCase().includes("saved")
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-blue-200 bg-blue-50 text-blue-700"
-                }`}
-              >
-                {formSavingStatus.toLowerCase().includes("saving") && (
-                  <Loader2 size={13} className="animate-spin" />
-                )}
-
-                {formSavingStatus}
-              </span>
-            )}
-
-            {(questionsSaving || saveStatus) && (
-              <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                {questionsSaving && (
-                  <Loader2 size={13} className="animate-spin" />
-                )}
-
-                {questionsSaving ? "Saving questions..." : saveStatus}
-              </span>
-            )}
-
-            {(formSaveError || questionsSaveError) && (
-              <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-extrabold text-red-700">
-                {formSaveError || questionsSaveError}
-              </span>
-            )}
-          </div>
+      {(formSavingStatus || formSaveError || questionsSaveError) && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {formSavingStatus && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+              {/saving/i.test(formSavingStatus) && (
+                <Loader2 size={13} className="animate-spin" />
+              )}
+              {formSavingStatus}
+            </span>
+          )}
+          {(formSaveError || questionsSaveError) && (
+            <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-extrabold text-red-700">
+              {formSaveError || questionsSaveError}
+            </span>
+          )}
         </div>
       )}
 
-      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 bg-[#F5F7FA] xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className="flex min-h-0 min-w-0 flex-col border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 pt-4 xl:border-b-0 xl:border-r">
-          <div className="relative shrink-0">
-            <Search
-              size={17}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-            />
+      <div className="mb-5 flex gap-2 rounded-2xl border border-[#E6ECF2] bg-white p-2 shadow-sm">
+        <StepButton
+          number={1}
+          label="Form Info & Score"
+          active={!showAllSteps && step === 1}
+          onClick={() => {
+            setStep(1);
+            setShowAllSteps(false);
+          }}
+        />
+        <StepButton
+          number={2}
+          label="Sections & Presets"
+          active={!showAllSteps && step === 2}
+          onClick={() => {
+            setStep(2);
+            setShowAllSteps(false);
+          }}
+        />
+        <StepButton
+          number={3}
+          label="Questions & Rating Types"
+          active={!showAllSteps && step === 3}
+          onClick={() => {
+            setStep(3);
+            setShowAllSteps(false);
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => setShowAllSteps((value) => !value)}
+          className={`inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-xs font-extrabold transition ${
+            showAllSteps
+              ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
+              : "border-transparent bg-white text-[#344054] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+          }`}
+        >
+          <Layers
+            size={15}
+            className={showAllSteps ? "text-[#FF5C28]" : "text-[#98A2B3]"}
+          />
+          {showAllSteps ? "Guided Wizard Mode" : "Show All Steps"}
+        </button>
+      </div>
 
-            <input
-              value={positionSearch}
-              onChange={(event) => setPositionSearch(event.target.value)}
-              placeholder="Search positions..."
-              className="h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-10 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-            />
-          </div>
+      <BeginnerGuide
+        hidden={guideHidden}
+        onToggle={() => setGuideHidden((value) => !value)}
+      />
 
-          <div className="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto pb-4 pr-1 pt-1">
-            {positionsError && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-xs font-extrabold text-amber-700">
-                  {positionsError}
-                </p>
-
-                <p className="mt-1 text-xs font-semibold leading-5 text-amber-700/80">
-                  Cached positions are shown when available. Press Refresh after
-                  the Available Positions API is reachable.
-                </p>
+      <div className="mt-5 space-y-5">
+        {showStepOne && (
+          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-4">
+              <div>
+                <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
+                  Step 1 of 3
+                </span>
+                <h4 className="mt-2 text-[15px] font-extrabold text-sibs-primary-1">
+                  Form Basic Information & Passing Threshold
+                </h4>
               </div>
-            )}
+              <p className="text-[13px] font-medium leading-5 text-sibs-tertiary-5">
+                Position Code: {getPositionCode(selectedPosition)}
+              </p>
+            </div>
 
-            {positionsLoading && !filteredPositions.length && (
-              <div className="flex items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-10 text-sm font-extrabold text-sibs-primary-1">
-                <Loader2 size={18} className="animate-spin" />
-                Loading all active positions...
-              </div>
-            )}
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(220px,0.75fr)_minmax(220px,0.55fr)]">
+              <label className="block">
+                <span className="text-xs font-extrabold text-sibs-primary-1">
+                  Form Name <span className="text-red-500">*</span>
+                </span>
+                <input
+                  value={formName || ""}
+                  onChange={(event) => setFormName?.(event.target.value)}
+                  className="mt-2 h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                />
+                <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                  Name displayed to interviewers during live evaluation.
+                </span>
+              </label>
 
-            {filteredPositions.map((position) => {
-              const isActive =
-                String(activePositionId) === String(position.id);
-
-              return (
-                <button
-                  key={position.id}
-                  type="button"
-                  onClick={() => {
-                    setActivePositionId(position.id);
-                    setExpandedSections(new Set());
-                  }}
-                  className={`w-full rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${
-                    isActive
-                      ? "border-sibs-primary-1 bg-white shadow-sm ring-4 ring-sibs-primary-1/10"
-                      : "border-[#E6ECF2] bg-white hover:border-sibs-primary-1/30"
-                  }`}
+              <label className="block">
+                <span className="text-xs font-extrabold text-sibs-primary-1">
+                  Form Status
+                </span>
+                <select
+                  value={formStatus || "Active"}
+                  onChange={(event) => setFormStatus?.(event.target.value)}
+                  className="mt-2 h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-extrabold text-[#101828]">
-                        {position.position}
-                      </p>
+                  {FORM_STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status === "Active"
+                        ? "Active (Ready for Hiring)"
+                        : status}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                  Only Active forms appear to interviewers.
+                </span>
+              </label>
 
-                      <p className="mt-1 text-xs font-bold text-sibs-primary-1">
-                        {position.code}
-                      </p>
-                    </div>
+              <label className="block">
+                <span className="text-xs font-extrabold text-sibs-primary-1">
+                  Passing Score (%) <span className="text-red-500">*</span>
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={passingScore ?? 80}
+                  onChange={(event) => setPassingScore?.(event.target.value)}
+                  className="mt-2 h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                />
+                <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                  Minimum score candidate needs to pass.
+                </span>
+              </label>
+            </div>
 
-                    <span
-                      className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${statusClass(
-                        position.status,
-                      )}`}
-                    >
-                      {position.status}
-                    </span>
-                  </div>
+            <label className="mt-4 block">
+              <span className="text-xs font-extrabold text-sibs-primary-1">
+                Description / Evaluation Directive
+              </span>
+              <textarea
+                rows={2}
+                value={formDescription || ""}
+                onChange={(event) => setFormDescription?.(event.target.value)}
+                className="mt-2 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+              />
+              <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                Instructions visible at the top of the interview form.
+              </span>
+            </label>
 
-                  <div className="mt-3 grid grid-cols-1 gap-2 text-xs font-semibold text-[#475467]">
-                    <p className="truncate">
-                      <span className="font-extrabold text-sibs-tertiary-5">
-                        Dept:
-                      </span>{" "}
-                      {position.department}
-                    </p>
-
-                    <p className="truncate">
-                      <span className="font-extrabold text-sibs-tertiary-5">
-                        Site:
-                      </span>{" "}
-                      {position.location}
-                    </p>
-
-                    <p className="line-clamp-2 leading-5">
-                      <span className="font-extrabold text-sibs-tertiary-5">
-                        Skills:
-                      </span>{" "}
-                      {position.skills}
-                    </p>
-                  </div>
+            {!showAllSteps && (
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90"
+                >
+                  Next Step: Add & Organize Sections
+                  <Plus size={15} className="text-[#FF5C28]" />
                 </button>
-              );
-            })}
-
-            {!positionsLoading && !filteredPositions.length && (
-              <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-white px-4 py-8 text-center">
-                <p className="text-xs font-extrabold text-sibs-tertiary-5">
-                  No positions found.
-                </p>
               </div>
             )}
-          </div>
-        </aside>
+          </section>
+        )}
 
-        <div className="min-h-0 min-w-0 overflow-y-auto p-5">
-          <div className="space-y-5">
-            <div className="min-w-0">
-              <FormDetailsCard />
-            </div>
-
-            <div className="min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-              <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
-                <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  Selected Role Questions
-                </p>
-
-                <p className="mt-1 text-sm font-semibold leading-5 text-[#344054]">
-                  Click a question group below to display its saved questions.
+        {showStepTwo && (
+          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+            <div className="mb-4 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
+                  Step 2 of 3
+                </span>
+                <h4 className="mt-2 text-[15px] font-extrabold text-sibs-primary-1">
+                  Form Sections & 1-Click Presets
+                </h4>
+                <p className="text-[13px] font-medium leading-5 text-[#475467]">
+                  Sections organize evaluation criteria into categories.
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={addBlankSection}
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E64E1D]"
+              >
+                <Plus size={15} />
+                Add Blank Section
+              </button>
+            </div>
 
-              <div className="w-full overflow-x-auto rounded-xl border border-[#E6ECF2]">
-                <table className="w-full min-w-[920px] table-fixed border-collapse">
-                  <colgroup>
-                    <col className="w-[44px]" />
-                    <col />
-                    <col className="w-[140px]" />
-                    <col className="w-[130px]" />
-                    <col className="w-[150px]" />
-                  </colgroup>
+            <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <p className="mb-3 flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
+                <Sparkles size={15} className="text-[#FF5C28]" />
+                Need help structuring your form? Click a 1-Click Standard
+                Section Preset:
+              </p>
+              <div className="grid gap-3 lg:grid-cols-4">
+                {SECTION_PRESETS.map((preset) => (
+                  <button
+                    key={preset.title}
+                    type="button"
+                    onClick={() =>
+                      handleAddFieldGroup?.(preset.title, preset.questions)
+                    }
+                    className="rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-left transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+                  >
+                    <p className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
+                      <Plus size={14} className="text-[#FF5C28]" />
+                      {preset.title}
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
+                      {preset.subtitle}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                  <thead className="bg-[#F8FAFC]">
-                    <tr className="text-left text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                      <th className="px-4 py-3" />
-                      <th className="px-4 py-3">Field Label</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-3 py-3 text-center">Section</th>
-                      <th className="px-4 py-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
+            <div className="mt-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-xs font-extrabold uppercase text-sibs-primary-1">
+                  Current Form Sections ({groupedSections.length})
+                </p>
+                <div className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
+                  <button type="button" className="hover:text-[#FF5C28]">
+                    Expand All
+                  </button>
+                  <span className="text-sibs-tertiary-5">-</span>
+                  <button type="button" className="hover:text-[#FF5C28]">
+                    Collapse All
+                  </button>
+                </div>
+              </div>
 
-                  <tbody className="divide-y divide-[#EEF2F6] bg-white">
-                    {groupedFields.map((group) => {
-                      const firstQuestion = group.questions[0];
-                      const isExpanded = expandedSections.has(group.section);
+              <div className="space-y-3">
+                {groupedSections.map((group, index) => (
+                  <div
+                    key={group.section}
+                    className="flex items-center gap-3 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-3"
+                  >
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
+                      S{index + 1}
+                    </span>
+                    <div className="min-w-0 flex-1 rounded-lg border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-extrabold uppercase text-sibs-primary-1">
+                      {index + 1}. {group.section}
+                    </div>
+                    <span className="hidden rounded-lg border border-[#D6DEE8] bg-white px-3 py-2 text-xs font-extrabold text-[#475467] sm:inline-flex">
+                      {group.questions.length} Questions
+                    </span>
+                    <button
+                      type="button"
+                      className="inline-flex h-9 w-12 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1"
+                      title="Move section"
+                    >
+                      <ChevronUp size={14} />
+                      <ChevronDown size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteFieldGroup?.(group.section)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50"
+                      title="Delete section"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
 
-                      return (
-                        <Fragment key={group.section}>
-                          <tr
-                            role="button"
-                            tabIndex={0}
-                            aria-expanded={isExpanded}
-                            onClick={() => toggleSection(group.section)}
-                            onKeyDown={(event) => {
-                              if (
-                                event.key === "Enter" ||
-                                event.key === " "
-                              ) {
-                                event.preventDefault();
-                                toggleSection(group.section);
-                              }
-                            }}
-                            className={`cursor-pointer text-sm outline-none transition hover:bg-[#F8FAFC] focus:bg-[#F8FAFC] ${
-                              isExpanded ? "bg-blue-50/40" : ""
-                            }`}
-                          >
-                            <td className="px-4 py-4 text-sibs-tertiary-5">
-                              <div className="flex items-center gap-2">
-                                <GripVertical size={18} />
+                {!groupedSections.length && (
+                  <div className="rounded-xl border border-dashed border-[#C8D7E8] bg-white px-4 py-10 text-center text-sm font-extrabold text-sibs-tertiary-5">
+                    No sections yet. Add a preset or blank section to start.
+                  </div>
+                )}
+              </div>
+            </div>
 
-                                <ChevronDown
-                                  size={17}
-                                  className={`transition-transform duration-200 ${
-                                    isExpanded ? "rotate-180" : ""
-                                  }`}
-                                />
-                              </div>
-                            </td>
+            {!showAllSteps && (
+              <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-5">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                >
+                  <ArrowLeft size={15} />
+                  Previous Step
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90"
+                >
+                  Next Step: Edit Criteria Questions
+                  <Plus size={15} className="text-[#FF5C28]" />
+                </button>
+              </div>
+            )}
+          </section>
+        )}
 
-                            <td className="px-4 py-4">
-                              <div className="min-w-0">
-                                <p
-                                  title={group.section}
-                                  className="truncate whitespace-nowrap font-extrabold uppercase text-[#101828]"
-                                >
-                                  {group.section}
-                                </p>
+        {showStepThree && (
+          <section>
+            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold uppercase text-blue-700">
+                  Step 3 of 3
+                </span>
+                <h4 className="mt-2 text-sm font-extrabold uppercase text-sibs-primary-1">
+                  Configure Criteria Fields & Rating Scales
+                </h4>
+                <p className="text-[13px] font-medium leading-5 text-[#475467]">
+                  {groupedSections.length} Sections - {totalCriteria} Criteria
+                  Fields
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                >
+                  Expand All
+                </button>
+                <button
+                  type="button"
+                  className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                >
+                  Collapse All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openPreview()}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white"
+                >
+                  <Eye size={15} className="text-[#FF5C28]" />
+                  Test Live Form
+                </button>
+              </div>
+            </div>
 
-                                <p className="mt-1 truncate whitespace-nowrap text-xs font-semibold text-sibs-primary-1">
-                                  {group.questions.length} question
-                                  {group.questions.length === 1 ? "" : "s"} in
-                                  this field
-                                </p>
-                              </div>
-                            </td>
+            <div className="space-y-5">
+              {groupedSections.map((group, groupIndex) => (
+                <div
+                  key={group.section}
+                  className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+                >
+                  <div className="flex flex-col gap-3 bg-sibs-primary-1 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
+                        S{groupIndex + 1}
+                      </span>
+                      <div className="min-w-0 flex-1 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-[15px] font-extrabold uppercase text-white">
+                        {groupIndex + 1}. {group.section}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        className="inline-flex h-9 w-12 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-white"
+                      >
+                        <ChevronUp size={15} />
+                        <ChevronDown size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addFieldToSection(group.section)}
+                        className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white"
+                      >
+                        <Plus size={15} />
+                        Add Field
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white"
+                      >
+                        <ChevronUp size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteFieldGroup?.(group.section)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-purple-500/30 text-pink-100"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
 
-                            <td className="px-4 py-4">
-                              <p className="truncate whitespace-nowrap font-bold text-[#344054]">
-                                {group.questions.length === 1
-                                  ? group.questions[0].type
-                                  : "Multiple"}
-                              </p>
-                            </td>
+                  <div className="space-y-4 p-5">
+                    {group.questions.map((field, fieldIndex) => (
+                      <div
+                        key={field.id}
+                        className="rounded-2xl border border-[#D9E2EC] bg-white p-4"
+                      >
+                        <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center">
+                          <div className="flex min-w-[210px] items-center gap-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold text-white">
+                              {fieldIndex + 1}
+                            </span>
+                            <span className="text-xs font-extrabold text-sibs-primary-1">
+                              Criteria Field #{fieldIndex + 1}
+                            </span>
+                            <button
+                              type="button"
+                              className="inline-flex h-7 w-11 items-center justify-center rounded-lg border border-[#D6DEE8] bg-[#F1F5F9] text-sibs-tertiary-5"
+                            >
+                              <ChevronUp size={13} />
+                              <ChevronDown size={13} />
+                            </button>
+                          </div>
 
-                            <td className="px-3 py-4 text-center">
-                              <p
-                                title="Form Section"
-                                className="truncate whitespace-nowrap font-bold text-[#344054]"
+                          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                            <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
+                              Type:
+                              <select
+                                defaultValue={field.type || "Rating"}
+                                onBlur={(event) =>
+                                  updateFieldOnBlur(field, {
+                                    type: event.target.value,
+                                  })
+                                }
+                                className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none"
                               >
-                                Form Section
-                              </p>
-                            </td>
+                                {typeOptions.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
+                              Scale:
+                              <select className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none">
+                                <option>1 to 5 Scale</option>
+                                <option>Pass / Fail</option>
+                              </select>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => openPreview()}
+                              className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#F1F5F9] px-3 text-xs font-extrabold text-sibs-primary-1"
+                            >
+                              <Sparkles size={14} className="text-[#FF5C28]" />
+                              Quick Preview
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteField?.(field.id)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-sibs-tertiary-5 hover:bg-red-50 hover:text-red-600"
+                              title="Delete field"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
 
+                        <textarea
+                          rows={5}
+                          defaultValue={field.label || ""}
+                          ref={resizeCriteriaTextarea}
+                          onInput={(event) =>
+                            resizeCriteriaTextarea(event.currentTarget)
+                          }
+                          onBlur={(event) =>
+                            updateFieldOnBlur(field, {
+                              label: event.target.value,
+                            })
+                          }
+                          className="min-h-10 w-full resize-none overflow-hidden rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                        />
+                      </div>
+                    ))}
 
-                            <td className="px-4 py-4">
-                              <div className="flex items-center justify-center gap-2 whitespace-nowrap">
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    stopRowClick(event);
-                                    handleToggleFieldGroup(
-                                      group.section,
-                                      "enabled",
-                                    );
-                                  }}
-                                  className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
-                                    group.enabled
-                                      ? "border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                      : "border-red-100 bg-red-50 text-red-600 hover:bg-red-100"
-                                  }`}
-                                  title={
-                                    group.enabled
-                                      ? "Disable question group"
-                                      : "Enable question group"
-                                  }
-                                >
-                                  {group.enabled ? (
-                                    <CheckCircle2 size={16} />
-                                  ) : (
-                                    <XCircle size={16} />
-                                  )}
-                                </button>
+                    <button
+                      type="button"
+                      onClick={() => addFieldToSection(group.section)}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+                    >
+                      <Plus size={15} className="text-[#FF5C28]" />
+                      Add Field to "{group.section}"
+                    </button>
+                  </div>
+                </div>
+              ))}
 
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    stopRowClick(event);
-                                    handleEditField(firstQuestion);
-                                  }}
-                                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
-                                  title="Edit first question"
-                                >
-                                  <Edit3 size={16} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    stopRowClick(event);
-                                    handleDeleteFieldGroup(group.section);
-                                    setExpandedSections((previous) => {
-                                      const next = new Set(previous);
-                                      next.delete(group.section);
-                                      return next;
-                                    });
-                                  }}
-                                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100"
-                                  title="Delete question group"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-
-                          {isExpanded && (
-                            <tr>
-                              <td colSpan={5} className="p-0">
-                                <QuestionList
-                                  group={group}
-                                  onEditQuestion={handleEditField}
-                                />
-                              </td>
-                            </tr>
-                          )}
-                        </Fragment>
-                      );
-                    })}
-
-                    {!groupedFields.length && (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-10 text-center">
-                          <p className="text-sm font-extrabold text-sibs-tertiary-5">
-                            No questions found for this position.
-                          </p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <AddFieldCard />
+              <button
+                type="button"
+                onClick={addBlankSection}
+                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+              >
+                <Plus size={15} className="text-[#FF5C28]" />
+                Add New Evaluation Section
+              </button>
             </div>
-          </div>
+
+            {!showAllSteps && (
+              <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-5">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                >
+                  <ArrowLeft size={15} />
+                  Previous Step
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void saveForm()}
+                  disabled={saveBusy}
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {saveBusy ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Save size={15} className="text-[#FF5C28]" />
+                  )}
+                  Save Position Form
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 border-t border-[#E6ECF2] pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={() => setMode("table")}
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+        >
+          <ArrowLeft size={15} />
+          Done & Back to Table
+        </button>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => openPreview()}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+          >
+            <Eye size={15} className="text-[#FF5C28]" />
+            Preview Live Form
+          </button>
+          <button
+            type="button"
+            onClick={() => void saveForm()}
+            disabled={saveBusy}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {saveBusy ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <Save size={15} className="text-[#FF5C28]" />
+            )}
+            Save Position Form
+          </button>
         </div>
       </div>
+
+      {questionsSaveError && (
+        <p className="mt-3 text-xs font-extrabold text-red-600">
+          {questionsSaveError}
+        </p>
+      )}
     </div>
   );
 }
