@@ -26,6 +26,7 @@ import {
   PieChart,
   Table2,
   UserCog,
+  UserRoundPlus,
   Users,
   X,
 } from "lucide-react";
@@ -38,7 +39,10 @@ import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptio
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
 import { buildSidebarBadgeText } from "../../lib/utils/sidebarNotifications";
-import { DASHBOARD_ACCESS, getDefaultDashboardPath } from "../../config/accessControl";
+import {
+  DASHBOARD_ACCESS,
+  getDefaultDashboardPath,
+} from "../../config/accessControl";
 
 const APPROVAL_MODULES = [
   "Attrition",
@@ -431,7 +435,10 @@ export default function Sidebar() {
     try {
       const moduleAccessResults = await Promise.all(
         APPROVAL_MODULES.map(async (moduleName) => {
-          const canCount = await canCountApprovalModuleForUser(moduleName, user);
+          const canCount = await canCountApprovalModuleForUser(
+            moduleName,
+            user,
+          );
 
           return {
             moduleName,
@@ -778,6 +785,12 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 6, 7],
     },
     {
+      name: "Applicant Leads",
+      icon: UserRoundPlus,
+      path: "/recruitment/applicant-leads",
+      allowedUsers: [1, 2, 3, 6, 7],
+    },
+    {
       name: "Talent Pool",
       icon: Users,
       path: "/recruitment/talent-pool",
@@ -902,7 +915,9 @@ export default function Sidebar() {
 
   const getVisibleItems = (items) =>
     items.filter((item) =>
-      item.allowedUsers ? item.allowedUsers.includes(getAdminAccess(user)) : true,
+      item.allowedUsers
+        ? item.allowedUsers.includes(getAdminAccess(user))
+        : true,
     );
 
   const handleLinkClick = () => {
@@ -1022,7 +1037,10 @@ export default function Sidebar() {
           className="fixed left-4 top-[19px] z-[85] flex h-9 w-9 items-center justify-center rounded-xl border border-[#083A69] bg-sibs-primary-1 shadow-[0_6px_16px_rgba(0,48,142,0.24)] lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg sm:left-6 sm:top-[25px]"
           aria-label="Open sidebar"
         >
-          <Menu size={18} className="text-white max-[360px]:h-4 max-[360px]:w-4" />
+          <Menu
+            size={18}
+            className="text-white max-[360px]:h-4 max-[360px]:w-4"
+          />
         </button>
       )}
 

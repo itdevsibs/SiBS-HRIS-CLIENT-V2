@@ -49,6 +49,7 @@ import ApprovalRequest from "./pages/communication/ApprovalRequest";
 import KronosDatasPage from "./pages/kronos-datas/KronosDatasPage";
 import WorkforceHiringOverviewPage from "./pages/recruitment/WorkforceHiringOverviewPage";
 import PublicJobDescriptionPage from "./pages/recruitment/talent-pool/PublicJobDescriptionPage";
+import ApplicantLeadsPage from "./pages/recruitment/ApplicantLeadsPage";
 
 const DEFAULT_PUBLIC_APPLICATION_HOST = "sibsapply.getleadsource.com";
 
@@ -393,6 +394,15 @@ function MainApplicationRoutes() {
           <PrivateRoute>
             <WorkforceHiringPlanPage />
             {/* <NotFound /> */}
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/recruitment/applicant-leads"
+        element={
+          <PrivateRoute>
+            <ApplicantLeadsPage />
           </PrivateRoute>
         }
       />

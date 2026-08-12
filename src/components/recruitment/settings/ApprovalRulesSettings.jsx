@@ -387,16 +387,10 @@ function getRuleApi(ruleKey) {
 
 function RuleInnerNav({ activeRuleKey, counts, onChange }) {
   return (
-    <aside className="shrink-0 rounded-2xl border border-[#E6ECF2] bg-white p-3 lg:w-[270px]">
-      <div className="mb-3 rounded-xl bg-[#F8FAFC] px-3 py-3">
-        <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-          Approval Modules
-        </p>
-
-        <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-          Choose which approval rule to configure.
-        </p>
-      </div>
+    <aside className="shrink-0 lg:w-[500px]">
+      <p className="mb-3 text-[10px] font-extrabold uppercase tracking-normal text-sibs-tertiary-5">
+        Approval Modules
+      </p>
 
       <div className="space-y-2">
         {APPROVAL_RULE_TABS.map((rule) => {
@@ -408,14 +402,14 @@ function RuleInnerNav({ activeRuleKey, counts, onChange }) {
               key={rule.key}
               type="button"
               onClick={() => onChange(rule.key)}
-              className={`group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left border border-blue-100 transition-all duration-200 ${
+              className={`group flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 ${
                 isActive
                   ? "bg-sibs-primary-1 text-white shadow-md"
-                  : "bg-white text-[#344054] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                  : "border-[#D9E2EC] bg-white text-[#344054] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
               }`}
             >
               <span
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isActive
                     ? "bg-white/15 text-white"
                     : "bg-blue-50 text-sibs-primary-1 group-hover:bg-white"
@@ -426,7 +420,7 @@ function RuleInnerNav({ activeRuleKey, counts, onChange }) {
 
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-extrabold">
-                  {rule.shortTitle}
+                  {rule.title}
                 </span>
 
                 <span
@@ -480,7 +474,7 @@ function EmployeeSearchDropdown({
   return (
     <div ref={dropdownRef} className="relative min-w-0 flex-1">
       <div
-        className={`flex h-12 items-center gap-3 rounded-xl border bg-white px-4 shadow-sm transition ${
+        className={`flex h-10 items-center gap-3 rounded-[10px] border bg-white px-3 transition ${
           open
             ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
             : "border-[#D0D5DD] hover:border-sibs-primary-1/30"
@@ -501,7 +495,7 @@ function EmployeeSearchDropdown({
             setOpen(true);
           }}
           placeholder={placeholder}
-          className="h-full min-w-0 flex-1 border-0 bg-transparent text-sm font-bold text-sibs-primary-1 outline-none placeholder:text-sibs-tertiary-5 disabled:cursor-not-allowed"
+          className="h-full min-w-0 flex-1 border-0 bg-transparent text-xs font-semibold text-sibs-primary-1 outline-none placeholder:text-sibs-tertiary-5 disabled:cursor-not-allowed"
         />
 
         {loading ? (
@@ -523,7 +517,7 @@ function EmployeeSearchDropdown({
         <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-72 overflow-y-auto py-2">
             {loading ? (
-              <div className="px-4 py-3 text-sm font-bold text-sibs-primary-1">
+              <div className="px-4 py-3 text-xs font-bold text-sibs-primary-1">
                 Searching employees...
               </div>
             ) : candidates.length > 0 ? (
@@ -537,7 +531,7 @@ function EmployeeSearchDropdown({
                   }}
                   className="block w-full px-4 py-3 text-left transition hover:bg-[#F8FAFC]"
                 >
-                  <span className="block text-sm font-extrabold text-[#101828]">
+                  <span className="block text-xs font-extrabold text-[#101828]">
                     {candidate.label}
                   </span>
 
@@ -547,11 +541,11 @@ function EmployeeSearchDropdown({
                 </button>
               ))
             ) : cleanText(search).length >= 2 ? (
-              <div className="px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+              <div className="px-4 py-3 text-xs font-bold text-sibs-tertiary-5">
                 No matching employee found.
               </div>
             ) : (
-              <div className="px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+              <div className="px-4 py-3 text-xs font-bold text-sibs-tertiary-5">
                 Type at least 2 characters to search.
               </div>
             )}
@@ -564,23 +558,27 @@ function EmployeeSearchDropdown({
 
 function ApprovalUserRow({ user, description, removing, onRemove }) {
   return (
-    <tr className="transition hover:bg-[#FAFBFC]">
-      <td className="border-b border-[#E6ECF2] px-5 py-4">
-        <p className="text-sm font-extrabold text-[#101828]">
+    <div className="flex items-center gap-4 rounded-xl border border-[#D9E2EC] bg-white px-4 py-3">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-sm font-extrabold text-white">
+        {String(user.employeeName || user.label || "?").trim().charAt(0)}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-extrabold text-sibs-primary-1">
           {user.label}
         </p>
 
-        <p className="mt-1 text-xs font-bold text-sibs-primary-1">
+        <p className="mt-0.5 truncate text-[11px] font-semibold text-sibs-primary-1/80">
           {description}
         </p>
-      </td>
+      </div>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-4 text-right">
+      <div className="shrink-0">
         <button
           type="button"
           onClick={() => onRemove(user)}
           disabled={removing}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:border-red-200 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-sibs-tertiary-5 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
           title="Remove approval user"
         >
           {removing ? (
@@ -589,8 +587,8 @@ function ApprovalUserRow({ user, description, removing, onRemove }) {
             <Trash2 size={16} />
           )}
         </button>
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
@@ -609,42 +607,33 @@ function ApprovalRulePanel({
   onAddUser,
   onRemoveUser,
 }) {
-  const RuleIcon = rule.icon;
   const isDisabled = !rule.isConnected;
 
   return (
-    <section className="min-w-0 flex-1 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <section className="min-w-0 flex-1 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-sibs-primary-1">
-              <RuleIcon size={22} strokeWidth={2.4} />
-            </span>
+          <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
+            Active Module Rules
+          </p>
 
-            <div className="min-w-0">
-              <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                {rule.badgeText}
-              </p>
+          <h2 className="mt-1 text-lg font-extrabold text-sibs-primary-1">
+            {rule.title}
+          </h2>
 
-              <h2 className="mt-1 text-xl font-extrabold text-[#101828]">
-                {rule.title}
-              </h2>
-            </div>
-          </div>
-
-          <p className="mt-4 max-w-4xl text-sm font-semibold leading-6 text-sibs-primary-1">
+          <p className="mt-2 max-w-4xl text-xs font-semibold leading-5 text-sibs-primary-1/80">
             {rule.description}
           </p>
         </div>
 
-        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
           <CheckCircle2 size={14} />
-          {users.length} User{users.length === 1 ? "" : "s"}
+          {users.length} Active Approver{users.length === 1 ? "" : "s"}
         </span>
       </div>
 
-      <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-        <label className="mb-2 block text-sm font-extrabold text-[#101828]">
+      <div className="rounded-xl border border-[#D9E2EC] bg-white p-3">
+        <label className="mb-2 block text-xs font-extrabold text-[#101828]">
           Add Approval User
         </label>
 
@@ -664,7 +653,7 @@ function ApprovalRulePanel({
             type="button"
             onClick={onAddUser}
             disabled={adding || !selectedCandidate || isDisabled}
-            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-6 text-sm font-extrabold text-blue-700 transition hover:border-blue-200 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-4 text-xs font-extrabold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {adding ? (
               <Loader2 size={17} className="animate-spin" />
@@ -675,57 +664,36 @@ function ApprovalRulePanel({
           </button>
         </div>
 
-        <p className="mt-2 text-xs font-bold text-sibs-primary-1">
+        <p className="mt-2 text-[11px] font-semibold text-sibs-primary-1">
           Adding or removing a user automatically saves this approval rule to
           the database.
         </p>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white">
-        <table className="w-full border-separate border-spacing-0 text-left">
-          <thead>
-            <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-              <th className="px-5 py-4">Approval User</th>
-              <th className="w-[120px] px-5 py-4 text-right">Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loading ? (
-              <tr>
-                <td
-                  colSpan={2}
-                  className="border-b border-[#E6ECF2] px-5 py-10 text-center text-sm font-bold text-sibs-primary-1"
-                >
-                  <Loader2
-                    size={20}
-                    className="mx-auto mb-2 animate-spin text-sibs-primary-1"
-                  />
-                  Loading approval users...
-                </td>
-              </tr>
-            ) : users.length > 0 ? (
-              users.map((user) => (
-                <ApprovalUserRow
-                  key={`${rule.key}-${user.id}-${user.sibsId}`}
-                  user={user}
-                  description={rule.rowDescription}
-                  removing={String(removingId) === String(user.id)}
-                  onRemove={onRemoveUser}
-                />
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={2}
-                  className="px-5 py-12 text-center text-sm font-bold text-sibs-tertiary-5"
-                >
-                  {rule.emptyText}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="mt-5 space-y-3">
+        {loading ? (
+          <div className="rounded-xl border border-[#D9E2EC] bg-white px-5 py-10 text-center text-xs font-bold text-sibs-primary-1">
+            <Loader2
+              size={20}
+              className="mx-auto mb-2 animate-spin text-sibs-primary-1"
+            />
+            Loading approval users...
+          </div>
+        ) : users.length > 0 ? (
+          users.map((user) => (
+            <ApprovalUserRow
+              key={`${rule.key}-${user.id}-${user.sibsId}`}
+              user={user}
+              description={rule.rowDescription}
+              removing={String(removingId) === String(user.id)}
+              onRemove={onRemoveUser}
+            />
+          ))
+        ) : (
+          <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-white px-5 py-12 text-center text-xs font-bold text-sibs-tertiary-5">
+            {rule.emptyText}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -1053,19 +1021,19 @@ export default function ApprovalRulesSettings() {
 
   return (
     <div>
-      <div className="mb-4 rounded-2xl border border-blue-100 bg-white px-5 py-4">
+      <div className="mb-5 border-b border-[#E6ECF2] pb-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
               <UserRoundCheck size={14} />
               Approval Configuration
             </div>
 
-            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
+            <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
               Recruitment Approval Rules
             </h2>
 
-            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-primary-1/80">
+            <p className="mt-1 text-xs font-medium leading-5 text-sibs-primary-1/80">
               Configure approval users for Job Descriptions, Hiring Needs,
               Available Positions, and Offers from one settings panel.
             </p>
