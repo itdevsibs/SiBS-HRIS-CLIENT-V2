@@ -59,6 +59,9 @@ const ROLE_OPTIONS = [
   { value: "manager", label: "Manager", access: 5 },
   { value: "executive", label: "Executive", access: 6 },
   { value: "super_admin", label: "Super Admin", access: 7 },
+  { value: "team_leaders", label: "Team Leaders", access: 8 },
+  { value: "wfm", label: "WFM", access: 9 },
+  { value: "som", label: "SOM", access: 10 },
 ];
 
 const EMPTY_SUMMARY = {
@@ -883,7 +886,7 @@ function AccountChips({ accounts = [] }) {
   }
 
   return (
-    <div className="flex min-w-[260px] max-w-[560px] flex-wrap gap-1.5">
+    <div className="flex min-w-[260px] flex-wrap gap-1.5">
       {accounts.map((account, index) => {
         const accountId = getAccountId(account);
         const accountName =
@@ -893,9 +896,9 @@ function AccountChips({ accounts = [] }) {
           <span
             key={`${account.id || accountId}-${accountName}-${index}`}
             title={`${accountName}${accountId ? ` (${accountId})` : ""}`}
-            className="inline-flex max-w-[240px] items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-sibs-primary-1"
+            className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-sibs-primary-1"
           >
-            <span className="truncate">{accountName}</span>
+            <span className="whitespace-normal break-words">{accountName}</span>
           </span>
         );
       })}
@@ -1799,7 +1802,7 @@ function AccessModal({
         )}
 
         <SelectField
-          label="Admin Access"
+          label="Access"
           value={adminAccess}
           onChange={setAdminAccess}
           disabled={!selectedEmployee}
@@ -2140,9 +2143,11 @@ export default function AccountSettingsPage() {
         setUsers(activeUsers);
         setPagination({
           ...result.pagination,
-          total: activeUsers.length,
+          page: Number(result.pagination?.page || currentPage),
+          limit: Number(result.pagination?.limit || PAGE_LIMIT),
+          total: Number(result.pagination?.total || 0),
           totalPages: Math.max(
-            Math.ceil(activeUsers.length / PAGE_LIMIT),
+            Number(result.pagination?.totalPages || 1),
             1,
           ),
         });
@@ -2254,9 +2259,11 @@ export default function AccountSettingsPage() {
         setUsers(activeUsers);
         setPagination({
           ...userResult.pagination,
-          total: activeUsers.length,
+          page: Number(userResult.pagination?.page || 1),
+          limit: Number(userResult.pagination?.limit || PAGE_LIMIT),
+          total: Number(userResult.pagination?.total || 0),
           totalPages: Math.max(
-            Math.ceil(activeUsers.length / PAGE_LIMIT),
+            Number(userResult.pagination?.totalPages || 1),
             1,
           ),
         });
@@ -2500,7 +2507,7 @@ export default function AccountSettingsPage() {
                 </div>
 
                 <SelectField
-                  label="Admin Access"
+                  label="Access"
                   value={roleFilter}
                   onChange={(value) => {
                     setRoleFilter(value);
@@ -2567,7 +2574,7 @@ export default function AccountSettingsPage() {
                       <th className="px-5 py-4 text-center">Profile</th>
                       <th className="px-5 py-4">Employee</th>
                       <th className="px-5 py-4">Status</th>
-                      <th className="px-5 py-4">Admin Access</th>
+                      <th className="px-5 py-4">Access</th>
                       <th className="px-5 py-4">Assigned Accounts</th>
                       <th className="px-5 py-4">Departments</th>
                       <th className="px-5 py-4">Creator</th>

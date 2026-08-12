@@ -109,6 +109,227 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function normalizeAccessRole(value) {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function getUserAdminAccess(user = {}) {
+  const directAccess = Number(
+    user.adminAccess ??
+      user.admin_access ??
+      user.gy_user_access ??
+      user.access ??
+      user.adminLevel ??
+      user.admin_level ??
+      0,
+  );
+
+  const assignments = Array.isArray(user.assignedAccounts)
+    ? user.assignedAccounts
+    : Array.isArray(user.assigned_accounts)
+      ? user.assigned_accounts
+      : Array.isArray(user.assignments)
+        ? user.assignments
+        : [];
+
+  const assignmentAccess = assignments
+    .map((item) =>
+      Number(
+        item?.adminAccess ??
+          item?.admin_access ??
+          item?.access ??
+          0,
+      ),
+    )
+    .filter((value) => Number.isFinite(value));
+
+  if (Number.isFinite(directAccess) && directAccess > 0) {
+    return directAccess;
+  }
+
+  return assignmentAccess.length
+    ? Math.max(...assignmentAccess)
+    : 0;
+}
+
+function getUserRoleName(user = {}) {
+  return normalizeAccessRole(
+    user.role ||
+      user.userRole ||
+      user.user_role ||
+      user.adminRole ||
+      user.admin_role ||
+      "",
+  );
+}
+
+function getUserPositionAssignments(user = {}) {
+  const sourceAssignments = Array.isArray(user.assignedAccounts)
+    ? user.assignedAccounts
+    : Array.isArray(user.assigned_accounts)
+      ? user.assigned_accounts
+      : Array.isArray(user.assignments)
+        ? user.assignments
+        : [];
+
+  const normalizedAssignments = sourceAssignments
+    .map((assignment) => ({
+      departmentId: cleanText(
+        assignment?.departmentId ||
+          assignment?.department_id ||
+          assignment?.gy_dept_id ||
+          "",
+      ),
+      departmentName: cleanText(
+        assignment?.departmentName ||
+          assignment?.department_name ||
+          assignment?.department ||
+          assignment?.name_department ||
+          "",
+      ),
+      accountId: cleanText(
+        assignment?.accountId ||
+          assignment?.account_id ||
+          assignment?.gy_acc_id ||
+          "",
+      ),
+      accountName: cleanText(
+        assignment?.accountName ||
+          assignment?.account_name ||
+          assignment?.account ||
+          assignment?.gy_acc_name ||
+          "",
+      ),
+    }))
+    .filter(
+      (assignment) =>
+        (assignment.departmentId || assignment.departmentName) &&
+        (assignment.accountId || assignment.accountName),
+    );
+
+  if (normalizedAssignments.length) {
+    return normalizedAssignments;
+  }
+
+  const fallback = {
+    departmentId: cleanText(
+      user.departmentId ||
+        user.department_id ||
+        user.gy_dept_id ||
+        "",
+    ),
+    departmentName: cleanText(
+      user.departmentName ||
+        user.department_name ||
+        user.department ||
+        user.name_department ||
+        "",
+    ),
+    accountId: cleanText(
+      user.accountId ||
+        user.account_id ||
+        user.gy_acc_id ||
+        "",
+    ),
+    accountName: cleanText(
+      user.accountName ||
+        user.account_name ||
+        user.account ||
+        user.gy_acc_name ||
+        "",
+    ),
+  };
+
+  return (
+    (fallback.departmentId || fallback.departmentName) &&
+    (fallback.accountId || fallback.accountName)
+  )
+    ? [fallback]
+    : [];
+}
+
+function valuesMatchByIdOrName(
+  firstId,
+  secondId,
+  firstName,
+  secondName,
+) {
+  const leftId = cleanText(firstId).toLowerCase();
+  const rightId = cleanText(secondId).toLowerCase();
+
+  if (leftId && rightId) {
+    return leftId === rightId;
+  }
+
+  const leftName = cleanText(firstName).toLowerCase();
+  const rightName = cleanText(secondName).toLowerCase();
+
+  return Boolean(
+    leftName &&
+      rightName &&
+      leftName === rightName,
+  );
+}
+
+function canViewAllHiringNeedPositions(user = {}) {
+  const access = getUserAdminAccess(user);
+  const role = getUserRoleName(user);
+
+  return (
+    access === 3 ||
+    access === 7 ||
+    role === "hr_admin" ||
+    role === "hradmin" ||
+    role === "super_admin" ||
+    role === "superadmin"
+  );
+}
+
+function isManagerUser(user = {}) {
+  const access = getUserAdminAccess(user);
+  const role = getUserRoleName(user);
+
+  return access === 5 || role === "manager";
+}
+
+function filterHiringNeedPositionsForUser(positions = [], user = {}) {
+  if (canViewAllHiringNeedPositions(user)) {
+    return positions;
+  }
+
+  if (!isManagerUser(user)) {
+    return positions;
+  }
+
+  const assignments = getUserPositionAssignments(user);
+
+  if (!assignments.length) {
+    return [];
+  }
+
+  return positions.filter((position) =>
+    assignments.some((assignment) => {
+      const departmentMatches = valuesMatchByIdOrName(
+        position.departmentId,
+        assignment.departmentId,
+        position.department,
+        assignment.departmentName,
+      );
+
+      const accountMatches = valuesMatchByIdOrName(
+        position.accountId,
+        assignment.accountId,
+        position.accountName,
+        assignment.accountName,
+      );
+
+      return departmentMatches && accountMatches;
+    }),
+  );
+}
+
 function upperText(value) {
   return cleanText(value).toUpperCase();
 }
@@ -1493,7 +1714,12 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
           .map(normalizePosition)
           .filter((item) => item.positionTitle);
 
-        setOpenPositions(rows);
+        const visibleRows = filterHiringNeedPositionsForUser(
+          rows,
+          user || {},
+        );
+
+        setOpenPositions(visibleRows);
       } catch (error) {
         if (!isActive) return;
 
@@ -1518,7 +1744,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
     return () => {
       isActive = false;
     };
-  }, [open, onStatus]);
+  }, [open, onStatus, user]);
 
   useEffect(() => {
     let isActive = true;
@@ -2108,8 +2334,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
     },
     ...openPositions.map((item) => ({
       value: item.id,
-      label: `${item.positionTitle}${item.positionId ? ` (${item.positionId})` : ""
-        }`,
+      label: item.positionTitle,
       description:
         item.departmentAccount ||
         item.locationSite ||
@@ -2419,17 +2644,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                       ) : null}
                     </div>
 
-                    <div>
-                      <FieldLabel>Position ID</FieldLabel>
-                      <TextInput
-                        value={form.positionId || ""}
-                        readOnly
-                        disabled
-                        placeholder="Auto-populated"
-                      />
-                    </div>
-
-                    <div className="lg:col-span-2">
+                    <div className="lg:col-span-3">
                       <FieldLabel required>
                         Department / Account
                       </FieldLabel>
@@ -2441,49 +2656,6 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                       />
                     </div>
 
-                    <div>
-                      <FieldLabel>Department ID</FieldLabel>
-                      <TextInput
-                        value={form.departmentId || ""}
-                        readOnly
-                        disabled
-                        placeholder="Auto-populated"
-                      />
-                    </div>
-
-                    <div>
-                      <FieldLabel>Account ID</FieldLabel>
-                      <TextInput
-                        value={form.accountId || ""}
-                        readOnly
-                        disabled
-                        placeholder="Auto-populated"
-                      />
-                    </div>
-
-                    <div>
-                      <FieldLabel>Job Description ID</FieldLabel>
-                      <TextInput
-                        value={form.jobDescriptionDbId || ""}
-                        readOnly
-                        disabled
-                        placeholder="Linked JD database ID"
-                      />
-                    </div>
-
-                    <div className="lg:col-span-3">
-                      <FieldLabel>Position Reference</FieldLabel>
-                      <TextInput
-                        value={
-                          form.jobDescriptionCode
-                            ? `${form.jobDescriptionCode} — ${form.jobDescriptionTitle}`
-                            : form.jobDescriptionTitle || ""
-                        }
-                        readOnly
-                        disabled
-                        placeholder="Auto-populated after selecting position"
-                      />
-                    </div>
                   </div>
                 </FormSection>
 

@@ -6181,6 +6181,23 @@ const CandidatePipelineModal = ({
         return response;
       }
 
+      /*
+       * The backend is authoritative for the current pipeline stage.
+       * Do not keep the optimistic hard-coded Initial Screening value when
+       * the saved database row is already in another stage. Doing so makes
+       * the modal display Initial Screening while the Proceed endpoint reads
+       * a different current_stage and correctly rejects the request.
+       */
+      const responseCandidate =
+        getCandidateFromApiPayload(response) || {};
+
+      setLocalCandidate((currentCandidate) =>
+        mergeCandidateRealtimeUpdate(
+          currentCandidate || nextCandidate,
+          responseCandidate,
+        ),
+      );
+
       setHasSelectedPrfStatusThisSession(
         ["Matched", "Not Matched"].includes(normalizedStatus),
       );
