@@ -1,23 +1,59 @@
 import React, { useMemo, useRef, useState } from "react";
-import { List, SlidersHorizontal } from "lucide-react";
-
 import { pipelineStages } from "../../../lib/utils/candidatePipeline/candidatePipelineConstants";
+import { getPipelineStageTheme } from "../../../lib/utils/candidatePipeline/candidatePipelineStageThemes";
 import PipelineCandidateCard from "./PipelineCandidateCard";
 import PipelineListView from "./PipelineListView";
 
 const BOARD_SCROLLBAR_CLASS =
-  "scrollbar-thin scrollbar-track-[#E6ECF2] scrollbar-thumb-sibs-primary-1 " +
-  "[&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar]:w-2 " +
-  "[&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-[#E6ECF2] " +
-  "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-sibs-primary-1 " +
-  "[&::-webkit-scrollbar-thumb:hover]:bg-[#082F50]";
+  "sibs-scrollbar [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:rounded-full " +
+  "[&::-webkit-scrollbar-track]:bg-[#E6ECF2] [&::-webkit-scrollbar-thumb]:rounded-full " +
+  "[&::-webkit-scrollbar-thumb]:bg-[#94A9C1] [&::-webkit-scrollbar-thumb:hover]:bg-[#6B88A8]";
 
 const COLUMN_SCROLLBAR_CLASS =
-  "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-sibs-primary-1 " +
-  "[&::-webkit-scrollbar]:w-2 " +
-  "[&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent " +
-  "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-sibs-primary-1 " +
-  "[&::-webkit-scrollbar-thumb:hover]:bg-[#082F50]";
+  "sibs-scrollbar [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent";
+
+const REFERENCE_STAGE_THEMES = {
+  "Initial Screening": {
+    dot: "bg-amber-500",
+    header: "border-amber-200/90 bg-amber-50/90 text-amber-900",
+    badge: "bg-amber-500 text-white",
+  },
+  "Online Assessment": {
+    dot: "bg-indigo-500",
+    header: "border-indigo-200/90 bg-indigo-50/90 text-indigo-900",
+    badge: "bg-indigo-500 text-white",
+  },
+  "Assessment Fit": {
+    dot: "bg-sky-500",
+    header: "border-sky-200/90 bg-sky-50/90 text-sky-900",
+    badge: "bg-sky-500 text-white",
+  },
+  "Interview Scheduled": {
+    dot: "bg-blue-500",
+    header: "border-blue-200/90 bg-blue-50/90 text-blue-900",
+    badge: "bg-blue-500 text-white",
+  },
+  Interviewed: {
+    dot: "bg-teal-500",
+    header: "border-teal-200/90 bg-teal-50/90 text-teal-900",
+    badge: "bg-teal-500 text-white",
+  },
+  Offered: {
+    dot: "bg-orange-500",
+    header: "border-orange-200/90 bg-orange-50/90 text-orange-900",
+    badge: "bg-orange-500 text-white",
+  },
+  Accepted: {
+    dot: "bg-emerald-500",
+    header: "border-emerald-200/90 bg-emerald-50/90 text-emerald-900",
+    badge: "bg-emerald-500 text-white",
+  },
+  "For NHO": {
+    dot: "bg-cyan-500",
+    header: "border-cyan-200/90 bg-cyan-50/90 text-cyan-900",
+    badge: "bg-cyan-500 text-white",
+  },
+};
 
 function getCandidateStage(candidate = {}) {
   return (
@@ -39,61 +75,29 @@ function getCandidateKey(candidate = {}, index = 0) {
   );
 }
 
-function getStageDescription(stage) {
-  switch (stage) {
-    case "Initial Screening":
-      return "PRF review";
-    case "Online Assessment":
-      return "Assessment";
-    case "Assessment Fit":
-      return "Ready to schedule";
-    case "Interview Scheduled":
-      return "Calendar";
-    case "Interviewed":
-      return "Interview done";
-    case "Offered":
-      return "Offer approval";
-    case "Accepted":
-      return "Converted";
-    case "For NHO":
-      return "NHO schedule";
-    case "Drop-off":
-    case "Drop-offs":
-      return "Closed";
-    default:
-      return "Pipeline";
-  }
-}
-
 function getAccountLabelByStage(stage = "") {
   const finalAccountStages = ["Offered", "Accepted", "For NHO", "Hired"];
 
-  return finalAccountStages.includes(stage)
-    ? "Final Account"
-    : "Initial Account";
+  return finalAccountStages.includes(stage) ? "Final Account" : "Initial Account";
 }
 
 export default function PipelineCardsBoard({
   candidates = [],
   stageCounts = {},
   activeStage,
-  setActiveStage,
   onViewCandidate,
   onOpenMoveModal,
   onOpenAssessmentModal,
   onOpenScheduleModal,
   onCancelInterview,
   onCompleteInterview,
+  viewMode = "board",
 }) {
-  const [boardViewMode, setBoardViewMode] = useState("board");
-
   const candidatesByStage = useMemo(() => {
     return pipelineStages.reduce((acc, stage) => {
-      acc[stage] = candidates.filter((candidate) => {
-        const candidateStage = getCandidateStage(candidate);
-        return candidateStage === stage;
-      });
-
+      acc[stage] = candidates.filter(
+        (candidate) => getCandidateStage(candidate) === stage,
+      );
       return acc;
     }, {});
   }, [candidates]);
@@ -124,10 +128,8 @@ export default function PipelineCardsBoard({
     if (!isDraggingBoard || !scrollRef.current) return;
 
     event.preventDefault();
-
     const currentX = event.pageX - scrollRef.current.offsetLeft;
     const walk = currentX - dragStartX;
-
     scrollRef.current.scrollLeft = dragStartScrollLeft - walk;
   }
 
@@ -139,140 +141,106 @@ export default function PipelineCardsBoard({
     setIsDraggingBoard(false);
   }
 
-  return (
-    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] bg-white px-4 py-3 sm:px-5">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-base font-extrabold text-[#101828]">Board</h2>
-
-            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-              Switch between compact board cards and a detailed list view.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] p-1">
-              <button
-                type="button"
-                onClick={() => setBoardViewMode("board")}
-                className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-xs font-extrabold transition ${
-                  boardViewMode === "board"
-                    ? "bg-sibs-primary-1 text-white shadow-sm"
-                    : "text-sibs-primary-1 hover:bg-white"
-                }`}
-              >
-                <SlidersHorizontal size={15} />
-                Board
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setBoardViewMode("list")}
-                className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-xs font-extrabold transition ${
-                  boardViewMode === "list"
-                    ? "bg-sibs-primary-1 text-white shadow-sm"
-                    : "text-sibs-primary-1 hover:bg-white"
-                }`}
-              >
-                <List size={15} />
-                List
-              </button>
-            </div>
-          </div>
-        </div>
+  if (viewMode === "list") {
+    return (
+      <div className="bg-[#F7F9FC] p-3 sm:p-4">
+        <PipelineListView
+          candidates={candidates}
+          activeStage={activeStage}
+          onViewCandidate={onViewCandidate}
+          onOpenMoveModal={onOpenMoveModal}
+          onOpenAssessmentModal={onOpenAssessmentModal}
+          onOpenScheduleModal={onOpenScheduleModal}
+          onCancelInterview={onCancelInterview}
+          onCompleteInterview={onCompleteInterview}
+        />
       </div>
+    );
+  }
 
-      {boardViewMode === "list" ? (
-        <div className="bg-[#F5F7FA] p-4">
-          <PipelineListView
-            candidates={candidates}
-            activeStage={activeStage}
-            onViewCandidate={onViewCandidate}
-            onOpenMoveModal={onOpenMoveModal}
-            onOpenAssessmentModal={onOpenAssessmentModal}
-            onOpenScheduleModal={onOpenScheduleModal}
-            onCancelInterview={onCancelInterview}
-            onCompleteInterview={onCompleteInterview}
-          />
-        </div>
-      ) : (
-        <div
-          ref={scrollRef}
-          onMouseDown={handleBoardMouseDown}
-          onMouseMove={handleBoardMouseMove}
-          onMouseUp={handleBoardMouseUp}
-          onMouseLeave={handleBoardMouseLeave}
-          className={`overflow-x-auto bg-[#F5F7FA] p-4 pb-5 select-none ${BOARD_SCROLLBAR_CLASS} ${
-            isDraggingBoard ? "cursor-grabbing" : "cursor-default"
-          }`}
-        >
-          <div className="flex min-w-max gap-4">
-            {pipelineStages.map((stage) => {
-              const stageCandidates = candidatesByStage[stage] || [];
-              const isActive = activeStage === stage;
-              const count = stageCounts[stage] ?? stageCandidates.length;
+  return (
+    <div
+      ref={scrollRef}
+      onMouseDown={handleBoardMouseDown}
+      onMouseMove={handleBoardMouseMove}
+      onMouseUp={handleBoardMouseUp}
+      onMouseLeave={handleBoardMouseLeave}
+      className={`overflow-x-auto bg-[#E6EAF0] p-1.5 pb-3 select-none sm:p-2 sm:pb-4 ${BOARD_SCROLLBAR_CLASS} ${
+        isDraggingBoard ? "cursor-grabbing" : "cursor-default"
+      }`}
+    >
+      <div className="flex min-w-max gap-3 2xl:gap-4">
+        {pipelineStages.map((stage, stageIndex) => {
+          const stageCandidates = candidatesByStage[stage] || [];
+          const count = stageCounts[stage] ?? stageCandidates.length;
+          const theme =
+            REFERENCE_STAGE_THEMES[stage] || getPipelineStageTheme(stage);
 
-              return (
-                <div
-                  key={stage}
-                  className={`flex h-[600px] w-[292px] shrink-0 flex-col overflow-hidden rounded-xl border bg-[#F8FAFC] transition border-[#E6ECF2]`}
+          return (
+            <div
+              key={stage}
+              style={{ animationDelay: `${stageIndex * 60}ms` }}
+              className="sibs-page-card-in flex h-[600px] w-[292px] shrink-0 flex-col overflow-hidden rounded-2xl border border-[#D7DEE8] bg-[#EEF3F8] shadow-[0_7px_18px_rgba(4,44,81,0.035)] transition 2xl:h-[760px]"
+            >
+              <div
+                className={`mx-1.5 mt-1.5 flex min-h-[44px] items-center justify-between gap-3 rounded-xl border px-3 text-left shadow-[0_1px_2px_rgba(4,44,81,0.025)] ${theme.header}`}
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <span
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${theme.dot}`}
+                  />
+                  <p className="truncate text-[10px] font-extrabold uppercase tracking-tight 2xl:text-[11px]">
+                    {stage}
+                  </p>
+                </div>
+
+                <span
+                  className={`inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-2 text-[10px] font-extrabold shadow-sm ${theme.badge}`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => setActiveStage(stage)}
-                    className={`flex h-[58px] items-center justify-between gap-3 border-b px-3 text-left transition bg-white border-[#E6ECF2]`}
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                        {stage}
-                      </p>
+                  {count}
+                </span>
+              </div>
 
-                      <p className="mt-0.5 truncate text-[10px] font-bold text-[#98A2B3]">
-                        {getStageDescription(stage)}
+              <div
+                className={`min-h-0 flex-1 space-y-3 overflow-y-auto p-1.5 pt-3 2xl:p-2 2xl:pt-3 ${COLUMN_SCROLLBAR_CLASS}`}
+              >
+                {stageCandidates.length > 0 ? (
+                  stageCandidates.map((candidate, index) => (
+                    <div
+                      key={getCandidateKey(candidate, index)}
+                      data-no-board-drag="true"
+                      className="sibs-page-card-in"
+                      style={{ animationDelay: `${stageIndex * 50 + index * 40}ms` }}
+                    >
+                      <PipelineCandidateCard
+                        candidate={candidate}
+                        accountLabel={getAccountLabelByStage(stage)}
+                        onViewCandidate={onViewCandidate}
+                        onOpenMoveModal={onOpenMoveModal}
+                        onOpenAssessmentModal={onOpenAssessmentModal}
+                        onOpenScheduleModal={onOpenScheduleModal}
+                        onCancelInterview={onCancelInterview}
+                        onCompleteInterview={onCompleteInterview}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="mx-0.5 flex min-h-[112px] items-center justify-center rounded-xl border border-dashed border-[#D6E0EA] bg-white/70 px-4 text-center">
+                    <div>
+                      <p className="sibs-text-xs font-extrabold text-[#667085]">
+                        No candidates
+                      </p>
+                      <p className="mt-1 text-[9px] font-semibold text-[#98A2B3]">
+                        This stage is currently empty.
                       </p>
                     </div>
-
-                    <span className="inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-white px-2 text-[11px] font-extrabold text-[#475467] shadow-sm">
-                      {count}
-                    </span>
-                  </button>
-
-                  <div
-                    className={`min-h-0 flex-1 space-y-3 overflow-y-auto p-3 pr-2 ${COLUMN_SCROLLBAR_CLASS}`}
-                  >
-                    {stageCandidates.length > 0 ? (
-                      stageCandidates.map((candidate, index) => (
-                        <div
-                          key={getCandidateKey(candidate, index)}
-                          data-no-board-drag="true"
-                        >
-                          <PipelineCandidateCard
-                            candidate={candidate}
-                            accountLabel={getAccountLabelByStage(stage)}
-                            onViewCandidate={onViewCandidate}
-                            onOpenMoveModal={onOpenMoveModal}
-                            onOpenAssessmentModal={onOpenAssessmentModal}
-                            onOpenScheduleModal={onOpenScheduleModal}
-                            onCancelInterview={onCancelInterview}
-                            onCompleteInterview={onCompleteInterview}
-                          />
-                        </div>
-                      ))
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-white px-3 py-8 text-center">
-                        <p className="text-xs font-extrabold text-[#98A2B3]">
-                          No cards
-                        </p>
-                      </div>
-                    )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </section>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

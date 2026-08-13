@@ -1300,7 +1300,7 @@ export default function AvailablePositionsPage() {
         className="sibs-dashboard-main-wide"
       >
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
-          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
+          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative z-[30] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
             <span className="sibs-top-accent" aria-hidden="true" />
 
             <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -1378,8 +1378,8 @@ export default function AvailablePositionsPage() {
             </section>
           ) : null}
 
-          <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
-            <div className="border-b border-[#E6ECF2] bg-white px-4 py-5 sm:px-5">
+          <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
+            <div className="rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-5 sm:px-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="sibs-section-title">
@@ -1398,7 +1398,7 @@ export default function AvailablePositionsPage() {
               </div>
             </div>
 
-            <div className="relative z-[90] space-y-5 overflow-visible p-4 sm:p-5">
+            <div className="relative z-[1] space-y-5 rounded-b-2xl p-4 sm:p-5">
               <PaginationTable
                 filterLayout="ta-inline"
                 showFilterPanel={false}

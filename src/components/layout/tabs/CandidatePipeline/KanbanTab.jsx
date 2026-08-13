@@ -207,7 +207,7 @@ export default function Kanban({
       </div>
 
       <div className="hidden overflow-x-auto pb-2 lg:block">
-        <div className="grid min-w-[1320px] grid-cols-7 gap-4">
+        <div className="grid min-w-[1540px] grid-cols-7 gap-4 2xl:min-w-[1680px]">
           {stages.map((stage) => {
             const items = groupedByStage[stage] || [];
 

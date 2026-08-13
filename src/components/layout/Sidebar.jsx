@@ -1025,7 +1025,7 @@ export default function Sidebar() {
           type="button"
           aria-label="Close sidebar backdrop"
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-[75] bg-black/40 lg:hidden"
+          className="fixed inset-0 z-[100000] bg-black/40 lg:hidden"
         />
       )}
 
@@ -1033,7 +1033,7 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
-          className="fixed left-4 top-[19px] z-[85] flex h-9 w-9 items-center justify-center rounded-xl border border-[#083A69] bg-sibs-primary-1 shadow-[0_6px_16px_rgba(0,48,142,0.24)] lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg sm:left-6 sm:top-[25px]"
+          className="fixed left-4 top-[19px] z-[100010] flex h-9 w-9 items-center justify-center rounded-xl border border-[#083A69] bg-sibs-primary-1 shadow-[0_6px_16px_rgba(0,48,142,0.24)] lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg sm:left-6 sm:top-[25px]"
           aria-label="Open sidebar"
         >
           <Menu
@@ -1047,7 +1047,7 @@ export default function Sidebar() {
         draggable={false}
         onDragStart={(event) => event.preventDefault()}
         className={[
-          "fixed left-0 top-0 z-[80] flex h-dvh shrink-0 select-none flex-col border-r border-[#083A69] bg-sibs-primary-1 font-jakarta text-white shadow-xl transition-all duration-300",
+          "fixed left-0 top-0 z-[100005] lg:z-[40] flex h-dvh shrink-0 select-none flex-col border-r border-[#083A69] bg-sibs-primary-1 font-jakarta text-white shadow-xl transition-all duration-300",
           !isMobile && collapsed ? "w-20" : "w-[240px] 2xl:w-[260px]",
           isMobile
             ? mobileOpen

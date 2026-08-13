@@ -109,6 +109,29 @@ function formatDate(value) {
   });
 }
 
+function findOverlappingCostEntry(costEntries = [], form = {}, excludeId = null) {
+  if (!form.source || !form.dateFrom || !form.dateTo) {
+    return null;
+  }
+
+  const source = cleanText(form.source).toLowerCase();
+
+  return (
+    (Array.isArray(costEntries) ? costEntries : []).find((entry) => {
+      const entryId = entry?.id;
+      const entrySource = cleanText(entry?.source).toLowerCase();
+      const entryDateFrom = entry?.dateFrom || entry?.date_from;
+      const entryDateTo = entry?.dateTo || entry?.date_to;
+
+      if (excludeId && String(entryId) === String(excludeId)) return false;
+      if (!entrySource || entrySource !== source) return false;
+      if (!entryDateFrom || !entryDateTo) return false;
+
+      return entryDateFrom <= form.dateTo && entryDateTo >= form.dateFrom;
+    }) || null
+  );
+}
+
 function formatDateRange(entry = {}) {
   const dateFrom =
     entry.dateFrom ||
@@ -233,7 +256,7 @@ function MetricTile({
   label,
   value,
   helper,
-  icon: Icon,
+  icon: Icon = Activity,
   accentClassName = "text-white",
   iconClassName = "text-slate-300",
   className = "",
@@ -247,7 +270,7 @@ function MetricTile({
           {label}
         </p>
 
-        <Icon size={14} className={iconClassName} />
+        {Icon ? <Icon size={14} className={iconClassName} /> : null}
       </div>
 
       <p
@@ -557,6 +580,19 @@ export default function SourceDetailsModal({
 
     if (expenseForm.dateTo < expenseForm.dateFrom) {
       return "Date To cannot be earlier than Date From.";
+    }
+
+    const conflictingEntry = findOverlappingCostEntry(
+      liveSource?.costEntries,
+      {
+        ...expenseForm,
+        source: sourceName,
+      },
+      expenseMode === "edit" ? editingEntry?.id : null,
+    );
+
+    if (conflictingEntry) {
+      return `This source already has a campaign from ${formatDate(conflictingEntry.dateFrom || conflictingEntry.date_from)} to ${formatDate(conflictingEntry.dateTo || conflictingEntry.date_to)}. Choose another date range or edit the existing campaign.`;
     }
 
     return "";

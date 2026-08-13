@@ -98,7 +98,7 @@ export default function StatusModal({
 
   return createPortal(
     <div
-      className="sibs-modal-blur fixed left-0 top-0 z-[999999] flex h-[100dvh] w-[100dvw] items-center justify-center px-4"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed left-0 top-0 z-[999999] flex h-[100dvh] w-[100dvw] items-center justify-center px-4 font-jakarta"
       onClick={handleClose}
     >
       {variant === "compact" ? (
@@ -106,40 +106,44 @@ export default function StatusModal({
           role="dialog"
           aria-modal="true"
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md rounded-2xl border border-sibs-tertiary-9 bg-white p-6 shadow-2xl"
+          className="sibs-modal-pop-in w-full max-w-md rounded-2xl border border-[#D7DEE8] bg-white p-6 shadow-2xl font-jakarta"
         >
           <div className="mb-4 flex items-start gap-4">
-            <div className="flex min-w-0 flex-row items-center gap-2">
+            <div className="flex min-w-0 flex-row items-center gap-3">
               <div
                 className={`shrink-0 rounded-2xl p-3 ${
-                  isConfirm ? "bg-amber-100" : isSuccess ? "bg-green-100" : "bg-red-100"
+                  isConfirm
+                    ? "bg-amber-50 text-amber-500"
+                    : isSuccess
+                      ? "bg-emerald-50 text-emerald-500"
+                      : "bg-red-50 text-red-500"
                 }`}
               >
                 {isConfirm ? (
-                  <AlertTriangle size={24} className="text-amber-600" />
+                  <AlertTriangle size={24} />
                 ) : isSuccess ? (
-                  <CheckCircle2 size={24} className="text-green-600" />
+                  <CheckCircle2 size={24} />
                 ) : (
-                  <XCircle size={24} className="text-red-600" />
+                  <XCircle size={24} />
                 )}
               </div>
 
-              <h3 className="break-words text-xl font-semibold text-sibs-primary-1">
+              <h3 className="break-words font-jakarta text-lg font-extrabold tracking-tight text-[#042C51]">
                 {finalTitle}
               </h3>
             </div>
           </div>
 
-          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-sibs-tertiary-5">
+          <p className="mt-2 whitespace-pre-line font-jakarta text-xs font-semibold leading-relaxed text-[#475467]">
             {finalMessage}
           </p>
 
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-6 flex justify-end gap-2.5">
             {isConfirm && (
               <button
                 type="button"
                 onClick={() => onCancel?.()}
-                className="rounded-xl border border-sibs-tertiary-9 bg-white px-4 py-2.5 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-slate-50 active:scale-[0.98]"
+                className="h-10 rounded-[10px] border border-[#D7DEE8] bg-white px-4 font-jakarta text-xs font-bold text-[#042C51] transition hover:bg-slate-50 active:scale-[0.98]"
               >
                 {cancelLabel}
               </button>
@@ -148,8 +152,8 @@ export default function StatusModal({
             <button
               type="button"
               onClick={isConfirm ? () => onConfirm?.() : handleClose}
-              className={`rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98] ${
-                isConfirm ? "bg-red-600" : "bg-[var(--sibs-primary-1)]"
+              className={`h-10 rounded-[10px] px-5 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
+                isConfirm ? "bg-red-600 hover:bg-red-700" : "bg-[#FF5C28] hover:bg-[#e04d1c]"
               }`}
             >
               {isConfirm ? confirmLabel : "OK"}
@@ -161,53 +165,55 @@ export default function StatusModal({
           role="dialog"
           aria-modal="true"
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md overflow-hidden rounded-2xl border border-sibs-tertiary-9 bg-white shadow-2xl"
+          className="sibs-modal-pop-in relative w-full max-w-md overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white p-6 shadow-2xl font-jakarta"
         >
-          <div className="px-6 py-6">
-            <div className="flex flex-col items-center text-center">
-              <div
-                className={`mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
-                  isConfirm ? "bg-amber-100" : isSuccess ? "bg-green-100" : "bg-red-100"
-                }`}
-              >
-                {isConfirm ? (
-                  <AlertTriangle size={34} className="text-amber-600" />
-                ) : isSuccess ? (
-                  <CheckCircle2 size={34} className="text-green-600" />
-                ) : (
-                  <XCircle size={34} className="text-red-600" />
-                )}
-              </div>
+          <div className="flex flex-col items-center text-center">
+            <div
+              className={`mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+                isConfirm
+                  ? "bg-amber-50 text-amber-500"
+                  : isSuccess
+                    ? "bg-emerald-50 text-emerald-500"
+                    : "bg-red-50 text-red-500"
+              }`}
+            >
+              {isConfirm ? (
+                <AlertTriangle size={28} />
+              ) : isSuccess ? (
+                <CheckCircle2 size={28} />
+              ) : (
+                <XCircle size={28} />
+              )}
+            </div>
 
-              <h2 className="text-2xl font-bold text-sibs-primary-1">
-                {finalTitle}
-              </h2>
+            <h2 className="font-jakarta text-xl font-extrabold tracking-tight text-[#042C51]">
+              {finalTitle}
+            </h2>
 
-              <p className="mt-3 whitespace-pre-line text-sm leading-6 text-sibs-tertiary-5">
-                {finalMessage}
-              </p>
+            <p className="mt-2.5 whitespace-pre-line font-jakarta text-xs font-medium leading-relaxed text-[#475467]">
+              {finalMessage}
+            </p>
 
-              <div className="mt-6 flex w-full gap-2">
-                {isConfirm && (
-                  <button
-                    type="button"
-                    onClick={() => onCancel?.()}
-                    className="flex-1 rounded-xl border border-sibs-tertiary-9 bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-slate-50 active:scale-[0.98]"
-                  >
-                    {cancelLabel}
-                  </button>
-                )}
-
+            <div className="mt-6 flex w-full gap-2.5">
+              {isConfirm && (
                 <button
                   type="button"
-                  onClick={isConfirm ? () => onConfirm?.() : handleClose}
-                  className={`flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98] ${
-                    isConfirm ? "bg-red-600" : "bg-[var(--sibs-primary-1)]"
-                  }`}
+                  onClick={() => onCancel?.()}
+                  className="h-10 flex-1 rounded-[10px] border border-[#D7DEE8] bg-white px-4 font-jakarta text-xs font-bold text-[#042C51] transition hover:bg-slate-50 active:scale-[0.98]"
                 >
-                  {isConfirm ? confirmLabel : "OK"}
+                  {cancelLabel}
                 </button>
-              </div>
+              )}
+
+              <button
+                type="button"
+                onClick={isConfirm ? () => onConfirm?.() : handleClose}
+                className={`h-10 flex-1 rounded-[10px] px-4 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
+                  isConfirm ? "bg-red-600 hover:bg-red-700" : "bg-[#FF5C28] hover:bg-[#e04d1c]"
+                }`}
+              >
+                {isConfirm ? confirmLabel : "OK"}
+              </button>
             </div>
           </div>
         </div>

@@ -1,11 +1,17 @@
 import React, { useState } from "react";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 import {
   getNextStage,
   getStageClass,
   textareaClass,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
+import CandidatePipelineModalShell, {
+  CandidateModalPrimaryButton,
+  CandidateModalSecondaryButton,
+  CandidateModalSection,
+} from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
+import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 
 const MoveStageModal = ({
   open,
@@ -22,149 +28,151 @@ const MoveStageModal = ({
   const nextStage = getNextStage(candidate.currentStage);
   if (!nextStage) return null;
 
-  return (
-    <div
-      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-4 py-4"
-    >
-      {processSubmitting && (
-        <div
-          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
-          aria-hidden="true"
-        />
-      )}
-<div
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()}
+  async function handleSubmit(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (processSubmitting) return;
+
+    setProcessSubmitting(true);
+    try {
+      await onSubmit?.(event);
+    } finally {
+      setProcessSubmitting(false);
+    }
+  }
+
+  const footer = (
+    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <CandidateModalSecondaryButton
+        type="button"
+        onClick={onClose}
+        disabled={processSubmitting}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-          <div>
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-              Move Candidate
-            </h2>
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Confirm movement from {candidate.currentStage} to {nextStage}.
-            </p>
-          </div>
+        Cancel
+      </CandidateModalSecondaryButton>
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={processSubmitting}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-          >
-            <X size={20} />
-          </button>
-        </div>
+      <CandidateModalPrimaryButton
+        type="button"
+        onClick={handleSubmit}
+        disabled={processSubmitting}
+        aria-busy={processSubmitting}
+        className="min-w-[142px]"
+      >
+        {processSubmitting ? (
+          <Loader2 size={15} className="animate-spin" />
+        ) : (
+          <ArrowRight size={15} />
+        )}
+        {processSubmitting ? "Moving..." : "Confirm Move"}
+      </CandidateModalPrimaryButton>
+    </div>
+  );
 
-        <form
-          onSubmit={async (event) => {
-            event.preventDefault();
-            if (processSubmitting) return;
+  return (
+    <CandidatePipelineModalShell
+      icon={ArrowRight}
+      title="Move Candidate to Next Stage"
+      subtitle="Record the movement reason before advancing the candidate through the recruitment pipeline."
+      badge="Pipeline Movement"
+      onClose={onClose}
+      closeDisabled={processSubmitting}
+      maxWidth="max-w-2xl"
+      zIndex="z-[10001]"
+      footer={footer}
+    >
+      <div className="space-y-4">
+        <CandidateModalSummary
+          candidate={candidate}
+          stage={candidate.currentStage}
+          statusClass={getStageClass(candidate.currentStage)}
+        />
 
-            setProcessSubmitting(true);
-            try {
-              await onSubmit?.(event);
-            } finally {
-              setProcessSubmitting(false);
-            }
-          }}
-          className="flex-1 overflow-y-auto p-4 sm:p-6"
+        <CandidateModalSection
+          title="Stage Movement"
+          subtitle="Confirm the current and next recruitment stages."
         >
-          <div className="space-y-5">
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <h3 className="text-lg font-bold text-sibs-primary-1">
-                {candidate.name}
-              </h3>
-              <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
-                {candidate.roleAccount}
-              </p>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span
-                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStageClass(
-                    candidate.currentStage,
-                  )}`}
-                >
-                  From: {candidate.currentStage}
-                </span>
-
-                <ArrowRight size={15} className="text-sibs-primary-1" />
-
-                <span
-                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStageClass(
-                    nextStage,
-                  )}`}
-                >
-                  To: {nextStage}
-                </span>
-              </div>
+          <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2 sm:gap-3">
+            <div className="rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-3 sm:p-4">
+              <p className="sibs-kicker">Current Stage</p>
+              <span
+                className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getStageClass(
+                  candidate.currentStage,
+                )}`}
+              >
+                {candidate.currentStage}
+              </span>
             </div>
 
-            {nextStage === "Online Assessment" && (
-              <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
-                After confirming, the candidate will move to Online Assessment,
-                assessment status will be set to Not Take, and the assessment
-                email will be triggered.
-              </div>
-            )}
+            <div className="flex items-center justify-center text-sibs-primary-1">
+              <ArrowRight size={18} />
+            </div>
 
-            {nextStage === "Offered" && (
-              <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
-                Candidate will move from Interviewed to Offered.
-              </div>
-            )}
+            <div className="rounded-xl border border-[#FF5C28]/25 bg-[#FFF9F6] p-3 sm:p-4">
+              <p className="sibs-kicker text-[#FF5C28]">Next Stage</p>
+              <span
+                className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getStageClass(
+                  nextStage,
+                )}`}
+              >
+                {nextStage}
+              </span>
+            </div>
+          </div>
 
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+          {nextStage === "Online Assessment" && (
+            <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 sibs-text-xs font-semibold leading-5 text-sibs-primary-1">
+              After confirmation, assessment status will be set to Not Take and
+              the assessment email workflow will be triggered.
+            </div>
+          )}
+
+          {nextStage === "Offered" && (
+            <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 sibs-text-xs font-semibold leading-5 text-amber-800">
+              Candidate will advance from Interviewed to Offered and continue to
+              the offer preparation workflow.
+            </div>
+          )}
+        </CandidateModalSection>
+
+        <CandidateModalSection title="Movement Details">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <label className="block">
+              <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">
                 Movement Reason <span className="text-red-500">*</span>
-              </label>
-
+              </span>
               <textarea
                 required
                 rows={4}
-                value={form.reason}
-                onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                disabled={processSubmitting}
+                value={form?.reason || ""}
+                onChange={(event) =>
+                  setForm({ ...form, reason: event.target.value })
+                }
                 className={textareaClass()}
+                placeholder="Explain why the candidate is moving to the next stage."
               />
-            </div>
+            </label>
 
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+            <label className="block">
+              <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">
                 Internal Remarks
-              </label>
-
+              </span>
               <textarea
                 rows={3}
-                value={form.remarks}
-                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                disabled={processSubmitting}
+                value={form?.remarks || ""}
+                onChange={(event) =>
+                  setForm({ ...form, remarks: event.target.value })
+                }
                 className={textareaClass()}
+                placeholder="Add optional internal remarks."
               />
-            </div>
-          </div>
-        </form>
-
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
-          <div className="flex flex-col justify-end gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="button"
-              onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
-            >
-              <ArrowRight size={16} />
-              Confirm Move
-            </button>
-          </div>
-        </div>
+            </label>
+          </form>
+        </CandidateModalSection>
       </div>
-    </div>
+    </CandidatePipelineModalShell>
   );
 };
 

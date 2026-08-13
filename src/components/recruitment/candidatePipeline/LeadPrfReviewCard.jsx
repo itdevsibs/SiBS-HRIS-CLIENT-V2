@@ -151,17 +151,8 @@ function PrfStatusDropdown({
   );
 }
 
-const LeadPrfReviewCard = ({ candidate, onUpdatePrfStatus }) => {
-  const currentStatus = cleanText(candidate?.prfStatus) || "Unmatched";
-
-  const options = useMemo(() => {
-    const normalized = normalizeOptions(prfStatusOptions);
-
-    if (normalized.length) return normalized;
-
-    return normalizeOptions(["Unmatched", "Matched"]);
-  }, []);
-
+const LeadPrfReviewCard = ({ candidate, onUpdatePrfStatus, onAdvanceStage }) => {
+  const currentStatus = cleanText(candidate?.prfStatus) || "Review";
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
 
   useEffect(() => {
@@ -169,56 +160,69 @@ const LeadPrfReviewCard = ({ candidate, onUpdatePrfStatus }) => {
   }, [currentStatus, candidate?.id, candidate?.candidateId]);
 
   async function handleStatusChange(nextStatus) {
-    if (!nextStatus || nextStatus === currentStatus) {
-      setSelectedStatus(currentStatus);
-      return;
-    }
-
+    if (!nextStatus || nextStatus === currentStatus) return;
     setSelectedStatus(nextStatus);
-
     const response = await onUpdatePrfStatus?.(candidate, nextStatus);
-
     if (response === null || response?.success === false) {
       setSelectedStatus(currentStatus);
     }
   }
 
-  return (
-    <div className="relative z-[80] overflow-visible rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h3 className="text-sm font-bold text-[#101828]">PRF Review</h3>
+  const isMatched = selectedStatus === "Matched";
 
-          <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-            Select the lead PRF status before moving forward.
+  return (
+    <div className="relative z-[80] overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+            LEAD PRF REVIEW & ALIGNMENT
+          </h3>
+          <p className="mt-0.5 text-xs font-medium text-[#667085]">
+            Validate headcount requisition alignment for candidate placement.
           </p>
         </div>
 
-        <span
-          className={`w-fit shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${getPrfStatusClass(
-            currentStatus,
-          )}`}
-        >
-          Current: {currentStatus}
-        </span>
+        {/* Segmented Control Button Group */}
+        <div className="flex items-center gap-1 rounded-lg border border-[#D7DEE8] bg-white p-1">
+          {["Review", "Matched", "Not Matched"].map((statusOption) => {
+            const active =
+              (selectedStatus === "Matched" && statusOption === "Matched") ||
+              (selectedStatus === "Not Matched" && statusOption === "Not Matched") ||
+              (selectedStatus !== "Matched" && selectedStatus !== "Not Matched" && statusOption === "Review");
+
+            return (
+              <button
+                key={statusOption}
+                type="button"
+                onClick={() => handleStatusChange(statusOption)}
+                className={`rounded-md border px-4 py-1.5 text-xs font-extrabold transition ${
+                  active
+                    ? "border-[#FF5C28] bg-[#FFF8F5] text-[#FF5C28]"
+                    : "border-transparent text-[#667085] hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                }`}
+              >
+                {statusOption}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="relative z-[90] mt-4 overflow-visible">
-        <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-          PRF Status
-        </label>
+      <div className="mt-4 flex flex-col gap-3 border-t border-[#EEF2F6] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-[#667085]">Current PRF Status:</span>
+          <span className="text-xs font-extrabold text-[#042C51]">{currentStatus}</span>
+        </div>
 
-        <PrfStatusDropdown
-          value={selectedStatus}
-          options={options}
-          onChange={handleStatusChange}
-          placeholder="Select PRF status"
-        />
-
-        <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-          Changing this value will immediately update the candidate PRF review
-          status.
-        </p>
+        {isMatched && (
+          <button
+            type="button"
+            onClick={() => onAdvanceStage?.(candidate)}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
+          >
+            Advance to Online Assessment
+          </button>
+        )}
       </div>
     </div>
   );

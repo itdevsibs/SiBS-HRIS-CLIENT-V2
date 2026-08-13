@@ -32,6 +32,8 @@ export default function DropdownField({
   excludedOptionId = "",
   boundaryRef = null,
   maxMenuHeight = 224,
+  controlVariant = "field",
+  className = "",
 }) {
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
@@ -263,9 +265,14 @@ export default function DropdownField({
 
       if (!nextOpen) {
         setDropdownSearch("");
+      } else {
+        window.setTimeout(() => {
+          updateMenuPosition();
+          if (searchable) {
+            inputRef.current?.focus?.();
+          }
+        }, 0);
       }
-
-      window.setTimeout(updateMenuPosition, 0);
 
       return nextOpen;
     });
@@ -305,7 +312,7 @@ export default function DropdownField({
               left: `${menuStyle.left}px`,
               top: `${menuStyle.top}px`,
               width: `${menuStyle.width}px`,
-              zIndex: 30000,
+              zIndex: 99999,
             }}
             className={`sibs-dropdown-pop-in overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
           >
@@ -316,27 +323,34 @@ export default function DropdownField({
               }}
             >
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => (
-                  <button
-                    key={option.id || option.value}
-                    type="button"
-                    role="option"
-                    aria-selected="false"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => handleSelect(option)}
-                    className="block w-full bg-white px-3 py-2.5 text-left text-xs font-semibold text-[#344054] transition hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-                  >
-                    <span className="block min-w-0 truncate">
-                      {option.label}
-                    </span>
-
-                    {option.description ? (
-                      <span className="mt-0.5 block min-w-0 truncate text-[10px] font-bold text-[#98A2B3]">
-                        {option.description}
+                filteredOptions.map((option) => {
+                  const isSelected = String(option.value) === String(value ?? "");
+                  return (
+                    <button
+                      key={option.id || option.value}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => handleSelect(option)}
+                      className={`block w-full px-3 py-2.5 text-left text-xs transition ${
+                        isSelected
+                          ? "bg-[#FFF7F3] font-extrabold text-[#FF5C28]"
+                          : "bg-white font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                      }`}
+                    >
+                      <span className="block min-w-0 truncate">
+                        {option.label}
                       </span>
-                    ) : null}
-                  </button>
-                ))
+
+                      {option.description ? (
+                        <span className="mt-0.5 block min-w-0 truncate text-[10px] font-bold text-[#98A2B3]">
+                          {option.description}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })
               ) : (
                 <div className="px-3 py-3 text-xs font-semibold text-[#98A2B3]">
                   {emptyMessage}
@@ -348,20 +362,28 @@ export default function DropdownField({
         )
       : null;
 
-  const sharedControlClass = `flex h-10 w-full min-w-0 items-center rounded-[10px] border px-3 text-left text-xs font-semibold outline-none transition ${
+  const isSecondaryAction = controlVariant === "secondaryAction";
+
+  const sharedControlClass = `flex h-10 w-full min-w-0 items-center ${
+    isSecondaryAction ? "rounded-lg px-4" : "rounded-[10px] px-3"
+  } border text-left text-xs outline-none transition ${
     open
       ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-      : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
+      : isSecondaryAction
+        ? "border-[#D6E0EA] bg-white hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+        : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
   } ${
     disabled
       ? "cursor-not-allowed bg-[#F2F4F7] text-[#98A2B3] opacity-70"
-      : "text-[#344054]"
+      : isSecondaryAction
+        ? "font-extrabold text-[#042C51]"
+        : "font-semibold text-[#344054]"
   }`;
 
   return (
     <div
       ref={dropdownRef}
-      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
+      className={`relative min-w-0 ${className} ${open ? zIndex : "z-[1]"}`}
     >
       {label ? (
         <FieldLabel required={required}>{label}</FieldLabel>
@@ -369,18 +391,25 @@ export default function DropdownField({
 
       {searchable ? (
         <div
-          className={`${sharedControlClass} cursor-text`}
-          onClick={openDropdown}
+          className={`${sharedControlClass} cursor-pointer`}
+          onClick={toggleDropdown}
         >
           <input
             ref={inputRef}
             value={inputDisplayValue}
             readOnly={!open}
             disabled={disabled}
-            onFocus={openDropdown}
+            onClick={(event) => {
+              if (open) {
+                event.stopPropagation();
+              }
+            }}
+            onFocus={() => {
+              if (!open) openDropdown();
+            }}
             onChange={(event) => {
               setDropdownSearch(event.target.value);
-              setOpen(true);
+              if (!open) setOpen(true);
               window.setTimeout(updateMenuPosition, 0);
             }}
             onKeyDown={handleInputKeyDown}
@@ -390,7 +419,7 @@ export default function DropdownField({
             autoComplete="off"
             className={`h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs font-semibold outline-none placeholder:text-[#98A2B3] ${
               hasDisplayValue || open
-                ? "text-[#344054]"
+                ? isSecondaryAction ? "font-extrabold text-[#042C51]" : "text-[#344054]"
                 : "text-[#98A2B3]"
             } disabled:cursor-not-allowed disabled:text-[#98A2B3]`}
           />
@@ -413,7 +442,9 @@ export default function DropdownField({
         >
           <span
             className={`min-w-0 flex-1 truncate ${
-              hasDisplayValue ? "text-[#344054]" : "text-[#98A2B3]"
+              hasDisplayValue
+                ? isSecondaryAction ? "text-[#042C51]" : "text-[#344054]"
+                : "text-[#98A2B3]"
             }`}
           >
             {displayLabel || placeholder}

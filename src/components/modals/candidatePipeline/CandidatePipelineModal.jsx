@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  X,
   UserX,
   Eye,
   ClipboardCheck,
@@ -22,9 +21,15 @@ import {
 } from "lucide-react";
 
 import DetailRow from "../../layout/common/DetailRow";
-import CandidateAvatar from "../../recruitment/candidatePipeline/CandidateAvatar";
+import CandidatePipelineModalShell, {
+  CandidateModalPrimaryButton,
+  CandidateModalSecondaryButton,
+  CandidateModalSection,
+} from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
+import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline/CandidateTalentPoolDetailsPanel";
-import LeadPrfReviewCard from "../../recruitment/candidatePipeline/LeadPrfReviewCard";
+import DropdownField from "../../recruitment/availablePositions/DropdownField";
+import NhoUploadModal from "./NhoUploadModal";
 
 import {
   offerApprovers,
@@ -44,7 +49,6 @@ import {
   getDisplayInterviewType,
   canScheduleInterview,
   getStageClass,
-  getPrfStatusClass,
   getInterviewStatusClass,
   getAssessmentResultClass,
   getOfferApprovalClass,
@@ -109,6 +113,589 @@ function formatCandidateDateOnly(value) {
     day: "numeric",
     timeZone: "UTC",
   }).format(date);
+}
+
+function getCandidateCompactProfileSources(candidate = {}) {
+  const metadata =
+    (candidate.metadata && typeof candidate.metadata === "object"
+      ? candidate.metadata
+      : safeJsonParseValue(
+          candidate.metadataJson || candidate.metadata_json,
+          {},
+        )) || {};
+
+  const candidateSnapshot =
+    candidate.candidateSnapshot ||
+    candidate.candidate_snapshot ||
+    metadata.candidateSnapshot ||
+    metadata.candidate_snapshot ||
+    metadata.candidate ||
+    {};
+
+  const talentPoolProfile =
+    candidate.talentPoolProfile ||
+    candidate.talent_pool_profile ||
+    candidate.talentPoolApplication ||
+    candidate.talent_pool_application ||
+    metadata.talentPoolProfile ||
+    metadata.talent_pool_profile ||
+    metadata.talentPoolApplication ||
+    metadata.talent_pool_application ||
+    metadata.talentPool ||
+    {};
+
+  return [candidate, candidateSnapshot, talentPoolProfile, metadata].filter(
+    Boolean,
+  );
+}
+
+function pickCandidateCompactProfileValue(candidate = {}, keys = []) {
+  const sources = getCandidateCompactProfileSources(candidate);
+
+  for (const key of keys) {
+    for (const source of sources) {
+      const value = source?.[key];
+
+      if (value !== null && value !== undefined && cleanText(value) !== "") {
+        return value;
+      }
+    }
+  }
+
+  return "";
+}
+
+function getCandidateCompactProfileSummary(candidate = {}) {
+  return {
+    highestEducation: pickCandidateCompactProfileValue(candidate, [
+      "education",
+      "educationalAttainment",
+      "educational_attainment",
+      "highestEducationalAttainment",
+      "highest_educational_attainment",
+    ]),
+    relevantExperience: pickCandidateCompactProfileValue(candidate, [
+      "experienceYears",
+      "experience_years",
+      "relevantExperience",
+      "relevant_experience",
+      "industryRelevantExperience",
+      "industry_relevant_experience",
+      "lengthOfWorkExperience",
+      "length_of_work_experience",
+      "experienceLength",
+      "experience_length",
+    ]),
+    expectedSalary: pickCandidateCompactProfileValue(candidate, [
+      "expectedSalary",
+      "expected_salary",
+      "desiredSalary",
+      "desired_salary",
+      "salaryExpectation",
+      "salary_expectation",
+    ]),
+    currentLocation: pickCandidateCompactProfileValue(candidate, [
+      "currentLocation",
+      "current_location",
+      "applyingLocation",
+      "applying_location",
+      "applicationLocation",
+      "application_location",
+      "location",
+      "site",
+    ]),
+  };
+}
+
+function activeCandidateRoleFallback(candidate = {}) {
+  return cleanText(
+    candidate.roleTitle ||
+      candidate.roleAccount ||
+      candidate.openPosition ||
+      "",
+  );
+}
+
+function isEmptyCandidateProfileValue(value) {
+  if (value === null || value === undefined) return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === "object") return Object.keys(value).length === 0;
+  return cleanText(value) === "";
+}
+
+function safeCandidateProfileArray(value) {
+  if (Array.isArray(value)) {
+    return value.filter((item) => !isEmptyCandidateProfileValue(item));
+  }
+
+  if (typeof value === "string") {
+    const parsed = safeJsonParseValue(value, null);
+
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item) => !isEmptyCandidateProfileValue(item));
+    }
+
+    return value
+      .split(",")
+      .map((item) => cleanText(item))
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function displayCandidateProfileValue(value) {
+  const list = safeCandidateProfileArray(value);
+
+  if (list.length) {
+    return list
+      .map((item) => {
+        if (typeof item === "object") {
+          return (
+            item.label ||
+            item.value ||
+            item.name ||
+            item.title ||
+            Object.values(item).filter(Boolean).join(" / ")
+          );
+        }
+
+        return item;
+      })
+      .map((item) => cleanText(item))
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+
+  return cleanText(value) || "—";
+}
+
+function splitCandidateProfileFullName(fullName = "") {
+  const parts = cleanText(fullName).split(/\s+/).filter(Boolean);
+
+  if (!parts.length) {
+    return {
+      firstName: "",
+      middleName: "",
+      lastName: "",
+    };
+  }
+
+  if (parts.length === 1) {
+    return {
+      firstName: parts[0],
+      middleName: "",
+      lastName: "",
+    };
+  }
+
+  return {
+    firstName: parts[0],
+    middleName: parts.length > 2 ? parts.slice(1, -1).join(" ") : "",
+    lastName: parts[parts.length - 1],
+  };
+}
+
+function pickCandidateProfileArrayValue(candidate = {}, keys = []) {
+  for (const key of keys) {
+    const value = pickCandidateCompactProfileValue(candidate, [key]);
+    const arrayValue = safeCandidateProfileArray(value);
+
+    if (arrayValue.length) return arrayValue;
+  }
+
+  return [];
+}
+
+function buildCandidateProfileWorkExperiences(candidate = {}) {
+  const workExperiences =
+    pickCandidateProfileArrayValue(candidate, [
+      "workExperiences",
+      "work_experiences_json",
+      "workExperiencesJson",
+    ]) || [];
+
+  if (workExperiences.length > 0) return workExperiences;
+
+  const otherExperiences = pickCandidateProfileArrayValue(candidate, [
+    "otherExperiences",
+    "other_experiences_json",
+    "otherExperiencesJson",
+  ]);
+
+  if (otherExperiences.length > 0) return otherExperiences;
+
+  const primaryExperience = {
+    industry: pickCandidateCompactProfileValue(candidate, [
+      "industry",
+      "industryRelevantExperience",
+      "industry_relevant_experience",
+      "industryExperience",
+      "relevantExperience",
+      "skillsLanguage",
+      "skills_language",
+    ]),
+    lengthOfWorkExperience: pickCandidateCompactProfileValue(candidate, [
+      "lengthOfWorkExperience",
+      "length_of_work_experience",
+      "experienceLength",
+      "length",
+    ]),
+    years: pickCandidateCompactProfileValue(candidate, ["years"]),
+    role: pickCandidateCompactProfileValue(candidate, [
+      "experienceRole",
+      "previousRole",
+      "role",
+    ]),
+    company: pickCandidateCompactProfileValue(candidate, ["company"]),
+    monthlyCompensation: pickCandidateCompactProfileValue(candidate, [
+      "monthlyCompensation",
+      "monthly_compensation",
+    ]),
+    reasonForLeaving: pickCandidateCompactProfileValue(candidate, [
+      "reasonForLeaving",
+      "reason_for_leaving",
+    ]),
+  };
+
+  return Object.values(primaryExperience).some(
+    (value) => !isEmptyCandidateProfileValue(value),
+  )
+    ? [primaryExperience]
+    : [];
+}
+
+function buildCandidateProfileReferences(candidate = {}) {
+  const references = pickCandidateProfileArrayValue(candidate, [
+    "references",
+    "references_json",
+    "referencesJson",
+  ]);
+
+  if (references.length > 0) return references;
+
+  return [
+    {
+      name: pickCandidateCompactProfileValue(candidate, [
+        "reference1",
+        "referenceName1",
+        "reference1Name",
+        "reference1_name",
+      ]),
+      phone: pickCandidateCompactProfileValue(candidate, [
+        "reference1Phone",
+        "referencePhone1",
+        "reference1_phone",
+      ]),
+    },
+    {
+      name: pickCandidateCompactProfileValue(candidate, [
+        "reference2",
+        "referenceName2",
+        "reference2Name",
+        "reference2_name",
+      ]),
+      phone: pickCandidateCompactProfileValue(candidate, [
+        "reference2Phone",
+        "referencePhone2",
+        "reference2_phone",
+      ]),
+    },
+    {
+      name: pickCandidateCompactProfileValue(candidate, [
+        "reference3",
+        "referenceName3",
+        "reference3Name",
+        "reference3_name",
+      ]),
+      phone: pickCandidateCompactProfileValue(candidate, [
+        "reference3Phone",
+        "referencePhone3",
+        "reference3_phone",
+      ]),
+    },
+  ].filter((reference) => reference.name || reference.phone);
+}
+
+function getCandidateExpandedProfileDetails(candidate = {}) {
+  const fullName =
+    pickCandidateCompactProfileValue(candidate, [
+      "fullName",
+      "full_name",
+      "name",
+      "candidateName",
+    ]) || "";
+
+  const splitName = splitCandidateProfileFullName(fullName);
+
+  const workExperiences = buildCandidateProfileWorkExperiences(candidate);
+  const primaryExperience = workExperiences[0] || {};
+  const references = buildCandidateProfileReferences(candidate);
+  const consentValue = pickCandidateCompactProfileValue(candidate, [
+    "consentAccepted",
+    "consent_accepted",
+    "consent",
+    "termsAccepted",
+  ]);
+
+  return {
+    heardFrom: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "hearAboutUs",
+        "hear_about_us",
+        "heardFrom",
+        "howHeard",
+        "howDidYouHearAboutUs",
+        "sources",
+        "source",
+      ]),
+    ),
+    openPosition:
+      pickCandidateCompactProfileValue(candidate, [
+        "openPosition",
+        "open_position",
+        "appliedPosition",
+        "roleCapability",
+        "role_capability",
+        "roleTitle",
+        "currentAppliedRole",
+      ]) ||
+      activeCandidateRoleFallback(candidate) ||
+      "—",
+    nickname: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, ["nickname"]),
+    ),
+    applyingLocation: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "applyingLocation",
+        "applying_location",
+        "applicationLocation",
+        "locationApplyingFor",
+        "site",
+        "location",
+      ]),
+    ),
+    referredBy:
+      displayCandidateProfileValue(
+        pickCandidateCompactProfileValue(candidate, [
+          "referredBy",
+          "referred_by",
+          "whoReferredYou",
+          "referrer",
+          "createdBy",
+        ]),
+      ) || "Talent Pool",
+    employeeId: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "employeeId",
+        "referrerEmployeeId",
+        "referrer_employee_id",
+      ]),
+    ),
+    firstName: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, ["firstName", "first_name"]) ||
+        splitName.firstName,
+    ),
+    lastName: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, ["lastName", "last_name"]) ||
+        splitName.lastName,
+    ),
+    middleName: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, ["middleName", "middle_name"]) ||
+        splitName.middleName,
+    ),
+    suffix: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, ["suffix", "extension"]),
+    ),
+    dateOfBirth: displayCandidateProfileValue(
+      formatCandidateDateOnly(
+        pickCandidateCompactProfileValue(candidate, [
+          "dateOfBirth",
+          "date_of_birth",
+        ]),
+      ),
+    ),
+    age: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "ageAsOfApplication",
+        "age_as_of_application",
+        "age",
+      ]),
+    ),
+    email: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, ["email", "candidateEmail"]),
+    ),
+    phone1: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "phone1",
+        "phoneNumber1",
+        "contactNumber",
+        "contact_number",
+        "phone",
+      ]),
+    ),
+    phone2: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, ["phone2", "phoneNumber2"]),
+    ),
+    physicalAddress: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "physicalAddress",
+        "physical_address",
+        "address",
+      ]),
+    ),
+    workExperience: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "workExperience",
+        "work_experience",
+        "hasWorkExperience",
+      ]),
+    ),
+    recentIndustry: displayCandidateProfileValue(
+      primaryExperience.industry ||
+        primaryExperience.industryRelevantExperience ||
+        primaryExperience.relevantExperience ||
+        primaryExperience.industryExperience,
+    ),
+    recentLength: displayCandidateProfileValue(
+      primaryExperience.lengthOfWorkExperience ||
+        primaryExperience.length_of_work_experience ||
+        primaryExperience.length ||
+        primaryExperience.experienceLength ||
+        primaryExperience.years,
+    ),
+    recentRole: displayCandidateProfileValue(primaryExperience.role),
+    recentCompany: displayCandidateProfileValue(primaryExperience.company),
+    recentMonthlyCompensation: displayCandidateProfileValue(
+      !isEmptyCandidateProfileValue(
+        primaryExperience.monthlyCompensation ||
+          primaryExperience.monthly_compensation,
+      )
+        ? formatCurrency(
+            primaryExperience.monthlyCompensation ||
+              primaryExperience.monthly_compensation,
+          )
+        : "—",
+    ),
+    recentReasonForLeaving: displayCandidateProfileValue(
+      primaryExperience.reasonForLeaving ||
+        primaryExperience.reason_for_leaving,
+    ),
+    educationalAttainment: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "educationalAttainment",
+        "highestEducationalAttainment",
+        "highest_educational_attainment",
+      ]),
+    ),
+    affiliations: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "affiliations",
+        "certifications",
+        "affiliationsAndCertifications",
+        "affiliations_certifications_json",
+      ]),
+    ),
+    trainingAttended: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "trainingAttended",
+        "training_attended",
+      ]),
+    ),
+    fullyVaccinated: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "fullyVaccinated",
+        "fully_vaccinated",
+      ]),
+    ),
+    comfortableOnSite: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "comfortableOnSite",
+        "comfortable_on_site",
+      ]),
+    ),
+    willingGraveyard: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "willingGraveyard",
+        "willing_graveyard",
+      ]),
+    ),
+    employmentInterest: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "employmentInterest",
+        "employment_interest",
+      ]),
+    ),
+    remoteWorkAccess: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "remoteWorkAccess",
+        "remote_work_access",
+      ]),
+    ),
+    willingDrugTest: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "willingDrugTest",
+        "willing_drug_test",
+      ]),
+    ),
+    willingBackgroundCheck: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "willingBackgroundCheck",
+        "willing_background_check",
+      ]),
+    ),
+    reference1: references[0]
+      ? displayCandidateProfileValue(
+          (references[0].name || "—") +
+            (references[0].phone ? " / " + references[0].phone : ""),
+        )
+      : "—",
+    reference2: references[1]
+      ? displayCandidateProfileValue(
+          (references[1].name || "—") +
+            (references[1].phone ? " / " + references[1].phone : ""),
+        )
+      : "—",
+    reference3: references[2]
+      ? displayCandidateProfileValue(
+          (references[2].name || "—") +
+            (references[2].phone ? " / " + references[2].phone : ""),
+        )
+      : "—",
+    audioFileName: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "audioFileName",
+        "audio_file_name",
+        "audioUploadName",
+      ]),
+    ),
+    attachmentFileName: displayCandidateProfileValue(
+      pickCandidateCompactProfileValue(candidate, [
+        "attachmentFileName",
+        "attachment_file_name",
+        "supportingFileName",
+        "resumeFileName",
+        "fileUploadName",
+      ]),
+    ),
+    consentAccepted: displayCandidateProfileValue(
+      consentValue === true ||
+        consentValue === 1 ||
+        consentValue === "1" ||
+        consentValue === "true"
+        ? "Yes"
+        : consentValue === false ||
+            consentValue === 0 ||
+            consentValue === "0" ||
+            consentValue === "false"
+          ? "No"
+          : "—",
+    ),
+  };
 }
 
 const MAJOR_REQUIREMENTS = [
@@ -1709,14 +2296,6 @@ function normalizePrfStatus(value) {
   return text;
 }
 
-function getPrfReviewCardDisplayStatus(value) {
-  const normalizedStatus = normalizePrfStatus(value);
-
-  return normalizedStatus === "Not Matched"
-    ? "Unmatched"
-    : normalizedStatus;
-}
-
 function FormDropdown({
   label,
   value,
@@ -2860,55 +3439,55 @@ function UpdateAssessmentModal({
     }
   }
 
+  const footer = (
+    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <CandidateModalSecondaryButton
+        type="button"
+        onClick={onClose}
+        disabled={isSaving}
+      >
+        Cancel
+      </CandidateModalSecondaryButton>
+      <CandidateModalPrimaryButton
+        type="submit"
+        form="candidate-inline-assessment-form"
+        disabled={isSaving}
+        className="min-w-[140px]"
+      >
+        {isSaving ? <Loader2 size={15} className="animate-spin" /> : <ClipboardCheck size={15} />}
+        {isSaving ? "Saving..." : "Save Assessment"}
+      </CandidateModalPrimaryButton>
+    </div>
+  );
+
   return (
-    <div
-      className="sibs-modal-blur fixed inset-0 z-[11000] flex h-dvh items-center justify-center px-4 py-4"
-      onClick={(event) => event.stopPropagation()}
-      onMouseDown={(event) => event.stopPropagation()}
+    <CandidatePipelineModalShell
+      open={open}
+      icon={ClipboardCheck}
+      title="Update Assessment"
+      subtitle="Save the candidate's online assessment status, result, score, and attachment."
+      badge="Assessment"
+      onClose={onClose}
+      closeDisabled={isSaving}
+      maxWidth="max-w-xl"
+      zIndex="z-[11000]"
+      footer={footer}
     >
       <form
+        id="candidate-inline-assessment-form"
         onSubmit={handleSubmit}
-        onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className={isSaving ? "pointer-events-none space-y-4 opacity-70" : "space-y-4"}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
-          <div>
-            <h2 className="text-lg font-extrabold text-sibs-primary-1">
-              Update Assessment
-            </h2>
+        <CandidateModalSummary
+          candidate={candidate || {}}
+          stage={candidate?.currentStage || candidate?.currentPipelineStage || "Online Assessment"}
+        />
 
-            <p className="mt-1 text-sm font-semibold leading-5 text-sibs-tertiary-5">
-              Save the candidate&apos;s online assessment status, result, score,
-              and attachment.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
-          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              Candidate
-            </p>
-
-            <p className="mt-1 break-words text-base font-extrabold text-[#101828]">
-              {candidate?.name || candidate?.candidateName || "Candidate"}
-            </p>
-
-            <p className="mt-1 break-words text-sm font-bold text-sibs-tertiary-5">
-              {candidate?.email || "No email provided"}
-            </p>
-          </div>
-
-          <div className="mt-5 space-y-4">
+        <CandidateModalSection
+          title="Assessment Details"
+          subtitle="Enter a fresh assessment result for this assessment attempt."
+        >
+          <div className="space-y-4">
             <FormDropdown
               label="Assessment Status"
               value={assessmentStatus}
@@ -3038,29 +3617,9 @@ function UpdateAssessmentModal({
               </div>
             )}
           </div>
-        </div>
-
-        <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSaving ? <Loader2 size={16} className="animate-spin" /> : null}
-            {isSaving ? "Saving..." : "Save Assessment"}
-          </button>
-        </div>
+        </CandidateModalSection>
       </form>
-    </div>
+    </CandidatePipelineModalShell>
   );
 }
 
@@ -3689,85 +4248,81 @@ function NhoScheduleModal({
     );
   }
 
+  const footer = (
+    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <CandidateModalSecondaryButton
+        type="button"
+        onClick={handleClose}
+        disabled={isSaving}
+      >
+        Cancel
+      </CandidateModalSecondaryButton>
+
+      <CandidateModalPrimaryButton
+        type="button"
+        onClick={onSubmit}
+        disabled={
+          isSaving ||
+          !selectedDate ||
+          !isSelectableNhoFriday(selectedDate)
+        }
+        className="min-w-[132px]"
+      >
+        {isSaving ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <CalendarDays size={16} />
+        )}
+        {isSaving ? "Scheduling..." : "Schedule NHO"}
+      </CandidateModalPrimaryButton>
+    </div>
+  );
+
   return (
-    <div
-      className="sibs-modal-blur fixed inset-0 z-[11500] flex h-dvh items-center justify-center px-4 py-4"
-      onClick={handleClose}
+    <CandidatePipelineModalShell
+      open={open}
+      icon={CalendarDays}
+      title="Schedule NHO"
+      subtitle="Choose the candidate's NHO start date. Only upcoming Fridays are available."
+      badge="NHO"
+      onClose={handleClose}
+      closeDisabled={isSaving}
+      maxWidth="max-w-xl"
+      zIndex="z-[11500]"
+      footer={footer}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(event) =>
-          event.stopPropagation()
+        className={
+          isSaving
+            ? "pointer-events-none space-y-4 opacity-70"
+            : "space-y-4"
         }
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
-          <div className="min-w-0">
-            <h2 className="text-xl font-extrabold text-sibs-primary-1">
-              Schedule NHO
-            </h2>
+        <CandidateModalSummary
+          candidate={candidate || {}}
+          stage={candidate?.currentStage || candidate?.currentPipelineStage || "Accepted"}
+        />
 
-            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
-              Choose the candidate&apos;s
-              NHO start date. Only Fridays
-              are available.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleClose}
-            disabled={isSaving}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-            aria-label="Close NHO schedule modal"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
-          <div className="rounded-2xl border border-[#D9E2EC] bg-white p-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              Candidate
-            </p>
-
-            <p className="mt-1 break-words text-base font-extrabold text-[#101828]">
-              {candidate?.name ||
-                candidate?.candidateName ||
-                "Candidate"}
-            </p>
-
-            <p className="mt-1 break-words text-sm font-bold text-sibs-tertiary-5">
-              {candidate?.email ||
-                candidate?.candidateEmail ||
-                "No email provided"}
-            </p>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
-            <p className="text-sm font-bold leading-6 text-sibs-primary-1">
+        <CandidateModalSection
+          title="NHO Schedule"
+          subtitle="The next available Friday is used. If today is Friday, scheduling begins next Friday."
+        >
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+            <p className="sibs-text-xs font-bold leading-5 text-sibs-primary-1">
               Earliest selectable date:{" "}
               <span className="font-extrabold">
                 {formatNhoScheduleDateDisplay(
-                  toDateInputValue(
-                    earliestFriday,
-                  ),
+                  toDateInputValue(earliestFriday),
                 )}
               </span>
             </p>
-
-            <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-              The next available Friday is used. If today is Friday, scheduling begins next Friday.
-            </p>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+          <div className="mt-4 overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
               <button
                 type="button"
-                disabled={
-                  disablePreviousMonth ||
-                  isSaving
-                }
+                disabled={disablePreviousMonth || isSaving}
                 onClick={() =>
                   setDisplayDate(
                     (previous) =>
@@ -3779,16 +4334,13 @@ function NhoScheduleModal({
                   )
                 }
                 className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-30"
+                aria-label="Previous month"
               >
                 <ChevronLeft size={18} />
               </button>
 
-              <p className="text-sm font-extrabold text-sibs-primary-1">
-                {
-                  assessmentEmailMonthNames[
-                    displayDate.getMonth()
-                  ]
-                }{" "}
+              <p className="sibs-text-xs font-extrabold text-sibs-primary-1">
+                {assessmentEmailMonthNames[displayDate.getMonth()]}{" "}
                 {displayDate.getFullYear()}
               </p>
 
@@ -3806,6 +4358,7 @@ function NhoScheduleModal({
                   )
                 }
                 className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Next month"
               >
                 <ChevronRight size={18} />
               </button>
@@ -3813,47 +4366,29 @@ function NhoScheduleModal({
 
             <div className="p-4">
               <div className="grid grid-cols-7 gap-1">
-                {assessmentEmailWeekdayLabels.map(
-                  (dayLabel) => (
-                    <div
-                      key={dayLabel}
-                      className="flex h-8 items-center justify-center text-xs font-extrabold text-[#174A7C]"
-                    >
-                      {dayLabel}
-                    </div>
-                  ),
-                )}
+                {assessmentEmailWeekdayLabels.map((dayLabel) => (
+                  <div
+                    key={dayLabel}
+                    className="flex h-8 items-center justify-center sibs-text-micro font-extrabold text-[#174A7C]"
+                  >
+                    {dayLabel}
+                  </div>
+                ))}
 
                 {calendarDays.map((day) => {
-                  const isFriday =
-                    day.date.getDay() === 5;
-
-                  const selectable =
-                    isSelectableNhoFriday(
-                      day.date,
-                    );
-
+                  const isFriday = day.date.getDay() === 5;
+                  const selectable = isSelectableNhoFriday(day.date);
                   const active =
                     selectedDate &&
-                    isSameAssessmentDate(
-                      day.date,
-                      selectedDate,
-                    );
+                    isSameAssessmentDate(day.date, selectedDate);
 
                   return (
                     <button
                       key={day.dateValue}
                       type="button"
-                      disabled={
-                        !selectable ||
-                        isSaving
-                      }
-                      onClick={() =>
-                        handleSelectDate(
-                          day.date,
-                        )
-                      }
-                      className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                      disabled={!selectable || isSaving}
+                      onClick={() => handleSelectDate(day.date)}
+                      className={`flex h-10 w-10 items-center justify-center rounded-full sibs-text-xs font-extrabold transition ${
                         active
                           ? "bg-sibs-primary-1 text-white shadow-sm"
                           : selectable
@@ -3878,57 +4413,17 @@ function NhoScheduleModal({
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-emerald-700">
+          <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+            <p className="sibs-kicker text-emerald-700">
               Selected NHO Start Date
             </p>
-
-            <p className="mt-1 text-base font-extrabold text-emerald-800">
-              {formatNhoScheduleDateDisplay(
-                value,
-              )}
+            <p className="mt-1 sibs-text-sm font-extrabold text-emerald-800">
+              {formatNhoScheduleDateDisplay(value)}
             </p>
           </div>
-        </div>
-
-        <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-          <button
-            type="button"
-            onClick={handleClose}
-            disabled={isSaving}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={
-              isSaving ||
-              !selectedDate ||
-              !isSelectableNhoFriday(
-                selectedDate,
-              )
-            }
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSaving ? (
-              <Loader2
-                size={16}
-                className="animate-spin"
-              />
-            ) : (
-              <CalendarDays size={16} />
-            )}
-
-            {isSaving
-              ? "Scheduling..."
-              : "Schedule NHO"}
-          </button>
-        </div>
+        </CandidateModalSection>
       </div>
-    </div>
+    </CandidatePipelineModalShell>
   );
 }
 
@@ -4238,226 +4733,226 @@ function AssessmentEmailFormatModal({
     form.recipientEmail,
   );
 
+  const footer = (
+    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <CandidateModalSecondaryButton
+        type="button"
+        onClick={onClose}
+        disabled={isSending}
+      >
+        Cancel
+      </CandidateModalSecondaryButton>
+
+      <CandidateModalPrimaryButton
+        type="button"
+        onClick={onSend}
+        disabled={isSending}
+        className="min-w-[180px]"
+      >
+        {isSending ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <Mail size={16} />
+        )}
+        {isSending ? "Sending..." : "Send Assessment Email"}
+      </CandidateModalPrimaryButton>
+    </div>
+  );
+
   return (
-    <div
-      className="sibs-modal-blur fixed inset-0 z-[12000] flex h-dvh items-center justify-center px-4 py-4"
+    <CandidatePipelineModalShell
+      open={open}
+      icon={Mail}
+      title="Assessment Email Format"
+      subtitle="Review the message before sending the online assessment invitation."
+      badge="Email Preview"
+      onClose={onClose}
+      closeDisabled={isSending}
+      maxWidth="max-w-[760px]"
+      zIndex="z-[12000]"
+      footer={footer}
     >
       <div
-        onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[92dvh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className={
+          isSending
+            ? "pointer-events-none space-y-4 opacity-70"
+            : "space-y-4"
+        }
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-6 py-5">
-          <div className="min-w-0">
-            <h2 className="text-xl font-extrabold text-sibs-primary-1">
-              Assessment Email Format
-            </h2>
-            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
-              Review the message before sending the online assessment invitation.
-            </p>
-          </div>
+        <CandidateModalSummary
+          candidate={candidate || {}}
+          stage={candidate?.currentStage || candidate?.currentPipelineStage || "Online Assessment"}
+        />
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSending}
-            className="rounded-full p-2 text-[#98A2B3] transition hover:bg-gray-100 hover:text-[#475467] disabled:cursor-not-allowed disabled:opacity-60"
-            aria-label="Close assessment email format modal"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] px-6 py-5">
+        <CandidateModalSection
+          title="Email Details"
+          subtitle="Confirm the recipient, deadline, subject, and role before sending."
+        >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <span className="sibs-kicker text-sibs-primary-1">
                 Recipient Email
               </span>
               <input
                 type="email"
                 value={form.recipientEmail}
+                disabled={isSending}
                 onChange={(event) =>
                   onChange({
                     ...form,
                     recipientEmail: event.target.value,
                   })
                 }
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-bold text-[#344054] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
               />
             </label>
 
             <label className="block">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <span className="sibs-kicker text-sibs-primary-1">
                 Assessment Deadline
               </span>
-                <div className="mt-2">
-                  <AssessmentDeadlineDatePicker
-                    value={form.emailDeadline}
-                    disabled={isSending}
-                    placeholder="Select deadline"
-                    onChange={(nextDate) =>
-                      onChange({
-                        ...form,
-                        emailDeadline: nextDate,
-                      })
-                    }
-                  />
-                </div>
+              <div className="mt-2">
+                <AssessmentDeadlineDatePicker
+                  value={form.emailDeadline}
+                  disabled={isSending}
+                  placeholder="Select deadline"
+                  onChange={(nextDate) =>
+                    onChange({
+                      ...form,
+                      emailDeadline: nextDate,
+                    })
+                  }
+                />
+              </div>
             </label>
 
             <label className="block md:col-span-2">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                Subject
-              </span>
+              <span className="sibs-kicker text-sibs-primary-1">Subject</span>
               <input
                 value={form.emailSubject}
+                disabled={isSending}
                 onChange={(event) =>
                   onChange({
                     ...form,
                     emailSubject: event.target.value,
                   })
                 }
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-bold text-[#344054] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
               />
             </label>
 
             <label className="block md:col-span-2">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                Role / Position
-              </span>
+              <span className="sibs-kicker text-sibs-primary-1">Role / Position</span>
               <input
                 value={form.roleName}
+                disabled={isSending}
                 onChange={(event) =>
                   onChange({
                     ...form,
                     roleName: event.target.value,
                   })
                 }
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-bold text-[#344054] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
               />
             </label>
           </div>
+        </CandidateModalSection>
 
-          <div className="mt-5 rounded-2xl border border-[#D9E2EC] bg-white p-5">
-            <div className="mx-auto max-w-[560px] overflow-hidden rounded-sm bg-[#FFF8EF] shadow-sm">
-              <div className="bg-white px-8 py-5 text-center">
-                <img
-                  src={SIBS_ASSESSMENT_LOGO_PREVIEW_URL}
-                  alt="SiBS - Practice. Purpose. Philosophy."
-                  width={360}
-                  className="mx-auto block h-auto w-[360px] max-w-full object-contain"
-                  draggable={false}
-                />
-              </div>
+        <CandidateModalSection
+          title="Email Preview"
+          subtitle="This is the message format the candidate will receive."
+        >
+          <div className="mx-auto max-w-[560px] overflow-hidden rounded-sm bg-[#FFF8EF] shadow-sm">
+            <div className="bg-white px-8 py-5 text-center">
+              <img
+                src={SIBS_ASSESSMENT_LOGO_PREVIEW_URL}
+                alt="SiBS - Practice. Purpose. Philosophy."
+                width={360}
+                className="mx-auto block h-auto w-[360px] max-w-full object-contain"
+                draggable={false}
+              />
+            </div>
 
-              <div className="px-8 py-6 text-sm leading-6 text-black">
-                <p>
-                  Hi <span className="font-bold">{candidateName}</span>,
-                </p>
+            <div className="px-8 py-6 text-sm leading-6 text-black">
+              <p>
+                Hi <span className="font-bold">{candidateName}</span>,
+              </p>
 
-                <p className="mt-4">
-                  Thank you for your interest in the {roleName} role at SiBS
-                  Contact Center! We're thrilled to have you take the next step
-                  in our selection process.
-                </p>
+              <p className="mt-4">
+                Thank you for your interest in the {roleName} role at SiBS
+                Contact Center! We're thrilled to have you take the next step
+                in our selection process.
+              </p>
 
-                <p className="mt-4">
-                  Your next step is to complete our online assessment. This is a
-                  fantastic opportunity for you to showcase your skills and
-                  demonstrate how you handle various customer service scenarios.
-                  By completing this assessment, we will get to know you better
-                  and understand how we can best support you when you join our
-                  team.
-                </p>
+              <p className="mt-4">
+                Your next step is to complete our online assessment. This is a
+                fantastic opportunity for you to showcase your skills and
+                demonstrate how you handle various customer service scenarios.
+                By completing this assessment, we will get to know you better
+                and understand how we can best support you when you join our
+                team.
+              </p>
 
-                <p className="mt-4 font-bold">Here's how to proceed:</p>
-                <ol className="ml-5 list-decimal">
-                  <li>
-                    Click on the following link to access the assessment:{" "}
-                    <a
-                      href={assessmentLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-700 underline"
-                    >
-                      SiBS - Online Assessment
-                    </a>
-                  </li>
-                  <li>Complete the assessment by {deadlineText}.</li>
-                  <li>
-                    Ensure you have a quiet space and a stable internet
-                    connection.
-                  </li>
-                </ol>
+              <p className="mt-4 font-bold">Here's how to proceed:</p>
+              <ol className="ml-5 list-decimal">
+                <li>
+                  Click on the following link to access the assessment:{" "}
+                  <a
+                    href={assessmentLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-700 underline"
+                  >
+                    SiBS - Online Assessment
+                  </a>
+                </li>
+                <li>Complete the assessment by {deadlineText}.</li>
+                <li>
+                  Ensure you have a quiet space and a stable internet
+                  connection.
+                </li>
+              </ol>
 
-                <p className="mt-4 font-bold">Tips for Success:</p>
-                <ul className="ml-5 list-disc">
-                  <li>Take your time to read each question carefully.</li>
-                  <li>
-                    Keep your browser window open and stay within the assessment
-                    area during the test. Stepping away too many times could
-                    result in being locked out for security reasons.
-                  </li>
-                  <li>
-                    For the best experience, use a laptop or computer in a
-                    quiet, distraction-free space throughout the assessment.
-                  </li>
-                </ul>
+              <p className="mt-4 font-bold">Tips for Success:</p>
+              <ul className="ml-5 list-disc">
+                <li>Take your time to read each question carefully.</li>
+                <li>
+                  Keep your browser window open and stay within the assessment
+                  area during the test. Stepping away too many times could
+                  result in being locked out for security reasons.
+                </li>
+                <li>
+                  For the best experience, use a laptop or computer in a
+                  quiet, distraction-free space throughout the assessment.
+                </li>
+              </ul>
 
-                <p className="mt-4">
-                  If you have any questions or encounter any issues, feel free to
-                  reach out to us at{" "}
-                  <span className="text-blue-700 underline">
-                    careers@thesiblingssolutions.com
-                  </span>{" "}
-                  or call us at 09178303126.
-                </p>
+              <p className="mt-4">
+                If you have any questions or encounter any issues, feel free to
+                reach out to us at{" "}
+                <span className="text-blue-700 underline">
+                  careers@thesiblingssolutions.com
+                </span>{" "}
+                or call us at 09178303126.
+              </p>
 
-                <p className="mt-4">
-                  We're looking forward to seeing your responses and moving
-                  further in the selection process!
-                </p>
+              <p className="mt-4">
+                We're looking forward to seeing your responses and moving
+                further in the selection process!
+              </p>
 
-                <p className="mt-8">
-                  Best regards,
-                  <br />
-                  <span className="font-bold">
-                    Talent Acquisition Team
-                  </span>
-                  <br />
-                  SiBS Contact Center
-                </p>
-              </div>
+              <p className="mt-8">
+                Best regards,
+                <br />
+                <span className="font-bold">Talent Acquisition Team</span>
+                <br />
+                SiBS Contact Center
+              </p>
             </div>
           </div>
-        </div>
-
-        <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-white px-6 py-4 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSending}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={onSend}
-            disabled={isSending}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSending ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Mail size={16} />
-            )}
-            {isSending ? "Sending..." : "Send Assessment Email"}
-          </button>
-        </div>
+        </CandidateModalSection>
       </div>
-    </div>
+    </CandidatePipelineModalShell>
   );
 }
 
@@ -4742,6 +5237,8 @@ const CandidatePipelineModal = ({
   onOfferDecision,
 }) => {
   const [showTalentPoolDetails, setShowTalentPoolDetails] = useState(false);
+  const [showFullHistory, setShowFullHistory] = useState(false);
+  const [showNhoUploadModal, setShowNhoUploadModal] = useState(false);
   const [interviewNotesDraft, setInterviewNotesDraft] = useState("");
   const [candidateFilesById, setCandidateFilesById] = useState({});
   const [localCandidate, setLocalCandidate] = useState(null);
@@ -4958,6 +5455,8 @@ const CandidatePipelineModal = ({
       null;
 
     setShowTalentPoolDetails(false);
+    setShowFullHistory(false);
+    setShowNhoUploadModal(false);
     setInterviewNotesDraft(
       sessionCandidate?.interviewNotes || "",
     );
@@ -5135,8 +5634,24 @@ const CandidatePipelineModal = ({
     activeCandidate.prfStatus || activeCandidate.prf_status,
   );
 
-  const prfReviewCardDisplayStatus =
-    getPrfReviewCardDisplayStatus(activePrfStatus);
+  const compactProfileSummary = useMemo(
+    () => getCandidateCompactProfileSummary(activeCandidate),
+    [activeCandidate],
+  );
+
+  const expandedProfileDetails = useMemo(
+    () => getCandidateExpandedProfileDetails(activeCandidate),
+    [activeCandidate],
+  );
+
+  const compactCreatedDate =
+    activeCandidate.createdAt ||
+    activeCandidate.created_at ||
+    activeCandidate.appliedAt ||
+    activeCandidate.applied_at ||
+    activeCandidate.applicationDate ||
+    activeCandidate.application_date ||
+    "";
 
   const candidateNhoUploadIdentity =
     nhoUploadSessionIdentityRef.current ||
@@ -5455,10 +5970,93 @@ const CandidatePipelineModal = ({
     ],
   );
 
+  const isDropOffStage = currentStage === "Drop-off";
+
+  function hasReachedPipelineStage(targetStage) {
+    if (!isDropOffStage) {
+      return isPipelineStageAtOrAfter(currentStage, targetStage);
+    }
+
+    return visibleTimeline.some((item) => {
+      const timelineStage = normalizePipelineStageForVisibility(
+        item.stage ||
+          item.pipelineStage ||
+          item.pipeline_stage ||
+          item.currentStage ||
+          item.current_stage ||
+          "",
+      );
+
+      return Boolean(
+        timelineStage &&
+          timelineStage !== "Drop-off" &&
+          isPipelineStageAtOrAfter(timelineStage, targetStage),
+      );
+    });
+  }
+
   const canShowNhoUploads =
     forNHO ||
     isIncompleteOnboarding ||
     isOnboarding;
+
+  const hasAssessmentDetailAccess =
+    hasReachedPipelineStage("Online Assessment") ||
+    Boolean(
+      activeCandidate.assessmentResult ||
+        activeCandidate.assessment_result ||
+        activeCandidate.assessmentScore ||
+        activeCandidate.assessment_score,
+    );
+
+  const hasInterviewDetailAccess =
+    hasReachedPipelineStage("Assessment Fit") ||
+    hasInterviewSchedule(activeCandidate) ||
+    Boolean(
+      activeCandidate.finalInterviewResult ||
+        activeCandidate.final_interview_result ||
+        activeCandidate.interviewDate ||
+        activeCandidate.interview_date,
+    );
+
+  const hasOfferDetailAccess =
+    hasReachedPipelineStage("Offered") ||
+    Boolean(
+      activeCandidate.offerDetails ||
+        activeCandidate.offer_details ||
+        activeCandidate.latestOfferVersion ||
+        activeCandidate.latest_offer_version,
+    );
+
+  const hasNhoDetailAccess =
+    hasReachedPipelineStage("Accepted") ||
+    forNHO ||
+    isIncompleteOnboarding ||
+    isOnboarding ||
+    Boolean(
+      activeCandidate.nhoScheduleDate ||
+        activeCandidate.nho_schedule_date ||
+        activeCandidate.nhoStartDate ||
+        activeCandidate.nho_start_date,
+    );
+
+  const sortedMovementHistory = useMemo(() => {
+    return [...visibleTimeline].sort((first, second) => {
+      const firstTime = new Date(
+        first.date || first.createdAt || first.created_at || first.updatedAt || 0,
+      ).getTime();
+      const secondTime = new Date(
+        second.date || second.createdAt || second.created_at || second.updatedAt || 0,
+      ).getTime();
+
+      return (Number.isFinite(secondTime) ? secondTime : 0) -
+        (Number.isFinite(firstTime) ? firstTime : 0);
+    });
+  }, [visibleTimeline]);
+
+  const displayedMovementHistory = showFullHistory
+    ? sortedMovementHistory
+    : sortedMovementHistory.slice(0, 3);
 
   useEffect(() => {
     let isActive = true;
@@ -8326,1769 +8924,737 @@ async function handleConfirmScheduleNho() {
     </div>
   );
 
+  const recordFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+      {!isInitialScreening && currentStage !== "Drop-off" && (
+        <button
+          type="button"
+          onClick={() => onOpenDropOffModal?.(activeCandidate)}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100"
+        >
+          <UserX size={15} />
+          Mark Drop-off
+        </button>
+      )}
+
+      {isOnlineAssessment && (
+        <CandidateModalSecondaryButton
+          type="button"
+          disabled={isResendingAssessmentEmail}
+          onClick={handleResendAssessmentEmail}
+        >
+          {isResendingAssessmentEmail ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Mail size={15} />
+          )}
+          {isResendingAssessmentEmail ? "Resending..." : "Resend Assessment Email"}
+        </CandidateModalSecondaryButton>
+      )}
+
+      {isInterviewed && (
+        <CandidateModalSecondaryButton
+          type="button"
+          disabled={isCreatingFinalInterviewRetake}
+          onClick={handleRetakeFinalInterview}
+        >
+          {isCreatingFinalInterviewRetake ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <RefreshCcw size={15} />
+          )}
+          {isCreatingFinalInterviewRetake ? "Creating Retake..." : "Retake Final Interview"}
+        </CandidateModalSecondaryButton>
+      )}
+
+      {forNHO && (
+        <CandidateModalSecondaryButton
+          type="button"
+          disabled={isResendingNhoEmail}
+          onClick={handleResendNhoScheduleEmail}
+        >
+          {isResendingNhoEmail ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Mail size={15} />
+          )}
+          {isResendingNhoEmail ? "Resending..." : "Resend NHO Email"}
+        </CandidateModalSecondaryButton>
+      )}
+
+      {isIncompleteOnboarding && majorNhoProgress.isComplete && (
+        <CandidateModalSecondaryButton
+          type="button"
+          onClick={() => setShowNhoUploadModal(true)}
+        >
+          <UploadCloud size={15} />
+          Manage Requirements
+        </CandidateModalSecondaryButton>
+      )}
+
+      {canProceedInitialScreening && (
+        <CandidateModalPrimaryButton
+          type="button"
+          disabled={isProceedingInitialScreening}
+          onClick={handleProceedInitialScreening}
+          className="min-w-[180px]"
+        >
+          {isProceedingInitialScreening ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <ArrowRight size={15} />
+          )}
+          {isProceedingInitialScreening
+            ? "Processing..."
+            : activePrfStatus === "Not Matched"
+              ? "Proceed"
+              : "Advance to Online Assessment"}
+        </CandidateModalPrimaryButton>
+      )}
+
+      {isOnlineAssessment && (
+        <CandidateModalPrimaryButton type="button" onClick={handleOpenAssessmentModalClick}>
+          <ClipboardCheck size={15} />
+          Update Assessment
+        </CandidateModalPrimaryButton>
+      )}
+
+      {isAssessmentFit && canScheduleInterview(activeCandidate) && (
+        <CandidateModalPrimaryButton type="button" onClick={handleOpenInterviewSchedule}>
+          <CalendarDays size={15} />
+          Schedule Interview
+        </CandidateModalPrimaryButton>
+      )}
+
+      {isInterviewScheduled && candidateHasSchedule && (
+        <CandidateModalPrimaryButton type="button" onClick={handleStartOrContinueInterview}>
+          <CirclePlay size={15} />
+          {isInterviewInProgress ? "Continue Interview" : "Start Interview"}
+        </CandidateModalPrimaryButton>
+      )}
+
+      {isInterviewed && nextStage && (
+        <CandidateModalPrimaryButton type="button" onClick={handleMoveToNextStage}>
+          <ArrowRight size={15} />
+          Move to {nextStage}
+        </CandidateModalPrimaryButton>
+      )}
+
+      {isOffered && (
+        <CandidateModalPrimaryButton type="button" onClick={handleGoToOffer}>
+          <ArrowRight size={15} />
+          Go to Offer
+        </CandidateModalPrimaryButton>
+      )}
+
+      {isAccepted && (
+        <CandidateModalPrimaryButton
+          type="button"
+          disabled={isSchedulingNho}
+          onClick={handleScheduleNhoClick}
+        >
+          {isSchedulingNho ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <CalendarDays size={15} />
+          )}
+          {isSchedulingNho ? "Scheduling..." : "Schedule NHO"}
+        </CandidateModalPrimaryButton>
+      )}
+
+      {(forNHO || (isIncompleteOnboarding && !majorNhoProgress.isComplete)) && (
+        <CandidateModalPrimaryButton type="button" onClick={() => setShowNhoUploadModal(true)}>
+          <UploadCloud size={15} />
+          Manage Requirements
+        </CandidateModalPrimaryButton>
+      )}
+
+      {isIncompleteOnboarding && majorNhoProgress.isComplete && !isOnboarding && (
+        <CandidateModalPrimaryButton
+          type="button"
+          disabled={isSavingNhoFiles || isLoadingNhoFiles}
+          onClick={handleMoveToOnboarding}
+        >
+          <ArrowRight size={15} />
+          Move to Onboarding
+        </CandidateModalPrimaryButton>
+      )}
+    </div>
+  );
+
   if (!open || !candidate) return null;
 
   return (
     <>
-      {(
-        <>
-          <div
-            className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4"
-      >
-        <div
-          className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-            <div>
-              <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-                Candidate Pipeline Details
-              </h2>
+      <CandidatePipelineModalShell
+        open={open}
+        title="Candidate Pipeline Record"
+        onClose={onClose}
+        closeDisabled={isCandidateProcessRunning}
+        maxWidth="max-w-6xl"
+        zIndex="z-[9999]"
+        footer={recordFooter}
+        headerContent={
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-sm font-extrabold text-white shadow-sm">
+              {String(activeCandidate.name || "?")
+                .split(/\s+/)
+                .filter(Boolean)
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </div>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                View candidate movement, online assessment, interview status,
-                and pre-employment requirements.
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/60">
+                  Candidate Pipeline Record
+                </span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white/90">
+                  {currentStage}
+                </span>
+                <span className="rounded-full border border-emerald-300/25 bg-emerald-400/15 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide text-emerald-100">
+                  PRF: {activePrfStatus}
+                </span>
+              </div>
+
+              <h3 className="mt-1 break-words text-lg font-extrabold text-white sm:text-xl">
+                {activeCandidate.name || "Unnamed Candidate"}
+              </h3>
+
+              <p className="mt-1 max-w-[850px] break-words sibs-text-xs font-semibold text-white/70">
+                {activeCandidate.email || "No email saved"}
+                {activeCandidate.roleTitle || activeCandidate.roleAccount
+                  ? ` • ${activeCandidate.roleTitle || activeCandidate.roleAccount}`
+                  : ""}
+                {activeCandidate.account ? ` • ${activeCandidate.account}` : ""}
+                {activeCandidate.candidateId ? ` • ID: ${activeCandidate.candidateId}` : ""}
               </p>
             </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
           </div>
-
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="grid grid-cols-1 gap-5">
-              <div className="min-w-0 space-y-5">
-                <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <CandidateAvatar candidate={activeCandidate} />
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
-                          <h3 className="break-words text-xl font-bold text-[#101828]">
-                            {activeCandidate.name}
-                          </h3>
-
-                          <p className="mt-1 break-words text-sm font-semibold text-sibs-tertiary-5">
-                            {activeCandidate.email}
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setShowTalentPoolDetails((previous) => !previous)
-                          }
-                          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
-                        >
-                          Talent Details
-                          <ChevronDown
-                            size={16}
-                            className={`transition-transform ${
-                              showTalentPoolDetails ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStageClass(
-                            currentStage,
-                          )}`}
-                        >
-                          {currentStage}
-                        </span>
-
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPrfStatusClass(
-                            activePrfStatus,
-                          )}`}
-                        >
-                          PRF: {activePrfStatus}
-                        </span>
-
-                        {canShowAssessmentStageData && modalStatus && (
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getInterviewStatusClass(
-                              modalStatus,
-                            )}`}
-                          >
-                            {modalStatus}
-                          </span>
-                        )}
-
-                        {!isLeadStage &&
-                          canShowAssessmentStageData &&
-                          activeCandidate.assessmentResult && (
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getAssessmentResultClass(
-                              activeCandidate.assessmentResult,
-                            )}`}
-                          >
-                            {activeCandidate.assessmentResult}
-                          </span>
-                        )}
-
-                        {canShowNhoUploads && (
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
-                              majorNhoProgress.isComplete
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                : "border-amber-200 bg-amber-50 text-amber-700"
-                            }`}
-                          >
-                            Major: {majorNhoProgress.completed} /{" "}
-                            {majorNhoProgress.total}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+        }
+      >
+        <div className="space-y-4">
+          <CandidateModalSection title="Candidate Master Requisition Details">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                [
+                  "Candidate ID",
+                  activeCandidate.candidateId || activeCandidate.candidateApplicationId || "—",
+                ],
+                ["Source", activeCandidate.source || activeCandidate.metadata?.source || "—"],
+                ["Department", activeCandidate.department || activeCandidate.metadata?.department || "—"],
+                ["Target Position", activeCandidate.roleTitle || activeCandidate.roleAccount || "—"],
+                ["Client Account", activeCandidate.account || "Not assigned yet"],
+                ["PRF Status", activePrfStatus || "Review"],
+                [
+                  "Created Date",
+                  compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : "—",
+                ],
+              ].map(([label, value]) => (
+                <div key={label} className="min-w-0">
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    {label}
+                  </p>
+                  <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+                    {value}
+                  </p>
                 </div>
-
-                {showTalentPoolDetails && (
-                  <CandidateTalentPoolDetailsPanel candidate={activeCandidate} />
-                )}
-
-                {isInitialScreening && (
-                  <LeadPrfReviewCard
-                    candidate={{
-                      ...activeCandidate,
-                      prfStatus: prfReviewCardDisplayStatus,
-                      prf_status: prfReviewCardDisplayStatus,
-                    }}
-                    onUpdatePrfStatus={handleLocalPrfStatusUpdate}
-                  />
-                )}
-
-                <div
-                  className={`grid grid-cols-1 gap-5 ${
-                    isLeadStage || isInitialScreening
-                      ? ""
-                      : "xl:grid-cols-[1fr_360px]"
-                  }`}
-                >
-                  <div className="min-w-0 space-y-5">
-                    <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                      <h3 className="text-sm font-bold text-[#101828]">
-                        Movement Timeline
-                      </h3>
-
-                      <div className="mt-5 space-y-4">
-                        {!visibleTimeline.length && (
-                          <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-4 py-6 text-center text-sm font-semibold text-sibs-tertiary-5">
-                            No movement records are available for the current stage.
-                          </div>
-                        )}
-
-                        {visibleTimeline.map(
-                          (item, index) => {
-                          const finalInterviewFormLink = getTimelineFinalInterviewFormLink(
-                            item,
-                            activeCandidate,
-                          );
-
-                          const timelineItem = buildTimelineItemWithFinalInterviewLink(
-                            item,
-                            activeCandidate,
-                          );
-
-                          const finalInterviewAttempts =
-                            getFinalInterviewSubmissions(
-                              activeCandidate,
-                            )
-                              .map((submission, submissionIndex) => ({
-                                submission,
-                                attemptNo:
-                                  getFinalInterviewAttemptNo(
-                                    submission,
-                                    submissionIndex + 1,
-                                  ),
-                              }))
-                              .sort(
-                                (first, second) =>
-                                  first.attemptNo - second.attemptNo,
-                              );
-
-                          const latestFinalInterviewAttemptNo =
-                            finalInterviewAttempts.reduce(
-                              (latest, entry) =>
-                                Math.max(latest, entry.attemptNo),
-                              0,
-                            );
-
-                          const latestFinalInterviewAttempt =
-                            finalInterviewAttempts.find(
-                              (entry) =>
-                                entry.attemptNo ===
-                                latestFinalInterviewAttemptNo,
-                            ) || null;
-
-                          const previousCompletedFinalInterviewAttempt =
-                            [...finalInterviewAttempts]
-                              .filter(
-                                (entry) =>
-                                  entry.attemptNo <
-                                    latestFinalInterviewAttemptNo &&
-                                  isFinalInterviewSubmissionCompleted(
-                                    entry.submission,
-                                  ),
-                              )
-                              .sort(
-                                (first, second) =>
-                                  second.attemptNo -
-                                  first.attemptNo,
-                              )[0] || null;
-
-                          const displayedFinalInterviewAttempts =
-                            [
-                              previousCompletedFinalInterviewAttempt,
-                              latestFinalInterviewAttempt,
-                            ].filter(
-                              (entry, entryIndex, entries) =>
-                                entry &&
-                                entries.findIndex(
-                                  (candidateEntry) =>
-                                    candidateEntry?.attemptNo ===
-                                    entry.attemptNo,
-                                ) === entryIndex,
-                            );
-
-                          const timelineSubmissionId =
-                            getFinalInterviewSubmissionId(
-                              timelineItem,
-                            ) ||
-                            getFinalInterviewSubmissionId(
-                              timelineItem?.extra || {},
-                            );
-
-                          const matchingTimelineSubmission =
-                            timelineSubmissionId
-                              ? finalInterviewAttempts.find(
-                                  (entry) =>
-                                    getFinalInterviewSubmissionId(
-                                      entry.submission,
-                                    ) === timelineSubmissionId,
-                                )?.submission || null
-                              : null;
-
-                          const timelineReasonKey = cleanText(
-                            timelineItem?.reason,
-                          ).toLowerCase();
-
-                          const isFinalInterviewStartEntry =
-                            Boolean(timelineSubmissionId) &&
-                            (
-                              timelineReasonKey.includes(
-                                "final interview attempt",
-                              ) &&
-                              timelineReasonKey.includes("started")
-                            );
-
-                          const timelineInterviewResponse =
-                            cleanText(
-                              timelineItem?.interviewResponse ||
-                                timelineItem?.interview_response ||
-                                timelineItem?.responseStatus ||
-                                timelineItem?.response_status ||
-                                timelineItem?.extra?.interviewResponse ||
-                                timelineItem?.extra?.interview_response ||
-                                timelineItem?.extra?.responseStatus ||
-                                timelineItem?.extra?.response_status ||
-                                "",
-                            );
-
-                          const timelineInterviewSchedule =
-                            timelineItem?.selectedInterviewDate ||
-                            timelineItem?.selected_interview_date ||
-                            timelineItem?.finalInterviewDate ||
-                            timelineItem?.final_interview_date ||
-                            timelineItem?.interviewDate ||
-                            timelineItem?.interview_date ||
-                            timelineItem?.extra?.selectedInterviewDate ||
-                            timelineItem?.extra?.selected_interview_date ||
-                            timelineItem?.extra?.finalInterviewDate ||
-                            timelineItem?.extra?.final_interview_date ||
-                            timelineItem?.extra?.interviewDate ||
-                            timelineItem?.extra?.interview_date ||
-                            "";
-
-                          const timelineInterviewType =
-                            cleanText(
-                              timelineItem?.interviewType ||
-                                timelineItem?.interview_type ||
-                                timelineItem?.extra?.interviewType ||
-                                timelineItem?.extra?.interview_type ||
-                                (
-                                  timelineInterviewResponse
-                                    ? activeCandidate.interviewType ||
-                                      activeCandidate.interview_type
-                                    : ""
-                                ) ||
-                                "",
-                            );
-
-                          const timelineOnlineInterviewLink =
-                            cleanText(
-                              timelineItem?.onlineInterviewLink ||
-                                timelineItem?.online_interview_link ||
-                                timelineItem?.extra?.onlineInterviewLink ||
-                                timelineItem?.extra?.online_interview_link ||
-                                "",
-                            );
-
-                          const timelineInterviewRespondedAt =
-                            timelineItem?.respondedAt ||
-                            timelineItem?.responded_at ||
-                            timelineItem?.extra?.respondedAt ||
-                            timelineItem?.extra?.responded_at ||
-                            "";
-
-                          const shouldShowInterviewScheduleHistory =
-                            Boolean(
-                              timelineInterviewResponse ||
-                                timelineInterviewSchedule,
-                            ) &&
-                            (
-                              cleanText(
-                                timelineItem?.extra?.source ||
-                                  timelineItem?.source ||
-                                  "",
-                              )
-                                .toLowerCase()
-                                .includes("candidate public interview response") ||
-                              ["accepted", "rescheduled", "declined"].includes(
-                                timelineInterviewResponse.toLowerCase(),
-                              )
-                            );
-
-                          const timelineScheduleText = String(
-                            [
-                              timelineItem?.stage,
-                              timelineItem?.title,
-                              timelineItem?.reason,
-                              timelineItem?.remarks,
-                              timelineItem?.description,
-                            ]
-                              .filter(Boolean)
-                              .join(" "),
-                          )
-                            .trim()
-                            .toLowerCase()
-                            .replace(/[-_]+/g, " ")
-                            .replace(/\s+/g, " ");
-
-                          const timelineScheduleStage = String(
-                            timelineItem?.stage ||
-                              timelineItem?.currentStage ||
-                              timelineItem?.current_stage ||
-                              "",
-                          )
-                            .trim()
-                            .toLowerCase()
-                            .replace(/[-_]+/g, " ")
-                            .replace(/\s+/g, " ");
-
-                          const isInterviewScheduleEmailEntry =
-                            timelineScheduleStage === "interview scheduled" &&
-                            (
-                              timelineScheduleText.includes(
-                                "interview schedule saved",
-                              ) ||
-                              timelineScheduleText.includes(
-                                "email sent to",
-                              ) ||
-                              timelineScheduleText.includes(
-                                "proposed interview schedule",
-                              )
-                            );
-
-                          const finalInterviewScoreSummary = getTimelineFinalInterviewScoreSummary(
-                            timelineItem,
-                            activeCandidate,
-                          );
-
-                          const finalInterviewResult = getFinalInterviewResult(
-                            finalInterviewScoreSummary,
-                          );
-
-                          const finalInterviewScore = getFinalInterviewScoreDisplay(
-                            finalInterviewScoreSummary,
-                          );
-
-                          const jobEvaluationScore =
-                            getJobEvaluationScoreDisplay(
-                              finalInterviewScoreSummary,
-                            );
-
-                          const isLatestFinalInterviewTimelineItem =
-                            index === latestFinalInterviewTimelineIndex &&
-                            isFinalInterviewTimelineItem(
-                              timelineItem,
-                            );
-
-                          const shouldShowJobEvaluationScore =
-                            !isFinalInterviewStartEntry &&
-                            !isInterviewScheduleEmailEntry &&
-                            !shouldShowInterviewScheduleHistory &&
-                            isLatestFinalInterviewTimelineItem &&
-                            Boolean(jobEvaluationScore);
-
-                          const shouldShowFinalInterviewResult =
-                            !isFinalInterviewStartEntry &&
-                            !isInterviewScheduleEmailEntry &&
-                            !shouldShowInterviewScheduleHistory &&
-                            isLatestFinalInterviewTimelineItem &&
-                            Boolean(
-                              finalInterviewResult ||
-                                finalInterviewScore,
-                            );
-
-                          const shouldShowAssessmentArtifacts =
-                            shouldShowAssessmentArtifactsForTimelineEntry(
-                              timelineItem,
-                            );
-
-                          const timelineAssessmentScore =
-                            shouldShowAssessmentArtifacts
-                              ? formatAssessmentScoreDisplay(
-                                  getTimelineAssessmentScore(
-                                    timelineItem,
-                                  ),
-                                )
-                              : "";
-
-                          const timelineOfferVersion =
-                            shouldDisplayEmploymentOfferPdf(
-                              timelineItem,
-                            )
-                              ? findTimelineOfferVersion(
-                                  timelineItem,
-                                  candidateOfferVersions,
-                                )
-                              : null;
-
-                          const timelineOfferVersionNumber =
-                            getOfferVersionNumber(
-                              timelineOfferVersion || {},
-                            );
-
-                          const timelineOfferPdfFilename =
-                            getOfferVersionPdfFilename(
-                              timelineOfferVersion || {},
-                            );
-
-                          const timelineOfferPdfUrl =
-                            timelineOfferVersionNumber > 0
-                              ? buildEmploymentOfferPdfUrl(
-                                  candidateNhoUploadId,
-                                  timelineOfferVersionNumber,
-                                )
-                              : "";
-
-                          return (
-                            <div
-                              key={`${item.stage}-${index}`}
-                              className="flex min-w-0 gap-4"
-                            >
-                              <div
-                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${getStageClass(
-                                  item.stage,
-                                )}`}
-                              >
-                                {index + 1}
-                              </div>
-
-                              <div className="min-w-0 flex-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                                  <div className="min-w-0">
-                                    <p className="truncate text-sm font-bold text-[#101828]">
-                                      {item.stage}
-                                    </p>
-                                    <p className="truncate text-xs font-semibold text-sibs-tertiary-5">
-                                      {item.timestamp}
-                                    </p>
-                                  </div>
-
-                                  <span className="w-fit shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-bold text-gray-600">
-                                    {item.owner}
-                                  </span>
-                                </div>
-
-                                <p className="mt-3 text-sm leading-6 text-[#344054]">
-                                  {item.reason}
-                                </p>
-
-                                {item.remarks && (
-                                  <p className="mt-3 rounded-lg bg-white p-3 text-xs font-semibold leading-5 text-[#475467]">
-                                    {item.remarks}
-                                  </p>
-                                )}
-
-                                {shouldShowInterviewScheduleHistory && (
-                                  <div className="mt-3 rounded-xl border border-blue-100 bg-white p-3">
-                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                                      Interview Schedule History
-                                    </p>
-
-                                    <div className="mt-3 divide-y divide-[#EEF2F6]">
-                                      <div className="flex flex-col gap-1 py-2 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
-                                        <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
-                                          Candidate Response
-                                        </span>
-                                        <span className="text-xs font-extrabold text-[#101828]">
-                                          {timelineInterviewResponse || "—"}
-                                        </span>
-                                      </div>
-
-                                      <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
-                                          Interview Schedule
-                                        </span>
-                                        <span className="text-xs font-extrabold text-[#101828] sm:text-right">
-                                          {formatDateTime(
-                                            timelineInterviewSchedule,
-                                          ) || "—"}
-                                        </span>
-                                      </div>
-
-                                      <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
-                                          Interview Type
-                                        </span>
-                                        <span className="text-xs font-extrabold text-[#101828]">
-                                          {timelineInterviewType || "—"}
-                                        </span>
-                                      </div>
-
-                                      {timelineInterviewRespondedAt && (
-                                        <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
-                                          <span className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
-                                            Responded At
-                                          </span>
-                                          <span className="text-xs font-extrabold text-[#101828] sm:text-right">
-                                            {formatDateTime(
-                                              timelineInterviewRespondedAt,
-                                            ) || "—"}
-                                          </span>
-                                        </div>
-                                      )}
-
-                                      {timelineInterviewType
-                                        .toLowerCase()
-                                        .includes("online") &&
-                                        timelineOnlineInterviewLink && (
-                                          <div className="py-2 last:pb-0">
-                                            <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
-                                              Online Interview Link
-                                            </p>
-                                            <p
-                                              title={timelineOnlineInterviewLink}
-                                              className="mt-1 truncate text-xs font-semibold text-blue-600"
-                                            >
-                                              {timelineOnlineInterviewLink}
-                                            </p>
-                                          </div>
-                                        )}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {isFinalInterviewStartEntry &&
-                                  finalInterviewAttempts.length > 0 && (
-                                    <div className="mt-3 rounded-xl border border-violet-100 bg-white p-3">
-                                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                                        Final Interview Attempts
-                                      </p>
-
-                                      <div className="mt-3 space-y-3">
-                                        {displayedFinalInterviewAttempts.map(
-                                          ({
-                                            submission,
-                                            attemptNo,
-                                          }) => {
-                                            const isPreviousAttempt =
-                                              attemptNo <
-                                              latestFinalInterviewAttemptNo;
-
-                                            const isCurrentAttempt =
-                                              attemptNo ===
-                                              latestFinalInterviewAttemptNo;
-
-                                            const isStarted =
-                                              isFinalInterviewSubmissionStarted(
-                                                submission,
-                                              );
-
-                                            const isCompleted =
-                                              isFinalInterviewSubmissionCompleted(
-                                                submission,
-                                              );
-
-                                            const attemptScoreSummary =
-                                              safeJsonParseValue(
-                                                submission.scoreSummary ||
-                                                  submission.score_summary ||
-                                                  {},
-                                                {},
-                                              ) || {};
-
-                                            const attemptJobEvaluationScore =
-                                              isCompleted
-                                                ? getJobEvaluationScoreDisplay(
-                                                    attemptScoreSummary,
-                                                  )
-                                                : "";
-
-                                            const attemptResult =
-                                              isCompleted
-                                                ? getFinalInterviewResult(
-                                                    attemptScoreSummary,
-                                                  ) ||
-                                                  submission.finalInterviewResult ||
-                                                  submission.final_interview_result ||
-                                                  "Completed"
-                                                : "";
-
-                                            const attemptFinalScore =
-                                              isCompleted
-                                                ? getFinalInterviewScoreDisplay(
-                                                    attemptScoreSummary,
-                                                  ) ||
-                                                  cleanText(
-                                                    submission.finalInterviewScore ||
-                                                      submission.final_interview_score ||
-                                                      "",
-                                                  )
-                                                : "";
-
-                                            const attemptLink =
-                                              cleanText(
-                                                submission.savedFormLink ||
-                                                  submission.saved_form_link ||
-                                                  "",
-                                              );
-
-                                            const attemptStatus =
-                                              isCompleted
-                                                ? "Completed"
-                                                : isStarted
-                                                  ? "In Progress"
-                                                  : "Not yet started";
-
-                                            return (
-                                              <div
-                                                key={
-                                                  getFinalInterviewSubmissionId(
-                                                    submission,
-                                                  ) ||
-                                                  `final-interview-attempt-${attemptNo}`
-                                                }
-                                                className={`rounded-xl border p-3 ${
-                                                  isCurrentAttempt
-                                                    ? "border-blue-100 bg-blue-50"
-                                                    : "border-[#E6ECF2] bg-[#F8FAFC]"
-                                                }`}
-                                              >
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                  <p className="text-xs font-extrabold text-[#101828]">
-                                                    {isPreviousAttempt
-                                                      ? `Previous Final Interview — Attempt ${attemptNo}`
-                                                      : `Current Final Interview — Attempt ${attemptNo}`}
-                                                  </p>
-
-                                                  <span className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-extrabold text-[#475467]">
-                                                    {attemptStatus}
-                                                  </span>
-                                                </div>
-
-                                                {isCompleted && (
-                                                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                                    <div className="rounded-lg border border-violet-100 bg-white p-3">
-                                                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-violet-700">
-                                                        {isPreviousAttempt
-                                                          ? "Previous Job Evaluation Score"
-                                                          : "Job Evaluation Score"}
-                                                      </p>
-                                                      <p className="mt-1 text-xs font-extrabold text-violet-700">
-                                                        {attemptJobEvaluationScore ||
-                                                          "Score recorded"}
-                                                      </p>
-                                                    </div>
-
-                                                    <div className="rounded-lg border border-blue-100 bg-white p-3">
-                                                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                                                        {isPreviousAttempt
-                                                          ? "Previous Final Interview Result"
-                                                          : "Final Interview Result"}
-                                                      </p>
-                                                      <div className="mt-1 flex flex-wrap gap-2 text-xs font-extrabold text-sibs-primary-1">
-                                                        <span>
-                                                          {attemptResult ||
-                                                            "Completed"}
-                                                        </span>
-                                                        {attemptFinalScore && (
-                                                          <span>
-                                                            Score:{" "}
-                                                            {attemptFinalScore}
-                                                          </span>
-                                                        )}
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                )}
-
-                                                {!isCompleted &&
-                                                  isCurrentAttempt &&
-                                                  isStarted && (
-                                                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                                                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
-                                                        Job Evaluation Status
-                                                      </p>
-                                                      <p className="mt-1 text-xs font-extrabold text-amber-800">
-                                                        In Progress — no score yet
-                                                      </p>
-                                                    </div>
-                                                  )}
-
-                                                {attemptLink &&
-                                                  isStarted && (
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => {
-                                                        try {
-                                                          const parsedUrl =
-                                                            new URL(
-                                                              attemptLink,
-                                                              window.location.origin,
-                                                            );
-
-                                                          navigate(
-                                                            `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`,
-                                                          );
-                                                        } catch {
-                                                          navigate(
-                                                            attemptLink,
-                                                          );
-                                                        }
-                                                      }}
-                                                      className="mt-3 block w-full min-w-0 truncate rounded-lg border border-blue-100 bg-white px-3 py-2 text-left text-xs font-semibold text-blue-600 underline transition hover:border-blue-200 hover:bg-blue-50"
-                                                    >
-                                                      {isPreviousAttempt
-                                                        ? "Open Previous Job Evaluation"
-                                                        : "Open Current Job Evaluation"}
-                                                    </button>
-                                                  )}
-                                              </div>
-                                            );
-                                          },
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                {timelineOfferVersion &&
-                                  timelineOfferPdfUrl &&
-                                  isOfferVersionPdfAvailable(
-                                    timelineOfferVersion,
-                                  ) && (
-                                    <div className="mt-3 rounded-xl border border-blue-100 bg-white p-3 shadow-sm">
-                                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="flex min-w-0 items-start gap-3">
-                                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
-                                            <FileText size={19} />
-                                          </div>
-
-                                          <div className="min-w-0">
-                                            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                                              Employment Offer PDF
-                                            </p>
-
-                                            <p
-                                              title={
-                                                timelineOfferPdfFilename ||
-                                                `Employment Offer Version ${timelineOfferVersionNumber}`
-                                              }
-                                              className="mt-1 truncate text-xs font-extrabold text-[#101828]"
-                                            >
-                                              {timelineOfferPdfFilename ||
-                                                `Employment Offer Version ${timelineOfferVersionNumber}.pdf`}
-                                            </p>
-
-                                            <p className="mt-1 text-[11px] font-bold text-sibs-tertiary-5">
-                                              Offer Version {timelineOfferVersionNumber}
-                                            </p>
-                                          </div>
-                                        </div>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setEmploymentOfferPreview({
-                                              open: true,
-                                              filename:
-                                                timelineOfferPdfFilename ||
-                                                `Employment Offer Version ${timelineOfferVersionNumber}.pdf`,
-                                              requestUrl:
-                                                `/api/candidate-pipeline/${encodeURIComponent(
-                                                  candidateNhoUploadId,
-                                                )}/offer-versions/${encodeURIComponent(
-                                                  timelineOfferVersionNumber,
-                                                )}/pdf`,
-                                            });
-                                          }}
-                                          className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-blue-700 transition hover:bg-blue-100"
-                                        >
-                                          <Eye size={15} />
-                                          Open PDF
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                {!timelineOfferVersion &&
-                                  isLoadingOfferVersions &&
-                                  shouldDisplayEmploymentOfferPdf(
-                                    timelineItem,
-                                  ) && (
-                                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-3 text-xs font-bold text-sibs-tertiary-5">
-                                      <Loader2
-                                        size={15}
-                                        className="animate-spin"
-                                      />
-                                      Loading Employment Offer PDF...
-                                    </div>
-                                  )}
-
-                                {timelineAssessmentScore && (
-                                  <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-3">
-                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                                      Assessment Score
-                                    </p>
-
-                                    <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-                                      {timelineAssessmentScore}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {shouldShowAssessmentArtifacts && (
-                                  <GetAssessmentTimelineFiles
-                                    item={timelineItem}
-                                    candidate={activeCandidate}
-                                  />
-                                )}
-
-                                {shouldShowJobEvaluationScore && (
-                                  <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50 p-3">
-                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-violet-700">
-                                      Job Evaluation Score
-                                    </p>
-
-                                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                                      <span className="inline-flex rounded-full border border-violet-100 bg-white px-3 py-1 text-xs font-extrabold text-violet-700">
-                                        {jobEvaluationScore}
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {shouldShowFinalInterviewResult && (
-                                  <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
-                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                                      Final Interview Result
-                                    </p>
-
-                                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                                      {finalInterviewResult && (
-                                        <span
-                                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getFinalInterviewResultClass(
-                                            finalInterviewResult,
-                                          )}`}
-                                        >
-                                          {finalInterviewResult}
-                                        </span>
-                                      )}
-
-                                      {finalInterviewScore && (
-                                        <span className="inline-flex rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
-                                          Score: {finalInterviewScore}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {finalInterviewFormLink &&
-                                  !isInterviewScheduleEmailEntry &&
-                                  !shouldShowInterviewScheduleHistory &&
-                                  !isFinalInterviewStartEntry && (
-                                  <div className="mt-3">
-                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                                      Job Evaluation Link
-                                    </p>
-
-                                    <button
-                                      type="button"
-                                      title={finalInterviewFormLink}
-                                      onClick={() => {
-                                        try {
-                                          const parsedUrl = new URL(
-                                            finalInterviewFormLink,
-                                            window.location.origin,
-                                          );
-
-                                          const internalRoute =
-                                            `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
-
-                                          /*
-                                           * Use the current React application tab so the
-                                           * authenticated UserContext/session is preserved.
-                                           * Opening this route in a new tab can initialize
-                                           * before the frontend auth state is restored and
-                                           * redirect the user to Login.
-                                           */
-                                          navigate(internalRoute);
-                                        } catch {
-                                          navigate(finalInterviewFormLink);
-                                        }
-                                      }}
-                                      className="mt-2 block w-full min-w-0 truncate rounded-lg border border-blue-100 bg-white px-3 py-2 text-left text-xs font-semibold text-blue-600 underline transition hover:cursor-pointer hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                                    >
-                                      {finalInterviewFormLink}
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                      <h3 className="text-sm font-bold text-[#101828]">
-                        Reason for Movement
-                      </h3>
-
-                      <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
-                        {visibleMovementReason || "—"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {!isLeadStage && !isInitialScreening && (
-                    <div className="space-y-5">
-                      <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                        <h3 className="text-sm font-bold text-sibs-primary-1">
-                          Online Assessment
-                        </h3>
-
-                        <div className="mt-4 rounded-xl bg-white p-4">
-                          <DetailRow
-                            label="Assessment Result"
-                            value={getAssessmentResult(activeCandidate) || "—"}
-                          />
-                          <DetailRow
-                            label="Assessment Score"
-                            value={
-                              formatAssessmentScoreDisplay(
-                                activeCandidate.assessmentScore ||
-                                  activeCandidate.assessment_score,
-                              ) || "—"
-                            }
-                          />
-                          <DetailRow
-                            label="Email Sent"
-                            value={
-                              activeCandidate.assessmentEmailSent ||
-                              activeCandidate.assessment_email_sent
-                                ? "Yes"
-                                : "No"
-                            }
-                          />
-                          <DetailRow
-                            label="Email Sent At"
-                            value={
-                              activeCandidate.assessmentEmailSentAt ||
-                              activeCandidate.assessment_email_sent_at
-                            }
-                          />
-                        </div>
-
-                        {isOnlineAssessment && (
-                          <div className="mt-4 grid grid-cols-1 gap-2">
-                            <button
-                              type="button"
-                              disabled={isResendingAssessmentEmail}
-                              onClick={handleResendAssessmentEmail}
-                              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
-                            >
-                              {isResendingAssessmentEmail ? (
-                                <Loader2 size={16} className="animate-spin" />
-                              ) : (
-                                <Mail size={16} />
-                              )}
-                              {isResendingAssessmentEmail
-                                ? "Resending..."
-                                : "Resend Assessment Email"}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={handleOpenAssessmentModalClick}
-                              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 text-sm font-bold text-white transition hover:opacity-90"
-                            >
-                              <ClipboardCheck size={16} />
-                              Update Assessment
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                        <h3 className="text-sm font-bold text-[#101828]">
-                          Interview Details
-                        </h3>
-
-                        <div className="mt-4 rounded-xl bg-white p-4">
-                          <DetailRow
-                            label="Candidate ID"
-                            value={activeCandidate.candidateId}
-                          />
-                          <DetailRow
-                            label="Role / Account"
-                            value={activeCandidate.roleAccount}
-                          />
-                          <DetailRow
-                            label="Interview Date"
-                            value={formatDateTime(activeCandidate.interviewDate)}
-                          />
-                          <DetailRow
-                            label="Interview Type"
-                            value={getDisplayInterviewType(activeCandidate)}
-                          />
-                          <DetailRow
-                            label="Interview Status"
-                            value={
-                              getDisplayInterviewStatus(activeCandidate) || "—"
-                            }
-                          />
-
-                          {(activeCandidate.finalInterviewResult ||
-                            activeCandidate.final_interview_result ||
-                            activeCandidate.reapplyEligibleAt ||
-                            activeCandidate.reapply_eligible_at) && (
-                            <>
-                              <DetailRow
-                                label="Final Interview Result"
-                                value={
-                                  activeCandidate.finalInterviewResult ||
-                                  activeCandidate.final_interview_result ||
-                                  "—"
-                                }
-                              />
-                              <DetailRow
-                                label="Final Interview Score"
-                                value={
-                                  activeCandidate.finalInterviewScore !== null &&
-                                  activeCandidate.finalInterviewScore !== undefined &&
-                                  activeCandidate.finalInterviewScore !== ""
-                                    ? `${activeCandidate.finalInterviewScore}%`
-                                    : activeCandidate.final_interview_score !== null &&
-                                        activeCandidate.final_interview_score !== undefined &&
-                                        activeCandidate.final_interview_score !== ""
-                                      ? `${activeCandidate.final_interview_score}%`
-                                      : "—"
-                                }
-                              />
-                              <DetailRow
-                                label="Required Passing Score"
-                                value={
-                                  activeCandidate.finalInterviewPassingScore !== null &&
-                                  activeCandidate.finalInterviewPassingScore !== undefined &&
-                                  activeCandidate.finalInterviewPassingScore !== ""
-                                    ? `${activeCandidate.finalInterviewPassingScore}%`
-                                    : activeCandidate.final_interview_passing_score !== null &&
-                                        activeCandidate.final_interview_passing_score !== undefined &&
-                                        activeCandidate.final_interview_passing_score !== ""
-                                      ? `${activeCandidate.final_interview_passing_score}%`
-                                      : "—"
-                                }
-                              />
-                              <DetailRow
-                                label="Failed Assessment Date"
-                                value={
-                                  formatDateTime(
-                                    activeCandidate.finalInterviewFailedAt ||
-                                      activeCandidate.final_interview_failed_at,
-                                  ) || "—"
-                                }
-                              />
-                              <DetailRow
-                                label="Reapply Eligibility Date"
-                                value={formatCandidateDateOnly(
-                                  activeCandidate.reapplyEligibleAt ||
-                                    activeCandidate.reapply_eligible_at,
-                                )}
-                              />
-                              <DetailRow
-                                label="Restriction Status"
-                                value={
-                                  activeCandidate.reapplicationRestrictionStatus ||
-                                  activeCandidate.reapplication_restriction_status ||
-                                  "—"
-                                }
-                              />
-                            </>
-                          )}
-
-                          <div className="mt-4 flex items-center justify-between gap-4 text-[12px]">
-                            <span className="shrink-0 font-bold uppercase text-sibs-tertiary-5">
-                              Interview Link
-                            </span>
-
-                            <span
-                              title={activeCandidate.onlineInterviewLink}
-                              className={`block max-w-[60%] min-w-0 overflow-hidden truncate text-right ${
-                                activeCandidate.onlineInterviewLink
-                                  ? "text-blue-600 underline hover:cursor-pointer"
-                                  : "text-sm font-bold text-[#344054]"
-                              }`}
-                              onClick={() => {
-                                if (activeCandidate.onlineInterviewLink) {
-                                  window.open(
-                                    activeCandidate.onlineInterviewLink,
-                                    "_blank",
-                                  );
-                                }
-                              }}
-                            >
-                              <span className="inline-block max-w-full overflow-hidden truncate align-bottom">
-                                {activeCandidate.onlineInterviewLink || "—"}
-                              </span>
-                            </span>
-                          </div>
-
-                          {activeCandidate.interviewStatus === "Cancelled" && (
-                            <DetailRow
-                              label="Cancellation Reason"
-                              value={activeCandidate.cancellationReason || "—"}
-                            />
-                          )}
-                        </div>
-
-                        {isInterviewScheduled && candidateHasSchedule && (
-                          <div className="mt-4 grid grid-cols-1 gap-2">
-                            <button
-                              type="button"
-                              onClick={handleOpenInterviewSchedule}
-                              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
-                            >
-                              <CalendarDays size={16} />
-                              Update Interview Schedule
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={handleStartOrContinueInterview}
-                              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 text-sm font-bold text-white transition hover:opacity-90"
-                            >
-                              <CirclePlay size={16} />
-                              {isInterviewInProgress
-                                ? "Continue Interview"
-                                : "Start Interview"}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                onCompleteInterview?.(activeCandidate)
-                              }
-                              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
-                            >
-                              <ClipboardCheck size={16} />
-                              Mark Interview Completed
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => onCancelInterview?.(activeCandidate)}
-                              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-red-600 transition hover:bg-red-100"
-                            >
-                              Cancel Interview
-                            </button>
-                          </div>
-                        )}
-
-                        {isAssessmentFit &&
-                          canScheduleInterview(activeCandidate) && (
-                            <button
-                              type="button"
-                              onClick={handleOpenInterviewSchedule}
-                              className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 text-sm font-bold text-white transition hover:opacity-90"
-                            >
-                              <CalendarDays size={16} />
-                              Schedule Interview
-                            </button>
-                          )}
-                      </div>
-
-                      {(isOffered ||
-                        isAccepted ||
-                        forNHO ||
-                        isIncompleteOnboarding ||
-                        isOnboarding) && (
-                        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                          <h3 className="text-sm font-bold text-sibs-primary-1">
-                            Offer and Approval
-                          </h3>
-
-                          <div className="mt-4 rounded-xl bg-white p-4">
-                            <DetailRow
-                              label="Offer Role"
-                              value={
-                                activeCandidate.offerDetails?.roleTitle ||
-                                activeCandidate.roleTitle
-                              }
-                            />
-                            <DetailRow
-                              label="Hiring Requirement"
-                              value={
-                                activeCandidate.offerDetails
-                                  ?.hiringRequirementId ||
-                                activeCandidate.hiringRequirementId
-                              }
-                            />
-                            <DetailRow
-                              label="Final Role"
-                              value={
-                                activeCandidate.offerDetails?.roleTitle ||
-                                activeCandidate.roleTitle
-                              }
-                            />
-                            <DetailRow
-                              label="Final Account"
-                              value={activeCandidate.offerDetails?.account}
-                            />
-                            <DetailRow
-                              label="Basic Daily Rate"
-                              value={formatCurrency(
-                                activeCandidate.offerDetails?.basicPay,
-                              )}
-                            />
-                            <DetailRow
-                              label="Daily De Minimis"
-                              value={formatCurrency(
-                                activeCandidate.offerDetails?.deminimisDailyRate,
-                              )}
-                            />
-                            <DetailRow
-                              label="Approval Status"
-                              value={
-                                activeCandidate.offerApprovalStatus ||
-                                getOfferApprovalSummary(activeCandidate)
-                              }
-                            />
-                            <DetailRow
-                              label="Offer Email Sent"
-                              value={
-                                activeCandidate.offerEmailSent ? "Yes" : "No"
-                              }
-                            />
-                            <DetailRow
-                              label="Candidate Response"
-                              value={activeCandidate.offerDecision || "—"}
-                            />
-                          </div>
-
-                          {isOffered && (
-                            <div className="mt-4 space-y-4">
-                              {(() => {
-                                const approvedBy = offerApprovers.filter(
-                                  (approver) => {
-                                    const approval =
-                                      activeCandidate.offerApprovals?.[approver];
-
-                                    return approval?.status === "Approved";
-                                  },
-                                );
-
-                                const isRejected = offerApprovers.some(
-                                  (approver) => {
-                                    const approval =
-                                      activeCandidate.offerApprovals?.[approver];
-
-                                    return approval?.status === "Rejected";
-                                  },
-                                );
-
-                                const approvalStatus =
-                                  activeCandidate.offerApprovalStatus ||
-                                  getOfferApprovalSummary(activeCandidate);
-
-                                return (
-                                  <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                      <div>
-                                        <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                                          Offer Approval
-                                        </p>
-
-                                        <h4 className="mt-1 text-base font-extrabold text-[#101828]">
-                                          {approvalStatus === "Approved"
-                                            ? "Offer Approved"
-                                            : isRejected
-                                              ? "Offer Rejected"
-                                              : "For Review"}
-                                        </h4>
-                                      </div>
-
-                                      <span
-                                        className={`w-fit rounded-full border px-3 py-1 text-xs font-extrabold ${getOfferApprovalClass(
-                                          approvalStatus || "For Review",
-                                        )}`}
-                                      >
-                                        {approvalStatus || "For Review"}
-                                      </span>
-                                    </div>
-
-                                    <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                                      <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                                        Approved By
-                                      </p>
-
-                                      <p className="mt-2 text-sm font-bold leading-6 text-sibs-primary-1">
-                                        {approvedBy.length > 0
-                                          ? approvedBy.join(", ")
-                                          : "Waiting for approval"}
-                                      </p>
-                                    </div>
-
-                                    {approvalStatus !== "Approved" &&
-                                      !isRejected && (
-                                        <p className="mt-3 rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm font-semibold leading-6 text-sibs-primary-1">
-                                          Offer is still for review. The email
-                                          button will be enabled once all
-                                          required approvals are completed in the
-                                          Offers page.
-                                        </p>
-                                      )}
-
-                                    {isRejected && (
-                                      <p className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold leading-6 text-red-600">
-                                        Offer approval was rejected. Please
-                                        review the approval details in the
-                                        Offers page.
-                                      </p>
-                                    )}
-                                  </div>
-                                );
-                              })()}
-
-                              {isOfferApproved(activeCandidate) &&
-                                !activeCandidate.offerEmailSent && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      onSendOfferEmail?.(activeCandidate)
-                                    }
-                                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 text-sm font-bold text-white transition hover:opacity-90"
-                                  >
-                                    <Mail size={16} />
-                                    Send Offer Email to Candidate
-                                  </button>
-                                )}
-
-                              {isOfferApproved(activeCandidate) && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    window.open(
-                                      buildOfferContractLink(activeCandidate),
-                                      "_blank",
-                                      "noopener,noreferrer",
-                                    )
-                                  }
-                                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
-                                >
-                                  <Eye size={16} />
-                                  Open Candidate Offer Link Manually
-                                </button>
-                              )}
-
-                              {activeCandidate.offerEmailSent && (
-                                <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-                                  <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                                    Candidate Offer Response
-                                  </p>
-
-                                  {isRevisedOfferPendingApproval ? (
-                                    <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
-                                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                        <div className="min-w-0">
-                                          <p className="text-sm font-extrabold text-sibs-primary-1">
-                                            Revised Offer Pending Approval
-                                          </p>
-                                          <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                                            The new compensation has already been submitted and is waiting for approval.
-                                          </p>
-                                        </div>
-
-                                        <span className="w-fit shrink-0 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-extrabold text-blue-700">
-                                          For Review
-                                        </span>
-                                      </div>
-
-                                      <button
-                                        type="button"
-                                        disabled
-                                        className="mt-3 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-xl border border-blue-100 bg-white px-4 text-sm font-extrabold text-blue-400 opacity-80"
-                                      >
-                                        Waiting for Approval
-                                      </button>
-                                    </div>
-                                  ) : isOfferNegotiationRequested ? (
-                                    <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 p-4">
-                                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                        <div className="min-w-0">
-                                          <p className="text-sm font-extrabold text-amber-800">
-                                            Negotiation Requested
-                                          </p>
-                                          <p className="mt-1 text-xs font-semibold leading-5 text-amber-700">
-                                            The candidate requested changes to the approved offer. Create a revised offer with the new Basic Daily Rate and Daily De Minimis.
-                                          </p>
-                                        </div>
-
-                                        <span className="w-fit shrink-0 rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-extrabold text-amber-700">
-                                          Negotiate
-                                        </span>
-                                      </div>
-
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setShowRevisedOfferModal(true)
-                                        }
-                                        className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
-                                      >
-                                        <ArrowRight size={16} />
-                                        Create Revised Offer
-                                      </button>
-                                    </div>
-                                  ) : hasFinalOfferDecision ? (
-                                    <div className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                                      <p className="text-sm font-extrabold text-[#101828]">
-                                        Candidate response recorded
-                                      </p>
-                                      <span
-                                        className={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getOfferDecisionClass(
-                                          activeCandidate.offerDecision ||
-                                            activeCandidate.offer_decision,
-                                        )}`}
-                                      >
-                                        {activeCandidate.offerDecision ||
-                                          activeCandidate.offer_decision}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                                        Use these buttons only when the candidate
-                                        cannot access the email link or TA needs to
-                                        record the response manually.
-                                      </p>
-                                      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                                        {offerDecisionOptions.map((decision) => (
-                                          <button
-                                            key={decision}
-                                            type="button"
-                                            onClick={() =>
-                                              onOfferDecision?.(
-                                                activeCandidate,
-                                                decision,
-                                              )
-                                            }
-                                            className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-bold transition ${getOfferDecisionClass(
-                                              decision,
-                                            )}`}
-                                          >
-                                            {decision}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {(isAccepted ||
-                        forNHO ||
-                        isIncompleteOnboarding ||
-                        isOnboarding) &&
-                        nhoScheduleSection}
-                    </div>
-                  )}
-                </div>
-
-                {canShowNhoUploads && (
-                  <PreEmploymentRequirementsPanel
-                    candidateName={activeCandidate.name}
-                    candidateEmail={activeCandidate.email}
-                    files={sortedCandidateFiles}
-                    selectedFile={selectedNhoFile}
-                    disabled={isSavingNhoFiles}
-                    saveError={nhoFilesError}
-                    saveSuccess={nhoFilesSuccess}
-                    onUpload={handleRequirementUpload}
-                    onRemove={requestRequirementFileDelete}
-                    onSelectFile={setSelectedNhoFile}
-                  />
-                )}
-              </div>
+              ))}
             </div>
-          </div>
+          </CandidateModalSection>
 
-          {currentStage === "Drop-off" && (
-            <div className="border-t border-gray-100 px-5 py-5 sm:px-6">
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#101828]">
-                      Drop-off Email Notification
-                    </h3>
-                    <p className="mt-1 text-xs font-semibold text-[#667085]">
-                      Automatic application update delivery status
-                    </p>
-                  </div>
-
-                  <span className="inline-flex w-fit rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
-                    {activeCandidate.dropOffEmailStatus ||
-                      activeCandidate.drop_off_email_status ||
-                      "Not Sent"}
+          {isInitialScreening && (
+            <CandidateModalSection
+              title="Lead PRF Review & Alignment"
+              subtitle="Validate headcount requisition alignment before the candidate proceeds."
+              headerAction={
+                <div className="sibs-text-xs font-semibold text-[#667085]">
+                  Current PRF Status:{" "}
+                  <span className="font-extrabold text-[#042C51]">
+                    {activePrfStatus}
                   </span>
                 </div>
-
-                <div className="mt-4 rounded-xl bg-white p-4">
-                  <DetailRow
-                    label="Recipient"
+              }
+            >
+              <div className="flex justify-end">
+                <div className="w-full sm:w-80">
+                  <DropdownField
+                    label="PRF STATUS"
                     value={
-                      activeCandidate.dropOffEmailRecipient ||
-                      activeCandidate.drop_off_email_recipient ||
-                      activeCandidate.email ||
-                      "No email saved"
+                      activePrfStatus === "Matched" || activePrfStatus === "Not Matched"
+                        ? activePrfStatus
+                        : ""
                     }
-                  />
-                  <DetailRow
-                    label="Attempt Count"
-                    value={
-                      activeCandidate.dropOffEmailAttemptCount ??
-                      activeCandidate.drop_off_email_attempt_count ??
-                      0
+                    displayValue={
+                      activePrfStatus === "Matched"
+                        ? "Matched"
+                        : activePrfStatus === "Not Matched"
+                          ? "Unmatched"
+                          : ""
                     }
+                    options={[
+                      {
+                        value: "Not Matched",
+                        label: "Unmatched",
+                        description: "Candidate is not yet matched to the PRF.",
+                      },
+                      {
+                        value: "Matched",
+                        label: "Matched",
+                        description: "Candidate can move to Online Assessment.",
+                      },
+                    ]}
+                    onChange={(value) => handleLocalPrfStatusUpdate(value)}
+                    placeholder="Select PRF status"
+                    searchable={false}
+                    controlVariant="secondaryAction"
+                    menuClassName="!rounded-lg"
+                    maxMenuHeight={180}
+                    className="w-full"
                   />
-                  <DetailRow
-                    label="Sent At"
-                    value={
-                      formatDateTime(
-                        activeCandidate.dropOffEmailSentAt ||
-                          activeCandidate.drop_off_email_sent_at,
-                      ) || "—"
-                    }
-                  />
-                  <DetailRow
-                    label="Last Attempt"
-                    value={
-                      formatDateTime(
-                        activeCandidate.dropOffEmailLastAttemptAt ||
-                          activeCandidate.drop_off_email_last_attempt_at,
-                      ) || "—"
-                    }
-                  />
-                  <DetailRow
-                    label="Delivery Error"
-                    value={
-                      activeCandidate.dropOffEmailError ||
-                      activeCandidate.drop_off_email_error ||
-                      "—"
-                    }
-                  />
+                  <p className="mt-1.5 text-xs font-medium text-[#475467]">
+                    Changing this value will immediately update the candidate PRF review status.
+                  </p>
                 </div>
-
-                <button
-                  type="button"
-                  disabled={isResendingDropOffEmail}
-                  onClick={handleResendDropOffNotification}
-                  className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isResendingDropOffEmail ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Mail size={16} />
-                  )}
-                  {isResendingDropOffEmail
-                    ? "Resending..."
-                    : "Resend Drop-off Email"}
-                </button>
               </div>
+            </CandidateModalSection>
+          )}
+
+          <CandidateModalSection
+            title="Candidate Profile Details Panel"
+            subtitle="Quick candidate profile summary for recruitment review."
+          >
+            <div className="grid grid-cols-1 gap-x-10 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2">
+              {[
+                ["Highest Education", compactProfileSummary.highestEducation || "—"],
+                ["Relevant Experience", compactProfileSummary.relevantExperience || "—"],
+                [
+                  "Expected Salary",
+                  compactProfileSummary.expectedSalary
+                    ? `${formatCurrency(compactProfileSummary.expectedSalary)}/month`
+                    : "—",
+                ],
+                ["Current Location", compactProfileSummary.currentLocation || "—"],
+              ].map(([label, value]) => (
+                <div key={label} className="min-w-0">
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    {label}
+                  </p>
+                  <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+                    {value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <CandidateModalSecondaryButton
+                type="button"
+                onClick={() => setShowTalentPoolDetails((previous) => !previous)}
+                className="w-full !justify-between sm:w-72"
+              >
+                <span className="min-w-0 flex-1 truncate text-left">
+                  {showTalentPoolDetails
+                    ? "Hide Full Submitted Profile"
+                    : "View Full Submitted Profile"}
+                </span>
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${showTalentPoolDetails ? "rotate-180" : ""}`}
+                />
+              </CandidateModalSecondaryButton>
+            </div>
+          </CandidateModalSection>
+
+          {showTalentPoolDetails && (
+            <div className="sibs-page-card-in">
+              <CandidateTalentPoolDetailsPanel candidate={activeCandidate} />
             </div>
           )}
 
-          <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
-            <div className="flex flex-col justify-end gap-2 sm:flex-row">
-              {!isInitialScreening && currentStage !== "Drop-off" && (
-                <button
-                  type="button"
-                  onClick={() => onOpenDropOffModal?.(activeCandidate)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-500 transition hover:bg-red-100"
-                >
-                  <UserX size={16} />
-                  Mark Drop-off
-                </button>
+          {hasAssessmentDetailAccess && (
+            <CandidateModalSection title="Assessment Summary">
+              <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  [
+                    "Status",
+                    activeCandidate.assessmentStatus ||
+                      activeCandidate.assessment_status ||
+                      (getAssessmentResult(activeCandidate) ? "Taken" : "Not Take"),
+                  ],
+                  ["Result", getAssessmentResult(activeCandidate) || "—"],
+                  [
+                    "Score",
+                    formatAssessmentScoreDisplay(
+                      activeCandidate.assessmentScore || activeCandidate.assessment_score,
+                    ) || "—",
+                  ],
+                  [
+                    "Attachment",
+                    activeCandidate.assessmentFileName ||
+                      activeCandidate.assessment_file_name ||
+                      activeCandidate.assessmentAttachmentName ||
+                      activeCandidate.assessment_attachment_name ||
+                      "—",
+                  ],
+                ].map(([label, value]) => (
+                  <div key={label} className="min-w-0">
+                    <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      {label}
+                    </p>
+                    <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+                      {value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3">
+                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  Remarks
+                </p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#475467]">
+                  {activeCandidate.assessmentRemarks || activeCandidate.assessment_remarks || "—"}
+                </p>
+              </div>
+            </CandidateModalSection>
+          )}
+
+          {hasInterviewDetailAccess && (
+            <CandidateModalSection title="Interview Summary">
+              <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  ["Date / Time", formatDateTime(activeCandidate.interviewDate) || "—"],
+                  ["Interview Type", getDisplayInterviewType(activeCandidate) || "—"],
+                  ["Interview Status", getDisplayInterviewStatus(activeCandidate) || "—"],
+                  [
+                    "Final Interview Result",
+                    activeCandidate.finalInterviewResult || activeCandidate.final_interview_result || "—",
+                  ],
+                  [
+                    "Final Interview Score",
+                    activeCandidate.finalInterviewScore !== null &&
+                    activeCandidate.finalInterviewScore !== undefined &&
+                    activeCandidate.finalInterviewScore !== ""
+                      ? `${activeCandidate.finalInterviewScore}%`
+                      : activeCandidate.final_interview_score !== null &&
+                          activeCandidate.final_interview_score !== undefined &&
+                          activeCandidate.final_interview_score !== ""
+                        ? `${activeCandidate.final_interview_score}%`
+                        : "—",
+                  ],
+                  [
+                    "Interview Link",
+                    activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link || "—",
+                  ],
+                ].map(([label, value]) => (
+                  <div key={label} className="min-w-0">
+                    <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      {label}
+                    </p>
+                    {label === "Interview Link" && value !== "—" ? (
+                      <button
+                        type="button"
+                        title={value}
+                        onClick={() => window.open(value, "_blank", "noopener,noreferrer")}
+                        className="mt-0.5 block max-w-full truncate text-left text-xs font-extrabold text-blue-600 underline"
+                      >
+                        {value}
+                      </button>
+                    ) : (
+                      <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+                        {value}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3">
+                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  Interview Remarks
+                </p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#475467]">
+                  {activeCandidate.interviewNotes ||
+                    activeCandidate.interviewerNotes ||
+                    activeCandidate.interview_notes ||
+                    "—"}
+                </p>
+              </div>
+
+              {isInterviewScheduled && candidateHasSchedule && (
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  <CandidateModalSecondaryButton type="button" onClick={handleOpenInterviewSchedule}>
+                    <CalendarDays size={14} />
+                    Update Schedule
+                  </CandidateModalSecondaryButton>
+                  <CandidateModalSecondaryButton
+                    type="button"
+                    onClick={() => onCompleteInterview?.(activeCandidate)}
+                  >
+                    <ClipboardCheck size={14} />
+                    Mark Completed
+                  </CandidateModalSecondaryButton>
+                  <button
+                    type="button"
+                    onClick={() => onCancelInterview?.(activeCandidate)}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100"
+                  >
+                    Cancel Interview
+                  </button>
+                </div>
+              )}
+            </CandidateModalSection>
+          )}
+
+          {hasOfferDetailAccess && (
+            <CandidateModalSection title="Offer Summary">
+              <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  ["Final Role", activeCandidate.offerDetails?.roleTitle || activeCandidate.roleTitle || "—"],
+                  ["Final Account", activeCandidate.offerDetails?.account || activeCandidate.account || "—"],
+                  [
+                    "Hiring Requirement / PRF",
+                    activeCandidate.offerDetails?.hiringRequirementId || activeCandidate.hiringRequirementId || "—",
+                  ],
+                  ["Basic Daily Rate", formatCurrency(currentOfferBasicDailyRate)],
+                  ["Daily De Minimis", formatCurrency(currentOfferDailyDeMinimis)],
+                  [
+                    "Total Daily Rate",
+                    formatCurrency(currentOfferBasicDailyRate + currentOfferDailyDeMinimis),
+                  ],
+                  [
+                    "Approval Status",
+                    activeCandidate.offerApprovalStatus || getOfferApprovalSummary(activeCandidate) || "For Review",
+                  ],
+                  [
+                    "Candidate Response",
+                    activeCandidate.offerDecision || activeCandidate.offer_decision || "Pending",
+                  ],
+                  [
+                    "Start Date",
+                    formatCandidateDateOnly(
+                      activeCandidate.offerDetails?.startDate ||
+                        activeCandidate.offerStartDate ||
+                        activeCandidate.offer_start_date,
+                    ),
+                  ],
+                ].map(([label, value]) => (
+                  <div key={label} className="min-w-0">
+                    <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      {label}
+                    </p>
+                    <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+                      {value || "—"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {candidateOfferVersions.length > 0 && (
+                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                      Offer Versions
+                    </p>
+                    {isLoadingOfferVersions && <Loader2 size={14} className="animate-spin text-[#667085]" />}
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {candidateOfferVersions.slice(0, 3).map((version) => {
+                      const versionNumber = getOfferVersionNumber(version);
+                      const filename =
+                        getOfferVersionPdfFilename(version) ||
+                        `Employment Offer Version ${versionNumber || ""}.pdf`;
+                      const canOpen =
+                        versionNumber > 0 && isOfferVersionPdfAvailable(version) && candidateNhoUploadId;
+
+                      return (
+                        <div
+                          key={version.id || version.offerVersionId || versionNumber || filename}
+                          className="flex flex-col gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-extrabold text-[#344054]">{filename}</p>
+                            <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3]">
+                              Version {versionNumber || "—"}
+                            </p>
+                          </div>
+                          {canOpen && (
+                            <CandidateModalSecondaryButton
+                              type="button"
+                              onClick={() =>
+                                setEmploymentOfferPreview({
+                                  open: true,
+                                  filename,
+                                  requestUrl: `/api/candidate-pipeline/${encodeURIComponent(
+                                    candidateNhoUploadId,
+                                  )}/offer-versions/${encodeURIComponent(versionNumber)}/pdf`,
+                                })
+                              }
+                              className="shrink-0"
+                            >
+                              <Eye size={14} />
+                              Open PDF
+                            </CandidateModalSecondaryButton>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
               {isOffered && (
-                <button
-                  type="button"
-                  onClick={handleGoToOffer}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
-                >
-                  <ArrowRight size={16} />
-                  Go to Offer
-                </button>
-              )}
-
-              {isAccepted && (
-                <button
-                  type="button"
-                  disabled={isSchedulingNho}
-                  onClick={handleScheduleNhoClick}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSchedulingNho ? (
-                    <Loader2
-                      size={16}
-                      className="animate-spin"
-                    />
-                  ) : (
-                    <CalendarDays size={16} />
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  {isOfferApproved(activeCandidate) && !activeCandidate.offerEmailSent && (
+                    <CandidateModalSecondaryButton
+                      type="button"
+                      onClick={() => onSendOfferEmail?.(activeCandidate)}
+                    >
+                      <Mail size={14} />
+                      Send Offer Email
+                    </CandidateModalSecondaryButton>
                   )}
-                  {isSchedulingNho
-                    ? "Scheduling..."
-                    : "Schedule NHO"}
-                </button>
-              )}
 
-              {forNHO && (
-                <button
-                  type="button"
-                  disabled={isResendingNhoEmail}
-                  onClick={handleResendNhoScheduleEmail}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isResendingNhoEmail ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Mail size={16} />
+                  {isOfferApproved(activeCandidate) && (
+                    <CandidateModalSecondaryButton
+                      type="button"
+                      onClick={() =>
+                        window.open(
+                          buildOfferContractLink(activeCandidate),
+                          "_blank",
+                          "noopener,noreferrer",
+                        )
+                      }
+                    >
+                      <Eye size={14} />
+                      Open Candidate Offer Link
+                    </CandidateModalSecondaryButton>
                   )}
-                  {isResendingNhoEmail
-                    ? "Resending NHO Email..."
-                    : "Resend NHO Email"}
-                </button>
-              )}
 
-              {canShowNhoUploads && (
-                <button
-                  type="button"
-                  disabled={isSavingNhoFiles}
-                  onClick={handleSavePreEmploymentRequirements}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isSavingNhoFiles ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <UploadCloud size={16} />
+                  {isOfferNegotiationRequested && !isRevisedOfferPendingApproval && (
+                    <CandidateModalSecondaryButton
+                      type="button"
+                      onClick={() => setShowRevisedOfferModal(true)}
+                    >
+                      <RefreshCcw size={14} />
+                      Create Revised Offer
+                    </CandidateModalSecondaryButton>
                   )}
-                  {isSavingNhoFiles ? "Saving..." : "Save"}
-                </button>
+                </div>
               )}
 
-              {canShowNhoUploads &&
-                majorNhoProgress.isComplete &&
-                !isOnboarding && (
-                  <button
-                    type="button"
-                    disabled={isSavingNhoFiles || isLoadingNhoFiles}
-                    onClick={handleMoveToOnboarding}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <ArrowRight size={16} />
-                    Move to Onboarding
-                  </button>
-                )}
-
-              {isInterviewed && (
-                <button
-                  type="button"
-                  disabled={isCreatingFinalInterviewRetake}
-                  onClick={handleRetakeFinalInterview}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-5 text-sm font-bold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isCreatingFinalInterviewRetake ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <RefreshCcw size={16} />
-                  )}
-                  {isCreatingFinalInterviewRetake
-                    ? "Creating Retake..."
-                    : "Retake Final Interview"}
-                </button>
+              {activeCandidate.offerEmailSent && !hasFinalOfferDecision && !isOfferNegotiationRequested && (
+                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white p-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                    Manual Candidate Response
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold leading-5 text-[#667085]">
+                    Use only when the candidate cannot access the email response link.
+                  </p>
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    {offerDecisionOptions.map((decision) => (
+                      <button
+                        key={decision}
+                        type="button"
+                        onClick={() => onOfferDecision?.(activeCandidate, decision)}
+                        className={`inline-flex h-9 items-center justify-center rounded-lg border px-3 text-xs font-bold transition ${getOfferDecisionClass(
+                          decision,
+                        )}`}
+                      >
+                        {decision}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
+            </CandidateModalSection>
+          )}
 
-              {isInterviewed && nextStage && (
-                <button
-                  type="button"
-                  onClick={handleMoveToNextStage}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
-                >
-                  <ArrowRight size={16} />
-                  Move to {nextStage}
-                </button>
-              )}
+          {hasNhoDetailAccess && (
+            <CandidateModalSection title="Pre-Employment Requirements">
+              <div className="grid grid-cols-1 gap-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Major Requirements
+                  </p>
+                  <p className="mt-1 text-xs font-extrabold text-[#344054]">
+                    {majorNhoProgress.completed} / {majorNhoProgress.total} ({majorNhoProgress.percent}%)
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Overall Requirements
+                  </p>
+                  <p className="mt-1 text-xs font-extrabold text-[#344054]">
+                    {totalNhoProgress.completed} / {totalNhoProgress.total} ({totalNhoProgress.percent}%)
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    NHO Schedule
+                  </p>
+                  <p className="mt-1 text-xs font-extrabold text-[#344054]">
+                    {hasNhoSchedule ? formatDateTime(nhoScheduleDetails.startDate) : "Not Scheduled"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Routing
+                  </p>
+                  <p className="mt-1 text-xs font-extrabold text-[#344054]">{currentStage}</p>
+                </div>
+              </div>
 
-              {canProceedInitialScreening && (
-                <button
-                  type="button"
-                  disabled={isProceedingInitialScreening}
-                  onClick={handleProceedInitialScreening}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isProceedingInitialScreening ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <ArrowRight size={16} />
-                  )}
-                  {isProceedingInitialScreening
-                    ? "Processing..."
-                    : activePrfStatus === "Not Matched"
-                      ? "Proceed"
-                      : "Proceed on Initial Screening"}
-                </button>
-              )}
-            </div>
-          </div>
+              <div className="mt-4">
+                <div className="mb-1.5 flex items-center justify-between text-[10px] font-extrabold text-[#667085]">
+                  <span>Major completion</span>
+                  <span>{majorNhoProgress.percent}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-[#EEF4FA]">
+                  <div
+                    className="h-full rounded-full bg-[#042C51] transition-all"
+                    style={{ width: `${majorNhoProgress.percent}%` }}
+                  />
+                </div>
+              </div>
+            </CandidateModalSection>
+          )}
+
         </div>
-      </div>
+      </CandidatePipelineModalShell>
+
+      <NhoUploadModal
+        open={showNhoUploadModal}
+        onClose={() => setShowNhoUploadModal(false)}
+        candidateId={candidateNhoUploadId}
+        candidateName={activeCandidate.name || "Candidate"}
+        candidateEmail={activeCandidate.email || ""}
+        initialFiles={candidateFiles}
+        currentFile={selectedNhoFile || candidateFiles[0] || null}
+        previousEmploymentEnabled
+        onSave={(payload = {}) => {
+          const savedFiles = Array.isArray(payload.files) ? payload.files : candidateFiles;
+
+          if (candidateUploadKey) {
+            setCandidateFilesById((previous) => ({
+              ...previous,
+              [candidateUploadKey]: savedFiles,
+            }));
+          }
+
+          if (payload.candidate && typeof payload.candidate === "object") {
+            syncCandidateAfterAction(payload.candidate, {
+              files: savedFiles,
+              routedStage: payload.routedStage,
+            });
+          }
+
+          setShowNhoUploadModal(false);
+        }}
+      />
 
       <EmploymentOfferPdfPreviewModal
         open={employmentOfferPreview.open}
@@ -10139,21 +9705,19 @@ async function handleConfirmScheduleNho() {
         onSaved={handleAssessmentSaved}
       />
 
-          <AssessmentEmailFormatModal
-            open={showAssessmentEmailModal}
-            candidate={activeCandidate}
-            form={assessmentEmailForm}
-            isSending={isSendingAssessmentEmail}
-            onChange={setAssessmentEmailForm}
-            onClose={() => {
-              if (!isSendingAssessmentEmail) {
-                setShowAssessmentEmailModal(false);
-              }
-            }}
-            onSend={handleConfirmSendAssessmentEmail}
-          />
-        </>
-      )}
+      <AssessmentEmailFormatModal
+        open={showAssessmentEmailModal}
+        candidate={activeCandidate}
+        form={assessmentEmailForm}
+        isSending={isSendingAssessmentEmail}
+        onChange={setAssessmentEmailForm}
+        onClose={() => {
+          if (!isSendingAssessmentEmail) {
+            setShowAssessmentEmailModal(false);
+          }
+        }}
+        onSend={handleConfirmSendAssessmentEmail}
+      />
 
       <StatusModal
         open={deleteFileConfirmation.open}

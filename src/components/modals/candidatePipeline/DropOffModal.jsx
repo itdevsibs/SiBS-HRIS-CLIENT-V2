@@ -6,9 +6,15 @@ import { dropOffCategoryOptions } from "../../../lib/utils/candidatePipeline/can
 import {
   ChevronDown,
   UserX,
-  X,
   Loader2,
 } from "lucide-react";
+
+import CandidatePipelineModalShell, {
+  CandidateModalPrimaryButton,
+  CandidateModalSecondaryButton,
+  CandidateModalSection,
+} from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
+import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -171,9 +177,7 @@ const DropOffModal = ({
   const [processSubmitting, setProcessSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!open) {
-      setCategoryError("");
-    }
+    if (!open) setCategoryError("");
   }, [open]);
 
   useEffect(() => {
@@ -186,14 +190,8 @@ const DropOffModal = ({
   const dropOffReason = cleanText(form?.reason);
 
   function handleCategoryChange(category) {
-    setForm({
-      ...form,
-      category,
-    });
-
-    if (categoryError) {
-      setCategoryError("");
-    }
+    setForm({ ...form, category });
+    if (categoryError) setCategoryError("");
   }
 
   function handleSubmit(event) {
@@ -208,64 +206,76 @@ const DropOffModal = ({
     if (processSubmitting) return;
 
     setProcessSubmitting(true);
-
     Promise.resolve(onSubmit?.(event)).finally(() => {
       setProcessSubmitting(false);
     });
   }
 
-  return (
-    <div
-      className="sibs-modal-blur fixed inset-0 z-[10003] flex h-dvh items-center justify-center px-4 py-4"
-    >
-      <form
-        onSubmit={handleSubmit}
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-visible rounded-2xl bg-white shadow-xl"
-        onClick={(event) => event.stopPropagation()}
+  const footer = (
+    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <CandidateModalSecondaryButton
+        type="button"
+        onClick={onClose}
+        disabled={processSubmitting}
       >
-        <div className="flex items-start justify-between gap-4 rounded-t-2xl border-b border-gray-100 bg-white px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-              Mark Candidate as Drop-off
-            </h2>
+        Cancel
+      </CandidateModalSecondaryButton>
 
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Capture reason before removing from active pipeline.
-            </p>
-          </div>
+      <CandidateModalPrimaryButton
+        type="button"
+        onClick={handleSubmit}
+        disabled={processSubmitting || !selectedCategory || !dropOffReason}
+        className="min-w-[150px] bg-red-600 hover:bg-red-700 focus-visible:ring-red-200"
+      >
+        {processSubmitting ? (
+          <Loader2 size={15} className="animate-spin" />
+        ) : (
+          <UserX size={15} />
+        )}
+        {processSubmitting ? "Processing..." : "Confirm Drop-off"}
+      </CandidateModalPrimaryButton>
+    </div>
+  );
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={processSubmitting}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Close Drop-off modal"
-          >
-            <X size={20} />
-          </button>
-        </div>
+  return (
+    <CandidatePipelineModalShell
+      icon={UserX}
+      title="Mark Candidate as Drop-off"
+      subtitle="Capture the exit reason before removing this candidate from the active recruitment pipeline."
+      badge="Consequential Action"
+      onClose={onClose}
+      closeDisabled={processSubmitting}
+      maxWidth="max-w-2xl"
+      zIndex="z-[10003]"
+      footer={footer}
+    >
+      <div className="space-y-4">
+        <CandidateModalSummary
+          candidate={candidate}
+          stage={candidate.currentStage || "Drop-off"}
+          statusClass="border-red-100 bg-red-50 text-red-700"
+        />
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white p-4 sm:p-6">
-          <div className="space-y-5">
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <h3 className="break-words text-lg font-bold text-sibs-primary-1">
-                {candidate.name || candidate.candidateName || "Candidate"}
-              </h3>
-
-              <p className="mt-1 break-words text-sm font-semibold text-sibs-primary-1/80">
-                {candidate.roleAccount ||
-                  candidate.currentAppliedRole ||
-                  candidate.openPosition ||
-                  "Not assigned yet"}
+        <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <UserX size={17} className="mt-0.5 shrink-0 text-red-600" />
+            <div>
+              <p className="sibs-text-xs font-extrabold text-red-700">
+                Candidate will be removed from the active pipeline
+              </p>
+              <p className="mt-1 text-[10px] font-semibold leading-5 text-red-600/90">
+                The selected reason and remarks will become part of the candidate recruitment history.
               </p>
             </div>
+          </div>
+        </div>
 
+        <CandidateModalSection title="Drop-off Details">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative z-[50]">
-              <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                Reason Category{" "}
-                <span className="text-red-500">*</span>
+              <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
+                Reason Category <span className="text-red-500">*</span>
               </label>
-
               <DropOffCategoryDropdown
                 value={form?.category || ""}
                 options={dropOffCategoryOptions}
@@ -274,98 +284,49 @@ const DropOffModal = ({
                 hasError={Boolean(categoryError)}
                 onChange={handleCategoryChange}
               />
-
               {categoryError && (
-                <p className="mt-2 text-xs font-bold text-red-600">
+                <p className="mt-2 text-[10px] font-extrabold text-red-600">
                   {categoryError}
                 </p>
               )}
             </div>
 
-            <div>
-              <label
-                htmlFor="drop-off-reason"
-                className="mb-2 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1"
-              >
-                Drop-off Reason{" "}
-                <span className="text-red-500">*</span>
-              </label>
-
+            <label className="block">
+              <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">
+                Drop-off Reason <span className="text-red-500">*</span>
+              </span>
               <textarea
-                id="drop-off-reason"
                 required
                 disabled={processSubmitting}
                 rows={4}
                 value={form?.reason || ""}
                 onChange={(event) =>
-                  setForm({
-                    ...form,
-                    reason: event.target.value,
-                  })
+                  setForm({ ...form, reason: event.target.value })
                 }
                 className={textareaClass()}
                 placeholder="Enter the reason for dropping off this candidate."
               />
-            </div>
+            </label>
 
-            <div>
-              <label
-                htmlFor="drop-off-remarks"
-                className="mb-2 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1"
-              >
-                Remarks
-              </label>
-
+            <label className="block">
+              <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">
+                Internal Remarks
+              </span>
               <textarea
-                id="drop-off-remarks"
                 rows={3}
                 disabled={processSubmitting}
                 value={form?.remarks || ""}
                 onChange={(event) =>
-                  setForm({
-                    ...form,
-                    remarks: event.target.value,
-                  })
+                  setForm({ ...form, remarks: event.target.value })
                 }
                 className={textareaClass()}
                 placeholder="Add optional remarks."
               />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-b-2xl border-t border-gray-100 bg-white px-5 py-4 sm:px-6">
-          <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={processSubmitting}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={processSubmitting || !selectedCategory || !dropOffReason}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none"
-            >
-              {processSubmitting ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <UserX size={16} />
-                  Confirm Drop-off
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
+            </label>
+          </form>
+        </CandidateModalSection>
+      </div>
+    </CandidatePipelineModalShell>
   );
 };
 

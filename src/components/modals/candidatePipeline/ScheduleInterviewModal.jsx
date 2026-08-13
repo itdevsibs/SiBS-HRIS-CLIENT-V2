@@ -1,11 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  getAssessmentResult,
-  getAssessmentResultClass,
-  getInterviewStatusClass,
-  inputClass,
-  textareaClass,
-} from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
+import { getInterviewStatusClass } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import { interviewTypeOptions } from "../../../lib/utils/candidatePipeline/candidatePipelineConstants";
 import {
   CalendarDays,
@@ -15,8 +9,14 @@ import {
   ChevronRight,
   Clock,
   Loader2,
-  X,
 } from "lucide-react";
+
+import CandidatePipelineModalShell, {
+  CandidateModalPrimaryButton,
+  CandidateModalSecondaryButton,
+  CandidateModalSection,
+} from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
+import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 
 const MONTH_OPTIONS = [
   { value: 0, label: "January" },
@@ -66,6 +66,13 @@ const HOUR_OPTIONS = Array.from({ length: 12 }, (_, index) => {
     label: pad(hour),
   };
 });
+
+const SCHEDULE_FIELD_LABEL_CLASS =
+  "mb-1.5 block sibs-kicker text-[#042C51]";
+const SCHEDULE_INPUT_CLASS =
+  "h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:hover:border-[#E6ECF2] disabled:hover:bg-[#F2F4F7] disabled:focus:ring-0";
+const SCHEDULE_TEXTAREA_CLASS =
+  "min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 sibs-text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -273,6 +280,7 @@ function PickerDropdown({
   disabled = false,
   buttonClassName = "",
   menuClassName = "",
+  textClassName = "sibs-text-xs",
 }) {
   const dropdownRef = useRef(null);
   const [localOpen, setLocalOpen] = useState(false);
@@ -346,24 +354,24 @@ function PickerDropdown({
   }
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={dropdownRef} className="relative font-jakarta">
       <button
         type="button"
         disabled={disabled}
         onClick={toggleOpen}
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-[#F8FAFC] px-3 text-left font-jakarta ${textClassName} font-bold shadow-sm outline-none transition ${
           open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
-            : "text-sibs-primary-1"
+            ? "cursor-not-allowed bg-[#F2F4F7] text-[#98A2B3] opacity-70"
+            : "text-[#042C51]"
         } ${buttonClassName}`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+            selectedOption ? "text-[#042C51]" : "text-[#6B88A8]"
           }`}
         >
           {selectedOption?.label || placeholder}
@@ -371,7 +379,7 @@ function PickerDropdown({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+          className={`shrink-0 text-[#315B7E] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -379,7 +387,7 @@ function PickerDropdown({
 
       {open && !disabled && (
         <div
-          className={`absolute left-0 top-[calc(100%+8px)] z-[99999] max-h-[260px] w-full overflow-hidden rounded-xl border border-[#D6DEE8] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)] ${menuClassName}`}
+          className={`sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[99999] max-h-[260px] w-full overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)] ${menuClassName}`}
         >
           <div className="max-h-[260px] overflow-y-auto py-1">
             {options.map((option) => {
@@ -391,12 +399,12 @@ function PickerDropdown({
                   type="button"
                   disabled={option.disabled}
                   onClick={() => handleSelect(option)}
-                  className={`flex min-h-[42px] w-full items-center justify-between gap-3 px-4 text-left text-sm font-semibold transition ${
+                  className={`flex min-h-[38px] w-full items-center justify-between gap-3 px-3 text-left font-jakarta ${textClassName} font-semibold transition ${
                     option.disabled
-                      ? "cursor-not-allowed bg-white text-slate-300"
+                      ? "cursor-not-allowed bg-white text-[#C8D2DE]"
                       : active
-                        ? "bg-[#EAF2FB] text-sibs-primary-1"
-                        : "bg-white text-[#475467] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                        ? "bg-[#FFF4EF] text-[#FF5C28]"
+                        : "bg-white text-[#31465B] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
                   }`}
                 >
                   <span>{option.label}</span>
@@ -661,7 +669,7 @@ function DateTimePicker({ value, onChange }) {
   }
 
   return (
-    <div ref={pickerRef} className="relative">
+    <div ref={pickerRef} className="relative font-jakarta text-[#042C51]">
       <button
         type="button"
         onClick={() => {
@@ -675,25 +683,25 @@ function DateTimePicker({ value, onChange }) {
             return nextOpen;
           });
         }}
-        className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+        className={`flex h-10 w-full items-center justify-between gap-3 rounded-xl border bg-[#F8FAFC] px-3 text-left font-jakarta sibs-text-xs font-bold shadow-sm outline-none transition ${
           open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            displayValue ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+            displayValue ? "text-[#042C51]" : "text-[#6B88A8]"
           }`}
         >
           {formatDateTimeDisplay(displayValue)}
         </span>
 
-        <CalendarDays size={18} className="shrink-0 text-sibs-primary-1" />
+        <CalendarDays size={17} className="shrink-0 text-[#315B7E]" />
       </button>
 
       {open && (
-        <div className="mt-3 overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.13)]">
+        <div className="sibs-dropdown-pop-in mt-3 overflow-visible rounded-xl border border-[#D9E2EC] bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]">
           <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="border-b border-[#E6ECF2] p-4 lg:border-b-0 lg:border-r">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -701,7 +709,7 @@ function DateTimePicker({ value, onChange }) {
                   type="button"
                   onClick={handlePreviousMonth}
                   disabled={disablePreviousMonth}
-                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white sm:flex"
+                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-[#315B7E] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#D9E2EC] disabled:hover:bg-white disabled:hover:text-[#315B7E] sm:flex"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -731,7 +739,7 @@ function DateTimePicker({ value, onChange }) {
                 <button
                   type="button"
                   onClick={handleNextMonth}
-                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:flex"
+                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-[#315B7E] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] sm:flex"
                 >
                   <ChevronRight size={18} />
                 </button>
@@ -741,7 +749,7 @@ function DateTimePicker({ value, onChange }) {
                     type="button"
                     onClick={handlePreviousMonth}
                     disabled={disablePreviousMonth}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white"
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white font-jakarta sibs-text-xs font-bold text-[#315B7E] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#D9E2EC] disabled:hover:bg-white disabled:hover:text-[#315B7E]"
                   >
                     <ChevronLeft size={16} />
                     Previous
@@ -750,7 +758,7 @@ function DateTimePicker({ value, onChange }) {
                   <button
                     type="button"
                     onClick={handleNextMonth}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white font-jakarta sibs-text-xs font-bold text-[#315B7E] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
                   >
                     Next
                     <ChevronRight size={16} />
@@ -762,7 +770,7 @@ function DateTimePicker({ value, onChange }) {
                 {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
                   <div
                     key={day}
-                    className="py-2 text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5"
+                    className="py-2 font-jakarta sibs-kicker text-[#7D8FA5]"
                   >
                     {day}
                   </div>
@@ -779,16 +787,16 @@ function DateTimePicker({ value, onChange }) {
                       type="button"
                       disabled={disabledDay}
                       onClick={() => handleDateSelect(item.date)}
-                      className={`flex h-9 items-center justify-center rounded-xl text-xs font-extrabold transition ${
+                      className={`flex h-9 items-center justify-center rounded-xl font-jakarta sibs-text-xs font-bold tabular-nums transition ${
                         disabledDay
-                          ? "cursor-not-allowed text-slate-300 opacity-45"
+                          ? "cursor-not-allowed text-[#C8D2DE] opacity-50"
                           : active
-                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            ? "bg-[#FF5C28] text-white shadow-sm"
                             : today
-                              ? "border border-sibs-primary-1/25 bg-[#EAF4FF] text-sibs-primary-1"
+                              ? "border border-[#FF5C28]/30 bg-[#FFF4EF] text-[#FF5C28]"
                               : item.currentMonth
-                                ? "text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                                : "text-sibs-tertiary-5/60 hover:bg-[#F8FAFC]"
+                                ? "text-[#31465B] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                                : "text-[#9BAAC0] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
                       }`}
                     >
                       {item.date.getDate()}
@@ -805,7 +813,7 @@ function DateTimePicker({ value, onChange }) {
                     setOpen(false);
                     setOpenDropdown("");
                   }}
-                  className="text-xs font-extrabold text-red-500 transition hover:text-red-600"
+                  className="font-jakarta sibs-text-xs font-bold text-[#E5484D] transition hover:text-[#C9363B]"
                 >
                   Clear
                 </button>
@@ -813,7 +821,7 @@ function DateTimePicker({ value, onChange }) {
                 <button
                   type="button"
                   onClick={setToday}
-                  className="text-xs font-extrabold text-sibs-primary-1 transition hover:opacity-80"
+                  className="font-jakarta sibs-text-xs font-bold text-[#FF5C28] transition hover:text-[#E84B1A]"
                 >
                   Today
                 </button>
@@ -821,14 +829,14 @@ function DateTimePicker({ value, onChange }) {
             </div>
 
             <div className="bg-[#F8FAFC] p-4">
-              <div className="mb-3 flex items-center gap-2 text-sibs-primary-1">
-                <Clock size={17} />
-                <p className="text-sm font-extrabold">Select Time</p>
+              <div className="mb-3 flex items-center gap-2 text-[#042C51]">
+                <Clock size={15} />
+                <p className="font-jakarta sibs-text-xs font-extrabold">Select Time</p>
               </div>
 
               <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
                 <div>
-                  <label className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                  <label className="mb-1 block font-jakarta sibs-kicker text-[#7D8FA5]">
                     Hour
                   </label>
 
@@ -847,12 +855,13 @@ function DateTimePicker({ value, onChange }) {
                     }))}
                     onChange={handleHourChange}
                     placeholder="Hour"
-                    buttonClassName="h-11"
+                    buttonClassName="h-9 px-2.5"
+                    textClassName="sibs-text-micro"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                  <label className="mb-1 block font-jakarta sibs-kicker text-[#7D8FA5]">
                     Minute
                   </label>
 
@@ -871,25 +880,26 @@ function DateTimePicker({ value, onChange }) {
                     }))}
                     onChange={handleMinuteChange}
                     placeholder="Minute"
-                    buttonClassName="h-11"
+                    buttonClassName="h-9 px-2.5"
+                    textClassName="sibs-text-micro"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                  <label className="mb-1 block font-jakarta sibs-kicker text-[#7D8FA5]">
                     AM/PM
                   </label>
 
-                  <div className="flex h-11 overflow-hidden rounded-xl border border-[#D0D5DD] bg-white">
+                  <div className="flex h-9 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white">
                     {["AM", "PM"].map((item) => (
                       <button
                         key={item}
                         type="button"
                         onClick={() => handlePeriodChange(item)}
-                        className={`w-12 text-xs font-extrabold transition ${
+                        className={`w-12 font-jakarta sibs-text-micro font-bold transition ${
                           period === item
-                            ? "bg-sibs-primary-1 text-white"
-                            : "bg-white text-sibs-primary-1 hover:bg-[#F5F9FF]"
+                            ? "bg-[#FF5C28] text-white"
+                            : "bg-white text-[#315B7E] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
                         }`}
                       >
                         {item}
@@ -900,11 +910,11 @@ function DateTimePicker({ value, onChange }) {
               </div>
 
               <div className="mt-4 rounded-xl border border-[#D9E2EC] bg-white p-3">
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                <p className="font-jakarta sibs-kicker text-[#7D8FA5]">
                   Selected Schedule
                 </p>
 
-                <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                <p className="mt-1 font-jakarta sibs-text-xs font-extrabold text-[#042C51]">
                   {formatDateTimeDisplay(displayValue)}
                 </p>
               </div>
@@ -916,9 +926,9 @@ function DateTimePicker({ value, onChange }) {
                   setOpen(false);
                   setOpenDropdown("");
                 }}
-                className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+                className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E84B1A] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <Check size={16} />
+                <Check size={14} />
                 Apply Schedule
               </button>
             </div>
@@ -943,7 +953,7 @@ function InterviewTypeDropdown({ value, onChange }) {
       options={options}
       onChange={onChange}
       placeholder="Select interview type"
-      buttonClassName="h-12 px-4"
+      buttonClassName="h-10 px-3"
       menuClassName="z-[10050]"
     />
   );
@@ -963,15 +973,14 @@ const ScheduleInterviewModal = ({
   if (!open || !candidate) return null;
 
   const isUpdatingSchedule = candidate.currentStage === "Interview Scheduled";
+  const busy = isSaving || processSubmitting;
 
   async function handleProcessSubmit(event) {
     event?.preventDefault?.();
     event?.stopPropagation?.();
-
-    if (isSaving || processSubmitting) return;
+    if (busy) return;
 
     setProcessSubmitting(true);
-
     try {
       await onSubmit?.(event);
     } finally {
@@ -979,193 +988,121 @@ const ScheduleInterviewModal = ({
     }
   }
 
-  return (
-    <div
-      className="sibs-modal-blur fixed inset-0 z-[10001] flex h-dvh items-center justify-center px-4 py-4"
-      onClick={(event) => event.stopPropagation()}
-      onMouseDown={(event) => event.stopPropagation()}
-    >
-<div
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()}
+  const footer = (
+    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <CandidateModalSecondaryButton type="button" disabled={busy} onClick={onClose}>
+        Cancel
+      </CandidateModalSecondaryButton>
+      <CandidateModalPrimaryButton
+        type="button"
+        disabled={busy}
+        aria-busy={busy}
+        onClick={handleProcessSubmit}
+        className="min-w-[160px]"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-          <div>
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-              {isUpdatingSchedule
-                ? "Update Interview Schedule"
-                : "Schedule Interview"}
-            </h2>
+        {busy ? <Loader2 size={15} className="animate-spin" /> : <CalendarDays size={15} />}
+        {busy
+          ? isUpdatingSchedule
+            ? "Updating Schedule..."
+            : "Saving Schedule..."
+          : isUpdatingSchedule
+            ? "Update Schedule"
+            : "Schedule Interview"}
+      </CandidateModalPrimaryButton>
+    </div>
+  );
 
-            <p className="mt-1 text-sm font-medium text-sibs-primary-1">
-              {isUpdatingSchedule
-                ? "Update the interview date, time, and interview type."
-                : "Only candidates tagged as Assessment Fit can be scheduled."}
-            </p>
-          </div>
+  return (
+    <CandidatePipelineModalShell
+      open={open}
+      icon={CalendarDays}
+      title={isUpdatingSchedule ? "Update Interview Schedule" : "Schedule Candidate Interview"}
+      subtitle={
+        isUpdatingSchedule
+          ? "Update the interview date, time, type, link, and internal scheduling remarks."
+          : "Create the interview schedule for a candidate who is ready to proceed from Assessment Fit."
+      }
+      badge={isUpdatingSchedule ? "Reschedule" : "Interview"}
+      onClose={onClose}
+      closeDisabled={busy}
+      maxWidth="max-w-3xl"
+      zIndex="z-[10001]"
+      footer={footer}
+    >
+      <form
+        onSubmit={handleProcessSubmit}
+        className={`space-y-4 font-jakarta ${busy ? "pointer-events-none opacity-70" : ""}`}
+      >
+        <CandidateModalSummary
+          candidate={candidate}
+          stage={candidate.currentStage}
+          statusClass={getInterviewStatusClass(candidate.interviewStatus || "For Scheduling")}
+        />
 
-          <button
-            type="button"
-            disabled={isSaving || processSubmitting}
-            onClick={onClose}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <form
-          onSubmit={handleProcessSubmit}
-          className={`flex-1 overflow-y-auto p-4 sm:p-6 ${
-            isSaving || processSubmitting ? "pointer-events-none opacity-70" : ""
-          }`}
+        <CandidateModalSection
+          title="Interview Schedule"
+          subtitle="Select an available weekday and a time from 10:00 AM through 5:00 PM."
         >
-          <div className="space-y-5">
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <h3 className="text-lg font-bold text-sibs-primary-1">
-                {candidate.name}
-              </h3>
+          <div>
+            <label className={SCHEDULE_FIELD_LABEL_CLASS}>
+              Interview Date and Time <span className="text-red-500">*</span>
+            </label>
+            <DateTimePicker
+              value={form.interviewDate}
+              onChange={(nextValue) => setForm({ ...form, interviewDate: nextValue })}
+            />
+          </div>
+        </CandidateModalSection>
 
-              <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
-                {candidate.roleAccount}
-              </p>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span
-                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getAssessmentResultClass(
-                    getAssessmentResult(candidate),
-                  )}`}
-                >
-                  {getAssessmentResult(candidate) || "No Result"}
-                </span>
-
-                {isUpdatingSchedule && (
-                  <span
-                    className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getInterviewStatusClass(
-                      candidate.interviewStatus,
-                    )}`}
-                  >
-                    {candidate.interviewStatus || "Scheduled"}
-                  </span>
-                )}
-              </div>
-            </div>
-
+        <CandidateModalSection title="Interview Details">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1">
-                Interview Date and Time <span className="text-red-500">*</span>
-              </label>
-
-              <DateTimePicker
-                value={form.interviewDate}
-                onChange={(nextValue) =>
-                  setForm({ ...form, interviewDate: nextValue })
-                }
-              />
-
-              <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                Monday to Friday only. Available interview times are from
-                10:00 AM through 5:00 PM.
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1">
+              <label className={SCHEDULE_FIELD_LABEL_CLASS}>
                 Interview Type <span className="text-red-500">*</span>
               </label>
-
               <InterviewTypeDropdown
                 value={form.interviewType}
                 onChange={(nextValue) =>
                   setForm({
                     ...form,
                     interviewType: nextValue,
-                    onlineInterviewLink:
-                      nextValue === "Online" ? form.onlineInterviewLink : "",
+                    onlineInterviewLink: nextValue === "Online" ? form.onlineInterviewLink : "",
                   })
                 }
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1">
-                Online Interview Link{" "}
-                {form.interviewType === "Online" && (
-                  <span className="text-red-500">*</span>
-                )}
+              <label className={SCHEDULE_FIELD_LABEL_CLASS}>
+                Online Interview Link {form.interviewType === "Online" && <span className="text-red-500">*</span>}
               </label>
-
               <input
                 type="text"
                 disabled={form.interviewType !== "Online"}
-                placeholder="Paste Online Interview Link Here..."
+                placeholder="Paste online interview link"
                 value={form.onlineInterviewLink}
-                onChange={(e) =>
-                  setForm({ ...form, onlineInterviewLink: e.target.value })
-                }
-                className={`${inputClass()} ${
-                  form.interviewType !== "Online"
-                    ? "cursor-not-allowed bg-[#F8FAFC] text-gray-400"
-                    : ""
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1">
-                Remarks
-              </label>
-
-              <textarea
-                rows={3}
-                value={form.remarks}
-                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                className={textareaClass()}
-                placeholder={
-                  isUpdatingSchedule
-                    ? "Example: Candidate requested to reschedule."
-                    : "Example: Initial interview schedule created."
-                }
+                onChange={(event) => setForm({ ...form, onlineInterviewLink: event.target.value })}
+                className={SCHEDULE_INPUT_CLASS}
               />
             </div>
           </div>
-        </form>
+        </CandidateModalSection>
 
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
-          <div className="flex flex-col justify-end gap-2 sm:flex-row">
-            <button
-              type="button"
-              disabled={isSaving || processSubmitting}
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="button"
-              disabled={isSaving || processSubmitting}
-              aria-busy={isSaving || processSubmitting}
-              onClick={handleProcessSubmit}
-              className="inline-flex h-11 min-w-[154px] items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isSaving || processSubmitting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <CalendarDays size={16} />
-              )}
-              {isSaving || processSubmitting
-                ? isUpdatingSchedule
-                  ? "Updating Schedule..."
-                  : "Saving Schedule..."
-                : isUpdatingSchedule
-                  ? "Update Schedule"
-                  : "Save Schedule"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        <CandidateModalSection title="Internal Remarks">
+          <textarea
+            rows={3}
+            value={form.remarks}
+            onChange={(event) => setForm({ ...form, remarks: event.target.value })}
+            className={SCHEDULE_TEXTAREA_CLASS}
+            placeholder={
+              isUpdatingSchedule
+                ? "Example: Candidate requested to reschedule."
+                : "Example: Initial interview schedule created."
+            }
+          />
+        </CandidateModalSection>
+      </form>
+    </CandidatePipelineModalShell>
   );
 };
 

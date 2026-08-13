@@ -1,6 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import DetailRow from "../../layout/common/DetailRow";
-import ProfileDetailCard from "./ProfileDetailCard";
 
 import api from "../../../lib/axios/api-template";
 
@@ -336,6 +334,38 @@ function buildReferences(sources = []) {
   ].filter((reference) => reference.name || reference.phone);
 }
 
+
+function CompactField({ label, value, className = "" }) {
+  return (
+    <div className={`min-w-0 ${className}`}>
+      <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+        {label}
+      </p>
+      <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+        {isEmptyValue(value) ? "—" : String(value)}
+      </p>
+    </div>
+  );
+}
+
+function CompactDetailGroup({ title, items = [], children = null }) {
+  return (
+    <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+      <h4 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+        {title}
+      </h4>
+      {items.length > 0 && (
+        <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+          {items.map(([label, value]) => (
+            <CompactField key={label} label={label} value={value} />
+          ))}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
 const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
   const baseProfile = useMemo(() => safeFindTalentPoolProfile(candidate), [
     candidate,
@@ -574,160 +604,161 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
   }, [candidate, baseProfile, remoteProfile]);
 
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 shadow-sm">
-      <div className="mb-4 flex flex-col gap-1">
-        <h3 className="text-sm font-extrabold text-sibs-primary-1">
+    <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)] sm:p-5">
+      <div className="mb-4 border-b border-[#EEF2F6] pb-3">
+        <h3 className="sibs-text-sm font-extrabold text-sibs-primary-1">
           Talent Pool Submitted Details
         </h3>
-
-        <p className="text-xs font-semibold leading-5 text-sibs-primary-1/75">
-          This shows the details captured from the Talent Pool / Public Form for
-          TA review.
+        <p className="mt-1 sibs-text-xs font-semibold leading-5 text-[#667085]">
+          Complete submitted profile from the Talent Pool / Public Form.
         </p>
-
         {isLoadingProfile && (
-          <p className="text-xs font-bold text-sibs-tertiary-5">
+          <p className="mt-2 text-[10px] font-bold text-[#667085]">
             Loading full Talent Pool profile...
           </p>
         )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <ProfileDetailCard title="Application Source">
-          <DetailRow label="How Heard About Us" value={data.heardFrom} />
-          <DetailRow label="Open Position" value={data.openPosition} />
-          <DetailRow label="Nickname" value={data.nickname} />
-          <DetailRow label="Applying Location" value={data.applyingLocation} />
-          <DetailRow label="Referred By" value={data.referredBy} />
-          <DetailRow label="Employee ID" value={data.employeeId} />
-        </ProfileDetailCard>
+        <CompactDetailGroup
+          title="Application Source"
+          items={[
+            ["How Heard About Us", data.heardFrom],
+            ["Open Position", data.openPosition],
+            ["Nickname", data.nickname],
+            ["Applying Location", data.applyingLocation],
+            ["Referred By", data.referredBy],
+            ["Employee ID", data.employeeId],
+          ]}
+        />
 
-        <ProfileDetailCard title="Personal Information">
-          <DetailRow label="First Name" value={data.firstName} />
-          <DetailRow label="Last Name" value={data.lastName} />
-          <DetailRow label="Middle Name" value={data.middleName} />
-          <DetailRow label="Suffix" value={data.suffix} />
-          <DetailRow label="Date of Birth" value={formatDateValue(data.dateOfBirth)} />
-          <DetailRow label="Age" value={data.age} />
-          <DetailRow label="Email" value={data.email} />
-          <DetailRow label="Phone 1" value={data.phone1} />
-          <DetailRow label="Phone 2" value={data.phone2} />
-          <DetailRow label="Physical Address" value={data.physicalAddress} />
-        </ProfileDetailCard>
+        <CompactDetailGroup
+          title="Personal Information"
+          items={[
+            ["First Name", data.firstName],
+            ["Last Name", data.lastName],
+            ["Middle Name", data.middleName],
+            ["Suffix", data.suffix],
+            ["Date of Birth", formatDateValue(data.dateOfBirth)],
+            ["Age", data.age],
+            ["Email", data.email],
+            ["Phone 1", data.phone1],
+            ["Phone 2", data.phone2],
+            ["Physical Address", data.physicalAddress],
+          ]}
+        />
 
-        <ProfileDetailCard title="Work Experience">
-          <DetailRow label="Work Experience" value={data.workExperience} />
+        <CompactDetailGroup title="Work Experience">
+          <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+            <CompactField label="Work Experience" value={data.workExperience} />
+          </div>
 
           {data.workExperiences.length > 0 ? (
-            <div className="space-y-3 pt-2">
+            <div className="mt-4 space-y-3">
               {data.workExperiences.map((experience, index) => (
                 <div
                   key={`experience-${index}`}
-                  className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3"
+                  className="rounded-xl border border-[#E6ECF2] bg-white p-3"
                 >
-                  <p className="mb-2 text-xs font-extrabold text-sibs-primary-1">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
                     Experience {index + 1}
                   </p>
-
-                  <DetailRow
-                    label="Industry"
-                    value={
-                      experience.industry ||
-                      experience.industryRelevantExperience ||
-                      experience.relevantExperience ||
-                      experience.industryExperience
-                    }
-                  />
-                  <DetailRow
-                    label="Length"
-                    value={
-                      experience.lengthOfWorkExperience ||
-                      experience.length_of_work_experience ||
-                      experience.length ||
-                      experience.experienceLength
-                    }
-                  />
-                  <DetailRow label="Years" value={experience.years} />
-                  <DetailRow label="Role" value={experience.role} />
-                  <DetailRow label="Company" value={experience.company} />
-                  <DetailRow
-                    label="Monthly Compensation"
-                    value={formatMoneyValue(
-                      experience.monthlyCompensation ||
-                        experience.monthly_compensation,
-                    )}
-                  />
-                  <DetailRow
-                    label="Reason for Leaving"
-                    value={
-                      experience.reasonForLeaving ||
-                      experience.reason_for_leaving
-                    }
-                  />
+                  <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                    <CompactField
+                      label="Industry"
+                      value={
+                        experience.industry ||
+                        experience.industryRelevantExperience ||
+                        experience.relevantExperience ||
+                        experience.industryExperience
+                      }
+                    />
+                    <CompactField
+                      label="Length"
+                      value={
+                        experience.lengthOfWorkExperience ||
+                        experience.length_of_work_experience ||
+                        experience.length ||
+                        experience.experienceLength
+                      }
+                    />
+                    <CompactField label="Years" value={experience.years} />
+                    <CompactField label="Role" value={experience.role} />
+                    <CompactField label="Company" value={experience.company} />
+                    <CompactField
+                      label="Monthly Compensation"
+                      value={formatMoneyValue(
+                        experience.monthlyCompensation ||
+                          experience.monthly_compensation,
+                      )}
+                    />
+                    <CompactField
+                      label="Reason for Leaving"
+                      value={
+                        experience.reasonForLeaving ||
+                        experience.reason_for_leaving
+                      }
+                      className="sm:col-span-2"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <DetailRow label="Detailed Experience" value="—" />
+            <div className="mt-4 rounded-lg border border-dashed border-[#D7DEE8] bg-white px-3 py-3 text-xs font-semibold text-[#667085]">
+              No detailed work experience was submitted.
+            </div>
           )}
-        </ProfileDetailCard>
+        </CompactDetailGroup>
 
-        <ProfileDetailCard title="Education and Certifications">
-          <DetailRow
-            label="Highest Educational Attainment"
-            value={data.educationalAttainment}
-          />
-          <DetailRow
-            label="Affiliations / Certifications"
-            value={data.affiliations}
-          />
-          <DetailRow label="Training Attended" value={data.trainingAttended} />
-        </ProfileDetailCard>
+        <CompactDetailGroup
+          title="Education and Certifications"
+          items={[
+            ["Highest Educational Attainment", data.educationalAttainment],
+            ["Affiliations / Certifications", data.affiliations],
+            ["Training Attended", data.trainingAttended],
+          ]}
+        />
 
-        <ProfileDetailCard title="Work Readiness">
-          <DetailRow label="Fully Vaccinated" value={data.fullyVaccinated} />
-          <DetailRow label="Comfortable On Site" value={data.comfortableOnSite} />
-          <DetailRow label="Willing Graveyard" value={data.willingGraveyard} />
-          <DetailRow label="Employment Interest" value={data.employmentInterest} />
-          <DetailRow label="Remote Work Access" value={data.remoteWorkAccess} />
-          <DetailRow label="Willing Drug Test" value={data.willingDrugTest} />
-          <DetailRow
-            label="Background Check Consent"
-            value={data.willingBackgroundCheck}
-          />
-        </ProfileDetailCard>
+        <CompactDetailGroup
+          title="Work Readiness"
+          items={[
+            ["Fully Vaccinated", data.fullyVaccinated],
+            ["Comfortable On Site", data.comfortableOnSite],
+            ["Willing Graveyard", data.willingGraveyard],
+            ["Employment Interest", data.employmentInterest],
+            ["Remote Work Access", data.remoteWorkAccess],
+            ["Willing Drug Test", data.willingDrugTest],
+            ["Background Check Consent", data.willingBackgroundCheck],
+          ]}
+        />
 
-        <ProfileDetailCard title="References and Uploads">
-          {data.references.length > 0 ? (
-            data.references.map((reference, index) => (
-              <DetailRow
-                key={`reference-${index}`}
-                label={`Reference ${index + 1}`}
-                value={`${reference.name || "—"}${
-                  reference.phone ? ` / ${reference.phone}` : ""
-                }`}
-              />
-            ))
-          ) : (
-            <DetailRow label="References" value="—" />
-          )}
-
-          <DetailRow label="Audio File" value={data.audioFileName} />
-          <DetailRow label="Attachment" value={data.attachmentFileName} />
-          <DetailRow
-            label="Terms Accepted"
-            value={
+        <CompactDetailGroup
+          title="References and Uploads"
+          items={[
+            ...(data.references.length > 0
+              ? data.references.map((reference, index) => [
+                  `Reference ${index + 1}`,
+                  `${reference.name || "—"}${
+                    reference.phone ? ` / ${reference.phone}` : ""
+                  }`,
+                ])
+              : [["References", "—"]]),
+            ["Audio File", data.audioFileName],
+            ["Attachment", data.attachmentFileName],
+            [
+              "Terms Accepted",
               data.consentAccepted === true ||
               data.consentAccepted === 1 ||
               data.consentAccepted === "1" ||
               data.consentAccepted === "true"
                 ? "Yes"
-                : "—"
-            }
-          />
-        </ProfileDetailCard>
+                : "—",
+            ],
+          ]}
+        />
       </div>
-    </div>
+    </section>
   );
 };
 
