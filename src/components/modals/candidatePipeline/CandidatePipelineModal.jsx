@@ -6000,45 +6000,46 @@ const CandidatePipelineModal = ({
     isIncompleteOnboarding ||
     isOnboarding;
 
+  const isEarlyStageBeforeOffer =
+    isInitialScreening ||
+    isOnlineAssessment ||
+    isAssessmentFit ||
+    isInterviewScheduled ||
+    isInterviewed;
+
   const hasAssessmentDetailAccess =
-    hasReachedPipelineStage("Online Assessment") ||
-    Boolean(
-      activeCandidate.assessmentResult ||
-        activeCandidate.assessment_result ||
-        activeCandidate.assessmentScore ||
-        activeCandidate.assessment_score,
-    );
+    !isInitialScreening &&
+    (hasReachedPipelineStage("Online Assessment") ||
+      Boolean(
+        activeCandidate.assessmentResult ||
+          activeCandidate.assessment_result ||
+          activeCandidate.assessmentScore ||
+          activeCandidate.assessment_score,
+      ));
 
   const hasInterviewDetailAccess =
-    hasReachedPipelineStage("Assessment Fit") ||
-    hasInterviewSchedule(activeCandidate) ||
-    Boolean(
-      activeCandidate.finalInterviewResult ||
-        activeCandidate.final_interview_result ||
-        activeCandidate.interviewDate ||
-        activeCandidate.interview_date,
-    );
+    !isInitialScreening &&
+    !isOnlineAssessment &&
+    (hasReachedPipelineStage("Assessment Fit") ||
+      hasInterviewSchedule(activeCandidate) ||
+      Boolean(
+        activeCandidate.finalInterviewResult ||
+          activeCandidate.final_interview_result ||
+          activeCandidate.interviewDate ||
+          activeCandidate.interview_date,
+      ));
 
   const hasOfferDetailAccess =
-    hasReachedPipelineStage("Offered") ||
-    Boolean(
-      activeCandidate.offerDetails ||
-        activeCandidate.offer_details ||
-        activeCandidate.latestOfferVersion ||
-        activeCandidate.latest_offer_version,
-    );
+    !isEarlyStageBeforeOffer &&
+    hasReachedPipelineStage("Offered");
 
   const hasNhoDetailAccess =
-    hasReachedPipelineStage("Accepted") ||
-    forNHO ||
-    isIncompleteOnboarding ||
-    isOnboarding ||
-    Boolean(
-      activeCandidate.nhoScheduleDate ||
-        activeCandidate.nho_schedule_date ||
-        activeCandidate.nhoStartDate ||
-        activeCandidate.nho_start_date,
-    );
+    !isEarlyStageBeforeOffer &&
+    !isOffered &&
+    (hasReachedPipelineStage("Accepted") ||
+      forNHO ||
+      isIncompleteOnboarding ||
+      isOnboarding);
 
   const sortedMovementHistory = useMemo(() => {
     return [...visibleTimeline].sort((first, second) => {
@@ -9136,98 +9137,76 @@ async function handleConfirmScheduleNho() {
         }
       >
         <div className="space-y-4">
-          <CandidateModalSection title="Candidate Master Requisition Details">
+          <CandidateModalSection
+            title="Candidate Master Requisition & Profile Details"
+            subtitle="Headcount requisition alignment, PRF status, and complete candidate profile summary."
+            headerAction={
+              isInitialScreening ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#667085]">
+                    Lead PRF Action:
+                  </span>
+                  <div className="w-48 sm:w-56">
+                    <DropdownField
+                      value={
+                        activePrfStatus === "Matched" || activePrfStatus === "Not Matched"
+                          ? activePrfStatus
+                          : ""
+                      }
+                      displayValue={
+                        activePrfStatus === "Matched"
+                          ? "Matched"
+                          : activePrfStatus === "Not Matched"
+                            ? "Unmatched"
+                            : ""
+                      }
+                      options={[
+                        {
+                          value: "Not Matched",
+                          label: "Unmatched",
+                          description: "Candidate is not yet matched to the PRF.",
+                        },
+                        {
+                          value: "Matched",
+                          label: "Matched",
+                          description: "Candidate can move to Online Assessment.",
+                        },
+                      ]}
+                      onChange={(value) => handleLocalPrfStatusUpdate(value)}
+                      placeholder="Lead PRF Status"
+                      searchable={false}
+                      controlVariant="secondaryAction"
+                      menuClassName="!rounded-lg"
+                      maxMenuHeight={180}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="sibs-text-xs font-semibold text-[#667085]">
+                  Current PRF Status:{" "}
+                  <span className="font-extrabold text-[#FF5C28]">
+                    {activePrfStatus}
+                  </span>
+                </div>
+              )
+            }
+          >
             <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 [
                   "Candidate ID",
                   activeCandidate.candidateId || activeCandidate.candidateApplicationId || "—",
                 ],
-                ["Source", activeCandidate.source || activeCandidate.metadata?.source || "—"],
-                ["Department", activeCandidate.department || activeCandidate.metadata?.department || "—"],
                 ["Target Position", activeCandidate.roleTitle || activeCandidate.roleAccount || "—"],
                 ["Client Account", activeCandidate.account || "Not assigned yet"],
+                ["Department", activeCandidate.department || activeCandidate.metadata?.department || "—"],
+                ["Source", activeCandidate.source || activeCandidate.metadata?.source || "—"],
                 ["PRF Status", activePrfStatus || "Review"],
                 [
                   "Created Date",
                   compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : "—",
                 ],
-              ].map(([label, value]) => (
-                <div key={label} className="min-w-0">
-                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    {label}
-                  </p>
-                  <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
-                    {value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </CandidateModalSection>
-
-          {isInitialScreening && (
-            <CandidateModalSection
-              title="Lead PRF Review & Alignment"
-              subtitle="Validate headcount requisition alignment before the candidate proceeds."
-              headerAction={
-                <div className="sibs-text-xs font-semibold text-[#667085]">
-                  Current PRF Status:{" "}
-                  <span className="font-extrabold text-[#042C51]">
-                    {activePrfStatus}
-                  </span>
-                </div>
-              }
-            >
-              <div className="flex justify-end">
-                <div className="w-full sm:w-80">
-                  <DropdownField
-                    label="PRF STATUS"
-                    value={
-                      activePrfStatus === "Matched" || activePrfStatus === "Not Matched"
-                        ? activePrfStatus
-                        : ""
-                    }
-                    displayValue={
-                      activePrfStatus === "Matched"
-                        ? "Matched"
-                        : activePrfStatus === "Not Matched"
-                          ? "Unmatched"
-                          : ""
-                    }
-                    options={[
-                      {
-                        value: "Not Matched",
-                        label: "Unmatched",
-                        description: "Candidate is not yet matched to the PRF.",
-                      },
-                      {
-                        value: "Matched",
-                        label: "Matched",
-                        description: "Candidate can move to Online Assessment.",
-                      },
-                    ]}
-                    onChange={(value) => handleLocalPrfStatusUpdate(value)}
-                    placeholder="Select PRF status"
-                    searchable={false}
-                    controlVariant="secondaryAction"
-                    menuClassName="!rounded-lg"
-                    maxMenuHeight={180}
-                    className="w-full"
-                  />
-                  <p className="mt-1.5 text-xs font-medium text-[#475467]">
-                    Changing this value will immediately update the candidate PRF review status.
-                  </p>
-                </div>
-              </div>
-            </CandidateModalSection>
-          )}
-
-          <CandidateModalSection
-            title="Candidate Profile Details Panel"
-            subtitle="Quick candidate profile summary for recruitment review."
-          >
-            <div className="grid grid-cols-1 gap-x-10 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2">
-              {[
                 ["Highest Education", compactProfileSummary.highestEducation || "—"],
                 ["Relevant Experience", compactProfileSummary.relevantExperience || "—"],
                 [
@@ -9242,7 +9221,11 @@ async function handleConfirmScheduleNho() {
                   <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     {label}
                   </p>
-                  <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+                  <p
+                    className={`mt-0.5 break-words text-xs font-extrabold leading-5 ${
+                      label === "PRF Status" ? "text-[#FF5C28]" : "text-[#344054]"
+                    }`}
+                  >
                     {value}
                   </p>
                 </div>
@@ -9253,16 +9236,16 @@ async function handleConfirmScheduleNho() {
               <CandidateModalSecondaryButton
                 type="button"
                 onClick={() => setShowTalentPoolDetails((previous) => !previous)}
-                className="w-full !justify-between sm:w-72"
+                className="w-full !justify-between !border-[#FF5C28]/35 !text-[#FF5C28] hover:!bg-[#FFF0EB] sm:w-72"
               >
-                <span className="min-w-0 flex-1 truncate text-left">
+                <span className="min-w-0 flex-1 truncate text-left font-extrabold text-[#FF5C28]">
                   {showTalentPoolDetails
                     ? "Hide Full Submitted Profile"
                     : "View Full Submitted Profile"}
                 </span>
                 <ChevronDown
                   size={14}
-                  className={`transition-transform ${showTalentPoolDetails ? "rotate-180" : ""}`}
+                  className={`text-[#FF5C28] transition-transform ${showTalentPoolDetails ? "rotate-180" : ""}`}
                 />
               </CandidateModalSecondaryButton>
             </div>
@@ -9493,9 +9476,9 @@ async function handleConfirmScheduleNho() {
                                   )}/offer-versions/${encodeURIComponent(versionNumber)}/pdf`,
                                 })
                               }
-                              className="shrink-0"
+                              className="shrink-0 !border-[#FF5C28]/35 !text-[#FF5C28] hover:!bg-[#FFF0EB]"
                             >
-                              <Eye size={14} />
+                              <Eye size={14} className="text-[#FF5C28]" />
                               Open PDF
                             </CandidateModalSecondaryButton>
                           )}

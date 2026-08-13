@@ -290,7 +290,7 @@ export default function CandidatePipelineModalShell({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`sibs-modal-pop-in flex h-[88vh] max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-sm:h-[calc(100dvh-1rem)] max-sm:max-h-[calc(100dvh-1rem)]`}
+        className={`sibs-modal-pop-in flex max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-sm:max-h-[calc(100dvh-1rem)]`}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="shrink-0 bg-[#042C51] px-5 py-4 text-white sm:px-6">
@@ -357,7 +357,7 @@ export default function CandidatePipelineModalShell({
                 type="button"
                 onClick={onClose}
                 disabled={closeDisabled}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-close-btn"
                 aria-label="Close modal"
               >
                 <X size={18} />
@@ -367,7 +367,7 @@ export default function CandidatePipelineModalShell({
         </header>
 
         <div className="relative min-h-0 flex-1 overflow-hidden bg-[#F7F9FC]">
-          <div className="sibs-scrollbar absolute inset-0 overflow-y-auto overscroll-contain p-4 sm:p-5">
+          <div className="sibs-scrollbar max-h-[calc(88vh-130px)] overflow-y-auto overscroll-contain p-4 sm:p-5">
             {children}
           </div>
 

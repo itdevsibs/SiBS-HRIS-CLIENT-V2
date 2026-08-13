@@ -233,10 +233,10 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 rounded-lg p-2 text-blue-100 transition hover:bg-white/10 hover:text-white"
+              className="sibs-modal-close-btn"
               aria-label="Close modal"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </header>

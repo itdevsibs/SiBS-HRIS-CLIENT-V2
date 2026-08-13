@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Clock3, History, UserRound, X } from "lucide-react";
+import { Clock3, ExternalLink, FileText, History, UserRound, X } from "lucide-react";
 
 import { formatDateTime } from "../../../lib/utils/candidatePipeline/candidatePipelineFormatters";
 import { getStageClass } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
@@ -83,6 +83,101 @@ function getSortableTime(item = {}) {
   const value = getTimelineDate(item);
   const parsed = new Date(value).getTime();
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getTimelineSources(item = {}) {
+  return [item, item.extra].filter(
+    (source) => source && typeof source === "object",
+  );
+}
+
+function getFirstValue(item, keys) {
+  for (const source of getTimelineSources(item)) {
+    for (const key of keys) {
+      if (source[key] !== null && source[key] !== undefined && cleanText(source[key])) {
+        return source[key];
+      }
+    }
+  }
+
+  return "";
+}
+
+function getTimelineFiles(item = {}) {
+  const files = getFirstValue(item, [
+    "files",
+    "attachments",
+    "assessmentFiles",
+    "assessment_files",
+  ]);
+
+  if (Array.isArray(files)) return files;
+
+  const fileName = getFirstValue(item, [
+    "assessmentAttachmentName",
+    "assessment_attachment_name",
+    "assessmentFileName",
+    "assessment_file_name",
+    "offerFileName",
+    "offer_file_name",
+    "fileName",
+    "filename",
+  ]);
+
+  return fileName ? [{
+    name: fileName,
+    url: getFirstValue(item, [
+      "assessmentAttachmentUrl",
+      "assessment_attachment_url",
+      "assessmentFileUrl",
+      "assessment_file_url",
+      "offerFileUrl",
+      "offer_file_url",
+      "fileUrl",
+      "url",
+    ]),
+    type: getFirstValue(item, ["assessmentAttachmentType", "assessment_attachment_type", "fileType", "mimeType"]),
+    size: getFirstValue(item, ["assessmentAttachmentSize", "assessment_attachment_size", "fileSize"]),
+  }] : [];
+}
+
+function getTimelineLinks(item = {}) {
+  const links = [
+    ["Job Evaluation", ["jobEvaluationLink", "job_evaluation_link", "evaluationLink", "evaluation_link"]],
+    ["Final Interview", ["finalInterviewLink", "final_interview_link", "savedFormLink", "saved_form_link", "assessmentLink", "assessment_link"]],
+  ];
+
+  return links
+    .map(([label, keys]) => ({ label, url: getFirstValue(item, keys) }))
+    .filter((link) => link.url);
+}
+
+function getTimelineDetails(item = {}) {
+  const score = getFirstValue(item, [
+    "assessmentScore",
+    "assessment_score",
+    "jobEvaluationScore",
+    "job_evaluation_score",
+    "finalInterviewScore",
+    "final_interview_score",
+  ]);
+  const result = getFirstValue(item, [
+    "assessmentResult",
+    "assessment_result",
+    "finalInterviewResult",
+    "final_interview_result",
+  ]);
+
+  return { score, result, files: getTimelineFiles(item), links: getTimelineLinks(item) };
+}
+
+function formatFileSize(value) {
+  if (!value) return "";
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes <= 0) return cleanText(value);
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function getMovementHistoryItems(candidate = {}) {
@@ -216,6 +311,7 @@ export default function CandidateMovementHistoryDrawer({
                   const remarks = cleanText(
                     item.remarks || item.remark || item.notes || "",
                   );
+                  const details = getTimelineDetails(item);
 
                   return (
                     <article
@@ -281,6 +377,66 @@ export default function CandidateMovementHistoryDrawer({
                             {remarks}
                           </p>
                         ) : null}
+
+                        {(details.score || details.result) && (
+                          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {details.score ? (
+                              <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+                                <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#174A78]">Score</p>
+                                <p className="mt-0.5 text-xs font-extrabold text-[#042C51]">{details.score}</p>
+                              </div>
+                            ) : null}
+                            {details.result ? (
+                              <div className="rounded-lg border border-blue-100 bg-white px-3 py-2">
+                                <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#174A78]">Result</p>
+                                <p className="mt-0.5 text-xs font-extrabold text-[#042C51]">{details.result}</p>
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
+
+                        {details.links.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {details.links.map((link) => (
+                              <button
+                                key={`${link.label}-${link.url}`}
+                                type="button"
+                                onClick={() => window.open(link.url, "_blank", "noopener,noreferrer")}
+                                className="flex w-full items-center justify-between gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-left text-[10px] font-extrabold text-blue-700 underline"
+                              >
+                                <span className="truncate">Open {link.label}</span>
+                                <ExternalLink size={13} className="shrink-0 no-underline" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {details.files.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {details.files.map((file, fileIndex) => {
+                              const name = cleanText(file.name || file.fileName || file.filename || file.title || "Attachment");
+                              const url = cleanText(file.url || file.fileUrl || file.file_url || file.path || "");
+                              const meta = [cleanText(file.type || file.mimeType), formatFileSize(file.size || file.fileSize)].filter(Boolean).join(" • ");
+
+                              return (
+                                <div key={`${name}-${fileIndex}`} className="flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-[#F8FAFC] px-3 py-2.5">
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <FileText size={17} className="shrink-0 text-[#FF5C28]" />
+                                    <div className="min-w-0">
+                                      <p className="truncate text-[10px] font-extrabold text-[#042C51]">{name}</p>
+                                      {meta ? <p className="mt-0.5 text-[9px] font-semibold text-[#667085]">{meta}</p> : null}
+                                    </div>
+                                  </div>
+                                  {url ? (
+                                    <button type="button" onClick={() => window.open(url, "_blank", "noopener,noreferrer")} className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-[9px] font-extrabold text-blue-700">
+                                      Open File
+                                    </button>
+                                  ) : null}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </article>
                   );

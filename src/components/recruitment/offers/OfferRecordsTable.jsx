@@ -141,8 +141,8 @@ export default function OfferRecordsTable({
   }
 
   return (
-    <div className="hidden lg:block">
-      <div className="overflow-x-auto rounded-[24px] border border-[#D9E2EC] bg-white">
+    <div className="hidden font-jakarta lg:block">
+      <div className="overflow-x-auto rounded-2xl border border-[#D7E3F0] bg-white">
         <table className="min-w-[1380px] table-fixed border-separate border-spacing-0 text-left">
           <colgroup>
             <col className="w-[17%]" />
@@ -155,14 +155,14 @@ export default function OfferRecordsTable({
           </colgroup>
 
           <thead>
-            <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-[0.04em] text-[#174A7C]">
-              <th className="rounded-tl-[24px] px-5 py-5">Candidate</th>
-              <th className="px-5 py-5">Final Role / Account</th>
-              <th className="px-5 py-5">Evaluation Scores</th>
-              <th className="px-5 py-5">Negotiation</th>
-              <th className="px-5 py-5">Approval</th>
-              <th className="px-5 py-5">Owner</th>
-              <th className="rounded-tr-[24px] px-5 py-5 text-right">
+            <tr className="bg-[#F5F7FA] text-[11px] font-extrabold uppercase tracking-[0.04em] text-[#174A7C]">
+              <th className="rounded-tl-2xl px-5 py-4">Candidate</th>
+              <th className="px-5 py-4">Final Role / Account</th>
+              <th className="px-5 py-4">Evaluation Scores</th>
+              <th className="px-5 py-4">Negotiation</th>
+              <th className="px-5 py-4">Approval</th>
+              <th className="px-5 py-4">Owner</th>
+              <th className="rounded-tr-2xl px-5 py-4 text-right">
                 Actions
               </th>
             </tr>
@@ -185,11 +185,11 @@ export default function OfferRecordsTable({
                     className="cursor-pointer align-middle transition hover:bg-[#FAFBFC]"
                     onClick={() => openOffer(offer)}
                   >
-                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                    <td className={`px-5 py-4 ${rowBorderClass}`}>
                       <div className="min-w-0">
                         <p
                           title={offer.candidateName}
-                          className="truncate whitespace-nowrap text-[15px] font-extrabold text-[#101828]"
+                          className="truncate whitespace-nowrap text-sm font-extrabold text-[#101828]"
                         >
                           {offer.candidateName || "—"}
                         </p>
@@ -199,11 +199,11 @@ export default function OfferRecordsTable({
                       </div>
                     </td>
 
-                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                    <td className={`px-5 py-4 ${rowBorderClass}`}>
                       <div className="min-w-0">
                         <p
                           title={offer.roleTitle}
-                          className="truncate whitespace-nowrap text-[14px] font-extrabold text-[#101828]"
+                          className="truncate whitespace-nowrap text-sm font-extrabold text-[#101828]"
                         >
                           {offer.roleTitle || "—"}
                         </p>
@@ -216,11 +216,11 @@ export default function OfferRecordsTable({
                       </div>
                     </td>
 
-                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                    <td className={`px-5 py-4 ${rowBorderClass}`}>
                       <EvaluationScoreLines offer={offer} />
                     </td>
 
-                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                    <td className={`px-5 py-4 ${rowBorderClass}`}>
                       <NegotiationSummary
                         offer={offer}
                         onViewHistory={(event) => {
@@ -230,7 +230,7 @@ export default function OfferRecordsTable({
                       />
                     </td>
 
-                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                    <td className={`px-5 py-4 ${rowBorderClass}`}>
                       <span
                         title={approvalStatus}
                         className={`inline-flex h-9 max-w-full items-center rounded-full border px-3 text-xs font-extrabold ${getStatusClass(
@@ -243,7 +243,7 @@ export default function OfferRecordsTable({
                       </span>
                     </td>
 
-                    <td className={`px-5 py-5 ${rowBorderClass}`}>
+                    <td className={`px-5 py-4 ${rowBorderClass}`}>
                       <p
                         title={offer.owner}
                         className="truncate whitespace-nowrap text-sm font-bold text-[#344054]"
@@ -252,7 +252,7 @@ export default function OfferRecordsTable({
                       </p>
                     </td>
 
-                    <td className={`px-5 py-5 text-right ${rowBorderClass}`}>
+                    <td className={`px-5 py-4 text-right ${rowBorderClass}`}>
                       <div
                         className="flex min-w-0 items-center justify-end gap-2"
                         onClick={(event) => event.stopPropagation()}
@@ -301,7 +301,7 @@ export default function OfferRecordsTable({
               <tr>
                 <td
                   colSpan={7}
-                  className="px-6 py-14 text-center text-sm font-bold text-[#667085]"
+                  className="px-6 py-12 text-center text-xs font-bold text-[#667085]"
                 >
                   {emptyMessage}
                 </td>
@@ -311,33 +311,43 @@ export default function OfferRecordsTable({
         </table>
       </div>
 
-      <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <p className="text-sm font-semibold text-[#475467]">
-          Showing {displayedOffers.length} of {totalOffers} offered candidates
+      <div className="sibs-pagination sibs-pagination--compact mt-4">
+        <p className="sibs-pagination__summary">
+          Showing <span>{displayedOffers.length}</span> loaded offered candidates
+          {totalOffers > 0 ? (
+            <>
+              {" "}out of <span>{totalOffers}</span>
+            </>
+          ) : null}
         </p>
 
-        <div className="flex items-center gap-2">
+        {totalOffers > 0 ? (
+          <div className="sibs-pagination__controls">
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50"
+            disabled
+            className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
             aria-label="Previous page"
           >
             <ChevronLeft size={16} />
+            <span>Previous</span>
           </button>
+
+          <span className="sibs-pagination__page is-active h-10 px-3 sm:px-4">
+            Page 1
+          </span>
+
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-bold text-white"
-          >
-            1
-          </button>
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50"
+            disabled
+            className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
             aria-label="Next page"
           >
+            <span>Next</span>
             <ChevronRight size={16} />
           </button>
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -32,7 +32,7 @@ function getAccount(candidate = {}) {
 export default function CandidateModalSummary({
   candidate = {},
   stage = "",
-  statusClass = "border-blue-100 bg-blue-50 text-blue-700",
+  statusClass = "border-[#FF5C28]/25 bg-[#FFF0EB] text-[#FF5C28]",
   compact = false,
   showAssignment = true,
 }) {

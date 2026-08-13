@@ -786,7 +786,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-close-btn"
                 aria-label="Close source cost modal"
               >
                 <X size={18} />

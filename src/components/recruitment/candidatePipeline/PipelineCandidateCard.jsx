@@ -275,17 +275,19 @@ const PipelineCandidateCard = ({
         </div>
       </div>
 
-      {candidate.interviewDate && (
-        <div className="mt-2.5 rounded-lg border border-sky-100 bg-sky-50/70 px-2.5 py-2">
-          <p className="flex items-center gap-1.5 text-[9px] font-extrabold text-[#042C51]">
-            <CalendarDays size={12} className="text-[#FF5C28]" />
-            {formatDateTime(candidate.interviewDate)}
-          </p>
-          <p className="mt-0.5 text-[8.5px] font-semibold text-[#667085]">
-            {getDisplayInterviewType(candidate)}
-          </p>
-        </div>
-      )}
+      {(candidate.currentStage === "Interview Scheduled" ||
+        candidate.currentStage === "Interviewed") &&
+        candidate.interviewDate && (
+          <div className="mt-2.5 rounded-lg border border-sky-100 bg-sky-50/70 px-2.5 py-2">
+            <p className="flex items-center gap-1.5 text-[9px] font-extrabold text-[#042C51]">
+              <CalendarDays size={12} className="text-[#FF5C28]" />
+              {formatDateTime(candidate.interviewDate)}
+            </p>
+            <p className="mt-0.5 text-[8.5px] font-semibold text-[#667085]">
+              {getDisplayInterviewType(candidate)}
+            </p>
+          </div>
+        )}
 
       {isDropOff && (
         <div className="mt-2.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-2.5">
