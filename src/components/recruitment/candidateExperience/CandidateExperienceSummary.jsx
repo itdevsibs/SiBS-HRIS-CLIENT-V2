@@ -20,48 +20,54 @@ function SummaryCard({
 }) {
   return (
     <article
-      className={`sibs-metric-card sibs-page-card-in flex min-h-[110px] flex-col justify-between overflow-hidden p-3.5 font-jakarta ${
+      className={`sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta ${
         featured
           ? "!border-transparent !bg-gradient-to-br !from-[#042C51] !to-[#0A467E] text-white"
           : ""
       }`}
-      style={{ animationDelay: `${delay}ms` }}
+      style={{
+        animationDelay: `${delay}ms`,
+        animationFillMode: "both",
+      }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p
-          className={`min-w-0 line-clamp-2 text-[10px] font-extrabold uppercase tracking-tight ${
-            featured ? "text-white" : `sibs-tone-${tone}-label`
-          }`}
-        >
-          {title}
-        </p>
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${
+                featured ? "text-white" : `sibs-tone-${tone}-label`
+              }`}
+            >
+              {title}
+            </p>
+
+            <p
+              className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${
+                featured ? "text-white" : `sibs-tone-${tone}-label`
+              }`}
+            >
+              {value}
+            </p>
+          </div>
+
+          <p
+            className={`line-clamp-1 truncate sibs-text-micro font-bold ${
+              featured ? "text-slate-200" : "text-[#667085]"
+            }`}
+          >
+            {description}
+          </p>
+        </div>
 
         <span
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${
             featured
               ? "bg-white/10 text-[#FF5C28]"
               : `sibs-tone-${tone}-icon`
           }`}
         >
-          <Icon size={16} strokeWidth={2} />
+          <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
-      </div>
-
-      <div className="mt-2">
-        <p
-          className={`text-2xl sm:text-3xl font-extrabold leading-none tabular-nums tracking-normal ${
-            featured ? "text-white" : `sibs-tone-${tone}-label`
-          }`}
-        >
-          {value}
-        </p>
-        <p
-          className={`mt-1.5 truncate text-xs font-bold ${
-            featured ? "text-slate-200" : "text-[#667085]"
-          }`}
-        >
-          {description}
-        </p>
       </div>
     </article>
   );
@@ -69,7 +75,7 @@ function SummaryCard({
 
 export default function CandidateExperienceSummary({ metrics }) {
   return (
-    <section className="sibs-profile-tab-panel font-jakarta" style={{ animationDelay: "60ms" }}>
+    <section className="font-jakarta">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-7">
         <SummaryCard
           title="Total Cases"
@@ -85,7 +91,7 @@ export default function CandidateExperienceSummary({ metrics }) {
           icon={CheckCircle2}
           description="Hired / Completed"
           tone="green"
-          delay={50}
+          delay={45}
         />
         <SummaryCard
           title="Drop-offs"
@@ -93,7 +99,7 @@ export default function CandidateExperienceSummary({ metrics }) {
           icon={UserX}
           description="Exited candidates"
           tone="red"
-          delay={100}
+          delay={90}
         />
         <SummaryCard
           title="Surveys Sent"
@@ -101,7 +107,7 @@ export default function CandidateExperienceSummary({ metrics }) {
           icon={MailCheck}
           description="Delivered forms"
           tone="indigo"
-          delay={150}
+          delay={135}
         />
         <SummaryCard
           title="Responses"
@@ -109,7 +115,7 @@ export default function CandidateExperienceSummary({ metrics }) {
           icon={MessageSquareText}
           description="Feedback received"
           tone="amber"
-          delay={200}
+          delay={180}
         />
         <SummaryCard
           title="Avg. Rating"
@@ -117,7 +123,7 @@ export default function CandidateExperienceSummary({ metrics }) {
           icon={Star}
           description={`Pos ${metrics.positiveRatings || 0} · Low ${metrics.lowRatings || 0}`}
           tone="amber"
-          delay={250}
+          delay={225}
         />
         <SummaryCard
           title="Voice of Candidate"
@@ -125,7 +131,7 @@ export default function CandidateExperienceSummary({ metrics }) {
           icon={Sparkles}
           description="Response health rate"
           featured
-          delay={300}
+          delay={270}
         />
       </div>
     </section>

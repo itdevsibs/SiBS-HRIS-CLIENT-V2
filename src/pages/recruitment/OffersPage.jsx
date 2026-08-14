@@ -529,8 +529,8 @@ export default function OffersPage() {
           <OfferSummaryCards />
 
           <section
-            className="sibs-profile-tab-panel sibs-page-card-in sibs-card relative overflow-visible font-jakarta"
-            style={{ animationDelay: "120ms" }}
+            className="sibs-page-card-in sibs-card relative overflow-visible font-jakarta"
+            style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <OfferFilters />
 

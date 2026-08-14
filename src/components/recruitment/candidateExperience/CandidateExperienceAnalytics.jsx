@@ -40,19 +40,22 @@ export default function CandidateExperienceAnalytics({ records, metrics }) {
 
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-4 font-jakarta">
-      <Panel icon={BarChart3} title="Drop-offs by Stage" subtitle="Where candidates leave the recruitment journey.">
+      <Panel icon={BarChart3} title="Drop-offs by Stage" subtitle="Where candidates leave the recruitment journey." delay={120}>
         <BarList rows={stageRows} emptyText="No drop-off stage data yet." />
       </Panel>
 
-      <Panel icon={Tag} title="Experience Categories" subtitle="Most common reasons and feedback themes.">
+      <Panel icon={Tag} title="Experience Categories" subtitle="Most common reasons and feedback themes." delay={165}>
         <BarList rows={categoryRows} emptyText="No experience categories yet." accent="bg-sibs-primary-2" />
       </Panel>
 
-      <Panel icon={Star} title="Rating Distribution" subtitle="Candidate and manually recorded feedback ratings.">
+      <Panel icon={Star} title="Rating Distribution" subtitle="Candidate and manually recorded feedback ratings." delay={210}>
         <BarList rows={ratingRows} emptyText="No ratings submitted yet." accent="bg-amber-500" />
       </Panel>
 
-      <section className="relative overflow-hidden rounded-2xl bg-sibs-primary-1 p-5 text-white shadow-sm">
+      <section
+        className="sibs-page-card-in relative overflow-hidden rounded-2xl bg-sibs-primary-1 p-5 text-white shadow-sm"
+        style={{ animationDelay: "255ms", animationFillMode: "both" }}
+      >
         <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-sibs-primary-2/15" />
         <div className="relative">
           <div className="flex items-center gap-2 text-sibs-primary-2">
@@ -79,9 +82,12 @@ export default function CandidateExperienceAnalytics({ records, metrics }) {
   );
 }
 
-function Panel({ icon: Icon, title, subtitle, children }) {
+function Panel({ icon: Icon, title, subtitle, delay = 120, children }) {
   return (
-    <section className="rounded-2xl border border-sibs-subtle-border bg-sibs-card p-5 shadow-sm transition-all duration-200 hover:shadow-md">
+    <section
+      className="sibs-page-card-in rounded-2xl border border-sibs-subtle-border bg-sibs-card p-5 shadow-sm transition-all duration-200 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
+    >
       <div className="mb-4 flex items-start justify-between gap-3 border-b border-sibs-subtle-border/60 pb-3">
         <div>
           <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">{title}</h3>

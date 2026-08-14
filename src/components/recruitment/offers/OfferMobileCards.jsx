@@ -44,7 +44,7 @@ export default function OfferMobileCards({
 
   return (
     <div className="space-y-4 lg:hidden">
-      {displayedOffers.map((offer) => {
+      {displayedOffers.map((offer, index) => {
         const approvalStatus = getOfferApprovalStatus
           ? getOfferApprovalStatus(offer)
           : offer.offerApprovalStatus || offer.status || "For Review";
@@ -58,7 +58,8 @@ export default function OfferMobileCards({
         return (
           <article
             key={`mobile-${offer.offerId}-${offer.candidateApplicationId}-${offer.id}`}
-            className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm"
+            className="sibs-page-card-in rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm"
+            style={{ animationDelay: `${index * 45}ms`, animationFillMode: "both" }}
           >
             <button
               type="button"

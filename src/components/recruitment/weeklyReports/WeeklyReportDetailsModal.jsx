@@ -4,219 +4,120 @@ import {
   BarChart3,
   BriefcaseBusiness,
   CheckCircle2,
-  ClipboardList,
+  CheckSquare,
   Download,
-  Eye,
   FileText,
-  ListChecks,
   Mail,
   Send,
-  ShieldCheck,
   X,
 } from "lucide-react";
 import {
   formatDate,
   getRoleStatusClass,
-  getStatusClass,
 } from "../../../lib/utils/weeklyReports/weeklyReportsHelpers.js";
 import { buildEmailPreview } from "../../../lib/utils/weeklyReports/weeklyReportsGenerator.js";
 import WeeklyReportEmailPreview from "./WeeklyReportEmailPreview.jsx";
+
+
+function getReportStatusClass(status) {
+  if (status === "Generated") return "border-amber-200 bg-amber-50 text-amber-700";
+  if (status === "Sent") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (status === "Archived") return "border-slate-300 bg-slate-100 text-slate-600";
+  return "border-white/20 bg-white/10 text-white";
+}
 
 function toNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getDisplayValue(value) {
-  if (value === null || value === undefined || value === "") return "—";
-  return value;
+function safePercent(value, maximum) {
+  const base = Math.max(toNumber(maximum), 1);
+  return Math.max(0, Math.min(100, Math.round((toNumber(value) / base) * 100)));
 }
 
-function getPercentage(value, maximum) {
-  const safeValue = toNumber(value);
-  const safeMaximum = Math.max(toNumber(maximum), 1);
+function MetricCard({ label, value, maximum, tone = "navy" }) {
+  const pct = safePercent(value, maximum);
+  const toneMap = {
+    navy: "text-[#042C51] bg-blue-600",
+    indigo: "text-indigo-800 bg-indigo-600",
+    purple: "text-purple-800 bg-purple-600",
+    teal: "text-teal-800 bg-teal-600",
+    cyan: "text-cyan-800 bg-cyan-600",
+    green: "text-emerald-800 bg-emerald-600",
+    red: "text-red-800 bg-red-600",
+  };
+  const [textClass, barClass] = (toneMap[tone] || toneMap.navy).split(" ");
 
-  return Math.min(
-    100,
-    Math.max(0, Math.round((safeValue / safeMaximum) * 100)),
+  return (
+    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+      <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">{label}</p>
+      <p className={`mt-1 text-lg font-extrabold tabular-nums ${textClass}`}>{toNumber(value)}</p>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#E6ECF2]">
+        <div className={`h-full rounded-full ${barClass}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   );
 }
 
-function KpiProgressRow({ label, value, maximum }) {
-  const percentage = getPercentage(value, maximum);
+function RoleCard({ role, index }) {
+  const requirement = toNumber(role?.requirement);
+  const filled = toNumber(role?.filled);
+  const fulfillment = requirement > 0 ? Math.round((filled / requirement) * 100) : 0;
 
   return (
-    <div className="py-2.5 first:pt-0 last:pb-0">
-      <div className="mb-2 flex items-center justify-between gap-4">
-        <p className="text-sm font-bold text-[#344054]">{label}</p>
-        <p className="shrink-0 text-sm font-extrabold text-sibs-primary-1">
-          {toNumber(value)}
+    <article className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-extrabold text-sibs-primary-1">
+            {role?.role || `Role ${index + 1}`}
+          </p>
+          <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
+            {role?.account || "Not assigned"}
+          </p>
+        </div>
+        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase ${getRoleStatusClass(role?.status)}`}>
+          {role?.status || "On Track"}
+        </span>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#E6ECF2] pt-2.5">
+        <p className="text-[10px] font-semibold text-[#667085]">
+          Owner: <strong className="text-[#344054]">{role?.owner || "Unassigned"}</strong>
+        </p>
+        <p className="font-mono text-[10px] font-extrabold text-sibs-primary-1">
+          {filled}/{requirement} HC · {fulfillment}%
         </p>
       </div>
-
-      <div className="h-2 overflow-hidden rounded-full bg-[#EAF0F5]">
-        <div
-          className="h-full rounded-full bg-sibs-primary-1 transition-[width] duration-700 ease-out"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
+    </article>
   );
 }
 
-function InformationRow({ label, value }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-[#E8EDF2] py-3 last:border-b-0">
-      <p className="text-[10px] font-extrabold uppercase tracking-[0.05em] text-sibs-tertiary-5">
-        {label}
-      </p>
-
-      <p className="max-w-[64%] break-words text-right text-sm font-bold text-[#344054]">
-        {getDisplayValue(value)}
-      </p>
-    </div>
-  );
-}
-
-function FollowUpList({ items, emptyText, tone }) {
+function FollowUpBlock({ title, icon: Icon, items, tone = "orange", emptyText }) {
   const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
   const isDanger = tone === "red";
 
-  if (safeItems.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-[#D7E0E9] bg-[#F8FAFC] px-4 py-5 text-center text-xs font-semibold text-sibs-tertiary-5">
-        {emptyText}
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-2">
-      {safeItems.map((item, index) => (
-        <div
-          key={`${tone}-${index}`}
-          className="flex items-start gap-3 rounded-xl border border-[#E3EAF1] bg-[#F8FAFC] px-3.5 py-3"
-        >
-          <span
-            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-              isDanger ? "bg-red-500" : "bg-amber-500"
-            }`}
-          />
+    <section className="space-y-2">
+      <h4 className={`flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide ${isDanger ? "text-red-700" : "text-sibs-primary-1"}`}>
+        <Icon size={14} className={isDanger ? "text-red-600" : "text-[#FF5C28]"} />
+        {title}
+      </h4>
 
-          <p className="text-xs font-semibold leading-5 text-[#344054]">
-            {item}
-          </p>
+      {safeItems.length > 0 ? (
+        <div className={`space-y-1.5 rounded-xl border p-3 ${isDanger ? "border-red-200 bg-red-50/70" : "border-orange-100 bg-orange-50/40"}`}>
+          {safeItems.map((item, index) => (
+            <div key={`${title}-${index}`} className="flex items-start gap-2 text-xs font-medium leading-5 text-[#344054]">
+              <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${isDanger ? "bg-red-500" : "bg-[#FF5C28]"}`} />
+              <span>{item}</span>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
-  );
-}
-
-function RoleSummary({ roles }) {
-  const safeRoles = Array.isArray(roles) ? roles : [];
-
-  return (
-    <section className="h-full rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-sm font-bold text-[#101828]">
-            Role / Account Summary
-          </h3>
-
-          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-            Headcount progress and current delivery status.
-          </p>
+      ) : (
+        <div className="rounded-xl border border-dashed border-[#D7E0E9] bg-[#F8FAFC] px-4 py-4 text-center text-xs font-semibold text-[#667085]">
+          {emptyText}
         </div>
-
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
-          <BriefcaseBusiness size={18} />
-        </div>
-      </div>
-
-      <div className="space-y-2.5">
-        {safeRoles.length > 0 ? (
-          safeRoles.map((role, index) => (
-            <article
-              key={`${role.role}-${role.account}-${index}`}
-              className="rounded-xl border border-[#E3EAF1] bg-[#F8FAFC] p-3.5"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-[#101828]">
-                    {role.role || "Not assigned"}
-                  </p>
-
-                  <p className="mt-0.5 truncate text-[11px] font-semibold text-sibs-tertiary-5">
-                    {role.account || "Not assigned"} · Owner:{" "}
-                    {role.owner || "Unassigned"}
-                  </p>
-                </div>
-
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-[#DCE5EE] bg-white px-2.5 py-1 text-[10px] font-extrabold text-[#344054]">
-                    {toNumber(role.filled)}/{toNumber(role.requirement)} filled
-                  </span>
-
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getRoleStatusClass(
-                      role.status,
-                    )}`}
-                  >
-                    {role.status || "On Track"}
-                  </span>
-                </div>
-              </div>
-            </article>
-          ))
-        ) : (
-          <div className="rounded-xl border border-dashed border-[#D7E0E9] bg-[#F8FAFC] px-4 py-8 text-center text-sm font-semibold text-sibs-tertiary-5">
-            No role or account records are available.
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function EmailPreviewAction({ report, onOpen }) {
-  return (
-    <section className="h-full rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="flex h-full flex-col">
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-sm font-bold text-[#101828]">Email Preview</h3>
-
-            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-              Review the generated email before distribution.
-            </p>
-          </div>
-
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-            <Mail size={18} />
-          </div>
-        </div>
-
-        <div className="flex flex-1 flex-col justify-between gap-4 rounded-xl border border-[#E3EAF1] bg-[#F8FAFC] p-3.5 sm:flex-row sm:items-center">
-          <div className="min-w-0">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.05em] text-sibs-tertiary-5">
-              Email subject
-            </p>
-
-            <p className="mt-1 break-words text-sm font-bold text-[#101828]">
-              Weekly Hiring Report — {report.weekLabel}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onOpen}
-            className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] sm:w-auto"
-          >
-            <Eye size={15} />
-            View Email
-          </button>
-        </div>
-      </div>
+      )}
     </section>
   );
 }
@@ -262,51 +163,34 @@ export default function WeeklyReportDetailsModal({
     [report],
   );
 
-  const maxMovement = useMemo(() => {
-    if (!report) return 1;
-
-    return Math.max(
-      toNumber(report.sourced),
-      toNumber(report.screened),
-      toNumber(report.interviewed),
-      toNumber(report.offered),
-      toNumber(report.accepted),
-      toNumber(report.hired),
-      toNumber(report.dropOffs),
-      1,
-    );
-  }, [report]);
-
   if (!open || !report) return null;
 
+  const requirement = toNumber(report.totalRequirement);
+  const filled = toNumber(report.totalFilled);
+  const fulfillment = requirement > 0 ? Math.round((filled / requirement) * 100) : 0;
+  const maxMovement = Math.max(
+    toNumber(report.sourced),
+    toNumber(report.screened),
+    toNumber(report.interviewed),
+    toNumber(report.offered),
+    toNumber(report.accepted),
+    toNumber(report.hired),
+    1,
+  );
+
   const actionItems = Array.isArray(report.actionItems)
-    ? report.actionItems.filter(
-        (item) =>
-          item && item !== "No open action items recorded for the current week.",
-      )
+    ? report.actionItems.filter((item) => item && item !== "No open action items recorded for the current week.")
     : [];
 
   const missingData = Array.isArray(report.missingData)
-    ? report.missingData.filter(
-        (item) => item && item !== "No missing data recorded.",
-      )
+    ? report.missingData.filter((item) => item && item !== "No missing data recorded.")
     : [];
 
-  const movementItems = [
-    { label: "Sourced", value: report.sourced },
-    { label: "Screened", value: report.screened },
-    { label: "Interviewed", value: report.interviewed },
-    { label: "Offered", value: report.offered },
-    { label: "Accepted", value: report.accepted },
-    { label: "Hired", value: report.hired },
-    { label: "Drop-offs", value: report.dropOffs },
-  ];
+  const roles = Array.isArray(report.roles) ? report.roles : [];
 
   function handleExport() {
     try {
-      const blob = new Blob([emailPreview], {
-        type: "text/plain;charset=utf-8",
-      });
+      const blob = new Blob([emailPreview], { type: "text/plain;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       const safeReportId = String(report.reportId || "weekly-report")
@@ -325,12 +209,6 @@ export default function WeeklyReportDetailsModal({
     }
   }
 
-  function handleMarkAsSent() {
-    if (typeof onMarkSent === "function") {
-      onMarkSent(report);
-    }
-  }
-
   return (
     <>
       <div
@@ -345,248 +223,182 @@ export default function WeeklyReportDetailsModal({
           aria-modal="true"
           aria-labelledby="weekly-report-modal-title"
         >
-          <header className="shrink-0 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:px-6 sm:py-5">
+          <header className="shrink-0 bg-[#042C51] px-5 py-4 text-white sm:px-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-extrabold ${getStatusClass(
-                      report.status,
-                    )}`}
-                  >
+                  <span className="rounded-md bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                    Weekly Performance Report Details
+                  </span>
+                  <span className={`rounded-md border px-2.5 py-1 text-[9px] font-extrabold uppercase ${getReportStatusClass(report.status)}`}>
                     {report.status}
                   </span>
-
                   {report.generatedFromModules ? (
-                    <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-extrabold text-sibs-primary-1">
-                      Generated from Recruitment Data
+                    <span className="rounded-md border border-blue-400/20 bg-white/10 px-2.5 py-1 text-[9px] font-extrabold uppercase text-blue-100">
+                      Multi-Module Signal Aggregated
                     </span>
                   ) : null}
                 </div>
 
-                <h2
-                  id="weekly-report-modal-title"
-                  className="mt-3 text-xl font-extrabold text-sibs-primary-1"
-                >
-                  Weekly Report Preview
+                <h2 id="weekly-report-modal-title" className="mt-2.5 text-lg font-extrabold sm:text-xl">
+                  {report.weekLabel}
                 </h2>
-
-                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                  Review the hiring summary, pipeline movement, follow-ups, and
-                  email before distribution.
+                <p className="mt-1 text-xs font-semibold text-blue-200">
+                  Report ID: <strong className="font-mono text-white">{report.reportId}</strong>
+                  <span className="mx-2 text-blue-500">|</span>
+                  Date Range: {report.dateRange}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-[#F1F5F9] hover:text-gray-700 active:scale-[0.98]"
-                aria-label="Close weekly report preview"
-              >
-                <X size={20} />
+              <button type="button" onClick={onClose} className="sibs-modal-close-btn" aria-label="Close weekly report details">
+                <X size={19} />
               </button>
             </div>
           </header>
 
-          <main className="min-h-0 flex-1 overflow-y-auto bg-[#F5F7FA] p-4 sm:p-5 sibs-scrollbar">
+          <main className="min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-4 sm:p-5 sibs-scrollbar">
             <div className="space-y-4">
-              <section className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-sibs-primary-1">
-                      <span>{report.weekLabel}</span>
-                      <span className="text-sibs-tertiary-8">•</span>
-                      <span>{report.dateRange}</span>
-                      <span className="text-sibs-tertiary-8">•</span>
-                      <span>{report.reportId}</span>
-                    </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.5fr)_330px]">
+                <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+                  <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    <FileText size={14} className="text-[#FF5C28]" />
+                    Executive Narrative Summary
+                  </p>
+                  <p className="mt-2 text-xs font-medium leading-5 text-[#344054] sm:text-sm sm:leading-6">
+                    {report.summary || "No weekly report summary is available."}
+                  </p>
+                </section>
 
-                    <p className="mt-3 max-w-3xl text-sm leading-6 text-[#344054]">
-                      {report.summary ||
-                        "No weekly report summary is available."}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="rounded-full border border-[#DCE5EE] bg-[#F8FAFC] px-3 py-1 text-[11px] font-bold text-[#344054]">
-                        {toNumber(report.totalOpenRoles)} Open Roles
-                      </span>
-
-                      <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700">
-                        {toNumber(report.atRiskRoles)} At Risk
-                      </span>
-
-                      <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-bold text-red-700">
-                        {toNumber(report.delayedRoles)} Delayed
-                      </span>
-                    </div>
+                <section className="rounded-xl border border-orange-200 bg-[#FFF7F3] p-4 shadow-sm">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">Headcount Target vs. Actual</p>
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-3xl font-extrabold text-sibs-primary-1">{filled}</span>
+                    <span className="text-lg font-bold text-[#98A2B3]">/</span>
+                    <span className="text-lg font-extrabold text-[#667085]">{requirement}</span>
+                    <span className="ml-1 text-xs font-extrabold text-[#FF5C28]">({fulfillment}% Filled)</span>
                   </div>
-
-                  <div className="w-full shrink-0 rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 sm:w-[170px]">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-                      Filled Headcount
-                    </p>
-
-                    <p className="mt-2 text-3xl font-extrabold text-sibs-primary-1">
-                      {toNumber(report.totalFilled)}/
-                      {toNumber(report.totalRequirement)}
-                    </p>
-
-                    <p className="mt-1 text-xs font-semibold text-sibs-primary-1/70">
-                      Current versus requirement
-                    </p>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-orange-100">
+                    <div className="h-full rounded-full bg-[#FF5C28]" style={{ width: `${Math.max(0, Math.min(100, fulfillment))}%` }} />
                   </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-orange-200/70 pt-3">
+                    <span className="rounded-md bg-blue-50 px-2 py-1 text-[9px] font-extrabold text-sibs-primary-1">{toNumber(report.totalOpenRoles)} Open</span>
+                    <span className="rounded-md bg-amber-100 px-2 py-1 text-[9px] font-extrabold text-amber-800">{toNumber(report.atRiskRoles)} At Risk</span>
+                    <span className="rounded-md bg-red-100 px-2 py-1 text-[9px] font-extrabold text-red-800">{toNumber(report.delayedRoles)} Delayed</span>
+                  </div>
+                </section>
+              </div>
+
+              <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                      <BarChart3 size={15} className="text-emerald-600" />
+                      Weekly Funnel Conversion KPI Snapshot
+                    </h3>
+                    <p className="mt-1 text-[10px] font-semibold text-[#667085]">Candidate movement from sourcing through hiring.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                  <MetricCard label="Sourced Leads" value={report.sourced} maximum={maxMovement} tone="navy" />
+                  <MetricCard label="Initial Screened" value={report.screened} maximum={maxMovement} tone="indigo" />
+                  <MetricCard label="Interviewed" value={report.interviewed} maximum={maxMovement} tone="purple" />
+                  <MetricCard label="Offers Made" value={report.offered} maximum={maxMovement} tone="cyan" />
+                  <MetricCard label="Offers Accepted" value={report.accepted} maximum={maxMovement} tone="teal" />
+                  <MetricCard label="Hired Candidates" value={report.hired} maximum={maxMovement} tone="green" />
+                  <MetricCard label="Drop-offs" value={report.dropOffs} maximum={maxMovement} tone="red" />
+                  <MetricCard label="Pending Onboarding" value={report.pendingOnboarding} maximum={Math.max(toNumber(report.pendingOnboarding), 1)} tone="navy" />
                 </div>
               </section>
 
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_390px] xl:items-stretch">
-                <div className="h-full">
-                  <section className="h-full rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                    <div className="mb-4 flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-sm font-bold text-[#101828]">
-                          Weekly KPI Snapshot
-                        </h3>
+              <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+                <h3 className="mb-3 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  <BriefcaseBusiness size={15} className="text-[#FF5C28]" />
+                  Role / Account Requirement Breakdown
+                </h3>
 
-                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                          Candidate movement from sourcing through hiring.
-                        </p>
-                      </div>
+                {roles.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+                    {roles.map((role, index) => (
+                      <RoleCard key={role.id || `${role.role}-${role.account}-${index}`} role={role} index={index} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="sibs-empty-panel">No role or account records are available.</div>
+                )}
+              </section>
 
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
-                        <BarChart3 size={18} />
-                      </div>
-                    </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <FollowUpBlock
+                  title="Action Items & Active Escalations"
+                  icon={CheckSquare}
+                  items={actionItems}
+                  emptyText="No active action items logged for this report period."
+                  tone="orange"
+                />
 
-                    <div className="divide-y divide-[#EEF2F6]">
-                      {movementItems.map((item) => (
-                        <KpiProgressRow
-                          key={item.label}
-                          label={item.label}
-                          value={item.value}
-                          maximum={maxMovement}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                </div>
-
-                <div className="h-full">
-                  <section className="h-full rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                    <div className="mb-3 flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-sm font-bold text-[#101828]">
-                          Report Summary
-                        </h3>
-
-                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                          Generation and recruitment signal details.
-                        </p>
-                      </div>
-
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
-                        <FileText size={18} />
-                      </div>
-                    </div>
-
-                    <InformationRow label="Report ID" value={report.reportId} />
-                    <InformationRow label="Status" value={report.status} />
-                    <InformationRow
-                      label="Generated Date"
-                      value={formatDate(report.generatedDate)}
-                    />
-                    <InformationRow
-                      label="Generated By"
-                      value={report.generatedBy || "System"}
-                    />
-                    <InformationRow
-                      label="Action Items"
-                      value={toNumber(report.actionItemsCount)}
-                    />
-                    <InformationRow
-                      label="Missing Data"
-                      value={toNumber(report.missingDataCount)}
-                    />
-                    <InformationRow
-                      label="Public Applicants"
-                      value={toNumber(report.publicApplicants)}
-                    />
-                    <InformationRow
-                      label="Pending Offers"
-                      value={toNumber(report.pendingOffers)}
-                    />
-                    <InformationRow
-                      label="Pending Onboarding"
-                      value={toNumber(report.pendingOnboarding)}
-                    />
-                  </section>
-
-                  
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-stretch">
-                <RoleSummary roles={report.roles} />
-
-                <EmailPreviewAction
-                  report={report}
-                  onOpen={() => setEmailPreviewOpen(true)}
+                <FollowUpBlock
+                  title="Missing Data & Delayed Role Explanations"
+                  icon={AlertTriangle}
+                  items={missingData}
+                  emptyText="All report inputs are complete with no missing-data alerts."
+                  tone="red"
                 />
               </div>
 
-              <section className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
-                    <ShieldCheck size={18} />
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-bold text-sibs-primary-1">
-                      Report Generation Rule
-                    </h3>
-
-                    <p className="mt-1 text-xs font-semibold leading-5 text-sibs-primary-1/75">
-                      This weekly report is generated from Hiring Needs, Weekly
-                      Hiring Plan, Candidate Pipeline, Offers, Onboarding,
-                      Missing Data, and Action Items.
-                    </p>
-                  </div>
+              <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5 text-[10px] font-semibold text-[#667085]">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span>Generated By: <strong className="text-[#344054]">{report.generatedBy || "System"}</strong></span>
+                  <span>Generated Date: <strong className="text-[#344054]">{formatDate(report.generatedDate)}</strong></span>
+                </div>
+                <div className="mt-2 border-t border-[#E6ECF2] pt-2">
+                  Current Signals: {toNumber(report.publicApplicants)} Public Applicants · {toNumber(report.talentPoolCount)} Talent Pool · {toNumber(report.pendingOffers)} Pending Offers · {toNumber(report.pendingOnboarding)} Pending Onboarding
                 </div>
               </section>
             </div>
           </main>
 
           <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3 sm:px-6">
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
-              >
-                Close
-              </button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                >
+                  <Download size={15} />
+                  Export Report (.txt)
+                </button>
 
-              <button
-                type="button"
-                onClick={handleExport}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
-              >
-                <Download size={16} />
-                Export
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setEmailPreviewOpen(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-[#E9F0FC] px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm active:scale-[0.98]"
+                >
+                  <Mail size={15} className="text-[#FF5C28]" />
+                  View Formatted Email Digest
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={handleMarkAsSent}
-                disabled={report.status === "Sent"}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-              >
-                {report.status === "Sent" ? (
-                  <CheckCircle2 size={16} />
-                ) : (
-                  <Send size={16} />
-                )}
-                {report.status === "Sent" ? "Already Sent" : "Mark as Sent"}
-              </button>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-xs font-extrabold text-[#667085] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+                >
+                  Close
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => typeof onMarkSent === "function" && onMarkSent(report)}
+                  disabled={report.status === "Sent"}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                >
+                  {report.status === "Sent" ? <CheckCircle2 size={15} /> : <Send size={15} />}
+                  {report.status === "Sent" ? "Report Status: SENT" : "Mark as Sent"}
+                </button>
+              </div>
             </div>
           </footer>
         </div>

@@ -182,7 +182,8 @@ export default function OfferRecordsTable({
                 return (
                   <tr
                     key={`${offer.offerId}-${offer.candidateApplicationId}-${offer.id}`}
-                    className="cursor-pointer align-middle transition hover:bg-[#FAFBFC]"
+                    className="sibs-page-card-in cursor-pointer align-middle transition hover:bg-[#FAFBFC]"
+                    style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                     onClick={() => openOffer(offer)}
                   >
                     <td className={`px-5 py-4 ${rowBorderClass}`}>
