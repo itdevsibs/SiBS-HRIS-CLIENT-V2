@@ -178,14 +178,14 @@ export default function UserDropdown({
         aria-expanded={open}
         aria-haspopup="menu"
         className={[
-          "group flex max-w-[360px] cursor-pointer items-center gap-2.5 rounded-xl border px-2 py-1.5 text-left transition-all duration-150",
+          "group flex max-w-[360px] cursor-pointer items-center gap-2.5 rounded-xl border px-2.5 py-1.5 text-left transition-all duration-200 outline-none",
           mobileCompact ? "max-[430px]:gap-0 max-[430px]:px-0 max-[430px]:py-0" : "",
           open
-            ? "border-sibs-primary-1/25 bg-white shadow-sm ring-2 ring-sibs-primary-1/10"
-            : "border-transparent bg-transparent hover:border-sibs-tertiary-9 hover:bg-white",
+            ? "border-sibs-primary-1/30 bg-white shadow-md ring-2 ring-sibs-primary-1/10"
+            : "border-transparent bg-transparent hover:border-sibs-tertiary-9 hover:bg-white/80",
         ].join(" ")}
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-8 max-[360px]:w-8">
+        <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-[11px] 2xl:text-xs font-extrabold uppercase text-white shadow-[0_4px_12px_rgba(4,44,81,0.22)] transition-transform duration-200 group-hover:scale-105 max-[360px]:h-8 max-[360px]:w-8">
           {avatar || "U"}
         </div>
 
@@ -195,32 +195,36 @@ export default function UserDropdown({
             mobileCompact ? "hidden lg:flex" : "flex",
           ].join(" ")}
         >
-          <span className="max-w-[220px] truncate text-xs font-bold text-sibs-primary-1">
+          <span className="max-w-[180px] 2xl:max-w-[220px] truncate sibs-text-xs font-bold text-sibs-primary-1 tracking-tight">
             {formattedName || "USER"}
           </span>
 
-          <span className="mt-0.5 max-w-[220px] truncate text-[10px] font-medium text-sibs-primary-2">
+          <span className="mt-0.5 max-w-[180px] 2xl:max-w-[220px] truncate sibs-text-micro font-medium text-sibs-tertiary-6">
             {email || "no-email@sibs.com"}
           </span>
         </div>
 
         <ChevronDown
           size={15}
-          strokeWidth={2}
+          strokeWidth={2.2}
           className={[
-            "shrink-0 text-sibs-tertiary-6 transition-transform duration-200 group-hover:text-sibs-primary-1",
+            "shrink-0 text-sibs-tertiary-6 transition-transform duration-200 ease-out group-hover:text-sibs-primary-1",
             open ? "rotate-180 text-sibs-primary-1" : "",
             mobileCompact ? "hidden lg:block" : "",
           ].join(" ")}
         />
       </button>
 
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-[calc(100%+8px)] z-[999999] w-[286px] origin-top-right overflow-hidden rounded-xl border border-[#D7E0E9] bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)] animate-[sibsUserDropdownOpen_180ms_ease-out_both]"
-        >
-          <div className="p-2">
+      <div
+        role="menu"
+        aria-hidden={!open}
+        className={[
+          "sibs-animated-dropdown absolute right-0 top-[calc(100%+8px)] z-[999999] w-[260px] 2xl:w-[286px] origin-top-right",
+          open ? "open" : "closed",
+        ].join(" ")}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box p-2 border border-[#D7DEE8] bg-white shadow-[0_16px_40px_rgba(4,44,81,0.16)] rounded-xl">
             {!isAdminSide && canSwitchToAdmin && (
               <DropdownItem
                 icon={UserKey}
@@ -247,34 +251,38 @@ export default function UserDropdown({
               role="menuitem"
               onClick={onLogout}
               disabled={Boolean(actionLoading)}
-              className="mt-1 flex min-h-[50px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-1 flex min-h-[48px] w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-red-600 transition-colors duration-150 hover:bg-red-50 focus:bg-red-50 outline-none disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {actionLoading === "logout" ? (
-                <Loader2 size={18} className="shrink-0 animate-spin" />
-              ) : (
-                <LogOut size={18} className="shrink-0" />
-              )}
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100/60 text-red-600">
+                {actionLoading === "logout" ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <LogOut size={16} strokeWidth={2} />
+                )}
+              </span>
 
-              <span className="text-xs font-bold">
+              <span className="text-xs font-extrabold">
                 {actionLoading === "logout" ? "Logging out..." : "Logout"}
               </span>
             </button>
           </div>
         </div>
-      )}
+      </div>
 
       <style>
         {`
-          @keyframes sibsUserDropdownOpen {
-            from {
-              opacity: 0;
-              transform: translateY(-8px) scale(0.97);
-            }
-
-            to {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
+          .sibs-animated-dropdown {
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(-8px) scale(0.97);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+          }
+          .sibs-animated-dropdown.open {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
           }
         `}
       </style>
@@ -298,21 +306,21 @@ function DropdownItem({
       role="menuitem"
       onClick={onClick}
       disabled={disabled}
-      className="flex min-h-[58px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sibs-primary-1 transition hover:bg-[#F1F5F9] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex min-h-[52px] w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sibs-primary-1 transition-colors duration-150 hover:bg-[#F1F5F9] focus:bg-[#F1F5F9] outline-none disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EAF0F7] text-sibs-primary-1">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EAF0F7] text-sibs-primary-1 transition-transform duration-150 group-hover:scale-105">
         {loading ? (
-          <Loader2 size={17} className="animate-spin" />
+          <Loader2 size={16} className="animate-spin" />
         ) : (
-          <MenuIcon size={17} />
+          <MenuIcon size={16} strokeWidth={2} />
         )}
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-extrabold text-sibs-primary-1">
+        <span className="block truncate text-xs font-extrabold text-sibs-primary-1 leading-snug">
           {loading ? "Switching..." : title}
         </span>
-        <span className="mt-0.5 block truncate text-[10px] text-sibs-tertiary-6">
+        <span className="block truncate text-[10px] font-medium text-sibs-tertiary-6 leading-tight">
           {subtitle}
         </span>
       </span>

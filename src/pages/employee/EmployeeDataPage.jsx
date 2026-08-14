@@ -417,19 +417,19 @@ export default function EmployeeDataPage() {
     >
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden sibs-scrollbar bg-[#E8EDF3] px-3 py-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden sibs-scrollbar bg-[#E8EDF3] px-3 py-3 sm:px-5 sm:py-4 2xl:px-6 2xl:py-5">
         <div className="mx-auto w-full max-w-[1600px]">
-          <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="mb-3 2xl:mb-4 flex items-center justify-between gap-4">
             <button
               type="button"
               onClick={() => navigate("/employee")}
               className="inline-flex items-center gap-1.5"
             >
               <ChevronLeft size={15} className="text-[#FF5C28] hover:scale-110 hover:text-[#FF3C00]" />
-              <span className="text-sm font-bold text-[#042C51] hover:text-[#FF5C28]">Back to Employees</span>
+              <span className="text-xs 2xl:text-sm font-bold text-[#042C51] hover:text-[#FF5C28]">Back to Employees</span>
             </button>
 
-            <div className="hidden min-w-0 items-center gap-1.5 text-[10px] font-semibold text-[#667085] sm:flex">
+            <div className="hidden min-w-0 items-center gap-1.5 text-[10px] 2xl:text-xs font-semibold text-[#667085] sm:flex">
               <span>SiBS HRIS Portal</span>
               <span>/</span>
               <span>Employee Directory</span>
@@ -451,7 +451,7 @@ export default function EmployeeDataPage() {
               Profile not found.
             </div>
           ) : (
-            <div className="sibs-page-header-in space-y-4 sm:space-y-5">
+            <div className="sibs-page-header-in space-y-3.5 sm:space-y-4 2xl:space-y-5">
               <EmployeeProfileHeader
                 employee={displayEmployee}
                 apiUrl={API_URL}
@@ -473,7 +473,10 @@ export default function EmployeeDataPage() {
                 }}
                 morePanel={
                   <div
-                    className="sibs-profile-dropdown-panel absolute right-0 top-full z-[70] mt-2"
+                    className={[
+                      "sibs-animated-dropdown absolute right-0 top-[calc(100%+6px)] z-[70] w-[250px] 2xl:w-[260px] origin-top-right",
+                      openProfileDropdown ? "open" : "closed",
+                    ].join(" ")}
                     onClick={(event) => event.stopPropagation()}
                   >
                     <ProfileDropdown
@@ -490,32 +493,32 @@ export default function EmployeeDataPage() {
               />
 
               <div
-                className={`sibs-page-card-in grid grid-cols-1 items-start gap-6 ${
+                className={`sibs-page-card-in grid grid-cols-1 items-start gap-4 2xl:gap-6 ${
                   showContextPanel
-                    ? "xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]"
+                    ? "xl:grid-cols-[minmax(0,1.85fr)_minmax(260px,1fr)] 2xl:grid-cols-[minmax(0,2fr)_minmax(310px,1fr)]"
                     : ""
                 }`}
               >
                 <section
                   key={activeTab}
-                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-4 2xl:p-5 shadow-sm"
                 >
-                  <div className="mb-5 flex flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mb-4 2xl:mb-5 flex flex-col gap-2.5 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-sm font-black uppercase tracking-wider text-[#042C51]">
+                      <h2 className="text-xs 2xl:text-sm font-black uppercase tracking-wider text-[#042C51]">
                         {activeProfileLabel.primary}
                         {activeProfileLabel.secondary
                           ? ` - ${activeProfileLabel.secondary}`
                           : ""}
                       </h2>
-                      <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
+                      <p className="mt-0.5 text-[10px] 2xl:text-[11px] font-semibold text-slate-400">
                         {isEditing
                           ? "Editable input mode. Save the profile to lock the current updates."
                           : "Official record values are shown from the existing employee data source."}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <span
                         className={`h-2.5 w-2.5 rounded-full ${
                           isEditing

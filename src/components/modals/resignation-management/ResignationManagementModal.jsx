@@ -2469,23 +2469,23 @@ export function ViewResignationModal({ open, item, onClose }) {
         aria-modal="true"
         aria-labelledby="view-resignation-title"
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white font-jakarta shadow-[0_24px_70px_rgba(4,44,81,0.32)] sm:max-h-[92vh]"
+        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[720px] 2xl:max-w-[760px] flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white font-jakarta shadow-[0_24px_70px_rgba(4,44,81,0.32)] sm:max-h-[85dvh] 2xl:sm:max-h-[92dvh]"
       >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-4 py-4 text-white sm:px-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
-              <UserX size={18} strokeWidth={2.25} />
+        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#042C51] px-4 py-3 2xl:px-5 2xl:py-4 text-white">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <UserX className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2.25} />
             </span>
 
             <div className="min-w-0">
               <h2
                 id="view-resignation-title"
-                className="truncate text-sm font-extrabold leading-tight text-white sm:text-base"
+                className="truncate sibs-text-xs 2xl:sibs-text-sm font-extrabold leading-tight text-white"
               >
                 Resignation Case Details
               </h2>
 
-              <p className="mt-0.5 truncate text-[10px] font-semibold text-slate-300 sm:text-xs">
+              <p className="mt-0.5 truncate sibs-text-micro font-semibold text-slate-300">
                 Offboarding workflow profile
               </p>
             </div>
@@ -2494,27 +2494,27 @@ export function ViewResignationModal({ open, item, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300 transition hover:bg-white/20 hover:text-white active:scale-[0.97]"
+            className="inline-flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300 transition hover:bg-white/20 hover:text-white active:scale-[0.97]"
             aria-label="Close resignation case details"
           >
-            <X size={18} />
+            <X className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-5 sibs-scrollbar sm:px-6 sm:py-6">
-          <div className="space-y-5">
-            <section className="flex flex-col gap-4 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-3.5 py-4 sibs-scrollbar sm:px-5 2xl:sm:px-6 sm:py-5 2xl:sm:py-6">
+          <div className="space-y-4 2xl:space-y-5">
+            <section className="flex flex-col gap-3 2xl:gap-4 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-3 2xl:p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#042C51] text-sm font-extrabold text-white">
+                <span className="flex h-9 w-9 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-full bg-[#042C51] sibs-text-xs font-extrabold text-white">
                   {employeeInitial}
                 </span>
 
                 <div className="min-w-0">
-                  <h3 className="truncate text-base font-extrabold text-[#042C51] sm:text-lg">
+                  <h3 className="truncate sibs-text-sm 2xl:text-base font-extrabold text-[#042C51]">
                     {employeeName}
                   </h3>
 
-                  <p className="mt-1 line-clamp-2 text-xs font-semibold text-[#667085]">
+                  <p className="mt-0.5 2xl:mt-1 line-clamp-2 sibs-text-micro font-semibold text-[#667085]">
                     {employeeMeta.length > 0
                       ? employeeMeta.join("  •  ")
                       : "Employee information unavailable"}
@@ -2523,12 +2523,12 @@ export function ViewResignationModal({ open, item, onClose }) {
               </div>
 
               <div className="flex shrink-0 flex-col items-start sm:items-end">
-                <span className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                <span className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
                   Current Status
                 </span>
 
                 <span
-                  className={`mt-1 inline-flex rounded border px-2 py-1 text-[9px] font-extrabold uppercase leading-none ${getCaseStatusClass(
+                  className={`mt-1 inline-flex rounded border px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase leading-none ${getCaseStatusClass(
                     status,
                   )}`}
                 >
@@ -2537,55 +2537,55 @@ export function ViewResignationModal({ open, item, onClose }) {
               </div>
             </section>
 
-            <section className="grid grid-cols-2 gap-x-5 gap-y-4 rounded-xl border border-[#E7ECF2] bg-[#FBFCFE] p-4 md:grid-cols-4">
+            <section className="grid grid-cols-2 gap-x-4 gap-y-3 2xl:gap-x-5 2xl:gap-y-4 rounded-xl border border-[#E7ECF2] bg-[#FBFCFE] p-3 2xl:p-4 md:grid-cols-4">
               <div className="min-w-0">
-                <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
                   Case ID
                 </p>
-                <p className="mt-1 truncate text-xs font-extrabold text-[#042C51]">
+                <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">
                   {safeText(getCaseId(item))}
                 </p>
               </div>
 
               <div className="min-w-0">
-                <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
                   Filed Date
                 </p>
-                <p className="mt-1 truncate text-xs font-bold text-[#344054]">
+                <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-bold text-[#344054]">
                   {safeText(resignationDate)}
                 </p>
               </div>
 
               <div className="min-w-0">
-                <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
                   Last Working Day
                 </p>
-                <p className="mt-1 truncate text-xs font-extrabold text-rose-600">
+                <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-extrabold text-rose-600">
                   {safeText(lastWorkingDate)}
                 </p>
               </div>
 
               <div className="min-w-0">
-                <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
                   Notice Cycle
                 </p>
-                <p className="mt-1 truncate text-xs font-extrabold text-indigo-600">
+                <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-extrabold text-indigo-600">
                   {getNoticeCycleLabel(resignationType)}
                 </p>
               </div>
             </section>
 
             <section>
-              <h4 className="text-[11px] font-extrabold uppercase text-[#042C51] sm:text-xs">
+              <h4 className="sibs-text-micro font-extrabold uppercase text-[#042C51]">
                 Statement / Reason Details
               </h4>
 
-              <div className="mt-2 rounded-xl border border-[#CFE0F4] bg-[#F7FAFE] p-4">
-                <span className="inline-flex max-w-full rounded border border-[#FFD7C8] bg-[#FFF0EB] px-2 py-1 text-[10px] font-extrabold text-[#FF5C28]">
+              <div className="mt-1.5 2xl:mt-2 rounded-xl border border-[#CFE0F4] bg-[#F7FAFE] p-3 2xl:p-4">
+                <span className="inline-flex max-w-full rounded border border-[#FFD7C8] bg-[#FFF0EB] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold text-[#FF5C28]">
                   <span className="truncate">Reason: {reason}</span>
                 </span>
 
-                <p className="mt-2 whitespace-pre-wrap break-words text-xs font-medium italic leading-5 text-[#344054]">
+                <p className="mt-2 whitespace-pre-wrap break-words sibs-text-xs font-medium italic leading-relaxed text-[#344054]">
                   “{safeText(narrative)}”
                 </p>
               </div>
@@ -2593,30 +2593,30 @@ export function ViewResignationModal({ open, item, onClose }) {
 
             <section>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <h4 className="text-[11px] font-extrabold uppercase text-[#042C51] sm:text-xs">
-                  Clearance & Approval Routing Stages
+                <h4 className="sibs-text-micro font-extrabold uppercase text-[#042C51]">
+                  Clearance &amp; Approval Routing Stages
                 </h4>
 
-                <span className="text-[9px] font-extrabold uppercase text-[#7E8DA8]">
+                <span className="sibs-text-micro font-extrabold uppercase text-[#7E8DA8]">
                   SOP Alignment Routing: TL → OM → SOM → HR
                 </span>
               </div>
 
-              <div className="mt-2 overflow-hidden rounded-xl border border-[#D9E2EC]">
+              <div className="mt-1.5 2xl:mt-2 overflow-hidden rounded-xl border border-[#D9E2EC]">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[620px] border-collapse text-left">
                     <thead>
                       <tr className="border-b border-[#D9E2EC] bg-[#F8FAFC]">
-                        <th className="px-3 py-3 text-[10px] font-extrabold text-[#8A98B8]">
+                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 sibs-text-micro font-extrabold text-[#8A98B8]">
                           Approval Stage
                         </th>
-                        <th className="px-3 py-3 text-[10px] font-extrabold text-[#8A98B8]">
+                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 sibs-text-micro font-extrabold text-[#8A98B8]">
                           Designated Approver
                         </th>
-                        <th className="px-3 py-3 text-center text-[10px] font-extrabold text-[#8A98B8]">
+                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 text-center sibs-text-micro font-extrabold text-[#8A98B8]">
                           Status
                         </th>
-                        <th className="px-3 py-3 text-[10px] font-extrabold text-[#8A98B8]">
+                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 sibs-text-micro font-extrabold text-[#8A98B8]">
                           Processed Time
                         </th>
                       </tr>
@@ -2628,20 +2628,20 @@ export function ViewResignationModal({ open, item, onClose }) {
                           key={stage.id}
                           className="border-b border-[#EEF2F6] last:border-b-0 hover:bg-[#FFF8F5]"
                         >
-                          <td className="px-3 py-3 text-xs font-extrabold text-[#042C51]">
+                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-xs font-extrabold text-[#042C51]">
                             {stage.stage}
                           </td>
 
-                          <td className="px-3 py-3 text-xs font-semibold text-[#475467]">
+                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-xs font-semibold text-[#475467]">
                             {safeText(
                               stage.approver,
                               "Pending assignment",
                             )}
                           </td>
 
-                          <td className="px-3 py-3 text-center">
+                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 text-center">
                             <span
-                              className={`inline-flex rounded border px-2 py-1 text-[8px] font-extrabold uppercase leading-none ${getApprovalStatusClass(
+                              className={`inline-flex rounded border px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase leading-none ${getApprovalStatusClass(
                                 stage.status,
                               )}`}
                             >
@@ -2649,7 +2649,7 @@ export function ViewResignationModal({ open, item, onClose }) {
                             </span>
                           </td>
 
-                          <td className="px-3 py-3 text-[10px] font-semibold tabular-nums text-[#8A98B8]">
+                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-micro font-semibold tabular-nums text-[#8A98B8]">
                             {stage.processedTime}
                           </td>
                         </tr>
@@ -2661,12 +2661,12 @@ export function ViewResignationModal({ open, item, onClose }) {
             </section>
 
             <section>
-              <p className="text-[10px] font-extrabold uppercase text-[#98A2B3]">
+              <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
                 Attached Files ({attachments.length})
               </p>
 
               {attachments.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-1.5 2xl:mt-2 flex flex-wrap gap-2">
                   {attachments.map((attachment) =>
                     attachment.url ? (
                       <a
@@ -2675,7 +2675,7 @@ export function ViewResignationModal({ open, item, onClose }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         title={`Open ${attachment.name}`}
-                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-3 py-2 text-left text-xs font-extrabold text-[#042C51] no-underline transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51] no-underline transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
                       >
                         <FileText
                           size={14}
@@ -2689,7 +2689,7 @@ export function ViewResignationModal({ open, item, onClose }) {
                       <span
                         key={attachment.id}
                         title={attachment.name}
-                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-3 py-2 text-left text-xs font-extrabold text-[#042C51]"
+                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51]"
                       >
                         <FileText
                           size={14}
@@ -2703,7 +2703,7 @@ export function ViewResignationModal({ open, item, onClose }) {
                   )}
                 </div>
               ) : (
-                <p className="mt-2 text-xs font-semibold text-[#98A2B3]">
+                <p className="mt-1.5 sibs-text-xs font-semibold text-[#98A2B3]">
                   No files were attached to this resignation.
                 </p>
               )}
@@ -2711,8 +2711,8 @@ export function ViewResignationModal({ open, item, onClose }) {
           </div>
         </div>
 
-        <footer className="flex shrink-0 flex-col gap-3 border-t border-[#EEF2F6] bg-[#F8FAFC] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <p className="min-w-0 truncate text-[10px] font-semibold text-[#7E8DA8]">
+        <footer className="flex shrink-0 flex-col gap-2.5 2xl:gap-3 border-t border-[#EEF2F6] bg-[#F8FAFC] px-4 py-2.5 2xl:px-5 2xl:py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="min-w-0 truncate sibs-text-micro font-semibold text-[#7E8DA8]">
             <span className="font-extrabold text-[#667085]">
               Filed By:
             </span>{" "}
@@ -2723,7 +2723,7 @@ export function ViewResignationModal({ open, item, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-[#E4EAF1] px-4 text-xs font-extrabold text-[#23364D] transition hover:bg-[#D7E0EA] active:scale-[0.98]"
+            className="inline-flex h-8.5 2xl:h-9 shrink-0 items-center justify-center rounded-lg bg-[#E4EAF1] px-3.5 2xl:px-4 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#23364D] transition hover:bg-[#D7E0EA] active:scale-[0.98]"
           >
             Close profile
           </button>

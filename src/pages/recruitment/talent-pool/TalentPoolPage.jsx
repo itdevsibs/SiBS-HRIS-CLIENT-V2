@@ -156,7 +156,7 @@ export default function TalentPoolPage() {
           <TalentPoolStats />
 
           <section
-            className="sibs-page-card-in sibs-card relative z-[80] overflow-visible"
+            className="sibs-page-card-in sibs-card relative z-[10] overflow-visible"
           >
             <TalentPoolFilters />
 

@@ -385,7 +385,7 @@ function WeeklyVersionDropdown({
 
   return (
     <div className="relative z-[80] min-w-0 overflow-visible">
-      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
+      <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-[#101828]">
         Weekly Version
       </label>
 
@@ -394,7 +394,7 @@ function WeeklyVersionDropdown({
         type="button"
         disabled={loading}
         onClick={handleOpen}
-        className={`flex h-11 w-full items-center justify-between rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-left font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
           open
             ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
             : ""
@@ -407,8 +407,7 @@ function WeeklyVersionDropdown({
         </span>
 
         <ChevronDown
-          size={18}
-          className={`ml-2 shrink-0 transition-all duration-300 ${
+          className={`ml-1.5 2xl:ml-2 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 transition-all duration-300 ${
             open ? "rotate-180 text-[#FF5C28]" : "text-[#667085]"
           }`}
         />
@@ -522,7 +521,7 @@ function CheckboxDropdown({
 
   return (
     <div className="relative z-[70] min-w-0 overflow-visible">
-      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
+      <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-[#101828]">
         {label}
       </label>
 
@@ -532,7 +531,7 @@ function CheckboxDropdown({
             ref={inputRef}
             type="text"
             value={
-              open ? search : loading ? "Loading accounts..." : displayLabel
+              open ? search : loading ? "Loading..." : displayLabel
             }
             onChange={(event) => {
               setSearch(event.target.value);
@@ -549,7 +548,7 @@ function CheckboxDropdown({
             disabled={loading}
             placeholder={searchPlaceholder}
             autoComplete="off"
-            className={`h-11 w-full rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-10 font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+            className={`h-8.5 2xl:h-10 w-full rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 pr-8 2xl:pr-10 font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
               open
                 ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
                 : ""
@@ -557,9 +556,8 @@ function CheckboxDropdown({
           />
 
           <ChevronDown
-            size={18}
             onClick={handleOpen}
-            className={`absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 ${
+            className={`absolute right-2.5 2xl:right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 2xl:h-4 2xl:w-4 cursor-pointer transition-all duration-300 ${
               open ? "rotate-180 text-[#FF5C28]" : "text-[#667085]"
             }`}
           />
@@ -570,7 +568,7 @@ function CheckboxDropdown({
           type="button"
           disabled={loading}
           onClick={handleOpen}
-          className={`flex h-11 w-full items-center justify-between rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+          className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-left font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
             open
               ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
               : ""
@@ -581,8 +579,7 @@ function CheckboxDropdown({
           </span>
 
           <ChevronDown
-            size={18}
-            className={`ml-2 shrink-0 transition-all duration-300 ${
+            className={`ml-1.5 2xl:ml-2 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 transition-all duration-300 ${
             open ? "rotate-180 text-[#FF5C28]" : "text-[#667085]"
           }`}
           />
@@ -694,8 +691,8 @@ export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } =
   return (
     <div className="relative z-[100] w-full overflow-visible">
       <div className="flex w-full justify-start xl:justify-end">
-        <div className="flex w-full flex-col gap-3 overflow-visible xl:w-auto xl:flex-row xl:items-end xl:gap-3">
-          <div className="w-full xl:w-[350px] xl:flex-none">
+        <div className="flex w-full flex-col gap-2.5 2xl:gap-3 overflow-visible xl:w-auto xl:flex-row xl:items-end">
+          <div className="w-full xl:w-[240px] 2xl:w-[310px] xl:flex-none">
             <WeeklyVersionDropdown
               value={weeklyVersionValue}
               onChange={(nextValue) => {
@@ -712,7 +709,7 @@ export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } =
             />
           </div>
 
-          <div className="w-full xl:w-[220px] xl:flex-none">
+          <div className="w-full xl:w-[140px] 2xl:w-[180px] xl:flex-none">
             <CheckboxDropdown
               label="Cluster"
               value={selectedClusters}
@@ -742,7 +739,7 @@ export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } =
             />
           </div>
 
-          <div className="w-full xl:w-[240px] xl:flex-none">
+          <div className="w-full xl:w-[150px] 2xl:w-[190px] xl:flex-none">
             <CheckboxDropdown
               label="Account"
               value={selectedAccounts}

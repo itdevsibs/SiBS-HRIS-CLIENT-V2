@@ -212,35 +212,35 @@ function StatCard({
 
   return (
     <article
-      className="sibs-metric-card"
+      className="sibs-metric-card flex min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
       }}
     >
-      <div className="flex h-full items-start justify-between gap-4">
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
         <div className="min-w-0 flex-1 self-stretch">
           <p
-            className={`m-0 truncate text-xs font-extrabold uppercase ${currentTone.label}`}
+            className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${currentTone.label}`}
           >
             {title}
           </p>
 
           <p
-            className={`mt-3 text-3xl font-extrabold leading-none tabular-nums ${currentTone.value}`}
+            className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${currentTone.value}`}
           >
             {value}
           </p>
 
-          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-2 sibs-text-micro font-bold leading-4 text-[#667085]">
             {description}
           </p>
         </div>
 
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${currentTone.iconWrap} ${currentTone.icon}`}
+          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${currentTone.iconWrap} ${currentTone.icon}`}
         >
-          <IconComponent size={17} strokeWidth={2} />
+          <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
       </div>
     </article>
@@ -655,44 +655,44 @@ export default function LeavesPage() {
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6"
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <span className="sibs-top-accent" aria-hidden="true" />
 
-            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1.5">
+            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#042C51]">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#042C51]">
                     <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
                     Leave Management View
                   </span>
 
-                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
+                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#FF5C28]">
                     Module: Core HR
                   </span>
                 </div>
 
-                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
                   {isPersonalView ? "My Leaves" : "Leaves"}
                 </h1>
 
-                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
                   {isPersonalView
                     ? "View your leave requests, credits, plotted leaves, and remaining balance."
                     : "Review employee leave requests, credits, plotted leaves, and remaining balances."}
                 </p>
               </div>
 
-              <span className="inline-flex h-10 w-max shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 text-xs font-extrabold text-[#042C51]">
-                <UserRound size={14} />
+              <span className="inline-flex h-8.5 2xl:h-10 w-max shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-[#042C51]">
+                <UserRound className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                 {isPersonalView ? "Personal View" : "Administrative View"}
               </span>
             </div>
           </section>
 
           <section
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6"
             style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
             <StatCard

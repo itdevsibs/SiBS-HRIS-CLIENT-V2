@@ -486,7 +486,7 @@ export default function PositionFormModal({
                 onClick={onClose}
                 disabled={isSaving}
                 aria-label="Close Available Position modal"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-close-btn"
               >
                 <X size={18} />
               </button>

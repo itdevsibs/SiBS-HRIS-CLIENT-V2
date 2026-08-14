@@ -1,193 +1,160 @@
-import React, { useMemo, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Eye, CalendarDays } from "lucide-react";
+import React, { useEffect, useMemo } from "react";
+import {
+  CalendarDays,
+  Eye,
+  UserRoundCheck,
+} from "lucide-react";
 import { useOnboarding } from "../../../services/context/OnboardingContext";
 import { usePagination } from "../../../services/context/PaginationContext";
-// 1. IMPORT THE NEW VIEW
 import OnboardingMobileCardView from "./OnboardingMobileCardView";
+import PaginationTable from "../../../services/pagination/PaginationTable.jsx";
 
-const formatDate = (d) =>
-  !d
-    ? "—"
-    : new Date(d).toLocaleDateString("en-PH", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+const PAGE_SIZE = 8;
 
-const getShowStatusClass = (s) =>
-  s === "Show"
-    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-    : s === "No Show"
-    ? "border-red-200 bg-red-50 text-red-700"
-    : s === "Withdrawn"
-    ? "border-orange-200 bg-orange-50 text-orange-700"
-    : s === "Pending"
-    ? "border-amber-200 bg-amber-50 text-amber-700"
-    : "border-gray-200 bg-gray-50 text-gray-600";
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
 
+const formatDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return cleanText(value) || "—";
+
+  return date.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+function getRecordValue(item = {}, camelKey, snakeKey, fallback = "") {
+  return item?.[camelKey] ?? item?.[snakeKey] ?? fallback;
+}
 
 function getOnboardingDisplayId(item = {}) {
   return (
-    item.onboardingId ||
-    item.onboarding_id ||
-    (item.id
-      ? `ONB-${String(item.id).padStart(5, "0")}`
-      : "—")
+    getRecordValue(item, "onboardingId", "onboarding_id") ||
+    (item.id ? `ONB-${String(item.id).padStart(5, "0")}` : "—")
   );
 }
 
-function getRecordValue(
-  item = {},
-  camelKey,
-  snakeKey,
-  fallback = "",
-) {
-  return (
-    item?.[camelKey] ??
-    item?.[snakeKey] ??
-    fallback
-  );
+function getInitials(name = "") {
+  const parts = cleanText(name).split(/\s+/).filter(Boolean);
+  if (!parts.length) return "ON";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-const getOutcomeClass = (o) =>
-  o === "True Hire"
+const getShowStatusClass = (status) =>
+  status === "Show"
     ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-    : o === "No Show"
-    ? "border-red-200 bg-red-50 text-red-700"
-    : o === "Pre-start Withdrawal"
-    ? "border-orange-200 bg-orange-50 text-orange-700"
-    : o === "Pending Start"
-    ? "border-amber-200 bg-amber-50 text-amber-700"
-    : "border-gray-200 bg-gray-50 text-gray-600";
+    : status === "No Show"
+      ? "border-red-200 bg-red-50 text-red-700"
+      : status === "Withdrawn"
+        ? "border-orange-200 bg-orange-50 text-orange-700"
+        : "border-amber-200 bg-amber-50 text-amber-700";
+
+const getOutcomeClass = (outcome) =>
+  outcome === "True Hire"
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : outcome === "No Show"
+      ? "border-red-200 bg-red-50 text-red-700"
+      : outcome === "Pre-start Withdrawal"
+        ? "border-orange-200 bg-orange-50 text-orange-700"
+        : "border-amber-200 bg-amber-50 text-amber-700";
 
 export default function OnboardingTable({ onView }) {
-  const { list, loading } = useOnboarding();
+  const { list = [], loading } = useOnboarding();
+  const { page, setPage, setPagination, search, filterValues } =
+    usePagination("onboarding");
 
-  const {
-    page,
-    setPage,
-    setPagination,
-    search,
-    filterValues,
-  } = usePagination("onboarding");
-
-  const limit = 8;
-
-  const safeList = Array.isArray(list)
-    ? list
-    : [];
+  const safeList = Array.isArray(list) ? list : [];
 
   const filteredList = useMemo(() => {
-    const keyword = String(
-      search || "",
-    ).toLowerCase();
+    const keyword = cleanText(search).toLowerCase();
+    const showStatusFilter = filterValues.showStatus || "All Status";
+    const outcomeFilter = filterValues.outcome || "All Outcomes";
+    const ownerFilter = filterValues.owner || "All Owners";
 
     return safeList.filter((item) => {
-      const candidateName = String(
-        getRecordValue(
-          item,
-          "candidateName",
-          "candidate_name",
-        ) || "",
+      const candidateName = cleanText(
+        getRecordValue(item, "candidateName", "candidate_name"),
       ).toLowerCase();
-
-      const candidateEmail = String(
-        getRecordValue(
-          item,
-          "candidateEmail",
-          "candidate_email",
-        ) || "",
+      const candidateEmail = cleanText(
+        getRecordValue(item, "candidateEmail", "candidate_email"),
       ).toLowerCase();
-
-      const roleTitle = String(
-        getRecordValue(
-          item,
-          "roleTitle",
-          "role_title",
-        ) || "",
+      const roleTitle = cleanText(
+        getRecordValue(item, "roleTitle", "role_title"),
       ).toLowerCase();
+      const account = cleanText(item.account).toLowerCase();
+      const owner = cleanText(item.owner);
+      const onboardingId = getOnboardingDisplayId(item).toLowerCase();
+      const showStatus = cleanText(
+        getRecordValue(item, "showStatus", "show_status", "Pending"),
+      );
+      const finalOutcome = cleanText(
+        getRecordValue(item, "finalOutcome", "final_outcome", "Pending Start"),
+      );
 
-      const onboardingId =
-        getOnboardingDisplayId(item)
-          .toLowerCase();
-
-      const matchS =
+      const matchesKeyword =
         !keyword ||
         candidateName.includes(keyword) ||
-        onboardingId.includes(keyword) ||
         candidateEmail.includes(keyword) ||
         roleTitle.includes(keyword) ||
-        String(item.account || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(item.owner || "")
-          .toLowerCase()
-          .includes(keyword);
+        account.includes(keyword) ||
+        owner.toLowerCase().includes(keyword) ||
+        onboardingId.includes(keyword);
 
-      const matchStatus =
-        filterValues.showStatus === "All Status" ||
-        !filterValues.showStatus ||
-        item.showStatus === filterValues.showStatus;
+      const matchesStatus =
+        showStatusFilter === "All Status" || showStatus === showStatusFilter;
+      const matchesOutcome =
+        outcomeFilter === "All Outcomes" || finalOutcome === outcomeFilter;
+      const matchesOwner = ownerFilter === "All Owners" || owner === ownerFilter;
 
-      const matchOutcome =
-        filterValues.outcome === "All Outcomes" ||
-        !filterValues.outcome ||
-        item.finalOutcome === filterValues.outcome;
-
-      const matchOwner =
-        filterValues.owner === "All Owners" ||
-        !filterValues.owner ||
-        item.owner === filterValues.owner;
-
-      return matchS && matchStatus && matchOutcome && matchOwner;
+      return matchesKeyword && matchesStatus && matchesOutcome && matchesOwner;
     });
   }, [safeList, search, filterValues]);
 
-  const totalPages = Math.ceil(filteredList.length / limit) || 1;
-  const paginatedData = useMemo(
-    () => filteredList.slice((page - 1) * limit, page * limit),
-    [filteredList, page, limit]
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, Number(page || 1)), totalPages);
+
+  const paginatedData = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filteredList.slice(start, start + PAGE_SIZE);
+  }, [filteredList, safePage]);
 
   useEffect(() => {
-    setPagination({
-      total: filteredList.length,
-      totalPages,
-    });
-  }, [
-    filteredList.length,
-    totalPages,
-    setPagination,
-  ]);
+    setPagination({ total: filteredList.length, totalPages });
+  }, [filteredList.length, totalPages, setPagination]);
 
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages, setPage]);
-
-  const firstVisibleRecord =
-    filteredList.length > 0
-      ? (page - 1) * limit + 1
-      : 0;
-
-  const lastVisibleRecord =
-    filteredList.length > 0
-      ? Math.min(
-          page * limit,
-          filteredList.length,
-        )
-      : 0;
+    if (page !== safePage) setPage(safePage);
+  }, [page, safePage, setPage]);
 
   return (
-    <div className="p-4 sm:p-6">
-      {/* 3. MOBILE VIEW (Using the External View Component) */}
-      <div className="space-y-3 lg:hidden">
-        {paginatedData.length > 0 ? (
+    <div className="relative z-[1] font-jakarta">
+      <div className="space-y-3 p-4 lg:hidden">
+        {loading ? (
+          <div className="sibs-empty-panel">Loading onboarding records...</div>
+        ) : paginatedData.length > 0 ? (
           paginatedData.map((item) => (
             <OnboardingMobileCardView
-              key={item.id}
-              record={item}
+              key={item.id || getOnboardingDisplayId(item)}
+              record={{
+                ...item,
+                onboardingId: getOnboardingDisplayId(item),
+                candidateName: getRecordValue(item, "candidateName", "candidate_name"),
+                candidateEmail: getRecordValue(item, "candidateEmail", "candidate_email"),
+                roleTitle: getRecordValue(item, "roleTitle", "role_title"),
+                showStatus: getRecordValue(item, "showStatus", "show_status", "Pending"),
+                finalOutcome: getRecordValue(
+                  item,
+                  "finalOutcome",
+                  "final_outcome",
+                  "Pending Start",
+                ),
+              }}
               onView={() => onView(item)}
               formatDate={formatDate}
               getShowStatusClass={getShowStatusClass}
@@ -195,130 +162,177 @@ export default function OnboardingTable({ onView }) {
             />
           ))
         ) : (
-          <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-            No onboarding records found.
+          <div className="sibs-empty-panel">
+            <UserRoundCheck size={22} className="mx-auto mb-2 text-[#6B88A8]" />
+            No onboarding records match the current search and filters.
           </div>
         )}
       </div>
 
-      {/* 4. DESKTOP VIEW (Restored Original Density) */}
-      <div className="hidden lg:block">
-        <div className="overflow-x-auto rounded-2xl border border-[#D9E2EC]">
-          <table className="w-full min-w-[1350px] border-separate border-spacing-0 text-left">
-            <thead>
-              <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C] whitespace-nowrap">
-                <th className="px-5 py-4">Onboarding ID</th>
-                <th className="px-5 py-4">Candidate</th>
-                <th className="px-5 py-4">Role / Account</th>
-                <th className="px-5 py-4">Accepted Offer</th>
-                <th className="px-5 py-4">Expected Start</th>
-                <th className="px-5 py-4">Actual Start</th>
-                <th className="px-5 py-4 text-center">Show Status</th>
-                <th className="px-5 py-4 text-center">Final Outcome</th>
-                <th className="px-5 py-4">Owner</th>
-                <th className="px-5 py-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.map((item) => (
-                <tr key={item.id} className="transition duration-200 hover:bg-[#FAFBFC]">
-                  <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-sibs-primary-1">
-                    {getOnboardingDisplayId(item)}
-                  </td>
-                  <td className="border-b border-[#E6ECF2] px-5 py-5">
-                    <p className="text-sm font-bold text-[#101828]">{item.candidateName}</p>
-                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                      {item.candidateEmail}
-                    </p>
-                  </td>
-                  <td className="border-b border-[#E6ECF2] px-5 py-5">
-                    <p className="text-sm font-bold text-[#344054]">{item.roleTitle}</p>
-                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">{item.account}</p>
-                  </td>
-                  <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays size={15} className="text-gray-400" />
-                      {formatDate(item.acceptedOfferDate)}
-                    </div>
-                  </td>
-                  <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold">
-                    {formatDate(item.expectedStartDate)}
-                  </td>
-                  <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold">
-                    {formatDate(item.actualStartDate)}
-                  </td>
-                  <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-bold ${getShowStatusClass(
-                        item.showStatus
-                      )}`}
-                    >
-                      {item.showStatus}
-                    </span>
-                  </td>
-                  <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
-                    <span
-                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold whitespace-nowrap ${getOutcomeClass(
-                        item.finalOutcome
-                      )}`}
-                    >
-                      {item.finalOutcome}
-                    </span>
-                  </td>
-                  <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054] whitespace-nowrap">
-                    {item.owner}
-                  </td>
-                  <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
-                    <button
-                      onClick={() => onView(item)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 hover:bg-[#F8FAFC] active:scale-[0.98]"
-                    >
-                      <Eye size={15} /> View
-                    </button>
-                  </td>
-                </tr>
+      <div className="hidden overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white lg:block">
+        <table className="w-full min-w-[1250px] border-collapse text-left font-jakarta text-xs">
+          <thead className="bg-[#F8FAFC]">
+            <tr className="whitespace-nowrap border-b border-[#E6ECF2]">
+              {["Onboarding ID", "Candidate", "Role / Account", "Accepted Offer", "Expected Start", "Actual Start", "Show Status", "Final Outcome", "Owner", "Action"].map((label) => (
+                <th key={label} className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#042C51] ${label === "Action" ? "text-right" : label === "Show Status" || label === "Final Outcome" ? "text-center" : ""}`}>
+                  {label}
+                </th>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={10} className="px-5 py-12 text-center sibs-text-xs font-bold text-[#667085]">
+                  Loading onboarding records...
+                </td>
+              </tr>
+            ) : paginatedData.length === 0 ? (
+              <tr>
+                <td colSpan={10} className="px-5 py-12 text-center sibs-text-xs font-bold text-[#667085]">
+                  No onboarding records match the current search and filters.
+                </td>
+              </tr>
+            ) : (
+              paginatedData.map((item) => {
+                const candidateName = getRecordValue(
+                  item,
+                  "candidateName",
+                  "candidate_name",
+                  "Candidate",
+                );
+                const candidateEmail = getRecordValue(
+                  item,
+                  "candidateEmail",
+                  "candidate_email",
+                  "",
+                );
+                const roleTitle = getRecordValue(item, "roleTitle", "role_title", "—");
+                const showStatus = getRecordValue(
+                  item,
+                  "showStatus",
+                  "show_status",
+                  "Pending",
+                );
+                const finalOutcome = getRecordValue(
+                  item,
+                  "finalOutcome",
+                  "final_outcome",
+                  "Pending Start",
+                );
+
+                return (
+                  <tr
+                    key={item.id || getOnboardingDisplayId(item)}
+                    className="sibs-page-card-in group transition-colors hover:bg-[#FFF9F6]"
+                    style={{ animationDelay: `${index * 35}ms` }}
+                  >
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6]">
+                      <button
+                        type="button"
+                        onClick={() => onView(item)}
+                        className="font-extrabold text-[#042C51] transition hover:text-[#FF5C28]"
+                      >
+                        {getOnboardingDisplayId(item)}
+                      </button>
+                    </td>
+
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6]">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#042C51] text-[9px] font-extrabold text-white shadow-sm">
+                          {getInitials(candidateName)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="max-w-[210px] truncate font-extrabold text-[#101828]">
+                            {candidateName}
+                          </p>
+                          <p className="mt-0.5 max-w-[210px] truncate text-[9px] font-semibold text-[#667085] 2xl:text-[10px]">
+                            {candidateEmail || "No email saved"}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6]">
+                      <p className="max-w-[210px] truncate font-extrabold text-[#344054]">
+                        {roleTitle}
+                      </p>
+                      <span className="mt-1 inline-flex max-w-[210px] truncate rounded-md border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-0.5 text-[9px] font-bold text-[#667085]">
+                        {item.account || "No account"}
+                      </span>
+                    </td>
+
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6]">
+                      <div className="flex items-center gap-1.5 font-semibold text-[#475467]">
+                        <CalendarDays size={13} className="shrink-0 text-[#98A2B3]" />
+                        {formatDate(getRecordValue(item, "acceptedOfferDate", "accepted_offer_date"))}
+                      </div>
+                    </td>
+
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6] font-extrabold text-[#344054]">
+                      {formatDate(getRecordValue(item, "expectedStartDate", "expected_start_date"))}
+                    </td>
+
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6] font-semibold text-[#475467]">
+                      {formatDate(getRecordValue(item, "actualStartDate", "actual_start_date"))}
+                    </td>
+
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6] text-center">
+                      <span
+                        className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getShowStatusClass(
+                          showStatus,
+                        )}`}
+                      >
+                        {showStatus}
+                      </span>
+                    </td>
+
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6] text-center">
+                      <span
+                        className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getOutcomeClass(
+                          finalOutcome,
+                        )}`}
+                      >
+                        {finalOutcome}
+                      </span>
+                    </td>
+
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6] font-semibold text-[#344054]">
+                      <span className="block max-w-[150px] truncate">{item.owner || "—"}</span>
+                    </td>
+
+                    <td className="sibs-data-table-td border-b border-[#EEF2F6] text-right">
+                      <button
+                        type="button"
+                        onClick={() => onView(item)}
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 text-[9px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] active:scale-[0.98]"
+                      >
+                        <Eye size={13} />
+                        View Record
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* 5. FOOTER (Exact Original Text) */}
-      <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <p className="text-sm font-semibold text-sibs-tertiary-5">
-          Showing {firstVisibleRecord} to{" "}
-          {lastVisibleRecord} of{" "}
-          {filteredList.length} onboarding records
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50 disabled:opacity-50"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i + 1)}
-              className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition ${
-                page === i + 1
-                  ? "bg-sibs-primary-1 text-white shadow-sm"
-                  : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-          <button
-            disabled={page >= totalPages}
-            onClick={() => setPage(page + 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50 disabled:opacity-50"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
+      <div className="mt-2 font-jakarta">
+        <PaginationTable
+          showSearch={false}
+          recordLabel="onboarding records"
+          loadedCount={paginatedData.length}
+          totalRecords={filteredList.length}
+          currentPage={safePage}
+          totalPages={totalPages}
+          hasPreviousPage={safePage > 1}
+          hasNextPage={safePage < totalPages}
+          onPreviousPage={() => setPage(Math.max(1, safePage - 1))}
+          onNextPage={() => setPage(Math.min(totalPages, safePage + 1))}
+        />
       </div>
     </div>
   );

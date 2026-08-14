@@ -17,16 +17,16 @@ function ConfirmationModal({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-2xl"
+        className="sibs-modal-pop-in w-full max-w-md overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white font-jakarta shadow-[0_20px_45px_rgba(4,44,81,0.18)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-[#EEF2F6] px-5 py-4">
-          <h3 className="text-base font-extrabold text-sibs-primary-1">
+        <div className="border-b border-[#E6ECF2] bg-white px-5 py-4">
+          <h3 className="sibs-text-base font-extrabold text-[#042C51]">
             {title}
           </h3>
 
           {message && (
-            <p className="mt-1 text-sm font-semibold leading-6 text-[#667085]">
+            <p className="mt-1 sibs-text-sm font-semibold leading-6 text-[#667085]">
               {message}
             </p>
           )}
@@ -36,7 +36,7 @@ function ConfirmationModal({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white px-5 text-sm font-bold text-[#344054] transition hover:-translate-y-0.5 hover:border-[#B8C4D2] hover:bg-[#F8FAFC] hover:shadow-sm focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/10"
+            className="inline-flex h-10 min-w-[88px] items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/15 active:translate-y-px"
           >
             {cancelLabel}
           </button>
@@ -44,7 +44,7 @@ function ConfirmationModal({
           <button
             type="button"
             onClick={onConfirm}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/20"
+            className="inline-flex h-10 min-w-[104px] items-center justify-center rounded-lg bg-[#FF5C28] px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20 active:translate-y-px"
           >
             {confirmLabel}
           </button>

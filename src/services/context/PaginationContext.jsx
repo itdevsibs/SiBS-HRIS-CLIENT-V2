@@ -530,7 +530,7 @@ export const usePagination = (entity) => {
 function AnimatedCalendarDropdown({ open, children }) {
   return (
     <div
-      className={`sibs-animated-dropdown absolute right-0 z-[99999] mt-2 w-[310px] max-[380px]:right-auto max-[380px]:left-0 max-[380px]:w-[calc(100vw-48px)] ${
+      className={`sibs-animated-dropdown absolute right-0 z-[99999] mt-2 w-[250px] 2xl:w-[300px] max-[380px]:right-auto max-[380px]:left-0 max-[380px]:w-[calc(100vw-48px)] ${
         open ? "open" : "closed"
       }`}
     >
@@ -569,60 +569,54 @@ function MiniCalendar({ value, min, onSelect, onClose }) {
   }
 
   function handleSelect(date) {
-    const dateKey = toDateKey(date);
-
-    if (min && dateKey < min) return;
-
-    onSelect(dateKey);
+    if (min && toDateKey(date) < min) return;
+    onSelect?.(toDateKey(date));
     onClose?.();
   }
 
   function handleToday() {
-    const todayKey = toDateKey(today);
-
-    if (min && todayKey < min) return;
-
-    onSelect(todayKey);
+    if (min && toDateKey(today) < min) return;
+    onSelect?.(toDateKey(today));
     onClose?.();
   }
 
   function handleClear() {
-    onSelect("");
+    onSelect?.("");
     onClose?.();
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+    <div className="w-full font-jakarta">
+      <div className="flex items-center justify-between border-b border-[#E6ECF2] px-3 py-2 2xl:px-4 2xl:py-2.5">
         <button
           type="button"
           onClick={goPreviousMonth}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
+          className="inline-flex h-7 w-7 2xl:h-8 2xl:w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
           aria-label="Previous month"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
         </button>
 
-        <div className="text-sm font-extrabold text-sibs-primary-1">
+        <span className="sibs-text-xs font-extrabold text-[#042C51]">
           {MONTH_LABELS[viewDate.getMonth()]} {viewDate.getFullYear()}
-        </div>
+        </span>
 
         <button
           type="button"
           onClick={goNextMonth}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
+          className="inline-flex h-7 w-7 2xl:h-8 2xl:w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
           aria-label="Next month"
         >
-          <ChevronRight size={18} />
+          <ChevronRight className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
         </button>
       </div>
 
-      <div className="px-4 py-3">
-        <div className="grid grid-cols-7 gap-1">
+      <div className="px-2.5 py-2 2xl:px-4 2xl:py-3">
+        <div className="grid grid-cols-7 gap-0.5 2xl:gap-1">
           {WEEKDAY_LABELS.map((day) => (
             <div
               key={day}
-              className="flex h-8 items-center justify-center text-xs font-extrabold text-sibs-tertiary-5"
+              className="flex h-6 2xl:h-8 items-center justify-center sibs-text-micro font-extrabold text-[#7B8DB3]"
             >
               {day}
             </div>
@@ -641,7 +635,7 @@ function MiniCalendar({ value, min, onSelect, onClose }) {
                 type="button"
                 disabled={disabled}
                 onClick={() => handleSelect(date)}
-                className={`flex h-9 items-center justify-center rounded-xl text-sm font-bold transition active:scale-[0.96] ${
+                className={`flex h-7 2xl:h-8.5 items-center justify-center rounded-lg sibs-text-xs font-bold transition active:scale-[0.96] ${
                   isSelected
                     ? "bg-[#FF5C28] text-white shadow-sm hover:bg-[#E94F1F]"
                     : isToday
@@ -661,11 +655,11 @@ function MiniCalendar({ value, min, onSelect, onClose }) {
           })}
         </div>
 
-        <div className="mt-3 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
+        <div className="mt-2 flex items-center justify-between border-t border-[#E6ECF2] pt-2">
           <button
             type="button"
             onClick={handleClear}
-            className="rounded-full px-3 py-2 text-xs font-extrabold text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            className="rounded-full px-2.5 py-1 sibs-text-micro font-extrabold text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
           >
             Clear
           </button>
@@ -674,7 +668,7 @@ function MiniCalendar({ value, min, onSelect, onClose }) {
             type="button"
             onClick={handleToday}
             disabled={min && toDateKey(today) < min}
-            className="rounded-full px-3 py-2 text-xs font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+            className="rounded-full px-2.5 py-1 sibs-text-micro font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
           >
             Today
           </button>
@@ -715,21 +709,21 @@ function DateRangeInput({ label, value, min, onChange }) {
   }, [open]);
 
   return (
-    <div ref={wrapperRef} className="relative h-10 w-full min-w-0">
+    <div ref={wrapperRef} className="relative h-8.5 sm:h-9 2xl:h-10 w-full min-w-0">
       <button
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
         data-state={open ? "open" : "closed"}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-10 w-full items-center justify-between gap-2 rounded-lg border bg-[#F8FAFC] px-3 text-left text-xs font-extrabold text-[#042C51] outline-none transition-all duration-200 active:scale-[0.99] ${
+        className={`flex h-8.5 sm:h-9 2xl:h-10 w-full items-center justify-between gap-2 rounded-lg border bg-[#F8FAFC] px-3 text-left sibs-text-xs font-extrabold text-[#042C51] outline-none transition-all duration-200 active:scale-[0.99] ${
           open
             ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
             : "border-[#E6ECF2] hover:border-[#FF5C28]/40 hover:bg-white"
         }`}
       >
-        <span className="flex min-w-0 items-center gap-2">
-          <CalendarDays size={16} className="shrink-0 text-[#FF5C28]" />
+        <span className="flex min-w-0 items-center gap-1.5 2xl:gap-2">
+          <CalendarDays className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#FF5C28]" />
 
           <span className="shrink-0">{label}</span>
 
@@ -743,8 +737,7 @@ function DateRangeInput({ label, value, min, onChange }) {
         </span>
 
         <ChevronDown
-          size={16}
-          className={`shrink-0 text-[#6B88A8] transition-transform duration-200 ${
+          className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#6B88A8] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />

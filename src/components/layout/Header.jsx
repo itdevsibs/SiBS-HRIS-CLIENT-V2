@@ -1078,21 +1078,21 @@ export default function Header() {
     (!employeeSearchAllowed || query.trim().length >= 2);
 
   return (
-    <header className="relative z-[70] flex h-[74px] shrink-0 items-center border-b border-[#D7E0E9] bg-[#FAFCFF] px-2 font-jakarta shadow-sm sm:h-[86px] sm:px-6">
-      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-1.5 pl-14 sm:pl-11 lg:gap-4 lg:pl-0">
+    <header className="relative z-[70] flex h-[74px] 2xl:h-[86px] shrink-0 items-center border-b border-[#D7E0E9] bg-[#FAFCFF] px-2 font-jakarta shadow-sm sm:px-5 2xl:px-6">
+      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-1.5 pl-14 sm:pl-11 lg:gap-3 2xl:gap-4 lg:pl-0">
         <div
           ref={searchRootRef}
-          className="relative z-[10000] min-w-[118px] flex-[1_1_auto] lg:max-w-[560px]"
+          className="relative z-[10000] min-w-[118px] flex-[1_1_auto] lg:max-w-[460px] 2xl:max-w-[560px]"
         >
           <div
             className={[
-              "relative flex h-9 min-w-0 items-center rounded-xl border bg-[#F1F5F9] transition-all duration-150 sm:h-10",
+              "relative flex h-8.5 sm:h-9 2xl:h-10 min-w-0 items-center rounded-xl border bg-[#F1F5F9] transition-all duration-150",
               showSearchPanel
                 ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
                 : "border-transparent hover:border-[#FF5C28]/40 focus-within:border-[#FF5C28] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#FF5C28]/10",
             ].join(" ")}
           >
-            <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[#98A2B3]" />
+            <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#98A2B3]" />
 
             <input
               ref={searchInputRef}
@@ -1120,7 +1120,7 @@ export default function Header() {
                   ? `header-search-result-${activeIndex}`
                   : undefined
               }
-              className="h-full min-w-0 flex-1 bg-transparent pl-9 pr-8 text-xs font-semibold text-[#101828] outline-none placeholder:font-medium placeholder:text-[#98A2B3] sm:pr-9"
+              className="h-full min-w-0 flex-1 bg-transparent pl-9 pr-8 sibs-text-xs font-semibold text-[#101828] outline-none placeholder:font-medium placeholder:text-[#98A2B3] sm:pr-9"
             />
 
             {query ? (
@@ -1331,29 +1331,29 @@ export default function Header() {
           ) : null}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5 2xl:gap-3">
           <button
             type="button"
             onClick={() => setCalendarOpen(true)}
-            className="hidden h-10 items-center gap-2 rounded-[12px] border border-transparent px-3 text-[10px] font-semibold text-[#667085] transition hover:border-[#C9D6E4] hover:bg-white hover:text-sibs-primary-1 hover:shadow-sm xl:flex hover:cursor-pointer"
+            className="hidden h-8.5 2xl:h-10 items-center gap-1.5 2xl:gap-2 rounded-[12px] border border-transparent px-2.5 2xl:px-3 sibs-text-micro font-semibold text-[#667085] transition hover:border-[#C9D6E4] hover:bg-white hover:text-sibs-primary-1 hover:shadow-sm xl:flex hover:cursor-pointer"
             aria-label="Open HR and talent acquisition calendar"
           >
             <CalendarDays className="h-3.5 w-3.5 text-[#98A2B3]" />
             <span className="whitespace-nowrap">{timeStr}</span>
           </button>
 
-          <div className="hidden h-6 w-px bg-[#E0E6ED] xl:block" />
+          <div className="hidden h-5 2xl:h-6 w-px bg-[#E0E6ED] xl:block" />
 
           <button
             type="button"
-            className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#F1F5F9] hover:text-sibs-primary-1 sm:h-9 sm:w-9"
+            className="relative flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#F1F5F9] hover:text-sibs-primary-1"
             aria-label="Notifications"
           >
-            <Bell className="h-4 w-4 sm:h-[18px] sm:w-[18px]" strokeWidth={1.8} />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-sibs-primary-2 ring-2 ring-white sm:right-[7px] sm:top-[6px]" />
+            <Bell className="h-4 w-4 2xl:h-[18px] 2xl:w-[18px]" strokeWidth={1.8} />
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-sibs-primary-2 ring-2 ring-white" />
           </button>
 
-          <div className="hidden h-6 w-px bg-[#E0E6ED] sm:block" />
+          <div className="hidden h-5 2xl:h-6 w-px bg-[#E0E6ED] sm:block" />
 
           <div className="relative z-[9999] min-w-0 shrink-0">
             {loading || !user ? (

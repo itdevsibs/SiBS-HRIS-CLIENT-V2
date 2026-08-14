@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../../components/layout/Header";
 import { useCandidatePipeline } from "../../services/context/CandidatePipelineContext";
 
@@ -7,16 +8,19 @@ import {
   UserCheck,
   BriefcaseBusiness,
   ShieldCheck,
-  Filter,
   CalendarDays,
   ClipboardCheck,
-  SlidersHorizontal,
   ChevronDown,
   RefreshCw,
   Loader2,
+  Users,
+  LayoutGrid,
+  List,
+  X,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 
-import DashboardMetric from "../../components/layout/common/DashboardMetric";
 import MoveStageModal from "../../components/modals/candidatePipeline/MoveStageModal";
 import ScheduleInterviewModal from "../../components/modals/candidatePipeline/ScheduleInterviewModal";
 import AssessmentModal from "../../components/modals/candidatePipeline/AssessmentModal";
@@ -136,7 +140,6 @@ function buildSafeStageCounts(stageCounts = {}, candidates = []) {
 
   candidates.forEach((candidate) => {
     const stage = getCandidateStage(candidate);
-
     nextCounts[stage] = Number(nextCounts[stage] || 0) + 1;
   });
 
@@ -179,6 +182,7 @@ function FilterDropdown({
 }) {
   const dropdownRef = useRef(null);
   const [open, setOpen] = useState(false);
+  const [filterSearch, setFilterSearch] = useState("");
 
   const normalizedOptions = normalizeDropdownOptions(options);
 
@@ -188,18 +192,27 @@ function FilterDropdown({
 
   const displayLabel = selectedOption?.label || placeholder;
 
+  const filteredOptions = useMemo(() => {
+    if (!cleanText(filterSearch)) return normalizedOptions;
+    const query = filterSearch.toLowerCase().trim();
+    return normalizedOptions.filter((option) =>
+      String(option.label || "").toLowerCase().includes(query)
+    );
+  }, [normalizedOptions, filterSearch]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (!dropdownRef.current) return;
-
       if (!dropdownRef.current.contains(event.target)) {
         setOpen(false);
+        setFilterSearch("");
       }
     }
 
     function handleEscape(event) {
       if (event.key === "Escape") {
         setOpen(false);
+        setFilterSearch("");
       }
     }
 
@@ -215,6 +228,7 @@ function FilterDropdown({
   function handleSelect(nextValue) {
     onChange?.(nextValue);
     setOpen(false);
+    setFilterSearch("");
   }
 
   return (
@@ -222,63 +236,81 @@ function FilterDropdown({
       ref={dropdownRef}
       className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
     >
-      <label className="mb-1 block text-sm font-extrabold text-[#101828]">
-        {label}
-      </label>
+      {label ? (
+        <label className="mb-1 block text-xs font-bold text-[#042C51]">
+          {label}
+        </label>
+      ) : null}
 
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1"
-        } ${
-          disabled
-            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-[#344054]"
-        }`}
-      >
-        <span className="min-w-0 flex-1 truncate text-[#344054]">
-          {displayLabel}
-        </span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
+      <div className="group relative">
+        <input
+          type="text"
+          value={open ? filterSearch : displayLabel}
+          onChange={(e) => {
+            setFilterSearch(e.target.value);
+            if (!open) setOpen(true);
+          }}
+          onFocus={() => {
+            setOpen(true);
+            setFilterSearch("");
+          }}
+          placeholder={`Search ${label ? label.toLowerCase() : "options"}...`}
+          autoComplete="off"
+          disabled={disabled}
+          className={`h-9 w-full rounded-xl border px-3 pr-9 font-jakarta sibs-text-xs font-bold outline-none transition placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-10 ${
+            open
+              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10 text-[#042C51]"
+              : "border-[#E6ECF2] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
           }`}
         />
-      </button>
+
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            setOpen((prev) => !prev);
+            setFilterSearch("");
+          }}
+          className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+          aria-label={`Toggle ${label || "dropdown"}`}
+        >
+          <ChevronDown
+            size={16}
+            className={`transition-transform duration-300 ${
+              open ? "rotate-180 text-[#FF5C28]" : ""
+            }`}
+          />
+        </button>
+      </div>
 
       {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
-          <div className="max-h-72 overflow-y-auto">
-            {normalizedOptions.length > 0 ? (
-              normalizedOptions.map((option) => {
+        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+6px)] z-[99999] min-w-[200px] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-[0_20px_25px_-5px_rgba(15,23,42,0.15),0_8px_10px_-6px_rgba(15,23,42,0.1)]">
+          <div role="listbox" className="sibs-scrollbar max-h-60 overflow-y-auto py-1">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => {
                 const active = String(option.value) === String(value ?? "");
 
                 return (
                   <button
                     key={option.id || option.value}
                     type="button"
+                    role="option"
+                    aria-selected={active}
                     onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-4 py-4 text-left text-sm font-extrabold transition ${
+                    className={`flex min-h-9 w-full items-center justify-between gap-2 px-3.5 py-2 text-left sibs-text-xs transition ${
                       active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                        ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                        : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                     }`}
                   >
-                    <span className="block min-w-0 truncate">
-                      {option.label}
-                    </span>
+                    <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                    {active && <Check size={14} className="shrink-0 text-[#FF5C28]" />}
                   </button>
                 );
               })
             ) : (
-              <div className="px-4 py-4 text-sm font-extrabold text-sibs-tertiary-5">
-                No options found.
+              <div className="px-3.5 py-3 sibs-text-xs font-semibold text-[#667085]">
+                No matching options found.
               </div>
             )}
           </div>
@@ -288,28 +320,155 @@ function FilterDropdown({
   );
 }
 
+function getCandidateDepartment(candidate = {}) {
+  return cleanText(
+    candidate.department ||
+      candidate.departmentName ||
+      candidate.department_name ||
+      candidate.cluster ||
+      candidate.clusterName ||
+      candidate.cluster_name ||
+      "",
+  );
+}
+
+function getCandidatePrfStatus(candidate = {}) {
+  return cleanText(candidate.prfStatus || candidate.prf_status || "");
+}
+
+function getCandidateSource(candidate = {}) {
+  return cleanText(
+    candidate.source ||
+      candidate.sourceName ||
+      candidate.source_name ||
+      candidate.applicationSource ||
+      candidate.application_source ||
+      candidate.hearAboutUs ||
+      candidate.hear_about_us ||
+      "",
+  );
+}
+
+function buildDynamicFilterOptions(candidates = [], getter, allLabel) {
+  const values = Array.from(
+    new Set(
+      candidates
+        .map((candidate) => cleanText(getter(candidate)))
+        .filter(Boolean),
+    ),
+  ).sort((left, right) => left.localeCompare(right));
+
+  return [allLabel, ...values];
+}
+
+function matchesReferenceFilters(
+  candidate,
+  { departmentFilter, prfStatusFilter, sourceFilter },
+) {
+  if (
+    departmentFilter !== "All Departments" &&
+    getCandidateDepartment(candidate) !== departmentFilter
+  ) {
+    return false;
+  }
+
+  if (
+    prfStatusFilter !== "All PRF Status" &&
+    getCandidatePrfStatus(candidate) !== prfStatusFilter
+  ) {
+    return false;
+  }
+
+  if (
+    sourceFilter !== "All Sources" &&
+    getCandidateSource(candidate) !== sourceFilter
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+const METRIC_TONES = {
+  navy: {
+    label: "text-[#042C51]",
+    icon: "border-blue-100 bg-[#E9F0FC] text-[#042C51]",
+    value: "text-[#042C51]",
+  },
+  indigo: {
+    label: "text-indigo-700",
+    icon: "border-indigo-100 bg-indigo-50 text-indigo-600",
+    value: "text-[#042C51]",
+  },
+  blue: {
+    label: "text-blue-700",
+    icon: "border-blue-100 bg-blue-50 text-blue-600",
+    value: "text-[#042C51]",
+  },
+  green: {
+    label: "text-emerald-700",
+    icon: "border-emerald-100 bg-emerald-50 text-emerald-600",
+    value: "text-[#042C51]",
+  },
+  amber: {
+    label: "text-amber-700",
+    icon: "border-amber-100 bg-amber-50 text-amber-600",
+    value: "text-[#042C51]",
+  },
+  orange: {
+    label: "text-[#C2410C]",
+    icon: "border-orange-100 bg-orange-50 text-[#FF5C28]",
+    value: "text-emerald-600",
+  },
+};
+
+function PipelineMetricCard({ label, value, description, icon: Icon, tone, delay }) {
+  const colors = METRIC_TONES[tone] || METRIC_TONES.navy;
+
+  return (
+    <article
+      className="sibs-page-card-in sibs-metric-card min-h-[96px] 2xl:min-h-[112px]"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex h-full items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className={`sibs-text-micro truncate font-extrabold uppercase tracking-wide ${colors.label}`}>
+            {label}
+          </p>
+          <p className={`mt-2 text-2xl font-extrabold leading-none tabular-nums 2xl:text-3xl ${colors.value}`}>
+            {Number(value || 0).toLocaleString("en-US")}
+          </p>
+          <p className="mt-1.5 sibs-text-micro font-semibold text-[#667085]">
+            {description}
+          </p>
+        </div>
+
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border 2xl:h-9 2xl:w-9 ${colors.icon}`}>
+          <Icon size={16} strokeWidth={2.2} />
+        </span>
+      </div>
+    </article>
+  );
+}
+
 function LoadingPipelineBoard() {
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] px-5 py-4">
-        <h2 className="text-base font-extrabold text-[#101828]">Board</h2>
-        <p className="mt-1 text-sm font-medium text-sibs-primary-1">
-          Loading candidate pipeline records.
-        </p>
+    <section className="sibs-page-card-in sibs-card overflow-hidden">
+      <div className="border-b border-[#E6ECF2] px-4 py-3.5 sm:px-5">
+        <h2 className="sibs-section-title">Candidate Pipeline</h2>
+        <p className="sibs-section-subtitle">Loading current pipeline records.</p>
       </div>
 
       <div className="flex min-h-[360px] items-center justify-center p-8">
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-sibs-primary-1">
-            <Loader2 size={22} className="animate-spin" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 bg-[#E9F0FC] text-[#042C51]">
+            <Loader2 size={20} className="animate-spin" />
           </div>
-
-          <p className="mt-3 text-sm font-extrabold text-[#101828]">
+          <p className="mt-3 sibs-text-sm font-extrabold text-[#042C51]">
             Loading candidate pipeline...
           </p>
-
-          <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-            Please wait while the latest candidate data is being prepared.
+          <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+            Preparing the latest recruitment records.
           </p>
         </div>
       </div>
@@ -322,6 +481,7 @@ export default function CandidatePipelinePage() {
     isLoading,
     loadError,
     refreshCandidatePipeline,
+    candidates: candidateList = [],
 
     search,
     setSearch,
@@ -334,7 +494,6 @@ export default function CandidatePipelinePage() {
     pageView,
     setPageView,
 
-    roleOptions,
     accountOptions,
 
     selectedCandidate,
@@ -364,7 +523,6 @@ export default function CandidatePipelinePage() {
     filteredCandidates,
     stageVisibleCandidates,
     stageCounts,
-    metrics,
 
     handleUpdatePrfStatus,
 
@@ -397,6 +555,55 @@ export default function CandidatePipelinePage() {
     handleScheduleNhoAuto,
   } = useCandidatePipeline();
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [departmentFilter, setDepartmentFilter] = useState("All Departments");
+  const [prfStatusFilter, setPrfStatusFilter] = useState("All PRF Status");
+  const [sourceFilter, setSourceFilter] = useState("All Sources");
+  const [boardSubView, setBoardSubView] = useState("board");
+
+  useEffect(() => {
+    if (roleFilter !== "All Roles") {
+      setRoleFilter("All Roles");
+    }
+  }, [roleFilter, setRoleFilter]);
+
+  const renderableCandidateList = useMemo(
+    () => filterRenderableCandidates(candidateList),
+    [candidateList],
+  );
+
+  const departmentOptions = useMemo(
+    () =>
+      buildDynamicFilterOptions(
+        renderableCandidateList,
+        getCandidateDepartment,
+        "All Departments",
+      ),
+    [renderableCandidateList],
+  );
+
+  const prfStatusOptions = useMemo(
+    () =>
+      buildDynamicFilterOptions(
+        renderableCandidateList,
+        getCandidatePrfStatus,
+        "All PRF Status",
+      ),
+    [renderableCandidateList],
+  );
+
+  const sourceOptions = useMemo(
+    () =>
+      buildDynamicFilterOptions(
+        renderableCandidateList,
+        getCandidateSource,
+        "All Sources",
+      ),
+    [renderableCandidateList],
+  );
+
   const {
     candidates: combinedDropOffCandidates,
     isLoading: dropOffListLoading,
@@ -404,63 +611,121 @@ export default function CandidatePipelinePage() {
     refresh: refreshDropOffCandidates,
   } = useCombinedDropOffCandidates();
 
+  const activeReferenceFilters = useMemo(
+    () => ({ departmentFilter, prfStatusFilter, sourceFilter }),
+    [departmentFilter, prfStatusFilter, sourceFilter],
+  );
+
   const safeFilteredCandidates = useMemo(() => {
     if (isLoading) return [];
 
-    return filterRenderableCandidates(filteredCandidates);
-  }, [filteredCandidates, isLoading]);
+    return filterRenderableCandidates(filteredCandidates).filter((candidate) =>
+      matchesReferenceFilters(candidate, activeReferenceFilters),
+    );
+  }, [activeReferenceFilters, filteredCandidates, isLoading]);
+
+  useEffect(() => {
+    if (!location) return;
+
+    const queryParams = new URLSearchParams(location.search || "");
+    const targetStage = queryParams.get("stage");
+    const targetCandidateId = queryParams.get("candidateId") || queryParams.get("pipelineId");
+    const stateCandidate = location.state?.candidate;
+
+    if (targetStage && typeof setActiveStage === "function") {
+      setActiveStage(targetStage);
+    }
+
+    if (stateCandidate && typeof setSelectedCandidate === "function") {
+      setSelectedCandidate(stateCandidate);
+    } else if (targetCandidateId && Array.isArray(safeFilteredCandidates) && safeFilteredCandidates.length) {
+      const match = safeFilteredCandidates.find((c) => {
+        const id = String(c.id || c.candidateId || c.pipelineRecordId || c.candidatePipelineRowId || "");
+        return id === String(targetCandidateId);
+      });
+      if (match && typeof setSelectedCandidate === "function") {
+        setSelectedCandidate(match);
+      }
+    }
+  }, [location, safeFilteredCandidates, setActiveStage, setSelectedCandidate]);
 
   const safeStageVisibleCandidates = useMemo(() => {
     if (isLoading) return [];
 
-    return filterRenderableCandidates(stageVisibleCandidates);
-  }, [stageVisibleCandidates, isLoading]);
+    return filterRenderableCandidates(stageVisibleCandidates).filter((candidate) =>
+      matchesReferenceFilters(candidate, activeReferenceFilters),
+    );
+  }, [activeReferenceFilters, stageVisibleCandidates, isLoading]);
 
   const safeStageCounts = useMemo(() => {
-    if (isLoading) {
-      return buildSafeStageCounts(stageCounts, []);
-    }
-
+    if (isLoading) return buildSafeStageCounts(stageCounts, []);
     return buildSafeStageCounts(stageCounts, safeStageVisibleCandidates);
   }, [isLoading, safeStageVisibleCandidates, stageCounts]);
 
-  const safeMetrics = useMemo(() => {
-    if (!isLoading) return metrics;
-
-    return {
-      ...metrics,
-      initialScreening: 0,
-      onlineAssessment: 0,
-      interviewScheduled: 0,
-      interviewed: 0,
-      offered: 0,
-      accepted: 0,
-    };
-  }, [isLoading, metrics]);
-
-  const dropOffCandidates = useMemo(
-    () =>
-      filterDropOffCandidates(combinedDropOffCandidates, {
-        search,
-        roleFilter,
-        accountFilter,
-      }),
-    [combinedDropOffCandidates, search, roleFilter, accountFilter],
+  const safeMetrics = useMemo(
+    () => ({
+      initialScreening: Number(safeStageCounts["Initial Screening"] || 0),
+      onlineAssessment: Number(safeStageCounts["Online Assessment"] || 0),
+      interviewScheduled: Number(safeStageCounts["Interview Scheduled"] || 0),
+      interviewed: Number(safeStageCounts.Interviewed || 0),
+      offered: Number(safeStageCounts.Offered || 0),
+      accepted: Number(safeStageCounts.Accepted || 0),
+    }),
+    [safeStageCounts],
   );
+
+  const dropOffCandidates = useMemo(() => {
+    const baseRows = filterDropOffCandidates(combinedDropOffCandidates, {
+      search,
+      roleFilter: "All Roles",
+      accountFilter,
+    });
+
+    return baseRows.filter((candidate) =>
+      matchesReferenceFilters(candidate, activeReferenceFilters),
+    );
+  }, [
+    accountFilter,
+    activeReferenceFilters,
+    combinedDropOffCandidates,
+    search,
+  ]);
+
+  const hasActiveFilters = Boolean(
+    cleanText(search) ||
+      departmentFilter !== "All Departments" ||
+      accountFilter !== "All Accounts" ||
+      prfStatusFilter !== "All PRF Status" ||
+      sourceFilter !== "All Sources",
+  );
+
+  function handleClearAllFilters() {
+    setSearch("");
+    setDepartmentFilter("All Departments");
+    setAccountFilter("All Accounts");
+    setPrfStatusFilter("All PRF Status");
+    setSourceFilter("All Sources");
+  }
 
   const selectedCandidateIsDropOff = useMemo(() => {
     return isDropOffCandidate(selectedCandidate || {});
   }, [selectedCandidate]);
 
-  const hasActiveFilters =
-    cleanText(search) ||
-    roleFilter !== "All Roles" ||
-    accountFilter !== "All Accounts";
+  function handleCloseCandidateModal() {
+    setSelectedCandidate(null);
 
-  function clearFilters() {
-    setSearch("");
-    setRoleFilter("All Roles");
-    setAccountFilter("All Accounts");
+    // Clear deep-link state so the URL effect cannot reopen the same record.
+    const queryParams = new URLSearchParams(location.search || "");
+    queryParams.delete("candidateId");
+    queryParams.delete("pipelineId");
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: queryParams.toString() ? `?${queryParams.toString()}` : "",
+      },
+      { replace: true, state: null },
+    );
   }
 
   async function handleRefreshPage() {
@@ -471,186 +736,254 @@ export default function CandidatePipelinePage() {
   }
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                <ClipboardCheck size={14} />
-                Recruitment
+      <main className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 2xl:space-y-6">
+          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6 md:flex-row md:items-center">
+            <span className="sibs-top-accent" aria-hidden="true" />
+
+            <div className="mt-1 min-w-0">
+              <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+                Recruitment Lifecycle
               </div>
 
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+              <h1 className="mt-2.5 break-words text-xl font-extrabold tracking-normal text-[#042C51] sm:text-2xl">
                 Candidate Pipeline
               </h1>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Track candidates from Initial Screening to Accepted. Final role,
-                hiring requirement, and account are assigned during the offer
-                stage.
+              <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-[#667085] sm:text-sm sm:leading-6">
+                Stage-by-stage applicant progress engine. Review PRFs, issue online assessments, schedule interviews, process offers, and track onboarding conversions.
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex shrink-0 items-center gap-2.5">
               <button
                 type="button"
                 onClick={handleRefreshPage}
                 disabled={isLoading}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                title="Refresh pipeline data"
+                aria-label="Refresh pipeline data"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <RefreshCw
-                  size={18}
-                  className={isLoading ? "animate-spin" : ""}
-                />
-                Refresh
+                <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
               </button>
 
               <button
                 type="button"
-                onClick={() => setPageView("pipeline")}
-                className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 ${
-                  pageView === "pipeline"
-                    ? "bg-[var(--sibs-primary-1)] text-white"
-                    : "border border-[#D6DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                }`}
+                onClick={() => navigate("/recruitment/talent-pool")}
+                className="sibs-button-primary inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] active:scale-[0.98]"
               >
-                <SlidersHorizontal size={18} />
-                Pipeline View
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPageView("calendar")}
-                className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 ${
-                  pageView === "calendar"
-                    ? "bg-[var(--sibs-primary-1)] text-white"
-                    : "border border-[#D6DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                }`}
-              >
-                <CalendarDays size={18} />
-                Calendar View
+                <Users size={16} />
+                Sourced Talent Pool
               </button>
             </div>
-          </div>
+          </section>
 
-          {loadError && (
-            <section className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">
+          {loadError ? (
+            <section
+              role="alert"
+              className="sibs-page-card-in rounded-xl border border-red-200 bg-red-50 px-4 py-3 sibs-text-xs font-bold leading-5 text-red-700"
+            >
               {loadError}
             </section>
-          )}
+          ) : null}
 
-          <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="text-base font-bold text-[#101828]">
-              Pipeline Summary
-            </h2>
+          <section aria-label="Pipeline Summary" className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
+            <PipelineMetricCard
+              label="Initial Screening"
+              value={safeMetrics.initialScreening}
+              icon={UserCheck}
+              description="PRF match review"
+              tone="navy"
+              delay={0}
+            />
+            <PipelineMetricCard
+              label="Online Assessment"
+              value={safeMetrics.onlineAssessment}
+              icon={ClipboardCheck}
+              description="Matched candidates"
+              tone="indigo"
+              delay={60}
+            />
+            <PipelineMetricCard
+              label="Interview Scheduled"
+              value={safeMetrics.interviewScheduled}
+              icon={CalendarDays}
+              description="Booked sessions"
+              tone="blue"
+              delay={120}
+            />
+            <PipelineMetricCard
+              label="Interviewed"
+              value={safeMetrics.interviewed}
+              icon={ShieldCheck}
+              description="Evaluations complete"
+              tone="green"
+              delay={180}
+            />
+            <PipelineMetricCard
+              label="Offered"
+              value={safeMetrics.offered}
+              icon={BriefcaseBusiness}
+              description="Offers processing"
+              tone="amber"
+              delay={240}
+            />
+            <PipelineMetricCard
+              label="Accepted"
+              value={safeMetrics.accepted}
+              icon={UserCheck}
+              description="Ready for NHO"
+              tone="orange"
+              delay={300}
+            />
+          </section>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
-              <DashboardMetric
-                label="Initial Screening"
-                value={safeMetrics.initialScreening}
-                icon={UserCheck}
-                description="PRF reviewed"
+          <section className="sibs-page-card-in sibs-card relative z-[100] overflow-visible p-4 sm:p-5">
+            <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="flex items-center gap-1 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1">
+                  <button
+                    type="button"
+                    onClick={() => setPageView("pipeline")}
+                    className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3.5 sibs-text-xs font-extrabold transition ${
+                      pageView === "pipeline"
+                        ? "bg-[#FF5C28] text-white shadow-sm"
+                        : "text-[#667085] hover:text-[#042C51]"
+                    }`}
+                  >
+                    <LayoutGrid size={14} />
+                    Pipeline View
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPageView("calendar")}
+                    className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3.5 sibs-text-xs font-extrabold transition ${
+                      pageView === "calendar"
+                        ? "bg-[#FF5C28] text-white shadow-sm"
+                        : "text-[#667085] hover:text-[#042C51]"
+                    }`}
+                  >
+                    <CalendarDays size={14} />
+                    Calendar View
+                  </button>
+                </div>
+
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={handleClearAllFilters}
+                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#FF5C28]/30 bg-[#FFF9F6] px-3 sibs-text-xs font-extrabold text-[#FF5C28] transition hover:bg-[#FF5C28] hover:text-white active:scale-[0.98]"
+                  >
+                    <RotateCcw size={13} />
+                    Reset Filters
+                  </button>
+                ) : null}
+              </div>
+
+              {pageView === "pipeline" ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                    Sub-View:
+                  </span>
+
+                  <div className="flex items-center gap-1 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1">
+                    <button
+                      type="button"
+                      onClick={() => setBoardSubView("board")}
+                      className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 sibs-text-xs font-extrabold transition ${
+                        boardSubView === "board"
+                          ? "bg-[#FF5C28] text-white shadow-sm"
+                          : "text-[#667085] hover:text-[#042C51]"
+                      }`}
+                    >
+                      <LayoutGrid size={14} />
+                      Kanban Board
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBoardSubView("list")}
+                      className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 sibs-text-xs font-extrabold transition ${
+                        boardSubView === "list"
+                          ? "bg-[#FF5C28] text-white shadow-sm"
+                          : "text-[#667085] hover:text-[#042C51]"
+                      }`}
+                    >
+                      <List size={14} />
+                      List View
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 border-t border-[#E6ECF2] pt-3.5 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="relative min-w-0">
+                <Search
+                  size={16}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3]"
+                />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search candidate name, ID, or email..."
+                  className="h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] pl-9.5 pr-9 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#042C51]/45 hover:bg-white focus:border-[#042C51] focus:bg-white focus:ring-4 focus:ring-[#042C51]/10 2xl:h-11"
+                />
+                {cleanText(search) ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#98A2B3] transition hover:bg-white hover:text-[#042C51]"
+                  >
+                    <X size={14} />
+                  </button>
+                ) : null}
+              </div>
+
+              <FilterDropdown
+                value={departmentFilter}
+                onChange={setDepartmentFilter}
+                options={departmentOptions}
+                placeholder="All Departments"
+                zIndex="z-[140]"
               />
 
-              <DashboardMetric
-                label="Online Assessment"
-                value={safeMetrics.onlineAssessment}
-                icon={ClipboardCheck}
-                description="Assessment stage"
+              <FilterDropdown
+                value={accountFilter}
+                onChange={setAccountFilter}
+                options={accountOptions}
+                placeholder="All Accounts"
+                zIndex="z-[130]"
               />
 
-              <DashboardMetric
-                label="Interview Scheduled"
-                value={safeMetrics.interviewScheduled}
-                icon={CalendarDays}
-                description="Calendar booked"
+              <FilterDropdown
+                value={prfStatusFilter}
+                onChange={setPrfStatusFilter}
+                options={prfStatusOptions}
+                placeholder="All PRF Status"
+                zIndex="z-[120]"
               />
 
-              <DashboardMetric
-                label="Interviewed"
-                value={safeMetrics.interviewed}
-                icon={ShieldCheck}
-                description="Interview done"
-              />
-
-              <DashboardMetric
-                label="Offered"
-                value={safeMetrics.offered}
-                icon={BriefcaseBusiness}
-                description="Offer processing"
-              />
-
-              <DashboardMetric
-                label="Accepted"
-                value={safeMetrics.accepted}
-                icon={UserCheck}
-                description="Converted"
-                valueClassName="text-emerald-600"
+              <FilterDropdown
+                value={sourceFilter}
+                onChange={setSourceFilter}
+                options={sourceOptions}
+                placeholder="All Sources"
+                zIndex="z-[110]"
               />
             </div>
           </section>
 
           {pageView === "pipeline" && (
             <div className="space-y-5">
-              <section className="relative z-[90] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-                <div className="relative z-[90] overflow-visible border-b border-[#E6ECF2] p-4 sm:p-5">
-                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_220px_auto] xl:items-end">
-                    <div>
-                      <label className="mb-1 block text-sm font-bold text-[#101828]">
-                        Search
-                      </label>
-
-                      <div className="relative">
-                        <Search
-                          size={18}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                        />
-
-                        <input
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                          placeholder="Search candidate, PRF, assessment, role, account..."
-                          className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                        />
-                      </div>
-                    </div>
-
-                    <FilterDropdown
-                      label="Role"
-                      value={roleFilter}
-                      onChange={setRoleFilter}
-                      options={roleOptions}
-                      placeholder="All Roles"
-                      zIndex="z-[120]"
-                    />
-
-                    <FilterDropdown
-                      label="Account"
-                      value={accountFilter}
-                      onChange={setAccountFilter}
-                      options={accountOptions}
-                      placeholder="All Accounts"
-                      zIndex="z-[110]"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      disabled={!hasActiveFilters}
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Filter size={17} />
-                      Clear
-                    </button>
-                  </div>
-                </div>
-              </section>
-
               {isLoading ? (
                 <LoadingPipelineBoard />
               ) : (
@@ -665,6 +998,7 @@ export default function CandidatePipelinePage() {
                   onOpenScheduleModal={handleOpenScheduleInterview}
                   onCancelInterview={handleCancelInterview}
                   onCompleteInterview={handleCompleteInterview}
+                  viewMode={boardSubView}
                 />
               )}
 
@@ -689,7 +1023,7 @@ export default function CandidatePipelinePage() {
       <CandidatePipelineModal
         open={!!selectedCandidate}
         candidate={selectedCandidate}
-        onClose={() => setSelectedCandidate(null)}
+        onClose={handleCloseCandidateModal}
         onUpdatePrfStatus={handleUpdatePrfStatus}
         onOpenScheduleModal={handleOpenScheduleInterview}
         onOpenMoveModal={handleOpenMoveModal}

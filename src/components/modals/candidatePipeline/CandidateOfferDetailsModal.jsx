@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -10,14 +11,19 @@ import {
   Loader2,
   Search,
   RefreshCw,
-  X,
 } from "lucide-react";
 
 import { getApprovedHiringNeeds } from "../../../lib/axios/getCandidatePipeline";
 import { buildApprovedReprofileOptions } from "../../../lib/utils/candidatePipeline/offerReprofile";
 import StatusModal from "../StatusModal";
 
-const BRAND_BLUE = "#0D4676";
+import CandidatePipelineModalShell, {
+  CandidateModalPrimaryButton,
+  CandidateModalSecondaryButton,
+  CandidateModalSection,
+} from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
+import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
+
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -35,25 +41,6 @@ function formatMoneyInput(value) {
   if (!Number.isFinite(numberValue)) return cleanText(value);
 
   return numberValue.toFixed(2);
-}
-
-function getCandidateName(candidate = {}) {
-  return (
-    candidate.name ||
-    candidate.candidateName ||
-    candidate.fullName ||
-    "Unnamed Candidate"
-  );
-}
-
-function getCandidateRoleAccount(candidate = {}) {
-  return (
-    candidate.roleAccount ||
-    [candidate.roleTitle || candidate.openPosition, candidate.account]
-      .filter(Boolean)
-      .join(" / ") ||
-    "Not assigned yet"
-  );
 }
 
 function getHiringNeedId(item = {}) {
@@ -202,9 +189,11 @@ function HrisDropdown({
 }) {
   const wrapperRef = useRef(null);
   const searchInputRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
+  const [dropdownRect, setDropdownRect] = useState(null);
 
   const selectedOption = useMemo(() => {
     return options.find((option) => String(option.value) === String(value));
@@ -243,7 +232,10 @@ function HrisDropdown({
     function handleClickOutside(event) {
       if (!wrapperRef.current) return;
 
-      if (!wrapperRef.current.contains(event.target)) {
+      if (
+        !wrapperRef.current.contains(event.target) &&
+        !dropdownRef.current?.contains(event.target)
+      ) {
         setOpen(false);
         setKeyword("");
       }
@@ -264,6 +256,28 @@ function HrisDropdown({
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
+
+  useEffect(() => {
+    if (!open || !wrapperRef.current) return undefined;
+
+    const updateDropdownPosition = () => {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      setDropdownRect({
+        left: rect.left,
+        top: rect.bottom + 6,
+        width: rect.width,
+      });
+    };
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open && searchable) {
@@ -332,28 +346,28 @@ function HrisDropdown({
   return (
     <div ref={wrapperRef} className="relative min-w-0">
       {label && (
-        <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-          {label} {required && <span className="text-red-500">*</span>}
+        <label className="sibs-modal-field-label mb-1.5 block">
+          {label} {required && <span className="text-[#FF5C28]">*</span>}
         </label>
       )}
 
       {searchable ? (
         <div
           onClick={openDropdown}
-          className={`flex h-12 w-full min-w-0 items-center gap-3 rounded-xl border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+          className={`flex h-10 w-full min-w-0 items-center gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
             open
-              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
+              ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
+              : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
           } ${
             disabled
-              ? "cursor-not-allowed bg-[#F8FAFC] text-sibs-tertiary-5"
-              : "cursor-text bg-white text-sibs-primary-1"
+              ? "cursor-not-allowed bg-[#EEF2F6] opacity-70"
+              : "cursor-text bg-white text-[#042C51]"
           }`}
         >
           <Search
-            size={17}
+            size={15}
             className={`shrink-0 ${
-              disabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
+              open ? "text-[#FF5C28]" : disabled ? "text-[#98A2B3]" : "text-[#042C51]"
             }`}
           />
 
@@ -365,13 +379,13 @@ function HrisDropdown({
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
             placeholder={inputPlaceholder}
-            className="h-full min-w-0 flex-1 bg-transparent text-sm font-extrabold text-sibs-primary-1 outline-none placeholder:text-sibs-tertiary-5 disabled:cursor-not-allowed disabled:text-sibs-tertiary-5"
+            className="h-full min-w-0 flex-1 bg-transparent font-jakarta text-xs font-bold text-[#042C51] outline-none placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:text-[#98A2B3]"
           />
 
           {loading ? (
             <Loader2
-              size={18}
-              className="shrink-0 animate-spin text-sibs-primary-1"
+              size={15}
+              className="shrink-0 animate-spin text-[#FF5C28]"
             />
           ) : (
             <button
@@ -380,11 +394,11 @@ function HrisDropdown({
               disabled={disabled}
               onMouseDown={(event) => event.preventDefault()}
               onClick={toggleDropdown}
-              className="shrink-0 rounded-lg p-1 text-sibs-primary-1 transition hover:bg-[#EAF4FF] disabled:cursor-not-allowed disabled:text-sibs-tertiary-5 disabled:hover:bg-transparent"
+              className="shrink-0 rounded-md p-1 text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ChevronDown
-                size={18}
-                className={`transition-transform ${open ? "rotate-180" : ""}`}
+                size={15}
+                className={`transition-transform duration-200 ${open ? "rotate-180 text-[#FF5C28]" : ""}`}
               />
             </button>
           )}
@@ -394,19 +408,19 @@ function HrisDropdown({
           type="button"
           disabled={disabled}
           onClick={toggleDropdown}
-          className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+          className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
             open
-              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
+              ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
+              : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
           } ${
             disabled
-              ? "cursor-not-allowed bg-[#F8FAFC] text-sibs-tertiary-5"
-              : "bg-white text-sibs-primary-1"
+              ? "cursor-not-allowed bg-[#EEF2F6] opacity-70"
+              : "bg-white text-[#042C51]"
           }`}
         >
           <span
             className={`min-w-0 flex-1 truncate ${
-              selectedOption ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+              selectedOption ? "text-[#042C51]" : "text-[#98A2B3]"
             }`}
           >
             {loading
@@ -416,23 +430,31 @@ function HrisDropdown({
 
           {loading ? (
             <Loader2
-              size={18}
-              className="shrink-0 animate-spin text-sibs-primary-1"
+              size={15}
+              className="shrink-0 animate-spin text-[#FF5C28]"
             />
           ) : (
             <ChevronDown
-              size={18}
-              className={`shrink-0 transition-transform ${
-                disabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
-              } ${open ? "rotate-180" : ""}`}
+              size={15}
+              className={`shrink-0 transition-transform duration-200 ${
+                disabled ? "text-[#98A2B3]" : "text-[#042C51]"
+              } ${open ? "rotate-180 text-[#FF5C28]" : ""}`}
             />
           )}
         </button>
       )}
 
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[10080] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-72 overflow-y-auto py-2">
+      {open && !disabled && dropdownRect && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            left: dropdownRect.left,
+            top: dropdownRect.top,
+            width: dropdownRect.width,
+          }}
+          className="sibs-dropdown-pop-in fixed z-[11000] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
+        >
+          <div className="sibs-scrollbar max-h-64 overflow-y-auto py-1">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
                 const active = String(option.value) === String(value);
@@ -442,19 +464,19 @@ function HrisDropdown({
                     key={`${option.value}-${option.label}`}
                     type="button"
                     onClick={() => handleSelect(option)}
-                    className={`flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition ${
+                    className={`flex w-full items-start justify-between gap-2.5 px-3.5 py-2.5 text-left font-jakarta transition ${
                       active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                        ? "bg-[#FFF0EB] text-[#FF5C28]"
+                        : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                     }`}
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-extrabold">
+                      <span className="block truncate text-xs font-extrabold">
                         {option.label}
                       </span>
 
                       {option.subLabel && (
-                        <span className="mt-0.5 block truncate text-xs font-semibold text-sibs-tertiary-5">
+                        <span className="mt-0.5 block truncate text-[10px] font-semibold text-[#667085]">
                           {option.subLabel}
                         </span>
                       )}
@@ -462,20 +484,21 @@ function HrisDropdown({
 
                     {active && (
                       <Check
-                        size={17}
-                        className="mt-0.5 shrink-0 text-sibs-primary-1"
+                        size={15}
+                        className="mt-0.5 shrink-0 text-[#FF5C28]"
                       />
                     )}
                   </button>
                 );
               })
             ) : (
-              <div className="px-4 py-5 text-center text-sm font-bold text-sibs-tertiary-5">
+              <div className="px-4 py-4 text-center font-jakarta text-xs font-bold text-[#98A2B3]">
                 {emptyText}
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -508,85 +531,359 @@ function parseDateValue(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function isSameDate(firstDate, secondDate) {
+  if (!firstDate || !secondDate) return false;
+
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
 function isWeekendDateValue(value) {
   const date = parseDateValue(value);
   return !!date && (date.getDay() === 0 || date.getDay() === 6);
 }
 
-function StartDatePicker({ value, onChange }) {
-  const wrapperRef = useRef(null);
-  const selectedDate = parseDateValue(value);
+const monthNamesShort = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const weekdayLabelsShort = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function CalendarHeaderDropdown({
+  value,
+  options = [],
+  onChange,
+  className = "",
+  menuClassName = "",
+}) {
+  const dropdownRef = useRef(null);
   const [open, setOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
 
-  useEffect(() => {
-    if (selectedDate) setViewDate(selectedDate);
-  }, [value]);
-
-  useEffect(() => {
-    function close(event) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpen(false);
-    }
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells = Array.from({ length: firstDay + daysInMonth }, (_, index) =>
-    index < firstDay ? null : new Date(year, month, index - firstDay + 1),
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value),
   );
 
+  const displayText = selectedOption?.label || "Select";
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
   return (
-    <div ref={wrapperRef} className="relative">
+    <div ref={dropdownRef} className={`relative min-w-0 ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className={`${inputClass()} flex items-center justify-between text-left`}
+        className={`flex h-8 w-full min-w-0 items-center justify-between gap-1.5 rounded-lg border px-2.5 text-left text-xs font-extrabold outline-none transition ${
+          open
+            ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+        }`}
       >
-        <span className={value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"}>
-          {selectedDate
-            ? selectedDate.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "2-digit" })
-            : "Select start date"}
-        </span>
-        <CalendarDays size={18} className="shrink-0" />
+        <span className="min-w-0 flex-1 truncate">{displayText}</span>
+        <ChevronDown
+          size={13}
+          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="mb-3 flex items-center justify-between">
-            <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-lg p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
-            <span className="text-sm font-extrabold text-sibs-primary-1">{viewDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</span>
-            <button type="button" onClick={() => setViewDate(new Date(year, month + 1, 1))} className="rounded-lg p-2 hover:bg-gray-100"><ChevronRight size={18} /></button>
-          </div>
-          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold text-sibs-tertiary-5">
-            {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day) => <span key={day} className="py-1">{day}</span>)}
-          </div>
-          <div className="mt-1 grid grid-cols-7 gap-1">
-            {cells.map((date, index) => {
-              if (!date) return <span key={`blank-${index}`} />;
-              const dateValue = toDateValue(date);
-              const disabled = date < today || date.getDay() === 0 || date.getDay() === 6;
-              const active = dateValue === value;
+        <div
+          className={`absolute left-0 top-[calc(100%+6px)] z-[100000] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl ${menuClassName}`}
+        >
+          <div className="max-h-60 overflow-y-auto py-1 sibs-scrollbar">
+            {options.map((option) => {
+              const active = String(option.value) === String(value);
+
               return (
                 <button
-                  key={dateValue}
+                  key={option.value}
                   type="button"
-                  disabled={disabled}
-                  onClick={() => { onChange(dateValue); setOpen(false); }}
-                  className={`h-9 rounded-lg text-sm font-bold transition ${active ? "bg-sibs-primary-1 text-white" : disabled ? "cursor-not-allowed bg-gray-50 text-gray-300" : "text-sibs-primary-1 hover:bg-[#EAF4FF]"}`}
-                  title={date.getDay() === 0 || date.getDay() === 6 ? "Saturday and Sunday are unavailable" : undefined}
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={`block w-full px-3 py-2 text-left text-xs font-bold transition ${
+                    active
+                      ? "bg-[#FFF0EB] text-[#FF5C28]"
+                      : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  }`}
                 >
-                  {date.getDate()}
+                  <span className="block min-w-0 truncate">{option.label}</span>
                 </button>
               );
             })}
           </div>
-          <p className="mt-3 text-xs font-semibold text-sibs-tertiary-5">Saturdays and Sundays are unavailable.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function buildRichCalendarDays(displayDate) {
+  const year = displayDate.getFullYear();
+  const month = displayDate.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const startDay = firstDayOfMonth.getDay();
+
+  const calendarStart = new Date(year, month, 1 - startDay);
+  const days = [];
+
+  for (let index = 0; index < 42; index += 1) {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
+
+    days.push({
+      date,
+      dateValue: toDateValue(date),
+      dayNumber: date.getDate(),
+      isCurrentMonth: date.getMonth() === month,
+    });
+  }
+
+  return days;
+}
+
+function StartDatePicker({ value, onChange }) {
+  const calendarRef = useRef(null);
+  const selectedDate = parseDateValue(value);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const currentYear = today.getFullYear();
+  const minimumYear = currentYear - 5;
+  const maximumYear = currentYear + 10;
+
+  const monthOptions = monthNamesShort.map((month, index) => ({
+    value: index,
+    label: month,
+  }));
+
+  const yearOptions = [];
+  for (let year = currentYear; year <= maximumYear; year += 1) {
+    yearOptions.push({ value: year, label: String(year) });
+  }
+
+  const [open, setOpen] = useState(false);
+  const [displayDate, setDisplayDate] = useState(
+    () => selectedDate || new Date(),
+  );
+
+  const calendarDays = useMemo(
+    () => buildRichCalendarDays(displayDate),
+    [displayDate],
+  );
+
+  useEffect(() => {
+    if (selectedDate) setDisplayDate(selectedDate);
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function goPreviousMonth() {
+    setDisplayDate(
+      (previous) =>
+        new Date(previous.getFullYear(), previous.getMonth() - 1, 1),
+    );
+  }
+
+  function goNextMonth() {
+    setDisplayDate(
+      (previous) =>
+        new Date(previous.getFullYear(), previous.getMonth() + 1, 1),
+    );
+  }
+
+  function handleMonthChange(monthIndex) {
+    setDisplayDate(
+      (previous) => new Date(previous.getFullYear(), Number(monthIndex), 1),
+    );
+  }
+
+  function handleYearChange(year) {
+    setDisplayDate(
+      (previous) => new Date(Number(year), previous.getMonth(), 1),
+    );
+  }
+
+  function handleSelectDate(date) {
+    onChange(toDateValue(date));
+    setOpen(false);
+  }
+
+  function handleClear() {
+    onChange("");
+    setOpen(false);
+  }
+
+  function handleToday() {
+    onChange(toDateValue(today));
+    setDisplayDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    setOpen(false);
+  }
+
+  return (
+    <div ref={calendarRef} className="relative z-[220] min-w-0 font-jakarta">
+      <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
+        className="sibs-modal-input flex items-center justify-between text-left cursor-pointer"
+      >
+        <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
+          <CalendarDays size={16} className="shrink-0 text-[#215789]" />
+
+          <span className={`min-w-0 truncate ${value ? "text-[#042C51] font-bold" : "text-[#98A2B3]"}`}>
+            {selectedDate
+              ? selectedDate.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "2-digit" })
+              : "Select date"}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="sibs-dropdown-pop-in mt-2 w-full max-w-[320px] overflow-visible rounded-2xl border border-[#D7DEE8] bg-white shadow-2xl">
+          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-3.5 py-2.5">
+            <button
+              type="button"
+              onClick={goPreviousMonth}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <div className="grid min-w-0 flex-1 grid-cols-[1fr_84px] gap-1.5 px-2">
+              <CalendarHeaderDropdown
+                value={displayDate.getMonth()}
+                options={monthOptions}
+                onChange={handleMonthChange}
+                className="z-[100002]"
+                menuClassName="w-[150px]"
+              />
+
+              <CalendarHeaderDropdown
+                value={displayDate.getFullYear()}
+                options={yearOptions}
+                onChange={handleYearChange}
+                className="z-[100001]"
+                menuClassName="w-[110px]"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={goNextMonth}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <div className="px-3.5 py-3">
+            <div className="grid grid-cols-7 gap-1">
+              {weekdayLabelsShort.map((dayLabel) => (
+                <div
+                  key={dayLabel}
+                  className="flex h-7 items-center justify-center text-xs font-extrabold text-[#042C51]"
+                >
+                  {dayLabel}
+                </div>
+              ))}
+
+              {calendarDays.map((day) => {
+                const active = selectedDate && isSameDate(day.date, selectedDate);
+                const currentDay = isSameDate(day.date, today);
+                const disabled = day.date < today || day.date.getDay() === 0 || day.date.getDay() === 6;
+
+                return (
+                  <button
+                    key={day.dateValue}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => handleSelectDate(day.date)}
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-extrabold transition-all duration-200 ${
+                      active
+                        ? "bg-[#FF5C28] text-white shadow-sm"
+                        : currentDay
+                          ? "border border-[#FF5C28]/40 bg-[#FFF0EB] text-[#FF5C28]"
+                          : disabled
+                            ? "cursor-not-allowed bg-white text-[#C7D2E0]"
+                            : day.isCurrentMonth
+                              ? "border border-transparent bg-white text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                              : "border border-transparent bg-white text-[#C7D2E0] hover:bg-[#F8FAFC]"
+                    }`}
+                  >
+                    {day.dayNumber}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-[#E6ECF2] px-4 py-2.5">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-extrabold text-[#042C51] transition-all duration-200 hover:border-[#FF5C28]/35 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToday}
+              className="inline-flex h-8 items-center justify-center rounded-lg bg-[#042C51] px-3 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:bg-[#063C69]"
+            >
+              Today
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -848,303 +1145,202 @@ export default function CandidateOfferDetailsModal({
     }
   }
 
+  const busy = submitting || isSavingReprofile;
+
+  const footer = (
+    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <CandidateModalSecondaryButton type="button" onClick={onClose} disabled={busy}>
+        Cancel
+      </CandidateModalSecondaryButton>
+      <CandidateModalPrimaryButton
+        type="submit"
+        form="candidate-offer-details-form"
+        disabled={busy}
+        className="min-w-[168px]"
+      >
+        {submitting ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />}
+        {submitting ? "Sending..." : "Proceed for Approval"}
+      </CandidateModalPrimaryButton>
+    </div>
+  );
+
   return (
     <>
-      <div
-        className="sibs-modal-blur fixed inset-0 z-[10020] flex h-dvh items-center justify-center px-4 py-4"
+      <CandidatePipelineModalShell
+        icon={BriefcaseBusiness}
+        title="Candidate Offer Details"
+        subtitle="Set the final assignment, compensation, and start date before submitting the offer for approval."
+        badge="Offer Preparation"
+        onClose={onClose}
+        closeDisabled={busy}
+        maxWidth="max-w-4xl"
+        zIndex="z-[10020]"
+        footer={footer}
       >
-      {submitting || isSavingReprofile && (
-        <div
-          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
-          aria-hidden="true"
-        />
-      )}
-<div
-          className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
-          onClick={(event) => event.stopPropagation()}
-        >
-          {submitting && (
-            <div className="absolute inset-0 z-50 flex flex-col rounded-2xl bg-white p-6">
-              <div className="animate-pulse space-y-5">
-                <div className="h-7 w-64 rounded bg-slate-200" />
-                <div className="h-4 w-96 max-w-full rounded bg-slate-200" />
-                <div className="h-20 rounded-xl bg-slate-100" />
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="h-16 rounded-xl bg-slate-100" />
-                  <div className="h-16 rounded-xl bg-slate-100" />
-                  <div className="h-16 rounded-xl bg-slate-100" />
-                  <div className="h-16 rounded-xl bg-slate-100" />
-                </div>
-                <div className="h-24 rounded-xl bg-slate-100" />
-                <div className="h-20 rounded-xl bg-amber-50" />
-              </div>
-              <div className="mt-auto flex items-center justify-center gap-3 pt-6 text-sm font-extrabold text-sibs-primary-1">
-                <Loader2 size={20} className="animate-spin" />
-                Generating PDF and sending offer for approval...
-              </div>
-            </div>
-          )}
-          <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-            <div>
-              <h2 className="text-lg font-extrabold text-sibs-primary-1 sm:text-xl">
-                Offer Details for Approval
-              </h2>
+        {busy && (
+          <div className="fixed inset-0 z-[24000] cursor-wait bg-transparent" aria-hidden="true" />
+        )}
 
-              <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
-                Add the final assignment and pay details. Approval will be
-                managed in the Offers page.
-              </p>
-            </div>
+        <form id="candidate-offer-details-form" onSubmit={handleProceedClick} className="space-y-4">
+          <CandidateModalSummary candidate={candidate} stage={candidate?.currentStage || "Offered"} />
 
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting || isSavingReprofile}
-              className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <form
-            onSubmit={handleProceedClick}
-            className="flex-1 overflow-y-auto p-4 sm:p-6"
+          <CandidateModalSection
+            title="Final Assignment"
+            subtitle="Role title remains fixed. Reprofile only when another approved Hiring Need account is required for the same role."
           >
-            <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                <div className="flex items-start gap-3">
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
-                    style={{ backgroundColor: BRAND_BLUE }}
-                  >
-                    <BriefcaseBusiness size={20} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3 className="break-words text-lg font-extrabold text-sibs-primary-1">
-                      {getCandidateName(candidate)}
-                    </h3>
-
-                    <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1/80">
-                      {getCandidateRoleAccount(candidate)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Final Role Title <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={form.roleTitle || ""}
-                      disabled
-                      readOnly
-                      placeholder="Final role title"
-                      className={`${inputClass()} pr-32`}
-                      title="Role Title remains the same during account reprofile."
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setReprofileOpen(true)}
-                      className="absolute right-1.5 top-1/2 inline-flex h-9 -translate-y-1/2 items-center justify-center gap-2 rounded-lg border border-sibs-primary-1 bg-white px-3 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#EAF4FF]"
-                    >
-                      <RefreshCw size={15} />
-                      Reprofile
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Final Account <span className="text-red-500">*</span>
-                  </label>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="sibs-modal-field-label">
+                  Final Role Title <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
                   <input
                     type="text"
-                    value={form.account || ""}
+                    value={form.roleTitle || ""}
                     disabled
                     readOnly
-                    placeholder="Final account"
-                    className={inputClass()}
+                    placeholder="Final role title"
+                    className="sibs-modal-input pr-28"
+                    title="Role Title remains the same during account reprofile."
                   />
+                  <button
+                    type="button"
+                    onClick={() => setReprofileOpen(true)}
+                    className="absolute right-1.5 top-1/2 inline-flex h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-lg border border-[#FF5C28]/35 bg-white px-2.5 text-[10px] font-extrabold text-[#FF5C28] transition hover:bg-[#FFF0EB]"
+                  >
+                    <RefreshCw size={13} className="text-[#FF5C28]" /> Reprofile
+                  </button>
                 </div>
-              </div>
-
-
-              <p className="-mt-2 text-xs font-bold text-sibs-primary-1/80">
-                Final Role Title remains unchanged. Use Reprofile to select
-                another approved account for the same Role Title.
-              </p>
-
-              {!cleanText(form?.hiringRequirementId) && (
-                <p className="-mt-2 text-xs font-bold text-amber-700">
-                  No approved Hiring Requirement matches this Role Title and Account. Use
-                  Reprofile to select an approved account before proceeding.
-                </p>
-              )}
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Basic Daily Rate <span className="text-red-500">*</span>
-                  </label>
-
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.basicPay || ""}
-                    onChange={(event) =>
-                      updateForm({
-                        basicPay: event.target.value,
-                      })
-                    }
-                    onWheel={handleNumberInputWheel}
-                    placeholder="0.00"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Daily De Minimis{" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.deminimisDailyRate || ""}
-                    onChange={(event) =>
-                      updateForm({
-                        deminimisDailyRate: event.target.value,
-                      })
-                    }
-                    onWheel={handleNumberInputWheel}
-                    placeholder="0.00"
-                    className={inputClass()}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (startDateInitiated) {
-                      updateForm({ startDate: "" });
-                      setStartDateInitiated(false);
-                      return;
-                    }
-
-                    setStartDateInitiated(true);
-                  }}
-                  className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl border border-sibs-primary-1 bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#EAF4FF]"
-                >
-                  <CalendarDays size={16} />
-                  {startDateInitiated ? "Hide Start Date" : "Add Start Date"}
-                </button>
-
-                {startDateInitiated && (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                        Start Date
-                      </label>
-                      <StartDatePicker
-                        value={form.startDate || ""}
-                        onChange={(startDate) => updateForm({ startDate })}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div>
-                <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  Remarks
+                <label className="sibs-modal-field-label">
+                  Final Account <span className="text-red-500">*</span>
                 </label>
+                <input
+                  type="text"
+                  value={form.account || ""}
+                  disabled
+                  readOnly
+                  placeholder="Final account"
+                  className="sibs-modal-input"
+                />
+              </div>
+            </div>
 
-                <textarea
-                  value={form.remarks || ""}
-                  onChange={(event) =>
-                    updateForm({
-                      remarks: event.target.value,
-                    })
-                  }
-                  placeholder="Example: Offer prepared after passed interview."
-                  className={textareaClass()}
+            {!cleanText(form?.hiringRequirementId) && (
+              <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-[10px] font-bold leading-5 text-amber-800">
+                No approved Hiring Requirement matches this Role Title and Account. Use Reprofile to select an approved account before proceeding.
+              </div>
+            )}
+          </CandidateModalSection>
+
+          <CandidateModalSection title="Compensation">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="sibs-modal-field-label">
+                  Basic Daily Rate <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.basicPay || ""}
+                  onChange={(event) => updateForm({ basicPay: event.target.value })}
+                  onWheel={handleNumberInputWheel}
+                  placeholder="0.00"
+                  className="sibs-modal-input tabular-nums"
                 />
               </div>
 
-              <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-                <p className="text-sm font-extrabold leading-6 text-sibs-primary-1">
-                  After proceeding, the candidate will move to Offered and will
-                  be available in the Offers page for approval and contract
-                  sending.
-                </p>
+              <div>
+                <label className="sibs-modal-field-label">
+                  Daily De Minimis <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.deminimisDailyRate || ""}
+                  onChange={(event) => updateForm({ deminimisDailyRate: event.target.value })}
+                  onWheel={handleNumberInputWheel}
+                  placeholder="0.00"
+                  className="sibs-modal-input tabular-nums"
+                />
               </div>
             </div>
-          </form>
+          </CandidateModalSection>
 
-          <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
-            <div className="flex flex-col justify-end gap-2 sm:flex-row">
+          <CandidateModalSection title="Start Date & Remarks">
+            <div className="space-y-4">
               <button
                 type="button"
-                onClick={onClose}
-                disabled={submitting || isSavingReprofile}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-extrabold text-gray-600 transition hover:bg-gray-50"
+                onClick={() => {
+                  if (startDateInitiated) {
+                    updateForm({ startDate: "" });
+                    setStartDateInitiated(false);
+                    return;
+                  }
+                  setStartDateInitiated(true);
+                }}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#FF5C28]/35 bg-white px-4 text-xs font-extrabold text-[#FF5C28] transition hover:bg-[#FFF0EB]"
               >
-                Cancel
+                <CalendarDays size={14} className="text-[#FF5C28]" />
+                {startDateInitiated ? "Hide Start Date" : "Add Start Date"}
               </button>
 
-              <button
-                type="button"
-                onClick={handleProceedClick}
-                disabled={submitting || isSavingReprofile}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90"
-              >
-                {submitting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <ArrowRight size={16} />
-                )}
-                {submitting ? "Sending..." : "Proceed for Approval"}
-              </button>
+              {startDateInitiated && (
+                <div className="max-w-md">
+                  <label className="sibs-modal-field-label">Start Date</label>
+                  <StartDatePicker value={form.startDate || ""} onChange={(startDate) => updateForm({ startDate })} />
+                </div>
+              )}
+
+              <div>
+                <label className="sibs-modal-field-label">Remarks</label>
+                <textarea
+                  value={form.remarks || ""}
+                  onChange={(event) => updateForm({ remarks: event.target.value })}
+                  placeholder="Example: Offer prepared after passed interview."
+                  className="sibs-modal-textarea"
+                />
+              </div>
             </div>
+          </CandidateModalSection>
+
+          <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 sibs-text-xs font-semibold leading-5 text-amber-800">
+            After proceeding, the candidate will move to Offered and will be available in the Offers page for approval and contract sending.
           </div>
-        </div>
-      </div>
+        </form>
+      </CandidatePipelineModalShell>
 
       {reprofileOpen && (
-        <div
-          className="sibs-modal-blur fixed inset-0 z-[10100] flex h-dvh items-center justify-center px-4 py-4"
-        >
-          <div
-            className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-extrabold text-sibs-primary-1">Reprofile Candidate</h3>
-                <p className="mt-1 text-sm font-bold text-sibs-tertiary-5">Keep the same Role Title and select an approved Hiring Need account.</p>
-              </div>
-              <button type="button" onClick={() => setReprofileOpen(false)} className="rounded-full p-2 text-gray-400 hover:bg-gray-100">
-                <X size={18} />
-              </button>
+        <CandidatePipelineModalShell
+          icon={RefreshCw}
+          title="Reprofile Candidate"
+          subtitle="Keep the same Role Title and select another approved Hiring Need account."
+          badge="Approved PRF"
+          onClose={() => setReprofileOpen(false)}
+          closeDisabled={isSavingReprofile}
+          maxWidth="max-w-lg"
+          zIndex="z-[10100]"
+          footer={
+            <div className="flex justify-end gap-2">
+              <CandidateModalSecondaryButton type="button" disabled={isSavingReprofile} onClick={() => setReprofileOpen(false)}>
+                Cancel
+              </CandidateModalSecondaryButton>
+              <CandidateModalPrimaryButton type="button" disabled={isSavingReprofile} onClick={handleSaveReprofile}>
+                {isSavingReprofile && <Loader2 size={15} className="animate-spin" />}
+                Save Reprofile
+              </CandidateModalPrimaryButton>
             </div>
-
-            <div className="mt-5 space-y-4">
-              <div>
-                <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">Role Title</label>
-                <input value={candidateRoleTitle} disabled readOnly className={inputClass()} />
-              </div>
+          }
+        >
+          <div className="space-y-4">
+            <CandidateModalSection title="Current Role">
+              <input value={candidateRoleTitle} disabled readOnly className="sibs-modal-input" />
+            </CandidateModalSection>
+            <CandidateModalSection title="Approved Hiring Requirement">
               <HrisDropdown
                 label="Hiring Requirement / PRF"
                 required
@@ -1155,17 +1351,9 @@ export default function CandidateOfferDetailsModal({
                 loading={isLoadingHiringNeeds}
                 emptyText={loadError || "No approved Hiring Needs are available."}
               />
-            </div>
-
-            <div className="mt-6 flex justify-end gap-2">
-              <button type="button" disabled={isSavingReprofile} onClick={() => setReprofileOpen(false)} className="h-11 rounded-xl border border-[#E6ECF2] px-5 text-sm font-extrabold text-gray-600">Cancel</button>
-              <button type="button" disabled={isSavingReprofile} onClick={handleSaveReprofile} className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white disabled:opacity-60">
-                {isSavingReprofile && <Loader2 size={16} className="animate-spin" />}
-                Save Reprofile
-              </button>
-            </div>
+            </CandidateModalSection>
           </div>
-        </div>
+        </CandidatePipelineModalShell>
       )}
 
       <StatusModal

@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import {
   BriefcaseBusiness,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -40,9 +41,9 @@ const VALID_LOCATION_SITES = ["Davao Site", "Tagum Site", "Mabini Site"];
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+    <label className="sibs-modal-field-label mb-1.5 block">
       {children}
-      {required && <span className="text-red-500"> *</span>}
+      {required && <span className="text-[#FF5C28]"> *</span>}
     </label>
   );
 }
@@ -51,7 +52,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
+      className={`sibs-modal-input ${className}`}
     />
   );
 }
@@ -60,36 +61,40 @@ function TextArea({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-28 w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
+      className={`min-h-28 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 font-jakarta text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-2 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#EEF2F6] disabled:text-[#98A2B3] ${className}`}
     />
   );
 }
-
 
 function FormSection({
   title,
   subtitle,
   icon: SectionIcon,
   children,
+  headerAction = null,
 }) {
   return (
     <section className="rounded-2xl border border-[#D6E0EA] bg-white p-4 sm:p-5">
-      <div className="mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-3">
-        {React.createElement(SectionIcon, {
-          size: 17,
-          className: "mt-0.5 shrink-0 text-[#FF5C28]",
-          "aria-hidden": "true",
-        })}
+      <div className="mb-4 flex flex-col gap-3 border-b border-[#EEF2F6] pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-2.5">
+          {React.createElement(SectionIcon, {
+            size: 17,
+            className: "mt-0.5 shrink-0 text-[#FF5C28]",
+            "aria-hidden": "true",
+          })}
 
-        <div className="min-w-0">
-          <h3 className="text-xs font-extrabold uppercase tracking-normal text-[#042C51]">
-            {title}
-          </h3>
+          <div className="min-w-0">
+            <h3 className="font-jakarta text-xs font-extrabold uppercase tracking-normal text-[#042C51]">
+              {title}
+            </h3>
 
-          <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
-            {subtitle}
-          </p>
+            <p className="mt-1 font-jakarta text-xs font-semibold leading-5 text-[#667085]">
+              {subtitle}
+            </p>
+          </div>
         </div>
+
+        {headerAction ? <div className="shrink-0 sm:min-w-[300px]">{headerAction}</div> : null}
       </div>
 
       {children}
@@ -1006,20 +1011,19 @@ function DropdownPortal({
   width,
   offset = 8,
   className = "",
-  innerClassName = "overflow-y-auto py-2 sibs-scrollbar",
+  innerClassName = "overflow-y-auto py-1 sibs-scrollbar",
 }) {
   const dropdownRef = useRef(null);
-  const [style, setStyle] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-    maxHeight,
-  });
+  const [style, setStyle] = useState(null);
 
   useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return;
+    if (!open || !anchorRef.current) {
+      setStyle(null);
+      return;
+    }
 
     function updatePosition() {
+      if (!anchorRef.current) return;
       const rect = anchorRef.current.getBoundingClientRect();
       const viewportPadding = 12;
       const availableWidth = window.innerWidth - viewportPadding * 2;
@@ -1033,11 +1037,13 @@ function DropdownPortal({
       );
       const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
       const spaceAbove = rect.top - viewportPadding;
+      const renderedHeight = dropdownRef.current?.getBoundingClientRect().height || 0;
+      const menuHeight = renderedHeight || Math.min(panelMaxHeight, Math.max(0, spaceBelow));
       const shouldOpenUp =
-        spaceBelow < panelMaxHeight && spaceAbove > spaceBelow;
+        spaceBelow < menuHeight && spaceAbove > spaceBelow;
       const top = shouldOpenUp
-        ? Math.max(viewportPadding, rect.top - panelMaxHeight - offset)
-        : Math.min(rect.bottom + offset, window.innerHeight - viewportPadding);
+        ? Math.max(viewportPadding, rect.top - menuHeight - offset)
+        : rect.bottom + offset;
       const left = Math.min(
         Math.max(viewportPadding, rect.left),
         window.innerWidth - panelWidth - viewportPadding,
@@ -1049,6 +1055,12 @@ function DropdownPortal({
         width: panelWidth,
         maxHeight: panelMaxHeight,
       });
+
+      if (!renderedHeight) {
+        window.requestAnimationFrame(() => {
+          if (anchorRef.current) updatePosition();
+        });
+      }
     }
 
     updatePosition();
@@ -1091,12 +1103,12 @@ function DropdownPortal({
     };
   }, [open, anchorRef, onClose]);
 
-  if (!open || typeof document === "undefined") return null;
+  if (!open || !style || typeof document === "undefined") return null;
 
   return createPortal(
     <div
       ref={dropdownRef}
-      className={`fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl ${className}`}
+      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl ${className}`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -1104,7 +1116,7 @@ function DropdownPortal({
       }}
     >
       <div
-        className={innerClassName}
+        className={`sibs-scrollbar ${innerClassName}`}
         style={{ maxHeight: style.maxHeight }}
       >
         {children}
@@ -1235,17 +1247,18 @@ function CustomSelect({
 
   if (searchable) {
     return (
-      <div ref={anchorRef} className="relative">
+      <div ref={anchorRef} className="relative min-w-0 font-jakarta">
         <div
           onClick={handleOpen}
-          className={`flex h-10 w-full items-center gap-2 rounded-[10px] border px-3 transition-all duration-200 ${disabled
-              ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
+          className={`flex h-10 w-full min-w-0 items-center gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
+            disabled
+              ? "cursor-not-allowed border-[#D0D5DD] bg-[#EEF2F6] text-[#98A2B3] opacity-70"
               : open
-                ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
-                : "border-[#D0D5DD] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-white"
-            }`}
+                ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
+                : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+          }`}
         >
-          <Search size={17} className="shrink-0 text-sibs-tertiary-5" />
+          <Search size={15} className={`shrink-0 ${open ? "text-[#FF5C28]" : "text-[#042C51]"}`} />
 
           <input
             ref={inputRef}
@@ -1274,13 +1287,12 @@ function CustomSelect({
               }
             }}
             placeholder={open ? searchPlaceholder : placeholder}
-            className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#344054] outline-none placeholder:text-sibs-tertiary-5"
+            className="h-full min-w-0 flex-1 bg-transparent font-jakarta text-xs font-bold text-[#042C51] outline-none placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:text-[#98A2B3]"
           />
 
           <ChevronDown
-            size={18}
-            className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
-              }`}
+            size={15}
+            className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180 text-[#FF5C28]" : "text-[#042C51]"}`}
           />
         </div>
 
@@ -1291,7 +1303,7 @@ function CustomSelect({
           maxHeight={280}
         >
           {loading ? (
-            <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+            <div className="px-3.5 py-3 font-jakarta text-xs font-semibold text-[#98A2B3]">
               {loadingMessage}
             </div>
           ) : filteredOptions.length > 0 ? (
@@ -1311,23 +1323,28 @@ function CustomSelect({
                     onChange(currentValue, option);
                     handleClose();
                   }}
-                  className={`block w-full px-4 py-3 text-left text-sm transition ${selected
-                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                      : "text-[#344054] hover:bg-[#F8FAFC]"
-                    }`}
+                  className={`flex w-full items-start justify-between gap-2.5 px-3.5 py-2.5 text-left font-jakarta transition ${
+                    selected
+                      ? "bg-[#FFF0EB] text-[#FF5C28] font-extrabold"
+                      : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  }`}
                 >
-                  <span className="block truncate">{currentLabel}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-bold">{currentLabel}</span>
 
-                  {currentDescription && (
-                    <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
-                      {currentDescription}
-                    </span>
-                  )}
+                    {currentDescription && (
+                      <span className="mt-0.5 block truncate text-[10px] font-semibold text-[#667085]">
+                        {currentDescription}
+                      </span>
+                    )}
+                  </span>
+
+                  {selected && <Check size={15} className="mt-0.5 shrink-0 text-[#FF5C28]" />}
                 </button>
               );
             })
           ) : (
-            <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+            <div className="px-3.5 py-3 font-jakarta text-xs font-semibold text-[#98A2B3]">
               {emptyMessage}
             </div>
           )}
@@ -1337,30 +1354,32 @@ function CustomSelect({
   }
 
   return (
-    <div className="relative">
+    <div ref={anchorRef} className="relative min-w-0 font-jakarta">
       <button
-        ref={anchorRef}
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-sm font-bold outline-none transition-all duration-200 ${disabled
-            ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
+          disabled
+            ? "cursor-not-allowed border-[#D0D5DD] bg-[#EEF2F6] text-[#98A2B3] opacity-70"
             : open
-              ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
-              : "border-[#D0D5DD] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
-          }`}
+              ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
+              : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+        }`}
       >
         <span
-          className={`truncate ${selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
-            }`}
+          className={`min-w-0 flex-1 truncate ${
+            selectedOption ? "text-[#042C51]" : "text-[#98A2B3]"
+          }`}
         >
           {selectedLabel || placeholder}
         </span>
 
         <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
-            }`}
+          size={15}
+          className={`shrink-0 transition-transform duration-200 ${
+            disabled ? "text-[#98A2B3]" : open ? "rotate-180 text-[#FF5C28]" : "text-[#042C51]"
+          }`}
         />
       </button>
 
@@ -1389,29 +1408,123 @@ function CustomSelect({
                   onChange(currentValue, option);
                   setOpen(false);
                 }}
-                className={`block w-full px-4 py-3 text-left text-sm transition ${option.disabled
-                    ? "cursor-not-allowed text-sibs-tertiary-5"
+                className={`flex w-full items-start justify-between gap-2.5 px-3.5 py-2.5 text-left font-jakarta transition ${
+                  option.disabled
+                    ? "cursor-not-allowed text-[#98A2B3] opacity-60"
                     : selected
-                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                      : "text-[#344054] hover:bg-[#F8FAFC]"
-                  }`}
+                      ? "bg-[#FFF0EB] text-[#FF5C28] font-extrabold"
+                      : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                }`}
               >
-                <span className="block truncate">{currentLabel}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-xs font-bold">{currentLabel}</span>
 
-                {currentDescription && (
-                  <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
-                    {currentDescription}
-                  </span>
-                )}
+                  {currentDescription && (
+                    <span className="mt-0.5 block truncate text-[10px] font-semibold text-[#667085]">
+                      {currentDescription}
+                    </span>
+                  )}
+                </span>
+
+                {selected && <Check size={15} className="mt-0.5 shrink-0 text-[#FF5C28]" />}
               </button>
             );
           })
         ) : (
-          <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+          <div className="px-3.5 py-3 font-jakarta text-xs font-semibold text-[#98A2B3]">
             No options available.
           </div>
         )}
       </DropdownPortal>
+    </div>
+  );
+}
+
+const MONTH_NAMES_FULL = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function CalendarHeaderDropdown({
+  value,
+  options = [],
+  onChange,
+  className = "",
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value),
+  );
+
+  const displayText = selectedOption?.label || "Select";
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className={`relative min-w-0 ${className}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-7 w-full min-w-0 items-center justify-between gap-1 rounded-lg border px-2 text-left font-jakarta text-xs font-extrabold outline-none transition ${
+          open
+            ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+        }`}
+      >
+        <span className="truncate">{displayText}</span>
+        <ChevronDown
+          size={13}
+          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="sibs-dropdown-pop-in sibs-scrollbar absolute left-0 top-[calc(100%+4px)] z-[10090] max-h-48 overflow-y-auto rounded-xl border border-[#D7DEE8] bg-white p-1 shadow-2xl">
+          {options.map((option) => {
+            const active = String(option.value) === String(value);
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+                className={`block w-full rounded-lg px-2.5 py-1.5 text-left font-jakarta text-xs transition ${
+                  active
+                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                    : "bg-white font-bold text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1444,8 +1557,6 @@ function DateDropdown({
 
   useEffect(() => {
     if (selectedDate) {
-      // Keep the calendar viewport aligned when an existing value is edited.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setViewDate(selectedDate);
     }
   }, [selectedDate]);
@@ -1456,6 +1567,14 @@ function DateDropdown({
 
   function goToNextMonth() {
     setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  }
+
+  function handleMonthChange(monthIndex) {
+    setViewDate((prev) => new Date(prev.getFullYear(), Number(monthIndex), 1));
+  }
+
+  function handleYearChange(year) {
+    setViewDate((prev) => new Date(Number(year), prev.getMonth(), 1));
   }
 
   function handleSelectDate(date) {
@@ -1471,41 +1590,62 @@ function DateDropdown({
     setOpen(false);
   }
 
-  const monthTitle = viewDate.toLocaleDateString("en-PH", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthOptions = useMemo(
+    () =>
+      MONTH_NAMES_FULL.map((name, index) => ({
+        value: index,
+        label: name,
+      })),
+    [],
+  );
+
+  const yearOptions = useMemo(() => {
+    const currentYear = today.getFullYear();
+    const startYear = currentYear - 5;
+    const endYear = currentYear + 10;
+    const years = [];
+
+    for (let y = startYear; y <= endYear; y += 1) {
+      years.push({ value: y, label: String(y) });
+    }
+
+    return years;
+  }, [today]);
 
   const displayValue = value ? formatShortDate(value) : placeholder;
 
   return (
-    <div ref={anchorRef} className="relative">
+    <div ref={anchorRef} className="relative min-w-0 font-jakarta">
       <button
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-sm font-bold outline-none transition-all duration-200 ${disabled
-            ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
+          disabled
+            ? "cursor-not-allowed border-[#D0D5DD] bg-[#EEF2F6] text-[#98A2B3] opacity-70"
             : open
-              ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
-              : "border-[#E6ECF2] bg-white text-[#344054] hover:border-sibs-primary-1/30 hover:bg-slate-50 focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
-          }`}
+              ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
+              : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+        }`}
       >
         <span className="flex min-w-0 items-center gap-2">
-          <CalendarDays size={17} className="shrink-0 text-sibs-tertiary-5" />
+          <CalendarDays
+            size={15}
+            className={`shrink-0 ${open ? "text-[#FF5C28]" : "text-[#042C51]"}`}
+          />
 
           <span
-            className={`truncate ${value ? "text-[#344054]" : "text-sibs-tertiary-5"
-              }`}
+            className={`truncate ${value ? "text-[#042C51]" : "text-[#98A2B3]"}`}
           >
             {displayValue}
           </span>
         </span>
 
         <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
-            }`}
+          size={15}
+          className={`shrink-0 transition-transform duration-200 ${
+            disabled ? "text-[#98A2B3]" : open ? "rotate-180 text-[#FF5C28]" : "text-[#042C51]"
+          }`}
         />
       </button>
 
@@ -1515,31 +1655,40 @@ function DateDropdown({
         onClose={() => setOpen(false)}
         maxHeight={420}
         matchAnchorWidth={false}
-        width={280}
-        className="rounded-2xl border-[#D7DEE8]"
+        width={300}
+        className="rounded-xl border-[#D7DEE8]"
         innerClassName="p-3"
       >
-        <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2">
+        <div className="mb-3 flex items-center gap-1.5 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1.5">
           <button
             type="button"
             onClick={goToPreviousMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98]"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
             aria-label="Previous month"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={15} />
           </button>
 
-          <p className="text-xs font-extrabold text-sibs-primary-1">
-            {monthTitle}
-          </p>
+          <div className="grid flex-1 grid-cols-2 gap-1.5">
+            <CalendarHeaderDropdown
+              value={viewDate.getMonth()}
+              options={monthOptions}
+              onChange={handleMonthChange}
+            />
+            <CalendarHeaderDropdown
+              value={viewDate.getFullYear()}
+              options={yearOptions}
+              onChange={handleYearChange}
+            />
+          </div>
 
           <button
             type="button"
             onClick={goToNextMonth}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98]"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
             aria-label="Next month"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={15} />
           </button>
         </div>
 
@@ -1547,7 +1696,7 @@ function DateDropdown({
           {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map((day) => (
             <div
               key={day}
-              className="py-1.5 text-center text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]"
+              className="py-1 text-center font-jakarta text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]"
             >
               {day}
             </div>
@@ -1563,14 +1712,15 @@ function DateDropdown({
                 key={toDateInputValue(date)}
                 type="button"
                 onClick={() => handleSelectDate(date)}
-                className={`flex h-8 items-center justify-center rounded-lg text-xs font-extrabold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${active
-                    ? "bg-[#FF5C28] text-white shadow-sm"
+                className={`flex h-8 items-center justify-center rounded-lg font-jakarta text-xs transition-all active:scale-[0.98] ${
+                  active
+                    ? "bg-[#FF5C28] font-extrabold text-white shadow-md"
                     : isToday
-                      ? "border border-[#B9D7FF] bg-[#EFF6FF] text-[#042C51]"
+                      ? "border border-[#FF5C28]/40 bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
                       : currentMonth
-                        ? "border border-transparent bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-                        : "border border-transparent bg-white text-[#C7D2E0] hover:bg-[#F8FAFC]"
-                  }`}
+                        ? "bg-white font-bold text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                        : "bg-white font-semibold text-[#D0D5DD] opacity-60 hover:bg-[#F8FAFC]"
+                }`}
               >
                 {date.getDate()}
               </button>
@@ -1578,14 +1728,14 @@ function DateDropdown({
           })}
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-3">
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-2.5">
           <button
             type="button"
             onClick={() => {
               onChange("");
               setOpen(false);
             }}
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98]"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 font-jakarta text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28] active:scale-[0.98]"
           >
             Clear
           </button>
@@ -1593,7 +1743,7 @@ function DateDropdown({
           <button
             type="button"
             onClick={handleTodayClick}
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0D4676] hover:shadow-md active:scale-[0.98]"
+            className="inline-flex h-8 items-center justify-center rounded-lg bg-[#FF5C28] px-3 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04D1D] active:scale-[0.98]"
           >
             Today
           </button>
@@ -2572,19 +2722,24 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                 title="Request Type & Position"
                 subtitle="Choose the personnel request workflow before completing its required fields."
                 icon={SlidersHorizontal}
+                headerAction={
+                  <div>
+                    <FieldLabel required>Request Type</FieldLabel>
+                    <CustomSelect
+                      value={form.requestType || ""}
+                      options={requestTypeOptions}
+                      onChange={handleRequestTypeChange}
+                      placeholder="Select Request Type"
+                      disabled={isSubmitting}
+                      optionValue={(option) => option.value}
+                      optionLabel={(option) => option.label}
+                    />
+                  </div>
+                }
               >
-                <div className="max-w-md">
-                  <FieldLabel required>Request Type</FieldLabel>
-                  <CustomSelect
-                    value={form.requestType || ""}
-                    options={requestTypeOptions}
-                    onChange={handleRequestTypeChange}
-                    placeholder="Select Request Type"
-                    disabled={isSubmitting}
-                    optionValue={(option) => option.value}
-                    optionLabel={(option) => option.label}
-                  />
-                </div>
+                <p className="font-jakarta text-xs font-semibold text-[#667085]">
+                  Select the workflow that determines the required personnel details.
+                </p>
               </FormSection>
             ) : null}
 
@@ -2596,7 +2751,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   icon={BriefcaseBusiness}
                 >
                   <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                    <div>
+                    <div className="lg:order-2">
                       <FieldLabel required>Request Type</FieldLabel>
                       <CustomSelect
                         value={form.requestType || ""}
@@ -2609,7 +2764,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                       />
                     </div>
 
-                    <div className="lg:col-span-2">
+                    <div className="lg:order-1 lg:col-span-2">
                       <FieldLabel required>Position Title</FieldLabel>
                       <CustomSelect
                         value={form.openPositionDbId || ""}

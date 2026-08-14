@@ -9,7 +9,13 @@ import {
   formatTime,
   getDateKey,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineFormatters";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Video,
+} from "lucide-react";
 
 const InterviewCalendar = ({ candidates, onViewCandidate }) => {
   const [calendarViewType, setCalendarViewType] = useState("Month");
@@ -158,170 +164,230 @@ const InterviewCalendar = ({ candidates, onViewCandidate }) => {
   }
 
   function renderCandidateEvent(candidate, compact = false) {
+    const isOnline = candidate.interviewType === "Online";
+
     return (
       <button
         key={candidate.id}
         type="button"
         onClick={() => onViewCandidate(candidate)}
-        className="w-full rounded-lg border border-cyan-100 bg-cyan-50 px-2 py-2 text-left text-xs font-semibold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-cyan-100 hover:shadow-sm"
+        className={`group/event w-full rounded-lg border px-2 py-2 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${
+          isOnline
+            ? "border-[#B2DDFF] bg-[#F0F8FF] text-[#004EEB] hover:border-[#80C1FF] hover:bg-[#E0F2FE]"
+            : "border-[#FEDF89] bg-[#FFFAEB] text-[#B54708] hover:border-[#FEC84B] hover:bg-[#FEF0C7]"
+        }`}
       >
-        <p className="truncate font-bold">{candidate.name}</p>
-        <p>{formatTime(candidate.interviewDate)}</p>
-        {!compact && (
-          <p>
-            {candidate.interviewType === "Online" ? "Online" : "Face-to-face"}
-          </p>
-        )}
-        {candidate.interviewType === "Online" &&
-          candidate.onlineInterviewLink && (
-            <div>
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Interview Link:{" "}
-              </p>
-              <p
-                title={candidate.onlineInterviewLink}
-                className="truncate underline text-sibs-tertiary-5 hover:cursor-pointer hover:text-sibs-primary-1"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(candidate.onlineInterviewLink, "_blank");
-                }}
-              >
-                {candidate.onlineInterviewLink}
-              </p>
-            </div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-[9px] font-extrabold text-[#042C51] 2xl:text-[10px]">
+              {candidate.name}
+            </p>
+            <p className="mt-0.5 font-mono text-[8px] font-bold opacity-80 2xl:text-[9px]">
+              {formatTime(candidate.interviewDate)}
+            </p>
+          </div>
+          {!compact && (
+            <span className="shrink-0 text-[8px] font-extrabold uppercase opacity-85">
+              {isOnline ? "Online" : "On-site"}
+            </span>
           )}
+        </div>
+
+        {!compact && isOnline && candidate.onlineInterviewLink && (
+          <span
+            role="link"
+            tabIndex={0}
+            title={candidate.onlineInterviewLink}
+            className="mt-1.5 flex items-center gap-1 truncate text-[8px] font-extrabold text-[#FF5C28] underline decoration-[#FF5C28]/40 underline-offset-2 hover:opacity-80"
+            onClick={(event) => {
+              event.stopPropagation();
+              window.open(candidate.onlineInterviewLink, "_blank");
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              event.stopPropagation();
+              window.open(candidate.onlineInterviewLink, "_blank");
+            }}
+          >
+            <ExternalLink size={10} className="shrink-0" />
+            <span className="truncate">Open interview link</span>
+          </span>
+        )}
       </button>
     );
   }
 
   return (
-    <section className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5">
-      <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <CalendarDays size={18} className="text-sibs-primary-1" />
-            <h2 className="text-base font-extrabold text-[#101828]">
-              Interview Calendar
-            </h2>
-          </div>
-          <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-            {activeRangeTitle} · {scheduledCandidates.length} scheduled
-            interview{scheduledCandidates.length === 1 ? "" : "s"}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="inline-flex rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] p-1">
-            {["Month", "Week", "List"].map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setCalendarViewType(type)}
-                className={`inline-flex h-9 items-center justify-center rounded-lg px-4 text-xs font-extrabold transition ${
-                  calendarViewType === type
-                    ? "bg-sibs-primary-1 text-white shadow-sm"
-                    : "text-sibs-primary-1 hover:bg-white"
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-
-          {calendarViewType !== "List" && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handlePreviousCalendarRange}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                title={
-                  calendarViewType === "Week"
-                    ? "Previous Week"
-                    : "Previous Month"
-                }
-              >
-                <ChevronLeft size={17} />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleTodayCalendarRange}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-              >
-                Today
-              </button>
-
-              <button
-                type="button"
-                onClick={handleNextCalendarRange}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                title={calendarViewType === "Week" ? "Next Week" : "Next Month"}
-              >
-                <ChevronRight size={17} />
-              </button>
+    <section className="sibs-page-card-in sibs-card overflow-hidden font-jakarta">
+      <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#FFEADF] bg-[#FFF2EB] text-[#FF5C28]">
+              <CalendarDays size={17} />
+            </span>
+            <div className="min-w-0">
+              <h2 className="sibs-section-title">Scheduled Interview Calendar</h2>
+              <p className="sibs-section-subtitle">
+                {activeRangeTitle} · {scheduledCandidates.length} scheduled interview
+                {scheduledCandidates.length === 1 ? "" : "s"}
+              </p>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      {calendarViewType === "Month" && (
-        <div className="overflow-x-auto">
-          <div className="min-w-[1120px] overflow-hidden rounded-xl border border-[#E6ECF2]">
-            <div className="grid grid-cols-7 border-b border-[#E6ECF2] bg-[#F8FAFC]">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <div
-                  key={day}
-                  className="border-r border-[#E6ECF2] px-3 py-3 text-center text-xs font-bold text-[#174A7C] last:border-r-0"
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="inline-flex rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1">
+              {["Month", "Week", "List"].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setCalendarViewType(type)}
+                  className={`inline-flex h-8 items-center justify-center rounded-lg px-3.5 sibs-text-xs font-extrabold transition 2xl:h-9 2xl:px-4 ${
+                    calendarViewType === type
+                      ? "bg-[#FF5C28] text-white shadow-sm"
+                      : "text-[#667085] hover:text-[#042C51]"
+                  }`}
                 >
-                  {day}
-                </div>
+                  {type}
+                </button>
               ))}
             </div>
 
-            <div className="grid grid-cols-7">
-              {monthDays.map((date) => {
+            {calendarViewType !== "List" && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handlePreviousCalendarRange}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                  title={calendarViewType === "Week" ? "Previous Week" : "Previous Month"}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTodayCalendarRange}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                >
+                  Today
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleNextCalendarRange}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                  title={calendarViewType === "Week" ? "Next Week" : "Next Month"}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-[#F7F9FC] p-3 sm:p-4 2xl:p-5">
+        {calendarViewType === "Month" && (
+          <div className="overflow-x-auto">
+            <div className="min-w-[980px] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white 2xl:min-w-[1120px]">
+              <div className="grid grid-cols-7 border-b border-[#E6ECF2] bg-[#F8FAFC]">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                  <div
+                    key={day}
+                    className="border-r border-[#E6ECF2] px-2 py-2.5 text-center text-[9px] font-extrabold uppercase tracking-wider text-[#042C51] last:border-r-0 2xl:px-3 2xl:py-3 2xl:text-[10px]"
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7">
+                {monthDays.map((date) => {
+                  const dateKey = getDateKey(date);
+                  const dayCandidates = candidatesByDate[dateKey] || [];
+                  const isCurrentMonth =
+                    date.getMonth() === visibleMonth.getMonth() &&
+                    date.getFullYear() === visibleMonth.getFullYear();
+                  const isToday = dateKey === getDateKey(new Date());
+
+                  return (
+                    <div
+                      key={dateKey}
+                      className={`min-h-[112px] border-r border-b border-[#E6ECF2] p-2 2xl:min-h-[145px] 2xl:p-3 ${
+                        isCurrentMonth ? "bg-white" : "bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span
+                          className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-extrabold 2xl:h-7 2xl:w-7 2xl:text-[10px] ${
+                            isToday
+                              ? "bg-[#FF5C28] text-white shadow-sm"
+                              : isCurrentMonth
+                                ? "text-[#042C51]"
+                                : "text-[#98A2B3]"
+                          }`}
+                        >
+                          {date.getDate()}
+                        </span>
+
+                        {dayCandidates.length > 0 && (
+                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#FF5C28] px-1.5 text-[8px] font-extrabold text-white shadow-sm">
+                            {dayCandidates.length}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {dayCandidates
+                          .slice(0, 3)
+                          .map((candidate) => renderCandidateEvent(candidate, true))}
+
+                        {dayCandidates.length > 3 && (
+                          <div className="rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1.5 text-center text-[8px] font-extrabold text-[#667085]">
+                            +{dayCandidates.length - 3} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {calendarViewType === "Week" && (
+          <div className="overflow-x-auto">
+            <div className="grid min-w-[900px] grid-cols-7 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white 2xl:min-w-[980px]">
+              {weekDays.map((date) => {
                 const dateKey = getDateKey(date);
                 const dayCandidates = candidatesByDate[dateKey] || [];
-                const isCurrentMonth =
-                  date.getMonth() === visibleMonth.getMonth() &&
-                  date.getFullYear() === visibleMonth.getFullYear();
                 const isToday = dateKey === getDateKey(new Date());
 
                 return (
                   <div
                     key={dateKey}
-                    className={`min-h-[150px] border-r border-b border-[#E6ECF2] p-3 ${
-                      isCurrentMonth ? "bg-white" : "bg-[#F8FAFC]"
-                    }`}
+                    className="min-h-[330px] border-r border-[#E6ECF2] bg-white p-2.5 last:border-r-0 2xl:min-h-[360px] 2xl:p-3"
                   >
-                    <div className="mb-2 flex items-center justify-between">
-                      <span
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                          isToday
-                            ? "bg-sibs-primary-1 text-white"
-                            : isCurrentMonth
-                              ? "text-[#101828]"
-                              : "text-[#98A2B3]"
+                    <div className="mb-3 rounded-xl bg-[#F8FAFC] px-2 py-2.5 text-center">
+                      <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#042C51]">
+                        {date.toLocaleDateString("en-PH", { weekday: "short" })}
+                      </p>
+                      <p
+                        className={`mx-auto mt-1 flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-extrabold ${
+                          isToday ? "bg-[#FF5C28] text-white shadow-sm" : "text-[#042C51]"
                         }`}
                       >
                         {date.getDate()}
-                      </span>
-
-                      {dayCandidates.length > 0 && (
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                          {dayCandidates.length}
-                        </span>
-                      )}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      {dayCandidates
-                        .slice(0, 3)
-                        .map((candidate) => renderCandidateEvent(candidate))}
-
-                      {dayCandidates.length > 3 && (
-                        <div className="rounded-lg border border-gray-100 bg-gray-50 px-2 py-2 text-center text-xs font-bold text-gray-600">
-                          +{dayCandidates.length - 3} more
+                      {dayCandidates.length > 0 ? (
+                        dayCandidates.map((candidate) => renderCandidateEvent(candidate))
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-3 py-6 text-center text-[9px] font-semibold text-[#98A2B3]">
+                          No interview
                         </div>
                       )}
                     </div>
@@ -330,115 +396,69 @@ const InterviewCalendar = ({ candidates, onViewCandidate }) => {
               })}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {calendarViewType === "Week" && (
-        <div className="overflow-x-auto">
-          <div className="grid min-w-[980px] grid-cols-7 overflow-hidden rounded-xl border border-[#E6ECF2]">
-            {weekDays.map((date) => {
-              const dateKey = getDateKey(date);
-              const dayCandidates = candidatesByDate[dateKey] || [];
-              const isToday = dateKey === getDateKey(new Date());
-
-              return (
+        {calendarViewType === "List" && (
+          <div className="space-y-3">
+            {Object.keys(listGroups).length > 0 ? (
+              Object.keys(listGroups).map((dateKey) => (
                 <div
                   key={dateKey}
-                  className="min-h-[360px] border-r border-[#E6ECF2] bg-white p-3 last:border-r-0"
+                  className="rounded-xl border border-[#D7DEE8] bg-white p-3.5 2xl:p-4"
                 >
-                  <div className="mb-3 rounded-xl bg-[#F8FAFC] px-3 py-3 text-center">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
-                      {date.toLocaleDateString("en-PH", { weekday: "short" })}
-                    </p>
-                    <p
-                      className={`mx-auto mt-1 flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold ${
-                        isToday
-                          ? "bg-sibs-primary-1 text-white"
-                          : "text-[#101828]"
-                      }`}
-                    >
-                      {date.getDate()}
-                    </p>
+                  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="sibs-text-xs font-extrabold text-[#042C51]">
+                      {new Date(dateKey).toLocaleDateString("en-PH", {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </h3>
+                    <span className="w-fit rounded-full border border-[#FFEADF] bg-[#FFF2EB] px-2.5 py-1 text-[9px] font-extrabold text-[#FF5C28]">
+                      {listGroups[dateKey].length} interview
+                      {listGroups[dateKey].length === 1 ? "" : "s"}
+                    </span>
                   </div>
 
-                  <div className="space-y-2">
-                    {dayCandidates.length > 0 ? (
-                      dayCandidates.map((candidate) =>
-                        renderCandidateEvent(candidate),
-                      )
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-3 py-6 text-center text-xs font-bold text-sibs-tertiary-5">
-                        No interview
-                      </div>
-                    )}
+                  <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 2xl:gap-3">
+                    {listGroups[dateKey].map((candidate) => (
+                      <button
+                        key={candidate.id}
+                        type="button"
+                        onClick={() => onViewCandidate(candidate)}
+                        className="flex items-center justify-between gap-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF9F6] hover:shadow-sm 2xl:p-4"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate sibs-text-xs font-extrabold text-[#042C51]">
+                            {candidate.name}
+                          </p>
+                          <p className="mt-1 truncate text-[9px] font-semibold text-[#667085] 2xl:text-[10px]">
+                            {getRoleTitle(candidate.roleAccount)} / {getAccount(candidate.roleAccount)}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="sibs-text-xs font-extrabold text-[#042C51]">
+                            {formatTime(candidate.interviewDate)}
+                          </p>
+                          <p className="mt-1 flex items-center justify-end gap-1 text-[9px] font-semibold text-[#667085]">
+                            {candidate.interviewType === "Online" && <Video size={11} />}
+                            {candidate.interviewType}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {calendarViewType === "List" && (
-        <div className="space-y-3">
-          {Object.keys(listGroups).length > 0 ? (
-            Object.keys(listGroups).map((dateKey) => (
-              <div
-                key={dateKey}
-                className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
-              >
-                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <h3 className="text-sm font-extrabold text-sibs-primary-1">
-                    {new Date(dateKey).toLocaleDateString("en-PH", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </h3>
-                  <span className="w-fit rounded-full bg-white px-3 py-1 text-xs font-bold text-[#475467]">
-                    {listGroups[dateKey].length} interview
-                    {listGroups[dateKey].length === 1 ? "" : "s"}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                  {listGroups[dateKey].map((candidate) => (
-                    <button
-                      key={candidate.id}
-                      type="button"
-                      onClick={() => onViewCandidate(candidate)}
-                      className="flex items-center justify-between gap-4 rounded-xl border border-[#E6ECF2] bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-cyan-100 hover:bg-cyan-50 hover:shadow-sm"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-extrabold text-[#101828]">
-                          {candidate.name}
-                        </p>
-                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                          {getRoleTitle(candidate.roleAccount)} /{" "}
-                          {getAccount(candidate.roleAccount)}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-sm font-extrabold text-sibs-primary-1">
-                          {formatTime(candidate.interviewDate)}
-                        </p>
-                        <p className="text-xs font-bold text-sibs-tertiary-5">
-                          {candidate.interviewType}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+              ))
+            ) : (
+              <div className="sibs-empty-panel">
+                No scheduled interviews found.
               </div>
-            ))
-          ) : (
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-12 text-center text-sm font-bold text-gray-500">
-              No scheduled interviews found.
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </section>
   );
 };

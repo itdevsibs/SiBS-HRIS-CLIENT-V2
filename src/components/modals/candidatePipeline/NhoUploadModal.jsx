@@ -9,11 +9,16 @@ import {
   Loader2,
   Trash2,
   UploadCloud,
-  X,
 } from "lucide-react";
 
 import api from "../../../lib/axios/api-template";
 import StatusModal from "../StatusModal";
+
+import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
+import CandidatePipelineModalShell, {
+  CandidateModalPrimaryButton,
+  CandidateModalSecondaryButton,
+} from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
 
 const PREVIOUS_EMPLOYMENT_REQUIREMENTS = [
   "BIR 2316 Form",
@@ -1554,76 +1559,72 @@ export default function NhoUploadModal({
     }
   }
 
-  return (
-    <div
-      className="sibs-modal-blur fixed inset-0 z-[10010] flex h-dvh items-center justify-center px-4 py-4"
-      onClick={() => {
-        if (!isSaving && !deletingFile) onClose?.();
-      }}
-    >
-      <div
-        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-7">
-          <div className="min-w-0">
-            <h2 className="text-xl font-extrabold text-sibs-primary-1 sm:text-2xl">
-              Pre-Employment File Uploads
-            </h2>
+  const busy = isSaving || deletingFile;
 
-            <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
-              Upload, review, and monitor candidate pre-employment requirements.
-            </p>
-          </div>
+  const footer = (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="min-w-0 text-xs font-bold leading-5 text-sibs-tertiary-5">
+        {majorProgress.completed} of {majorProgress.total} major requirements submitted. {completedRequirements} of {ALL_REQUIREMENTS.length} total requirements submitted.
+      </p>
 
-          <button
-            type="button"
-            disabled={isSaving || deletingFile}
-            onClick={onClose}
-            className="rounded-xl p-2 text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <X size={22} />
-          </button>
-        </div>
-
-        <div
-          className={`min-h-0 flex-1 overflow-y-auto p-5 sm:p-7 ${
-            isSaving || deletingFile ? "pointer-events-none opacity-70" : ""
-          }`}
+      <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
+        <CandidateModalSecondaryButton
+          type="button"
+          disabled={busy}
+          onClick={onClose}
         >
+          Cancel
+        </CandidateModalSecondaryButton>
+
+        <CandidateModalPrimaryButton
+          type="button"
+          disabled={busy || isLoadingFiles}
+          onClick={handleSaveUploads}
+          className="min-w-[132px]"
+        >
+          {isSaving && <Loader2 size={15} className="animate-spin" />}
+          {isSaving ? "Saving..." : "Save Uploads"}
+        </CandidateModalPrimaryButton>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <CandidatePipelineModalShell
+        open={open}
+        icon={UploadCloud}
+        title="Pre-Employment Requirements"
+        subtitle="Upload, review, and monitor candidate pre-employment requirements."
+        badge="NHO Files"
+        onClose={onClose}
+        closeDisabled={busy}
+        maxWidth="max-w-6xl"
+        zIndex="z-[10010]"
+        footer={footer}
+      >
+        <div className={busy ? "pointer-events-none opacity-70" : ""}>
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="min-w-0 space-y-5">
               <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <h3 className="truncate text-lg font-extrabold text-[#101828]">
-                      {candidateName}
-                    </h3>
+                <CandidateModalSummary
+                  candidate={{
+                    name: candidateName,
+                    email: candidateEmail,
+                    candidateId,
+                    currentStage: "For NHO",
+                  }}
+                  stage="For NHO"
+                  showAssignment={false}
+                />
 
-                    <p className="mt-1 truncate text-sm font-bold text-sibs-primary-1">
-                      {candidateEmail || "No email provided"}
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-[#344054]">
-                      Pre-Employment
-                    </span>
-
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-extrabold ${
-                        majorProgress.isComplete
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-amber-50 text-amber-700"
-                      }`}
-                    >
-                      {majorProgress.completed} / {majorProgress.total} Major
-                    </span>
-
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
-                      {completedRequirements} / {ALL_REQUIREMENTS.length} Total
-                    </span>
-                  </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${majorProgress.isComplete ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                    {majorProgress.completed} / {majorProgress.total} Major
+                  </span>
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-extrabold text-sibs-primary-1">
+                    {completedRequirements} / {ALL_REQUIREMENTS.length} Total
+                  </span>
                 </div>
 
                 <div className="mt-5">
@@ -1784,40 +1785,10 @@ export default function NhoUploadModal({
             </aside>
           </div>
         </div>
+      </CandidatePipelineModalShell>
 
-        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-7">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-bold text-sibs-tertiary-5">
-              {majorProgress.completed} of {majorProgress.total} major
-              requirements submitted. {completedRequirements} of{" "}
-              {ALL_REQUIREMENTS.length} total requirements submitted.
-            </p>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                disabled={isSaving || deletingFile}
-                onClick={onClose}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                disabled={isSaving || deletingFile || isLoadingFiles}
-                onClick={handleSaveUploads}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSaving && <Loader2 size={17} className="animate-spin" />}
-                {isSaving ? "Saving..." : "Save Uploads"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
           <StatusModal open={Boolean(deleteTarget)} type="confirm" title="Delete File?" message={`This will permanently remove ${deleteTarget?.fileName || deleteTarget?.savedFileName || "the selected document"} from the Candidate Pipeline server folder. This action cannot be undone.`} confirmLabel="Delete Permanently" cancelLabel="Cancel" variant="center" onConfirm={confirmDeleteFile} onCancel={() => setDeleteTarget(null)} lockScroll={false} />
       <StatusModal open={deleteStatus.open} type={deleteStatus.type} title={deleteStatus.title} message={deleteStatus.message} variant="center" onClose={() => setDeleteStatus((value) => ({ ...value, open: false }))} lockScroll={false} />
-</div>
+    </>
   );
 }
