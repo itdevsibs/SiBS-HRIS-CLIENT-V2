@@ -78,6 +78,27 @@ function formatShortDate(value) {
   });
 }
 
+function findOverlappingCostEntry(costEntries = [], form = {}) {
+  if (!form.source || !form.dateFrom || !form.dateTo) {
+    return null;
+  }
+
+  const source = String(form.source).trim().toLowerCase();
+
+  return (
+    (Array.isArray(costEntries) ? costEntries : []).find((entry) => {
+      const entrySource = String(entry?.source || "").trim().toLowerCase();
+      const entryDateFrom = entry?.dateFrom || entry?.date_from;
+      const entryDateTo = entry?.dateTo || entry?.date_to;
+
+      if (!entrySource || entrySource !== source) return false;
+      if (!entryDateFrom || !entryDateTo) return false;
+
+      return entryDateFrom <= form.dateTo && entryDateTo >= form.dateFrom;
+    }) || null
+  );
+}
+
 function toDateInputValue(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -482,6 +503,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
   const {
     createSourceCostEntry,
     addSourceCost,
+    costEntries = [],
     sourcingOptions = [],
     fetchSourcingOptions,
   } = useSourcingAnalytics();
@@ -642,6 +664,20 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
       return;
     }
 
+    const conflictingEntry = findOverlappingCostEntry(
+      costEntries,
+      form,
+    );
+
+    if (conflictingEntry) {
+      onStatus?.({
+        type: "error",
+        title: "Campaign Date Conflict",
+        message: `This source already has a campaign from ${formatShortDate(conflictingEntry.dateFrom || conflictingEntry.date_from)} to ${formatShortDate(conflictingEntry.dateTo || conflictingEntry.date_to)}. Choose another date range or edit the existing campaign.`,
+      });
+      return;
+    }
+
     const payload = {
       source: form.source,
       description: form.description.trim(),
@@ -750,7 +786,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-close-btn"
                 aria-label="Close source cost modal"
               >
                 <X size={18} />

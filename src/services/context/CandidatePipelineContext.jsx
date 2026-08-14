@@ -1229,8 +1229,13 @@ export function CandidatePipelineProvider({ children }) {
     if (!isAuthenticated) return undefined;
 
     function handleRefreshEvent(event) {
+      if (event?.type === "focus") {
+        return;
+      }
+
       const payload = event?.detail || {};
       const eventCandidate = payload?.candidate || payload;
+      let updatedLocally = false;
 
       if (eventCandidate && typeof eventCandidate === "object") {
         const normalizedCandidate =
@@ -1247,10 +1252,13 @@ export function CandidatePipelineProvider({ children }) {
           );
 
           syncSelectedCandidate(normalizedCandidate);
+          updatedLocally = true;
         }
       }
 
-      refreshCandidatePipeline();
+      if (!updatedLocally || payload?.forceRefresh || payload?.refresh === true) {
+        refreshCandidatePipeline();
+      }
     }
 
     window.addEventListener(

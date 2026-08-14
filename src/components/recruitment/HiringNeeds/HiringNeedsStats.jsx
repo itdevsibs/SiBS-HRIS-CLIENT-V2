@@ -60,29 +60,29 @@ function MetricCard({ item, value, delay = 0 }) {
       className="sibs-metric-card"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex h-full items-start justify-between gap-4">
+      <div className="flex h-full items-start justify-between gap-3 2xl:gap-4">
         <div className="min-w-0 flex-1 self-stretch">
           <p
-            className={`truncate text-[10px] font-extrabold uppercase tracking-normal sibs-tone-${item.tone}-label`}
+            className={`truncate sibs-text-micro font-extrabold uppercase tracking-normal sibs-tone-${item.tone}-label`}
           >
             {item.title}
           </p>
 
           <p
-            className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal sibs-tone-${item.tone}-label`}
+            className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums tracking-normal sibs-tone-${item.tone}-label`}
           >
             {value.toLocaleString("en-PH")}
           </p>
 
-          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-2 sibs-text-micro font-bold leading-4 text-[#667085]">
             {item.description}
           </p>
         </div>
 
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${item.tone}-icon`}
+          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${item.tone}-icon`}
         >
-          {React.createElement(item.icon, { size: 17, strokeWidth: 2 })}
+          {React.createElement(item.icon, { className: "h-4 w-4 2xl:h-4.5 2xl:w-4.5", strokeWidth: 2 })}
         </span>
       </div>
     </article>

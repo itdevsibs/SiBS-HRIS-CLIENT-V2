@@ -34,9 +34,9 @@ export function WorkforceHiringOverviewPipelineStrip() {
   } = useWorkforceHiringView();
 
   return (
-    <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-center">
-        <div className="grid min-w-0 flex-1 grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_26px_1fr_26px_1fr_26px_1fr_26px_1fr]">
+    <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-3.5 shadow-sm 2xl:p-5">
+      <div className="flex flex-col gap-3 2xl:gap-4 2xl:flex-row 2xl:items-center">
+        <div className="grid min-w-0 flex-1 grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_20px_1fr_20px_1fr_20px_1fr_20px_1fr] 2xl:grid-cols-[1fr_26px_1fr_26px_1fr_26px_1fr_26px_1fr]">
           {pipeline.map((stage, index) => {
             const StageIcon = PIPELINE_ICONS[stage.iconKey] || Users;
             const tone = STAGE_TONES[index] || STAGE_TONES[0];
@@ -44,22 +44,22 @@ export function WorkforceHiringOverviewPipelineStrip() {
             return (
               <div className="contents" key={stage.stage}>
                 <article
-                  className={`flex min-h-[78px] items-center gap-3 rounded-xl border px-3 py-2.5 ${tone}`}
+                  className={`flex min-h-[64px] 2xl:min-h-[78px] items-center gap-2.5 2xl:gap-3 rounded-xl border px-2.5 py-2 2xl:px-3 2xl:py-2.5 ${tone}`}
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm">
-                    <StageIcon size={17} strokeWidth={2.2} />
+                  <span className="flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm">
+                    <StageIcon className="h-3.5 w-3.5 2xl:h-4.5 2xl:w-4.5" strokeWidth={2.2} />
                   </span>
 
                   <div className="min-w-0">
-                    <p className="truncate text-[9px] font-extrabold uppercase tracking-wider opacity-75">
+                    <p className="truncate sibs-text-micro font-extrabold uppercase tracking-wider opacity-75">
                       {stage.short || stage.stage}
                     </p>
-                    <div className="mt-1 flex items-baseline gap-2">
+                    <div className="mt-0.5 2xl:mt-1 flex items-baseline gap-1.5 2xl:gap-2">
                       <AnimatedNumber
                         value={stage.count}
-                        className="text-xl font-extrabold leading-none tabular-nums"
+                        className="text-lg 2xl:text-xl font-extrabold leading-none tabular-nums"
                       />
-                      <span className="rounded bg-white/80 px-1.5 py-0.5 text-[9px] font-extrabold tabular-nums">
+                      <span className="rounded bg-white/80 px-1 py-0.5 2xl:px-1.5 sibs-text-micro font-extrabold tabular-nums">
                         {Number(stage.cumulative || 0).toFixed(1)}%
                       </span>
                     </div>
@@ -67,30 +67,30 @@ export function WorkforceHiringOverviewPipelineStrip() {
                 </article>
 
                 {index < pipeline.length - 1 ? (
-                  <ArrowRight className="mx-auto hidden h-4 w-4 text-slate-300 xl:block" />
+                  <ArrowRight className="mx-auto hidden h-3.5 w-3.5 text-slate-300 xl:block" />
                 ) : null}
               </div>
             );
           })}
         </div>
 
-        <aside className="grid shrink-0 grid-cols-2 gap-3 border-t border-[#E6ECF2] pt-4 2xl:w-[260px] 2xl:border-l 2xl:border-t-0 2xl:pl-5 2xl:pt-0">
+        <aside className="grid shrink-0 grid-cols-2 gap-3 border-t border-[#E6ECF2] pt-3 2xl:w-[260px] 2xl:border-l 2xl:border-t-0 2xl:pl-5 2xl:pt-0">
           <div>
-            <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#667085]">
+            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]">
               Leads to Interview
             </p>
             <AnimatedNumber
               value={formatOverviewNumber(summary.leadsToInterview)}
-              className="mt-1 block text-xl font-extrabold text-[#042C51]"
+              className="mt-0.5 2xl:mt-1 block text-lg 2xl:text-xl font-extrabold text-[#042C51]"
             />
           </div>
           <div className="text-right">
-            <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#667085]">
+            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]">
               Hiring Rate
             </p>
             <AnimatedNumber
               value={`${Number(summary.hiringRate || 0).toFixed(1)}%`}
-              className="mt-1 block text-xl font-extrabold text-[#FF5C28]"
+              className="mt-0.5 2xl:mt-1 block text-lg 2xl:text-xl font-extrabold text-[#FF5C28]"
             />
           </div>
         </aside>

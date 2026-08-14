@@ -1,5 +1,3 @@
-import { sourcingOptions } from "./sourcingConstants";
-
 export function normalizeStatus(status) {
   return String(status || "").trim().toLowerCase();
 }
@@ -64,14 +62,25 @@ export function calculateCostPerHire(sourceCost, hired) {
   return Number((safeCost / safeHired).toFixed(2));
 }
 
-export function buildSourceRows(publicSubmissions = [], costEntries = []) {
+export function buildSourceRows(
+  publicSubmissions = [],
+  costEntries = [],
+) {
   const safeSubmissions = Array.isArray(publicSubmissions)
     ? publicSubmissions
     : [];
 
   const safeCostEntries = Array.isArray(costEntries) ? costEntries : [];
 
-  return sourcingOptions.map((sourceName, index) => {
+  const activeChannelNames = [
+    ...new Set(
+      safeCostEntries
+        .map((entry) => String(entry?.source || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  return activeChannelNames.map((sourceName, index) => {
     const matchedCandidates = safeSubmissions.filter((candidate) => {
       const candidateSources = Array.isArray(candidate?.hearAboutUs)
         ? candidate.hearAboutUs

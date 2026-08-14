@@ -1,8 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BriefcaseBusiness,
+  Check,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
   FileText,
   Info,
@@ -17,6 +19,131 @@ import {
 } from "../../../lib/utils/actionItems/actionItemsConstants.js";
 
 const STATUS_OPTIONS = ["Planned", "Ongoing", "Completed"];
+
+function ThemedSelectDropdown({
+  dropdownId = "",
+  activeDropdown = "",
+  setActiveDropdown,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select option",
+  disabled = false,
+  className = "",
+  menuClassName = "",
+}) {
+  const dropdownRef = useRef(null);
+  const [localOpen, setLocalOpen] = useState(false);
+
+  const isControlled = typeof setActiveDropdown === "function" && Boolean(dropdownId);
+  const open = isControlled ? activeDropdown === dropdownId : localOpen;
+
+  const selectedOption = useMemo(() => {
+    return options.find((option) => String(option.value) === String(value));
+  }, [options, value]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        if (isControlled) {
+          setActiveDropdown("");
+        } else {
+          setLocalOpen(false);
+        }
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        if (isControlled) {
+          setActiveDropdown("");
+        } else {
+          setLocalOpen(false);
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isControlled, setActiveDropdown]);
+
+  function toggleOpen() {
+    if (disabled) return;
+    if (isControlled) {
+      setActiveDropdown(open ? "" : dropdownId);
+    } else {
+      setLocalOpen((prev) => !prev);
+    }
+  }
+
+  function handleSelect(optionValue) {
+    if (disabled) return;
+    onChange(optionValue);
+    if (isControlled) {
+      setActiveDropdown("");
+    } else {
+      setLocalOpen(false);
+    }
+  }
+
+  return (
+    <div ref={dropdownRef} className={`relative min-w-0 font-jakarta ${className}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={toggleOpen}
+        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-lg border px-3 text-left text-xs font-bold outline-none transition ${
+          open
+            ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
+            : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+        } ${disabled ? "cursor-not-allowed bg-[#EEF2F6] opacity-70" : ""}`}
+      >
+        <span className={`min-w-0 flex-1 truncate ${selectedOption ? "text-[#042C51]" : "text-[#98A2B3]"}`}>
+          {selectedOption?.label || placeholder}
+        </span>
+        <ChevronDown
+          size={14}
+          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div
+          className={`sibs-dropdown-pop-in absolute left-0 top-[calc(100%+6px)] z-[100050] max-h-60 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl ${menuClassName}`}
+        >
+          <div className="max-h-60 overflow-y-auto py-1 sibs-scrollbar">
+            {options.map((option) => {
+              const active = String(option.value) === String(value);
+
+              return (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2 text-left text-xs font-extrabold transition ${
+                    active
+                      ? "bg-[#FFF0EB] text-[#FF5C28]"
+                      : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  }`}
+                >
+                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                  {active && <Check size={14} className="shrink-0 text-[#FF5C28]" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function FieldLabel({ children, required = false }) {
   return (
@@ -79,6 +206,49 @@ export default function AddActionItemModal() {
     resetActionForm,
     addActionItem,
   } = useActionItems();
+
+  const [activeDropdown, setActiveDropdown] = useState("");
+
+  const linkedRoleOptions = useMemo(() => {
+    return [
+      { value: "", label: "Select role with hiring gap" },
+      ...linkedActionOptions.map((option) => {
+        const gap = Math.max(
+          Number(option.requirement || 0) - Number(option.filled || 0),
+          0,
+        );
+        return {
+          value: option.key,
+          label: `${option.displayLabel} — ${option.filled}/${option.requirement} filled, ${gap} remaining`,
+        };
+      }),
+    ];
+  }, [linkedActionOptions]);
+
+  const ownerSelectOptions = useMemo(() => {
+    return [
+      { value: "", label: "Select owner" },
+      ...ownerOptions
+        .filter((option) => option !== "All Owners")
+        .map((owner) => ({ value: owner, label: owner })),
+    ];
+  }, [ownerOptions]);
+
+  const statusSelectOptions = useMemo(() => {
+    return STATUS_OPTIONS.map((status) => ({ value: status, label: status }));
+  }, []);
+
+  const riskSelectOptions = useMemo(() => {
+    return RISK_OPTIONS.filter((option) => option !== "All Risk").map(
+      (risk) => ({ value: risk, label: risk }),
+    );
+  }, []);
+
+  const gapSelectOptions = useMemo(() => {
+    return GAP_OPTIONS.filter((option) => option !== "All Gaps").map(
+      (gap) => ({ value: gap, label: gap }),
+    );
+  }, []);
 
   useEffect(() => {
     if (!showAddModal) return undefined;
@@ -189,7 +359,7 @@ export default function AddActionItemModal() {
             <button
               type="button"
               onClick={closeAddModal}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white active:scale-[0.98]"
+              className="sibs-modal-close-btn"
               aria-label="Close modal"
             >
               <X size={18} />
@@ -199,14 +369,14 @@ export default function AddActionItemModal() {
 
         <main className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-white p-4 sm:p-5">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
-            <section className="flex min-w-0 flex-col rounded-xl border border-[#DDE5EE] bg-white p-4 shadow-sm sm:p-5">
-              <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#E9EEF4] pb-3">
-                <h3 className="flex min-w-0 items-center gap-2 text-[11px] font-black uppercase tracking-[0.04em] text-[#042C51]">
-                  <FileText size={14} className="shrink-0 text-[#FF5C28]" />
-                  Source Record & Hiring Context
+            <section className="flex min-w-0 flex-col rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-4 shadow-sm sm:p-5">
+              <div className="mb-3 flex items-center justify-between border-b border-[#E9EEF4] pb-2.5">
+                <h3 className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.04em] text-[#042C51]">
+                  <BriefcaseBusiness size={14} className="shrink-0 text-[#FF5C28]" />
+                  Hiring Gap Source Record
                 </h3>
 
-                <span className="shrink-0 rounded-md border border-[#DDE5EE] bg-[#F8FAFC] px-2 py-1 text-[9px] font-black text-[#667085]">
+                <span className="rounded-md border border-[#D0DFEE] bg-white px-2 py-0.5 text-[9px] font-black uppercase text-[#042C51]">
                   {selectedRole ? "Linked Record" : "Global Creation"}
                 </span>
               </div>
@@ -226,32 +396,15 @@ export default function AddActionItemModal() {
 
               <div className="mt-3 min-w-0">
                 <FieldLabel required>Role / Account Target</FieldLabel>
-                <select
-                  required
+                <ThemedSelectDropdown
+                  dropdownId="roleTarget"
+                  activeDropdown={activeDropdown}
+                  setActiveDropdown={setActiveDropdown}
                   value={selectedKey}
-                  title={selectedRole?.displayLabel || actionForm.roleAccount || ""}
-                  onChange={(event) =>
-                    selectLinkedRecord(event.target.value)
-                  }
-                  className={selectClass}
-                >
-                  <option value="">Select role with hiring gap</option>
-
-                  {linkedActionOptions.map((option) => {
-                    const gap = Math.max(
-                      Number(option.requirement || 0) -
-                        Number(option.filled || 0),
-                      0,
-                    );
-
-                    return (
-                      <option key={option.key} value={option.key}>
-                        {option.displayLabel} — {option.filled}/
-                        {option.requirement} filled, {gap} remaining
-                      </option>
-                    );
-                  })}
-                </select>
+                  options={linkedRoleOptions}
+                  onChange={(val) => selectLinkedRecord(val)}
+                  placeholder="Select role with hiring gap"
+                />
               </div>
 
               <div className="mt-3 grid grid-cols-3 divide-x divide-[#DDE5EE] rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] px-1 py-1.5">
@@ -376,24 +529,15 @@ export default function AddActionItemModal() {
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1.35fr)_minmax(170px,0.65fr)]">
                 <div className="min-w-0">
                   <FieldLabel required>Accountable Owner</FieldLabel>
-                  <select
-                    required
+                  <ThemedSelectDropdown
+                    dropdownId="owner"
+                    activeDropdown={activeDropdown}
+                    setActiveDropdown={setActiveDropdown}
                     value={actionForm.owner}
-                    title={actionForm.owner || ""}
-                    onChange={(event) =>
-                      updateField("owner", event.target.value)
-                    }
-                    className={selectClass}
-                  >
-                    <option value="">Select owner</option>
-                    {ownerOptions
-                      .filter((option) => option !== "All Owners")
-                      .map((owner) => (
-                        <option key={owner} value={owner}>
-                          {owner}
-                        </option>
-                      ))}
-                  </select>
+                    options={ownerSelectOptions}
+                    onChange={(val) => updateField("owner", val)}
+                    placeholder="Select owner"
+                  />
                 </div>
 
                 <div>
@@ -413,64 +557,42 @@ export default function AddActionItemModal() {
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <FieldLabel required>Initial Status</FieldLabel>
-                  <select
-                    required
+                  <ThemedSelectDropdown
+                    dropdownId="status"
+                    activeDropdown={activeDropdown}
+                    setActiveDropdown={setActiveDropdown}
                     value={actionForm.status}
-                    onChange={(event) =>
-                      updateField("status", event.target.value)
-                    }
-                    title={actionForm.status || ""}
-                    className={selectClass}
-                  >
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
+                    options={statusSelectOptions}
+                    onChange={(val) => updateField("status", val)}
+                    placeholder="Select status"
+                  />
                 </div>
 
                 <div>
                   <FieldLabel required>Assigned Risk Level</FieldLabel>
-                  <select
-                    required
+                  <ThemedSelectDropdown
+                    dropdownId="riskLevel"
+                    activeDropdown={activeDropdown}
+                    setActiveDropdown={setActiveDropdown}
                     value={actionForm.riskLevel}
-                    onChange={(event) =>
-                      updateField("riskLevel", event.target.value)
-                    }
-                    title={actionForm.riskLevel || ""}
-                    className={selectClass}
-                  >
-                    {RISK_OPTIONS.filter(
-                      (option) => option !== "All Risk",
-                    ).map((risk) => (
-                      <option key={risk} value={risk}>
-                        {risk}
-                      </option>
-                    ))}
-                  </select>
+                    options={riskSelectOptions}
+                    onChange={(val) => updateField("riskLevel", val)}
+                    placeholder="Select risk level"
+                  />
                 </div>
               </div>
 
               <div className="mt-3">
                 <FieldLabel required>Linked Gap Category</FieldLabel>
-                <select
-                  required
+                <ThemedSelectDropdown
+                  dropdownId="linkedGap"
+                  activeDropdown={activeDropdown}
+                  setActiveDropdown={setActiveDropdown}
                   value={actionForm.linkedGap}
-                  onChange={(event) =>
-                    updateField("linkedGap", event.target.value)
-                  }
-                  title={actionForm.linkedGap || ""}
-                  className={selectClass}
-                >
-                  {GAP_OPTIONS.filter(
-                    (option) => option !== "All Gaps",
-                  ).map((gap) => (
-                    <option key={gap} value={gap}>
-                      {gap}
-                    </option>
-                  ))}
-                </select>
+                  options={gapSelectOptions}
+                  onChange={(val) => updateField("linkedGap", val)}
+                  placeholder="Select gap category"
+                />
               </div>
 
               <div className="mt-3 flex flex-1 flex-col">

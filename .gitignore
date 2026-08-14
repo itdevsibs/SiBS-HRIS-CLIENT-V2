@@ -38,6 +38,11 @@ Thumbs.db
 # MD files
 *.md
 
-# Codex
+# Codex & Skills
 .codex
-.agents
+.agents/
+!.agents/skills/
+
+# Graphify output & cache
+graphify-out/
+.graphify/

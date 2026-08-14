@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { DollarSign, Loader2 } from "lucide-react";
+
+import CandidatePipelineModalShell, {
+  CandidateModalPrimaryButton,
+  CandidateModalSecondaryButton,
+  CandidateModalSection,
+} from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
+import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 
 function toNumber(value) {
   const numberValue = Number(value);
@@ -102,194 +109,130 @@ export default function RevisedOfferModal({
     }
   }
 
+  const footer = (
+    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <CandidateModalSecondaryButton type="button" onClick={handleClose} disabled={isSubmitting}>
+        Cancel
+      </CandidateModalSecondaryButton>
+      <CandidateModalPrimaryButton
+        type="submit"
+        form="candidate-revised-offer-form"
+        disabled={isSubmitting}
+        className="min-w-[170px] bg-[#FF5C28] hover:bg-[#E94F1F]"
+      >
+        {isSubmitting && <Loader2 size={15} className="animate-spin" />}
+        {isSubmitting ? "Submitting..." : "Submit Revised Offer"}
+      </CandidateModalPrimaryButton>
+    </div>
+  );
+
   return (
-    <div
-      className="sibs-modal-blur fixed inset-0 z-[13000] flex h-dvh items-center justify-center px-4 py-4"
-      onClick={handleClose}
+    <CandidatePipelineModalShell
+      icon={DollarSign}
+      title="Create Revised Offer"
+      subtitle="Compare the current compensation against the proposed values before submitting the revision for approval."
+      badge="Offer Revision"
+      onClose={handleClose}
+      closeDisabled={isSubmitting}
+      maxWidth="max-w-3xl"
+      zIndex="z-[13000]"
+      footer={footer}
+      closeOnBackdrop
     >
       {isSubmitting && (
-        <div
-          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
-          aria-hidden="true"
-        />
+        <div className="fixed inset-0 z-[24000] cursor-wait bg-transparent" aria-hidden="true" />
       )}
-<form
-        onSubmit={handleSubmit}
-        onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
-          <div className="min-w-0">
-            <h2 className="text-xl font-extrabold text-sibs-primary-1">
-              Create New Offer
-            </h2>
-            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
-              Enter the new compensation and submit it for approval.
-            </p>
-          </div>
 
-          <button
-            type="button"
-            onClick={handleClose}
-            disabled={isSubmitting}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-            aria-label="Close revised offer modal"
-          >
-            <X size={20} />
-          </button>
-        </div>
+      <form id="candidate-revised-offer-form" onSubmit={handleSubmit} className="space-y-4">
+        <CandidateModalSummary candidate={candidate} stage={candidate?.currentStage || "Offered"} />
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
-          <div className="rounded-2xl border border-[#D9E2EC] bg-white p-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              Candidate
-            </p>
-            <p className="mt-1 break-words text-base font-extrabold text-[#101828]">
-              {candidate?.name || candidate?.candidateName || "Candidate"}
-            </p>
-            <p className="mt-1 break-words text-sm font-bold text-sibs-tertiary-5">
-              {candidate?.email || candidate?.candidateEmail || "No email provided"}
-            </p>
-          </div>
-
-          <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5">
-              <h3 className="text-sm font-extrabold text-sibs-primary-1">
-                Current Compensation
-              </h3>
-
-              <div className="mt-4 space-y-3">
-                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                    Current Basic Daily Rate
-                  </p>
-                  <p className="mt-1 text-base font-extrabold text-[#101828]">
-                    {formatCurrency(currentBasicDailyRate)}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                    Current Daily De Minimis
-                  </p>
-                  <p className="mt-1 text-base font-extrabold text-[#101828]">
-                    {formatCurrency(currentDailyDeMinimis)}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Current Total Daily Rate
-                  </p>
-                  <p className="mt-1 text-base font-extrabold text-sibs-primary-1">
-                    {formatCurrency(
-                      toNumber(currentBasicDailyRate) +
-                        toNumber(currentDailyDeMinimis),
-                    )}
-                  </p>
-                </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <CandidateModalSection title="Current Compensation">
+            <div className="space-y-3">
+              <div className="sibs-info-tile">
+                <p className="sibs-kicker">Current Basic Daily Rate</p>
+                <p className="mt-1 sibs-text-base font-extrabold tabular-nums text-[#101828]">
+                  {formatCurrency(currentBasicDailyRate)}
+                </p>
               </div>
-            </section>
-
-            <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5">
-              <h3 className="text-sm font-extrabold text-sibs-primary-1">
-                Proposed Compensation
-              </h3>
-
-              <div className="mt-4 space-y-4">
-                <label className="block">
-                  <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    New Basic Daily Rate
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={basicDailyRate}
-                    disabled={isSubmitting}
-                    onWheel={preventNumberWheel}
-                    onKeyDown={preventNumberArrowChange}
-                    onChange={(event) => setBasicDailyRate(event.target.value)}
-                    placeholder="Enter new basic daily rate"
-                    className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    New Daily De Minimis
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={dailyDeMinimis}
-                    disabled={isSubmitting}
-                    onWheel={preventNumberWheel}
-                    onKeyDown={preventNumberArrowChange}
-                    onChange={(event) => setDailyDeMinimis(event.target.value)}
-                    placeholder="Enter new daily de minimis"
-                    className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  />
-                </label>
-
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-emerald-700">
-                    Proposed Total Daily Rate
-                  </p>
-                  <p className="mt-1 text-base font-extrabold text-emerald-800">
-                    {formatCurrency(proposedTotal)}
-                  </p>
-                </div>
+              <div className="sibs-info-tile">
+                <p className="sibs-kicker">Current Daily De Minimis</p>
+                <p className="mt-1 sibs-text-base font-extrabold tabular-nums text-[#101828]">
+                  {formatCurrency(currentDailyDeMinimis)}
+                </p>
               </div>
-            </section>
-          </div>
-
-          <label className="mt-5 block rounded-2xl border border-[#D9E2EC] bg-white p-5">
-            <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              Remarks — Optional
-            </span>
-            <textarea
-              value={remarks}
-              disabled={isSubmitting}
-              onChange={(event) => setRemarks(event.target.value)}
-              rows={4}
-              placeholder="Add a reason or justification for the new offer..."
-              className="mt-2 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
-            />
-          </label>
-
-          {errorMessage && (
-            <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
-              {errorMessage}
+              <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                <p className="sibs-kicker text-sibs-primary-1">Current Total Daily Rate</p>
+                <p className="mt-1 sibs-text-base font-extrabold tabular-nums text-sibs-primary-1">
+                  {formatCurrency(toNumber(currentBasicDailyRate) + toNumber(currentDailyDeMinimis))}
+                </p>
+              </div>
             </div>
-          )}
+          </CandidateModalSection>
+
+          <CandidateModalSection title="Proposed Compensation">
+            <div className="space-y-4">
+              <label className="block">
+                <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">New Basic Daily Rate</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={basicDailyRate}
+                  disabled={isSubmitting}
+                  onWheel={preventNumberWheel}
+                  onKeyDown={preventNumberArrowChange}
+                  onChange={(event) => setBasicDailyRate(event.target.value)}
+                  placeholder="Enter new basic daily rate"
+                  className="h-11 w-full rounded-xl border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-bold tabular-nums text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">New Daily De Minimis</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={dailyDeMinimis}
+                  disabled={isSubmitting}
+                  onWheel={preventNumberWheel}
+                  onKeyDown={preventNumberArrowChange}
+                  onChange={(event) => setDailyDeMinimis(event.target.value)}
+                  placeholder="Enter new daily de minimis"
+                  className="h-11 w-full rounded-xl border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-bold tabular-nums text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                />
+              </label>
+
+              <div className="rounded-xl border border-[#FF5C28]/25 bg-[#FFF9F6] px-4 py-3">
+                <p className="sibs-kicker text-[#FF5C28]">Proposed Total Daily Rate</p>
+                <p className="mt-1 sibs-text-base font-extrabold tabular-nums text-sibs-primary-1">
+                  {formatCurrency(proposedTotal)}
+                </p>
+              </div>
+            </div>
+          </CandidateModalSection>
         </div>
 
-        <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-          <button
-            type="button"
-            onClick={handleClose}
+        <CandidateModalSection title="Revision Remarks" subtitle="Optional justification for the revised compensation.">
+          <textarea
+            value={remarks}
             disabled={isSubmitting}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Cancel
-          </button>
+            onChange={(event) => setRemarks(event.target.value)}
+            rows={4}
+            placeholder="Add a reason or justification for the new offer..."
+            className="w-full resize-none rounded-xl border border-[#D6E0EA] bg-white px-3 py-3 sibs-text-xs font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+          />
+        </CandidateModalSection>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
-            {isSubmitting
-              ? "Submitting..."
-              : "Submit New Offer for Approval"}
-          </button>
-        </div>
+        {errorMessage && (
+          <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 sibs-text-xs font-bold leading-5 text-red-600">
+            {errorMessage}
+          </div>
+        )}
       </form>
-    </div>
+    </CandidatePipelineModalShell>
   );
 }

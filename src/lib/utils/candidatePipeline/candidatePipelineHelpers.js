@@ -11,10 +11,10 @@ import { safeReadArray, safeWriteArray } from "./candidatePipelineStorage";
 
 import {
   getCurrentDate,
-  getCurrentTimestamp,
   formatCurrency,
 } from "./candidatePipelineFormatters";
 import { FileSpreadsheet, FileText, ImageIcon } from "lucide-react";
+import { getPipelineStageClass } from "./candidatePipelineStageThemes";
 
 export function inputClass(extra = "") {
   return `h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F8FAFC] disabled:text-sibs-tertiary-5 disabled:placeholder:text-sibs-tertiary-6 disabled:shadow-none disabled:focus:border-[#E6ECF2] disabled:focus:ring-0 ${extra}`;
@@ -148,26 +148,7 @@ export function canUpdateInterviewSchedule(candidate) {
 }
 
 export function getStageClass(stage) {
-  switch (stage) {
-    case "Initial Screening":
-      return "border-blue-100 bg-blue-50 text-blue-700";
-    case "Online Assessment":
-      return "border-cyan-100 bg-cyan-50 text-cyan-700";
-    case "Interview Scheduled":
-      return "border-sky-100 bg-sky-50 text-sky-700";
-    case "Interviewed":
-      return "border-violet-100 bg-violet-50 text-violet-700";
-    case "Offered":
-      return "border-amber-100 bg-amber-50 text-amber-700";
-    case "Accepted":
-      return "border-emerald-100 bg-emerald-50 text-emerald-700";
-    case "For NHO":
-      return "border-teal-100 bg-teal-50 text-teal-700";
-    case "Drop-off":
-      return "border-red-100 bg-red-50 text-sibs-primary-1";
-    default:
-      return "border-gray-100 bg-gray-50 text-gray-600";
-  }
+  return getPipelineStageClass(stage);
 }
 
 export function getPrfStatusClass(status) {

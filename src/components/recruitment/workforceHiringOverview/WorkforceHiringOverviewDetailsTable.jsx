@@ -171,10 +171,10 @@ function HeaderTh({
     <th
       rowSpan={rowSpan}
       colSpan={colSpan}
-      className={`sibs-data-table-th border border-slate-200 !px-3 text-center align-middle font-jakarta uppercase tracking-wider ${
+      className={`sibs-data-table-th border border-slate-200 !px-2.5 2xl:!px-3 text-center align-middle font-jakarta uppercase tracking-wider ${
         group
-          ? "!bg-[#EBF3FA] !py-2 !text-[10px] !font-black !text-sibs-primary-1"
-          : "!bg-[#F8FAFC] !py-2.5 !text-[10px] !font-extrabold !text-slate-500"
+          ? "!bg-[#EBF3FA] !py-1.5 2xl:!py-2 sibs-text-micro !font-black !text-sibs-primary-1"
+          : "!bg-[#F8FAFC] !py-1.5 2xl:!py-2.5 sibs-text-micro !font-extrabold !text-slate-500"
       } ${className}`}
     >
       {children}
@@ -199,7 +199,7 @@ function BodyTd({
   return (
     <td
       {...props}
-      className={`whitespace-nowrap border-b border-[#E6ECF2] px-3 py-2.5 align-middle text-xs leading-tight font-jakarta tabular-nums ${alignmentClass} ${className}`}
+      className={`whitespace-nowrap border-b border-[#E6ECF2] px-2.5 py-1.5 2xl:px-3 2xl:py-2.5 align-middle sibs-text-xs leading-tight font-jakarta tabular-nums ${alignmentClass} ${className}`}
     >
       {children}
     </td>
@@ -1473,22 +1473,22 @@ export default function WorkforceHiringOverviewDetailsTable() {
 
   return (
     <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+      <div className="border-b border-[#E6ECF2] px-3 py-2 2xl:px-5 2xl:py-4">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,1fr)_minmax(680px,860px)] xl:items-start">
           <div className="min-w-0">
             <div className="flex min-w-0 items-start gap-2">
 
-              <div className="min-w-0">
-                <h2 className="sibs-section-title">
+              <div className="min-w-0 space-y-0.5">
+                <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
                   Detailed Performance by Cluster / Account (6-Week Multi-Week Ledger)
                 </h2>
-                <p className="sibs-section-subtitle">
+                <p className="sibs-text-xs font-semibold text-[#667085]">
                   Master account-level capacity ledger across the selected six-week window, including requirements, buffer, workforce loss, pipeline, and yield metrics.
                 </p>
               </div>
             </div>
 
-            <span className="mt-3 inline-flex w-fit items-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+            <span className="mt-2.5 inline-flex w-fit items-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 2xl:px-3 2xl:py-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">
               <GripHorizontal className="h-3.5 w-3.5 text-[#FF5C28]" />
               Drag horizontally to inspect all columns
             </span>

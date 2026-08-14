@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
 import { useOnboarding } from "../../services/context/OnboardingContext";
 import { CreateOnboardingModal } from "../../components/modals/onboarding/OnboardingModal.jsx";
@@ -13,35 +8,21 @@ import OnboardingStats from "../../components/recruitment/onboarding/OnboardingS
 import OnboardingOutcomeOverview from "../../components/recruitment/onboarding/OnboardingOutcomeOverview";
 import OnboardingFilters from "../../components/recruitment/onboarding/OnboardingFilters";
 import OnboardingTable from "../../components/recruitment/onboarding/OnboardingTable";
-import OnboardingProcessNote from "../../components/recruitment/onboarding/OnboardingProcessNote";
 import { getAcceptedOffers } from "../../lib/axios/onboarding";
-import {
-  ClipboardList,
-  Plus,
-} from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 
 const formatDate = (dateValue) =>
   !dateValue
     ? "—"
-    : new Date(dateValue).toLocaleDateString(
-        "en-PH",
-        {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        },
-      );
+    : new Date(dateValue).toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
 
-const getDaysToStart = (
-  acceptedDate,
-  expectedDate,
-) =>
+const getDaysToStart = (acceptedDate, expectedDate) =>
   acceptedDate && expectedDate
-    ? `${Math.ceil(
-        (new Date(expectedDate) -
-          new Date(acceptedDate)) /
-          86400000,
-      )} day/s`
+    ? `${Math.ceil((new Date(expectedDate) - new Date(acceptedDate)) / 86400000)} day/s`
     : "—";
 
 const getShowStatusClass = (status) =>
@@ -49,7 +30,9 @@ const getShowStatusClass = (status) =>
     ? "bg-emerald-50 text-emerald-700 border-emerald-200"
     : status === "No Show"
       ? "bg-red-50 text-red-700 border-red-200"
-      : "bg-amber-50 text-amber-700 border-amber-200";
+      : status === "Withdrawn"
+        ? "bg-orange-50 text-orange-700 border-orange-200"
+        : "bg-amber-50 text-amber-700 border-amber-200";
 
 const getOutcomeClass = (outcome) =>
   outcome === "True Hire"
@@ -77,59 +60,22 @@ const emptyOnboardingForm = {
 };
 
 export default function OnboardingPage() {
-  const {
-    fetchList,
-    createRecord,
-    updateOutcome,
-    list,
-  } = useOnboarding();
+  const { fetchList, createRecord, updateOutcome, list } = useOnboarding();
 
   const refreshTimerRef = useRef(null);
   const loadingDataRef = useRef(false);
 
-  const [
-    acceptedOffers,
-    setAcceptedOffers,
-  ] = useState([]);
+  const [acceptedOffers, setAcceptedOffers] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [onboardingForm, setOnboardingForm] = useState(emptyOnboardingForm);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [outcomeRecord, setOutcomeRecord] = useState(null);
+  const [outcomeType, setOutcomeType] = useState("");
+  const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
-  const [
-    showCreateModal,
-    setShowCreateModal,
-  ] = useState(false);
-
-  const [
-    onboardingForm,
-    setOnboardingForm,
-  ] = useState(emptyOnboardingForm);
-
-  const [
-    selectedRecord,
-    setSelectedRecord,
-  ] = useState(null);
-
-  const [
-    outcomeRecord,
-    setOutcomeRecord,
-  ] = useState(null);
-
-  const [
-    outcomeType,
-    setOutcomeType,
-  ] = useState("");
-
-  const [
-    isSubmittingCreate,
-    setIsSubmittingCreate,
-  ] = useState(false);
-
-  const [
-    outcomeForm,
-    setOutcomeForm,
-  ] = useState({
-    actualStartDate:
-      new Date()
-        .toISOString()
-        .split("T")[0],
+  const [outcomeForm, setOutcomeForm] = useState({
+    actualStartDate: new Date().toISOString().split("T")[0],
     reasonCategory: "No Response",
     remarks: "",
     withdrawalReason: "",
@@ -138,36 +84,27 @@ export default function OnboardingPage() {
     feedbackTag: "",
   });
 
-  const loadData = useCallback(
-    async () => {
-      if (loadingDataRef.current) {
-        return;
-      }
+  const loadData = useCallback(async () => {
+    if (loadingDataRef.current) return;
 
-      loadingDataRef.current = true;
+    loadingDataRef.current = true;
 
-      try {
-        /*
-         * GET /api/onboarding performs the Candidate Pipeline-to-
-         * Onboarding synchronization before returning the records.
-         */
-        await fetchList();
+    try {
+      /*
+       * GET /api/onboarding performs the Candidate Pipeline-to-Onboarding
+       * synchronization before returning the records.
+       */
+      await fetchList();
 
-        const response =
-          await getAcceptedOffers();
+      const response = await getAcceptedOffers();
 
-        setAcceptedOffers(
-          response?.success &&
-            Array.isArray(response.data)
-            ? response.data
-            : [],
-        );
-      } finally {
-        loadingDataRef.current = false;
-      }
-    },
-    [fetchList],
-  );
+      setAcceptedOffers(
+        response?.success && Array.isArray(response.data) ? response.data : [],
+      );
+    } finally {
+      loadingDataRef.current = false;
+    }
+  }, [fetchList]);
 
   useEffect(() => {
     loadData();
@@ -175,139 +112,85 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     function scheduleRefresh() {
-      window.clearTimeout(
-        refreshTimerRef.current,
-      );
-
-      refreshTimerRef.current =
-        window.setTimeout(() => {
-          loadData();
-        }, 180);
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = window.setTimeout(() => {
+        loadData();
+      }, 180);
     }
 
     function handleVisibilityChange() {
-      if (
-        document.visibilityState ===
-        "visible"
-      ) {
-        scheduleRefresh();
-      }
+      if (document.visibilityState === "visible") scheduleRefresh();
     }
 
-    window.addEventListener(
-      "ta-onboarding-updated",
-      scheduleRefresh,
-    );
-
-    window.addEventListener(
-      "ta-pipeline-candidates-updated",
-      scheduleRefresh,
-    );
-
-    window.addEventListener(
-      "focus",
-      scheduleRefresh,
-    );
-
-    document.addEventListener(
-      "visibilitychange",
-      handleVisibilityChange,
-    );
+    window.addEventListener("ta-onboarding-updated", scheduleRefresh);
+    window.addEventListener("ta-pipeline-candidates-updated", scheduleRefresh);
+    window.addEventListener("focus", scheduleRefresh);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.clearTimeout(
-        refreshTimerRef.current,
-      );
-
-      window.removeEventListener(
-        "ta-onboarding-updated",
-        scheduleRefresh,
-      );
-
-      window.removeEventListener(
-        "ta-pipeline-candidates-updated",
-        scheduleRefresh,
-      );
-
-      window.removeEventListener(
-        "focus",
-        scheduleRefresh,
-      );
-
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange,
-      );
+      window.clearTimeout(refreshTimerRef.current);
+      window.removeEventListener("ta-onboarding-updated", scheduleRefresh);
+      window.removeEventListener("ta-pipeline-candidates-updated", scheduleRefresh);
+      window.removeEventListener("focus", scheduleRefresh);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [loadData]);
 
-  function handleOpenOutcomeModal(
-    record,
-    type,
-  ) {
+  function handleOpenOutcomeModal(record, type) {
     setOutcomeRecord(record);
     setOutcomeType(type);
 
     setOutcomeForm((previous) => ({
       ...previous,
       actualStartDate:
-        type === "Show"
-          ? new Date()
-              .toISOString()
-              .split("T")[0]
-          : "",
+        type === "Show" ? new Date().toISOString().split("T")[0] : "",
       feedbackTag:
         type === "No Show"
           ? "No Show"
-          : "Pre-start Withdrawal",
+          : type === "Withdrawn"
+            ? "Pre-start Withdrawal"
+            : "",
     }));
   }
 
-  async function handleSubmitCreate(
-    event,
-  ) {
+  async function handleManualRefresh() {
+    if (isManualRefreshing) return;
+
+    setIsManualRefreshing(true);
+    try {
+      await loadData();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  }
+
+  async function handleSubmitCreate(event) {
     event.preventDefault();
 
-    if (isSubmittingCreate) {
-      return;
-    }
+    if (isSubmittingCreate) return;
 
     setIsSubmittingCreate(true);
 
     try {
-      const response =
-        await createRecord(
-          onboardingForm,
-        );
+      const response = await createRecord(onboardingForm);
 
       if (!response?.success) {
-        window.alert(
-          response?.message ||
-            "Failed to create onboarding record.",
-        );
-
+        window.alert(response?.message || "Failed to create onboarding record.");
         return;
       }
 
       setShowCreateModal(false);
-      setOnboardingForm(
-        emptyOnboardingForm,
-      );
-
+      setOnboardingForm(emptyOnboardingForm);
       await loadData();
     } finally {
       setIsSubmittingCreate(false);
     }
   }
 
-  async function handleSubmitOutcome(
-    event,
-  ) {
+  async function handleSubmitOutcome(event) {
     event.preventDefault();
 
-    if (!outcomeRecord?.id) {
-      return;
-    }
+    if (!outcomeRecord?.id) return;
 
     const finalOutcome =
       outcomeType === "Show"
@@ -316,86 +199,91 @@ export default function OnboardingPage() {
           ? "No Show"
           : "Pre-start Withdrawal";
 
-    const response =
-      await updateOutcome(
-        outcomeRecord.id,
-        {
-          ...outcomeForm,
-          finalOutcome,
-          showStatus: outcomeType,
-        },
-      );
+    const response = await updateOutcome(outcomeRecord.id, {
+      ...outcomeForm,
+      finalOutcome,
+      showStatus: outcomeType,
+    });
 
     if (!response?.success) {
-      window.alert(
-        response?.message ||
-          "Failed to update onboarding outcome.",
-      );
-
+      window.alert(response?.message || "Failed to update onboarding outcome.");
       return;
     }
 
     setOutcomeRecord(null);
     setSelectedRecord(null);
-
     await loadData();
   }
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-      <Header />
+    <div className="sibs-dashboard-shell">
+      <div className="shrink-0">
+        <Header />
+      </div>
 
-      <main className="min-w-0 flex-1 overflow-y-auto bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
-                <ClipboardList size={14} />
-                Recruitment Setup
+      <main className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 2xl:space-y-6">
+          <section className="sibs-page-header-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden p-5 sm:p-6 md:flex-row md:items-center">
+            <span className="sibs-top-accent" aria-hidden="true" />
+
+            <div className="mt-1 min-w-0">
+              <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+                Recruitment Lifecycle
               </div>
 
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+              <h1 className="mt-2.5 text-xl font-extrabold tracking-normal text-[#042C51] sm:text-2xl">
                 Onboarding
               </h1>
-
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Track transitions, true hires,
-                show/no-show, and pre-start
-                withdrawals.
+              <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-[#667085] sm:text-sm sm:leading-6">
+                Track accepted offers through expected start, actual start, Show / No Show, pre-start withdrawal, and final True Hire conversion.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                setShowCreateModal(true)
-              }
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 active:scale-[0.98]"
-            >
-              <Plus size={18} />
-              Add Onboarding Record
-            </button>
-          </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleManualRefresh}
+                disabled={isManualRefreshing}
+                title="Refresh onboarding data"
+                aria-label="Refresh onboarding data"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCw size={15} className={isManualRefreshing ? "animate-spin" : ""} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
+              >
+                <Plus size={15} />
+                Add Onboarding Record
+              </button>
+            </div>
+          </section>
 
           <OnboardingStats />
           <OnboardingOutcomeOverview />
 
           <section
-            className="sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
-            style={{
-              animationDelay: "240ms",
-            }}
+            className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm"
+            style={{ animationDelay: "240ms" }}
           >
-            <OnboardingFilters />
+            <header className="border-b border-[#E6ECF2] bg-white px-5 py-4">
+              <h2 className="text-base font-extrabold text-[#042C51]">
+                Onboarding Records
+              </h2>
+              <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+                Select a row or mobile card to review and resolve candidate start outcomes.
+              </p>
+            </header>
 
-            <OnboardingTable
-              onView={setSelectedRecord}
-            />
+            <div className="space-y-4 p-4 font-jakarta sm:p-5">
+              <OnboardingFilters />
+              <OnboardingTable onView={setSelectedRecord} />
+            </div>
           </section>
-
-          <OnboardingProcessNote
-            delay={300}
-          />
         </div>
       </main>
 
@@ -403,46 +291,26 @@ export default function OnboardingPage() {
         open={showCreateModal}
         form={onboardingForm}
         setForm={setOnboardingForm}
-        onReset={() =>
-          setOnboardingForm(
-            emptyOnboardingForm,
-          )
-        }
+        onReset={() => setOnboardingForm(emptyOnboardingForm)}
         onClose={() => {
           setShowCreateModal(false);
-          setOnboardingForm(
-            emptyOnboardingForm,
-          );
+          setOnboardingForm(emptyOnboardingForm);
         }}
         onboardingList={list}
-        acceptedOfferList={
-          acceptedOffers
-        }
+        acceptedOfferList={acceptedOffers}
         onSubmit={handleSubmitCreate}
-        isSubmitting={
-          isSubmittingCreate
-        }
+        isSubmitting={isSubmittingCreate}
       />
 
       <OnboardingDetailsModal
         open={Boolean(selectedRecord)}
         item={selectedRecord}
-        onClose={() =>
-          setSelectedRecord(null)
-        }
-        onOpenOutcomeModal={
-          handleOpenOutcomeModal
-        }
+        onClose={() => setSelectedRecord(null)}
+        onOpenOutcomeModal={handleOpenOutcomeModal}
         formatDate={formatDate}
-        getShowStatusClass={
-          getShowStatusClass
-        }
-        getOutcomeClass={
-          getOutcomeClass
-        }
-        getDaysToStart={
-          getDaysToStart
-        }
+        getShowStatusClass={getShowStatusClass}
+        getOutcomeClass={getOutcomeClass}
+        getDaysToStart={getDaysToStart}
       />
 
       <OutcomeModal
@@ -451,12 +319,8 @@ export default function OnboardingPage() {
         type={outcomeType}
         form={outcomeForm}
         setForm={setOutcomeForm}
-        onClose={() =>
-          setOutcomeRecord(null)
-        }
-        onSubmit={
-          handleSubmitOutcome
-        }
+        onClose={() => setOutcomeRecord(null)}
+        onSubmit={handleSubmitOutcome}
       />
     </div>
   );
