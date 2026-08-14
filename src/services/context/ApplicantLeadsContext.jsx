@@ -18,9 +18,13 @@ import {
   createApplicantLead,
   getApplicantLeadOptions,
   getApplicantLeads,
+  sendApplicantLeadApplicationLink,
   updateApplicantLead,
-  updateApplicantLeadStatus,
 } from "../../lib/axios/getApplicantLeads";
+import {
+  isApplicantLeadFormEdited,
+  getApplicantLeadEditSnapshot,
+} from "../../lib/utils/applicantLeads/applicantLeadFormDirty";
 import {
   filterApplicantLeads,
   getApplicantLeadMetrics,
@@ -102,6 +106,8 @@ export function ApplicantLeadsProvider({ children }) {
   const [toastMessage, setToastMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [sendingApplicationLinkLead, setSendingApplicationLinkLead] = useState(null);
+  const [applicationLinkSendStatus, setApplicationLinkSendStatus] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [lookupOptions, setLookupOptions] = useState(DEFAULT_LOOKUP_OPTIONS);
 
@@ -190,23 +196,7 @@ export function ApplicantLeadsProvider({ children }) {
 
   function openEditModal(lead) {
     setEditingLead(lead);
-    setFormData({
-      firstName: lead.firstName || "",
-      lastName: lead.lastName || "",
-      middleName: lead.middleName || "",
-      suffix: lead.suffix || "",
-      cpNum: lead.cpNum,
-      email: lead.email,
-      departmentId: lead.departmentId || "",
-      department: lead.department,
-      accountId: lead.accountId || "",
-      specificAccount: lead.specificAccount,
-      sourcingId: lead.sourcingId || "",
-      source: lead.source,
-      preferredSite: lead.preferredSite,
-      status: lead.status,
-      notes: lead.notes || "",
-    });
+    setFormData(getApplicantLeadEditSnapshot(lead));
     setShowLeadModal(true);
   }
 
@@ -230,6 +220,12 @@ export function ApplicantLeadsProvider({ children }) {
     const payload = buildApplicantLeadPayload(formData, user);
 
     if (editingLead) {
+      if (!isApplicantLeadFormEdited(formData, editingLead)) {
+        setIsSaving(false);
+        showToast("No changes to update.");
+        return;
+      }
+
       const result = await updateApplicantLead(editingLead.leadId || editingLead.id, payload);
 
       if (!result.success) {
@@ -267,12 +263,14 @@ export function ApplicantLeadsProvider({ children }) {
   }
 
   async function markApplicationLinkSent(lead) {
-    const result = await updateApplicantLeadStatus(lead.leadId || lead.id, {
-      status: "Application Link Sent",
-    });
+    setSendingApplicationLinkLead(lead);
+    setApplicationLinkSendStatus("sending");
+    const result = await sendApplicantLeadApplicationLink(lead.leadId || lead.id);
 
     if (!result.success) {
-      showToast(result.message || "Failed to update applicant lead status.");
+      setSendingApplicationLinkLead(null);
+      setApplicationLinkSendStatus("");
+      showToast(result.message || "Failed to send application link email.");
       return;
     }
 
@@ -286,7 +284,18 @@ export function ApplicantLeadsProvider({ children }) {
           : item,
       ),
     );
-    showToast(result.message || `Application link marked as sent for ${lead.fullName}.`);
+    setApplicationLinkSendStatus("sent");
+
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => {
+        setSendingApplicationLinkLead(null);
+        setApplicationLinkSendStatus("");
+        showToast(result.message || `Application link email sent to ${lead.fullName}.`);
+      }, 1400);
+    } else {
+      setSendingApplicationLinkLead(null);
+      setApplicationLinkSendStatus("");
+    }
   }
 
   function clearFilters() {
@@ -318,6 +327,9 @@ export function ApplicantLeadsProvider({ children }) {
       currentAccountName,
       isLoading,
       isSaving,
+      sendingApplicationLinkLead,
+      isSendingApplicationLink: Boolean(sendingApplicationLinkLead),
+      applicationLinkSendStatus,
       errorMessage,
       departmentOptions: lookupOptions.departments,
       accountOptions: lookupOptions.accounts,
@@ -361,6 +373,8 @@ export function ApplicantLeadsProvider({ children }) {
       formData,
       isLoading,
       isSaving,
+      sendingApplicationLinkLead,
+      applicationLinkSendStatus,
       leads,
       lookupOptions,
       metrics,

@@ -1,6 +1,7 @@
 import api from "./api-template";
 
 const REQUEST_TIMEOUT = 15000;
+const SEND_EMAIL_TIMEOUT = 45000;
 const BASE_PATH = "/api/applicant-leads";
 
 function normalizeApiError(err, fallbackMessage) {
@@ -103,6 +104,7 @@ export function normalizeApplicantLead(row = {}) {
       row.preferredLocation ||
       "",
     status: row.status || "New Lead",
+    referralCode: row.referral_code || row.referralCode || "",
     notes: row.remarks || row.notes || "",
     inputtedBy:
       row.logged_by_name ||
@@ -301,10 +303,40 @@ export async function updateApplicantLeadStatus(id, payload) {
   }
 }
 
+export async function sendApplicantLeadApplicationLink(id) {
+  try {
+    const res = await api.post(
+      `${BASE_PATH}/${encodeURIComponent(id)}/send-application-link`,
+      {},
+      {
+        withCredentials: true,
+        timeout: SEND_EMAIL_TIMEOUT,
+      },
+    );
+
+    return {
+      success: res.data?.success !== false,
+      data: normalizeApplicantLead(res.data?.data || res.data?.lead || res.data),
+      message: res.data?.message || "Application link email sent.",
+      status: res.status,
+      email: res.data?.email || null,
+    };
+  } catch (err) {
+    console.error(
+      "Axios sendApplicantLeadApplicationLink API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return normalizeApiError(err, "Failed to send application link email.");
+  }
+}
+
 export default {
   getApplicantLeads,
   getApplicantLeadOptions,
   createApplicantLead,
   updateApplicantLead,
   updateApplicantLeadStatus,
+  sendApplicantLeadApplicationLink,
 };
