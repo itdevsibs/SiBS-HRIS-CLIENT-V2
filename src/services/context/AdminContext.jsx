@@ -13,6 +13,8 @@ export function AdminProvider({ children }) {
     if (accessNum === 5) return "Manager";
     if (accessNum === 6) return "Executive";
     if (accessNum === 7) return "Super Admin";
+    if (accessNum === 8) return "Team Leaders";
+    if (accessNum === 9) return "WFM";
     if (accessNum === 10) return "SOM";
 
     return null;
