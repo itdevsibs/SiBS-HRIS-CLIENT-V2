@@ -42,6 +42,7 @@ export const APPLICANT_LEAD_STATUS_OPTIONS = [
   "Contacted",
   "Application Link Sent",
   "Converted to Applicant",
+  "Moved to Talent Pool Archive",
   "Not Interested",
   "On Hold",
 ];

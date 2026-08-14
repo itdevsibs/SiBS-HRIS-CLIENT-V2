@@ -45,25 +45,26 @@ export default function ApplicantLeadsFilters() {
 
   return (
     <div className="border-b border-[#E6ECF2] bg-white px-5 py-4">
-      <div className="grid gap-3 lg:grid-cols-[minmax(320px,1fr)_180px_220px_220px_auto]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(320px,520px)_1fr] xl:items-end">
         <label className="block">
           <span className="mb-2 block text-xs font-extrabold text-[#101828]">
             Search
           </span>
           <div className="relative">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
-            />
-            <input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search leads by name, phone, email, account..."
-              className="h-10 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 pl-9 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-            />
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
+          />
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search active leads by candidate name, phone, email, account..."
+            className="h-10 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 pl-9 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+          />
           </div>
         </label>
 
+        <div className="grid gap-3 lg:grid-cols-[180px_220px_220px_auto]">
         <label className="block">
           <span className="mb-2 block text-xs font-extrabold text-[#101828]">
             Status
@@ -108,6 +109,7 @@ export default function ApplicantLeadsFilters() {
           >
             Clear
           </button>
+        </div>
         </div>
       </div>
     </div>
