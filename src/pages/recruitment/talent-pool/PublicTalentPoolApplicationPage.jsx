@@ -88,8 +88,10 @@ const acceptedDocumentExtensions = [
   ".gif",
 ];
 
+const OUTBOUND_SOURCE = "Outbound";
+
 const defaultFormOptions = {
-  hearAboutUs: [],
+  hearAboutUs: [OUTBOUND_SOURCE],
   locations: [],
   workExperience: [],
   lengthOfExperience: [],
@@ -1069,11 +1071,39 @@ function normalizeDropdownOptions(options = []) {
     .filter(Boolean);
 }
 
+function ensureOption(options = [], optionValue) {
+  const normalizedTarget = cleanText(optionValue).toLowerCase();
+  const hasOption = toArray(options).some((option) => {
+    const value = cleanText(getOptionValue(option)).toLowerCase();
+    const label = cleanText(getOptionLabel(option)).toLowerCase();
+    return value === normalizedTarget || label === normalizedTarget;
+  });
+
+  return hasOption ? options : [...toArray(options), optionValue];
+}
+
+function sortHearAboutUsOptions(options = []) {
+  return [...toArray(options)].sort((firstOption, secondOption) => {
+    const firstLabel = cleanText(getOptionLabel(firstOption)).toLowerCase();
+    const secondLabel = cleanText(getOptionLabel(secondOption)).toLowerCase();
+    const firstIsOthers = firstLabel === "others";
+    const secondIsOthers = secondLabel === "others";
+
+    if (firstIsOthers === secondIsOthers) return 0;
+    return firstIsOthers ? 1 : -1;
+  });
+}
+
 function normalizeOptionsPayload(payload) {
   const data = payload && typeof payload === "object" ? payload : {};
 
   return {
-    hearAboutUs: Array.isArray(data.hearAboutUs) ? data.hearAboutUs : [],
+    hearAboutUs: sortHearAboutUsOptions(
+      ensureOption(
+        Array.isArray(data.hearAboutUs) ? data.hearAboutUs : [],
+        OUTBOUND_SOURCE,
+      ),
+    ),
     locations: Array.isArray(data.locations) ? data.locations : [],
     workExperience: Array.isArray(data.workExperience)
       ? data.workExperience
@@ -2565,8 +2595,10 @@ function EducationDetailsFields({ attainment, details, onChange }) {
   );
 }
 
-function MultiSelectCheckboxGroup({ options, values, onChange }) {
+function MultiSelectCheckboxGroup({ options, values, onChange, disabled = false }) {
   function toggleValue(optionValue) {
+    if (disabled) return;
+
     if (values.includes(optionValue)) {
       onChange(values.filter((item) => item !== optionValue));
       return;
@@ -2589,17 +2621,26 @@ function MultiSelectCheckboxGroup({ options, values, onChange }) {
         return (
           <label
             key={option?.id || optionValue}
-            className={`group flex cursor-pointer items-start gap-2.5 rounded-[10px] border px-3 py-2.5 text-xs transition ${
-              checked
-                ? "border-[#FF5C28] bg-[#FFF0EB] font-extrabold text-[#042C51] shadow-sm"
-                : "border-[#DCE6F1] bg-white font-bold text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+            className={`group flex items-start gap-2.5 rounded-[10px] border px-3 py-2.5 text-xs transition ${
+              disabled
+                ? checked
+                  ? "cursor-not-allowed border-emerald-200 bg-emerald-50 font-extrabold text-emerald-800 shadow-sm"
+                  : "cursor-not-allowed border-[#E6ECF2] bg-[#F8FAFC] font-bold text-[#98A2B3] opacity-70"
+                : checked
+                  ? "cursor-pointer border-[#FF5C28] bg-[#FFF0EB] font-extrabold text-[#042C51] shadow-sm"
+                  : "cursor-pointer border-[#DCE6F1] bg-white font-bold text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
             }`}
           >
             <input
               type="checkbox"
               checked={checked}
+              disabled={disabled}
               onChange={() => toggleValue(optionValue)}
-              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
+              className={`mt-0.5 h-4 w-4 shrink-0 rounded border-[#98A2B3] ${
+                disabled
+                  ? "cursor-not-allowed accent-emerald-600"
+                  : "cursor-pointer accent-[#FF5C28]"
+              }`}
             />
             <span className="leading-5">{optionLabel}</span>
           </label>
@@ -3039,6 +3080,7 @@ export default function PublicTalentPoolApplicationPage() {
         body.public-talent-pool-form-page select:disabled {
           cursor: not-allowed !important;
         }
+
       `;
 
     return () => {
@@ -3049,7 +3091,7 @@ export default function PublicTalentPoolApplicationPage() {
 
   useEffect(() => {
     const referralCode = cleanText(form.referralCode).toUpperCase();
-    const referralCodeLooksComplete = /^REF-[A-Z0-9]{6}$/.test(referralCode);
+    const referralCodeReachedLimit = referralCode.length === 10;
 
     if (!referralCode) {
       setReferralLookupStatus("");
@@ -3058,7 +3100,7 @@ export default function PublicTalentPoolApplicationPage() {
       return undefined;
     }
 
-    if (!referralCodeLooksComplete) {
+    if (!referralCodeReachedLimit) {
       setReferralLookupStatus("");
       setReferralLookupMessage("");
       setIsLoadingReferralPrefill(false);
@@ -3091,6 +3133,9 @@ export default function PublicTalentPoolApplicationPage() {
           phone1: prefill.phone1 || previous.phone1,
           applyingLocation:
             prefill.applyingLocation || previous.applyingLocation,
+          hearAboutUs: [OUTBOUND_SOURCE],
+          referredBy: "",
+          employeeId: "",
         }));
         setReferralLookupStatus("matched");
         setReferralLookupMessage("Referral code matched.");
@@ -3196,6 +3241,8 @@ export default function PublicTalentPoolApplicationPage() {
   const hasRelevantExperience =
     form.workExperience ===
     "Has work Experience (at least 6 months relevant work experience)";
+
+  const isReferralCodeMatched = referralLookupStatus === "matched";
 
   const hasEmployeeReferralProgram = useMemo(
     () =>
@@ -3392,6 +3439,8 @@ export default function PublicTalentPoolApplicationPage() {
   }
 
   function handleHearAboutUsChange(values) {
+    if (isReferralCodeMatched) return;
+
     const hasEmployeeReferralProgram = isEmployeeReferralProgramSelected(
       values,
       formOptions.hearAboutUs,
@@ -4201,26 +4250,23 @@ export default function PublicTalentPoolApplicationPage() {
                     <input
                       value={form.referralCode}
                       disabled={isReferralCodeFromEmail}
+                      maxLength={10}
                       onChange={(e) =>
                         updateFormField(
                           "referralCode",
-                          e.target.value.toUpperCase(),
+                          e.target.value.toUpperCase().slice(0, 10),
                         )
                       }
                       placeholder="e.g. REF-******"
-                      className={inputClass(
-                        [
-                          "md:w-[260px]",
-                          isReferralCodeFromEmail
-                            ? "cursor-not-allowed bg-white text-[#042C51]"
-                            : "bg-white",
-                          referralLookupStatus === "matched"
-                            ? "!border-emerald-400 !ring-emerald-100 focus:!border-emerald-500 focus:!ring-emerald-100"
-                            : referralLookupStatus === "missing"
-                              ? "!border-amber-400 !ring-amber-100 focus:!border-amber-500 focus:!ring-amber-100"
-                              : "border-[#FFB27A]",
-                        ].join(" "),
-                      )}
+                      className={[
+                        "public-referral-code-input h-10 w-full rounded-[10px] border bg-white px-3 text-xs font-semibold uppercase text-[#042C51] transition placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] md:w-[260px]",
+                        referralLookupStatus === "matched"
+                          ? "public-referral-code-input--matched"
+                          : referralLookupStatus === "missing"
+                            ? "public-referral-code-input--missing"
+                            : "public-referral-code-input--default",
+                        isReferralCodeFromEmail ? "cursor-not-allowed" : "",
+                      ].join(" ")}
                     />
                   </div>
                 </div>
@@ -4234,6 +4280,7 @@ export default function PublicTalentPoolApplicationPage() {
                   options={formOptions.hearAboutUs}
                   values={form.hearAboutUs}
                   onChange={handleHearAboutUsChange}
+                  disabled={isReferralCodeMatched}
                 />
               </div>
 

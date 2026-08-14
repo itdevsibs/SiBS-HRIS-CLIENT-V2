@@ -129,6 +129,43 @@
     outline: 2px solid #FF5C28 !important;
     outline-offset: 2px !important;
   }
+
+  body.public-talent-pool-form-page input.public-referral-code-input {
+    outline-offset: 2px !important;
+  }
+
+  body.public-talent-pool-form-page input.public-referral-code-input.public-referral-code-input--matched {
+    border-color: #10B981 !important;
+  }
+
+  body.public-talent-pool-form-page input.public-referral-code-input.public-referral-code-input--matched:focus,
+  body.public-talent-pool-form-page input.public-referral-code-input.public-referral-code-input--matched:focus-visible {
+    border-color: #10B981 !important;
+    outline: 2px solid #10B981 !important;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18) !important;
+  }
+
+  body.public-talent-pool-form-page input.public-referral-code-input.public-referral-code-input--missing {
+    border-color: #F59E0B !important;
+  }
+
+  body.public-talent-pool-form-page input.public-referral-code-input.public-referral-code-input--missing:focus,
+  body.public-talent-pool-form-page input.public-referral-code-input.public-referral-code-input--missing:focus-visible {
+    border-color: #F59E0B !important;
+    outline: 2px solid #F59E0B !important;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18) !important;
+  }
+
+  body.public-talent-pool-form-page input.public-referral-code-input.public-referral-code-input--default {
+    border-color: #FFB27A !important;
+  }
+
+  body.public-talent-pool-form-page input.public-referral-code-input.public-referral-code-input--default:focus,
+  body.public-talent-pool-form-page input.public-referral-code-input.public-referral-code-input--default:focus-visible {
+    border-color: #FF5C28 !important;
+    outline: 2px solid #FF5C28 !important;
+    box-shadow: 0 0 0 4px rgba(255, 92, 40, 0.1) !important;
+  }
 }
 
 /* =========================
