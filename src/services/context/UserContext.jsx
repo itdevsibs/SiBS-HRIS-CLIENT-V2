@@ -359,9 +359,28 @@ export function UserProvider({ children }) {
       return false;
     }
 
-    logoutTimerRef.current = window.setTimeout(() => {
-      void forceLogout();
-    }, remaining);
+    const scheduleExpiryCheck = (delay) => {
+      logoutTimerRef.current = window.setTimeout(() => {
+        logoutTimerRef.current = null;
+
+        /*
+         * Another HRIS tab may have extended the shared inactivity deadline.
+         * Re-read it before logging out so an older timer in this tab cannot
+         * invalidate the shared authentication cookies for every open tab.
+         */
+        const latestExpiresAt = readStoredExpiry();
+        const latestRemaining = latestExpiresAt - Date.now();
+
+        if (latestRemaining > 0) {
+          scheduleExpiryCheck(latestRemaining);
+          return;
+        }
+
+        void forceLogout();
+      }, delay);
+    };
+
+    scheduleExpiryCheck(remaining);
 
     return true;
   }, [clearLogoutTimer, forceLogout]);

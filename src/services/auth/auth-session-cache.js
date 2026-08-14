@@ -28,13 +28,34 @@ export function normalizeExpiry(value) {
 
 export function readStoredExpiry() {
   const sessionStore = getSessionStorage();
+  const localStore = getLocalStorage();
+
   const sessionExpiry = normalizeExpiry(
     sessionStore?.getItem(SESSION_EXPIRY_KEY),
   );
+  const sharedExpiry = normalizeExpiry(
+    localStore?.getItem(PERSISTENT_EXPIRY_KEY),
+  );
 
-  if (!sessionExpiry) return 0;
+  const effectiveExpiry = Math.max(sessionExpiry, sharedExpiry);
 
-  return sessionExpiry;
+  if (!effectiveExpiry) return 0;
+
+  /*
+   * sessionStorage is tab-scoped, while localStorage is shared by tabs on
+   * the same origin. Mirror the newest inactivity deadline so a sidebar
+   * link opened in a new tab can validate the already-authenticated cookie
+   * instead of treating the missing tab-local value as an expired session.
+   */
+  if (sessionExpiry !== effectiveExpiry) {
+    sessionStore?.setItem(SESSION_EXPIRY_KEY, String(effectiveExpiry));
+  }
+
+  if (sharedExpiry !== effectiveExpiry) {
+    localStore?.setItem(PERSISTENT_EXPIRY_KEY, String(effectiveExpiry));
+  }
+
+  return effectiveExpiry;
 }
 
 export function writeStoredExpiry(expiresAt) {
@@ -46,7 +67,10 @@ export function writeStoredExpiry(expiresAt) {
     SESSION_EXPIRY_KEY,
     String(normalizedExpiry),
   );
-  getLocalStorage()?.removeItem(PERSISTENT_EXPIRY_KEY);
+  getLocalStorage()?.setItem(
+    PERSISTENT_EXPIRY_KEY,
+    String(normalizedExpiry),
+  );
 
   return normalizedExpiry;
 }

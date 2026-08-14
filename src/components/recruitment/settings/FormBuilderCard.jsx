@@ -2,6 +2,8 @@ import React, { useMemo, useState } from "react";
 import {
   ArrowLeft,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Eye,
   Layers,
@@ -19,6 +21,7 @@ import { useRecruitmentSettings } from "../../../services/context/RecruitmentSet
 
 const FORM_STATUS_OPTIONS = ["Active", "Inactive", "Draft"];
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
+const FORMS_PAGE_LIMIT = 15;
 
 const SECTION_PRESETS = [
   {
@@ -208,7 +211,7 @@ function StatusFilterButton({ active, children, count, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-extrabold transition ${
+      className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] px-3 text-[11px] font-extrabold transition ${
         active
           ? "border border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
           : "border border-[#D6DEE8] bg-white text-[#475467] hover:border-[#BFD8F1] hover:bg-[#EFF6FF] hover:text-sibs-primary-1"
@@ -217,7 +220,7 @@ function StatusFilterButton({ active, children, count, onClick }) {
       {children}
       {Number.isFinite(count) && count > 0 && (
         <span
-          className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-100 px-1.5 text-[10px] font-extrabold text-red-600"
+          className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-100 px-1 text-[9px] font-extrabold text-red-600"
         >
           {count}
         </span>
@@ -231,14 +234,14 @@ function StepButton({ number, label, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border px-4 text-xs font-extrabold transition ${
+      className={`inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold transition ${
         active
           ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
-          : "border-transparent bg-white text-[#344054] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+          : "border-transparent bg-white text-[#475467] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
       }`}
     >
       <span
-        className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-extrabold ${
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-extrabold ${
           active ? "bg-[#FF5C28] text-white" : "bg-[#E8EEF5] text-[#667085]"
         }`}
       >
@@ -265,8 +268,8 @@ function BeginnerGuide({ hidden, onToggle }) {
   }
 
   return (
-    <div className="rounded-2xl border border-amber-300 bg-[#FFFBEA] p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <div className="rounded-xl border border-amber-200 bg-[#FFFCF2] p-3">
+      <div className="mb-2.5 flex items-center justify-between gap-3">
         <p className="flex items-center gap-2 text-xs font-extrabold uppercase text-[#9A4A00]">
           <Sparkles size={15} className="text-[#FF5C28]" />
           <Lightbulb size={14} className="text-amber-500" />
@@ -282,7 +285,7 @@ function BeginnerGuide({ hidden, onToggle }) {
         </button>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-2.5 lg:grid-cols-3">
         {[
           [
             "Step 1: Basic Info",
@@ -299,12 +302,12 @@ function BeginnerGuide({ hidden, onToggle }) {
         ].map(([title, copy]) => (
           <div
             key={title}
-            className="rounded-xl border border-amber-200 bg-white px-4 py-3"
+            className="rounded-[10px] border border-amber-100 bg-white px-3 py-2.5"
           >
             <p className="text-xs font-extrabold text-sibs-primary-1">
               {title}
             </p>
-            <p className="mt-1 text-xs font-medium leading-5 text-[#475467]">
+            <p className="mt-1 text-[11px] font-medium leading-4 text-[#667085]">
               {copy}
             </p>
           </div>
@@ -352,6 +355,7 @@ export default function FormBuilderCard() {
   const [showAllSteps, setShowAllSteps] = useState(false);
   const [formsSearch, setFormsSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [formsPage, setFormsPage] = useState(1);
   const [guideHidden, setGuideHidden] = useState(false);
 
   const allPositions = Array.isArray(availablePositions)
@@ -413,6 +417,27 @@ export default function FormBuilderCard() {
 
     return counts;
   }, [allPositions, getFinalInterviewForm]);
+
+  const totalFormsPages = Math.max(
+    1,
+    Math.ceil(formsForTable.length / FORMS_PAGE_LIMIT),
+  );
+  const currentFormsPage = Math.min(formsPage, totalFormsPages);
+  const formsPageStart = (currentFormsPage - 1) * FORMS_PAGE_LIMIT;
+  const paginatedForms = formsForTable.slice(
+    formsPageStart,
+    formsPageStart + FORMS_PAGE_LIMIT,
+  );
+
+  function handlePreviousFormsPage() {
+    if (positionsLoading || currentFormsPage <= 1) return;
+    setFormsPage(Math.max(currentFormsPage - 1, 1));
+  }
+
+  function handleNextFormsPage() {
+    if (positionsLoading || currentFormsPage >= totalFormsPages) return;
+    setFormsPage(Math.min(currentFormsPage + 1, totalFormsPages));
+  }
 
   const groupedSections = useMemo(() => groupFieldsBySection(fields), [fields]);
   const typeOptions = useMemo(
@@ -509,201 +534,302 @@ export default function FormBuilderCard() {
     : formsForTable.length;
 
   if (mode === "table") {
+    const shownFrom = formsForTable.length ? formsPageStart + 1 : 0;
+    const shownTo = Math.min(
+      formsPageStart + paginatedForms.length,
+      formsForTable.length,
+    );
+
     return (
-      <div className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <div className="mb-5 flex flex-col gap-3 border-b border-[#E6ECF2] pb-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold text-sibs-tertiary-5">
-              <span>Settings</span>
-              <span>/</span>
-              <span className="text-sibs-primary-1">
+      <>
+        <style>{`
+          @keyframes sibsFinalInterviewRowReveal {
+            from {
+              opacity: 0;
+              transform: translateY(8px);
+            }
+
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .sibs-final-interview-row-reveal {
+            animation: sibsFinalInterviewRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            will-change: opacity, transform;
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .sibs-final-interview-row-reveal {
+              animation: none !important;
+              transform: none !important;
+            }
+          }
+        `}</style>
+
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[10px] font-extrabold text-[#8A98B8]">
+                <span>Settings</span>
+                <span>/</span>
+                <span className="text-sibs-primary-1">
+                  Position-based Final Interview Forms
+                </span>
+              </div>
+              <h3 className="sibs-section-title text-[18px] sm:text-[20px]">
                 Position-based Final Interview Forms
-              </span>
+              </h3>
+              <p className="sibs-section-subtitle mt-1">
+                Manage position interview forms, scoring rubrics, passing thresholds, and custom question fields.
+              </p>
             </div>
-            <h3 className="text-[22px] font-extrabold leading-tight text-sibs-primary-1">
-              Position-based Final Interview Forms
-            </h3>
-            <p className="mt-1 text-[13px] font-medium leading-5 text-[#475467]">
-              Manage position interview forms, scoring rubrics, passing
-              thresholds, and custom question fields.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-9 items-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-xs font-extrabold text-blue-700">
-              {configuredCount} configured forms
-            </span>
-            <button
-              type="button"
-              onClick={() => refreshAvailablePositions?.()}
-              disabled={positionsLoading}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#F2F6FA] text-sibs-primary-1 transition hover:bg-[#E8EEF5] disabled:cursor-not-allowed disabled:opacity-60"
-              title="Refresh forms"
-            >
-              <RefreshCw
-                size={16}
-                className={positionsLoading ? "animate-spin" : ""}
-              />
-            </button>
-          </div>
-        </div>
-
-        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative w-full lg:max-w-[520px]">
-            <Search
-              size={17}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-            />
-            <input
-              value={formsSearch}
-              onChange={(event) => setFormsSearch(event.target.value)}
-              className="h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-4 pl-11 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-              placeholder="Search forms by role title, position code, department..."
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-xs font-extrabold text-[#475467]">
-              Status:
-            </span>
-            {TABLE_STATUS_OPTIONS.map((status) => (
-              <StatusFilterButton
-                key={status}
-                active={statusFilter === status}
-                count={status === "All" ? undefined : statusCounts[status]}
-                onClick={() => setStatusFilter(status)}
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="inline-flex h-8 items-center rounded-full border border-blue-100 bg-blue-50 px-3 text-[10px] font-extrabold uppercase tracking-wide text-blue-700">
+                {configuredCount} configured forms
+              </span>
+              <button
+                type="button"
+                onClick={() => refreshAvailablePositions?.()}
+                disabled={positionsLoading}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#DCE6F1] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                title="Refresh forms"
               >
-                {status}
-              </StatusFilterButton>
-            ))}
+                <RefreshCw
+                  size={14}
+                  className={positionsLoading ? "animate-spin" : ""}
+                />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {positionsError && (
-          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-700">
-            {positionsError}
-          </div>
-        )}
+          <div className="relative overflow-visible p-4 sm:p-5">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+              <label className="min-w-0">
+                <span className="mb-1 block text-[10px] font-extrabold text-[#101828]">
+                  Search
+                </span>
+                <div className="relative">
+                  <Search
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A98B8]"
+                  />
+                  <input
+                    value={formsSearch}
+                    onChange={(event) => {
+                      setFormsSearch(event.target.value);
+                      setFormsPage(1);
+                    }}
+                    className="h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-3 pl-9 text-[11px] font-semibold text-sibs-primary-1 outline-none transition placeholder:text-[#8A98B8] focus:border-[#BFD8F1] focus:ring-2 focus:ring-[#EFF6FF]"
+                    placeholder="Search forms by role title, position code, department..."
+                  />
+                </div>
+              </label>
 
-        <div className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white">
-          <div className="overflow-x-auto">
-            <table className="min-w-[980px] w-full border-collapse">
-              <thead>
-                <tr className="bg-[#F8FAFC] text-left text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
-                  <th className="px-5 py-4">Position Title & Code</th>
-                  <th className="px-5 py-4">Department & Site</th>
-                  <th className="px-5 py-4">Form Name</th>
-                  <th className="px-5 py-4">Passing Score</th>
-                  <th className="px-5 py-4">Criteria</th>
-                  <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4 text-right">Preview</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E6ECF2]">
-                {formsForTable.map(({ position, form }) => {
-                  const status = getFormStatus(form);
-
-                  return (
-                    <tr
-                      key={getPositionId(position)}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openEditor(position)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          openEditor(position);
-                        }
+              <div className="min-w-0">
+                <span className="mb-1 block text-[10px] font-extrabold text-[#101828]">
+                  Status
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {TABLE_STATUS_OPTIONS.map((status) => (
+                    <StatusFilterButton
+                      key={status}
+                      active={statusFilter === status}
+                      count={status === "All" ? undefined : statusCounts[status]}
+                      onClick={() => {
+                        setStatusFilter(status);
+                        setFormsPage(1);
                       }}
-                      className="cursor-pointer bg-white text-[13px] outline-none transition hover:bg-[#F8FAFC] focus:bg-[#F8FAFC]"
                     >
-                      <td className="px-5 py-4">
-                        <div className="flex items-start gap-3">
-                          <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#FF5C28]" />
-                          <div className="min-w-0">
-                            <p className="max-w-[220px] truncate text-[13px] font-extrabold text-sibs-primary-1">
-                              {getPositionTitle(position)}
-                            </p>
-                            <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
-                              {getPositionCode(position)}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <p className="text-[13px] font-extrabold text-sibs-primary-1">
-                          {getPositionDepartment(position)}
-                        </p>
-                        <p className="mt-1 text-xs font-medium text-[#475467]">
-                          {getPositionSite(position)}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4">
-                        <p className="max-w-[260px] truncate text-[13px] font-medium text-sibs-primary-1">
-                          {getFormName(form, position)}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                          {getPassingScore(form)}%
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="inline-flex rounded-lg bg-[#F1F5F9] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
-                          {getCriteriaCount(form)} Fields
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold uppercase ${statusBadgeClass(status)}`}
-                        >
-                          {status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openPreview(position, form);
-                            }}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-sibs-tertiary-5 transition hover:bg-[#F1F7FD] hover:text-sibs-primary-1"
-                            title="Preview form"
-                          >
-                            <Eye size={16} />
-                          </button>
-                        </div>
-                      </td>
+                      {status}
+                    </StatusFilterButton>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {positionsError && (
+              <div className="mt-3 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] font-bold text-amber-700">
+                {positionsError}
+              </div>
+            )}
+
+            <div className="mt-4 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+              <div className="max-h-[580px] overflow-auto sibs-scrollbar">
+                <table className="w-full min-w-[920px] border-collapse bg-white">
+                  <thead className="sibs-data-table-head">
+                    <tr className="sibs-data-table-head-row">
+                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
+                        Position Title &amp; Code
+                      </th>
+                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
+                        Department &amp; Site
+                      </th>
+                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
+                        Form Name
+                      </th>
+                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
+                        Passing Score
+                      </th>
+                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
+                        Criteria
+                      </th>
+                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
+                        Status
+                      </th>
+                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
+                        Preview
+                      </th>
                     </tr>
-                  );
-                })}
+                  </thead>
 
-                {positionsLoading && !formsForTable.length && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-14 text-center">
-                      <div className="inline-flex items-center gap-2 text-sm font-extrabold text-sibs-primary-1">
-                        <Loader2 size={18} className="animate-spin" />
-                        Loading final interview forms...
-                      </div>
-                    </td>
-                  </tr>
-                )}
+                  <tbody
+                    key={`${currentFormsPage}-${formsSearch}-${statusFilter}-${positionsLoading}`}
+                    className="divide-y divide-[#F1F5F9]"
+                  >
+                    {positionsLoading && !paginatedForms.length ? (
+                      Array.from({ length: FORMS_PAGE_LIMIT }).map((_, index) => (
+                        <tr key={index}>
+                          <td colSpan={7} className="px-3 py-3">
+                            <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E6ECF2]" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : paginatedForms.length > 0 ? (
+                      paginatedForms.map(({ position, form }, index) => {
+                        const status = getFormStatus(form);
 
-                {!positionsLoading && !formsForTable.length && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-14 text-center">
-                      <p className="text-sm font-extrabold text-sibs-tertiary-5">
-                        No final interview forms match the selected filters.
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                        return (
+                          <tr
+                            key={getPositionId(position)}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => openEditor(position)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                openEditor(position);
+                              }
+                            }}
+                            className="sibs-data-table-row sibs-final-interview-row-reveal cursor-pointer outline-none hover:bg-[#FFF9F6] focus:bg-[#FFF9F6]"
+                            style={{
+                              animationDelay: `${Math.min(index, 10) * 36}ms`,
+                            }}
+                          >
+                            <td className="whitespace-nowrap px-3 py-3 text-[11px]">
+                              <div className="flex items-center gap-2.5">
+                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF5C28]" />
+                                <div className="min-w-0">
+                                  <p className="max-w-[210px] truncate font-extrabold text-sibs-primary-1">
+                                    {getPositionTitle(position)}
+                                  </p>
+                                  <p className="mt-0.5 text-[10px] font-bold text-[#52637A]">
+                                    {getPositionCode(position)}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-3 text-[11px]">
+                              <p className="max-w-[220px] truncate font-extrabold text-sibs-primary-1">
+                                {getPositionDepartment(position)}
+                              </p>
+                              <p className="mt-0.5 text-[10px] font-medium text-[#667085]">
+                                {getPositionSite(position)}
+                              </p>
+                            </td>
+                            <td className="px-3 py-3 text-[11px]">
+                              <p className="max-w-[270px] truncate font-semibold text-sibs-primary-1">
+                                {getFormName(form, position)}
+                              </p>
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <span className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-extrabold text-blue-700">
+                                {getPassingScore(form)}%
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <span className="inline-flex rounded-md bg-[#F1F5F9] px-2 py-1 text-[10px] font-extrabold text-sibs-primary-1">
+                                {getCriteriaCount(form)} Fields
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <span
+                                className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase ${statusBadgeClass(status)}`}
+                              >
+                                {status}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openPreview(position, form);
+                                }}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] text-[#52637A] transition hover:bg-[#F1F7FD] hover:text-sibs-primary-1"
+                                title="Preview form"
+                              >
+                                <Eye size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="p-12 text-center">
+                          <p className="text-sm font-extrabold text-sibs-primary-1">
+                            No final interview forms found
+                          </p>
+                          <p className="mt-1 text-xs font-semibold text-[#667085]">
+                            Adjust the search or status filter to view other forms.
+                          </p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 border-t border-[#E6ECF2] pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[11px] font-semibold text-[#667085]">
+                Showing <span className="font-extrabold text-sibs-primary-1">{shownFrom}</span> to{" "}
+                <span className="font-extrabold text-sibs-primary-1">{shownTo}</span> of{" "}
+                <span className="font-extrabold text-sibs-primary-1">{formsForTable.length}</span> forms
+              </p>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handlePreviousFormsPage}
+                  disabled={positionsLoading || currentFormsPage <= 1}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-[11px] font-bold text-[#52637A] transition hover:border-[#BFD8F1] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft size={14} />
+                  Previous
+                </button>
+
+                <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-[10px] bg-[#FF5C28] px-3 text-[11px] font-extrabold text-white shadow-sm">
+                  {currentFormsPage}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleNextFormsPage}
+                  disabled={positionsLoading || currentFormsPage >= totalFormsPages}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-[11px] font-bold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
+      </>
     );
   }
 
@@ -712,143 +838,142 @@ export default function FormBuilderCard() {
   const showStepThree = showAllSteps || step === 3;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="mb-5 flex flex-col gap-3 border-b border-[#E6ECF2] pb-5 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] font-extrabold text-sibs-tertiary-5">
-            <span>Settings</span>
-            <span>/</span>
-            <button
-              type="button"
-              onClick={() => setMode("table")}
-              className="text-sibs-primary-1 hover:underline"
-            >
-              Position-based Final Interview Forms
-            </button>
-            <span>/</span>
-            <span className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-sibs-primary-1">
-              {getPositionTitle(selectedPosition)}
-            </span>
-          </div>
-          <h3 className="text-[22px] font-extrabold leading-tight text-sibs-primary-1">
-            Position-based Final Interview Forms
-          </h3>
-          <p className="mt-1 text-[13px] font-medium leading-5 text-[#475467]">
-            Manage position interview forms, scoring rubrics, passing
-            thresholds, and custom question fields.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setMode("table")}
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#EFF6FF]"
-          >
-            <ArrowLeft size={15} className="text-[#FF5C28]" />
-            Back to Forms Table
-          </button>
-          <button
-            type="button"
-            onClick={() => refreshAvailablePositions?.()}
-            disabled={positionsLoading}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#F2F6FA] text-sibs-primary-1 transition hover:bg-[#E8EEF5] disabled:cursor-not-allowed disabled:opacity-60"
-            title="Refresh forms"
-          >
-            <RefreshCw
-              size={16}
-              className={positionsLoading ? "animate-spin" : ""}
-            />
-          </button>
-        </div>
-      </div>
-
-      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:flex-row lg:items-center lg:justify-between">
-        <button
-          type="button"
-          onClick={() => setMode("table")}
-          className="inline-flex h-10 items-center gap-2 text-xs font-extrabold text-sibs-primary-1 hover:text-[#FF5C28]"
-        >
-          <ArrowLeft size={15} className="text-[#FF5C28]" />
-          Return to Position Forms Table
-        </button>
-
-        <label className="flex flex-col gap-2 text-xs font-bold text-sibs-tertiary-5 sm:flex-row sm:items-center">
-          Currently Editing Role:
-          <select
-            value={getPositionId(selectedPosition)}
-            onChange={(event) => {
-              setActivePositionId?.(event.target.value);
-              setStep(1);
-              setShowAllSteps(false);
-            }}
-            className="h-10 min-w-[320px] rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-          >
-            {allPositions.map((position) => (
-              <option
-                key={getPositionId(position)}
-                value={getPositionId(position)}
-              >
-                {getPositionTitle(position)} ({getPositionCode(position)})
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div className="mb-5 rounded-2xl bg-sibs-primary-1 p-5 text-white">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="rounded-md bg-[#FF5C28] px-2 py-1 text-xs font-extrabold uppercase">
-                Form Builder
+    <div className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-sibs-primary-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+                FINAL INTERVIEW FORM EDITOR
               </span>
-              <span className="text-sm font-extrabold">
+              <span className="inline-flex rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
                 {getPositionCode(selectedPosition)}
               </span>
             </div>
-            <h4 className="text-xl font-extrabold leading-tight">
-              {getPositionTitle(selectedPosition)}
-            </h4>
-            <p className="mt-1 text-[13px] font-medium leading-5 text-white/90">
-              {getPositionCode(selectedPosition)} -{" "}
-              {getPositionDepartment(selectedPosition)} -{" "}
-              {getPositionSite(selectedPosition)} - Passing Score:{" "}
-              <span className="font-extrabold text-amber-300">
-                {passingScore || 80}%
-              </span>{" "}
-              - Total Questions: {totalCriteria} Fields
+            <h3 className="text-[20px] font-extrabold leading-tight text-sibs-primary-1">
+              Position-based Final Interview Forms
+            </h3>
+            <p className="mt-1 text-[12px] font-medium leading-5 text-[#667085]">
+              Configure the selected position's final interview form, scoring threshold, sections, and criteria fields.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMode("table")}
+              className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-3 text-[11px] font-extrabold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#F8FAFC]"
+            >
+              <ArrowLeft size={14} className="text-[#FF5C28]" />
+              Back to Forms
+            </button>
+            <button
+              type="button"
+              onClick={() => refreshAvailablePositions?.()}
+              disabled={positionsLoading}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#DCE6F1] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+              title="Refresh forms"
+            >
+              <RefreshCw
+                size={14}
+                className={positionsLoading ? "animate-spin" : ""}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 lg:flex-row lg:items-end lg:justify-between">
+          <label className="min-w-0 flex-1">
+            <span className="mb-1 block text-[10px] font-extrabold text-[#101828]">
+              Currently Editing Role
+            </span>
+            <select
+              value={getPositionId(selectedPosition)}
+              onChange={(event) => {
+                setActivePositionId?.(event.target.value);
+                setStep(1);
+                setShowAllSteps(false);
+              }}
+              className="h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-3 text-[11px] font-extrabold text-sibs-primary-1 outline-none transition focus:border-[#BFD8F1] focus:ring-2 focus:ring-[#EFF6FF] lg:max-w-[560px]"
+            >
+              {allPositions.map((position) => (
+                <option
+                  key={getPositionId(position)}
+                  value={getPositionId(position)}
+                >
+                  {getPositionTitle(position)} ({getPositionCode(position)})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => openPreview()}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-xs font-extrabold text-white transition hover:bg-white/15"
+              className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-3 text-[11px] font-extrabold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#EFF6FF]"
             >
-              <Eye size={15} className="text-[#FF5C28]" />
+              <Eye size={14} className="text-[#FF5C28]" />
               Test Live Evaluation
             </button>
             <button
               type="button"
               onClick={() => void saveForm()}
               disabled={saveBusy}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E64E1D] disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-sibs-primary-1 px-3.5 text-[11px] font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {saveBusy ? (
-                <Loader2 size={15} className="animate-spin" />
+                <Loader2 size={14} className="animate-spin" />
               ) : (
-                <Save size={15} />
+                <Save size={14} className="text-[#FF5C28]" />
               )}
               Save Form
             </button>
           </div>
         </div>
-      </div>
+
+        <section className="mb-4 rounded-xl border border-[#E6ECF2] bg-white p-3.5">
+          <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#EDF1F5] pb-2.5">
+            <div>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.05em] text-[#52637A]">
+                POSITION FORM SUMMARY
+              </p>
+              <p className="mt-0.5 text-[11px] font-medium text-[#8A98B8]">
+                Review the selected position before editing its interview form.
+              </p>
+            </div>
+            <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase ${statusBadgeClass(formStatus || "Active")}`}>
+              {formStatus || "Active"}
+            </span>
+          </div>
+
+          <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="min-w-0 rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 xl:col-span-2">
+              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">Position Title</p>
+              <p className="mt-1 truncate text-[12px] font-extrabold text-sibs-primary-1">{getPositionTitle(selectedPosition)}</p>
+              <p className="mt-0.5 text-[10px] font-bold text-[#FF5C28]">{getPositionCode(selectedPosition)}</p>
+            </div>
+            <div className="min-w-0 rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5">
+              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">Department / Site</p>
+              <p className="mt-1 truncate text-[11px] font-extrabold text-sibs-primary-1">{getPositionDepartment(selectedPosition)}</p>
+              <p className="mt-0.5 truncate text-[10px] font-medium text-[#667085]">{getPositionSite(selectedPosition)}</p>
+            </div>
+            <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5">
+              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">Passing Score</p>
+              <p className="mt-1 text-[16px] font-extrabold tabular-nums text-[#FF5C28]">{passingScore || 80}%</p>
+            </div>
+            <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5">
+              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">Criteria Fields</p>
+              <p className="mt-1 text-[16px] font-extrabold tabular-nums text-sibs-primary-1">{totalCriteria}</p>
+            </div>
+          </div>
+        </section>
 
       {(formSavingStatus || formSaveError || questionsSaveError) && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-wrap gap-2">
           {formSavingStatus && (
             <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
               {/saving/i.test(formSavingStatus) && (
@@ -865,7 +990,7 @@ export default function FormBuilderCard() {
         </div>
       )}
 
-      <div className="mb-5 flex gap-2 rounded-2xl border border-[#E6ECF2] bg-white p-2 shadow-sm">
+        <div className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white p-1.5 shadow-sm sibs-scrollbar">
         <StepButton
           number={1}
           label="Form Info & Score"
@@ -896,7 +1021,7 @@ export default function FormBuilderCard() {
         <button
           type="button"
           onClick={() => setShowAllSteps((value) => !value)}
-          className={`inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-xs font-extrabold transition ${
+          className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold transition ${
             showAllSteps
               ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
               : "border-transparent bg-white text-[#344054] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
@@ -908,17 +1033,17 @@ export default function FormBuilderCard() {
           />
           {showAllSteps ? "Guided Wizard Mode" : "Show All Steps"}
         </button>
-      </div>
+        </div>
 
-      <BeginnerGuide
+        <BeginnerGuide
         hidden={guideHidden}
         onToggle={() => setGuideHidden((value) => !value)}
       />
 
-      <div className="mt-5 space-y-5">
+        <div className="mt-4 space-y-4">
         {showStepOne && (
-          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-4">
+          <section className="rounded-xl border border-[#D9E2EC] bg-white p-4">
+            <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-3">
               <div>
                 <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
                   Step 1 of 3
@@ -940,7 +1065,7 @@ export default function FormBuilderCard() {
                 <input
                   value={formName || ""}
                   onChange={(event) => setFormName?.(event.target.value)}
-                  className="mt-2 h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
                 />
                 <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
                   Name displayed to interviewers during live evaluation.
@@ -954,7 +1079,7 @@ export default function FormBuilderCard() {
                 <select
                   value={formStatus || "Active"}
                   onChange={(event) => setFormStatus?.(event.target.value)}
-                  className="mt-2 h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
                 >
                   {FORM_STATUS_OPTIONS.map((status) => (
                     <option key={status} value={status}>
@@ -979,7 +1104,7 @@ export default function FormBuilderCard() {
                   max="100"
                   value={passingScore ?? 80}
                   onChange={(event) => setPassingScore?.(event.target.value)}
-                  className="mt-2 h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
                 />
                 <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
                   Minimum score candidate needs to pass.
@@ -995,7 +1120,7 @@ export default function FormBuilderCard() {
                 rows={2}
                 value={formDescription || ""}
                 onChange={(event) => setFormDescription?.(event.target.value)}
-                className="mt-2 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                className="mt-1.5 w-full resize-none rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
               />
               <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
                 Instructions visible at the top of the interview form.
@@ -1018,8 +1143,8 @@ export default function FormBuilderCard() {
         )}
 
         {showStepTwo && (
-          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-            <div className="mb-4 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-start sm:justify-between">
+          <section className="rounded-xl border border-[#D9E2EC] bg-white p-4">
+            <div className="mb-3 flex flex-col gap-3 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
                   Step 2 of 3
@@ -1041,13 +1166,13 @@ export default function FormBuilderCard() {
               </button>
             </div>
 
-            <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
               <p className="mb-3 flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
                 <Sparkles size={15} className="text-[#FF5C28]" />
                 Need help structuring your form? Click a 1-Click Standard
                 Section Preset:
               </p>
-              <div className="grid gap-3 lg:grid-cols-4">
+              <div className="grid gap-2.5 lg:grid-cols-4">
                 {SECTION_PRESETS.map((preset) => (
                   <button
                     key={preset.title}
@@ -1055,7 +1180,7 @@ export default function FormBuilderCard() {
                     onClick={() =>
                       handleAddFieldGroup?.(preset.title, preset.questions)
                     }
-                    className="rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-left transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+                    className="rounded-[10px] border border-[#D6DEE8] bg-white px-3 py-2.5 text-left transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
                   >
                     <p className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
                       <Plus size={14} className="text-[#FF5C28]" />
@@ -1069,7 +1194,7 @@ export default function FormBuilderCard() {
               </div>
             </div>
 
-            <div className="mt-5">
+            <div className="mt-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="text-xs font-extrabold uppercase text-sibs-primary-1">
                   Current Form Sections ({groupedSections.length})
@@ -1089,7 +1214,7 @@ export default function FormBuilderCard() {
                 {groupedSections.map((group, index) => (
                   <div
                     key={group.section}
-                    className="flex items-center gap-3 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-3"
+                    className="flex items-center gap-2.5 rounded-[10px] border border-[#D9E2EC] bg-[#F8FAFC] px-3 py-2.5"
                   >
                     <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
                       S{index + 1}
@@ -1152,7 +1277,7 @@ export default function FormBuilderCard() {
 
         {showStepThree && (
           <section>
-            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-3 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-white p-3.5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold uppercase text-blue-700">
                   Step 3 of 3
@@ -1189,25 +1314,25 @@ export default function FormBuilderCard() {
               </div>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-3.5">
               {groupedSections.map((group, groupIndex) => (
                 <div
                   key={group.section}
-                  className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+                  className="overflow-hidden rounded-xl border border-[#D9E2EC] bg-white"
                 >
-                  <div className="flex flex-col gap-3 bg-sibs-primary-1 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                       <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
                         S{groupIndex + 1}
                       </span>
-                      <div className="min-w-0 flex-1 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-[15px] font-extrabold uppercase text-white">
+                      <div className="min-w-0 flex-1 px-1 text-[13px] font-extrabold uppercase text-sibs-primary-1">
                         {groupIndex + 1}. {group.section}
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <button
                         type="button"
-                        className="inline-flex h-9 w-12 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-white"
+                        className="inline-flex h-8 w-10 items-center justify-center rounded-[9px] border border-[#D6DEE8] bg-white text-[#667085]"
                       >
                         <ChevronUp size={15} />
                         <ChevronDown size={15} />
@@ -1215,34 +1340,34 @@ export default function FormBuilderCard() {
                       <button
                         type="button"
                         onClick={() => addFieldToSection(group.section)}
-                        className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#FF5C28] px-3 text-[10px] font-extrabold text-white"
                       >
                         <Plus size={15} />
                         Add Field
                       </button>
                       <button
                         type="button"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] border border-[#D6DEE8] bg-white text-[#667085]"
                       >
                         <ChevronUp size={15} />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteFieldGroup?.(group.section)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-purple-500/30 text-pink-100"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] border border-red-100 bg-red-50 text-red-500"
                       >
                         <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
 
-                  <div className="space-y-4 p-5">
+                  <div className="space-y-3 p-3.5">
                     {group.questions.map((field, fieldIndex) => (
                       <div
                         key={field.id}
-                        className="rounded-2xl border border-[#D9E2EC] bg-white p-4"
+                        className="rounded-xl border border-[#D9E2EC] bg-white p-3"
                       >
-                        <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center">
+                        <div className="mb-2.5 flex flex-col gap-2.5 lg:flex-row lg:items-center">
                           <div className="flex min-w-[210px] items-center gap-3">
                             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold text-white">
                               {fieldIndex + 1}
@@ -1316,7 +1441,7 @@ export default function FormBuilderCard() {
                               label: event.target.value,
                             })
                           }
-                          className="min-h-10 w-full resize-none overflow-hidden rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                          className="min-h-10 w-full resize-none overflow-hidden rounded-[10px] border border-[#D6DEE8] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
                         />
                       </div>
                     ))}
@@ -1372,46 +1497,12 @@ export default function FormBuilderCard() {
         )}
       </div>
 
-      <div className="mt-5 flex flex-col gap-3 border-t border-[#E6ECF2] pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={() => setMode("table")}
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-        >
-          <ArrowLeft size={15} />
-          Done & Back to Table
-        </button>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => openPreview()}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
-          >
-            <Eye size={15} className="text-[#FF5C28]" />
-            Preview Live Form
-          </button>
-          <button
-            type="button"
-            onClick={() => void saveForm()}
-            disabled={saveBusy}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {saveBusy ? (
-              <Loader2 size={15} className="animate-spin" />
-            ) : (
-              <Save size={15} className="text-[#FF5C28]" />
-            )}
-            Save Position Form
-          </button>
-        </div>
+        {questionsSaveError && (
+          <p className="mt-3 text-xs font-extrabold text-red-600">
+            {questionsSaveError}
+          </p>
+        )}
       </div>
-
-      {questionsSaveError && (
-        <p className="mt-3 text-xs font-extrabold text-red-600">
-          {questionsSaveError}
-        </p>
-      )}
     </div>
   );
 }
