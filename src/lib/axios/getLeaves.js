@@ -5,9 +5,12 @@ export async function getLeaves({
   limit = 15,
   search = "",
   status = "All",
+  department = "All",
   account = "All",
   dateFrom = "",
   dateTo = "",
+  includeDepartments = false,
+  includeAccounts = false,
 } = {}) {
   try {
     const res = await api.get("/api/leaves", {
@@ -16,9 +19,12 @@ export async function getLeaves({
         limit,
         search,
         status,
+        department,
         account,
         dateFrom,
         dateTo,
+        includeDepartments: includeDepartments ? 1 : 0,
+        includeAccounts: includeAccounts ? 1 : 0,
       },
     });
 
@@ -34,6 +40,8 @@ export async function getLeaves({
         err?.message ||
         "Failed to fetch leave records.",
       data: [],
+      departmentOptions: [],
+      accountOptions: [],
       pagination: {
         currentPage: 1,
         limit,

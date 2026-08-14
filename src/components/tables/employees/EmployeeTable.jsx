@@ -61,7 +61,34 @@ function normalizeRole(value) {
     .replace(/[\s-]+/g, "_");
 }
 
-function canViewEmployeeFilters(user) {
+function isManagerUser(user) {
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  const access = Number(
+    user?.admin_access ??
+      user?.adminAccess ??
+      user?.access ??
+      user?.gy_user_access ??
+      user?.gyUserAccess ??
+      0,
+  );
+
+  return (
+    access === 5 ||
+    roles.some((role) =>
+      ["manager", "operations_manager", "team_manager"].includes(role),
+    )
+  );
+}
+
+function canRequestEmployeeFilters(user) {
   const roles = [
     user?.role,
     user?.tokenType,
@@ -82,6 +109,7 @@ function canViewEmployeeFilters(user) {
 
   return (
     access === 1 ||
+    access === 5 ||
     roles.some((role) =>
       [
         "hr_admin",
@@ -89,6 +117,9 @@ function canViewEmployeeFilters(user) {
         "super_admin",
         "superadmin",
         "super_administrator",
+        "manager",
+        "operations_manager",
+        "team_manager",
       ].includes(role),
     )
   );
@@ -568,7 +599,8 @@ export default function EmployeeTable({
 }) {
   const { user } = useUser();
   const navigate = useNavigate();
-  const showEmployeeFilters = canViewEmployeeFilters(user);
+  const canRequestFilters = canRequestEmployeeFilters(user);
+  const managerView = isManagerUser(user);
 
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
@@ -580,6 +612,7 @@ export default function EmployeeTable({
   const [accountFilter, setAccountFilter] = useState("All");
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
+  const [employeeAccess, setEmployeeAccess] = useState(null);
 
   const {
     page = 1,
@@ -609,6 +642,9 @@ export default function EmployeeTable({
   const currentPage = safePagination.currentPage;
   const totalPages = safePagination.totalPages;
   const totalRecords = safePagination.total;
+  const showEmployeeFilterControls =
+    canRequestFilters &&
+    (employeeAccess?.showEmployeeFilters ?? !managerView);
 
   const departmentDropdownOptions = useMemo(() => {
     return (Array.isArray(departmentOptions) ? departmentOptions : [])
@@ -622,10 +658,12 @@ export default function EmployeeTable({
       .map(normalizeAccountOption)
       .filter((option) => option.value && option.label);
 
-    const loadedOptions = employees
-      .flatMap((employee) => getEmployeeAccounts(employee))
-      .filter((account) => account && account !== "Unassigned")
-      .map((account) => ({ label: account, value: account }));
+    const loadedOptions = employeeAccess?.isManager
+      ? []
+      : employees
+          .flatMap((employee) => getEmployeeAccounts(employee))
+          .filter((account) => account && account !== "Unassigned")
+          .map((account) => ({ label: account, value: account }));
 
     const optionMap = new Map();
 
@@ -637,18 +675,19 @@ export default function EmployeeTable({
     return [...optionMap.values()].sort((a, b) =>
       String(a.label).localeCompare(String(b.label)),
     );
-  }, [accountOptions, employees]);
+  }, [accountOptions, employeeAccess?.isManager, employees]);
 
   useEffect(() => {
-    if (showEmployeeFilters) return;
+    if (canRequestFilters) return;
 
     setDepartmentFilter("All");
     setAccountFilter("All");
     setDepartmentOptions([]);
     setAccountOptions([]);
+    setEmployeeAccess(null);
     loadedDepartmentOptionsRef.current = false;
     loadedAccountOptionsKeyRef.current = "";
-  }, [showEmployeeFilters]);
+  }, [canRequestFilters]);
 
   useEffect(() => {
     let cancelled = false;
@@ -659,17 +698,17 @@ export default function EmployeeTable({
 
         const accountOptionsKey = `${departmentFilter || "All"}`;
         const shouldLoadDepartments =
-          showEmployeeFilters && !loadedDepartmentOptionsRef.current;
+          canRequestFilters && !loadedDepartmentOptionsRef.current;
         const shouldLoadAccounts =
-          showEmployeeFilters &&
+          canRequestFilters &&
           loadedAccountOptionsKeyRef.current !== accountOptionsKey;
 
         const result = await getEmployee(
           page,
           search,
-          showEmployeeFilters ? accountFilter : "All",
+          canRequestFilters ? accountFilter : "All",
           {
-            department: showEmployeeFilters ? departmentFilter : "All",
+            department: canRequestFilters ? departmentFilter : "All",
             includeDepartments: shouldLoadDepartments,
             includeAccounts: shouldLoadAccounts,
           },
@@ -690,14 +729,29 @@ export default function EmployeeTable({
             total: 0,
             limit: PAGE_LIMIT,
           });
+          setEmployeeAccess(null);
           return;
         }
 
         const records = Array.isArray(result.data) ? result.data : [];
         setEmployees(records);
+        setEmployeeAccess(result.access || null);
 
         if (
-          showEmployeeFilters &&
+          result.access?.isManager &&
+          result.access?.showEmployeeFilters === false
+        ) {
+          if (departmentFilter !== "All") {
+            setDepartmentFilter("All");
+          }
+
+          if (accountFilter !== "All") {
+            setAccountFilter("All");
+          }
+        }
+
+        if (
+          canRequestFilters &&
           shouldLoadDepartments &&
           Array.isArray(result.departmentOptions)
         ) {
@@ -706,7 +760,7 @@ export default function EmployeeTable({
         }
 
         if (
-          showEmployeeFilters &&
+          canRequestFilters &&
           shouldLoadAccounts &&
           Array.isArray(result.accountOptions)
         ) {
@@ -726,6 +780,7 @@ export default function EmployeeTable({
 
         console.error("Employee directory load error:", error);
         setEmployees([]);
+        setEmployeeAccess(null);
         setPagination?.({
           currentPage: 1,
           totalPages: 1,
@@ -752,7 +807,7 @@ export default function EmployeeTable({
     search,
     setLoading,
     setPagination,
-    showEmployeeFilters,
+    canRequestFilters,
   ]);
 
   useEffect(() => {
@@ -815,6 +870,10 @@ export default function EmployeeTable({
   }
 
   function handleDepartmentChange(value) {
+    if (value === departmentFilter) {
+      return;
+    }
+
     setDepartmentFilter(value);
     setAccountFilter("All");
     setAccountOptions([]);
@@ -823,6 +882,10 @@ export default function EmployeeTable({
   }
 
   function handleAccountChange(value) {
+    if (value === accountFilter) {
+      return;
+    }
+
     setAccountFilter(value);
     resetToFirstPage();
   }
@@ -848,7 +911,7 @@ export default function EmployeeTable({
           onSearchChange={(value) => setSearchInput?.(value)}
           onSearchKeyDown={handleEmployeeSearchKeyDown}
           dropdownFilters={
-            showEmployeeFilters
+            showEmployeeFilterControls
               ? [
                   {
                     key: "department",

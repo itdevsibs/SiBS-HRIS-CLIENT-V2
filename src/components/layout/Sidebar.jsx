@@ -66,7 +66,7 @@ const sidebarBadgeToneClass = {
 };
 
 const APPROVAL_MODULE_ACCESS = {
-  Attrition: [1, 2, 3, 4, 5, 6, 7],
+  Attrition: [1, 2, 3, 4, 5, 6, 7, 10],
 };
 
 const APPROVAL_SETTINGS_API_BY_MODULE = {
@@ -92,7 +92,7 @@ function normalizeRole(value = "") {
 }
 
 function getAdminAccess(user = {}) {
-  return Number(
+  const access = Number(
     user?.adminAccess ??
       user?.admin_access ??
       user?.access ??
@@ -100,6 +100,12 @@ function getAdminAccess(user = {}) {
       user?.gyUserAccess ??
       0,
   );
+
+  // Team Leaders (admin_access 8) and WFM (admin_access 9) intentionally
+  // inherit every Manager sidebar item without duplicating access lists.
+  if (access === 8 || access === 9) return 5;
+
+  return access;
 }
 
 function getCurrentUserSibsId(user = {}) {
@@ -413,6 +419,8 @@ export default function Sidebar() {
       "hradmin",
       "finance",
       "manager",
+      "wfm",
+      "som",
       "executive",
       "super_admin",
       "superadmin",
@@ -720,26 +728,26 @@ export default function Sidebar() {
       name: "Employee Directory",
       icon: Users,
       path: "/employee",
-      allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7, 10],
     },
     {
       name: "Time & Attendance",
       icon: Clock,
       path: "/attendance",
-      allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7, 10],
     },
     {
       name: "Leaves",
       icon: Calendar,
       path: "/leaves",
-      allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7, 10],
       notificationKey: "leaves",
     },
     {
       name: "Resignation Management",
       icon: FileText,
       path: "/resignation",
-      allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7, 10],
     },
   ];
 
@@ -748,14 +756,14 @@ export default function Sidebar() {
       name: "Workforce & Hiring Overview",
       icon: CalendarDays,
       path: "/recruitment/workforce-hiring-overview",
-      allowedUsers: [3, 5, 6, 7],
+      allowedUsers: [3, 5, 6, 7, 10],
       notificationKey: "workforceHiringOverview",
     },
     {
       name: "Workforce & Hiring Plan",
       icon: CalendarDays,
       path: "/recruitment/workforce-hiring-plan",
-      allowedUsers: [3, 5, 6, 7],
+      allowedUsers: [3, 5, 6, 7, 10],
     },
     {
       name: "Job Description",
@@ -768,7 +776,7 @@ export default function Sidebar() {
       name: "Hiring Needs Intake",
       icon: FileText,
       path: "/recruitment/hiring-needs",
-      allowedUsers: [1, 2, 3, 5, 6, 7],
+      allowedUsers: [1, 2, 3, 5, 6, 7, 10],
       notificationKey: "hiringNeedsApprovals",
     },
     {
@@ -824,7 +832,7 @@ export default function Sidebar() {
       name: "Weekly Reports",
       icon: FileClock,
       path: "/recruitment/weekly-reports",
-      allowedUsers: [1, 2, 3, 5, 6, 7],
+      allowedUsers: [1, 2, 3, 5, 6, 7, 10],
     },
     {
       name: "Candidate Experience",
@@ -862,7 +870,7 @@ export default function Sidebar() {
       name: "Email Logs",
       icon: FileClock,
       path: "/email-logs",
-      allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7, 10],
     },
   ];
 
@@ -871,25 +879,25 @@ export default function Sidebar() {
       name: "Reports",
       icon: BarChart3,
       path: "/reports",
-      allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7, 10],
     },
     {
       name: "Analytics",
       icon: PieChart,
       path: "/analytics",
-      allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7, 10],
     },
     {
       name: "Costs",
       icon: DollarSign,
       path: "/costs",
-      allowedUsers: [4, 5, 6, 7],
+      allowedUsers: [4, 5, 6, 7, 10],
     },
     {
       name: "Payroll",
       icon: DollarSign,
       path: "/payroll",
-      allowedUsers: [4, 5, 6, 7],
+      allowedUsers: [4, 5, 6, 7, 10],
     },
   ];
 
@@ -898,13 +906,13 @@ export default function Sidebar() {
       name: "Departments",
       icon: Building2,
       path: "/departments",
-      allowedUsers: [5, 6, 7],
+      allowedUsers: [5, 6, 7, 10],
     },
     {
       name: "Office Locations",
       icon: MapPin,
       path: "/locations",
-      allowedUsers: [5, 6, 7],
+      allowedUsers: [5, 6, 7, 10],
     },
   ];
 

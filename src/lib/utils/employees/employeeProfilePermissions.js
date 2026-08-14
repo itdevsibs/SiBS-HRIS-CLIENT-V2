@@ -5,8 +5,8 @@ export function normalizeEmployeeRole(value) {
     .replace(/[\s-]+/g, "_");
 }
 
-export function canEditProfileDetails(user) {
-  const access = Number(
+function getEmployeeAdminAccess(user) {
+  return Number(
     user?.admin_access ??
       user?.adminAccess ??
       user?.access ??
@@ -14,28 +14,31 @@ export function canEditProfileDetails(user) {
       user?.gyUserAccess ??
       0,
   );
+}
+
+export function canEditProfileDetails(user) {
+  const access = getEmployeeAdminAccess(user);
+
+  if ([2, 3, 7].includes(access)) {
+    return true;
+  }
 
   const roles = [
     user?.role,
-    user?.tokenType,
     user?.userRole,
     user?.accountType,
     user?.user_type,
     user?.gy_user_type,
   ].map(normalizeEmployeeRole);
 
-  return (
-    (access >= 1 && access <= 7) ||
-    roles.some((role) =>
-      [
-        "admin",
-        "hr",
-        "hr_admin",
-        "hradmin",
-        "super_admin",
-        "superadmin",
-        "super_administrator",
-      ].includes(role),
-    )
+  return roles.some((role) =>
+    [
+      "hr",
+      "hr_admin",
+      "hradmin",
+      "super_admin",
+      "superadmin",
+      "super_administrator",
+    ].includes(role),
   );
 }

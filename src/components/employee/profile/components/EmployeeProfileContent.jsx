@@ -16,6 +16,7 @@ export default function EmployeeProfileContent({
     displayEmployee,
     isEditing,
     isSaving,
+    canEditDetails,
     onEdit,
     onSave,
     onCancel,
@@ -30,6 +31,7 @@ export default function EmployeeProfileContent({
     employee: displayEmployee,
     isEditing,
     isSaving,
+    canEditDetails,
     onEdit,
     onSave,
     onCancel,
@@ -95,6 +97,7 @@ export default function EmployeeProfileContent({
     return (
       <DocumentsSection
         employee={employee}
+        canEditDetails={canEditDetails}
         onDocumentsChange={onDocumentsChange}
         onFeedback={onFeedback}
       />
@@ -105,6 +108,7 @@ export default function EmployeeProfileContent({
     return (
       <NotesSection
         employee={employee}
+        canEditDetails={canEditDetails}
         onCommitNote={onCommitNote}
         onFeedback={onFeedback}
       />

@@ -757,6 +757,10 @@ export default function LeavesTable({
   },
   statusFilter = "All",
   onStatusChange,
+  showDepartmentFilter = false,
+  departmentFilter = "All",
+  onDepartmentSelect,
+  departmentDropdownOptions = [],
   showAccountFilter = false,
   accountFilter = "All",
   onAccountSelect,
@@ -828,6 +832,7 @@ export default function LeavesTable({
     searchKeyword,
     searchSubmitVersion,
     statusFilter,
+    departmentFilter,
     accountFilter,
     dateFrom,
     dateTo,
@@ -882,6 +887,21 @@ export default function LeavesTable({
                 searchable: false,
                 includeAll: false,
               },
+              ...(showDepartmentFilter
+                ? [
+                    {
+                      key: "department",
+                      value: departmentFilter,
+                      onChange: onDepartmentSelect,
+                      options: departmentDropdownOptions,
+                      allLabel: "All Departments",
+                      label: "Department",
+                      placeholder: "Search departments...",
+                      searchable: true,
+                      includeAll: true,
+                    },
+                  ]
+                : []),
               ...(showAccountFilter
                 ? [
                     {
@@ -919,11 +939,14 @@ export default function LeavesTable({
               ref={tableScrollRef}
               className="max-h-[580px] overflow-auto sibs-scrollbar"
             >
-              <table className="w-full min-w-[1220px] border-collapse bg-white">
+              <table className="w-full min-w-[1340px] border-collapse bg-white">
                 <thead className="sibs-data-table-head">
                   <tr className="sibs-data-table-head-row">
                     <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
                       Employee
+                    </th>
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
+                      Account
                     </th>
                     <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
                       Leave Type
@@ -956,13 +979,13 @@ export default function LeavesTable({
                 </thead>
 
                 <tbody
-                  key={`${page}-${searchKeyword}-${searchSubmitVersion}-${statusFilter}-${accountFilter}-${dateFrom}-${dateTo}-${loading}`}
+                  key={`${page}-${searchKeyword}-${searchSubmitVersion}-${statusFilter}-${departmentFilter}-${accountFilter}-${dateFrom}-${dateTo}-${loading}`}
                   className="divide-y divide-[#F1F5F9]"
                 >
                   {loading ? (
                     Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                       <tr key={index}>
-                        <td colSpan={10} className="px-4 py-3.5">
+                        <td colSpan={11} className="px-4 py-3.5">
                           <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E6ECF2]" />
                         </td>
                       </tr>
@@ -990,6 +1013,12 @@ export default function LeavesTable({
                           <p className="mt-0.5 text-[10px] font-bold text-[#FF5C28]">
                             {item.gy_user_code || "No user code"}
                           </p>
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-3.5 text-xs font-bold text-[#344054]">
+                          <span className="inline-flex max-w-[190px] truncate rounded-md border border-blue-100 bg-blue-50 px-2 py-1 text-[10px] font-extrabold uppercase text-[#164E7A]">
+                            {item.gy_emp_account || "—"}
+                          </span>
                         </td>
 
                         <td className="whitespace-nowrap px-4 py-3.5 text-xs font-bold text-[#344054]">
@@ -1031,14 +1060,14 @@ export default function LeavesTable({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={10} className="p-12 text-center">
+                      <td colSpan={11} className="p-12 text-center">
                         <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-[#667085]">
                           <CalendarDays size={34} className="text-[#C8D3DF]" />
                           <p className="text-sm font-extrabold text-[#042C51]">
                             No leave records found
                           </p>
                           <p className="text-xs font-semibold">
-                            Adjust the search, status, account, or date range filters.
+                            Adjust the search, status, department, account, or date range filters.
                           </p>
                         </div>
                       </td>

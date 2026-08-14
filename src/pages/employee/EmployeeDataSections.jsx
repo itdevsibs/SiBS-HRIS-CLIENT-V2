@@ -1753,7 +1753,7 @@ function getEmployeeRequirementGroupTitle(group) {
   return "Requirements";
 }
 
-export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
+export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canEditDetails = false }) {
   const fileInputRef = useRef(null);
   const requirementFileInputRef = useRef(null);
   const previewUrlRef = useRef("");
@@ -1967,7 +1967,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   );
 
   function openFilePicker() {
-    if (uploading) return;
+    if (!canEditDetails || uploading) return;
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
       fileInputRef.current.click();
@@ -1975,6 +1975,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   }
 
   function prepareSelectedFiles(fileList) {
+    if (!canEditDetails) return;
     const files = Array.from(fileList || []);
     if (!files.length) return;
 
@@ -2009,6 +2010,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
 
   function handleDrop(event) {
     event.preventDefault();
+    if (!canEditDetails) return;
     event.stopPropagation();
     setDragActive(false);
 
@@ -2023,7 +2025,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
 
   async function uploadDocument(event) {
     event.preventDefault();
-    if (!sibsId || !selectedFiles.length || uploading) return;
+    if (!canEditDetails || !sibsId || !selectedFiles.length || uploading) return;
 
     setUploading(true);
     try {
@@ -2050,7 +2052,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   }
 
   function openRequirementFilePicker(requirement) {
-    if (!requirement?.id || uploadingRequirementId) return;
+    if (!canEditDetails || !requirement?.id || uploadingRequirementId) return;
     setSelectedRequirement(requirement);
 
     window.setTimeout(() => {
@@ -2062,6 +2064,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   }
 
   async function handleRequirementFileChange(event) {
+    if (!canEditDetails) return;
     const files = Array.from(event.target.files || []);
     const requirement = selectedRequirement;
     if (!files.length || !requirement?.id || !sibsId) return;
@@ -2097,6 +2100,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   }
 
   async function permanentlyDeleteRequirement() {
+    if (!canEditDetails) return;
     const requirement = requirementDeleteTarget;
 
     if (!sibsId || !requirement?.id || deletingRequirementId) return;
@@ -2219,6 +2223,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
 
   async function permanentlyDeleteDocument() {
     if (
+      !canEditDetails ||
       !sibsId ||
       !deleteTarget?.id ||
       deleting ||
@@ -2274,22 +2279,26 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
 
   return (
     <div className="rounded-[20px] border border-[#D6E0EA] bg-white p-4 shadow-sm sm:p-6">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={PROFILE_DOCUMENT_ACCEPT}
-        multiple
-        onChange={handleFileInputChange}
-        className="hidden"
-      />
-      <input
-        ref={requirementFileInputRef}
-        type="file"
-        accept={PROFILE_DOCUMENT_ACCEPT}
-        multiple
-        onChange={handleRequirementFileChange}
-        className="hidden"
-      />
+      {canEditDetails ? (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={PROFILE_DOCUMENT_ACCEPT}
+            multiple
+            onChange={handleFileInputChange}
+            className="hidden"
+          />
+          <input
+            ref={requirementFileInputRef}
+            type="file"
+            accept={PROFILE_DOCUMENT_ACCEPT}
+            multiple
+            onChange={handleRequirementFileChange}
+            className="hidden"
+          />
+        </>
+      ) : null}
 
       <div className="mb-6 border-b border-[#E6ECF2] pb-5">
         <div className="flex items-center gap-3">
@@ -2485,7 +2494,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
                                 <button type="button" onClick={() => downloadDocument(document)} className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#D6E0EA] bg-white px-2.5 text-[9px] font-extrabold text-[#52637A]">
                                   <Download size={12} /> Download
                                 </button>
-                                {canDeleteEmployeeDocument(document) ? (
+                                {canEditDetails && canDeleteEmployeeDocument(document) ? (
                                   <button type="button" onClick={() => setDeleteTarget(document)} className="inline-flex h-7 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 text-[9px] font-extrabold text-red-600">
                                     <Trash2 size={12} /> Delete
                                   </button>
@@ -2502,10 +2511,12 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
                       )}
 
                       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#E6ECF2] pt-3">
-                        <button type="button" onClick={() => openRequirementFilePicker(requirement)} disabled={isUploading || isDeleting} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#042C51] px-3 text-[10px] font-extrabold text-white disabled:opacity-60">
-                          <Upload size={13} className="text-[#FF5C28]" />
-                          {isUploading ? "Uploading..." : "Upload Files"}
-                        </button>
+                        {canEditDetails ? (
+                          <button type="button" onClick={() => openRequirementFilePicker(requirement)} disabled={isUploading || isDeleting} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#042C51] px-3 text-[10px] font-extrabold text-white disabled:opacity-60">
+                            <Upload size={13} className="text-[#FF5C28]" />
+                            {isUploading ? "Uploading..." : "Upload Files"}
+                          </button>
+                        ) : null}
                         {files.length > 0 ? (
                           <span className="text-[9px] font-bold text-[#667085]">
                             {files.length} active file{files.length === 1 ? "" : "s"}
@@ -2530,9 +2541,11 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
                 Upload employee and HR documents or review files synchronized from recruitment.
               </p>
             </div>
-            <button type="button" onClick={openFilePicker} disabled={uploading} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white disabled:opacity-60">
-              <Upload size={15} className="text-[#FF5C28]" /> Upload Files
-            </button>
+            {canEditDetails ? (
+              <button type="button" onClick={openFilePicker} disabled={uploading} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white disabled:opacity-60">
+                <Upload size={15} className="text-[#FF5C28]" /> Upload Files
+              </button>
+            ) : null}
           </div>
 
           {loadingDocuments ? (
@@ -2561,7 +2574,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
                   <div className="mt-4 flex items-center justify-end gap-2 border-t border-[#E6ECF2] pt-3">
                     <button type="button" onClick={() => openDocumentPreview(document)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6E0EA] px-3 text-[10px] font-extrabold text-[#52637A]"><Eye size={13} /> Preview</button>
                     <button type="button" onClick={() => downloadDocument(document)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6E0EA] px-3 text-[10px] font-extrabold text-[#52637A]"><Download size={13} /> Download</button>
-                    {canDeleteEmployeeDocument(document) ? (
+                    {canEditDetails && canDeleteEmployeeDocument(document) ? (
                       <button type="button" onClick={() => setDeleteTarget(document)} className="inline-flex h-8 items-center rounded-lg border border-red-200 bg-red-50 px-2.5 text-red-600"><Trash2 size={13} /></button>
                     ) : null}
                   </div>
@@ -2572,7 +2585,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         </section>
       )}
 
-      {uploadOpen && selectedFiles.length > 0 && (
+      {canEditDetails && uploadOpen && selectedFiles.length > 0 && (
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4"
           onClick={closeUploadModal}
@@ -2719,7 +2732,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         </div>
       )}
 
-      {deleteTarget && (
+      {canEditDetails && deleteTarget && (
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4"
           onClick={() => !deleting && setDeleteTarget(null)}
@@ -2766,7 +2779,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         </div>
       )}
 
-      {requirementDeleteTarget && (
+      {canEditDetails && requirementDeleteTarget && (
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4"
           onClick={() =>
