@@ -1,92 +1,116 @@
 import React from "react";
-import { Eye } from "lucide-react";
+import { CalendarDays, Eye, UserRound } from "lucide-react";
+
+function getInitials(name = "") {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!parts.length) return "ON";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
 
 export default function OnboardingMobileCardView({
   record,
   onView,
   formatDate,
   getShowStatusClass,
-  getOutcomeClass
+  getOutcomeClass,
 }) {
   return (
-    <button
-      type="button"
-      onClick={onView}
-      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-sibs-primary-1">
-            {record.onboardingId}
-          </p>
+    <article className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+      <button
+        type="button"
+        onClick={onView}
+        className="w-full p-4 text-left transition hover:bg-[#FFF9F6] active:bg-[#FFF4ED]"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#042C51] text-[11px] font-extrabold text-white shadow-sm">
+              {getInitials(record.candidateName)}
+            </span>
 
-          <h3 className="mt-1 text-sm font-bold text-[#101828]">
-            {record.candidateName}
-          </h3>
-
-          <p className="mt-1 break-words text-xs font-semibold text-sibs-tertiary-5">
-            {record.roleTitle} / {record.account}
-          </p>
-        </div>
-
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getShowStatusClass(
-            record.showStatus,
-          )}`}
-        >
-          {record.showStatus}
-        </span>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Expected
-          </p>
-
-          <p className="mt-1 text-xs font-bold text-[#344054]">
-            {formatDate(record.expectedStartDate)}
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Actual
-          </p>
-
-          <p className="mt-1 text-xs font-bold text-[#344054]">
-            {formatDate(record.actualStartDate)}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <span
-          className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getOutcomeClass(
-            record.finalOutcome,
-          )}`}
-        >
-          {record.finalOutcome}
-        </span>
-
-        <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-bold text-[#344054]">
-          {record.owner}
-        </span>
-      </div>
-
-      {(record.showStatus === "No Show" || record.showStatus === "Withdrawn") &&
-        record.withdrawalReason && (
-          <div className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-semibold leading-5 text-red-700">
-            {record.withdrawalReason}
+            <div className="min-w-0">
+              <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#6B88A8]">
+                {record.onboardingId || record.id}
+              </p>
+              <h3 className="mt-0.5 truncate sibs-text-sm font-extrabold text-[#101828]">
+                {record.candidateName}
+              </h3>
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-[#667085]">
+                {record.candidateEmail}
+              </p>
+            </div>
           </div>
-        )}
 
-      <div className="mt-4">
-        <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1">
-          <Eye size={15} />
+          <Eye size={16} className="mt-1 shrink-0 text-[#FF5C28]" />
+        </div>
+
+        <div className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+          <p className="truncate sibs-text-xs font-extrabold text-[#042C51]">
+            {record.roleTitle || "Not assigned"}
+          </p>
+          <p className="mt-0.5 truncate text-[10px] font-semibold text-[#667085]">
+            {record.account || "No account assigned"}
+          </p>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-[#E6ECF2] bg-white p-3">
+            <div className="flex items-center gap-1.5 text-[#98A2B3]">
+              <CalendarDays size={12} />
+              <p className="text-[9px] font-extrabold uppercase tracking-wide">
+                Expected Start
+              </p>
+            </div>
+            <p className="mt-1 text-[10px] font-extrabold text-[#344054]">
+              {formatDate(record.expectedStartDate)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[#E6ECF2] bg-white p-3">
+            <div className="flex items-center gap-1.5 text-[#98A2B3]">
+              <UserRound size={12} />
+              <p className="text-[9px] font-extrabold uppercase tracking-wide">
+                Actual Start
+              </p>
+            </div>
+            <p className="mt-1 text-[10px] font-extrabold text-[#344054]">
+              {formatDate(record.actualStartDate)}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getShowStatusClass(
+              record.showStatus,
+            )}`}
+          >
+            {record.showStatus}
+          </span>
+
+          <span
+            className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getOutcomeClass(
+              record.finalOutcome,
+            )}`}
+          >
+            {record.finalOutcome}
+          </span>
+
+          <span className="ml-auto truncate text-[9px] font-bold text-[#667085]">
+            Owner: {record.owner || "—"}
+          </span>
+        </div>
+
+        <div className="mt-3 flex items-center justify-center gap-1.5 border-t border-[#EEF2F6] pt-3 text-[10px] font-extrabold text-[#042C51]">
+          <Eye size={13} className="text-[#FF5C28]" />
           View Details
-        </span>
-      </div>
-    </button>
+        </div>
+      </button>
+    </article>
   );
 }
