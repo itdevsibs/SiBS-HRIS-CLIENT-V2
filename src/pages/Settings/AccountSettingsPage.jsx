@@ -43,7 +43,7 @@ import {
   updateAccountSettingsUser,
 } from "../../lib/axios/accountSettings";
 
-const PAGE_LIMIT = 8;
+const PAGE_LIMIT = 15;
 const API_URL = (
   import.meta.env.VITE_API_URL || "http://localhost:5001"
 ).replace(/\/+$/, "");
@@ -590,6 +590,7 @@ function CustomSelect({
   searchable = false,
   searchPlaceholder = "Search...",
   noResultsMessage = "No matching option found.",
+  compact = false,
 }) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -660,7 +661,7 @@ function CustomSelect({
       <div ref={anchorRef} className="relative">
         <div
           onClick={openDropdown}
-          className={`flex h-12 w-full items-center gap-2 rounded-xl border px-4 transition-all duration-200 ${
+          className={`flex ${compact ? "h-10 rounded-lg px-3" : "h-12 rounded-xl px-4"} w-full items-center gap-2 border transition-all duration-200 ${
             disabled
               ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
               : open
@@ -701,7 +702,7 @@ function CustomSelect({
               }
             }}
             placeholder={searchPlaceholder || placeholder}
-            className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#344054] outline-none placeholder:text-sibs-tertiary-5"
+            className={`min-w-0 flex-1 bg-transparent font-bold text-[#344054] outline-none placeholder:text-sibs-tertiary-5 ${compact ? "text-xs" : "text-sm"}`}
           />
 
           <ChevronDown
@@ -771,7 +772,7 @@ function CustomSelect({
             openDropdown();
           }
         }}
-        className={`flex h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-bold outline-none transition-all duration-200 ${
+        className={`flex ${compact ? "h-10 rounded-lg px-3 text-xs" : "h-12 rounded-xl px-4 text-sm"} w-full items-center justify-between border text-left font-bold outline-none transition-all duration-200 ${
           disabled
             ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
             : open
@@ -853,11 +854,12 @@ function SelectField({
   searchable = false,
   searchPlaceholder = "Search...",
   placeholder = "Select",
+  compact = false,
 }) {
   return (
     <div>
       {label && (
-        <label className="mb-1 block text-sm font-bold text-[#101828]">
+        <label className={`${compact ? "text-[10px]" : "text-sm"} mb-1 block font-bold text-[#101828]`}>
           {label}
         </label>
       )}
@@ -870,6 +872,7 @@ function SelectField({
         searchable={searchable}
         searchPlaceholder={searchPlaceholder}
         placeholder={placeholder}
+        compact={compact}
       />
     </div>
   );
@@ -878,7 +881,7 @@ function SelectField({
 function RolePill({ role, adminAccess }) {
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getRolePillClass(
+      className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getRolePillClass(
         adminAccess,
       )}`}
     >
@@ -892,7 +895,7 @@ function StatusPill({ status }) {
 
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold capitalize ${getStatusPillClass(
+      className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold capitalize ${getStatusPillClass(
         displayStatus,
       )}`}
     >
@@ -911,7 +914,7 @@ function AccountChips({ accounts = [] }) {
   }
 
   return (
-    <div className="flex min-w-[260px] flex-wrap gap-1.5">
+    <div className="flex max-w-[190px] flex-wrap gap-1">
       {accounts.map((account, index) => {
         const accountId = getAccountId(account);
         const accountName =
@@ -921,9 +924,9 @@ function AccountChips({ accounts = [] }) {
           <span
             key={`${account.id || accountId}-${accountName}-${index}`}
             title={`${accountName}${accountId ? ` (${accountId})` : ""}`}
-            className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-sibs-primary-1"
+            className="inline-flex max-w-[190px] items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-sibs-primary-1"
           >
-            <span className="whitespace-normal break-words">{accountName}</span>
+            <span className="truncate">{accountName}</span>
           </span>
         );
       })}
@@ -943,18 +946,18 @@ function DepartmentChips({ accounts = [], limit = 2 }) {
   }
 
   return (
-    <div className="flex max-w-[280px] flex-wrap gap-1.5">
+    <div className="flex max-w-[190px] flex-wrap gap-1">
       {visible.map((department) => (
         <span
           key={department}
-          className="inline-flex max-w-[200px] rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700"
+          className="inline-flex max-w-[170px] rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-700"
         >
           <span className="truncate">{department}</span>
         </span>
       ))}
 
       {hiddenCount > 0 && (
-        <span className="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600">
+        <span className="inline-flex rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-600">
           +{hiddenCount}
         </span>
       )}
@@ -1068,7 +1071,7 @@ function DraggableTableScroll({ children }) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
-      className={`hidden overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white lg:block sibs-scrollbar ${
+      className={`mt-5 hidden overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white lg:block sibs-scrollbar ${
         isDragging
           ? "cursor-grabbing select-none"
           : "cursor-grab"
@@ -1083,7 +1086,7 @@ function DraggableTableScroll({ children }) {
 function LoadingRows() {
   return Array.from({ length: PAGE_LIMIT }).map((_, index) => (
     <tr key={index}>
-      <td colSpan={11} className="border-b border-[#E6ECF2] px-5 py-5">
+      <td colSpan={11} className="border-b border-[#E6ECF2] px-3 py-3">
         <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
       </td>
     </tr>
@@ -2159,18 +2162,6 @@ export default function AccountSettingsPage() {
     : 0;
   const showingTo = Math.min(currentPage * PAGE_LIMIT, pagination.total);
 
-  const visiblePageNumbers = useMemo(() => {
-    const totalPages = Math.max(pagination.totalPages, 1);
-    const start = Math.max(currentPage - 2, 1);
-    const end = Math.min(start + 4, totalPages);
-    const adjustedStart = Math.max(end - 4, 1);
-
-    return Array.from(
-      { length: end - adjustedStart + 1 },
-      (_, index) => adjustedStart + index,
-    );
-  }, [currentPage, pagination.totalPages]);
-
   const openStatus = useCallback((type, title, message) => {
     setStatusModal({ open: true, type, title, message });
   }, []);
@@ -2431,6 +2422,31 @@ export default function AccountSettingsPage() {
 
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <style>{`
+        @keyframes sibsAccountSettingsRowReveal {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .sibs-account-settings-row-reveal {
+          animation: sibsAccountSettingsRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          will-change: opacity, transform;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .sibs-account-settings-row-reveal {
+            animation: none !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
       <div className="shrink-0">
         <Header />
       </div>
@@ -2514,19 +2530,17 @@ export default function AccountSettingsPage() {
           </section>
 
           <section className="sibs-card overflow-visible">
-            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-base font-extrabold text-[#042C51] sm:text-lg">
-                    Assigned Users
-                  </h2>
-                  <p className="mt-1 text-xs font-semibold text-[#667085] sm:text-sm">
+            <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div className="min-w-0">
+                  <h2 className="sibs-section-title">Assigned Users</h2>
+                  <p className="sibs-section-subtitle">
                     Employee information is read-only. Access settings are managed on this page.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex rounded-full border border-blue-100 bg-[#E9F0FC] px-3 py-1 text-[10px] font-extrabold uppercase text-[#042C51]">
+                  <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
                     {pagination.total} Users
                   </span>
 
@@ -2534,26 +2548,28 @@ export default function AccountSettingsPage() {
                     type="button"
                     onClick={() => reloadAll({ showRefresh: true })}
                     disabled={refreshing}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-[#042C51] transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:bg-[#F8FAFC] disabled:opacity-50"
                     aria-label="Refresh account settings"
                   >
                     <RefreshCw
-                      size={17}
+                      size={15}
                       className={refreshing ? "animate-spin" : ""}
                     />
                   </button>
                 </div>
               </div>
+            </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_230px_280px_auto] xl:items-end">
+            <div className="relative overflow-visible p-4 sm:p-5">
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_210px_260px_auto] xl:items-end">
                 <div>
-                  <label className="mb-1 block text-sm font-bold text-[#101828]">
+                  <label className="mb-1 block text-[10px] font-bold text-[#101828]">
                     Search
                   </label>
 
                   <div className="relative">
                     <Search
-                      size={18}
+                      size={16}
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
                     />
 
@@ -2562,13 +2578,14 @@ export default function AccountSettingsPage() {
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
                       placeholder="Search employee, SIBS ID, account, department..."
-                      className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-11 pr-4 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#042C51]/30 focus:border-[#042C51] focus:bg-white focus:ring-4 focus:ring-[#042C51]/10 sm:text-sm"
+                      className="h-10 w-full rounded-lg border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-4 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#042C51]/30 focus:border-[#042C51] focus:bg-white focus:ring-4 focus:ring-[#042C51]/10"
                     />
                   </div>
                 </div>
 
                 <SelectField
                   label="Access"
+                  compact
                   value={roleFilter}
                   onChange={(value) => {
                     setRoleFilter(value);
@@ -2580,6 +2597,7 @@ export default function AccountSettingsPage() {
 
                 <SelectField
                   label="Assigned Account"
+                  compact
                   value={accountFilter}
                   onChange={(value) => {
                     setAccountFilter(value);
@@ -2594,16 +2612,14 @@ export default function AccountSettingsPage() {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] sm:text-sm"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
                 >
-                  <Filter size={17} />
+                  <Filter size={16} />
                   Clear
                 </button>
               </div>
-            </div>
 
-            <div className="p-4 sm:p-5">
-              <div className="space-y-3 lg:hidden">
+              <div className="mt-5 space-y-3 lg:hidden">
                 {tableLoading ? (
                   Array.from({ length: 4 }).map((_, index) => (
                     <div
@@ -2628,20 +2644,20 @@ export default function AccountSettingsPage() {
               </div>
 
               <DraggableTableScroll>
-                <table className="w-full min-w-[1900px] border-collapse text-left">
+                <table className="w-full min-w-[1380px] border-collapse text-left">
                   <thead>
                     <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
-                      <th className="px-4 py-3.5">SIBS ID</th>
-                      <th className="px-4 py-3.5 text-center">Profile</th>
-                      <th className="px-4 py-3.5">Employee</th>
-                      <th className="px-4 py-3.5">Status</th>
-                      <th className="px-4 py-3.5">Access</th>
-                      <th className="px-4 py-3.5">Assigned Accounts</th>
-                      <th className="px-4 py-3.5">Departments</th>
-                      <th className="px-4 py-3.5">Creator</th>
-                      <th className="px-4 py-3.5">Updater</th>
-                      <th className="px-4 py-3.5">Created / Updated</th>
-                      <th className="px-4 py-3.5 text-right">Actions</th>
+                      <th className="px-3 py-3">SIBS ID</th>
+                      <th className="px-3 py-3 text-center">Profile</th>
+                      <th className="px-3 py-3">Employee</th>
+                      <th className="px-3 py-3">Status</th>
+                      <th className="px-3 py-3">Access</th>
+                      <th className="px-3 py-3">Assigned Accounts</th>
+                      <th className="px-3 py-3">Departments</th>
+                      <th className="px-3 py-3">Creator</th>
+                      <th className="px-3 py-3">Updater</th>
+                      <th className="px-3 py-3">Created / Updated</th>
+                      <th className="px-3 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
 
@@ -2649,59 +2665,62 @@ export default function AccountSettingsPage() {
                     {tableLoading ? (
                       <LoadingRows />
                     ) : users.length ? (
-                      users.map((assignedUser) => (
+                      users.map((assignedUser, index) => (
                         <tr
                           key={assignedUser.id}
-                          className="transition-colors hover:bg-[#FFF9F6]"
+                          className="sibs-account-settings-row-reveal transition-colors hover:bg-[#FFF9F6]"
+                          style={{
+                            animationDelay: `${Math.min(index, 10) * 36}ms`,
+                          }}
                         >
-                          <td className="whitespace-nowrap border-b border-[#E6ECF2] px-5 py-5">
+                          <td className="whitespace-nowrap border-b border-[#E6ECF2] px-3 py-3">
                             <p className="text-xs font-extrabold text-[#FF5C28]">
                               {assignedUser.sibsId || "—"}
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3">
                             <div className="flex justify-center">
-                              <ProfileAvatar employee={assignedUser} />
+                              <ProfileAvatar employee={assignedUser} size="sm" />
                             </div>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3">
                             <div className="min-w-0">
-                              <p className="max-w-[280px] truncate text-sm font-extrabold text-[#101828]">
+                              <p className="max-w-[220px] truncate text-xs font-extrabold text-[#101828]">
                                 {formatEmployeeName(assignedUser)}
                               </p>
-                              <p className="mt-1 max-w-[280px] truncate text-xs font-semibold text-sibs-tertiary-5">
+                              <p className="mt-0.5 max-w-[220px] truncate text-[10px] font-semibold text-sibs-tertiary-5">
                                 {assignedUser.email || "No email available"}
                               </p>
                             </div>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3">
                             <StatusPill status={assignedUser.status} />
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3">
                             <RolePill
                               role={assignedUser.role}
                               adminAccess={assignedUser.adminAccess}
                             />
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3">
                             <AccountChips
                               accounts={assignedUser.assignedAccounts}
                             />
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3">
                             <DepartmentChips
                               accounts={assignedUser.assignedAccounts}
                             />
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
-                            <p className="min-w-[220px] max-w-[300px] whitespace-normal break-words text-xs font-bold leading-5 text-[#344054]">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3">
+                            <p className="max-w-[150px] truncate text-[10px] font-bold leading-4 text-[#344054]">
                               {getAuditDisplayValue(
                                 assignedUser,
                                 "creator",
@@ -2709,8 +2728,8 @@ export default function AccountSettingsPage() {
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
-                            <p className="min-w-[220px] max-w-[300px] whitespace-normal break-words text-xs font-bold leading-5 text-[#344054]">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3">
+                            <p className="max-w-[150px] truncate text-[10px] font-bold leading-4 text-[#344054]">
                               {getAuditDisplayValue(
                                 assignedUser,
                                 "updater",
@@ -2718,8 +2737,8 @@ export default function AccountSettingsPage() {
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
-                            <p className="text-xs font-semibold text-[#344054]">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3">
+                            <p className="whitespace-nowrap text-[10px] font-semibold text-[#344054]">
                               {formatDateTime(
                                 getAuditDateValue(
                                   assignedUser,
@@ -2727,7 +2746,7 @@ export default function AccountSettingsPage() {
                                 ),
                               )}
                             </p>
-                            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                            <p className="mt-0.5 whitespace-nowrap text-[10px] font-semibold text-sibs-tertiary-5">
                               {formatDateTime(
                                 getAuditDateValue(
                                   assignedUser,
@@ -2737,23 +2756,23 @@ export default function AccountSettingsPage() {
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                          <td className="border-b border-[#E6ECF2] px-3 py-3 text-right">
                             <div className="inline-flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => openEditModal(assignedUser)}
-                                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-blue-100"
+                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2.5 text-[10px] font-bold text-sibs-primary-1 transition hover:bg-blue-100"
                               >
-                                <Edit3 size={15} />
+                                <Edit3 size={13} />
                                 Edit
                               </button>
 
                               <button
                                 type="button"
                                 onClick={() => setDeleteTarget(assignedUser)}
-                                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-xs font-bold text-red-700 transition hover:bg-red-100"
+                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-2.5 text-[10px] font-bold text-red-700 transition hover:bg-red-100"
                               >
-                                <Trash2 size={15} />
+                                <Trash2 size={13} />
                                 Delete
                               </button>
                             </div>
@@ -2787,25 +2806,12 @@ export default function AccountSettingsPage() {
                     Previous
                   </button>
 
-                  {visiblePageNumbers.map((pageNumber) => {
-                    const active = currentPage === pageNumber;
-
-                    return (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        onClick={() => handlePageChange(pageNumber)}
-                        disabled={tableLoading}
-                        className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition ${
-                          active
-                            ? "bg-[#FF5C28] text-white shadow-sm"
-                            : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
+                  <span
+                    aria-current="page"
+                    className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-[#FF5C28] px-3 text-sm font-bold text-white shadow-sm"
+                  >
+                    {currentPage}
+                  </span>
 
                   <button
                     type="button"

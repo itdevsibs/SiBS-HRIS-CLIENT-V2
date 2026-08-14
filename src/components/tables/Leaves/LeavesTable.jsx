@@ -171,8 +171,8 @@ function Badge({ children, className = "" }) {
 
 function SectionHeading({ children }) {
   return (
-    <div className="mb-2 2xl:mb-3 flex items-center gap-3">
-      <h3 className="shrink-0 sibs-text-micro font-extrabold uppercase tracking-[0.08em] text-[#8A98B8]">
+    <div className="mb-3 flex items-center gap-3">
+      <h3 className="shrink-0 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#8A98B8]">
         {children}
       </h3>
 
@@ -190,13 +190,13 @@ function CompactField({
 }) {
   return (
     <div className={`min-w-0 ${className}`}>
-      <p className="sibs-text-micro font-extrabold uppercase leading-4 tracking-wide text-[#8A98B8]">
+      <p className="text-[9px] font-extrabold uppercase leading-4 tracking-wide text-[#8A98B8]">
         {label}
       </p>
 
       {children || (
         <p
-          className={`mt-0.5 break-words sibs-text-xs 2xl:sibs-text-sm font-extrabold leading-5 ${
+          className={`mt-0.5 break-words text-xs font-extrabold leading-5 ${
             accent ? "text-[#FF5C28]" : "text-[#042C51]"
           }`}
         >
@@ -215,14 +215,14 @@ function LedgerMetric({
 }) {
   return (
     <div
-      className={`rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1.5 2xl:px-3 2xl:py-2.5 text-center ${className}`}
+      className={`rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-center ${className}`}
     >
-      <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#8A98B8]">
+      <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
         {label}
       </p>
 
       <p
-        className={`mt-0.5 2xl:mt-1 break-words sibs-text-xs 2xl:sibs-text-sm font-extrabold tabular-nums ${
+        className={`mt-1 break-words text-sm font-extrabold tabular-nums ${
           accent ? "text-[#FF5C28]" : "text-[#52637A]"
         }`}
       >
@@ -419,20 +419,21 @@ function LeaveDetailsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="leave-details-title"
-        className={`flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[720px] 2xl:max-w-[760px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-white font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)] sm:max-h-[85dvh] 2xl:sm:max-h-[92dvh] ${
+        className={`flex max-h-[calc(100dvh-1rem)] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-white font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)] sm:max-h-[92dvh] ${
           isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
         }`}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#07365F] px-4 py-3 2xl:px-6 2xl:py-4 text-white">
-          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#07365F] px-5 py-4 text-white sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <CalendarDays
-              className="h-4 w-4 2xl:h-5 2xl:w-5 shrink-0 text-amber-400"
+              size={19}
+              className="shrink-0 text-amber-400"
             />
 
             <h2
               id="leave-details-title"
-              className="truncate sibs-text-xs 2xl:sibs-text-sm font-extrabold uppercase tracking-wide"
+              className="truncate text-sm font-extrabold uppercase tracking-wide sm:text-base"
             >
               Leave Request &amp; Ledger Audit
             </h2>
@@ -442,34 +443,34 @@ function LeaveDetailsModal({
             type="button"
             onClick={handleAnimatedClose}
             disabled={busy}
-            className="inline-flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close leave details"
           >
-            <X className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
+            <X size={18} />
           </button>
         </header>
 
-        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white p-3.5 sm:p-4 2xl:p-6 text-[#101828]">
-          <div className="space-y-4 2xl:space-y-6">
-            <section className="flex flex-col gap-3 2xl:gap-4 rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-3 2xl:p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white p-4 text-[#101828] sm:p-6">
+          <div className="space-y-6">
+            <section className="flex flex-col gap-4 rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-9 w-9 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-full bg-[#07365F] sibs-text-xs font-extrabold text-white">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#07365F] text-xs font-extrabold text-white">
                   {getEmployeeInitials(item)}
                 </div>
 
                 <div className="min-w-0">
-                  <h3 className="break-words sibs-text-sm 2xl:text-base font-extrabold text-[#042C51]">
+                  <h3 className="break-words text-sm font-extrabold text-[#042C51] sm:text-base">
                     {item.gy_full_name ||
                       item.gy_username ||
                       "Unknown User"}
                   </h3>
 
-                  <div className="mt-0.5 2xl:mt-1 flex flex-wrap items-center gap-1.5 2xl:gap-2">
-                    <span className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
                       User Code (SiBS ID):
                     </span>
 
-                    <span className="rounded bg-[#E6ECF2] px-1.5 py-0.5 2xl:px-2 2xl:py-0.5 sibs-text-micro font-extrabold text-[#52637A]">
+                    <span className="rounded bg-[#E6ECF2] px-2 py-0.5 text-[10px] font-extrabold text-[#52637A]">
                       {item.gy_user_code || "—"}
                     </span>
                   </div>
@@ -478,22 +479,22 @@ function LeaveDetailsModal({
 
               <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
                 <div className="text-right">
-                  <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                  <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
                     Remaining Balance
                   </p>
 
-                  <p className="mt-0.5 text-lg 2xl:text-xl font-extrabold tabular-nums text-[#FF5C28]">
+                  <p className="mt-0.5 text-xl font-extrabold tabular-nums text-[#FF5C28]">
                     {formatNumber(item.leave_remaining)} Days
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <span className="inline-flex justify-center rounded border border-blue-200 bg-blue-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-blue-700">
+                  <span className="inline-flex justify-center rounded border border-blue-200 bg-blue-50 px-2.5 py-1 text-[9px] font-extrabold uppercase text-blue-700">
                     {leaveType}
                   </span>
 
                   <span
-                    className={`inline-flex justify-center rounded border px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase ${getStatusClass(
+                    className={`inline-flex justify-center rounded border px-2.5 py-1 text-[9px] font-extrabold uppercase ${getStatusClass(
                       normalizedStatus,
                     )}`}
                   >
@@ -553,16 +554,16 @@ function LeaveDetailsModal({
                 />
               </div>
 
-              <div className="mt-3 2xl:mt-4 grid grid-cols-1 gap-3 2xl:gap-4 sm:grid-cols-2">
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <CompactField label="Reason">
-                  <div className="mt-1 min-h-[40px] 2xl:min-h-[46px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-2 2xl:px-3 2xl:py-2.5 sibs-text-xs font-semibold leading-relaxed text-[#52637A]">
+                  <div className="mt-1 min-h-[46px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold leading-5 text-[#52637A]">
                     {item.gy_leave_reason ||
                       "No specification provided."}
                   </div>
                 </CompactField>
 
                 <CompactField label="Supervisor Remarks">
-                  <div className="mt-1 min-h-[40px] 2xl:min-h-[46px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-2 2xl:px-3 2xl:py-2.5 sibs-text-xs font-semibold leading-relaxed text-[#52637A]">
+                  <div className="mt-1 min-h-[46px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold leading-5 text-[#52637A]">
                     {item.gy_leave_remarks ||
                       "No comments filed."}
                   </div>
@@ -573,7 +574,7 @@ function LeaveDetailsModal({
             <section>
               <SectionHeading>Leave Balance Ledger</SectionHeading>
 
-              <div className="grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                 <LedgerMetric
                   label="Approved Credits"
                   value={formatNumber(item.leave_credit)}
@@ -597,9 +598,9 @@ function LeaveDetailsModal({
                 />
               </div>
 
-              <div className="mt-3 2xl:mt-4">
+              <div className="mt-4">
                 <CompactField label="Balance Justification">
-                  <div className="mt-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-2 2xl:px-3 2xl:py-2.5 sibs-text-xs font-medium italic leading-relaxed text-[#667085]">
+                  <div className="mt-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-xs font-medium italic leading-5 text-[#667085]">
                     “
                     {item.gy_leave_avail_justify ||
                       "No balance justification recorded."}
@@ -614,8 +615,8 @@ function LeaveDetailsModal({
                 Approval Context &amp; Security
               </SectionHeading>
 
-              <div className="grid grid-cols-1 gap-3 2xl:gap-4 sm:grid-cols-2">
-                <div className="space-y-2.5 2xl:space-y-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-3">
                   <CompactField
                     label="Approver Name"
                     value={approver.name}
@@ -637,19 +638,19 @@ function LeaveDetailsModal({
 
                 <CompactField label="Attachment File">
                   {attachmentName ? (
-                    <div className="mt-1 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/50 px-2.5 py-2 2xl:px-3 2xl:py-2.5 sibs-text-micro font-extrabold text-blue-700">
+                    <div className="mt-1 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/50 px-3 py-2.5 text-[10px] font-extrabold text-blue-700">
                       <Paperclip size={14} className="shrink-0" />
 
                       <span className="min-w-0 flex-1 truncate">
                         {attachmentName}
                       </span>
 
-                      <span className="shrink-0 text-blue-500">
+                      <span className="shrink-0 text-[9px] text-blue-500">
                         Download
                       </span>
                     </div>
                   ) : (
-                    <div className="mt-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-2 2xl:px-3 2xl:py-2.5 sibs-text-xs font-semibold text-[#8A98B8]">
+                    <div className="mt-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#8A98B8]">
                       No attachments provided.
                     </div>
                   )}
@@ -658,20 +659,20 @@ function LeaveDetailsModal({
             </section>
 
             {isPending ? (
-              <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 2xl:p-4">
+              <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
                     <AlertCircle
-                      size={18}
+                      size={19}
                       className="mt-0.5 shrink-0 text-amber-500"
                     />
 
                     <div className="min-w-0">
-                      <h3 className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#042C51]">
+                      <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
                         Pending Approval Action
                       </h3>
 
-                      <p className="mt-0.5 sibs-text-micro font-semibold leading-relaxed text-[#667085]">
+                      <p className="mt-1 text-[9px] font-semibold leading-4 text-[#667085]">
                         {canRunApproval
                           ? "Sign off or reject this request with your configured administrative access."
                           : "This request is pending approval from an authorized leave approver."}
@@ -685,7 +686,7 @@ function LeaveDetailsModal({
                         type="button"
                         onClick={() => handleDecision("approve")}
                         disabled={busy}
-                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3.5 2xl:px-4 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {decisionAction === "approve" ? (
                           <Loader2
@@ -702,7 +703,7 @@ function LeaveDetailsModal({
                         type="button"
                         onClick={() => handleDecision("reject")}
                         disabled={busy}
-                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-3.5 2xl:px-4 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {decisionAction === "reject" ? (
                           <Loader2
@@ -722,12 +723,12 @@ function LeaveDetailsModal({
           </div>
         </div>
 
-        <footer className="flex shrink-0 justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-2.5 2xl:px-6 2xl:py-4">
+        <footer className="flex shrink-0 justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:px-6">
           <button
             type="button"
             onClick={handleAnimatedClose}
             disabled={busy}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-xl bg-[#042C51] px-4 2xl:px-5 sibs-text-micro 2xl:sibs-text-xs font-extrabold uppercase tracking-widest text-white transition hover:bg-[#021F3A] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#042C51] px-5 text-[10px] font-extrabold uppercase tracking-widest text-white transition hover:bg-[#021F3A] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Close Panel
           </button>
@@ -807,15 +808,19 @@ export default function LeavesTable({
   }
 
   function handlePreviousPage() {
-    if (loading || !pagination.hasPreviousPage) return;
+    const currentPaginationPage = Number(pagination.currentPage || page || 1);
 
-    setPage((prev) => Math.max(Number(prev || 1) - 1, 1));
+    if (loading || currentPaginationPage <= 1) return;
+
+    setPage(Math.max(currentPaginationPage - 1, 1));
   }
 
   function handleNextPage() {
+    const currentPaginationPage = Number(pagination.currentPage || page || 1);
+
     if (loading || !pagination.hasNextPage) return;
 
-    setPage((prev) => Number(prev || 1) + 1);
+    setPage(currentPaginationPage + 1);
   }
 
   useEffect(() => {
@@ -844,24 +849,48 @@ export default function LeavesTable({
 
   return (
     <>
+      <style>{`
+        @keyframes sibsLeavesRowReveal {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .sibs-leaves-row-reveal {
+          animation: sibsLeavesRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          will-change: opacity, transform;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .sibs-leaves-row-reveal {
+            animation: none !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
+
       <section
         className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
         style={{ animationDelay: "80ms", animationFillMode: "both" }}
       >
-        <div className="border-b border-[#E6ECF2] bg-white px-3 py-2 2xl:px-5 2xl:py-4">
-          <div className="min-w-0 space-y-0.5">
-            <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
-              {isPersonalView ? "My Leave Records" : "Leave Records"}
-            </h2>
-            <p className="sibs-text-xs font-semibold text-[#667085]">
-              {isPersonalView
-                ? "Only your current page of leave records is loaded."
-                : "Only 15 leave records are loaded from the backend per page."}
-            </p>
-          </div>
+        <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+          <h2 className="sibs-section-title">
+            {isPersonalView ? "My Leave Records" : "Leave Records"}
+          </h2>
+          <p className="sibs-section-subtitle">
+            {isPersonalView
+              ? "Only your current page of leave records is loaded."
+              : "Only 15 leave records are loaded from the backend per page."}
+          </p>
         </div>
 
-        <div className="relative overflow-visible p-3.5 sm:p-5">
+        <div className="relative overflow-visible p-4 sm:p-5">
           <PaginationTable
             filterLayout="ta-inline"
             showFilterPanel={false}
@@ -943,7 +972,7 @@ export default function LeavesTable({
               <table className="w-full min-w-[1340px] border-collapse bg-white">
                 <thead className="sibs-data-table-head">
                   <tr className="sibs-data-table-head-row">
-                    <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-left">
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
                       Employee
                     </th>
                     <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
@@ -952,28 +981,28 @@ export default function LeavesTable({
                     <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
                       Leave Type
                     </th>
-                    <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
                       Filed
                     </th>
-                    <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
                       Date From
                     </th>
-                    <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
                       Date To
                     </th>
-                    <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
                       Days
                     </th>
-                    <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
                       Credits
                     </th>
-                    <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
                       Plotted
                     </th>
-                    <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
                       Remaining
                     </th>
-                    <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">
+                    <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
                       Status
                     </th>
                   </tr>
@@ -992,7 +1021,7 @@ export default function LeavesTable({
                       </tr>
                     ))
                   ) : leaves.length > 0 ? (
-                    leaves.map((item) => (
+                    leaves.map((item, index) => (
                       <tr
                         key={`${item.gy_leave_id}-${item.gy_user_id}`}
                         role="button"
@@ -1005,13 +1034,16 @@ export default function LeavesTable({
                             setSelectedLeave(item);
                           }
                         }}
-                        className="sibs-data-table-row"
+                        className="sibs-data-table-row sibs-leaves-row-reveal"
+                        style={{
+                          animationDelay: `${Math.min(index, 10) * 36}ms`,
+                        }}
                       >
-                        <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs">
+                        <td className="whitespace-nowrap px-4 py-3.5 text-xs">
                           <p className="m-0 font-extrabold text-[#042C51]">
                             {item.gy_full_name || item.gy_username || "—"}
                           </p>
-                          <p className="mt-0.5 sibs-text-micro font-bold text-[#FF5C28]">
+                          <p className="mt-0.5 text-[10px] font-bold text-[#FF5C28]">
                             {item.gy_user_code || "No user code"}
                           </p>
                         </td>
@@ -1030,28 +1062,28 @@ export default function LeavesTable({
                             )}
                         </td>
 
-                        <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-semibold text-[#52637A]">
+                        <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-semibold text-[#52637A]">
                           {formatDate(item.gy_leave_filed)}
                         </td>
-                        <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-semibold text-[#52637A]">
+                        <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-semibold text-[#52637A]">
                           {formatDate(item.gy_leave_date_from)}
                         </td>
-                        <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-semibold text-[#52637A]">
+                        <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-semibold text-[#52637A]">
                           {formatDate(item.gy_leave_date_to)}
                         </td>
-                        <td className="whitespace-nowrap bg-[#F8FAFC]/60 px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#042C51]">
+                        <td className="whitespace-nowrap bg-[#F8FAFC]/60 px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
                           {formatNumber(item.gy_leave_day)}
                         </td>
-                        <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#344054]">
+                        <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#344054]">
                           {formatNumber(item.leave_credit)}
                         </td>
-                        <td className="whitespace-nowrap bg-amber-50/30 px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-extrabold tabular-nums text-amber-600">
+                        <td className="whitespace-nowrap bg-amber-50/30 px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-amber-600">
                           {formatNumber(item.leave_plotted)}
                         </td>
-                        <td className="whitespace-nowrap bg-emerald-50/30 px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-extrabold tabular-nums text-emerald-600">
+                        <td className="whitespace-nowrap bg-emerald-50/30 px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-emerald-600">
                           {formatNumber(item.leave_remaining)}
                         </td>
-                        <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs">
+                        <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs">
                           <Badge className={getStatusClass(item.gy_leave_status)}>
                             {item.normalizedStatus ||
                               normalizeStatus(item.gy_leave_status)}

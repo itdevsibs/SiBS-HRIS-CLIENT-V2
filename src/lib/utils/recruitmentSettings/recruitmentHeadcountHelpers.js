@@ -1,4 +1,4 @@
-export const RECRUITMENT_HEADCOUNT_PAGE_LIMIT = 8;
+export const RECRUITMENT_HEADCOUNT_PAGE_LIMIT = 15;
 
 export const RECRUITMENT_HEADCOUNT_CLUSTER_OPTIONS = [
   { label: "All Clusters", value: "All" },

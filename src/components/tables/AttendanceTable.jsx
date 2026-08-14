@@ -273,6 +273,10 @@ function getAccessValue(user) {
   );
 }
 
+function isEmployeeAttendanceSession(user) {
+  return normalizeRole(user?.tokenType) === "employee";
+}
+
 function getLoggedInSibsId(user) {
   return String(
     user?.username ||
@@ -300,6 +304,8 @@ function isOwnAttendanceRow(item, user) {
 }
 
 function isHrAdminUser(user) {
+  if (isEmployeeAttendanceSession(user)) return false;
+
   const roles = [
     user?.role,
     user?.tokenType,
@@ -313,6 +319,8 @@ function isHrAdminUser(user) {
 }
 
 function isSuperAdminUser(user) {
+  if (isEmployeeAttendanceSession(user)) return false;
+
   const roles = [
     user?.role,
     user?.tokenType,
@@ -328,6 +336,8 @@ function isSuperAdminUser(user) {
 }
 
 function isTalentAcquisitionUser(user) {
+  if (isEmployeeAttendanceSession(user)) return false;
+
   const roles = [
     user?.role,
     user?.tokenType,
@@ -351,6 +361,8 @@ function isTalentAcquisitionUser(user) {
 }
 
 function isTeamLeaderUser(user) {
+  if (isEmployeeAttendanceSession(user)) return false;
+
   const access = getAccessValue(user);
 
   if (access) {
@@ -371,6 +383,8 @@ function isTeamLeaderUser(user) {
 }
 
 function isWfmUser(user) {
+  if (isEmployeeAttendanceSession(user)) return false;
+
   const access = getAccessValue(user);
 
   if (access) {
@@ -391,6 +405,8 @@ function isWfmUser(user) {
 }
 
 function canUseAttendanceFilters(user) {
+  if (isEmployeeAttendanceSession(user)) return false;
+
   return (
     isHrAdminUser(user) ||
     isSuperAdminUser(user) ||
@@ -401,6 +417,8 @@ function canUseAttendanceFilters(user) {
 }
 
 function isManagerUser(user) {
+  if (isEmployeeAttendanceSession(user)) return false;
+
   const roles = [
     user?.role,
     user?.tokenType,
@@ -515,30 +533,30 @@ function StatCard({
 
   return (
     <article
-      className="sibs-metric-card flex min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card flex min-h-[112px] flex-col justify-between overflow-hidden p-3.5"
       style={getAnimationStyle(delay)}
     >
-      <div className="flex items-start justify-between gap-2.5 2xl:gap-3">
+      <div className="flex items-start justify-between gap-3">
         <span
-          className={`sibs-text-micro font-extrabold uppercase ${selectedTone.label}`}
+          className={`text-[10px] font-extrabold uppercase ${selectedTone.label}`}
         >
           {title}
         </span>
 
         <span
-          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
         >
-          <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
+          <IconComponent size={17} strokeWidth={2} />
         </span>
       </div>
 
-      <div className="mt-1.5 2xl:mt-2">
+      <div className="mt-2">
         <p
-          className={`text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+          className={`text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
         >
           {value}
         </p>
-        <p className="mt-1 sibs-text-micro font-bold leading-4 text-[#667085]">
+        <p className="mt-1.5 text-xs font-bold leading-4 text-[#667085]">
           {description}
         </p>
       </div>
@@ -1165,6 +1183,31 @@ export default function AttendanceTable() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      <style>{`
+        @keyframes sibsAttendanceRowReveal {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .sibs-attendance-row-reveal {
+          animation: sibsAttendanceRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          will-change: opacity, transform;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .sibs-attendance-row-reveal {
+            animation: none !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
       <section
         className="sibs-profile-tab-panel"
         style={getAnimationStyle(60)}
@@ -1212,18 +1255,18 @@ export default function AttendanceTable() {
         className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
         style={getAnimationStyle(120)}
       >
-        <div className="border-b border-[#E6ECF2] bg-white px-3 py-2 2xl:px-5 2xl:py-4">
+        <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0 space-y-0.5">
-              <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">Attendance Records</h2>
-              <p className="sibs-text-xs font-semibold text-[#667085]">
+            <div className="min-w-0">
+              <h2 className="sibs-section-title">Attendance Records</h2>
+              <p className="sibs-section-subtitle">
                 {adminView
                   ? "Review employee time entries, work hours, breaks, and approval status."
                   : "Review your time entries, work hours, breaks, and approval status."}
               </p>
             </div>
 
-            <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#FF5C28]">
+            <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
               Page {currentPage}
             </span>
           </div>
@@ -1308,63 +1351,63 @@ export default function AttendanceTable() {
                   <thead className="sibs-data-table-head">
                     <tr className="sibs-data-table-head-row">
                       {adminView ? (
-                        <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5">
+                        <th className="sibs-data-table-th">
                           SiBS ID
                         </th>
                       ) : null}
 
                       {adminView ? (
-                        <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 min-w-[190px]">
+                        <th className="sibs-data-table-th min-w-[190px]">
                           Employee Name
                         </th>
                       ) : null}
 
                       {attendanceFiltersView ? (
-                        <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 min-w-[170px]">
+                        <th className="sibs-data-table-th min-w-[170px]">
                           Department
                         </th>
                       ) : null}
 
                       {attendanceFiltersView ? (
-                        <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 min-w-[145px]">
+                        <th className="sibs-data-table-th min-w-[145px]">
                           Account
                         </th>
                       ) : null}
 
                       {attendanceFiltersView ? (
-                        <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5">
+                        <th className="sibs-data-table-th">
                           Site
                         </th>
                       ) : null}
 
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5">
+                      <th className="sibs-data-table-th">
                         Tracker Date
                       </th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5">
+                      <th className="sibs-data-table-th">
                         Login (In)
                       </th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5">
+                      <th className="sibs-data-table-th">
                         Start Break
                       </th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5">
+                      <th className="sibs-data-table-th">
                         End Break
                       </th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5">
+                      <th className="sibs-data-table-th">
                         Logout (Out)
                       </th>
-                      <th className="sibs-data-table-th px-2 py-2 2xl:px-3 2xl:py-3.5 text-center">
+                      <th className="sibs-data-table-th px-3 text-center">
                         WH
                       </th>
-                      <th className="sibs-data-table-th px-2 py-2 2xl:px-3 2xl:py-3.5 text-center">
+                      <th className="sibs-data-table-th px-3 text-center">
                         BH
                       </th>
-                      <th className="sibs-data-table-th px-2 py-2 2xl:px-3 2xl:py-3.5 text-center">
+                      <th className="sibs-data-table-th px-3 text-center">
                         OT
                       </th>
-                      <th className="sibs-data-table-th px-2 py-2 2xl:px-3 2xl:py-3.5 text-center">
+                      <th className="sibs-data-table-th px-3 text-center">
                         ATH
                       </th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 text-center">
+                      <th className="sibs-data-table-th text-center">
                         Status
                       </th>
                     </tr>
@@ -1377,8 +1420,8 @@ export default function AttendanceTable() {
                     {loading ? (
                       Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                         <tr key={`attendance-skeleton-${index}`}>
-                          <td colSpan={emptyColSpan} className="px-2.5 py-2 2xl:px-4 2xl:py-4">
-                            <div className="h-6 2xl:h-7 w-full animate-sibs-pulse rounded bg-slate-100" />
+                          <td colSpan={emptyColSpan} className="px-4 py-4">
+                            <div className="h-7 w-full animate-sibs-pulse rounded bg-slate-100" />
                           </td>
                         </tr>
                       ))
@@ -1415,17 +1458,20 @@ export default function AttendanceTable() {
                             key={`${
                               item.gy_tracker_id || item.gy_tracker_date || "row"
                             }-${index}`}
-                            className="sibs-data-table-row"
+                            className="sibs-data-table-row sibs-attendance-row-reveal"
+                            style={{
+                              animationDelay: `${Math.min(index, 10) * 36}ms`,
+                            }}
                           >
                             {adminView ? (
-                              <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-extrabold tabular-nums text-[#FF5C28]">
+                              <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold tabular-nums text-[#FF5C28]">
                                 {item.gy_emp_code || "—"}
                               </td>
                             ) : null}
 
                             {adminView ? (
-                              <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3.5">
-                                <p className="max-w-[220px] break-words sibs-text-xs font-extrabold leading-tight text-[#042C51]">
+                              <td className="px-4 py-3.5">
+                                <p className="max-w-[220px] break-words text-xs font-extrabold leading-tight text-[#042C51]">
                                   {employeeName}
                                 </p>
                               </td>
@@ -1433,7 +1479,7 @@ export default function AttendanceTable() {
 
                             {attendanceFiltersView ? (
                               <td
-                                className="max-w-[190px] truncate px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-semibold text-[#52637A]"
+                                className="max-w-[190px] truncate px-4 py-3.5 text-xs font-semibold text-[#52637A]"
                                 title={item.department || "—"}
                               >
                                 {item.department || "—"}
@@ -1442,7 +1488,7 @@ export default function AttendanceTable() {
 
                             {attendanceFiltersView ? (
                               <td
-                                className="max-w-[160px] truncate px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-extrabold text-[#344054]"
+                                className="max-w-[160px] truncate px-4 py-3.5 text-xs font-extrabold text-[#344054]"
                                 title={item.gy_emp_account || "—"}
                               >
                                 {item.gy_emp_account || "—"}
@@ -1450,9 +1496,9 @@ export default function AttendanceTable() {
                             ) : null}
 
                             {attendanceFiltersView ? (
-                              <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5">
+                              <td className="whitespace-nowrap px-4 py-3.5">
                                 <span
-                                  className={`inline-flex rounded-md border px-2 py-0.5 sibs-text-micro font-extrabold uppercase ${getSiteBadgeClass(
+                                  className={`inline-flex rounded-md border px-2 py-0.5 text-[9px] font-extrabold uppercase ${getSiteBadgeClass(
                                     site,
                                   )}`}
                                 >
@@ -1461,11 +1507,11 @@ export default function AttendanceTable() {
                               </td>
                             ) : null}
 
-                            <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-extrabold text-[#536887]">
+                            <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold text-[#536887]">
                               {formatDate(item.gy_tracker_date)}
                             </td>
 
-                            <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5">
+                            <td className="whitespace-nowrap px-4 py-3.5">
                               <TimeIndicator
                                 value={loginTime}
                                 label={loginIndicator.label}
@@ -1473,15 +1519,15 @@ export default function AttendanceTable() {
                               />
                             </td>
 
-                            <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                            <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold tabular-nums text-[#7B8DB3]">
                               {breakoutTime}
                             </td>
 
-                            <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                            <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold tabular-nums text-[#7B8DB3]">
                               {breakinTime}
                             </td>
 
-                            <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5">
+                            <td className="whitespace-nowrap px-4 py-3.5">
                               <TimeIndicator
                                 value={logoutTime}
                                 label={logoutIndicator.label}
@@ -1489,23 +1535,23 @@ export default function AttendanceTable() {
                               />
                             </td>
 
-                            <td className="bg-slate-50/60 px-2 py-1.5 2xl:px-3 2xl:py-3.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#101828]">
+                            <td className="bg-slate-50/60 px-3 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#101828]">
                               {displayCappedWorkHours(item)}
                             </td>
 
-                            <td className="px-2 py-1.5 2xl:px-3 2xl:py-3.5 text-center sibs-text-xs font-semibold tabular-nums text-[#667085]">
+                            <td className="px-3 py-3.5 text-center text-xs font-semibold tabular-nums text-[#667085]">
                               {item.gy_tracker_bh ?? "—"}
                             </td>
 
-                            <td className="bg-blue-50/20 px-2 py-1.5 2xl:px-3 2xl:py-3.5 text-center sibs-text-xs font-extrabold tabular-nums text-blue-600">
+                            <td className="bg-blue-50/20 px-3 py-3.5 text-center text-xs font-extrabold tabular-nums text-blue-600">
                               {ot > 0 ? `+${formatNumber(ot)}` : "—"}
                             </td>
 
-                            <td className="bg-orange-50/20 px-2 py-1.5 2xl:px-3 2xl:py-3.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#FF5C28]">
+                            <td className="bg-orange-50/20 px-3 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#FF5C28]">
                               {ath > 0 ? formatNumber(ath) : "—"}
                             </td>
 
-                            <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center">
+                            <td className="whitespace-nowrap px-4 py-3.5 text-center">
                               {renderStatusBadge(item.gy_tracker_status)}
                             </td>
                           </tr>

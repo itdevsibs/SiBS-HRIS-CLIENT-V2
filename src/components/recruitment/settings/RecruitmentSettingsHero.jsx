@@ -4,7 +4,6 @@ import {
   FileText,
   Mail,
   RefreshCw,
-  Settings,
   ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
@@ -19,7 +18,7 @@ const heroCards = [
     unit: "Accounts",
     description: "Required headcount",
     icon: Building2,
-    tone: "sky",
+    tone: "navy",
   },
   {
     key: "rubrics",
@@ -60,11 +59,31 @@ const heroCards = [
 ];
 
 const toneClasses = {
-  sky: "border-sky-400/30 bg-sky-400/10 text-sky-200",
-  orange: "border-[#FF5C28]/40 bg-[#FF5C28]/10 text-[#FFB092]",
-  blue: "border-blue-300/30 bg-blue-300/10 text-blue-200",
-  violet: "border-violet-300/40 bg-violet-300/10 text-violet-200",
-  emerald: "border-emerald-300/40 bg-emerald-300/10 text-emerald-200",
+  navy: {
+    label: "text-[#164E7A]",
+    value: "text-[#042C51]",
+    icon: "border-blue-100 bg-blue-50 text-[#164E7A]",
+  },
+  orange: {
+    label: "text-[#D34F1F]",
+    value: "text-[#FF5C28]",
+    icon: "border-orange-100 bg-orange-50 text-[#FF5C28]",
+  },
+  blue: {
+    label: "text-blue-700",
+    value: "text-[#0D4676]",
+    icon: "border-blue-100 bg-blue-50 text-blue-700",
+  },
+  violet: {
+    label: "text-violet-700",
+    value: "text-violet-600",
+    icon: "border-violet-100 bg-violet-50 text-violet-600",
+  },
+  emerald: {
+    label: "text-emerald-700",
+    value: "text-emerald-600",
+    icon: "border-emerald-100 bg-emerald-50 text-emerald-600",
+  },
 };
 
 function getHeroMetrics(settings) {
@@ -90,79 +109,89 @@ export default function RecruitmentSettingsHero({ onSyncConfigurations }) {
   const metrics = getHeroMetrics(recruitmentSettings);
 
   return (
-    <section className="relative overflow-hidden rounded-[18px] bg-[#062F53] px-5 py-6 text-white shadow-[0_18px_40px_rgba(4,44,81,0.20)] sm:px-7">
-      <div className="pointer-events-none absolute -right-12 bottom-[-105px] h-72 w-72 rounded-full border-[28px] border-white/10" />
-      <div className="pointer-events-none absolute -right-2 bottom-10 h-28 w-28 rounded-full border-[18px] border-white/10" />
+    <div className="space-y-4">
+      <section className="relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white px-5 py-5 shadow-sm sm:px-6">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#07365F] via-[#FF5C28] to-[#07365F]" />
 
-      <div className="relative z-10 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[#FF5C28] px-3 py-1 text-[10px] font-extrabold uppercase tracking-normal text-white">
-              Recruitment Setup & Governance
-            </span>
-            <span className="text-xs font-bold text-slate-300">
-              • SiBS Solutions Portal
-            </span>
-          </div>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#164E7A]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+                RECRUITMENT SETTINGS VIEW
+              </span>
 
-          <div className="mt-3 flex items-center gap-3">
-            <Settings className="h-7 w-7 shrink-0 text-[#FF5C28]" />
-            <h1 className="text-2xl font-extrabold leading-tight tracking-normal sm:text-3xl">
+              <span className="inline-flex rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
+                MODULE: SETTINGS
+              </span>
+            </div>
+
+            <h1 className="mt-3 text-2xl font-extrabold leading-tight text-[#042C51]">
               Recruitment Settings
             </h1>
+
+            <p className="mt-1 max-w-5xl text-sm font-semibold leading-6 text-[#667085]">
+              Configure recruitment forms, scoring rubrics, pipeline SLAs,
+              assessment thresholds, email templates, holidays, and approval
+              rules.
+            </p>
           </div>
 
-          <p className="mt-3 max-w-5xl text-sm font-medium leading-6 text-slate-200">
-            Configure recruitment forms, final interview scoring rubrics,
-            pipeline SLAs, assessment thresholds, automated email templates,
-            working holiday exclusions, and approval consensus matrices.
-          </p>
+          <button
+            type="button"
+            onClick={onSyncConfigurations}
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-extrabold text-[#042C51] shadow-sm transition hover:border-[#BFD8F1] hover:bg-white active:scale-[0.98]"
+          >
+            <RefreshCw size={15} className="text-[#FF5C28]" />
+            Sync Configurations
+          </button>
         </div>
+      </section>
 
-        <button
-          type="button"
-          onClick={onSyncConfigurations}
-          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-white/15"
-        >
-          <RefreshCw size={16} className="text-[#FF5C28]" />
-          Sync Configurations
-        </button>
-      </div>
-
-      <div className="relative z-10 mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {heroCards.map((card) => {
           const Icon = card.icon;
+          const tone = toneClasses[card.tone] || toneClasses.navy;
 
           return (
-            <div
+            <article
               key={card.key}
-              className={`min-h-[118px] rounded-xl border p-4 ${toneClasses[card.tone]}`}
+              className="min-h-[112px] rounded-2xl border border-[#E6ECF2] bg-white px-4 py-4 shadow-sm"
             >
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-[10px] font-extrabold uppercase leading-4 tracking-normal">
-                  {card.label}
-                </p>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-current/30 bg-white/10">
-                  <Icon size={17} />
+              <div className="flex h-full items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p
+                    className={`truncate text-[10px] font-extrabold uppercase tracking-normal ${tone.label}`}
+                  >
+                    {card.label}
+                  </p>
+
+                  <div className="mt-3 flex items-end gap-1.5">
+                    <span
+                      className={`text-2xl font-extrabold leading-none ${tone.value}`}
+                    >
+                      {metrics[card.valueKey]}
+                    </span>
+                    <span className="pb-0.5 text-[10px] font-extrabold text-[#667085]">
+                      {card.unit}
+                    </span>
+                  </div>
+
+                  <p className="mt-2 truncate text-[10px] font-semibold text-[#667085]">
+                    {card.description}
+                  </p>
+                </div>
+
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${tone.icon}`}
+                >
+                  <Icon size={16} strokeWidth={2.2} />
                 </span>
               </div>
-
-              <div className="mt-5 flex items-end gap-1.5">
-                <span className="text-2xl font-extrabold leading-none text-white">
-                  {metrics[card.valueKey]}
-                </span>
-                <span className="pb-0.5 text-xs font-extrabold text-slate-200">
-                  {card.unit}
-                </span>
-              </div>
-
-              <p className="mt-2 text-[10px] font-bold uppercase leading-4 tracking-normal text-slate-300">
-                {card.description}
-              </p>
-            </div>
+            </article>
           );
         })}
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }

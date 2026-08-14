@@ -7,6 +7,13 @@ import { PaginationDateRangeFilter } from "@/services/context/PaginationContext"
 
 const PAGE_LIMIT = 15;
 
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
+}
+
 function formatTime(timeString) {
   if (!timeString || timeString === "00:00:00") return "—";
 
@@ -56,24 +63,24 @@ function getModeBadgeClass(mode) {
   const normalized = normalizeMode(mode);
 
   if (normalized === "Day Off") {
-    return "border-red-200 bg-red-50 text-red-600";
+    return "border-rose-200 bg-rose-50 text-rose-600";
   }
 
   if (normalized === "Rest Day") {
-    return "border-amber-200 bg-amber-50 text-amber-600";
+    return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
   if (normalized === "Holiday") {
-    return "border-blue-200 bg-blue-50 text-sibs-primary-1";
+    return "border-blue-200 bg-blue-50 text-blue-700";
   }
 
-  return "border-emerald-200 bg-emerald-50 text-emerald-600";
+  return "border-emerald-200 bg-emerald-50 text-emerald-700";
 }
 
 function Badge({ children, className = "" }) {
   return (
     <span
-      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${className}`}
     >
       {children}
     </span>
@@ -83,36 +90,67 @@ function Badge({ children, className = "" }) {
 function StatCard({
   title,
   value,
-  icon: Icon,
-  valueClassName = "text-sibs-primary-1",
-  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  description,
+  icon,
+  tone = "navy",
   delay = 0,
 }) {
+  const tones = {
+    navy: {
+      label: "text-[#174A7C]",
+      value: "text-[#042C51]",
+      icon: "bg-[#F2F6FA] text-[#174A7C]",
+    },
+    emerald: {
+      label: "text-emerald-700",
+      value: "text-emerald-600",
+      icon: "bg-emerald-50 text-emerald-600",
+    },
+    rose: {
+      label: "text-rose-700",
+      value: "text-rose-600",
+      icon: "bg-rose-50 text-rose-600",
+    },
+    amber: {
+      label: "text-amber-700",
+      value: "text-amber-500",
+      icon: "bg-amber-50 text-amber-600",
+    },
+  };
+
+  const selectedTone = tones[tone] || tones.navy;
+  const IconComponent = icon;
+
   return (
-    <div
-      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
+    <article
+      className="sibs-metric-card flex min-h-[112px] flex-col justify-between overflow-hidden p-3.5"
+      style={getAnimationStyle(delay)}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-            {title}
-          </p>
-
-          <p
-            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName}`}
-          >
-            {value}
-          </p>
-        </div>
-
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={`text-[10px] font-extrabold uppercase ${selectedTone.label}`}
         >
-          <Icon size={22} />
-        </div>
+          {title}
+        </span>
+
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
+        >
+          <IconComponent size={17} strokeWidth={2} />
+        </span>
       </div>
-    </div>
+
+      <div className="mt-2">
+        <p
+          className={`text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+        >
+          {value}
+        </p>
+        <p className="mt-1.5 text-xs font-bold leading-4 text-[#667085]">
+          {description}
+        </p>
+      </div>
+    </article>
   );
 }
 
@@ -120,95 +158,12 @@ function InlineScheduleDateRangeFilter({ visible }) {
   if (!visible) return null;
 
   return (
-    <div className="schedule-date-filter-inline w-full lg:w-auto">
-      <style>
-        {`
-          .schedule-date-filter-inline {
-            width: 100%;
-          }
-
-          .schedule-date-filter-inline > div {
-            display: flex !important;
-            align-items: center !important;
-            gap: 12px !important;
-            flex-wrap: wrap !important;
-          }
-
-          .schedule-date-filter-inline > div > button,
-          .schedule-date-filter-inline > div > div > button,
-          .schedule-date-filter-inline > div > div > div > button,
-          .schedule-date-filter-inline button[aria-haspopup="dialog"],
-          .schedule-date-filter-inline button[data-state] {
-            height: 44px !important;
-            min-height: 44px !important;
-            min-width: 220px !important;
-            border-radius: 10px !important;
-            border: 1px solid #D0D5DD !important;
-            background: #FFFFFF !important;
-            padding: 0 16px !important;
-            color: #0D4676 !important;
-            font-size: 14px !important;
-            font-weight: 700 !important;
-            box-shadow: none !important;
-            outline: none !important;
-            transition:
-              border-color 180ms ease,
-              background-color 180ms ease,
-              box-shadow 180ms ease,
-              transform 180ms ease !important;
-          }
-
-          .schedule-date-filter-inline > div > button:hover,
-          .schedule-date-filter-inline > div > div > button:hover,
-          .schedule-date-filter-inline > div > div > div > button:hover,
-          .schedule-date-filter-inline button[aria-haspopup="dialog"]:hover,
-          .schedule-date-filter-inline button[data-state]:hover {
-            border-color: rgba(13, 70, 118, 0.3) !important;
-            background: #F8FAFC !important;
-          }
-
-          .schedule-date-filter-inline > div > button:focus,
-          .schedule-date-filter-inline > div > div > button:focus,
-          .schedule-date-filter-inline > div > div > div > button:focus,
-          .schedule-date-filter-inline button[aria-haspopup="dialog"]:focus,
-          .schedule-date-filter-inline button[data-state="open"] {
-            border-color: #0D4676 !important;
-            box-shadow: 0 0 0 4px rgba(13, 70, 118, 0.10) !important;
-          }
-
-          .schedule-date-filter-inline > div > button:active,
-          .schedule-date-filter-inline > div > div > button:active,
-          .schedule-date-filter-inline > div > div > div > button:active,
-          .schedule-date-filter-inline button[aria-haspopup="dialog"]:active {
-            transform: scale(0.98) !important;
-          }
-
-          .schedule-date-filter-inline > div > button svg,
-          .schedule-date-filter-inline > div > div > button svg,
-          .schedule-date-filter-inline > div > div > div > button svg,
-          .schedule-date-filter-inline button[aria-haspopup="dialog"] svg {
-            color: #0D4676 !important;
-          }
-
-          @media (max-width: 1023px) {
-            .schedule-date-filter-inline,
-            .schedule-date-filter-inline > div,
-            .schedule-date-filter-inline > div > button,
-            .schedule-date-filter-inline > div > div,
-            .schedule-date-filter-inline > div > div > button,
-            .schedule-date-filter-inline > div > div > div,
-            .schedule-date-filter-inline > div > div > div > button {
-              width: 100% !important;
-            }
-          }
-
-          .schedule-date-filter-inline [data-radix-popper-content-wrapper] {
-            z-index: 999999 !important;
-          }
-        `}
-      </style>
-
-      <PaginationDateRangeFilter entity="schedule" visible className="m-0" />
+    <div className="schedule-date-filter-inline w-full sm:w-auto">
+      <PaginationDateRangeFilter
+        entity="schedule"
+        visible
+        className="m-0 w-full"
+      />
     </div>
   );
 }
@@ -276,17 +231,15 @@ export default function ScheduleTable({
   }
 
   function handlePreviousPage() {
-    if (loading || page <= 1) return;
+    if (loading || currentPage <= 1) return;
 
-    setPage?.((prev) => Math.max(Number(prev || 1) - 1, 1));
+    setPage?.(Math.max(currentPage - 1, 1));
   }
 
   function handleNextPage() {
-    const safeTotalPages = Math.max(Number(pagination.totalPages || 1), 1);
+    if (loading || currentPage >= totalPages) return;
 
-    if (loading || page >= safeTotalPages) return;
-
-    setPage?.((prev) => Math.min(Number(prev || 1) + 1, safeTotalPages));
+    setPage?.(Math.min(currentPage + 1, totalPages));
   }
 
   const pageStats = useMemo(() => {
@@ -320,211 +273,234 @@ export default function ScheduleTable({
 
   return (
     <>
+      <style>{`
+        @keyframes sibsScheduleRowReveal {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .sibs-schedule-row-reveal {
+          animation: sibsScheduleRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          will-change: opacity, transform;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .sibs-schedule-row-reveal {
+            animation: none !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
+
+      <div className="space-y-5 sm:space-y-6">
       <section
-        className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
-        style={{ animationDelay: "60ms", animationFillMode: "both" }}
+        className="sibs-profile-tab-panel"
+        style={getAnimationStyle(60)}
       >
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-base font-bold text-[#101828]">
-              Current Page Summary
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              These totals are based only on the current schedule records loaded
-              for this page.
-            </p>
-          </div>
-
-          <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
-            Page {currentPage} of {totalPages}
-          </Badge>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Loaded Schedules"
             value={loading ? "..." : pageStats.totalLoaded}
+            description="Records loaded on the current page"
             icon={CalendarDays}
+            tone="navy"
             delay={0}
           />
 
           <StatCard
             title="Regular"
             value={loading ? "..." : pageStats.regularCount}
+            description="Regular work schedules on this page"
             icon={Clock}
-            valueClassName="text-emerald-600"
-            iconClassName="bg-emerald-50 text-emerald-600"
+            tone="emerald"
             delay={60}
           />
 
           <StatCard
             title="Day Off"
             value={loading ? "..." : pageStats.dayOffCount}
+            description="Scheduled days off on this page"
             icon={Clock}
-            valueClassName="text-red-600"
-            iconClassName="bg-red-50 text-red-600"
+            tone="rose"
             delay={120}
           />
 
           <StatCard
             title="Rest Day"
             value={loading ? "..." : pageStats.restDayCount}
+            description="Rest days scheduled on this page"
             icon={Clock}
-            valueClassName="text-amber-500"
-            iconClassName="bg-amber-50 text-amber-600"
+            tone="amber"
             delay={180}
           />
         </div>
       </section>
 
       <section
-        className="sibs-profile-tab-panel min-w-0 overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
-        style={{ animationDelay: "120ms", animationFillMode: "both" }}
+        className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+        style={getAnimationStyle(120)}
       >
+        <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="sibs-section-title">Schedule Records</h2>
+              <p className="sibs-section-subtitle">
+                Review your scheduled work days, shift times, breaks, and registered dates.
+              </p>
+            </div>
+
+            <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
+              Page {currentPage}
+            </span>
+          </div>
+        </div>
+
         <div className="relative overflow-visible p-4 sm:p-5">
           <PaginationTable
-            title="Schedule Records"
-            subtitle="View your current page of schedule records."
+            filterLayout="ta-inline"
+            showFilterPanel={false}
+            showFilterHeader={false}
+            showPagination={false}
             loading={loading}
             searchValue={searchInput}
-            searchPlaceholder="Search..."
+            searchPlaceholder="Search schedule records..."
             onSearchChange={(value) => setSearchInput?.(value)}
             onSearchKeyDown={handleSearchKeyDown}
+            dropdownFilters={[]}
             rightContent={<InlineScheduleDateRangeFilter visible />}
-            showPagination={false}
-            className="mb-5"
+            className="border-0 bg-transparent p-0 shadow-none"
           />
 
-          <div className="mb-5 block sm:hidden">
+          <div className="mt-3 block sm:hidden">
             <button
               type="button"
               onClick={runSearch}
               disabled={loading}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1D] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Search size={17} />
-              Search
+              <Search size={16} />
+              Apply Search
             </button>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
-            <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
-              <table className="w-full min-w-[980px] border-collapse bg-white">
-                <thead className="sticky top-0 z-10 bg-slate-50">
-                  <tr>
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Date
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Mode
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Login
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Break Out
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Break In
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Logout
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Registered
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody
-                  key={`${page}-${searchKeyword}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${loading}`}
-                >
-                  {loading ? (
-                    Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                      <tr key={index}>
-                        <td
-                          colSpan={7}
-                          className="border-t border-[#f3f4f6] px-5 py-4"
-                        >
-                          <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
-                        </td>
-                      </tr>
-                    ))
-                  ) : schedule.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
-                      >
-                        No schedule found.
-                      </td>
+          <div className="mt-5 sibs-data-table-shell">
+            <div className="overflow-hidden">
+              <div
+                ref={tableScrollRef}
+                className="max-h-[650px] overflow-auto"
+              >
+                <table className="w-full min-w-[980px] border-collapse bg-white text-left">
+                  <thead className="sibs-data-table-head">
+                    <tr className="sibs-data-table-head-row">
+                      <th className="sibs-data-table-th">Date</th>
+                      <th className="sibs-data-table-th">Mode</th>
+                      <th className="sibs-data-table-th text-center">Login</th>
+                      <th className="sibs-data-table-th text-center">Break Out</th>
+                      <th className="sibs-data-table-th text-center">Break In</th>
+                      <th className="sibs-data-table-th text-center">Logout</th>
+                      <th className="sibs-data-table-th text-center">Registered</th>
                     </tr>
-                  ) : (
-                    schedule.map((item, index) => (
-                      <tr
-                        key={item.gy_sched_id || index}
-                        className="transition-all duration-200 hover:bg-slate-50"
-                      >
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
-                          {formatDate(item.gy_sched_day)}
-                        </td>
+                  </thead>
 
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm">
-                          <Badge
-                            className={getModeBadgeClass(item.gy_sched_mode)}
-                          >
-                            {formatMode(item.gy_sched_mode)}
-                          </Badge>
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-[#344054]">
-                          {formatTime(item.gy_sched_login)}
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
-                          {formatTime(item.gy_sched_breakout)}
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
-                          {formatTime(item.gy_sched_breakin)}
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-sibs-primary-1">
-                          {formatTime(item.gy_sched_logout)}
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
-                          {formatDate(item.gy_sched_reg)}
+                  <tbody
+                    key={`${page}-${searchKeyword}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${loading}`}
+                    className="divide-y divide-[#EEF2F6]"
+                  >
+                    {loading ? (
+                      Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                        <tr key={`schedule-skeleton-${index}`}>
+                          <td colSpan={7} className="px-4 py-4">
+                            <div className="h-7 w-full animate-sibs-pulse rounded bg-slate-100" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : schedule.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-12 text-center">
+                          <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-[#667085]">
+                            <CalendarDays size={34} className="text-[#C8D3DF]" />
+                            <p className="text-sm font-extrabold text-[#042C51]">
+                              No schedule records found
+                            </p>
+                            <p className="text-xs font-semibold">
+                              Adjust the search or date range filters and try again.
+                            </p>
+                          </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      schedule.map((item, index) => (
+                        <tr
+                          key={item.gy_sched_id || index}
+                          className="sibs-data-table-row sibs-schedule-row-reveal"
+                          style={{
+                            animationDelay: `${Math.min(index, 10) * 36}ms`,
+                          }}
+                        >
+                          <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold text-[#536887]">
+                            {formatDate(item.gy_sched_day)}
+                          </td>
+
+                          <td className="whitespace-nowrap px-4 py-3.5">
+                            <Badge className={getModeBadgeClass(item.gy_sched_mode)}>
+                              {formatMode(item.gy_sched_mode)}
+                            </Badge>
+                          </td>
+
+                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
+                            {formatTime(item.gy_sched_login)}
+                          </td>
+
+                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                            {formatTime(item.gy_sched_breakout)}
+                          </td>
+
+                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                            {formatTime(item.gy_sched_breakin)}
+                          </td>
+
+                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
+                            {formatTime(item.gy_sched_logout)}
+                          </td>
+
+                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-semibold text-[#667085]">
+                            {formatDate(item.gy_sched_reg)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          <PaginationTable
-            loading={loading}
-            showSearch={false}
-            showPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            loadedCount={schedule.length}
-            totalRecords={totalRecords}
-            recordLabel="schedule records"
-            onPrevious={handlePreviousPage}
-            onNext={handleNextPage}
-          />
+          <div className="mt-5">
+            <PaginationTable
+              loading={loading}
+              showSearch={false}
+              showPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              loadedCount={schedule.length}
+              totalRecords={totalRecords}
+              recordLabel="schedule records"
+              onPrevious={handlePreviousPage}
+              onNext={handleNextPage}
+              showCount
+              className="border-0 bg-transparent p-0 shadow-none"
+            />
+          </div>
         </div>
       </section>
+      </div>
     </>
   );
 }
