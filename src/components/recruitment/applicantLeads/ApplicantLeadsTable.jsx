@@ -2,14 +2,17 @@ import React from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  CircleCheckBig,
   Mail,
   MapPin,
   Phone,
+  RotateCw,
   Trash2,
   UserRound,
 } from "lucide-react";
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
+import { isApplicantLeadApplicationLinkSent } from "../../../lib/utils/applicantLeads/applicantLeadEmailStatus";
 import ApplicantLeadStatusBadge from "./ApplicantLeadStatusBadge";
 
 function cleanText(value, fallback = "-") {
@@ -24,6 +27,7 @@ export default function ApplicantLeadsTable() {
     errorMessage,
     markApplicationLinkSent,
     openEditModal,
+    isSendingApplicationLink,
   } = useApplicantLeadsPage();
 
   const totalRecords = Array.isArray(filteredLeads) ? filteredLeads.length : 0;
@@ -89,6 +93,7 @@ export default function ApplicantLeadsTable() {
               const inputtedBy = cleanText(lead.inputtedBy);
 
               const dateLogged = cleanText(lead.dateLogged);
+              const applicationLinkSent = isApplicantLeadApplicationLinkSent(lead);
 
               return (
                 <tr
@@ -239,16 +244,41 @@ export default function ApplicantLeadsTable() {
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         type="button"
+                        disabled={isSendingApplicationLink}
                         onClick={(event) => {
                           event.stopPropagation();
                           markApplicationLinkSent(lead);
                         }}
-                        title="Send application link"
-                        aria-label={`Send application link to ${fullName}`}
-                        className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-[7px] border border-[#E7C7FF] bg-[#FCF7FF] text-[#9E28FF] transition hover:border-[#D7A3FF] hover:bg-[#F7EBFF] active:scale-95"
+                        title={
+                          applicationLinkSent
+                            ? "Resend application link email"
+                            : "Send application link email"
+                        }
+                        aria-label={
+                          applicationLinkSent
+                            ? `Resend application link email to ${fullName}`
+                            : `Send application link email to ${fullName}`
+                        }
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-[7px] border transition active:scale-95 disabled:cursor-not-allowed disabled:active:scale-100 ${
+                          applicationLinkSent
+                            ? "cursor-pointer border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-60"
+                            : "cursor-pointer border-[#E7C7FF] bg-[#FCF7FF] text-[#9E28FF] hover:border-[#D7A3FF] hover:bg-[#F7EBFF] disabled:opacity-60"
+                        }`}
                       >
-                        <Mail size={13} strokeWidth={2} />
+                        {applicationLinkSent ? (
+                          <RotateCw size={13} strokeWidth={2.2} />
+                        ) : (
+                          <Mail size={13} strokeWidth={2} />
+                        )}
                       </button>
+                      {applicationLinkSent ? (
+                        <span
+                          title="Application link email has been sent"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-[7px] border border-emerald-200 bg-white text-emerald-600"
+                        >
+                          <CircleCheckBig size={13} strokeWidth={2.2} />
+                        </span>
+                      ) : null}
 
                       <button
                         type="button"

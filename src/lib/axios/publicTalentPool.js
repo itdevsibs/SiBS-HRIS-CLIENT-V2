@@ -86,6 +86,8 @@ function appendPublicApplicationFormData(formData, form = {}) {
   appendValue(formData, "openPosition", form.openPosition);
   appendValue(formData, "nickname", form.nickname);
   appendValue(formData, "applyingLocation", form.applyingLocation);
+  appendValue(formData, "referralCode", form.referralCode);
+  appendValue(formData, "referral_code", form.referralCode);
   appendValue(formData, "referredBy", form.referredBy);
   appendValue(formData, "employeeId", form.employeeId);
 
@@ -364,6 +366,43 @@ export async function getTalentPoolOpenPositions() {
         err?.response?.data?.error ||
         err?.message ||
         "Failed to load talent pool open positions.",
+    };
+  }
+}
+
+export async function getTalentPoolReferralPrefill(referralCode) {
+  try {
+    const cleanReferralCode = String(referralCode || "").trim();
+
+    if (!cleanReferralCode) {
+      return {
+        success: false,
+        data: null,
+        message: "Referral code is required.",
+      };
+    }
+
+    const res = await publicApi.get(
+      `/api/talent-pool/referrals/${encodeURIComponent(cleanReferralCode)}`,
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Public getTalentPoolReferralPrefill API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return {
+      success: false,
+      data: null,
+      status: err?.response?.status || null,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to load referral information.",
     };
   }
 }

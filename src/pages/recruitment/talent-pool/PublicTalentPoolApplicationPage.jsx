@@ -26,10 +26,13 @@ import {
   Loader2,
   Plus,
   Trash2,
+  CircleCheckBig,
+  TriangleAlert,
 } from "lucide-react";
 import StatusModal from "@/components/modals/StatusModal";
 import {
   getTalentPoolFormOptions,
+  getTalentPoolReferralPrefill,
   submitPublicTalentPoolApplication,
 } from "@/lib/axios/publicTalentPool";
 import { getPublicApprovedJobDescriptions } from "@/lib/axios/getPublicJobDescription";
@@ -631,12 +634,21 @@ function validateEducationDetails(attainment, details) {
 }
 /* EDUCATION RULES END */
 
-function createEmptyPublicForm() {
+function getReferralCodeFromCurrentUrl() {
+  if (typeof window === "undefined") return "";
+
+  return String(new URLSearchParams(window.location.search).get("ref") || "")
+    .trim()
+    .toUpperCase();
+}
+
+function createEmptyPublicForm(referralCode = "") {
   return {
     hearAboutUs: [],
     openPosition: "",
     nickname: "",
     applyingLocation: "",
+    referralCode,
     referredBy: "",
     employeeId: "",
 
@@ -2938,11 +2950,17 @@ export default function PublicTalentPoolApplicationPage() {
   const educationSectionRef = useRef(null);
   const consentRef = useRef(null);
 
-  const [form, setForm] = useState(createEmptyPublicForm);
+  const [form, setForm] = useState(() =>
+    createEmptyPublicForm(getReferralCodeFromCurrentUrl()),
+  );
   const [submittedRecord, setSubmittedRecord] = useState(null);
   const [activePositionOptions, setActivePositionOptions] = useState([]);
   const [formOptions, setFormOptions] = useState(defaultFormOptions);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingReferralPrefill, setIsLoadingReferralPrefill] =
+    useState(false);
+  const [referralLookupStatus, setReferralLookupStatus] = useState("");
+  const [referralLookupMessage, setReferralLookupMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [highlightAudio, setHighlightAudio] = useState(false);
@@ -2959,6 +2977,7 @@ export default function PublicTalentPoolApplicationPage() {
   const selectedAudioFile = audioFileRef.current || form.audioFile;
   const selectedAttachmentFile =
     attachmentFileRef.current || form.attachmentFile;
+  const isReferralCodeFromEmail = Boolean(getReferralCodeFromCurrentUrl());
 
   useEffect(() => {
     const styleId = "public-talent-pool-hide-sidebar-style";
@@ -3027,6 +3046,72 @@ export default function PublicTalentPoolApplicationPage() {
       document.documentElement.classList.remove("public-talent-pool-form-page");
     };
   }, []);
+
+  useEffect(() => {
+    const referralCode = cleanText(form.referralCode).toUpperCase();
+    const referralCodeLooksComplete = /^REF-[A-Z0-9]{6}$/.test(referralCode);
+
+    if (!referralCode) {
+      setReferralLookupStatus("");
+      setReferralLookupMessage("");
+      setIsLoadingReferralPrefill(false);
+      return undefined;
+    }
+
+    if (!referralCodeLooksComplete) {
+      setReferralLookupStatus("");
+      setReferralLookupMessage("");
+      setIsLoadingReferralPrefill(false);
+      return undefined;
+    }
+
+    let isCurrent = true;
+    const lookupDelay = isReferralCodeFromEmail ? 0 : 500;
+
+    setReferralLookupStatus("checking");
+    setReferralLookupMessage("Checking referral code...");
+    setIsLoadingReferralPrefill(true);
+
+    const lookupTimer = window.setTimeout(async () => {
+      const response = await getTalentPoolReferralPrefill(referralCode);
+
+      if (!isCurrent) return;
+
+      if (response?.success && response.data) {
+        const prefill = response.data;
+
+        setForm((previous) => ({
+          ...previous,
+          referralCode: prefill.referralCode || previous.referralCode,
+          firstName: prefill.firstName || previous.firstName,
+          middleName: prefill.middleName || previous.middleName,
+          lastName: prefill.lastName || previous.lastName,
+          suffix: prefill.suffix || previous.suffix,
+          email: prefill.email || previous.email,
+          phone1: prefill.phone1 || previous.phone1,
+          applyingLocation:
+            prefill.applyingLocation || previous.applyingLocation,
+        }));
+        setReferralLookupStatus("matched");
+        setReferralLookupMessage("Referral code matched.");
+      } else {
+        setReferralLookupStatus("missing");
+        setReferralLookupMessage(
+          response?.status === 404
+            ? "No matching referral code."
+            : response?.message ||
+                "We could not verify this referral code right now.",
+        );
+      }
+
+      setIsLoadingReferralPrefill(false);
+    }, lookupDelay);
+
+    return () => {
+      isCurrent = false;
+      window.clearTimeout(lookupTimer);
+    };
+  }, [form.referralCode, isReferralCodeFromEmail]);
 
   useEffect(() => {
     let isMounted = true;
@@ -4068,6 +4153,79 @@ export default function PublicTalentPoolApplicationPage() {
             description="Tell us where you learned about SiBS and what position you are applying for."
           >
             <div className="space-y-4">
+              <div className="rounded-2xl border border-[#FFB27A] bg-[#FFF7F1] p-4 shadow-sm">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wide text-[#E6531B]">
+                      Referral Code
+                    </p>
+                    <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+                      Use this code to connect your application to your referral.
+                    </p>
+                    {isReferralCodeFromEmail ? (
+                      <p className="mt-1 text-xs font-semibold text-emerald-700">
+                        {isLoadingReferralPrefill
+                          ? "Loading your saved applicant lead information..."
+                          : "This was applied from your email invitation."}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs font-semibold text-[#667085]">
+                        Enter a referral code if one was shared with you.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+                    {referralLookupStatus ? (
+                      <div
+                        className={[
+                          "flex min-h-10 items-center gap-1.5 text-xs font-extrabold md:max-w-[190px]",
+                          referralLookupStatus === "matched"
+                            ? "text-emerald-700"
+                            : referralLookupStatus === "missing"
+                              ? "text-amber-700"
+                              : "text-[#174A7C]",
+                        ].join(" ")}
+                      >
+                        {referralLookupStatus === "checking" ? (
+                          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                        ) : referralLookupStatus === "matched" ? (
+                          <CircleCheckBig className="h-3.5 w-3.5 shrink-0" />
+                        ) : (
+                          <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                        )}
+                        <span className="leading-tight">
+                          {referralLookupMessage}
+                        </span>
+                      </div>
+                    ) : null}
+                    <input
+                      value={form.referralCode}
+                      disabled={isReferralCodeFromEmail}
+                      onChange={(e) =>
+                        updateFormField(
+                          "referralCode",
+                          e.target.value.toUpperCase(),
+                        )
+                      }
+                      placeholder="e.g. REF-******"
+                      className={inputClass(
+                        [
+                          "md:w-[260px]",
+                          isReferralCodeFromEmail
+                            ? "cursor-not-allowed bg-white text-[#042C51]"
+                            : "bg-white",
+                          referralLookupStatus === "matched"
+                            ? "!border-emerald-400 !ring-emerald-100 focus:!border-emerald-500 focus:!ring-emerald-100"
+                            : referralLookupStatus === "missing"
+                              ? "!border-amber-400 !ring-amber-100 focus:!border-amber-500 focus:!ring-amber-100"
+                              : "border-[#FFB27A]",
+                        ].join(" "),
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <FieldLabel>
                   How did you first hear about us? <RequiredMark />

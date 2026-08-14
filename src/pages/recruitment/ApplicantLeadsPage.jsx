@@ -1,6 +1,7 @@
 import React from "react";
 
 import Header from "../../components/layout/Header";
+import ApplicantLeadEmailSendingModal from "../../components/recruitment/applicantLeads/ApplicantLeadEmailSendingModal";
 import ApplicantLeadModal from "../../components/recruitment/applicantLeads/ApplicantLeadModal";
 import ApplicantLeadsDirectory from "../../components/recruitment/applicantLeads/ApplicantLeadsDirectory";
 import ApplicantLeadsHeader from "../../components/recruitment/applicantLeads/ApplicantLeadsHeader";
@@ -25,6 +26,7 @@ function ApplicantLeadsPageContent() {
       </main>
 
       <ApplicantLeadModal />
+      <ApplicantLeadEmailSendingModal />
     </div>
   );
 }
