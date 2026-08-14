@@ -105,6 +105,18 @@ export function normalizeApplicantLead(row = {}) {
       "",
     status: row.status || "New Lead",
     referralCode: row.referral_code || row.referralCode || "",
+    talentPoolApplicationId:
+      row.talent_pool_application_id ||
+      row.talentPoolApplicationId ||
+      "",
+    movedToTalentPoolBySibsId:
+      row.moved_to_talent_pool_by_sibs_id ||
+      row.movedToTalentPoolBySibsId ||
+      "",
+    movedToTalentPoolAt:
+      row.moved_to_talent_pool_at ||
+      row.movedToTalentPoolAt ||
+      "",
     notes: row.remarks || row.notes || "",
     inputtedBy:
       row.logged_by_name ||

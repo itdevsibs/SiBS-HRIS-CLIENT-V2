@@ -16,6 +16,7 @@ export const hearAboutUsOptions = [
   "External Referral Listings",
   "Job Fairs",
   "Employee Retention Program",
+  "Outbound",
   "Others",
 ];
 

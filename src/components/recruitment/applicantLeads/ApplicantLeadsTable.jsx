@@ -28,6 +28,7 @@ export default function ApplicantLeadsTable() {
     markApplicationLinkSent,
     openEditModal,
     isSendingApplicationLink,
+    leadView,
   } = useApplicantLeadsPage();
 
   const totalRecords = Array.isArray(filteredLeads) ? filteredLeads.length : 0;
@@ -94,6 +95,10 @@ export default function ApplicantLeadsTable() {
 
               const dateLogged = cleanText(lead.dateLogged);
               const applicationLinkSent = isApplicantLeadApplicationLinkSent(lead);
+              const talentPoolApplicationId = cleanText(
+                lead.talentPoolApplicationId,
+                "",
+              );
 
               return (
                 <tr
@@ -120,9 +125,14 @@ export default function ApplicantLeadsTable() {
 
                       {leadId && (
                         <p className="mt-0.5 truncate text-[9px] font-semibold uppercase tracking-[0.035em] text-[#91A2B8]">
-                          {leadId}
+                          Lead ID: {leadId}
                         </p>
                       )}
+                      {leadView === "archive" && talentPoolApplicationId ? (
+                        <p className="mt-0.5 truncate text-[9px] font-extrabold uppercase tracking-[0.035em] text-emerald-700">
+                          TP ID: {talentPoolApplicationId}
+                        </p>
+                      ) : null}
                     </div>
                   </td>
 
@@ -241,6 +251,9 @@ export default function ApplicantLeadsTable() {
                   ========================================= */}
 
                   <td className="px-5 py-4 align-middle">
+                    {leadView === "archive" ? (
+                      <div className="h-7" />
+                    ) : (
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         type="button"
@@ -291,6 +304,7 @@ export default function ApplicantLeadsTable() {
                         <Trash2 size={13} strokeWidth={2} />
                       </button>
                     </div>
+                    )}
                   </td>
                 </tr>
               );

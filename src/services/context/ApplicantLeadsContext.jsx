@@ -32,6 +32,33 @@ import {
 } from "../../lib/utils/applicantLeads/applicantLeadsHelpers";
 
 const ApplicantLeadsContext = createContext(null);
+const MOVED_TO_TALENT_POOL_STATUS = "Moved to Talent Pool Archive";
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function isMovedToTalentPoolLead(lead = {}) {
+  const status = cleanText(lead.status).toLowerCase();
+
+  return (
+    Boolean(cleanText(lead.talentPoolApplicationId)) ||
+    status === MOVED_TO_TALENT_POOL_STATUS.toLowerCase()
+  );
+}
+
+function buildCountSummary(items = [], getKey) {
+  const counts = new Map();
+
+  items.forEach((item) => {
+    const key = cleanText(getKey(item)) || "Unassigned";
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+
+  return [...counts.entries()]
+    .map(([label, total]) => ({ label, total }))
+    .sort((first, second) => second.total - first.total || first.label.localeCompare(second.label));
+}
 
 function toLookupOptions(values = []) {
   return values.map((value) => ({
@@ -100,6 +127,7 @@ export function ApplicantLeadsProvider({ children }) {
   const [sourceFilter, setSourceFilter] = useState("All");
   const [siteFilter, setSiteFilter] = useState("All");
   const [departmentFilter, setDepartmentFilter] = useState("All");
+  const [leadView, setLeadView] = useState("active");
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [formData, setFormData] = useState(EMPTY_APPLICANT_LEAD_FORM);
@@ -111,10 +139,20 @@ export function ApplicantLeadsProvider({ children }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [lookupOptions, setLookupOptions] = useState(DEFAULT_LOOKUP_OPTIONS);
 
+  const activeLeads = useMemo(
+    () => leads.filter((lead) => !isMovedToTalentPoolLead(lead)),
+    [leads],
+  );
+  const archivedLeads = useMemo(
+    () => leads.filter(isMovedToTalentPoolLead),
+    [leads],
+  );
+  const leadsForCurrentView = leadView === "archive" ? archivedLeads : activeLeads;
+
   const filteredLeads = useMemo(
     () =>
       filterApplicantLeads({
-        leads,
+        leads: leadsForCurrentView,
         searchTerm,
         statusFilter,
         sourceFilter,
@@ -123,7 +161,7 @@ export function ApplicantLeadsProvider({ children }) {
       }),
     [
       departmentFilter,
-      leads,
+      leadsForCurrentView,
       searchTerm,
       siteFilter,
       sourceFilter,
@@ -132,6 +170,14 @@ export function ApplicantLeadsProvider({ children }) {
   );
 
   const metrics = useMemo(() => getApplicantLeadMetrics(leads), [leads]);
+  const channelSourceSummary = useMemo(
+    () => buildCountSummary(leads, (lead) => lead.source),
+    [leads],
+  );
+  const accountLeadSummary = useMemo(
+    () => buildCountSummary(leads, (lead) => lead.specificAccount),
+    [leads],
+  );
 
   const loadApplicantLeadOptions = useCallback(async () => {
     const result = await getApplicantLeadOptions();
@@ -322,8 +368,12 @@ export function ApplicantLeadsProvider({ children }) {
   const value = useMemo(
     () => ({
       leads,
+      activeLeads,
+      archivedLeads,
       filteredLeads,
       metrics,
+      channelSourceSummary,
+      accountLeadSummary,
       currentAccountName,
       isLoading,
       isSaving,
@@ -336,6 +386,10 @@ export function ApplicantLeadsProvider({ children }) {
       sourceOptions: lookupOptions.sources,
       siteOptions: lookupOptions.sites,
       statusOptions: lookupOptions.statuses,
+      leadView,
+      setLeadView,
+      activeLeadCount: activeLeads.length,
+      archivedLeadCount: archivedLeads.length,
 
       searchTerm,
       setSearchTerm,
@@ -369,10 +423,15 @@ export function ApplicantLeadsProvider({ children }) {
       departmentFilter,
       errorMessage,
       editingLead,
+      activeLeads,
+      archivedLeads,
+      channelSourceSummary,
+      accountLeadSummary,
       filteredLeads,
       formData,
       isLoading,
       isSaving,
+      leadView,
       sendingApplicationLinkLead,
       applicationLinkSendStatus,
       leads,
