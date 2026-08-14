@@ -41,7 +41,56 @@ function normalizeRole(value) {
     .replace(/[\s-]+/g, "_");
 }
 
-function canViewAccountFilter(user) {
+function getAccessValue(user) {
+  return Number(
+    user?.admin_access ??
+      user?.adminAccess ??
+      user?.access ??
+      user?.gy_user_access ??
+      user?.gyUserAccess ??
+      0,
+  );
+}
+
+function isTeamLeaderUser(user) {
+  const access = getAccessValue(user);
+
+  if (access) return access === 8;
+
+  const roles = [
+    user?.role,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    ["team_leader", "teamleader", "tl"].includes(role),
+  );
+}
+
+function isWfmUser(user) {
+  const access = getAccessValue(user);
+
+  if (access) return access === 9;
+
+  const roles = [
+    user?.role,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    ["wfm", "workforce_management"].includes(role),
+  );
+}
+
+function canViewLeaveFilters(user) {
+  if (isTeamLeaderUser(user) || isWfmUser(user)) return true;
+
   const roles = [
     user?.role,
     user?.tokenType,
@@ -208,7 +257,9 @@ export default function LeavesPage() {
   const [recordScope, setRecordScope] = useState("all");
 
   const [statusFilter, setStatusFilter] = useState("All");
+  const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
+  const [departmentOptions, setDepartmentOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
 
   const paginationContext = usePagination("leaves");
@@ -234,7 +285,8 @@ export default function LeavesPage() {
   const isEmployeeAccount =
     String(user?.role || "").toLowerCase() === "employee";
 
-  const showAccountFilter = canViewAccountFilter(user);
+  const showDepartmentFilter = canViewLeaveFilters(user);
+  const showAccountFilter = canViewLeaveFilters(user);
 
   useEffect(() => {
     if (!user) return;
@@ -274,6 +326,7 @@ export default function LeavesPage() {
     pageValue = page,
     searchValue = search,
     statusValue = statusFilter,
+    departmentValue = departmentFilter,
     accountValue = accountFilter,
     dateFromValue = dateFrom,
     dateToValue = dateTo,
@@ -291,17 +344,40 @@ export default function LeavesPage() {
         limit: PAGE_LIMIT,
         search: searchValue,
         status: statusValue,
+        department: showDepartmentFilter ? departmentValue : "All",
         account: showAccountFilter ? accountValue : "All",
         dateFrom: dateFromValue,
         dateTo: dateToValue,
+        includeDepartments: showDepartmentFilter,
+        includeAccounts: showAccountFilter,
       });
 
       if (res?.success && Array.isArray(res.data)) {
         setLeaves(res.data);
         setRecordScope(res.scope || "all");
 
+        if (Array.isArray(res.departmentOptions)) {
+          setDepartmentOptions(res.departmentOptions);
+        }
+
         if (Array.isArray(res.accountOptions)) {
           setAccountOptions(res.accountOptions);
+        }
+
+        if (
+          showDepartmentFilter &&
+          typeof res.selectedDepartment === "string" &&
+          res.selectedDepartment !== departmentValue
+        ) {
+          setDepartmentFilter(res.selectedDepartment || "All");
+        }
+
+        if (
+          showAccountFilter &&
+          typeof res.selectedAccount === "string" &&
+          res.selectedAccount !== accountValue
+        ) {
+          setAccountFilter(res.selectedAccount || "All");
         }
 
         setPagination(
@@ -363,6 +439,10 @@ export default function LeavesPage() {
           setStatusFilter(parsed.status || "All");
         }
 
+        if (typeof parsed.department === "string") {
+          setDepartmentFilter(parsed.department || "All");
+        }
+
         if (typeof parsed.account === "string") {
           setAccountFilter(parsed.account || "All");
         }
@@ -398,12 +478,21 @@ export default function LeavesPage() {
         search,
         page,
         status: statusFilter,
+        department: departmentFilter,
         account: accountFilter,
         dateFrom,
         dateTo,
       }),
     );
-  }, [search, page, statusFilter, accountFilter, dateFrom, dateTo]);
+  }, [
+    search,
+    page,
+    statusFilter,
+    departmentFilter,
+    accountFilter,
+    dateFrom,
+    dateTo,
+  ]);
 
   useEffect(() => {
     if (!restoredRef.current) return;
@@ -412,16 +501,40 @@ export default function LeavesPage() {
       pageValue: page,
       searchValue: search,
       statusValue: statusFilter,
+      departmentValue: departmentFilter,
       accountValue: accountFilter,
       dateFromValue: dateFrom,
       dateToValue: dateTo,
       shouldScrollTop: false,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, statusFilter, accountFilter, dateFrom, dateTo]);
+  }, [
+    page,
+    search,
+    statusFilter,
+    departmentFilter,
+    accountFilter,
+    dateFrom,
+    dateTo,
+  ]);
+
+  function handleDepartmentSelect(departmentId) {
+    const nextDepartment = departmentId || "All";
+
+    if (nextDepartment === departmentFilter) return;
+
+    setDepartmentFilter(nextDepartment);
+    setAccountFilter("All");
+    setAccountOptions([]);
+    setPage(1);
+  }
 
   function handleAccountSelect(accountName) {
-    setAccountFilter(accountName || "All");
+    const nextAccount = accountName || "All";
+
+    if (nextAccount === accountFilter) return;
+
+    setAccountFilter(nextAccount);
     setPage(1);
   }
 
@@ -501,11 +614,36 @@ export default function LeavesPage() {
 
   const isPersonalView = isEmployeeAccount || recordScope === "personal";
 
+  const departmentDropdownOptions = useMemo(() => {
+    return (Array.isArray(departmentOptions) ? departmentOptions : [])
+      .map((option) => {
+        if (option && typeof option === "object") {
+          return {
+            label: String(option.label || option.name || option.value || "").trim(),
+            value: String(option.value || option.id || "").trim(),
+          };
+        }
+
+        const value = String(option || "").trim();
+        return { label: value, value };
+      })
+      .filter((option) => option.label && option.value);
+  }, [departmentOptions]);
+
   const accountDropdownOptions = useMemo(() => {
-    return accountOptions.map((account) => ({
-      label: account,
-      value: account,
-    }));
+    return (Array.isArray(accountOptions) ? accountOptions : [])
+      .map((account) => {
+        if (account && typeof account === "object") {
+          return {
+            label: String(account.label || account.name || account.value || "").trim(),
+            value: String(account.value || account.name || account.label || "").trim(),
+          };
+        }
+
+        const value = String(account || "").trim();
+        return { label: value, value };
+      })
+      .filter((option) => option.label && option.value);
   }, [accountOptions]);
 
   return (
@@ -624,6 +762,10 @@ export default function LeavesPage() {
               pagination={pagination}
               statusFilter={statusFilter}
               onStatusChange={handleStatusChange}
+              showDepartmentFilter={showDepartmentFilter}
+              departmentFilter={departmentFilter}
+              onDepartmentSelect={handleDepartmentSelect}
+              departmentDropdownOptions={departmentDropdownOptions}
               showAccountFilter={showAccountFilter}
               accountFilter={accountFilter}
               onAccountSelect={handleAccountSelect}

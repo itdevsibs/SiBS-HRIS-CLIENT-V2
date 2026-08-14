@@ -350,11 +350,53 @@ function isTalentAcquisitionUser(user) {
   );
 }
 
+function isTeamLeaderUser(user) {
+  const access = getAccessValue(user);
+
+  if (access) {
+    return access === 8;
+  }
+
+  const roles = [
+    user?.role,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    ["team_leader", "teamleader", "tl"].includes(role),
+  );
+}
+
+function isWfmUser(user) {
+  const access = getAccessValue(user);
+
+  if (access) {
+    return access === 9;
+  }
+
+  const roles = [
+    user?.role,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    ["wfm", "workforce_management"].includes(role),
+  );
+}
+
 function canUseAttendanceFilters(user) {
   return (
     isHrAdminUser(user) ||
     isSuperAdminUser(user) ||
-    isTalentAcquisitionUser(user)
+    isTalentAcquisitionUser(user) ||
+    isTeamLeaderUser(user) ||
+    isWfmUser(user)
   );
 }
 
@@ -835,6 +877,8 @@ export default function AttendanceTable() {
   function handleDepartmentSelect(departmentId) {
     const cleanDepartment = departmentId || "All";
 
+    if (cleanDepartment === departmentFilter) return;
+
     setDepartmentFilter(cleanDepartment);
     setAccountFilter("All");
     setAccountOptions([]);
@@ -844,7 +888,11 @@ export default function AttendanceTable() {
   }
 
   function handleAccountSelect(accountName) {
-    setAccountFilter(accountName || "All");
+    const cleanAccount = accountName || "All";
+
+    if (cleanAccount === accountFilter) return;
+
+    setAccountFilter(cleanAccount);
     goToPage(1);
   }
 

@@ -11,6 +11,8 @@ export const ADMIN_ROLES = [
   "hr_admin",
   "finance",
   "manager",
+  "wfm",
+  "som",
   "executive",
   "super_admin",
 ];
@@ -21,6 +23,8 @@ export const ADMIN_ACCESS = {
   HR_ADMIN: 3,
   FINANCE: 4,
   MANAGER: 5,
+  WFM: 9,
+  SOM: 10,
   EXECUTIVE: 6,
   SUPER_ADMIN: 7,
 };
@@ -40,13 +44,14 @@ export const DASHBOARD_ACCESS = {
   ],
   OM: [
     ADMIN_ACCESS.MANAGER,
+    ADMIN_ACCESS.SOM,
     ADMIN_ACCESS.EXECUTIVE,
     ADMIN_ACCESS.SUPER_ADMIN,
   ],
 };
 
 export function getAdminAccess(user = {}) {
-  return Number(
+  const access = Number(
     user?.adminAccess ??
       user?.admin_access ??
       user?.access ??
@@ -54,6 +59,12 @@ export function getAdminAccess(user = {}) {
       user?.gyUserAccess ??
       0,
   );
+
+  // Team Leaders (admin_access 8) and WFM (admin_access 9) use the exact
+  // same route permissions and dashboard behavior as Managers (admin_access 5).
+  if (access === 8 || access === 9) return ADMIN_ACCESS.MANAGER;
+
+  return access;
 }
 
 export function getDefaultDashboardPath(user = {}) {
@@ -101,7 +112,7 @@ export const ACCESS_RULES = [
   },
   {
     paths: ["/recruitment/om-dashboard"],
-    roles: ["manager", "executive", "super_admin"],
+    roles: ["manager", "som", "executive", "super_admin"],
     adminAccess: DASHBOARD_ACCESS.OM,
   },
   {
@@ -112,6 +123,7 @@ export const ACCESS_RULES = [
       "hr_admin",
       "finance",
       "manager",
+      "som",
       "executive",
       "super_admin",
     ],
@@ -133,6 +145,7 @@ export const ACCESS_RULES = [
       "hr_admin",
       "finance",
       "manager",
+      "som",
       "executive",
       "super_admin",
     ],
@@ -143,7 +156,15 @@ export const ACCESS_RULES = [
       "/recruitment/hiring-needs",
       "/recruitment/weekly-reports",
     ],
-    roles: ["ta", "hr", "hr_admin", "manager", "executive", "super_admin"],
+    roles: [
+      "ta",
+      "hr",
+      "hr_admin",
+      "manager",
+      "som",
+      "executive",
+      "super_admin",
+    ],
   },
   {
     paths: [
@@ -169,17 +190,31 @@ export const ACCESS_RULES = [
       "hr_admin",
       "finance",
       "manager",
+      "som",
       "executive",
       "super_admin",
     ],
   },
   {
     paths: ["/costs", "/payroll"],
-    roles: ["finance", "hr_admin", "executive", "super_admin"],
+    roles: [
+      "finance",
+      "hr_admin",
+      "manager",
+      "som",
+      "executive",
+      "super_admin",
+    ],
   },
   {
     paths: ["/departments", "/locations"],
-    roles: ["hr_admin", "executive", "super_admin"],
+    roles: [
+      "hr_admin",
+      "manager",
+      "som",
+      "executive",
+      "super_admin",
+    ],
   },
   {
     paths: ["/users"],

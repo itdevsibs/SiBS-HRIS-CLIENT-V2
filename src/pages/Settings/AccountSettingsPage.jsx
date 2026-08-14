@@ -21,7 +21,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Settings,
   ShieldCheck,
   Trash2,
   UserCog,
@@ -415,37 +414,60 @@ function getAuditDateValue(user = {}, type = "created") {
 }
 
 function SummaryCard({ icon: Icon, label, value, description, tone = "blue" }) {
-  const toneClasses = {
-    blue: "text-sibs-primary-1",
-    emerald: "text-emerald-600",
-    amber: "text-amber-600",
-    violet: "text-violet-600",
-    cyan: "text-cyan-600",
+  const tones = {
+    blue: {
+      label: "text-[#042C51]",
+      value: "text-[#042C51]",
+      icon: "bg-[#EAF2FB] text-[#042C51]",
+    },
+    emerald: {
+      label: "text-emerald-700",
+      value: "text-emerald-700",
+      icon: "bg-emerald-50 text-emerald-700",
+    },
+    amber: {
+      label: "text-amber-700",
+      value: "text-amber-700",
+      icon: "bg-amber-50 text-amber-700",
+    },
+    violet: {
+      label: "text-violet-700",
+      value: "text-violet-700",
+      icon: "bg-violet-50 text-violet-700",
+    },
+    cyan: {
+      label: "text-cyan-700",
+      value: "text-cyan-700",
+      icon: "bg-cyan-50 text-cyan-700",
+    },
   };
+  const selectedTone = tones[tone] || tones.blue;
 
   return (
-    <article className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+    <article className="sibs-metric-card sibs-card p-4">
+      <div className="flex h-full items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 self-stretch">
+          <p
+            className={`m-0 truncate text-[10px] font-extrabold uppercase tracking-normal ${selectedTone.label}`}
+          >
             {label}
           </p>
 
           <p
-            className={`mt-3 truncate text-3xl font-extrabold leading-none ${
-              toneClasses[tone] || toneClasses.blue
-            }`}
+            className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal ${selectedTone.value}`}
           >
             {formatNumber(value)}
           </p>
 
-          <p className="mt-2 truncate text-xs font-semibold text-sibs-tertiary-5">
+          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
             {description}
           </p>
         </div>
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
-          <Icon size={22} />
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
+        >
+          <Icon size={17} strokeWidth={2} />
         </div>
       </div>
     </article>
@@ -462,6 +484,7 @@ function DropdownPortal({
   const dropdownRef = useRef(null);
   const [position, setPosition] = useState({
     top: 0,
+    bottom: null,
     left: 0,
     width: 0,
     openUpward: false,
@@ -473,7 +496,7 @@ function DropdownPortal({
     function updatePosition() {
       const rect = anchorRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      const estimatedDropdownHeight = Math.min(maxHeight, 280);
+      const estimatedDropdownHeight = maxHeight;
       const spaceBelow = viewportHeight - rect.bottom;
       const spaceAbove = rect.top;
       const openUpward =
@@ -481,9 +504,10 @@ function DropdownPortal({
         spaceAbove > spaceBelow;
 
       setPosition({
-        top: openUpward
-          ? Math.max(rect.top - estimatedDropdownHeight - 8, 8)
-          : rect.bottom + 8,
+        top: openUpward ? null : rect.bottom + 8,
+        bottom: openUpward
+          ? Math.max(viewportHeight - rect.top + 8, 8)
+          : null,
         left: Math.max(rect.left, 8),
         width: rect.width,
         openUpward,
@@ -539,14 +563,15 @@ function DropdownPortal({
       ref={dropdownRef}
       className="fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
       style={{
-        top: `${position.top}px`,
+        top: position.top == null ? "auto" : `${position.top}px`,
+        bottom: position.bottom == null ? "auto" : `${position.bottom}px`,
         left: `${position.left}px`,
         width: `${position.width}px`,
       }}
       data-open-upward={position.openUpward ? "true" : "false"}
     >
       <div
-        className="overflow-y-auto py-2 sibs-scrollbar"
+        className="box-border overflow-x-hidden overflow-y-auto py-2 sibs-scrollbar"
         style={{ maxHeight }}
       >
         {children}
@@ -1043,7 +1068,7 @@ function DraggableTableScroll({ children }) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
-      className={`hidden overflow-x-auto rounded-2xl border border-[#D9E2EC] bg-white lg:block sibs-scrollbar ${
+      className={`hidden overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white lg:block sibs-scrollbar ${
         isDragging
           ? "cursor-grabbing select-none"
           : "cursor-grab"
@@ -1122,19 +1147,35 @@ function ModalShell({ open, title, description, onClose, children, footer }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="account-settings-modal-title"
-          className="my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-2xl sm:max-h-[calc(100dvh-2.5rem)]"
+          className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-[16px] border border-[#D9E2EC] bg-[#F4F7FB] shadow-2xl sm:max-h-[calc(100dvh-2.5rem)]"
         >
-          <header className="flex shrink-0 items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+          <span
+            className="pointer-events-none absolute left-[1px] right-[1px] top-[1px] z-10 h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]"
+            aria-hidden="true"
+          />
+
+          <header className="relative flex shrink-0 items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 pb-5 pt-6 sm:px-6">
             <div className="min-w-0">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+                  Account Access Configuration
+                </span>
+
+                <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
+                  Module: Settings
+                </span>
+              </div>
+
               <h2
                 id="account-settings-modal-title"
-                className="text-lg font-extrabold text-sibs-primary-1"
+                className="text-xl font-extrabold text-[#042C51] sm:text-2xl"
               >
                 {title}
               </h2>
 
               {description && (
-                <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-sibs-tertiary-5">
+                <p className="mt-1.5 max-w-3xl text-xs font-semibold leading-5 text-[#667085] sm:text-sm">
                   {description}
                 </p>
               )}
@@ -1143,19 +1184,19 @@ function ModalShell({ open, title, description, onClose, children, footer }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] text-[#667085] transition hover:border-[#042C51]/20 hover:bg-white hover:text-[#042C51] focus:outline-none focus:ring-4 focus:ring-[#042C51]/10"
               aria-label="Close modal"
             >
               <X size={19} />
             </button>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 sibs-scrollbar">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F4F7FB] p-4 sm:p-5 sibs-scrollbar">
             {children}
           </div>
 
           {footer && (
-            <footer className="shrink-0 border-t border-[#E6ECF2] bg-[#FAFBFC] px-4 py-3 sm:px-6 sm:py-4">
+            <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-3 sm:px-6 sm:py-4">
               {footer}
             </footer>
           )}
@@ -1764,69 +1805,93 @@ function AccessModal({
         </div>
       }
     >
-      <div className="space-y-5">
-        {isEdit ? (
-          <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-            <p className="text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-              Employee
-            </p>
+      <div className="space-y-4">
+        <section className="sibs-card rounded-2xl p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#E6ECF2] pb-3">
+            <div>
+              <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
+                Employee Record
+              </p>
+              <p className="mt-1 text-xs font-semibold text-[#667085]">
+                Employee information is read-only on this form.
+              </p>
+            </div>
 
-            <div className="mt-3 flex items-start gap-3">
+            <span className="inline-flex shrink-0 items-center rounded-full border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#042C51]">
+              Read Only
+            </span>
+          </div>
+
+          {isEdit ? (
+            <div className="flex items-start gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
               <ProfileAvatar
                 employee={selectedEmployee || {}}
                 size="lg"
               />
 
               <div className="min-w-0">
-                <p className="truncate text-base font-extrabold text-sibs-primary-1">
+                <p className="truncate text-base font-extrabold text-[#042C51]">
                   {formatEmployeeName(selectedEmployee || {})}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
+                <p className="mt-1 text-sm font-semibold text-[#667085]">
                   SIBS ID: {selectedEmployee?.sibsId || "—"}
                 </p>
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  Employee information is read-only.
+                <p className="mt-1 text-xs font-semibold text-[#8A98B8]">
+                  Access settings can be updated below without changing the employee record.
                 </p>
               </div>
             </div>
-          </div>
-        ) : (
-          <EmployeeSearchBox
-            search={employeeSearch}
-            setSearch={setEmployeeSearch}
-            loading={employeeLoading}
-            results={employeeResults}
-            selectedEmployee={selectedEmployee}
-            onSelect={selectEmployee}
-          />
-        )}
-
-        <SelectField
-          label="Access"
-          value={adminAccess}
-          onChange={setAdminAccess}
-          disabled={!selectedEmployee}
-          options={ROLE_OPTIONS.filter((option) => option.value !== "All").map(
-            (option) => ({
-              value: String(option.access),
-              label: option.label,
-            }),
+          ) : (
+            <EmployeeSearchBox
+              search={employeeSearch}
+              setSearch={setEmployeeSearch}
+              loading={employeeLoading}
+              results={employeeResults}
+              selectedEmployee={selectedEmployee}
+              onSelect={selectEmployee}
+            />
           )}
-          placeholder={
-            selectedEmployee
-              ? "Select admin access"
-              : "Select an employee first"
-          }
-        />
+        </section>
 
-        <AccountMultiSelect
-          accounts={accountOptions}
-          selectedIds={selectedAccountIds}
-          search={accountSearch}
-          setSearch={setAccountSearch}
-          onToggle={toggleAccount}
-          disabled={!selectedEmployee}
-        />
+        <section className="sibs-card rounded-2xl p-4 sm:p-5">
+          <div className="mb-4 border-b border-[#E6ECF2] pb-3">
+            <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
+              Access Configuration
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+              Set the employee's access level and choose the accounts available to this user.
+            </p>
+          </div>
+
+          <div className="space-y-5">
+            <SelectField
+              label="Access"
+              value={adminAccess}
+              onChange={setAdminAccess}
+              disabled={!selectedEmployee}
+              options={ROLE_OPTIONS.filter((option) => option.value !== "All").map(
+                (option) => ({
+                  value: String(option.access),
+                  label: option.label,
+                }),
+              )}
+              placeholder={
+                selectedEmployee
+                  ? "Select admin access"
+                  : "Select an employee first"
+              }
+            />
+
+            <AccountMultiSelect
+              accounts={accountOptions}
+              selectedIds={selectedAccountIds}
+              search={accountSearch}
+              setSearch={setAccountSearch}
+              onToggle={toggleAccount}
+              disabled={!selectedEmployee}
+            />
+          </div>
+        </section>
       </div>
     </ModalShell>
   );
@@ -1991,24 +2056,25 @@ function AccountSettingsLoading() {
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="sibs-page-header-in min-w-0">
-            <div className="mb-4 h-6 w-40 animate-sibs-pulse rounded-full bg-gray-300" />
-            <div className="mb-3 h-9 w-72 max-w-full animate-sibs-pulse rounded-lg bg-gray-300" />
-            <div className="h-4 w-96 max-w-full animate-sibs-pulse rounded-lg bg-gray-300" />
-          </div>
-
-          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-              {[1, 2, 3, 4, 5].map((item) => (
-                <div
-                  key={item}
-                  className="h-32 animate-sibs-pulse rounded-2xl border border-[#E6ECF2] bg-gray-100"
-                />
-              ))}
+          <section className="sibs-card relative overflow-hidden p-5 sm:p-6">
+            <span className="pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
+            <div className="mt-1">
+              <div className="mb-3 h-6 w-56 animate-sibs-pulse rounded bg-gray-200" />
+              <div className="mb-2 h-8 w-64 max-w-full animate-sibs-pulse rounded bg-gray-200" />
+              <div className="h-4 w-96 max-w-full animate-sibs-pulse rounded bg-gray-200" />
             </div>
           </section>
 
-          <section className="h-[420px] animate-sibs-pulse rounded-2xl border border-[#E6ECF2] bg-white shadow-sm" />
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {[1, 2, 3, 4, 5].map((item) => (
+              <div
+                key={item}
+                className="sibs-card h-28 animate-sibs-pulse rounded-2xl bg-gray-100"
+              />
+            ))}
+          </section>
+
+          <section className="sibs-card h-[460px] animate-sibs-pulse rounded-2xl bg-white" />
         </div>
       </main>
     </div>
@@ -2371,101 +2437,96 @@ export default function AccountSettingsPage() {
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mx-auto max-w-[1600px] space-y-5">
-          <section className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
-                <Settings size={14} />
-                Account Setup
-              </div>
+          <section className="sibs-page-header-in sibs-card relative overflow-hidden p-5 sm:p-6">
+            <span
+              className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]"
+              aria-hidden="true"
+            />
 
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-                Account Settings
-              </h1>
+            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    Account Settings View
+                  </span>
 
-              <p className="mt-1 max-w-5xl text-sm font-medium leading-6 text-sibs-tertiary-5">
-                Manage employee access levels, assigned accounts, and department access.
-              </p>
-            </div>
+                  <span className="inline-flex max-w-full rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
+                    Module: Settings
+                  </span>
+                </div>
 
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] sm:w-auto"
-            >
-              <Plus size={18} />
-              Add User Access
-            </button>
-          </section>
+                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                  Account Settings
+                </h1>
 
-          <section className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-base font-bold text-[#101828]">
-                  Account Access Summary
-                </h2>
-
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  Overview of users and their current account access records.
+                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  Manage employee access levels, assigned accounts, and department access.
                 </p>
               </div>
 
-              <span className="inline-flex w-max rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
-                Source Data Read Only
-              </span>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-              <SummaryCard
-                icon={UsersRound}
-                label="Assigned Users"
-                value={summary.totalUsers}
-                description="Distinct HRIS users"
-              />
-              <SummaryCard
-                icon={KeyRound}
-                label="Assignments"
-                value={summary.totalAssignments}
-                description="Total access records"
-                tone="violet"
-              />
-              <SummaryCard
-                icon={Building2}
-                label="Assigned Accounts"
-                value={summary.assignedAccounts}
-                description={`${summary.activeKronosAccounts} available accounts`}
-                tone="cyan"
-              />
-              <SummaryCard
-                icon={UserCog}
-                label="Departments"
-                value={summary.assignedDepartments}
-                description={`${summary.kronosDepartments} available departments`}
-                tone="amber"
-              />
-              <SummaryCard
-                icon={ShieldCheck}
-                label="Super Admins"
-                value={summary.superAdmins}
-                description="Access level 7"
-                tone="emerald"
-              />
+              <button
+                type="button"
+                onClick={openAddModal}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] sm:w-auto sm:text-sm"
+              >
+                <Plus size={17} />
+                Add User Access
+              </button>
             </div>
           </section>
 
-          <section className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <SummaryCard
+              icon={UsersRound}
+              label="Assigned Users"
+              value={summary.totalUsers}
+              description="Distinct HRIS users"
+            />
+            <SummaryCard
+              icon={KeyRound}
+              label="Assignments"
+              value={summary.totalAssignments}
+              description="Total access records"
+              tone="violet"
+            />
+            <SummaryCard
+              icon={Building2}
+              label="Assigned Accounts"
+              value={summary.assignedAccounts}
+              description={`${summary.activeKronosAccounts} available accounts`}
+              tone="cyan"
+            />
+            <SummaryCard
+              icon={UserCog}
+              label="Departments"
+              value={summary.assignedDepartments}
+              description={`${summary.kronosDepartments} available departments`}
+              tone="amber"
+            />
+            <SummaryCard
+              icon={ShieldCheck}
+              label="Super Admins"
+              value={summary.superAdmins}
+              description="Access level 7"
+              tone="emerald"
+            />
+          </section>
+
+          <section className="sibs-card overflow-visible">
             <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
-              <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-sibs-primary-1">
+                  <h2 className="text-base font-extrabold text-[#042C51] sm:text-lg">
                     Assigned Users
                   </h2>
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  <p className="mt-1 text-xs font-semibold text-[#667085] sm:text-sm">
                     Employee information is read-only. Access settings are managed on this page.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                  <span className="inline-flex rounded-full border border-blue-100 bg-[#E9F0FC] px-3 py-1 text-[10px] font-extrabold uppercase text-[#042C51]">
                     {pagination.total} Users
                   </span>
 
@@ -2473,7 +2534,7 @@ export default function AccountSettingsPage() {
                     type="button"
                     onClick={() => reloadAll({ showRefresh: true })}
                     disabled={refreshing}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-[#042C51] transition hover:bg-[#F8FAFC] disabled:opacity-50"
                     aria-label="Refresh account settings"
                   >
                     <RefreshCw
@@ -2484,7 +2545,7 @@ export default function AccountSettingsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_230px_280px_auto] xl:items-end">
+              <div className="mt-5 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_230px_280px_auto] xl:items-end">
                 <div>
                   <label className="mb-1 block text-sm font-bold text-[#101828]">
                     Search
@@ -2501,7 +2562,7 @@ export default function AccountSettingsPage() {
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
                       placeholder="Search employee, SIBS ID, account, department..."
-                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white pl-11 pr-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-11 pr-4 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#042C51]/30 focus:border-[#042C51] focus:bg-white focus:ring-4 focus:ring-[#042C51]/10 sm:text-sm"
                     />
                   </div>
                 </div>
@@ -2533,7 +2594,7 @@ export default function AccountSettingsPage() {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] sm:text-sm"
                 >
                   <Filter size={17} />
                   Clear
@@ -2541,7 +2602,7 @@ export default function AccountSettingsPage() {
               </div>
             </div>
 
-            <div className="bg-[#F8FAFC] p-4 sm:p-5">
+            <div className="p-4 sm:p-5">
               <div className="space-y-3 lg:hidden">
                 {tableLoading ? (
                   Array.from({ length: 4 }).map((_, index) => (
@@ -2567,20 +2628,20 @@ export default function AccountSettingsPage() {
               </div>
 
               <DraggableTableScroll>
-                <table className="w-full min-w-[1900px] border-separate border-spacing-0 text-left">
+                <table className="w-full min-w-[1900px] border-collapse text-left">
                   <thead>
-                    <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                      <th className="px-5 py-4">SIBS ID</th>
-                      <th className="px-5 py-4 text-center">Profile</th>
-                      <th className="px-5 py-4">Employee</th>
-                      <th className="px-5 py-4">Status</th>
-                      <th className="px-5 py-4">Access</th>
-                      <th className="px-5 py-4">Assigned Accounts</th>
-                      <th className="px-5 py-4">Departments</th>
-                      <th className="px-5 py-4">Creator</th>
-                      <th className="px-5 py-4">Updater</th>
-                      <th className="px-5 py-4">Created / Updated</th>
-                      <th className="px-5 py-4 text-right">Actions</th>
+                    <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                      <th className="px-4 py-3.5">SIBS ID</th>
+                      <th className="px-4 py-3.5 text-center">Profile</th>
+                      <th className="px-4 py-3.5">Employee</th>
+                      <th className="px-4 py-3.5">Status</th>
+                      <th className="px-4 py-3.5">Access</th>
+                      <th className="px-4 py-3.5">Assigned Accounts</th>
+                      <th className="px-4 py-3.5">Departments</th>
+                      <th className="px-4 py-3.5">Creator</th>
+                      <th className="px-4 py-3.5">Updater</th>
+                      <th className="px-4 py-3.5">Created / Updated</th>
+                      <th className="px-4 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
 
@@ -2591,10 +2652,10 @@ export default function AccountSettingsPage() {
                       users.map((assignedUser) => (
                         <tr
                           key={assignedUser.id}
-                          className="transition hover:bg-[#FAFBFC]"
+                          className="transition-colors hover:bg-[#FFF9F6]"
                         >
                           <td className="whitespace-nowrap border-b border-[#E6ECF2] px-5 py-5">
-                            <p className="text-sm font-extrabold text-sibs-primary-1">
+                            <p className="text-xs font-extrabold text-[#FF5C28]">
                               {assignedUser.sibsId || "—"}
                             </p>
                           </td>
@@ -2720,9 +2781,10 @@ export default function AccountSettingsPage() {
                     type="button"
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage <= 1 || tableLoading}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-[#667085] transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <ChevronLeft size={16} />
+                    <ChevronLeft size={15} />
+                    Previous
                   </button>
 
                   {visiblePageNumbers.map((pageNumber) => {
@@ -2736,7 +2798,7 @@ export default function AccountSettingsPage() {
                         disabled={tableLoading}
                         className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition ${
                           active
-                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            ? "bg-[#FF5C28] text-white shadow-sm"
                             : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
                         }`}
                       >
@@ -2751,9 +2813,10 @@ export default function AccountSettingsPage() {
                     disabled={
                       currentPage >= pagination.totalPages || tableLoading
                     }
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-[#667085] transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <ChevronRight size={16} />
+                    Next
+                    <ChevronRight size={15} />
                   </button>
                 </div>
               </div>

@@ -27,6 +27,7 @@ export async function getEmployee(
       selectedDepartment:
         res.data?.selectedDepartment || options?.department || "All",
       selectedAccount: res.data?.selectedAccount || account || "All",
+      access: res.data?.access || null,
       pagination: res.data?.pagination || {
         totalPages: 1,
         currentPage: 1,
@@ -49,6 +50,7 @@ export async function getEmployee(
       accountOptions: [],
       selectedDepartment: options?.department || "All",
       selectedAccount: account || "All",
+      access: null,
       pagination: {
         totalPages: 1,
         currentPage: 1,

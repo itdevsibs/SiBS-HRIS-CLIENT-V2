@@ -21,6 +21,7 @@ const ADMIN_ACCESS_LABELS = {
   5: "Manager",
   6: "Executive",
   7: "Super Admin",
+  10: "SOM",
 };
 
 function normalizeRole(value = "") {
@@ -155,7 +156,7 @@ export default function UserDropdown({
 
   const canSwitchToAdmin =
     role === "employee" &&
-    [1, 2, 3, 4, 5, 6, 7].includes(adminAccess);
+    [1, 2, 3, 4, 5, 6, 7, 10].includes(adminAccess);
 
   const switchToAdminLabel = `Switch to ${
     typeof getAccessLabel === "function"

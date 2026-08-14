@@ -13,6 +13,7 @@ export function AdminProvider({ children }) {
     if (accessNum === 5) return "Manager";
     if (accessNum === 6) return "Executive";
     if (accessNum === 7) return "Super Admin";
+    if (accessNum === 10) return "SOM";
 
     return null;
   };
@@ -23,6 +24,7 @@ export function AdminProvider({ children }) {
     "hr_admin",
     "finance",
     "manager",
+    "som",
     "executive",
     "super_admin",
   ];

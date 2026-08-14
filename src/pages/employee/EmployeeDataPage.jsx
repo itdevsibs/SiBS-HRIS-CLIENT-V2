@@ -26,6 +26,7 @@ import {
   getProfileSibsId,
 } from "../../lib/utils/employees/employeeProfileHelpers.js";
 import { buildEditableEmployee } from "../../lib/utils/employees/employeeProfileNormalizer.js";
+import { canEditProfileDetails } from "../../lib/utils/employees/employeeProfilePermissions.js";
 import EmployeeProfileContent from "../../components/employee/profile/components/EmployeeProfileContent.jsx";
 import EmployeeProfileContextPanel from "../../components/employee/profile/components/EmployeeProfileContextPanel.jsx";
 import EmployeeProfileHeader from "../../components/employee/profile/components/EmployeeProfileHeader.jsx";
@@ -33,48 +34,6 @@ import EmployeeProfileNavigation from "../../components/employee/profile/compone
 import EmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
-
-function normalizeRole(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-}
-
-function canEditProfileDetails(user) {
-  const access = Number(
-    user?.admin_access ??
-      user?.adminAccess ??
-      user?.access ??
-      user?.gy_user_access ??
-      user?.gyUserAccess ??
-      0,
-  );
-
-  const roles = [
-    user?.role,
-    user?.tokenType,
-    user?.userRole,
-    user?.accountType,
-    user?.user_type,
-    user?.gy_user_type,
-  ].map(normalizeRole);
-
-  return (
-    (access >= 1 && access <= 7) ||
-    roles.some((role) =>
-      [
-        "admin",
-        "hr",
-        "hr_admin",
-        "hradmin",
-        "super_admin",
-        "superadmin",
-        "super_administrator",
-      ].includes(role),
-    )
-  );
-}
 
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
@@ -431,6 +390,7 @@ export default function EmployeeDataPage() {
 
   const sectionProps = {
     employee,
+    canEditDetails,
     displayEmployee,
     isEditing,
     isSaving,
