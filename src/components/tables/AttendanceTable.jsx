@@ -404,6 +404,32 @@ function isWfmUser(user) {
   );
 }
 
+function isSomUser(user) {
+  if (isEmployeeAttendanceSession(user)) return false;
+
+  const access = getAccessValue(user);
+
+  if (access) {
+    return access === 10;
+  }
+
+  const roles = [
+    user?.role,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    [
+      "som",
+      "senior_operations_manager",
+      "senior_operation_manager",
+    ].includes(role),
+  );
+}
+
 function canUseAttendanceFilters(user) {
   if (isEmployeeAttendanceSession(user)) return false;
 
@@ -411,6 +437,8 @@ function canUseAttendanceFilters(user) {
     isHrAdminUser(user) ||
     isSuperAdminUser(user) ||
     isTalentAcquisitionUser(user) ||
+    isSomUser(user) ||
+    isManagerUser(user) ||
     isTeamLeaderUser(user) ||
     isWfmUser(user)
   );
@@ -724,10 +752,18 @@ export default function AttendanceTable() {
   const [attendance, setAttendance] = useState([]);
 
   const [departmentFilter, setDepartmentFilter] = useState("All");
-  const [accountFilter, setAccountFilter] = useState("All");
+  const [accountFilters, setAccountFilters] = useState([]);
 
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
+
+  const accountFilterKey = useMemo(
+    () => accountFilters.join("||"),
+    [accountFilters],
+  );
+  const accountFilterQuery = accountFilters.length
+    ? accountFilterKey
+    : "All";
 
   const loadedDepartmentOptionsRef = useRef(false);
   const loadedAccountOptionsKeyRef = useRef("");
@@ -898,19 +934,26 @@ export default function AttendanceTable() {
     if (cleanDepartment === departmentFilter) return;
 
     setDepartmentFilter(cleanDepartment);
-    setAccountFilter("All");
+    setAccountFilters([]);
     setAccountOptions([]);
     loadedAccountOptionsKeyRef.current = "";
 
     goToPage(1);
   }
 
-  function handleAccountSelect(accountName) {
-    const cleanAccount = accountName || "All";
+  function handleAccountSelect(nextAccounts) {
+    const normalizedAccounts = [
+      ...new Set(
+        (Array.isArray(nextAccounts) ? nextAccounts : [])
+          .map((value) => String(value || "").trim())
+          .filter(Boolean),
+      ),
+    ];
+    const nextKey = normalizedAccounts.join("||");
 
-    if (cleanAccount === accountFilter) return;
+    if (nextKey === accountFilterKey) return;
 
-    setAccountFilter(cleanAccount);
+    setAccountFilters(normalizedAccounts);
     goToPage(1);
   }
 
@@ -974,12 +1017,12 @@ export default function AttendanceTable() {
   useEffect(() => {
     if (!attendanceFiltersView) {
       if (departmentFilter !== "All") setDepartmentFilter("All");
-      if (accountFilter !== "All") setAccountFilter("All");
+      if (accountFilters.length > 0) setAccountFilters([]);
 
       loadedDepartmentOptionsRef.current = false;
       loadedAccountOptionsKeyRef.current = "";
     }
-  }, [attendanceFiltersView, departmentFilter, accountFilter]);
+  }, [attendanceFiltersView, departmentFilter, accountFilterKey, accountFilters.length]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
@@ -1004,7 +1047,7 @@ export default function AttendanceTable() {
     dateFrom,
     dateTo,
     departmentFilter,
-    accountFilter,
+    accountFilterKey,
   ]);
 
   useEffect(() => {
@@ -1029,7 +1072,7 @@ export default function AttendanceTable() {
         const result = await getAttendance(
           page,
           search,
-          attendanceFiltersView ? accountFilter : "All",
+          attendanceFiltersView ? accountFilterQuery : "All",
           {
             dateFrom,
             dateTo,
@@ -1125,7 +1168,8 @@ export default function AttendanceTable() {
     dateFrom,
     dateTo,
     departmentFilter,
-    accountFilter,
+    accountFilterKey,
+    accountFilterQuery,
     attendanceFiltersView,
   ]);
 
@@ -1304,8 +1348,9 @@ export default function AttendanceTable() {
                       },
                       {
                         key: "account",
-                        value: accountFilter,
+                        value: accountFilters,
                         onChange: handleAccountSelect,
+                        multiple: true,
                         options: accountDropdownOptions,
                         allLabel: "All Accounts",
                         label: "Account",
@@ -1414,7 +1459,7 @@ export default function AttendanceTable() {
                   </thead>
 
                   <tbody
-                    key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}-${loading}`}
+                    key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilterKey}-${loading}`}
                     className="divide-y divide-[#EEF2F6]"
                   >
                     {loading ? (
@@ -1578,7 +1623,7 @@ export default function AttendanceTable() {
                 </div>
               ) : (
                 <div
-                  key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}`}
+                  key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilterKey}`}
                   className="space-y-3"
                 >
                   {attendance.map((item, index) => {

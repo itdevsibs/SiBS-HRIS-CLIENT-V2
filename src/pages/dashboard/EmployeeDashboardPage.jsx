@@ -336,7 +336,10 @@ export default function EmployeeDashboardPage() {
     }
 
     let cancelled = false;
-    setProfilePicture(profile.profilePictureUrl || "");
+
+    // The saved employee_profile picture is the source of truth for this
+    // avatar. Clear any previous URL so employees without one show initials.
+    setProfilePicture("");
 
     async function loadProfilePicture() {
       try {
@@ -347,11 +350,16 @@ export default function EmployeeDashboardPage() {
           ? cleanDashboardText(result?.data?.profilePictureUrl)
           : "";
 
-        if (pictureUrl) {
-          setProfilePicture(`${pictureUrl}?v=${Date.now()}`);
+        if (!pictureUrl) {
+          setProfilePicture("");
+          return;
         }
+
+        const separator = pictureUrl.includes("?") ? "&" : "?";
+        setProfilePicture(`${pictureUrl}${separator}v=${Date.now()}`);
       } catch (error) {
         if (!cancelled) {
+          setProfilePicture("");
           console.warn(
             "Employee dashboard profile picture was unavailable:",
             error?.message || error,
@@ -365,7 +373,7 @@ export default function EmployeeDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, profile.profilePictureUrl]);
+  }, [user]);
 
   const attendance = useMemo(
     () =>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import {
   Briefcase,
   Building2,
@@ -110,6 +110,9 @@ function canRequestEmployeeFilters(user) {
   return (
     access === 1 ||
     access === 5 ||
+    access === 8 ||
+    access === 9 ||
+    access === 10 ||
     roles.some((role) =>
       [
         "hr_admin",
@@ -120,6 +123,13 @@ function canRequestEmployeeFilters(user) {
         "manager",
         "operations_manager",
         "team_manager",
+        "team_leader",
+        "teamleader",
+        "tl",
+        "wfm",
+        "workforce_management",
+        "som",
+        "senior_operations_manager",
       ].includes(role),
     )
   );
@@ -455,17 +465,38 @@ function formatCompactDate(value) {
   }).format(parsedDate);
 }
 
+function getEmployeeProfilePictureUrl(employee = {}) {
+  return getCleanValue(
+    employee.profilePictureUrl,
+    employee.profile_picture_url,
+  );
+}
+
 function EmployeeAvatar({ employee, size = "md" }) {
   const sizeClass = size === "lg" ? "h-11 w-11" : "h-9 w-9";
+  const profilePictureUrl = getEmployeeProfilePictureUrl(employee);
+  const [failedImageUrl, setFailedImageUrl] = useState("");
+  const canShowProfilePicture =
+    Boolean(profilePictureUrl) && failedImageUrl !== profilePictureUrl;
 
   return (
     <span
-      className={`inline-flex ${sizeClass} shrink-0 items-center justify-center rounded-full border text-xs font-extrabold shadow-inner ${getAvatarTone(
+      className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs font-extrabold shadow-inner ${getAvatarTone(
         employee,
       )}`}
       aria-hidden="true"
     >
       {getInitials(employee)}
+
+      {canShowProfilePicture ? (
+        <img
+          src={profilePictureUrl}
+          alt=""
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={() => setFailedImageUrl(profilePictureUrl)}
+        />
+      ) : null}
     </span>
   );
 }
@@ -497,7 +528,11 @@ function DetailLine({ icon, children, breakAll = false }) {
   return (
     <span className="flex min-w-0 items-start gap-1.5 text-[11px] font-semibold leading-4 text-[#667085]">
       <DetailIcon size={13} className="mt-0.5 shrink-0 text-[#98A2B3]" />
-      <span className={breakAll ? "min-w-0 break-all" : "min-w-0 break-words"}>
+      <span className={
+          breakAll
+            ? "min-w-0 max-w-full break-words [overflow-wrap:anywhere]"
+            : "min-w-0 break-words"
+        }>
         {children}
       </span>
     </span>
@@ -609,10 +644,18 @@ export default function EmployeeTable({
 
   const [employees, setEmployees] = useState([]);
   const [departmentFilter, setDepartmentFilter] = useState("All");
-  const [accountFilter, setAccountFilter] = useState("All");
+  const [accountFilters, setAccountFilters] = useState([]);
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
   const [employeeAccess, setEmployeeAccess] = useState(null);
+
+  const accountFilterKey = useMemo(
+    () => accountFilters.join("||"),
+    [accountFilters],
+  );
+  const accountFilterQuery = accountFilters.length
+    ? accountFilterKey
+    : "All";
 
   const {
     page = 1,
@@ -681,7 +724,7 @@ export default function EmployeeTable({
     if (canRequestFilters) return;
 
     setDepartmentFilter("All");
-    setAccountFilter("All");
+    setAccountFilters([]);
     setDepartmentOptions([]);
     setAccountOptions([]);
     setEmployeeAccess(null);
@@ -706,7 +749,7 @@ export default function EmployeeTable({
         const result = await getEmployee(
           page,
           search,
-          canRequestFilters ? accountFilter : "All",
+          canRequestFilters ? accountFilterQuery : "All",
           {
             department: canRequestFilters ? departmentFilter : "All",
             includeDepartments: shouldLoadDepartments,
@@ -745,8 +788,8 @@ export default function EmployeeTable({
             setDepartmentFilter("All");
           }
 
-          if (accountFilter !== "All") {
-            setAccountFilter("All");
+          if (accountFilterKey) {
+            setAccountFilters([]);
           }
         }
 
@@ -800,7 +843,8 @@ export default function EmployeeTable({
       cancelled = true;
     };
   }, [
-    accountFilter,
+    accountFilterKey,
+    accountFilterQuery,
     departmentFilter,
     navigate,
     page,
@@ -822,7 +866,7 @@ export default function EmployeeTable({
       left: 0,
       behavior: "smooth",
     });
-  }, [accountFilter, currentPage, departmentFilter, search]);
+  }, [accountFilterKey, currentPage, departmentFilter, search]);
 
   function goToEmployee(employee) {
     const sibsId = getSibsId(employee);
@@ -875,18 +919,27 @@ export default function EmployeeTable({
     }
 
     setDepartmentFilter(value);
-    setAccountFilter("All");
+    setAccountFilters([]);
     setAccountOptions([]);
     loadedAccountOptionsKeyRef.current = "";
     resetToFirstPage();
   }
 
-  function handleAccountChange(value) {
-    if (value === accountFilter) {
+  function handleAccountChange(nextAccounts) {
+    const normalizedAccounts = [
+      ...new Set(
+        (Array.isArray(nextAccounts) ? nextAccounts : [])
+          .map((value) => String(value || "").trim())
+          .filter(Boolean),
+      ),
+    ];
+    const nextKey = normalizedAccounts.join("||");
+
+    if (nextKey === accountFilterKey) {
       return;
     }
 
-    setAccountFilter(value);
+    setAccountFilters(normalizedAccounts);
     resetToFirstPage();
   }
 
@@ -952,9 +1005,10 @@ export default function EmployeeTable({
                   },
                   {
                     key: "account",
-                    value: accountFilter,
+                    value: accountFilters,
                     options: accountDropdownOptions,
                     onChange: handleAccountChange,
+                    multiple: true,
                     includeAll: true,
                     allLabel: "All Accounts",
                     label: "Account",
@@ -1003,7 +1057,7 @@ export default function EmployeeTable({
                     ) : null}
 
                     {isActive ? (
-                      <motion.div
+                      <Motion.div
                         layoutId="employeeDirectoryTabIndicator"
                         className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
                         transition={{ type: "spring", stiffness: 380, damping: 30 }}
@@ -1074,7 +1128,7 @@ export default function EmployeeTable({
               </thead>
 
               <tbody
-                key={`${activeTab}-${currentPage}-${search}-${departmentFilter}-${accountFilter}`}
+                key={`${activeTab}-${currentPage}-${search}-${departmentFilter}-${accountFilterKey}`}
                 className="divide-y divide-[#EEF2F6]"
               >
                 {loading ? (
@@ -1160,7 +1214,7 @@ export default function EmployeeTable({
                         </td>
 
                         <td className="px-4 py-4 align-middle">
-                          <div className="min-w-[250px] space-y-1">
+                          <div className="w-full min-w-0 max-w-full space-y-1 overflow-hidden">
                             <DetailLine icon={Mail} breakAll>
                               {getEmail(employee)}
                             </DetailLine>

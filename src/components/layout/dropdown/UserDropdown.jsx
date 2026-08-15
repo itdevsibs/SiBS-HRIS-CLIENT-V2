@@ -46,12 +46,14 @@ function getAdminAccess(user = {}) {
 
 export default function UserDropdown({
   avatar,
+  profilePictureUrl = "",
   formattedName,
   email,
   mobileCompact = false,
 }) {
   const [open, setOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState("");
+  const [profileImageFailed, setProfileImageFailed] = useState(false);
 
   const navigate = useNavigate();
   const ref = useRef(null);
@@ -59,6 +61,10 @@ export default function UserDropdown({
   const { user, setUser, refetchUser } = useUser();
   const { setAdminLogin } = useHeader();
   const { getAccessLabel, ADMIN_ROLES = [] } = useAdmin();
+
+  useEffect(() => {
+    setProfileImageFailed(false);
+  }, [profilePictureUrl]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -187,8 +193,17 @@ export default function UserDropdown({
             : "border-transparent bg-transparent hover:border-sibs-tertiary-9 hover:bg-white",
         ].join(" ")}
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-8 max-[360px]:w-8">
-          {avatar || "U"}
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-8 max-[360px]:w-8">
+          {profilePictureUrl && !profileImageFailed ? (
+            <img
+              src={profilePictureUrl}
+              alt={`${formattedName || "User"} profile`}
+              className="h-full w-full object-cover"
+              onError={() => setProfileImageFailed(true)}
+            />
+          ) : (
+            avatar || "U"
+          )}
         </div>
 
         <div
