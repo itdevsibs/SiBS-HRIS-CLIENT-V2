@@ -39,6 +39,7 @@ import {
 
 import { useUser } from "../../services/context/UserContext";
 import { getEmployee } from "../../lib/axios/getEmployee";
+import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
 import UserDropdown from "./dropdown/UserDropdown";
 import HeaderCalendarModal from "./HeaderCalendarModal";
 
@@ -58,6 +59,8 @@ const ADMIN_ROLES = [
 ];
 
 const ALL_ADMIN_ACCESS = [1, 2, 3, 4, 5, 6, 7, 10];
+
+const HEADER_PROFILE_PICTURE_UPDATED_EVENT = "sibs:profile-picture-updated";
 
 const SEARCHABLE_MODULES = [
   {
@@ -778,6 +781,14 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
+  const profileLookupKey = String(
+    firstValue(
+      user?.sibsId,
+      user?.sibs_id,
+      user?.username,
+      user?.gy_user_code,
+    ),
+  ).trim();
 
   const [mounted, setMounted] = useState(false);
   const [timeStr, setTimeStr] = useState("");
@@ -788,6 +799,7 @@ export default function Header() {
   const [employeeResults, setEmployeeResults] = useState([]);
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeError, setEmployeeError] = useState("");
+  const [profilePictureUrl, setProfilePictureUrl] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [compactSearch, setCompactSearch] = useState(() =>
     typeof window === "undefined"
@@ -801,6 +813,62 @@ export default function Header() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!profileLookupKey) {
+      setProfilePictureUrl("");
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    // Never carry a previous user's image into a newly loaded session.
+    setProfilePictureUrl("");
+
+    async function loadHeaderProfilePicture() {
+      const result = await getMyEmployeeProfilePicture();
+
+      if (cancelled) return;
+
+      const savedProfilePictureUrl = String(
+        result?.data?.profilePictureUrl ||
+          result?.data?.profile_picture_url ||
+          "",
+      ).trim();
+
+      setProfilePictureUrl(savedProfilePictureUrl);
+    }
+
+    void loadHeaderProfilePicture();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profileLookupKey]);
+
+  useEffect(() => {
+    function handleProfilePictureUpdated(event) {
+      const nextProfilePictureUrl = String(
+        event?.detail?.profilePictureUrl ||
+          event?.detail?.profile_picture_url ||
+          "",
+      ).trim();
+
+      setProfilePictureUrl(nextProfilePictureUrl);
+    }
+
+    window.addEventListener(
+      HEADER_PROFILE_PICTURE_UPDATED_EVENT,
+      handleProfilePictureUpdated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        HEADER_PROFILE_PICTURE_UPDATED_EVENT,
+        handleProfilePictureUpdated,
+      );
+    };
   }, []);
 
   useEffect(() => {
@@ -1364,6 +1432,7 @@ export default function Header() {
             ) : (
               <UserDropdown
                 avatar={avatar}
+                profilePictureUrl={profilePictureUrl}
                 formattedName={formattedName}
                 email={user.email}
                 mobileCompact

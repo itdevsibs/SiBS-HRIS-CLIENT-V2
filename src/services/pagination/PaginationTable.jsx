@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -49,6 +50,18 @@ function getOptionValue(option) {
 
 function getOptionLabel(option) {
   return typeof option === "object" ? option.label : option;
+}
+
+function getSelectedDropdownValues(filter) {
+  if (!filter?.multiple) return [];
+
+  const values = Array.isArray(filter.value) ? filter.value : [];
+
+  return [...new Set(
+    values
+      .map((value) => String(value ?? "").trim())
+      .filter(Boolean),
+  )];
 }
 
 function FieldLabel({ children }) {
@@ -251,6 +264,25 @@ export default function PaginationTable({
   }
 
   function getDropdownLabel(filter) {
+    if (filter?.multiple) {
+      const selectedValues = getSelectedDropdownValues(filter);
+
+      if (selectedValues.length === 0) {
+        return filter?.allLabel || filter?.placeholder || "All";
+      }
+
+      if (selectedValues.length === 1) {
+        const selectedValue = selectedValues[0];
+        const matchedOption = (filter.options || []).find((option) => {
+          return String(getOptionValue(option) ?? "") === selectedValue;
+        });
+
+        return matchedOption ? getOptionLabel(matchedOption) : selectedValue;
+      }
+
+      return `${selectedValues.length} selected`;
+    }
+
     if (!filter?.value || filter.value === "All") {
       return filter?.allLabel || filter?.placeholder || "All";
     }
@@ -329,6 +361,25 @@ export default function PaginationTable({
   }
 
   function selectDropdownValue(filter, value) {
+    if (filter?.multiple) {
+      if (value === "All") {
+        filter.onChange?.([]);
+        closeDropdown(filter.key);
+        return;
+      }
+
+      const cleanValue = String(value ?? "").trim();
+      if (!cleanValue) return;
+
+      const selectedValues = getSelectedDropdownValues(filter);
+      const nextValues = selectedValues.includes(cleanValue)
+        ? selectedValues.filter((item) => item !== cleanValue)
+        : [...selectedValues, cleanValue];
+
+      filter.onChange?.(nextValues);
+      return;
+    }
+
     filter.onChange?.(value);
     closeDropdown(filter.key);
   }
@@ -384,6 +435,7 @@ export default function PaginationTable({
           const selectedLabel = getDropdownLabel(filter);
           const isSearchable = filter.searchable !== false;
           const label = getDropdownControlLabel(filter);
+          const selectedValues = getSelectedDropdownValues(filter);
 
           return (
             <div
@@ -472,7 +524,9 @@ export default function PaginationTable({
                         selectDropdownValue(filter, "All")
                       }
                       className={`block w-full px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
-                        filter.value === "All"
+                        (filter.multiple
+                          ? selectedValues.length === 0
+                          : filter.value === "All")
                           ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
                           : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                       }`}
@@ -487,7 +541,10 @@ export default function PaginationTable({
                     options.map((option, index) => {
                       const optionValue = getOptionValue(option);
                       const optionLabel = getOptionLabel(option);
-                      const checked = filter.value === optionValue;
+                      const cleanOptionValue = String(optionValue ?? "");
+                      const checked = filter.multiple
+                        ? selectedValues.includes(cleanOptionValue)
+                        : filter.value === optionValue;
 
                       return (
                         <button
@@ -496,13 +553,26 @@ export default function PaginationTable({
                           onClick={() =>
                             selectDropdownValue(filter, optionValue)
                           }
-                          className={`block w-full px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
+                          className={`flex w-full items-center gap-2 px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
                             checked
                               ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
                               : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                           }`}
                         >
-                          <span className="block truncate">
+                          {filter.multiple ? (
+                            <span
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                checked
+                                  ? "border-[#FF5C28] bg-[#FF5C28] text-white"
+                                  : "border-[#D0D5DD] bg-white text-transparent"
+                              }`}
+                              aria-hidden="true"
+                            >
+                              <Check size={11} strokeWidth={3} />
+                            </span>
+                          ) : null}
+
+                          <span className="block min-w-0 flex-1 truncate">
                             {optionLabel}
                           </span>
                         </button>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Eye, Image as ImageIcon, UploadCloud, User, X } from "lucide-react";
 
 import {
@@ -28,14 +28,12 @@ export default function MyEmployeeProfilePictureModal({
   uploading = false,
 }) {
   const fileInputRef = useRef(null);
-  const [activeView, setActiveView] = useState("view");
 
+  const canUpload = typeof onUploadImage === "function";
   const imageUrl = currentImage || getProfileImageUrl(employee, apiUrl);
 
   useEffect(() => {
     if (!open) return undefined;
-
-    setActiveView(imageUrl ? "view" : "upload");
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -56,7 +54,7 @@ export default function MyEmployeeProfilePictureModal({
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [imageUrl, onClose, open, uploading]);
+  }, [onClose, open, uploading]);
 
   if (!open) return null;
 
@@ -85,7 +83,6 @@ export default function MyEmployeeProfilePictureModal({
       return;
     }
 
-    setActiveView("upload");
     onUploadImage?.(file);
     event.target.value = "";
   }
@@ -140,44 +137,47 @@ export default function MyEmployeeProfilePictureModal({
             <section className="rounded-2xl border border-[#E6ECF2] bg-white p-3 shadow-sm">
               <button
                 type="button"
-                onClick={() => setActiveView("view")}
                 disabled={uploading}
                 className={`mb-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition ${
-                  activeView === "view"
-                    ? "bg-[#042C51] text-white"
-                    : "bg-[#F8FAFC] text-[#042C51] hover:bg-[#E9F0FC]"
+                  uploading
+                    ? "bg-[#F8FAFC] text-[#042C51]"
+                    : "bg-[#042C51] text-white"
                 }`}
               >
                 <Eye size={17} />
                 View Picture
               </button>
 
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition ${
-                  activeView === "upload"
-                    ? "bg-[#042C51] text-white"
-                    : "bg-[#F8FAFC] text-[#042C51] hover:bg-[#E9F0FC]"
-                }`}
-              >
-                <UploadCloud size={17} />
-                {uploading ? "Uploading..." : "Upload New"}
-              </button>
+              {canUpload && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition ${
+                      uploading
+                        ? "bg-[#042C51] text-white"
+                        : "bg-[#F8FAFC] text-[#042C51] hover:bg-[#E9F0FC]"
+                    }`}
+                  >
+                    <UploadCloud size={17} />
+                    {uploading ? "Uploading..." : "Upload New"}
+                  </button>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
 
-              <p className="mt-4 text-[10px] font-semibold leading-5 text-[#667085]">
-                Accepted formats: JPG, PNG, WEBP, and GIF. Maximum file size:
-                5MB.
-              </p>
+                  <p className="mt-4 text-[10px] font-semibold leading-5 text-[#667085]">
+                    Accepted formats: JPG, PNG, WEBP, and GIF. Maximum file size:
+                    5MB.
+                  </p>
+                </>
+              )}
             </section>
 
             <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
@@ -209,7 +209,9 @@ export default function MyEmployeeProfilePictureModal({
                       No profile picture
                     </h3>
                     <p className="mt-1 text-sm font-medium text-[#667085]">
-                      Select Upload New to add a profile picture.
+                      {canUpload
+                        ? "Select Upload New to add a profile picture."
+                        : "No profile picture is available for this employee."}
                     </p>
                   </div>
                 )}

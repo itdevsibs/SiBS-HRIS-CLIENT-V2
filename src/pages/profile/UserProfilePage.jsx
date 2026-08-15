@@ -38,6 +38,8 @@ import { PROFILE_TABS } from "../../lib/utils/employees/employeeProfileSchemas.j
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
+const HEADER_PROFILE_PICTURE_UPDATED_EVENT = "sibs:profile-picture-updated";
+
 const EMPLOYEE_PROFILE_TABS = PROFILE_TABS.filter((tab) => tab.key !== "notes");
 
 const MY_PROFILE_QUICK_ACTIONS = [
@@ -513,6 +515,13 @@ export default function UserProfilePage() {
           ? buildEditableEmployee(mergeProfilePicture(previous, nextUrl))
           : previous,
       );
+
+      window.dispatchEvent(
+        new CustomEvent(HEADER_PROFILE_PICTURE_UPDATED_EVENT, {
+          detail: { profilePictureUrl: nextUrl },
+        }),
+      );
+
       setOpenProfilePictureModal(false);
 
       showFeedback(
