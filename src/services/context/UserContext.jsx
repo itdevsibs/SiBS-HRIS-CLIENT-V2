@@ -13,7 +13,8 @@ import api, {
   AUTH_LOGOUT_START_EVENT,
   handleLogout,
 } from "../../lib/axios/api-template";
-import { createBirthdayLoginEvent } from "./birthdayLoginEvent.js";
+import { createBirthdayLoginEvent } from "../../lib/utils/birthdayCelebration.js";
+
 
 import {
   SESSION_DURATION_MS,

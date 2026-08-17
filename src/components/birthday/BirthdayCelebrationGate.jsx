@@ -14,9 +14,7 @@ export default function BirthdayCelebrationGate() {
   const location = useLocation();
 
   const [celebration, setCelebration] = useState(null);
-  const handledEventsRef = useRef(new Set());
-  const timerRef = useRef(null);
-  const abortControllerRef = useRef(null);
+  const activeEventIdRef = useRef(null);
 
   const enabled =
     import.meta.env?.VITE_BIRTHDAY_CELEBRATION_ENABLED === "true";
@@ -25,7 +23,7 @@ export default function BirthdayCelebrationGate() {
     if (!postLoginCelebrationEvent) return;
 
     const eventId = postLoginCelebrationEvent.id;
-    if (handledEventsRef.current.has(eventId)) return;
+    if (activeEventIdRef.current === eventId) return;
 
     const shouldPrepare = shouldPrepareBirthdayCelebration({
       enabled,
@@ -36,23 +34,24 @@ export default function BirthdayCelebrationGate() {
 
     if (!shouldPrepare) {
       if (location.pathname !== "/login" && location.pathname !== "/") {
-        handledEventsRef.current.add(eventId);
+        activeEventIdRef.current = eventId;
         consumePostLoginCelebrationEvent(eventId);
       }
       return;
     }
 
-    handledEventsRef.current.add(eventId);
+    activeEventIdRef.current = eventId;
 
-    timerRef.current = window.setTimeout(async () => {
-      abortControllerRef.current = new AbortController();
+    let isSubscribed = true;
+
+    async function triggerCelebration() {
       try {
         const [overlayModule, claimResult] = await Promise.all([
           import("./BirthdayCelebrationOverlay.jsx"),
-          claimBirthdayCelebration({ signal: abortControllerRef.current.signal }),
+          claimBirthdayCelebration(),
         ]);
 
-        if (claimResult?.show === true) {
+        if (isSubscribed && claimResult?.show === true) {
           const rawFirstName =
             user?.firstName ||
             user?.gy_emp_fname ||
@@ -68,17 +67,12 @@ export default function BirthdayCelebrationGate() {
       } finally {
         consumePostLoginCelebrationEvent(eventId);
       }
-    }, 400);
+    }
+
+    void triggerCelebration();
 
     return () => {
-      if (timerRef.current) {
-        window.clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-      }
+      isSubscribed = false;
     };
   }, [
     consumePostLoginCelebrationEvent,
@@ -101,3 +95,4 @@ export default function BirthdayCelebrationGate() {
     </BirthdayCelebrationErrorBoundary>
   );
 }
+
