@@ -1519,13 +1519,53 @@
 .sibs-float-reverse { animation: sibs-float-reverse 4.2s ease-in-out infinite; }
 .sibs-float-gentle { animation: sibs-float-gentle 3.8s ease-in-out infinite; }
 
+@keyframes sibs-drift-1 {
+  0% { transform: translate(4vw, 60vh) rotate(0deg) scale(1); }
+  25% { transform: translate(70vw, 15vh) rotate(14deg) scale(1.08); }
+  50% { transform: translate(40vw, 72vh) rotate(-10deg) scale(0.95); }
+  75% { transform: translate(12vw, 12vh) rotate(12deg) scale(1.04); }
+  100% { transform: translate(4vw, 60vh) rotate(0deg) scale(1); }
+}
+
+@keyframes sibs-drift-2 {
+  0% { transform: translate(72vw, 55vh) rotate(0deg) scale(1); }
+  25% { transform: translate(18vw, 70vh) rotate(-16deg) scale(0.96); }
+  50% { transform: translate(65vw, 12vh) rotate(12deg) scale(1.06); }
+  75% { transform: translate(82vw, 35vh) rotate(-8deg) scale(1); }
+  100% { transform: translate(72vw, 55vh) rotate(0deg) scale(1); }
+}
+
+@keyframes sibs-drift-3 {
+  0% { transform: translate(8vw, 15vh) rotate(0deg) scale(1); }
+  25% { transform: translate(55vw, 68vh) rotate(18deg) scale(1.05); }
+  50% { transform: translate(78vw, 20vh) rotate(-14deg) scale(0.94); }
+  75% { transform: translate(25vw, 55vh) rotate(10deg) scale(1.02); }
+  100% { transform: translate(8vw, 15vh) rotate(0deg) scale(1); }
+}
+
+@keyframes sibs-drift-4 {
+  0% { transform: translate(50vw, 10vh) rotate(0deg) scale(0.85); }
+  33% { transform: translate(10vw, 45vh) rotate(-15deg) scale(0.9); }
+  66% { transform: translate(75vw, 65vh) rotate(15deg) scale(0.8); }
+  100% { transform: translate(50vw, 10vh) rotate(0deg) scale(0.85); }
+}
+
+.sibs-drift-1 { animation: sibs-drift-1 16s ease-in-out infinite; }
+.sibs-drift-2 { animation: sibs-drift-2 20s ease-in-out infinite; }
+.sibs-drift-3 { animation: sibs-drift-3 15s ease-in-out infinite; }
+.sibs-drift-4 { animation: sibs-drift-4 18s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .sibs-birthday-overlay-in,
   .sibs-birthday-message-in,
   .sibs-birthday-overlay-out,
   .sibs-float-slow,
   .sibs-float-reverse,
-  .sibs-float-gentle {
+  .sibs-float-gentle,
+  .sibs-drift-1,
+  .sibs-drift-2,
+  .sibs-drift-3,
+  .sibs-drift-4 {
     animation-duration: 1ms;
     animation-iteration-count: 1;
   }

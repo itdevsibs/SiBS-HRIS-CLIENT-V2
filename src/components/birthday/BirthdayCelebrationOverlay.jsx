@@ -90,8 +90,8 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
         </div>
       )}
 
-      {/* Floating Pure PNG 1: Crispy Whole Roasted Lechon */}
-      <div className="sibs-float-slow pointer-events-none absolute bottom-8 left-6 z-20 w-48 sm:bottom-12 sm:left-14 sm:w-64 md:w-80 select-none">
+      {/* Floating Pure PNG 1: Crispy Whole Roasted Lechon Drifting */}
+      <div className="sibs-drift-1 pointer-events-none absolute top-0 left-0 z-20 w-44 sm:w-60 md:w-72 select-none">
         <img
           src="/assets/birthday/lechon.png"
           alt="Crispy Lechon"
@@ -99,8 +99,8 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
         />
       </div>
 
-      {/* Floating Pure PNG 2: Special Birthday Cake with Sardine & Candle */}
-      <div className="sibs-float-reverse pointer-events-none absolute bottom-8 right-6 z-20 w-44 sm:bottom-12 sm:right-14 sm:w-60 md:w-72 select-none">
+      {/* Floating Pure PNG 2: Special Birthday Cake with Sardine & Candle Drifting */}
+      <div className="sibs-drift-2 pointer-events-none absolute top-0 left-0 z-20 w-40 sm:w-56 md:w-64 select-none">
         <img
           src="/assets/birthday/bday-cake.png"
           alt="Birthday Cake with Candle"
@@ -108,8 +108,8 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
         />
       </div>
 
-      {/* Floating Pure PNG 3: Lechon Bread with Piglets */}
-      <div className="sibs-float-gentle pointer-events-none absolute top-12 left-8 z-20 w-36 sm:top-16 sm:left-16 sm:w-48 md:w-56 select-none">
+      {/* Floating Pure PNG 3: Lechon Bread with Piglets Drifting */}
+      <div className="sibs-drift-3 pointer-events-none absolute top-0 left-0 z-20 w-36 sm:w-48 md:w-56 select-none">
         <img
           src="/assets/birthday/lechon-bread.png"
           alt="Lechon Bread"
@@ -117,8 +117,8 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
         />
       </div>
 
-      {/* Extra floating clone of Lechon on Top-Right for balanced feast aesthetics */}
-      <div className="sibs-float-slow pointer-events-none absolute top-14 right-10 z-20 hidden w-40 md:block md:w-56 select-none opacity-85">
+      {/* Floating Pure PNG 4: Bonus Flying Lechon Clone Drifting */}
+      <div className="sibs-drift-4 pointer-events-none absolute top-0 left-0 z-20 hidden w-36 md:block md:w-48 select-none opacity-90">
         <img
           src="/assets/birthday/lechon.png"
           alt="Floating Lechon"
