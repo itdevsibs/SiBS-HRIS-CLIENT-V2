@@ -13,6 +13,7 @@ import api, {
   AUTH_LOGOUT_START_EVENT,
   handleLogout,
 } from "../../lib/axios/api-template";
+import { createBirthdayLoginEvent } from "./birthdayLoginEvent.js";
 
 import {
   SESSION_DURATION_MS,
@@ -194,11 +195,13 @@ export function UserProvider({ children }) {
   const initialSession = initialSessionRef.current;
 
   const [user, setUserState] = useState(initialSession?.user || null);
+  const [postLoginCelebrationEvent, setPostLoginCelebrationEvent] = useState(null);
 
   const [loading, setLoading] = useState(!initialSession?.user);
 
   const mountedRef = useRef(true);
   const userRef = useRef(initialSession?.user || null);
+  const birthdayLoginSequenceRef = useRef(0);
 
   const logoutTimerRef = useRef(null);
   const serverRefreshTimerRef = useRef(null);
@@ -301,6 +304,7 @@ export function UserProvider({ children }) {
 
     idleDurationRef.current = SESSION_DURATION_MS;
     justLoggedInRef.current = false;
+    setPostLoginCelebrationEvent(null);
     replaceUser(null, { cache: false });
 
     if (mountedRef.current) {
@@ -992,12 +996,35 @@ export function UserProvider({ children }) {
     ],
   );
 
+  const completeInteractiveLogin = useCallback(
+    (newUser, serverExpiresAt = null, expiresInMs = null) => {
+      updateUser(newUser, serverExpiresAt, expiresInMs);
+      birthdayLoginSequenceRef.current += 1;
+      setPostLoginCelebrationEvent(
+        createBirthdayLoginEvent({
+          sequence: birthdayLoginSequenceRef.current,
+          user: newUser,
+        }),
+      );
+    },
+    [updateUser],
+  );
+
+  const consumePostLoginCelebrationEvent = useCallback((eventId) => {
+    setPostLoginCelebrationEvent((current) =>
+      current?.id === eventId ? null : current,
+    );
+  }, []);
+
   return (
     <UserContext.Provider
       value={{
         user,
         loading,
         setUser: updateUser,
+        completeInteractiveLogin,
+        postLoginCelebrationEvent,
+        consumePostLoginCelebrationEvent,
         refetchUser: fetchUser,
         refreshSession: refreshServerSession,
         logout: forceLogout,
