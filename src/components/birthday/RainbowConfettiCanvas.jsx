@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
-import { createBirthdayParticles } from "./birthdayConfetti.js";
+import { createBirthdayParticles, BIRTHDAY_CONFETTI_COLORS } from "./birthdayConfetti.js";
+
+const SHAPES = ["rect", "rect", "rect", "circle", "circle", "star", "heart"];
 
 function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
   let rot = (Math.PI / 2) * 3;
@@ -57,22 +59,12 @@ export default function RainbowConfettiCanvas() {
     canvas.style.height = `${height}px`;
     ctx.scale(dpr, dpr);
 
-    const count = width >= 768 ? 80 : 40;
+    const count = width >= 768 ? 120 : 60;
     const particles = createBirthdayParticles({ count, width, height });
 
     let animationFrameId = null;
-    let startTime = null;
-    const maxDuration = 3000;
 
-    function render(timestamp) {
-      if (!startTime) startTime = timestamp;
-      const elapsed = timestamp - startTime;
-
-      if (elapsed >= maxDuration) {
-        ctx.clearRect(0, 0, width, height);
-        return;
-      }
-
+    function render() {
       ctx.clearRect(0, 0, width, height);
 
       particles.forEach((p) => {
@@ -82,13 +74,20 @@ export default function RainbowConfettiCanvas() {
         p.vx *= p.drag;
         p.rotation += p.rotationSpeed;
 
-        const progress = elapsed / p.lifeMs;
-        const opacity = progress > 0.7 ? Math.max(0, 1 - (progress - 0.7) / 0.3) : 1;
-
-        if (opacity <= 0) return;
+        // Respawn when falling off the bottom
+        if (p.y > height + 25 || p.x < -30 || p.x > width + 30) {
+          p.y = -20;
+          p.x = Math.random() * width;
+          p.vx = (Math.random() - 0.5) * 2;
+          p.vy = 1 + Math.random() * 2.5;
+          p.color =
+            BIRTHDAY_CONFETTI_COLORS[
+              Math.floor(Math.random() * BIRTHDAY_CONFETTI_COLORS.length)
+            ];
+          p.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+        }
 
         ctx.save();
-        ctx.globalAlpha = opacity;
         ctx.fillStyle = p.color;
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation);
@@ -118,6 +117,8 @@ export default function RainbowConfettiCanvas() {
         window.cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
         if (ctx) ctx.clearRect(0, 0, width, height);
+      } else if (!document.hidden && !animationFrameId) {
+        animationFrameId = window.requestAnimationFrame(render);
       }
     };
 
