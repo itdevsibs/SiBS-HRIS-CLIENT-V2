@@ -46,3 +46,6 @@ Thumbs.db
 # Graphify output & cache
 graphify-out/
 .graphify/
+
+# Local Git worktrees
+.worktrees/
