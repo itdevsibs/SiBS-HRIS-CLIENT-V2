@@ -76,9 +76,11 @@ export function normalizeActiveAvailablePosition(
 
   return {
     ...row,
-    id: code,
+    id: databaseId || code,
     databaseId,
     database_id: databaseId,
+    availablePositionId: databaseId || "",
+    available_position_id: databaseId || "",
     positionId: code,
     position_id: code,
     sourcePositionId:
@@ -150,8 +152,8 @@ export function normalizeActiveAvailablePositions(
     )
     .forEach((position) => {
       const key =
-        normalizeKey(position.id) ||
-        normalizeKey(position.databaseId);
+        normalizeKey(position.databaseId) ||
+        normalizeKey(position.id);
 
       if (!key || uniquePositions.has(key)) {
         return;
@@ -165,12 +167,14 @@ export function normalizeActiveAvailablePositions(
 
 function getPositionKeys(position = {}) {
   return [
+    position.databaseId,
+    position.database_id,
+    position.availablePositionId,
+    position.available_position_id,
     position.id,
     position.positionId,
     position.position_id,
     position.code,
-    position.databaseId,
-    position.database_id,
     position.sourcePositionId,
     position.source_position_id,
   ]
@@ -180,14 +184,14 @@ function getPositionKeys(position = {}) {
 
 function getFormPositionKeys(form = {}) {
   return [
-    form.positionId,
-    form.position_id,
-    form.positionCode,
-    form.position_code,
     form.availablePositionId,
     form.available_position_id,
     form.databasePositionId,
     form.database_position_id,
+    form.positionId,
+    form.position_id,
+    form.positionCode,
+    form.position_code,
   ]
     .map(normalizeKey)
     .filter(Boolean);
@@ -197,6 +201,35 @@ export function findFormForAvailablePosition(
   forms = [],
   position = {},
 ) {
+  const databaseKeys = [
+    position.databaseId,
+    position.database_id,
+    position.availablePositionId,
+    position.available_position_id,
+    position.id,
+  ]
+    .map(normalizeKey)
+    .filter(Boolean);
+
+  if (databaseKeys.length) {
+    const databaseKeySet = new Set(databaseKeys);
+    const databaseMatch = (Array.isArray(forms) ? forms : []).find((form) =>
+      [
+        form.availablePositionId,
+        form.available_position_id,
+        form.databasePositionId,
+        form.database_position_id,
+      ]
+        .map(normalizeKey)
+        .filter(Boolean)
+        .some((key) => databaseKeySet.has(key)),
+    );
+
+    if (databaseMatch) {
+      return databaseMatch;
+    }
+  }
+
   const positionKeys = new Set(
     getPositionKeys(position),
   );

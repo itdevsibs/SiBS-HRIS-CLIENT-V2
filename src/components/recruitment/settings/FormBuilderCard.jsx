@@ -1,14 +1,19 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Eye,
+  Filter,
   Layers,
   Lightbulb,
+  ListChecks,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
   Save,
@@ -129,6 +134,10 @@ function getPositionSite(position = {}) {
   return asText(position.location || position.site || position.branch);
 }
 
+function getPositionJdCode(position = {}) {
+  return asText(position.jdCode || position.jd_code, "");
+}
+
 function getFormName(form = {}, position = {}) {
   return asText(
     form.name ||
@@ -213,7 +222,7 @@ function StatusFilterButton({ active, children, count, onClick }) {
       onClick={onClick}
       className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] px-3 text-[11px] font-extrabold transition ${
         active
-          ? "border border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
+          ? "bg-sibs-primary-1 text-white shadow-sm"
           : "border border-[#D6DEE8] bg-white text-[#475467] hover:border-[#BFD8F1] hover:bg-[#EFF6FF] hover:text-sibs-primary-1"
       }`}
     >
@@ -387,6 +396,7 @@ export default function FormBuilderCard() {
         return [
           getPositionTitle(position),
           getPositionCode(position),
+          getPositionJdCode(form) || getPositionJdCode(position),
           getPositionDepartment(position),
           getPositionSite(position),
           getFormName(form, position),
@@ -418,26 +428,40 @@ export default function FormBuilderCard() {
     return counts;
   }, [allPositions, getFinalInterviewForm]);
 
-  const totalFormsPages = Math.max(
+  const formsTotalPages = Math.max(
     1,
-    Math.ceil(formsForTable.length / FORMS_PAGE_LIMIT),
-  );
-  const currentFormsPage = Math.min(formsPage, totalFormsPages);
-  const formsPageStart = (currentFormsPage - 1) * FORMS_PAGE_LIMIT;
-  const paginatedForms = formsForTable.slice(
-    formsPageStart,
-    formsPageStart + FORMS_PAGE_LIMIT,
+    Math.ceil(formsForTable.length / FORMS_TABLE_PAGE_SIZE),
   );
 
-  function handlePreviousFormsPage() {
-    if (positionsLoading || currentFormsPage <= 1) return;
-    setFormsPage(Math.max(currentFormsPage - 1, 1));
-  }
+  const formsPageRows = useMemo(() => {
+    const safePage = Math.min(Math.max(formsPage, 1), formsTotalPages);
+    const startIndex = (safePage - 1) * FORMS_TABLE_PAGE_SIZE;
 
-  function handleNextFormsPage() {
-    if (positionsLoading || currentFormsPage >= totalFormsPages) return;
-    setFormsPage(Math.min(currentFormsPage + 1, totalFormsPages));
-  }
+    return formsForTable.slice(
+      startIndex,
+      startIndex + FORMS_TABLE_PAGE_SIZE,
+    );
+  }, [formsForTable, formsPage, formsTotalPages]);
+
+  const formsShowingStart = formsForTable.length
+    ? (Math.min(Math.max(formsPage, 1), formsTotalPages) - 1) *
+        FORMS_TABLE_PAGE_SIZE +
+      1
+    : 0;
+  const formsShowingEnd = formsForTable.length
+    ? Math.min(
+        formsShowingStart + formsPageRows.length - 1,
+        formsForTable.length,
+      )
+    : 0;
+
+  useEffect(() => {
+    setFormsPage(1);
+  }, [formsSearch, statusFilter]);
+
+  useEffect(() => {
+    setFormsPage((previous) => Math.min(previous, formsTotalPages));
+  }, [formsTotalPages]);
 
   const groupedSections = useMemo(() => groupFieldsBySection(fields), [fields]);
   const typeOptions = useMemo(
@@ -541,114 +565,91 @@ export default function FormBuilderCard() {
     );
 
     return (
-      <>
-        <style>{`
-          @keyframes sibsFinalInterviewRowReveal {
-            from {
-              opacity: 0;
-              transform: translateY(8px);
-            }
-
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          .sibs-final-interview-row-reveal {
-            animation: sibsFinalInterviewRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
-            will-change: opacity, transform;
-          }
-
-          @media (prefers-reduced-motion: reduce) {
-            .sibs-final-interview-row-reveal {
-              animation: none !important;
-              transform: none !important;
-            }
-          }
-        `}</style>
-
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[10px] font-extrabold text-[#8A98B8]">
-                <span>Settings</span>
-                <span>/</span>
-                <span className="text-sibs-primary-1">
-                  Position-based Final Interview Forms
-                </span>
-              </div>
-              <h3 className="sibs-section-title text-[18px] sm:text-[20px]">
-                Position-based Final Interview Forms
-              </h3>
-              <p className="sibs-section-subtitle mt-1">
-                Manage position interview forms, scoring rubrics, passing thresholds, and custom question fields.
-              </p>
+      <div className="relative z-[80] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
+              <ListChecks size={14} />
+              Final Interview
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="inline-flex h-8 items-center rounded-full border border-blue-100 bg-blue-50 px-3 text-[10px] font-extrabold uppercase tracking-wide text-blue-700">
-                {configuredCount} configured forms
-              </span>
-              <button
-                type="button"
-                onClick={() => refreshAvailablePositions?.()}
-                disabled={positionsLoading}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#DCE6F1] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-                title="Refresh forms"
-              >
-                <RefreshCw
-                  size={14}
-                  className={positionsLoading ? "animate-spin" : ""}
-                />
-              </button>
+            <h3 className="mt-3 text-base font-extrabold text-sibs-primary-1">
+              Position-based Final Interview Forms
+            </h3>
+            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+              Manage position interview forms, scoring rubrics, passing
+              thresholds, and custom question fields.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+              {configuredCount} Records
+            </span>
+            <button
+              type="button"
+              onClick={() => refreshAvailablePositions?.()}
+              disabled={positionsLoading}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#F2F6FA] text-sibs-primary-1 transition hover:bg-[#E8EEF5] disabled:cursor-not-allowed disabled:opacity-60"
+              title="Refresh forms"
+            >
+              <RefreshCw
+                size={16}
+                className={positionsLoading ? "animate-spin" : ""}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-5 grid grid-cols-1 gap-3 border-b border-[#E6ECF2] pb-5 xl:grid-cols-[minmax(280px,1fr)_minmax(360px,auto)_auto] xl:items-end">
+          <div>
+            <label className="mb-1 block text-xs font-bold text-[#101828]">
+              Search
+            </label>
+            <div className="relative">
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+              />
+              <input
+                value={formsSearch}
+                onChange={(event) => setFormsSearch(event.target.value)}
+                className="h-10 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 pl-11 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                placeholder="Search forms by role title, position code, department..."
+              />
             </div>
           </div>
 
-          <div className="relative overflow-visible p-4 sm:p-5">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-              <label className="min-w-0">
-                <span className="mb-1 block text-[10px] font-extrabold text-[#101828]">
-                  Search
-                </span>
-                <div className="relative">
-                  <Search
-                    size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A98B8]"
-                  />
-                  <input
-                    value={formsSearch}
-                    onChange={(event) => {
-                      setFormsSearch(event.target.value);
-                      setFormsPage(1);
-                    }}
-                    className="h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-3 pl-9 text-[11px] font-semibold text-sibs-primary-1 outline-none transition placeholder:text-[#8A98B8] focus:border-[#BFD8F1] focus:ring-2 focus:ring-[#EFF6FF]"
-                    placeholder="Search forms by role title, position code, department..."
-                  />
-                </div>
-              </label>
-
-              <div className="min-w-0">
-                <span className="mb-1 block text-[10px] font-extrabold text-[#101828]">
-                  Status
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {TABLE_STATUS_OPTIONS.map((status) => (
-                    <StatusFilterButton
-                      key={status}
-                      active={statusFilter === status}
-                      count={status === "All" ? undefined : statusCounts[status]}
-                      onClick={() => {
-                        setStatusFilter(status);
-                        setFormsPage(1);
-                      }}
-                    >
-                      {status}
-                    </StatusFilterButton>
-                  ))}
-                </div>
-              </div>
+          <div>
+            <label className="mb-1 block text-xs font-bold text-[#101828]">
+              Status
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+            {TABLE_STATUS_OPTIONS.map((status) => (
+              <StatusFilterButton
+                key={status}
+                active={statusFilter === status}
+                count={status === "All" ? undefined : statusCounts[status]}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status}
+              </StatusFilterButton>
+            ))}
             </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setFormsSearch("");
+              setStatusFilter("All");
+            }}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-extrabold text-sibs-tertiary-5 transition-all duration-200 hover:border-[#FF5C28]/30 hover:bg-white hover:text-sibs-primary-1 active:scale-[0.98]"
+          >
+            <Filter size={17} />
+            Clear
+          </button>
+        </div>
 
             {positionsError && (
               <div className="mt-3 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] font-bold text-amber-700">
@@ -656,180 +657,191 @@ export default function FormBuilderCard() {
               </div>
             )}
 
-            <div className="mt-4 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-              <div className="max-h-[580px] overflow-auto sibs-scrollbar">
-                <table className="w-full min-w-[920px] border-collapse bg-white">
-                  <thead className="sibs-data-table-head">
-                    <tr className="sibs-data-table-head-row">
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
-                        Position Title &amp; Code
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
-                        Department &amp; Site
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
-                        Form Name
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
-                        Passing Score
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
-                        Criteria
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
-                        Status
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
-                        Preview
-                      </th>
-                    </tr>
-                  </thead>
+        <div className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white">
+          <div className="overflow-x-auto">
+            <table className="min-w-[980px] w-full border-collapse">
+              <thead>
+                <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC] text-left text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
+                  <th className="px-5 py-4">Position Title & Code</th>
+                  <th className="px-5 py-4">Department & Site</th>
+                  <th className="px-5 py-4">Form Name</th>
+                  <th className="px-5 py-4">Passing Score</th>
+                  <th className="px-5 py-4">Criteria</th>
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E6ECF2]">
+                {formsPageRows.map(({ position, form }) => {
+                  const status = getFormStatus(form);
+                  const jdReference =
+                    getPositionJdCode(form) || getPositionJdCode(position);
 
-                  <tbody
-                    key={`${currentFormsPage}-${formsSearch}-${statusFilter}-${positionsLoading}`}
-                    className="divide-y divide-[#F1F5F9]"
-                  >
-                    {positionsLoading && !paginatedForms.length ? (
-                      Array.from({ length: FORMS_PAGE_LIMIT }).map((_, index) => (
-                        <tr key={index}>
-                          <td colSpan={7} className="px-3 py-3">
-                            <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E6ECF2]" />
-                          </td>
-                        </tr>
-                      ))
-                    ) : paginatedForms.length > 0 ? (
-                      paginatedForms.map(({ position, form }, index) => {
-                        const status = getFormStatus(form);
-
-                        return (
-                          <tr
-                            key={getPositionId(position)}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => openEditor(position)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                openEditor(position);
-                              }
+                  return (
+                    <tr
+                      key={getPositionId(position)}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openEditor(position)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openEditor(position);
+                        }
+                      }}
+                      className="cursor-pointer bg-white text-[13px] outline-none transition hover:bg-[#F8FAFC] focus:bg-[#F8FAFC]"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-start gap-3">
+                          <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#FF5C28]" />
+                          <div className="min-w-0">
+                            <p className="max-w-[220px] truncate text-[13px] font-extrabold text-sibs-primary-1">
+                              {getPositionTitle(position)}
+                            </p>
+                            <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
+                              {getPositionCode(position)}
+                            </p>
+                            {jdReference && (
+                              <p className="mt-0.5 text-[11px] font-extrabold text-[#FF5C28]">
+                                JD: {jdReference}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="text-[13px] font-extrabold text-sibs-primary-1">
+                          {getPositionDepartment(position)}
+                        </p>
+                        <p className="mt-1 text-xs font-medium text-[#475467]">
+                          {getPositionSite(position)}
+                        </p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="max-w-[260px] truncate text-[13px] font-medium text-sibs-primary-1">
+                          {getFormName(form, position)}
+                        </p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                          {getPassingScore(form)}%
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex rounded-lg bg-[#F1F5F9] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                          {getCriteriaCount(form)} Fields
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold uppercase ${statusBadgeClass(status)}`}
+                        >
+                          {status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openEditor(position);
                             }}
-                            className="sibs-data-table-row sibs-final-interview-row-reveal cursor-pointer outline-none hover:bg-[#FFF9F6] focus:bg-[#FFF9F6]"
-                            style={{
-                              animationDelay: `${Math.min(index, 10) * 36}ms`,
-                            }}
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90"
                           >
-                            <td className="whitespace-nowrap px-3 py-3 text-[11px]">
-                              <div className="flex items-center gap-2.5">
-                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF5C28]" />
-                                <div className="min-w-0">
-                                  <p className="max-w-[210px] truncate font-extrabold text-sibs-primary-1">
-                                    {getPositionTitle(position)}
-                                  </p>
-                                  <p className="mt-0.5 text-[10px] font-bold text-[#52637A]">
-                                    {getPositionCode(position)}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-3 py-3 text-[11px]">
-                              <p className="max-w-[220px] truncate font-extrabold text-sibs-primary-1">
-                                {getPositionDepartment(position)}
-                              </p>
-                              <p className="mt-0.5 text-[10px] font-medium text-[#667085]">
-                                {getPositionSite(position)}
-                              </p>
-                            </td>
-                            <td className="px-3 py-3 text-[11px]">
-                              <p className="max-w-[270px] truncate font-semibold text-sibs-primary-1">
-                                {getFormName(form, position)}
-                              </p>
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <span className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-extrabold text-blue-700">
-                                {getPassingScore(form)}%
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <span className="inline-flex rounded-md bg-[#F1F5F9] px-2 py-1 text-[10px] font-extrabold text-sibs-primary-1">
-                                {getCriteriaCount(form)} Fields
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <span
-                                className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase ${statusBadgeClass(status)}`}
-                              >
-                                {status}
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  openPreview(position, form);
-                                }}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] text-[#52637A] transition hover:bg-[#F1F7FD] hover:text-sibs-primary-1"
-                                title="Preview form"
-                              >
-                                <Eye size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={7} className="p-12 text-center">
-                          <p className="text-sm font-extrabold text-sibs-primary-1">
-                            No final interview forms found
-                          </p>
-                          <p className="mt-1 text-xs font-semibold text-[#667085]">
-                            Adjust the search or status filter to view other forms.
-                          </p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                            <Pencil size={14} className="text-[#FF5C28]" />
+                            Edit Form
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openPreview(position, form);
+                            }}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-sibs-tertiary-5 transition hover:bg-[#F1F7FD] hover:text-sibs-primary-1"
+                            title="Preview form"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
 
-            <div className="mt-4 flex flex-col gap-3 border-t border-[#E6ECF2] pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-[11px] font-semibold text-[#667085]">
-                Showing <span className="font-extrabold text-sibs-primary-1">{shownFrom}</span> to{" "}
-                <span className="font-extrabold text-sibs-primary-1">{shownTo}</span> of{" "}
-                <span className="font-extrabold text-sibs-primary-1">{formsForTable.length}</span> forms
-              </p>
+                {positionsLoading && !formsForTable.length && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-14 text-center">
+                      <div className="inline-flex items-center gap-2 text-sm font-extrabold text-sibs-primary-1">
+                        <Loader2 size={18} className="animate-spin" />
+                        Loading final interview forms...
+                      </div>
+                    </td>
+                  </tr>
+                )}
 
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handlePreviousFormsPage}
-                  disabled={positionsLoading || currentFormsPage <= 1}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-[11px] font-bold text-[#52637A] transition hover:border-[#BFD8F1] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronLeft size={14} />
-                  Previous
-                </button>
+                {!positionsLoading && !formsForTable.length && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-14 text-center">
+                      <p className="text-sm font-extrabold text-sibs-tertiary-5">
+                        No final interview forms match the selected filters.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-[10px] bg-[#FF5C28] px-3 text-[11px] font-extrabold text-white shadow-sm">
-                  {currentFormsPage}
-                </span>
+          <div className="flex flex-col justify-between gap-4 border-t border-[#E6ECF2] px-6 py-5 md:flex-row md:items-center">
+            <p className="text-xs font-semibold text-sibs-tertiary-5">
+              Showing {formsShowingStart} to {formsShowingEnd} of{" "}
+              {formsForTable.length} final interview form records
+            </p>
 
-                <button
-                  type="button"
-                  onClick={handleNextFormsPage}
-                  disabled={positionsLoading || currentFormsPage >= totalFormsPages}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-[11px] font-bold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Next
-                  <ChevronRight size={14} />
-                </button>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setFormsPage((page) => Math.max(page - 1, 1))}
+                disabled={formsPage <= 1}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-xs font-extrabold text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+
+              {Array.from({ length: formsTotalPages }, (_, index) => index + 1)
+                .slice(0, 7)
+                .map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setFormsPage(page)}
+                    className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-extrabold transition active:scale-[0.98] ${
+                      formsPage === page
+                        ? "bg-[#FF5C28] text-white shadow-sm"
+                        : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFormsPage((page) => Math.min(page + 1, formsTotalPages))
+                }
+                disabled={formsPage >= formsTotalPages}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#BFD8F1] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
-        </section>
-      </>
+        </div>
+      </div>
     );
   }
 
@@ -1054,6 +1066,13 @@ export default function FormBuilderCard() {
               </div>
               <p className="text-[13px] font-medium leading-5 text-sibs-tertiary-5">
                 Position Code: {getPositionCode(selectedPosition)}
+                {getPositionJdCode(selectedForm) ||
+                getPositionJdCode(selectedPosition)
+                  ? ` • JD: ${
+                      getPositionJdCode(selectedForm) ||
+                      getPositionJdCode(selectedPosition)
+                    }`
+                  : ""}
               </p>
             </div>
 

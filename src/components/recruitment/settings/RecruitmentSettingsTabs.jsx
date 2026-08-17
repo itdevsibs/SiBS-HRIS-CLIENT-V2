@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   FileCheck2,
+  ListChecks,
   Mail,
   ShieldCheck,
   SlidersHorizontal,
@@ -12,6 +13,7 @@ import {
 const tabIconMap = {
   "Update Headcounts": ClipboardList,
   "Final Interview Form": ClipboardCheck,
+  "Application Screening Questionnaires": ListChecks,
   "Pipeline Settings": SlidersHorizontal,
   "Assessment Settings": FileCheck2,
   "Email Templates": Mail,

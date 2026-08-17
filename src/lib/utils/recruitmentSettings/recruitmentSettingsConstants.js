@@ -5,6 +5,7 @@ export const AVAILABLE_POSITIONS_STORAGE_KEY = "sibs_available_positions_temp";
 
 export const recruitmentTabs = [
   "Final Interview Form",
+  "Application Screening Questionnaires",
   "Pipeline Settings",
   "Assessment Settings",
   "Email Templates",

@@ -1,5 +1,6 @@
 import React from "react";
 
+import ApplicationQuestionsFormSettings from "./ApplicationQuestionsFormSettings";
 import ApprovalRulesSettings from "./ApprovalRulesSettings";
 import FormBuilderCard from "./FormBuilderCard";
 import PlaceholderSettingsPanel from "./PlaceholderSettingsPanel";
@@ -22,6 +23,13 @@ export default function RecruitmentSettingsPanelRouter({
         <FormBuilderCard />
       </div>
     );
+  }
+
+  if (
+    activeTab === "Application Screening Questionnaires" ||
+    activeTab === "Application Questions Form"
+  ) {
+    return <ApplicationQuestionsFormSettings />;
   }
 
   if (activeTab === "Holiday Calendar") {

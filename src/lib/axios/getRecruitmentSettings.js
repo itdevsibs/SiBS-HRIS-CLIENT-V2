@@ -155,6 +155,118 @@ export async function deleteFinalInterviewQuestion(
 }
 
 /* =========================================
+   PUBLIC TALENT POOL APPLICATION QUESTIONS
+========================================= */
+
+export async function getApplicationQuestionsForm() {
+  try {
+    const res = await api.get(
+      "/api/recruitment-settings/application-questions",
+      {
+        params: {
+          _t: Date.now(),
+        },
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "GET APPLICATION QUESTIONS FORM API ERROR:",
+      err,
+    );
+
+    throw err;
+  }
+}
+
+export async function saveApplicationQuestionsForm(questions = []) {
+  try {
+    const res = await api.put(
+      "/api/recruitment-settings/application-questions",
+      {
+        questions: Array.isArray(questions) ? questions : [],
+      },
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "SAVE APPLICATION QUESTIONS FORM API ERROR:",
+      err,
+    );
+
+    throw err;
+  }
+}
+
+export async function getApplicationForms() {
+  try {
+    const res = await api.get(
+      "/api/application-form/forms",
+      {
+        params: {
+          _t: Date.now(),
+        },
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error("GET APPLICATION FORMS API ERROR:", err);
+    throw err;
+  }
+}
+
+export async function getApplicationFormByPosition(positionIdentifier) {
+  try {
+    const res = await api.get(
+      `/api/application-form/position/${encodeIdentifier(
+        positionIdentifier,
+      )}`,
+      {
+        params: {
+          _t: Date.now(),
+        },
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error("GET APPLICATION FORM BY POSITION API ERROR:", err);
+    throw err;
+  }
+}
+
+export async function saveApplicationFormByPosition(
+  positionIdentifier,
+  payload = {},
+) {
+  try {
+    const res = await api.put(
+      `/api/application-form/position/${encodeIdentifier(
+        positionIdentifier,
+      )}`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error("SAVE APPLICATION FORM BY POSITION API ERROR:", err);
+    throw err;
+  }
+}
+
+/* =========================================
    UPDATE HEADCOUNTS / HEADCOUNT REQUESTS
 ========================================= */
 
