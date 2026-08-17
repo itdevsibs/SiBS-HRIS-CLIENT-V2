@@ -290,7 +290,7 @@ export default function CandidatePipelineModalShell({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`sibs-modal-pop-in flex max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-sm:max-h-[calc(100dvh-1rem)]`}
+        className={`sibs-modal-pop-in relative flex max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-sm:max-h-[calc(100dvh-1rem)]`}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="shrink-0 bg-[#042C51] px-5 py-4 text-white sm:px-6">
@@ -342,10 +342,18 @@ export default function CandidatePipelineModalShell({
                 <button
                   ref={movementTriggerRef}
                   type="button"
-                  onClick={() => setMovementHistoryOpen(true)}
+                  onClick={() => setMovementHistoryOpen((previous) => !previous)}
                   aria-expanded={movementHistoryOpen}
-                  aria-label={`Open Movement History, ${movementHistoryItems.length} records`}
-                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-[#063560] px-3 text-[9px] font-extrabold text-white shadow-sm transition hover:border-[#FF5C28]/60 hover:bg-[#0D4676] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 sm:h-9 sm:px-3.5 sm:text-[10px]"
+                  aria-label={
+                    movementHistoryOpen
+                      ? "Close Movement History"
+                      : `Open Movement History, ${movementHistoryItems.length} records`
+                  }
+                  className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border px-3 text-[9px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 sm:h-9 sm:px-3.5 sm:text-[10px] ${
+                    movementHistoryOpen
+                      ? "border-[#FF5C28] bg-[#0D4676] shadow-[0_0_12px_rgba(255,92,40,0.2)]"
+                      : "border-white/15 bg-[#063560] hover:border-[#FF5C28]/60 hover:bg-[#0D4676]"
+                  }`}
                 >
                   <History size={13} className="text-[#FF5C28]" />
                   <span className="hidden sm:inline">Movement History</span>
@@ -366,25 +374,23 @@ export default function CandidatePipelineModalShell({
           </div>
         </header>
 
-        <div className="relative min-h-0 flex-1 overflow-hidden bg-[#F7F9FC]">
-          <div className="sibs-scrollbar max-h-[calc(88vh-130px)] overflow-y-auto overscroll-contain p-4 sm:p-5">
-            {children}
-          </div>
-
-          {movementHistoryEnabled ? (
-            <CandidateMovementHistoryDrawer
-              open={movementHistoryOpen}
-              candidate={candidateForMovementHistory}
-              onClose={() => setMovementHistoryOpen(false)}
-              triggerRef={movementTriggerRef}
-            />
-          ) : null}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-4 sm:p-5 sibs-scrollbar">
+          {children}
         </div>
 
         {footer ? (
           <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3.5 sm:px-6">
             {footer}
           </footer>
+        ) : null}
+
+        {movementHistoryEnabled && movementHistoryOpen ? (
+          <CandidateMovementHistoryDrawer
+            open={movementHistoryOpen}
+            candidate={candidateForMovementHistory}
+            onClose={() => setMovementHistoryOpen(false)}
+            triggerRef={movementTriggerRef}
+          />
         ) : null}
       </div>
     </div>

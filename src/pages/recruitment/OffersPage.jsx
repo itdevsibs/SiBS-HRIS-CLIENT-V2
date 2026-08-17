@@ -529,12 +529,12 @@ export default function OffersPage() {
           <OfferSummaryCards />
 
           <section
-            className="sibs-page-card-in sibs-card relative overflow-visible font-jakarta"
+            className="sibs-page-card-in sibs-card relative z-[10] overflow-visible font-jakarta"
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <OfferFilters />
 
-            <div className="space-y-5 p-4 sm:p-5">
+            <div className="relative z-[1] overflow-hidden rounded-b-2xl">
               <OfferRecordsTable
                 offersOverride={visibleOffers}
                 routeFilterActive={Boolean(routeCandidate)}
@@ -545,15 +545,17 @@ export default function OffersPage() {
                 }
               />
 
-              <OfferMobileCards
-                offersOverride={visibleOffers}
-                routeFilterActive={Boolean(routeCandidate)}
-                emptyMessage={
-                  routeCandidate
-                    ? "No offer record was found for the selected candidate."
-                    : "No offered candidates found from Candidate Pipeline."
-                }
-              />
+              <div className="p-4 sm:p-5 lg:hidden">
+                <OfferMobileCards
+                  offersOverride={visibleOffers}
+                  routeFilterActive={Boolean(routeCandidate)}
+                  emptyMessage={
+                    routeCandidate
+                      ? "No offer record was found for the selected candidate."
+                      : "No offered candidates found from Candidate Pipeline."
+                  }
+                />
+              </div>
             </div>
           </section>
 

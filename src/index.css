@@ -1487,3 +1487,46 @@
     display: none !important;
   }
 }
+
+@keyframes sibs-birthday-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sibs-birthday-message-in {
+  0% { opacity: 0; transform: translateY(12px) scale(.94); }
+  72% { opacity: 1; transform: translateY(-2px) scale(1.015); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes sibs-birthday-overlay-out { to { opacity: 0; } }
+
+.sibs-birthday-overlay-in { animation: sibs-birthday-overlay-in 180ms ease-out both; }
+.sibs-birthday-message-in { animation: sibs-birthday-message-in 520ms cubic-bezier(.2,.8,.2,1) both; }
+.sibs-birthday-overlay-out { animation: sibs-birthday-overlay-out 220ms ease-in both; }
+
+@keyframes sibs-float-slow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(3deg); }
+}
+
+@keyframes sibs-float-reverse {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-18px) rotate(-4deg); }
+}
+
+@keyframes sibs-float-gentle {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  50% { transform: translateY(-10px) rotate(2deg) scale(1.03); }
+}
+
+.sibs-float-slow { animation: sibs-float-slow 3.5s ease-in-out infinite; }
+.sibs-float-reverse { animation: sibs-float-reverse 4.2s ease-in-out infinite; }
+.sibs-float-gentle { animation: sibs-float-gentle 3.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sibs-birthday-overlay-in,
+  .sibs-birthday-message-in,
+  .sibs-birthday-overlay-out,
+  .sibs-float-slow,
+  .sibs-float-reverse,
+  .sibs-float-gentle {
+    animation-duration: 1ms;
+    animation-iteration-count: 1;
+  }
+}

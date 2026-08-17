@@ -1,12 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Sparkles } from "lucide-react";
 
 import api from "../../../lib/axios/api-template";
-
 import {
   asDisplayValue,
   findTalentPoolProfile,
   getRoleTitle,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
+
+import CandidateProfileHero from "./profile/CandidateProfileHero";
+import CandidateProfilePersonalInfo from "./profile/CandidateProfilePersonalInfo";
+import CandidateProfileWorkReadiness from "./profile/CandidateProfileWorkReadiness";
+import CandidateProfileEducation from "./profile/CandidateProfileEducation";
+import CandidateProfileExperience from "./profile/CandidateProfileExperience";
+import CandidateProfileSkills from "./profile/CandidateProfileSkills";
+import CandidateProfileFamily from "./profile/CandidateProfileFamily";
+import CandidateProfileAttachments from "./profile/CandidateProfileAttachments";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -224,10 +233,17 @@ function buildWorkExperiences(sources = []) {
       "workExperiences",
       "work_experiences_json",
       "workExperiencesJson",
-    ]) ||
-    [];
+      "experiences",
+    ]) || [];
 
-  if (workExperiences.length > 0) return workExperiences;
+  if (workExperiences.length > 0) {
+    return workExperiences.map((exp) => ({
+      ...exp,
+      monthlyCompensationFormatted: formatMoneyValue(
+        exp.monthlyCompensation || exp.monthly_compensation || exp.compensation,
+      ),
+    }));
+  }
 
   const otherExperiences = pickArrayFromSources(sources, [
     "otherExperiences",
@@ -235,7 +251,14 @@ function buildWorkExperiences(sources = []) {
     "otherExperiencesJson",
   ]);
 
-  if (otherExperiences.length > 0) return otherExperiences;
+  if (otherExperiences.length > 0) {
+    return otherExperiences.map((exp) => ({
+      ...exp,
+      monthlyCompensationFormatted: formatMoneyValue(
+        exp.monthlyCompensation || exp.monthly_compensation || exp.compensation,
+      ),
+    }));
+  }
 
   const primaryExperience = {
     industry:
@@ -252,22 +275,52 @@ function buildWorkExperiences(sources = []) {
       pickFromSources(sources, [
         "lengthOfWorkExperience",
         "length_of_work_experience",
+        "experienceYears",
+        "experience_years",
         "experienceLength",
-        "length",
+        "experience_length",
       ]) || "",
-    years: pickFromSources(sources, ["years"]) || "",
+    years:
+      pickFromSources(sources, [
+        "experienceYears",
+        "experience_years",
+        "years",
+      ]) || "",
     role:
       pickFromSources(sources, [
         "experienceRole",
+        "experience_role",
         "previousRole",
-        "role",
+        "previous_role",
+        "lastPosition",
+        "last_position",
       ]) || "",
-    company: pickFromSources(sources, ["company"]) || "",
+    company:
+      pickFromSources(sources, [
+        "experienceCompany",
+        "experience_company",
+        "previousCompany",
+        "previous_company",
+        "lastEmployer",
+        "last_employer",
+      ]) || "",
     monthlyCompensation:
       pickFromSources(sources, [
         "monthlyCompensation",
         "monthly_compensation",
+        "lastSalary",
+        "last_salary",
+        "expectedSalary",
       ]) || "",
+    monthlyCompensationFormatted: formatMoneyValue(
+      pickFromSources(sources, [
+        "monthlyCompensation",
+        "monthly_compensation",
+        "lastSalary",
+        "last_salary",
+        "expectedSalary",
+      ]),
+    ),
     reasonForLeaving:
       pickFromSources(sources, [
         "reasonForLeaving",
@@ -275,11 +328,11 @@ function buildWorkExperiences(sources = []) {
       ]) || "",
   };
 
-  const hasValue = Object.values(primaryExperience).some(
+  const hasExpValue = Object.values(primaryExperience).some(
     (value) => !isEmptyValue(value),
   );
 
-  return hasValue ? [primaryExperience] : [];
+  return hasExpValue ? [primaryExperience] : [];
 }
 
 function buildReferences(sources = []) {
@@ -304,6 +357,14 @@ function buildReferences(sources = []) {
         "referencePhone1",
         "reference1_phone",
       ]),
+      relationship: pickFromSources(sources, [
+        "reference1Relationship",
+        "referenceRelationship1",
+      ]),
+      company: pickFromSources(sources, [
+        "reference1Company",
+        "referenceCompany1",
+      ]),
     },
     {
       name: pickFromSources(sources, [
@@ -316,6 +377,14 @@ function buildReferences(sources = []) {
         "reference2Phone",
         "referencePhone2",
         "reference2_phone",
+      ]),
+      relationship: pickFromSources(sources, [
+        "reference2Relationship",
+        "referenceRelationship2",
+      ]),
+      company: pickFromSources(sources, [
+        "reference2Company",
+        "referenceCompany2",
       ]),
     },
     {
@@ -330,40 +399,16 @@ function buildReferences(sources = []) {
         "referencePhone3",
         "reference3_phone",
       ]),
+      relationship: pickFromSources(sources, [
+        "reference3Relationship",
+        "referenceRelationship3",
+      ]),
+      company: pickFromSources(sources, [
+        "reference3Company",
+        "referenceCompany3",
+      ]),
     },
   ].filter((reference) => reference.name || reference.phone);
-}
-
-
-function CompactField({ label, value, className = "" }) {
-  return (
-    <div className={`min-w-0 ${className}`}>
-      <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-        {label}
-      </p>
-      <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
-        {isEmptyValue(value) ? "—" : String(value)}
-      </p>
-    </div>
-  );
-}
-
-function CompactDetailGroup({ title, items = [], children = null }) {
-  return (
-    <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-      <h4 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
-        {title}
-      </h4>
-      {items.length > 0 && (
-        <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-          {items.map(([label, value]) => (
-            <CompactField key={label} label={label} value={value} />
-          ))}
-        </div>
-      )}
-      {children}
-    </section>
-  );
 }
 
 const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
@@ -438,15 +483,15 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
     const splitName = splitFullName(fullName);
 
     const firstName =
-      pickFromSources(sources, ["firstName", "first_name"]) ||
+      pickFromSources(sources, ["firstName", "first_name", "candidateFirstName"]) ||
       splitName.firstName;
 
     const lastName =
-      pickFromSources(sources, ["lastName", "last_name"]) ||
+      pickFromSources(sources, ["lastName", "last_name", "candidateLastName"]) ||
       splitName.lastName;
 
     const middleName =
-      pickFromSources(sources, ["middleName", "middle_name"]) ||
+      pickFromSources(sources, ["middleName", "middle_name", "candidateMiddleName"]) ||
       splitName.middleName;
 
     const openPosition =
@@ -461,6 +506,13 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
       ]) ||
       getRoleTitle(pickFromSources(sources, ["roleAccount"])) ||
       "—";
+
+    const dateOfBirth = pickFromSources(sources, [
+      "dateOfBirth",
+      "date_of_birth",
+      "birthDate",
+      "birth_date",
+    ]);
 
     return {
       heardFrom: displayArray(
@@ -492,25 +544,45 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
           "referrer",
           "createdBy",
         ]) || "Talent Pool",
-      employeeId: pickFromSources(sources, [
-        "employeeId",
-        "referrerEmployeeId",
-        "referrer_employee_id",
-      ]),
+      candidateId:
+        pickFromSources(sources, [
+          "candidateId",
+          "candidate_id",
+          "candidateApplicationId",
+          "applicationId",
+        ]) || candidate?.candidateId || candidate?.id || "",
+      stage:
+        pickFromSources(sources, [
+          "currentStage",
+          "currentPipelineStage",
+          "stage",
+          "pipelineStage",
+        ]) || candidate?.stage || candidate?.currentStage || "",
+      submissionDate: formatDateValue(
+        pickFromSources(sources, [
+          "createdAt",
+          "created_at",
+          "applicationDate",
+          "dateApplied",
+        ]),
+      ),
 
       firstName,
       lastName,
       middleName,
       suffix: pickFromSources(sources, ["suffix", "extension"]),
-      dateOfBirth: pickFromSources(sources, [
-        "dateOfBirth",
-        "date_of_birth",
-      ]),
+      dateOfBirth,
+      dateOfBirthFormatted: formatDateValue(dateOfBirth),
       age: pickFromSources(sources, [
         "ageAsOfApplication",
         "age_as_of_application",
         "age",
       ]),
+      gender: pickFromSources(sources, ["gender", "sex"]),
+      civilStatus: pickFromSources(sources, ["civilStatus", "civil_status", "maritalStatus"]),
+      nationality: pickFromSources(sources, ["nationality", "citizenship"]) || "Filipino",
+      religion: pickFromSources(sources, ["religion"]),
+
       email: pickFromSources(sources, ["email", "candidateEmail"]),
       phone1: pickFromSources(sources, [
         "phone1",
@@ -520,10 +592,16 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
         "phone",
       ]),
       phone2: pickFromSources(sources, ["phone2", "phoneNumber2"]),
+      landline: pickFromSources(sources, ["landline", "telephone", "landlineNumber"]),
       physicalAddress: pickFromSources(sources, [
         "physicalAddress",
         "physical_address",
         "address",
+        "presentAddress",
+      ]),
+      permanentAddress: pickFromSources(sources, [
+        "permanentAddress",
+        "permanent_address",
       ]),
 
       workExperience: pickFromSources(sources, [
@@ -531,13 +609,70 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
         "work_experience",
         "hasWorkExperience",
       ]),
+      experienceLength: pickFromSources(sources, [
+        "experienceYears",
+        "experience_years",
+        "lengthOfWorkExperience",
+        "length_of_work_experience",
+        "experienceLength",
+        "experience_length",
+      ]),
       workExperiences: buildWorkExperiences(sources),
 
       educationalAttainment: pickFromSources(sources, [
         "educationalAttainment",
         "highestEducationalAttainment",
         "highest_educational_attainment",
+        "education",
       ]),
+      schoolName: pickFromSources(sources, [
+        "schoolName",
+        "school_name",
+        "institution",
+        "school",
+        "college",
+        "university",
+      ]),
+      courseDegree: pickFromSources(sources, [
+        "courseDegree",
+        "course_degree",
+        "degree",
+        "course",
+        "program",
+        "fieldOfStudy",
+      ]),
+      yearGraduated: pickFromSources(sources, [
+        "yearGraduated",
+        "year_graduated",
+        "graduationYear",
+        "graduation_year",
+        "inclusiveYears",
+      ]),
+      academicHonors: pickFromSources(sources, [
+        "academicHonors",
+        "academic_honors",
+        "honors",
+        "awards",
+      ]),
+
+      skills: displayArray(
+        pickFromSources(sources, [
+          "skills",
+          "skills_json",
+          "skillsJson",
+          "technicalSkills",
+          "coreCompetencies",
+        ]),
+      ),
+      languages: displayArray(
+        pickFromSources(sources, [
+          "languages",
+          "languages_json",
+          "languagesSpoken",
+          "skillsLanguage",
+          "skills_language",
+        ]),
+      ),
       affiliations: displayArray(
         pickFromSources(sources, [
           "affiliations",
@@ -546,10 +681,14 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
           "affiliations_certifications_json",
         ]),
       ),
-      trainingAttended: pickFromSources(sources, [
-        "trainingAttended",
-        "training_attended",
-      ]),
+      trainingAttended: displayArray(
+        pickFromSources(sources, [
+          "trainingAttended",
+          "training_attended",
+          "trainings",
+          "seminars",
+        ]),
+      ),
 
       fullyVaccinated: pickFromSources(sources, [
         "fullyVaccinated",
@@ -580,6 +719,27 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
         "willing_background_check",
       ]),
 
+      fatherName: pickFromSources(sources, ["fatherName", "father_name", "father"]),
+      motherName: pickFromSources(sources, ["motherName", "mother_name", "motherMaidenName"]),
+      spouseName: pickFromSources(sources, ["spouseName", "spouse_name", "spouse"]),
+      emergencyContactName: pickFromSources(sources, [
+        "emergencyContactName",
+        "emergency_contact_name",
+        "emergencyName",
+        "contactPerson",
+      ]),
+      emergencyContactRelationship: pickFromSources(sources, [
+        "emergencyContactRelationship",
+        "emergency_contact_relationship",
+        "emergencyRelationship",
+      ]),
+      emergencyContactPhone: pickFromSources(sources, [
+        "emergencyContactPhone",
+        "emergency_contact_phone",
+        "emergencyPhone",
+        "emergencyNumber",
+      ]),
+
       references: buildReferences(sources),
 
       audioFileName: pickFromSources(sources, [
@@ -587,12 +747,19 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
         "audio_file_name",
         "audioUploadName",
       ]),
+      audioUrl: pickFromSources(sources, ["audioUrl", "audio_url", "audioFilePath"]),
       attachmentFileName: pickFromSources(sources, [
         "attachmentFileName",
         "attachment_file_name",
         "supportingFileName",
         "resumeFileName",
         "fileUploadName",
+      ]),
+      attachmentUrl: pickFromSources(sources, [
+        "attachmentUrl",
+        "attachment_url",
+        "resumeUrl",
+        "fileUrl",
       ]),
       consentAccepted: pickFromSources(sources, [
         "consentAccepted",
@@ -619,144 +786,30 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <CompactDetailGroup
-          title="Application Source"
-          items={[
-            ["How Heard About Us", data.heardFrom],
-            ["Open Position", data.openPosition],
-            ["Nickname", data.nickname],
-            ["Applying Location", data.applyingLocation],
-            ["Referred By", data.referredBy],
-            ["Employee ID", data.employeeId],
-          ]}
-        />
+      <div className="space-y-4">
+        {/* 1. Profile Hero Summary */}
+        <CandidateProfileHero data={data} />
 
-        <CompactDetailGroup
-          title="Personal Information"
-          items={[
-            ["First Name", data.firstName],
-            ["Last Name", data.lastName],
-            ["Middle Name", data.middleName],
-            ["Suffix", data.suffix],
-            ["Date of Birth", formatDateValue(data.dateOfBirth)],
-            ["Age", data.age],
-            ["Email", data.email],
-            ["Phone 1", data.phone1],
-            ["Phone 2", data.phone2],
-            ["Physical Address", data.physicalAddress],
-          ]}
-        />
+        {/* 2. Personal & Contact Information */}
+        <CandidateProfilePersonalInfo data={data} />
 
-        <CompactDetailGroup title="Work Experience">
-          <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-            <CompactField label="Work Experience" value={data.workExperience} />
-          </div>
+        {/* 3. Application Source & Work Readiness Disclosures */}
+        <CandidateProfileWorkReadiness data={data} />
 
-          {data.workExperiences.length > 0 ? (
-            <div className="mt-4 space-y-3">
-              {data.workExperiences.map((experience, index) => (
-                <div
-                  key={`experience-${index}`}
-                  className="rounded-xl border border-[#E6ECF2] bg-white p-3"
-                >
-                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
-                    Experience {index + 1}
-                  </p>
-                  <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-                    <CompactField
-                      label="Industry"
-                      value={
-                        experience.industry ||
-                        experience.industryRelevantExperience ||
-                        experience.relevantExperience ||
-                        experience.industryExperience
-                      }
-                    />
-                    <CompactField
-                      label="Length"
-                      value={
-                        experience.lengthOfWorkExperience ||
-                        experience.length_of_work_experience ||
-                        experience.length ||
-                        experience.experienceLength
-                      }
-                    />
-                    <CompactField label="Years" value={experience.years} />
-                    <CompactField label="Role" value={experience.role} />
-                    <CompactField label="Company" value={experience.company} />
-                    <CompactField
-                      label="Monthly Compensation"
-                      value={formatMoneyValue(
-                        experience.monthlyCompensation ||
-                          experience.monthly_compensation,
-                      )}
-                    />
-                    <CompactField
-                      label="Reason for Leaving"
-                      value={
-                        experience.reasonForLeaving ||
-                        experience.reason_for_leaving
-                      }
-                      className="sm:col-span-2"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-4 rounded-lg border border-dashed border-[#D7DEE8] bg-white px-3 py-3 text-xs font-semibold text-[#667085]">
-              No detailed work experience was submitted.
-            </div>
-          )}
-        </CompactDetailGroup>
+        {/* 4. Educational Background */}
+        <CandidateProfileEducation data={data} />
 
-        <CompactDetailGroup
-          title="Education and Certifications"
-          items={[
-            ["Highest Educational Attainment", data.educationalAttainment],
-            ["Affiliations / Certifications", data.affiliations],
-            ["Training Attended", data.trainingAttended],
-          ]}
-        />
+        {/* 5. Work Experience & Employment Chronology */}
+        <CandidateProfileExperience data={data} />
 
-        <CompactDetailGroup
-          title="Work Readiness"
-          items={[
-            ["Fully Vaccinated", data.fullyVaccinated],
-            ["Comfortable On Site", data.comfortableOnSite],
-            ["Willing Graveyard", data.willingGraveyard],
-            ["Employment Interest", data.employmentInterest],
-            ["Remote Work Access", data.remoteWorkAccess],
-            ["Willing Drug Test", data.willingDrugTest],
-            ["Background Check Consent", data.willingBackgroundCheck],
-          ]}
-        />
+        {/* 6. Skills, Languages & Certifications */}
+        <CandidateProfileSkills data={data} />
 
-        <CompactDetailGroup
-          title="References and Uploads"
-          items={[
-            ...(data.references.length > 0
-              ? data.references.map((reference, index) => [
-                  `Reference ${index + 1}`,
-                  `${reference.name || "—"}${
-                    reference.phone ? ` / ${reference.phone}` : ""
-                  }`,
-                ])
-              : [["References", "—"]]),
-            ["Audio File", data.audioFileName],
-            ["Attachment", data.attachmentFileName],
-            [
-              "Terms Accepted",
-              data.consentAccepted === true ||
-              data.consentAccepted === 1 ||
-              data.consentAccepted === "1" ||
-              data.consentAccepted === "true"
-                ? "Yes"
-                : "—",
-            ],
-          ]}
-        />
+        {/* 7. Family Background & Emergency Contacts */}
+        <CandidateProfileFamily data={data} />
+
+        {/* 8. References, Audio Sample & Document Attachments */}
+        <CandidateProfileAttachments data={data} />
       </div>
     </section>
   );

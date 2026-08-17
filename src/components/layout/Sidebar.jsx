@@ -329,20 +329,11 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
   const showText = !collapsed || isMobile;
 
   return (
-    <MotionDiv
-      initial={{ opacity: 0, x: -18 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.45, ease: "easeOut" }}
-      whileHover={{ scale: 1.025 }}
-      className={[
-        "flex min-w-0 select-none items-center",
-        showText ? "gap-3" : "justify-center",
-      ].join(" ")}
-    >
+    <div className="flex min-w-0 select-none items-center">
       <MotionDiv
         whileHover={{ rotate: -3, scale: 1.05 }}
         transition={{ type: "spring", stiffness: 260, damping: 18 }}
-        className="relative flex h-10 w-10 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-[13px] 2xl:rounded-[15px] bg-sibs-primary-2 shadow-[0_10px_24px_rgba(255,92,40,0.22)]"
+        className="relative flex h-10 w-10 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-[13px] 2xl:rounded-[15px] bg-sibs-primary-2 shadow-[0_8px_20px_rgba(255,92,40,0.22)]"
       >
         <MotionDiv
           className="absolute -right-1 -top-1 h-3 w-3 2xl:h-3.5 2xl:w-3.5 rounded-full border-2 border-sibs-primary-1"
@@ -380,23 +371,27 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
         </MotionSpan>
       </MotionDiv>
 
-      {showText && (
-        <div className="min-w-0 leading-none">
-          <div className="flex min-w-0 items-baseline whitespace-nowrap">
-            <span className="text-[19px] 2xl:text-[22px] font-semibold tracking-[-0.035em] text-white">
-              SiBS&nbsp;
-            </span>
-            <span className="text-[19px] 2xl:text-[22px] font-semibold tracking-[-0.035em] text-sibs-primary-2">
-              HRIS
-            </span>
-          </div>
-
-          <p className="mt-0.5 2xl:mt-1 text-[8.5px] 2xl:text-[9px] font-semibold uppercase tracking-[0.15em] 2xl:tracking-[0.18em] text-slate-300/80">
-            Human Resource System
-          </p>
+      <div
+        className={`min-w-0 leading-none overflow-hidden whitespace-nowrap transition-all duration-300 ${
+          showText
+            ? "max-w-[150px] 2xl:max-w-[170px] opacity-100 ml-2.5"
+            : "max-w-0 opacity-0 pointer-events-none ml-0"
+        }`}
+      >
+        <div className="flex min-w-0 items-baseline whitespace-nowrap">
+          <span className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em] text-white">
+            SiBS&nbsp;
+          </span>
+          <span className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em] text-sibs-primary-2">
+            HRIS
+          </span>
         </div>
-      )}
-    </MotionDiv>
+
+        <p className="mt-0.5 text-[7.5px] 2xl:text-[8.5px] font-semibold uppercase tracking-[0.08em] 2xl:tracking-[0.1em] text-slate-300/80">
+          Human Resource System
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -964,6 +959,9 @@ export default function Sidebar() {
           : sidebarBadgeToneClass[badgeTone] || sidebarBadgeToneClass.info;
       const badgeTitle = sidebarNotification?.title || badgeText;
 
+      const isCollapsedMode = !isMobile && collapsed;
+      const isNumericBadge = /^\d+\+?$/.test(badgeText);
+
       return (
         <Link
           key={`${item.name}-${index}`}
@@ -971,54 +969,85 @@ export default function Sidebar() {
           draggable={false}
           onDragStart={(event) => event.preventDefault()}
           onClick={handleLinkClick}
-          title={!isMobile && collapsed ? badgeTitle || item.name : badgeTitle}
+          title={!isCollapsedMode ? badgeTitle || undefined : badgeTitle || item.name}
           aria-label={badgeTitle ? `${item.name}, ${badgeTitle}` : item.name}
           className={[
-            "group relative flex min-w-0 select-none items-center justify-between gap-2.5 rounded-lg px-2.5 2xl:px-3 py-2 2xl:py-2.5 text-left sibs-text-xs font-semibold transition-all duration-150",
+            "group relative flex select-none items-center font-semibold transition-all duration-300 rounded-xl",
+            isCollapsedMode
+              ? "mx-auto h-10 w-10 2xl:h-11 2xl:w-11 items-center justify-center p-0 overflow-visible"
+              : "w-full justify-between gap-2.5 px-3 py-2 2xl:py-2.5 text-left sibs-text-xs overflow-hidden",
             isActive
-              ? "bg-sibs-primary-2 text-white font-bold shadow-md shadow-sibs-primary-2/15 cursor-default hover:bg-sibs-primary-2 hover:text-white"
+              ? "bg-sibs-primary-2 text-white font-bold shadow-md shadow-sibs-primary-2/20 cursor-default hover:bg-sibs-primary-2 hover:text-white"
               : "text-slate-300 hover:bg-[#063560] hover:text-white",
-            !isMobile && collapsed ? "justify-center px-2" : "",
           ].join(" ")}
         >
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <div className="relative shrink-0">
+          <div
+            className={`flex min-w-0 items-center ${
+              isCollapsedMode
+                ? "h-full w-full items-center justify-center"
+                : "flex-1"
+            }`}
+          >
+            {/* Centered Icon Container */}
+            <div className="relative shrink-0 flex items-center justify-center">
               <Icon
                 strokeWidth={1.9}
                 draggable={false}
                 className={[
-                  "pointer-events-none h-4 w-4 shrink-0 transition",
+                  "pointer-events-none h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 transition",
                   isActive
                     ? "text-white"
                     : "text-slate-400 group-hover:text-white",
                 ].join(" ")}
               />
 
-              {badgeText && collapsed && !isMobile && (
+              {/* Folded Badge */}
+              {badgeText && isCollapsedMode && (
                 <span
-                  className={`absolute -right-2 -top-2 inline-flex h-4 min-w-4 items-center justify-center rounded px-1 text-[7px] font-extrabold uppercase leading-none ring-2 ring-sibs-primary-1 ${badgeClass}`}
+                  className={`absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[7.5px] font-black uppercase leading-none ring-2 ring-sibs-primary-1 shadow-sm ${
+                    isActive ? "bg-white !text-sibs-primary-2" : badgeClass
+                  }`}
                 >
-                  {badgeText.length > 2 ? "•" : badgeText}
+                  {isNumericBadge ? badgeText : "•"}
                 </span>
               )}
             </div>
 
-            {(!collapsed || isMobile) && (
-              <span
-                draggable={false}
-                className="pointer-events-none min-w-0 flex-1 whitespace-normal break-words"
-              >
-                {item.name}
-              </span>
+            {/* Expanded Text */}
+            {!isCollapsedMode && (
+              <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap transition-all duration-300 max-w-[160px] 2xl:max-w-[180px] opacity-100 ml-3">
+                <span
+                  draggable={false}
+                  className="pointer-events-none block truncate"
+                >
+                  {item.name}
+                </span>
+              </div>
             )}
           </div>
 
-          {badgeText && (!collapsed || isMobile) && (
+          {/* Expanded Badge */}
+          {badgeText && !isCollapsedMode && (
             <span
-              className={`ml-auto inline-flex h-5 shrink-0 items-center justify-center rounded px-1.5 2xl:px-2 sibs-text-micro font-bold uppercase leading-none tracking-wide ${badgeClass}`}
+              className={`ml-auto shrink-0 inline-flex h-5 items-center justify-center rounded px-1.5 2xl:px-2 sibs-text-micro font-bold uppercase leading-none tracking-wide transition-all duration-300 max-w-[70px] opacity-100 ${badgeClass}`}
             >
               {badgeText}
             </span>
+          )}
+
+          {/* Floating Tooltip in Folded Mode */}
+          {isCollapsedMode && (
+            <div className="pointer-events-none absolute left-full ml-3.5 hidden items-center gap-2 rounded-lg border border-[#083A69] bg-[#042C51] px-3 py-1.5 text-xs font-bold text-white shadow-2xl z-[99999] whitespace-nowrap group-hover:flex">
+              <span>{item.name}</span>
+              {badgeText && (
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase leading-none ${badgeClass}`}
+                >
+                  {badgeText}
+                </span>
+              )}
+              <span className="absolute -left-1 top-1/2 -translate-y-1/2 border-y-4 border-r-4 border-y-transparent border-r-[#083A69]" />
+            </div>
           )}
         </Link>
       );
@@ -1056,7 +1085,7 @@ export default function Sidebar() {
         onDragStart={(event) => event.preventDefault()}
         className={[
           "fixed left-0 top-0 z-[100005] lg:z-[40] flex h-dvh shrink-0 select-none flex-col border-r border-[#083A69] bg-sibs-primary-1 font-jakarta text-white shadow-xl transition-all duration-300",
-          !isMobile && collapsed ? "w-20" : "w-[240px] 2xl:w-[260px]",
+          !isMobile && collapsed ? "w-[84px] 2xl:w-[90px]" : "w-[245px] 2xl:w-[260px]",
           isMobile
             ? mobileOpen
               ? "translate-x-0 shadow-2xl"
@@ -1067,16 +1096,24 @@ export default function Sidebar() {
       >
         <div
           className={[
-            "relative flex h-[74px] 2xl:h-[86px] min-h-[74px] 2xl:min-h-[86px] shrink-0 items-center gap-2 border-b border-[#083A69] px-4 py-3 2xl:px-5 2xl:py-5",
-            !isMobile && collapsed ? "justify-center" : "justify-between",
+            "relative flex h-[74px] 2xl:h-[86px] min-h-[74px] 2xl:min-h-[86px] shrink-0 items-center border-b border-[#083A69] transition-all duration-300",
+            !isMobile && collapsed
+              ? "justify-center px-0"
+              : "justify-between px-3.5 2xl:px-4 py-3",
           ].join(" ")}
         >
-          <SibsLogo collapsed={!isMobile && collapsed} isMobile={isMobile} />
+          <div
+            onClick={!isMobile && collapsed ? () => setCollapsed(false) : undefined}
+            className={!isMobile && collapsed ? "cursor-pointer select-none" : "min-w-0 select-none flex-1"}
+            title={!isMobile && collapsed ? "Expand sidebar" : undefined}
+          >
+            <SibsLogo collapsed={!isMobile && collapsed} isMobile={isMobile} />
+          </div>
 
           {isMobile && (
             <button
               onClick={() => setMobileOpen(false)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-300 transition hover:bg-[#063560] hover:text-white active:scale-[0.98]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-[#063560] hover:text-white active:scale-[0.98]"
               type="button"
               aria-label="Close sidebar"
             >
@@ -1087,24 +1124,12 @@ export default function Sidebar() {
           {!isMobile && !collapsed && (
             <button
               onClick={() => setCollapsed(true)}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-300 transition hover:bg-[#063560] hover:text-white active:scale-[0.98]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-[#063560] hover:text-white active:scale-[0.98]"
               type="button"
               aria-label="Collapse sidebar"
               title="Collapse sidebar"
             >
-              <ChevronLeft size={18} strokeWidth={2.1} />
-            </button>
-          )}
-
-          {!isMobile && collapsed && (
-            <button
-              onClick={() => setCollapsed(false)}
-              className="absolute -right-3 top-1/2 z-20 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[#0A477F] bg-[#063560] text-white shadow-[0_6px_18px_rgba(0,0,0,0.28)] transition-all duration-150 hover:border-sibs-primary-2 hover:bg-sibs-primary-2 active:scale-95"
-              type="button"
-              aria-label="Expand sidebar"
-              title="Expand sidebar"
-            >
-              <ChevronRight size={15} strokeWidth={2.4} />
+              <ChevronLeft size={16} strokeWidth={2.2} />
             </button>
           )}
         </div>
@@ -1117,7 +1142,13 @@ export default function Sidebar() {
             <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
           </div>
         ) : (
-          <div className="no-scrollbar min-h-0 flex-1 space-y-4 2xl:space-y-6 overflow-y-auto overflow-x-hidden px-3 pb-5 pt-3 2xl:pt-4">
+          <div
+            className={`no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-5 pt-3 2xl:pt-4 ${
+              !isMobile && collapsed
+                ? "space-y-3 px-0"
+                : "space-y-4 2xl:space-y-6 px-3"
+            }`}
+          >
             <Section
               title={coreSectionTitle}
               short={coreSectionShort}
@@ -1189,16 +1220,19 @@ export default function Sidebar() {
 function Section({ title, short, collapsed, children }) {
   return (
     <section className="select-none">
-      <p
-        className={[
-          "mb-1.5 2xl:mb-2 px-2.5 2xl:px-3 sibs-text-micro font-black uppercase leading-none tracking-widest text-slate-400",
-          collapsed ? "px-0 text-center text-[9px]" : "",
-        ].join(" ")}
-      >
-        {collapsed ? short : title}
-      </p>
+      <div className="overflow-hidden whitespace-nowrap transition-all duration-300">
+        {collapsed ? (
+          <div className="my-2 flex items-center justify-center" aria-hidden="true">
+            <div className="h-[1px] w-6 rounded-full bg-[#083A69]/80" />
+          </div>
+        ) : (
+          <p className="mb-1.5 2xl:mb-2 px-2.5 2xl:px-3 sibs-text-micro font-black uppercase leading-none tracking-widest text-slate-400 truncate">
+            {title}
+          </p>
+        )}
+      </div>
 
-      <nav className="space-y-1">{children}</nav>
+      <nav className={collapsed ? "flex flex-col items-center space-y-1.5" : "space-y-1"}>{children}</nav>
     </section>
   );
 }
