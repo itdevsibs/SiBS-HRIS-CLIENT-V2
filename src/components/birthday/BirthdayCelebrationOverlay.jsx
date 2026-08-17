@@ -39,6 +39,7 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
 
   const handleButtonDodge = () => {
     if (prefersReducedMotion) return;
+    if (dodgeCount >= 5) return; // Stop running away after 5 dodges so user can click it!
 
     // Random dodge offset
     const maxOffset = Math.min(window.innerWidth * 0.35, 260);
@@ -52,17 +53,7 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
   };
 
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        handleClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
       if (exitTimerRef.current) {
         window.clearTimeout(exitTimerRef.current);
       }
@@ -76,11 +67,6 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
     <div
       role="status"
       aria-live="polite"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          handleClose();
-        }
-      }}
       className={`fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-[#042C51]/90 p-4 font-jakarta backdrop-blur-md transition-opacity ${
         isExiting ? "sibs-birthday-overlay-out" : "sibs-birthday-overlay-in"
       }`}
