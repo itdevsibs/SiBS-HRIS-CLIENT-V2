@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -253,6 +254,142 @@ function formatEmployeeName(item) {
   }
 
   return String(item?.gy_emp_fullname || "").trim().toUpperCase() || "—";
+}
+
+function getEmployeeInitials(item, employeeName = "") {
+  const firstName = String(item?.gy_emp_fname || "").trim();
+  const lastName = String(item?.gy_emp_lname || "").trim();
+
+  if (firstName || lastName) {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "?";
+  }
+
+  const normalizedName = String(employeeName || item?.gy_emp_fullname || "")
+    .replace(/,/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalizedName || normalizedName === "—") return "?";
+
+  const parts = normalizedName.split(" ").filter(Boolean);
+
+  return `${parts[0]?.charAt(0) || ""}${
+    parts.length > 1 ? parts[parts.length - 1]?.charAt(0) || "" : ""
+  }`.toUpperCase() || "?";
+}
+
+function getAttendanceAvatarPreviewPosition(element) {
+  if (!element || typeof window === "undefined") return null;
+
+  const rect = element.getBoundingClientRect();
+  const previewHeight = 176;
+  const gap = 12;
+  const placeBelow = rect.top < previewHeight + gap;
+
+  return {
+    left: rect.left + rect.width / 2,
+    top: placeBelow ? rect.bottom + gap : rect.top - gap,
+    placeBelow,
+  };
+}
+
+function AttendanceEmployeeAvatar({ item, employeeName, className = "h-8 w-8" }) {
+  const profilePictureUrl = String(
+    item?.profilePictureUrl || item?.profile_picture_url || "",
+  ).trim();
+  const [failedImageUrl, setFailedImageUrl] = useState("");
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState(null);
+  const avatarRef = useRef(null);
+  const showImage =
+    Boolean(profilePictureUrl) && failedImageUrl !== profilePictureUrl;
+  const initials = getEmployeeInitials(item, employeeName);
+
+  const showPreview = () => {
+    setPreviewPosition(getAttendanceAvatarPreviewPosition(avatarRef.current));
+    setPreviewVisible(true);
+  };
+
+  const hidePreview = () => {
+    setPreviewVisible(false);
+  };
+
+  useEffect(() => {
+    if (!previewVisible) return undefined;
+
+    const updatePreviewPosition = () => {
+      setPreviewPosition(getAttendanceAvatarPreviewPosition(avatarRef.current));
+    };
+
+    window.addEventListener("resize", updatePreviewPosition);
+    window.addEventListener("scroll", updatePreviewPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePreviewPosition);
+      window.removeEventListener("scroll", updatePreviewPosition, true);
+    };
+  }, [previewVisible]);
+
+  const preview =
+    previewVisible && previewPosition && typeof document !== "undefined"
+      ? createPortal(
+          <span
+            className="attendance-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            style={{
+              position: "fixed",
+              left: previewPosition.left,
+              top: previewPosition.top,
+              transform: previewPosition.placeBelow
+                ? "translate(-50%, 0)"
+                : "translate(-50%, -100%)",
+            }}
+            aria-hidden="true"
+          >
+            <span className="relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl bg-[#EEF5FF] text-[24px] font-extrabold text-[#174A7E]">
+              <span>{initials}</span>
+              {showImage ? (
+                <img
+                  src={profilePictureUrl}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                  onError={() => setFailedImageUrl(profilePictureUrl)}
+                />
+              ) : null}
+            </span>
+          </span>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <>
+      <span
+        ref={avatarRef}
+        className="relative inline-flex shrink-0 outline-none"
+        tabIndex={0}
+        aria-label={`${employeeName || "Employee"} profile picture`}
+        onMouseEnter={showPreview}
+        onMouseLeave={hidePreview}
+        onFocus={showPreview}
+        onBlur={hidePreview}
+      >
+        <span
+          className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E6F2] bg-[#EEF5FF] text-[10px] font-extrabold text-[#174A7E] ${className}`}
+        >
+          <span aria-hidden="true">{initials}</span>
+          {showImage ? (
+            <img
+              src={profilePictureUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={() => setFailedImageUrl(profilePictureUrl)}
+            />
+          ) : null}
+        </span>
+      </span>
+      {preview}
+    </>
+  );
 }
 
 function normalizeRole(value) {
@@ -1516,9 +1653,15 @@ export default function AttendanceTable() {
 
                             {adminView ? (
                               <td className="px-4 py-3.5">
-                                <p className="max-w-[220px] break-words text-xs font-extrabold leading-tight text-[#042C51]">
-                                  {employeeName}
-                                </p>
+                                <div className="flex min-w-0 items-center gap-2.5">
+                                  <AttendanceEmployeeAvatar
+                                    item={item}
+                                    employeeName={employeeName}
+                                  />
+                                  <p className="max-w-[190px] min-w-0 break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                                    {employeeName}
+                                  </p>
+                                </div>
                               </td>
                             ) : null}
 
@@ -1651,32 +1794,42 @@ export default function AttendanceTable() {
                         className="sibs-card rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
+                          <div className="flex min-w-0 items-start gap-3">
                             {adminView ? (
-                              <span className="text-[10px] font-extrabold uppercase text-[#FF5C28]">
-                                {item.gy_emp_code || "N/A"}
-                              </span>
+                              <AttendanceEmployeeAvatar
+                                item={item}
+                                employeeName={employeeName}
+                                className="h-10 w-10"
+                              />
                             ) : null}
 
-                            <h3 className="mt-1 break-words text-sm font-extrabold leading-tight text-[#042C51]">
-                              {adminView
-                                ? employeeName
-                                : formatDate(item.gy_tracker_date)}
-                            </h3>
+                            <div className="min-w-0">
+                              {adminView ? (
+                                <span className="text-[10px] font-extrabold uppercase text-[#FF5C28]">
+                                  {item.gy_emp_code || "N/A"}
+                                </span>
+                              ) : null}
 
-                            {attendanceFiltersView ? (
-                              <p className="mt-1 text-[11px] font-semibold leading-4 text-[#667085]">
-                                {item.department || "No department"} /{" "}
-                                {item.gy_emp_account || "No account"} /{" "}
-                                {getAssignedSite(item)}
-                              </p>
-                            ) : null}
+                              <h3 className="mt-1 break-words text-sm font-extrabold leading-tight text-[#042C51]">
+                                {adminView
+                                  ? employeeName
+                                  : formatDate(item.gy_tracker_date)}
+                              </h3>
 
-                            {adminView ? (
-                              <p className="mt-1 text-[10px] font-semibold text-[#8A98B8]">
-                                {formatDate(item.gy_tracker_date)}
-                              </p>
-                            ) : null}
+                              {attendanceFiltersView ? (
+                                <p className="mt-1 text-[11px] font-semibold leading-4 text-[#667085]">
+                                  {item.department || "No department"} /{" "}
+                                  {item.gy_emp_account || "No account"} /{" "}
+                                  {getAssignedSite(item)}
+                                </p>
+                              ) : null}
+
+                              {adminView ? (
+                                <p className="mt-1 text-[10px] font-semibold text-[#8A98B8]">
+                                  {formatDate(item.gy_tracker_date)}
+                                </p>
+                              ) : null}
+                            </div>
                           </div>
 
                           <div className="shrink-0">

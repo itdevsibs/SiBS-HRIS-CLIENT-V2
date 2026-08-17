@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion as Motion } from "framer-motion";
+import { createPortal } from "react-dom";
 import {
   Briefcase,
   Building2,
@@ -472,32 +473,127 @@ function getEmployeeProfilePictureUrl(employee = {}) {
   );
 }
 
+function getEmployeeAvatarPreviewPosition(element) {
+  if (!element || typeof window === "undefined") return null;
+
+  const rect = element.getBoundingClientRect();
+  const previewHeight = 176;
+  const gap = 12;
+  const placeBelow = rect.top < previewHeight + gap;
+
+  return {
+    left: rect.left + rect.width / 2,
+    top: placeBelow ? rect.bottom + gap : rect.top - gap,
+    placeBelow,
+  };
+}
+
 function EmployeeAvatar({ employee, size = "md" }) {
   const sizeClass = size === "lg" ? "h-11 w-11" : "h-9 w-9";
   const profilePictureUrl = getEmployeeProfilePictureUrl(employee);
   const [failedImageUrl, setFailedImageUrl] = useState("");
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState(null);
+  const avatarRef = useRef(null);
   const canShowProfilePicture =
     Boolean(profilePictureUrl) && failedImageUrl !== profilePictureUrl;
+  const employeeName = getEmployeeName(employee);
+  const initials = getInitials(employee);
+
+  const showPreview = () => {
+    setPreviewPosition(getEmployeeAvatarPreviewPosition(avatarRef.current));
+    setPreviewVisible(true);
+  };
+
+  const hidePreview = () => {
+    setPreviewVisible(false);
+  };
+
+  useEffect(() => {
+    if (!previewVisible) return undefined;
+
+    const updatePreviewPosition = () => {
+      setPreviewPosition(getEmployeeAvatarPreviewPosition(avatarRef.current));
+    };
+
+    window.addEventListener("resize", updatePreviewPosition);
+    window.addEventListener("scroll", updatePreviewPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePreviewPosition);
+      window.removeEventListener("scroll", updatePreviewPosition, true);
+    };
+  }, [previewVisible]);
+
+  const preview =
+    previewVisible && previewPosition && typeof document !== "undefined"
+      ? createPortal(
+          <span
+            className="employee-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            style={{
+              left: previewPosition.left,
+              top: previewPosition.top,
+              transform: previewPosition.placeBelow
+                ? "translate(-50%, 0)"
+                : "translate(-50%, -100%)",
+            }}
+            aria-hidden="true"
+          >
+            <span
+              className={`relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border text-[24px] font-extrabold ${getAvatarTone(
+                employee,
+              )}`}
+            >
+              <span>{initials}</span>
+
+              {canShowProfilePicture ? (
+                <img
+                  src={profilePictureUrl}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                  onError={() => setFailedImageUrl(profilePictureUrl)}
+                />
+              ) : null}
+            </span>
+          </span>,
+          document.body,
+        )
+      : null;
 
   return (
-    <span
-      className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs font-extrabold shadow-inner ${getAvatarTone(
-        employee,
-      )}`}
-      aria-hidden="true"
-    >
-      {getInitials(employee)}
+    <>
+      <span
+        ref={avatarRef}
+        className="relative inline-flex shrink-0 outline-none"
+        tabIndex={0}
+        aria-label={`${employeeName || "Employee"} profile picture`}
+        onMouseEnter={showPreview}
+        onMouseLeave={hidePreview}
+        onFocus={showPreview}
+        onBlur={hidePreview}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <span
+          className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs font-extrabold shadow-inner ${getAvatarTone(
+            employee,
+          )}`}
+        >
+          <span aria-hidden="true">{initials}</span>
 
-      {canShowProfilePicture ? (
-        <img
-          src={profilePictureUrl}
-          alt=""
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover"
-          onError={() => setFailedImageUrl(profilePictureUrl)}
-        />
-      ) : null}
-    </span>
+          {canShowProfilePicture ? (
+            <img
+              src={profilePictureUrl}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={() => setFailedImageUrl(profilePictureUrl)}
+            />
+          ) : null}
+        </span>
+      </span>
+      {preview}
+    </>
   );
 }
 

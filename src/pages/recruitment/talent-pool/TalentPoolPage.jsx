@@ -1,5 +1,6 @@
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
-  Database,
   Download,
   ExternalLink,
   Plus,
@@ -14,12 +15,18 @@ import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import TalentPoolStats from "../../../components/recruitment/talentPool/TalentPoolStats";
 import TalentPoolFilters from "../../../components/recruitment/talentPool/TalentPoolFilters";
 import TalentPoolTable from "../../../components/recruitment/talentPool/TalentPoolTable";
+import TalentPoolTabs from "../../../components/recruitment/talentPool/TalentPoolTabs";
 import DropOffListSection from "../../../components/recruitment/shared/DropOffListSection";
 import AddCandidateModal from "../../../components/modals/talentPool/AddCandidateModal";
 import CandidateProfileModal from "../../../components/modals/talentPool/CandidateProfileModal";
 import UpdateStatusModal from "../../../components/modals/talentPool/UpdateStatusModal";
 import MoveToPipeLineModal from "../../../components/modals/talentPool/MoveToPipeLineModal";
 import useCombinedDropOffCandidates from "../../../hooks/useCombinedDropOffCandidates";
+import {
+  filterTalentPoolCandidatesForTab,
+  getTalentPoolTabFromSearchParams,
+  TALENT_POOL_TABS,
+} from "../../../lib/utils/talentPool/talentPoolTabs";
 
 export default function TalentPoolPage() {
   const {
@@ -30,6 +37,8 @@ export default function TalentPoolPage() {
     refreshTalentPool,
     uploadLeadsFile,
     setSelectedCandidate,
+    candidateList,
+    filteredCandidates,
     isLoading,
     isSaving,
     loadError,
@@ -41,6 +50,65 @@ export default function TalentPoolPage() {
     loadError: dropOffListError,
     refresh: refreshDropOffCandidates,
   } = useCombinedDropOffCandidates();
+
+  const [searchParams] = useSearchParams();
+  const requestedTab = getTalentPoolTabFromSearchParams(searchParams);
+  const [activeTab, setActiveTab] = useState(requestedTab);
+
+  useEffect(() => {
+    setActiveTab(requestedTab);
+  }, [requestedTab]);
+
+  const tabCounts = useMemo(() => ({
+    [TALENT_POOL_TABS.ALL]: filterTalentPoolCandidatesForTab(
+      candidateList,
+      TALENT_POOL_TABS.ALL,
+    ).length,
+    [TALENT_POOL_TABS.NEW_APPLICANT]: filterTalentPoolCandidatesForTab(
+      candidateList,
+      TALENT_POOL_TABS.NEW_APPLICANT,
+    ).length,
+    [TALENT_POOL_TABS.APPLICANT_PIPELINE]: filterTalentPoolCandidatesForTab(
+      candidateList,
+      TALENT_POOL_TABS.APPLICANT_PIPELINE,
+    ).length,
+    [TALENT_POOL_TABS.BELOW_18]: filterTalentPoolCandidatesForTab(
+      candidateList,
+      TALENT_POOL_TABS.BELOW_18,
+    ).length,
+    [TALENT_POOL_TABS.INCOMPLETE_REQUIREMENTS]: filterTalentPoolCandidatesForTab(
+      candidateList,
+      TALENT_POOL_TABS.INCOMPLETE_REQUIREMENTS,
+    ).length,
+    [TALENT_POOL_TABS.DROP_OFF]: dropOffCandidates.length,
+  }), [candidateList, dropOffCandidates.length]);
+
+  const tabCandidates = useMemo(() =>
+    filterTalentPoolCandidatesForTab(filteredCandidates, activeTab),
+  [filteredCandidates, activeTab]);
+
+  const activeTabCopy = {
+    [TALENT_POOL_TABS.ALL]: {
+      title: "No applicants found",
+      message: "All Talent Pool applicants will appear here regardless of their current status.",
+    },
+    [TALENT_POOL_TABS.NEW_APPLICANT]: {
+      title: "No new applicants found",
+      message: "Applicants whose current status is New Applicant will appear here.",
+    },
+    [TALENT_POOL_TABS.APPLICANT_PIPELINE]: {
+      title: "No applicants in Candidate Pipeline",
+      message: "Candidates currently processed in Candidate Pipeline will appear here, except Incomplete Requirements and Drop Off records.",
+    },
+    [TALENT_POOL_TABS.BELOW_18]: {
+      title: "No applicants below 18",
+      message: "Applicants below 18 years old will appear here until they become eligible to move to Candidate Pipeline.",
+    },
+    [TALENT_POOL_TABS.INCOMPLETE_REQUIREMENTS]: {
+      title: "No incomplete NHO requirements",
+      message: "Candidates in For Onboarding - Incomplete Requirements will appear here.",
+    },
+  }[activeTab] || {};
 
   const pageIsRefreshing = isLoading || dropOffListLoading;
 
@@ -158,37 +226,35 @@ export default function TalentPoolPage() {
           <section
             className="sibs-page-card-in sibs-card relative z-[10] overflow-visible"
           >
-            <TalentPoolFilters />
+            <TalentPoolTabs
+              activeTab={activeTab}
+              onChange={setActiveTab}
+              counts={tabCounts}
+            />
 
-            <div className="relative z-[1] overflow-hidden rounded-b-2xl">
-              <TalentPoolTable />
-            </div>
+            {activeTab === TALENT_POOL_TABS.DROP_OFF ? (
+              <div className="p-4 sm:p-5">
+                <DropOffListSection
+                  candidates={dropOffCandidates}
+                  isLoading={dropOffListLoading}
+                  loadError={dropOffListError}
+                  onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
+                />
+              </div>
+            ) : (
+              <>
+                <TalentPoolFilters />
+                <div className="relative z-[1] overflow-hidden rounded-b-2xl">
+                  <TalentPoolTable
+                    candidates={tabCandidates}
+                    emptyTitle={activeTabCopy.title}
+                    emptyMessage={activeTabCopy.message}
+                  />
+                </div>
+              </>
+            )}
           </section>
 
-          <DropOffListSection
-            candidates={dropOffCandidates}
-            isLoading={dropOffListLoading}
-            loadError={dropOffListError}
-            onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
-          />
-
-          <section className="sibs-page-card-in flex items-start gap-3 rounded-xl border border-blue-100 bg-[#F7FAFE] px-4 py-3.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-tertiary-10 text-sibs-primary-1">
-              <Database size={16} />
-            </span>
-
-            <div className="min-w-0">
-              <h3 className="text-[13px] font-extrabold text-sibs-primary-1">
-                Database-Backed Talent Pool
-              </h3>
-
-              <p className="mt-0.5 text-xs font-medium leading-5 text-sibs-tertiary-6">
-                Public entries, manually added candidates, CSV imports, status
-                updates, and pipeline movements are persisted through the backend
-                API.
-              </p>
-            </div>
-          </section>
         </div>
       </main>
 
