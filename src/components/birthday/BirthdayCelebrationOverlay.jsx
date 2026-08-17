@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
-import { Sparkles } from "lucide-react";
 import usePrefersReducedMotion from "../../hooks/usePrefersReducedMotion.js";
 
 const RainbowConfettiCanvas = lazy(
@@ -126,24 +125,18 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
         />
       </div>
 
-      {/* Center Birthday Card */}
-      <div
-        className="sibs-birthday-message-in relative z-30 mx-auto max-w-lg rounded-3xl border border-white/25 bg-gradient-to-b from-white/20 to-white/10 p-6 text-center shadow-2xl backdrop-blur-2xl sm:p-8"
-      >
-        <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-white/35 bg-gradient-to-tr from-[#FF5C28] to-[#FF8C66] text-white shadow-xl shadow-[#FF5C28]/40">
-          <Sparkles size={28} className="animate-pulse" />
-        </div>
-
-        <h1 className="text-2xl font-black tracking-tight text-white drop-shadow-xl sm:text-4xl">
+      {/* Center Birthday Message (Pure Floating Text & Button, No Glass Panel/Box) */}
+      <div className="sibs-birthday-message-in relative z-30 mx-auto max-w-2xl text-center">
+        <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-[0_6px_16px_rgba(0,0,0,0.9)] sm:text-5xl md:text-6xl">
           {titleText}
         </h1>
 
-        <p className="mt-3 text-sm font-bold text-white/95 drop-shadow sm:text-base">
+        <p className="mt-4 text-base font-bold text-white/95 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] sm:text-xl">
           Wishing you the happiest day from everyone at SiBS!
         </p>
 
         {/* The Crazy Runaway Button */}
-        <div className="relative mt-8 flex h-14 items-center justify-center">
+        <div className="relative mt-10 flex h-16 items-center justify-center">
           <button
             type="button"
             onClick={handleClose}
@@ -152,7 +145,7 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
               transform: `translate(${btnPos.x}px, ${btnPos.y}px)`,
               transition: "transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
-            className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-2xl bg-gradient-to-r from-[#FF5C28] via-[#FF7A45] to-[#FF5C28] px-8 text-sm font-black text-white shadow-2xl shadow-[#FF5C28]/60 cursor-pointer transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="inline-flex h-13 items-center justify-center whitespace-nowrap rounded-2xl bg-gradient-to-r from-[#FF5C28] via-[#FF7A45] to-[#FF5C28] px-9 text-base font-black text-white shadow-[0_15px_30px_rgba(255,92,40,0.6)] cursor-pointer transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             {buttonLabel}
           </button>
