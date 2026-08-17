@@ -49,3 +49,6 @@ graphify-out/
 
 # Local Git worktrees
 .worktrees/
+
+# Superpowers docs
+docs/superpowers/
