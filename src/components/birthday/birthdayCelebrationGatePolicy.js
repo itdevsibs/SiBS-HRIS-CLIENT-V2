@@ -4,7 +4,7 @@ import {
 } from "../../lib/utils/birthdayCelebration.js";
 
 export function shouldPrepareBirthdayCelebration({
-  enabled,
+  enabled = true,
   event,
   user,
   pathname,

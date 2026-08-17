@@ -17,7 +17,7 @@ export default function BirthdayCelebrationGate() {
   const activeEventIdRef = useRef(null);
 
   const enabled =
-    import.meta.env?.VITE_BIRTHDAY_CELEBRATION_ENABLED === "true";
+    import.meta.env?.VITE_BIRTHDAY_CELEBRATION_ENABLED !== "false";
 
   useEffect(() => {
     if (!postLoginCelebrationEvent) return;
