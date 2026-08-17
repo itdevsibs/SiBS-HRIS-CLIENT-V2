@@ -214,7 +214,7 @@ export default function PositionFormModal({
           return {
             id: jd.id || jd.rawId || jd.raw_id || roleTitle,
             value: roleTitle,
-            label: roleTitle,
+            label: `${roleTitle}${jdCode ? ` (${jdCode})` : ""}`,
             description: [documentTitle, department, account]
               .filter(Boolean)
               .join(" • "),
@@ -299,26 +299,6 @@ export default function PositionFormModal({
       selectedJd.raw?.department_name ||
       "";
 
-    const accountId =
-      selectedJd.accountId ||
-      selectedJd.account_id ||
-      selectedJd.raw?.accountId ||
-      selectedJd.raw?.account_id ||
-      "";
-
-    const accountName =
-      selectedJd.account ||
-      selectedJd.accountName ||
-      selectedJd.account_name ||
-      selectedJd.preparedFor ||
-      selectedJd.prepared_for ||
-      selectedJd.raw?.account ||
-      selectedJd.raw?.accountName ||
-      selectedJd.raw?.account_name ||
-      selectedJd.raw?.preparedFor ||
-      selectedJd.raw?.prepared_for ||
-      "";
-
     const description =
       selectedJd.description ||
       selectedJd.positionOverview ||
@@ -348,13 +328,9 @@ export default function PositionFormModal({
       positionTitle,
       departmentId,
       department,
-      accountId,
-      accountName,
-      accountGhlName:
-        selectedJd.accountGhlName ||
-        selectedJd.account_ghl_name ||
-        previous.accountGhlName ||
-        "",
+      accountId: "",
+      accountName: "",
+      accountGhlName: "",
       description: description || previous.description || "",
       descriptionPlainText: htmlToPlainText(
         description || previous.description || "",
@@ -404,10 +380,7 @@ export default function PositionFormModal({
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/65 p-2 backdrop-blur-md sm:p-4"
-      onClick={() => {
-        if (!isSaving) onClose?.();
-      }}
+      className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/65 p-2 backdrop-blur-[2px] sm:p-4"
     >
       <form
         id="available-position-form"
@@ -486,7 +459,7 @@ export default function PositionFormModal({
                 onClick={onClose}
                 disabled={isSaving}
                 aria-label="Close Available Position modal"
-                className="sibs-modal-close-btn"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X size={18} />
               </button>
@@ -521,13 +494,6 @@ export default function PositionFormModal({
                     searchable
                     excludeSelectedOption
                     excludedOptionId={form.jdId || form.jd_id || ""}
-                    excludedOptionValues={[
-                      form.jdId,
-                      form.jd_id,
-                      form.jdCode,
-                      form.jd_code,
-                      form.positionTitle,
-                    ]}
                     boundaryRef={modalBodyRef}
                     maxMenuHeight={280}
                     zIndex="z-[190]"
@@ -685,44 +651,31 @@ export default function PositionFormModal({
                 <div className="md:col-span-2">
                   <FieldLabel>Preferred Skills</FieldLabel>
 
-                  <div
-                    className={
-                      isSaving
-                        ? "pointer-events-none opacity-70"
-                        : ""
+                  <textarea
+                    rows={3}
+                    value={form.preferredSkills || ""}
+                    onChange={(event) =>
+                      updateField("preferredSkills", event.target.value)
                     }
-                  >
-                    <RichTextEditor
-                      id="available-position-preferred-skills"
-                      value={form.preferredSkills || ""}
-                      onChange={(html, plainText) =>
-                        setForm((previous) => ({
-                          ...previous,
-                          preferredSkills: html,
-                          preferredSkillsPlainText: plainText,
-                        }))
-                      }
-                      placeholder="List preferred skills, certifications, or qualifications."
-                      minHeight={100}
-                    />
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <DropdownField
-                    label="Status"
-                    required
-                    value={form.status}
-                    onChange={(value) => updateField("status", value)}
-                    options={statusDropdownOptions}
-                    placeholder="Select status"
                     disabled={isSaving}
-                    boundaryRef={modalBodyRef}
-                    zIndex="z-[150]"
+                    placeholder="Separate skills with commas, semicolons, or new lines."
+                    className={TEXTAREA_CLASS}
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <DropdownField
+                  label="Status"
+                  required
+                  value={form.status}
+                  onChange={(value) => updateField("status", value)}
+                  options={statusDropdownOptions}
+                  placeholder="Select status"
+                  disabled={isSaving}
+                  boundaryRef={modalBodyRef}
+                  zIndex="z-[150]"
+                />
+
+                <div>
                   <FieldLabel>Remarks</FieldLabel>
 
                   <textarea
@@ -733,7 +686,7 @@ export default function PositionFormModal({
                     }
                     disabled={isSaving}
                     placeholder="Internal notes only."
-                    className={TEXTAREA_CLASS}
+                    className={`${TEXTAREA_CLASS} min-h-10`}
                   />
                 </div>
               </div>
