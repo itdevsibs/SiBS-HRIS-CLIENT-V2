@@ -226,16 +226,33 @@ function normalizeAvailablePositionApprovalRequest(request = {}) {
   });
 }
 
-function getAvailablePositionMergeKey(position = {}) {
-  return cleanText(
-    position.rawId ||
-      position.raw_id ||
-      position.sourcePositionId ||
-      position.source_position_id ||
-      position.positionId ||
-      position.position_id ||
-      position.id,
-  ).toLowerCase();
+function getAvailablePositionMergeKeys(position = {}) {
+  const raw = position.raw || {};
+
+  return [
+    position.rawId,
+    position.raw_id,
+    position.sourcePositionId,
+    position.source_position_id,
+    position.positionId,
+    position.position_id,
+    position.id,
+    position.availablePositionId,
+    position.available_position_id,
+    position.positionRecordId,
+    position.position_record_id,
+    raw.rawId,
+    raw.raw_id,
+    raw.positionId,
+    raw.position_id,
+    raw.availablePositionId,
+    raw.available_position_id,
+    raw.positionRecordId,
+    raw.position_record_id,
+    raw.id,
+  ]
+    .map((value) => cleanText(value).toLowerCase())
+    .filter(Boolean);
 }
 
 function getAvailablePositionApprovalRequestId(position = {}) {
@@ -257,23 +274,31 @@ function mergeAvailablePositionApprovalRequests(positions = [], requests = []) {
 
   requests.forEach((request) => {
     const approvalPosition = normalizeAvailablePositionApprovalRequest(request);
-    const approvalKey = getAvailablePositionMergeKey(approvalPosition);
-    const matchIndex = merged.findIndex(
-      (position) => getAvailablePositionMergeKey(position) === approvalKey,
+    const approvalKeys = new Set(
+      getAvailablePositionMergeKeys(approvalPosition),
     );
 
-    if (matchIndex >= 0) {
-      merged[matchIndex] = {
-        ...merged[matchIndex],
-        approvalRequestId: approvalPosition.approvalRequestId,
-        approval_request_id: approvalPosition.approval_request_id,
-        approvalStatus: approvalPosition.approvalStatus,
-        approval_status: approvalPosition.approval_status,
-      };
+    const matchIndex = merged.findIndex((position) =>
+      getAvailablePositionMergeKeys(position).some((key) =>
+        approvalKeys.has(key),
+      ),
+    );
+
+    if (matchIndex < 0) {
+      // Approval requests are metadata for an existing canonical
+      // Available Position. Never add an unmatched request as another
+      // position row because that duplicates the database record in
+      // the All Positions tab.
       return;
     }
 
-    merged.unshift(approvalPosition);
+    merged[matchIndex] = {
+      ...merged[matchIndex],
+      approvalRequestId: approvalPosition.approvalRequestId,
+      approval_request_id: approvalPosition.approval_request_id,
+      approvalStatus: approvalPosition.approvalStatus,
+      approval_status: approvalPosition.approval_status,
+    };
   });
 
   return merged;

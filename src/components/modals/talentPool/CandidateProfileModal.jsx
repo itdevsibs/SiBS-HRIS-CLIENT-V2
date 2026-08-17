@@ -60,6 +60,12 @@ import {
   markTalentPoolCandidateAsDropOff,
   updateTalentPoolApplicationStatus,
 } from "../../../lib/axios/getTalentPool";
+import {
+  getTalentPoolStatusForNhoStage,
+} from "../../../lib/utils/candidatePipeline/nhoRequirementRouting";
+import {
+  shouldShowMoveToPipelineAction,
+} from "../../../lib/utils/talentPool/talentPoolTabs";
 
 const TALENT_POOL_ROUTE = "/recruitment/talent-pool";
 const CANDIDATE_PIPELINE_ROUTE = "/recruitment/candidate-pipeline";
@@ -3741,6 +3747,10 @@ export default function CandidateProfileModal() {
 
   const isAlreadyInPipeline =
     isCandidateActivelyLinkedToPipeline(activeCandidate);
+  const shouldShowMoveToPipeline = shouldShowMoveToPipelineAction(
+    activeCandidate,
+    { isAlreadyInPipeline, isDoNotReprocess },
+  );
   const hasActivePipelineLink = Boolean(
     isAlreadyInPipeline && !isDropOffCandidate
   );
@@ -4528,10 +4538,10 @@ export default function CandidateProfileModal() {
 
       ...(nextStage
         ? {
-            status:
-              nextStage === ONBOARDING_STAGE
-                ? "Hired / Active"
-                : activeCandidate.status,
+            status: getTalentPoolStatusForNhoStage(
+              nextStage,
+              activeCandidate.status,
+            ),
             pipelineStatus:
               responseCandidate.pipelineStatus ||
               responseCandidate.pipeline_status ||
@@ -6331,8 +6341,7 @@ export default function CandidateProfileModal() {
                 </button>
               )}
 
-              {!isAlreadyInPipeline &&
-                !isDoNotReprocess && (
+              {shouldShowMoveToPipeline && (
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}

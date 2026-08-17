@@ -67,6 +67,10 @@ import {
 } from "../../../lib/utils/candidatePipeline/candidatePipelineStageVisibility";
 
 import {
+  getNhoSaveResultAction,
+} from "../../../lib/utils/candidatePipeline/nhoRequirementRouting";
+
+import {
   getCandidatePipelineIdentityKey,
   getCandidatePipelineRecordId,
   isSameCandidatePipelineRecord,
@@ -9620,6 +9624,11 @@ async function handleConfirmScheduleNho() {
         previousEmploymentEnabled
         onSave={(payload = {}) => {
           const savedFiles = Array.isArray(payload.files) ? payload.files : candidateFiles;
+          const saveResultAction = getNhoSaveResultAction({
+            uploadedFileCount: savedFiles.length,
+            majorProgress: payload.majorProgress || {},
+            routedStage: payload.routedStage || "",
+          });
 
           if (candidateUploadKey) {
             setCandidateFilesById((previous) => ({
@@ -9636,6 +9645,56 @@ async function handleConfirmScheduleNho() {
           }
 
           setShowNhoUploadModal(false);
+
+          if (saveResultAction.navigateToIncompleteRequirements) {
+            showStatusModal({
+              type: "success",
+              title: "Requirements Saved",
+              message:
+                "The requirement files were saved successfully. This candidate is now under Incomplete Requirements.",
+              closeParentOnClose: true,
+              afterClose: () =>
+                navigate(
+                  "/recruitment/talent-pool?tab=incomplete-requirements",
+                ),
+            });
+            return;
+          }
+
+          if (saveResultAction.kind === "for-nho") {
+            showStatusModal({
+              type: "success",
+              title: "Requirements Saved",
+              message:
+                "No requirement files are uploaded. This candidate remains under For NHO.",
+              closeParentOnClose:
+                saveResultAction.closeCandidatePipelineOnSuccess,
+            });
+            return;
+          }
+
+          if (saveResultAction.kind === "complete") {
+            showStatusModal({
+              type: "success",
+              title: "Requirements Saved",
+              message:
+                "The requirement files were saved successfully. All major requirements are complete.",
+            });
+            return;
+          }
+
+          showStatusModal({
+            type: "success",
+            title: "Requirements Saved",
+            message: "The requirement files were saved successfully.",
+          });
+        }}
+        onSaveError={(message) => {
+          showStatusModal({
+            type: "error",
+            title: "Save Failed",
+            message: message || "Unable to save the requirement files.",
+          });
         }}
       />
 

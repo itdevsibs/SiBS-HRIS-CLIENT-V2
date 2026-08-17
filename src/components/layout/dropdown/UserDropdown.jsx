@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronDown,
@@ -54,9 +55,15 @@ export default function UserDropdown({
   const [open, setOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState("");
   const [profileImageFailed, setProfileImageFailed] = useState(false);
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+  const [avatarPreviewPosition, setAvatarPreviewPosition] = useState({
+    top: 0,
+    left: 0,
+  });
 
   const navigate = useNavigate();
   const ref = useRef(null);
+  const avatarPreviewAnchorRef = useRef(null);
 
   const { user, setUser, refetchUser } = useUser();
   const { setAdminLogin } = useHeader();
@@ -64,7 +71,49 @@ export default function UserDropdown({
 
   useEffect(() => {
     setProfileImageFailed(false);
+    setAvatarPreviewOpen(false);
   }, [profilePictureUrl]);
+
+  useEffect(() => {
+    if (!avatarPreviewOpen) return undefined;
+
+    const updateAvatarPreviewPosition = () => {
+      const anchor = avatarPreviewAnchorRef.current;
+      if (!anchor) return;
+
+      const rect = anchor.getBoundingClientRect();
+      const previewSize = 152;
+      const gap = 10;
+      const viewportPadding = 12;
+      const maxLeft = Math.max(
+        viewportPadding,
+        window.innerWidth - previewSize - viewportPadding,
+      );
+      const left = Math.min(
+        Math.max(
+          rect.left + rect.width / 2 - previewSize / 2,
+          viewportPadding,
+        ),
+        maxLeft,
+      );
+
+      let top = rect.bottom + gap;
+      if (top + previewSize > window.innerHeight - viewportPadding) {
+        top = Math.max(viewportPadding, rect.top - previewSize - gap);
+      }
+
+      setAvatarPreviewPosition({ top, left });
+    };
+
+    updateAvatarPreviewPosition();
+    window.addEventListener("resize", updateAvatarPreviewPosition);
+    window.addEventListener("scroll", updateAvatarPreviewPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateAvatarPreviewPosition);
+      window.removeEventListener("scroll", updateAvatarPreviewPosition, true);
+    };
+  }, [avatarPreviewOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -175,14 +224,26 @@ export default function UserDropdown({
   const currentAdminRoleLabel =
     ADMIN_ACCESS_LABELS[adminAccess] || "Talent Acquisition";
 
+  const showAvatarPreview = () => {
+    if (open || !avatarPreviewAnchorRef.current) return;
+    setAvatarPreviewOpen(true);
+  };
+
+  const hideAvatarPreview = () => {
+    setAvatarPreviewOpen(false);
+  };
+
   return (
     <div className="relative z-[99999] min-w-0" ref={ref}>
       <button
         type="button"
         onClick={(event) => {
           event.stopPropagation();
+          hideAvatarPreview();
           setOpen((previous) => !previous);
         }}
+        onFocus={showAvatarPreview}
+        onBlur={hideAvatarPreview}
         aria-expanded={open}
         aria-haspopup="menu"
         className={[
@@ -193,7 +254,12 @@ export default function UserDropdown({
             : "border-transparent bg-transparent hover:border-sibs-tertiary-9 hover:bg-white",
         ].join(" ")}
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-8 max-[360px]:w-8">
+        <div
+          ref={avatarPreviewAnchorRef}
+          onMouseEnter={showAvatarPreview}
+          onMouseLeave={hideAvatarPreview}
+          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-8 max-[360px]:w-8"
+        >
           {profilePictureUrl && !profileImageFailed ? (
             <img
               src={profilePictureUrl}
@@ -231,6 +297,33 @@ export default function UserDropdown({
           ].join(" ")}
         />
       </button>
+
+      {avatarPreviewOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-[1000000] h-[152px] w-[152px] overflow-hidden rounded-2xl border border-[#D7E0E9] bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
+            style={{
+              top: avatarPreviewPosition.top,
+              left: avatarPreviewPosition.left,
+            }}
+            aria-hidden="true"
+          >
+            <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-sibs-primary-1 text-4xl font-extrabold uppercase text-white">
+              {profilePictureUrl && !profileImageFailed ? (
+                <img
+                  src={profilePictureUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  onError={() => setProfileImageFailed(true)}
+                />
+              ) : (
+                avatar || "U"
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {open && (
         <div

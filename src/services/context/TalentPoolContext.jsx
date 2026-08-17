@@ -20,6 +20,7 @@ import {
   updateTalentPoolApplicationStatus,
   updateTalentPoolCandidate,
 } from "../../lib/axios/getTalentPool";
+import { isUnder18Candidate } from "../../lib/utils/talentPool/talentPoolTabs";
 
 const TalentPoolContext = createContext(null);
 
@@ -1392,6 +1393,11 @@ export function TalentPoolProvider({ children }) {
   }
 
   function openMoveToPipeline(candidate) {
+    if (isUnder18Candidate(candidate)) {
+      alert("Applicant is below 18 years old and cannot be moved to Candidate Pipeline yet.");
+      return;
+    }
+
     setPipelineTarget(candidate);
     setMoveToPipelineForm({
       ...emptyMoveToPipelineForm,
@@ -1409,6 +1415,12 @@ export function TalentPoolProvider({ children }) {
     event?.preventDefault?.();
 
     if (!pipelineTarget) return;
+
+    if (isUnder18Candidate(pipelineTarget)) {
+      alert("Applicant is below 18 years old and cannot be moved to Candidate Pipeline yet.");
+      closeMoveToPipeline();
+      return;
+    }
 
     if (pipelineTarget.status === "Do Not Reprocess") {
       alert("This candidate is marked Do Not Reprocess.");

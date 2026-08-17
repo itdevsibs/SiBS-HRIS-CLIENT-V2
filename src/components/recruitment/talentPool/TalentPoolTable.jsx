@@ -56,7 +56,7 @@ function TableState({ icon, title, message, tone = "neutral", spin = false }) {
   );
 }
 
-export default function TalentPoolTable() {
+export default function TalentPoolTable({ candidates = null, emptyTitle = "No candidate profiles found", emptyMessage = "Try changing or clearing the current search filters." }) {
   const {
     filteredCandidates,
     setSelectedCandidate,
@@ -70,12 +70,13 @@ export default function TalentPoolTable() {
     page: 1,
   });
 
-  const totalCandidates = filteredCandidates.length;
+  const displayedCandidates = Array.isArray(candidates) ? candidates : filteredCandidates;
+  const totalCandidates = displayedCandidates.length;
   const totalPages = Math.max(1, Math.ceil(totalCandidates / PAGE_SIZE));
 
   const filteredCandidateKey = useMemo(
     () =>
-      filteredCandidates
+      displayedCandidates
         .map(
           (candidate) =>
             candidate.id ||
@@ -85,7 +86,7 @@ export default function TalentPoolTable() {
             "",
         )
         .join("|"),
-    [filteredCandidates],
+    [displayedCandidates],
   );
 
   const currentPage = Math.min(
@@ -100,11 +101,11 @@ export default function TalentPoolTable() {
 
   const paginatedCandidates = useMemo(
     () =>
-      filteredCandidates.slice(
+      displayedCandidates.slice(
         pageStartIndex,
         pageStartIndex + PAGE_SIZE,
       ),
-    [filteredCandidates, pageStartIndex],
+    [displayedCandidates, pageStartIndex],
   );
 
   function goToPage(pageNumber) {
@@ -169,8 +170,8 @@ export default function TalentPoolTable() {
             ) : (
               <TableState
                 icon={UsersRound}
-                title="No candidate profiles found"
-                message="Try changing or clearing the current search filters."
+                title={emptyTitle}
+                message={emptyMessage}
               />
             )}
           </div>
@@ -318,10 +319,10 @@ export default function TalentPoolTable() {
                         <div className="flex flex-col items-center text-center text-[#667085]">
                           <UsersRound className="h-6 w-6" />
                           <p className="mt-2 text-[13px] font-extrabold">
-                            No candidate profiles found
+                            {emptyTitle}
                           </p>
                           <p className="mt-1 text-xs font-medium">
-                            Try changing or clearing the current filters.
+                            {emptyMessage}
                           </p>
                         </div>
                       </td>
