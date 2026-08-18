@@ -50,7 +50,6 @@ import { resolveCalendarSelectionChange } from "@/lib/utils/talentPool/calendarD
 import {
   buildApplicationFormAnswersPayload,
   createQuestionAnswerState,
-  getVoiceSelectedQuestions,
   normalizeApplicationFormQuestions,
   validateApplicationQuestionAnswers,
 } from "@/lib/utils/talentPool/publicApplicationQuestions";
@@ -1314,6 +1313,78 @@ function PublicSibsLogo() {
         </p>
       </div>
     </div>
+  );
+}
+
+function ApplicationPageTabs({
+  visible,
+  currentPage,
+  isPageOneComplete,
+  isLoadingPageTwo,
+  onPageOneClick,
+  onPageTwoClick,
+}) {
+  if (!visible) return null;
+
+  const pageOneActive = currentPage === 1;
+  const pageTwoActive = currentPage === 2;
+
+  const tabClass = (active) =>
+    `flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-left text-xs font-extrabold transition sm:text-sm ${
+      active
+        ? "bg-[#042C51] text-white shadow-[0_8px_20px_rgba(4,44,81,0.18)]"
+        : "bg-white text-[#344054] hover:bg-[#F8FAFC]"
+    }`;
+
+  const numberClass = (active) =>
+    `inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${
+      active
+        ? "bg-[#FF5C28] text-white"
+        : "bg-[#E9EEF5] text-[#667085]"
+    }`;
+
+  return (
+    <nav
+      data-testid="public-application-page-tabs"
+      aria-label="Public Talent Pool application pages"
+      className="grid grid-cols-1 gap-2 rounded-2xl border border-[#DCE6F1] bg-white p-2 shadow-[0_8px_24px_rgba(4,44,81,0.06)] sm:grid-cols-2"
+    >
+      <button
+        type="button"
+        onClick={onPageOneClick}
+        aria-current={pageOneActive ? "step" : undefined}
+        className={tabClass(pageOneActive)}
+      >
+        <span className={numberClass(pageOneActive)}>1</span>
+        <span className="min-w-0 truncate">Page 1: Master Candidate Profile</span>
+        {isPageOneComplete ? (
+          <CircleCheckBig
+            size={16}
+            className={pageOneActive ? "text-emerald-300" : "text-emerald-500"}
+          />
+        ) : null}
+      </button>
+
+      <button
+        type="button"
+        onClick={onPageTwoClick}
+        disabled={isLoadingPageTwo}
+        aria-current={pageTwoActive ? "step" : undefined}
+        className={`${tabClass(pageTwoActive)} disabled:cursor-wait disabled:opacity-60`}
+      >
+        <span className={numberClass(pageTwoActive)}>2</span>
+        <span className="min-w-0 truncate">Page 2: Position Screening Questions</span>
+        <span
+          className={`shrink-0 rounded-md px-2 py-1 text-[9px] font-black uppercase tracking-wide ${
+            pageTwoActive
+              ? "bg-[#FF5C28]/20 text-[#FF8B66]"
+              : "bg-[#FFF0EB] text-[#E6531B]"
+          }`}
+        >
+          JD FORM
+        </span>
+      </button>
+    </nav>
   );
 }
 
@@ -3029,6 +3100,7 @@ export default function PublicTalentPoolApplicationPage() {
   );
   const [submittedRecord, setSubmittedRecord] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isPageOneComplete, setIsPageOneComplete] = useState(false);
   const [applicationForm, setApplicationForm] = useState(null);
   const [applicationQuestions, setApplicationQuestions] = useState([]);
   const [applicationQuestionAnswers, setApplicationQuestionAnswers] =
@@ -3061,14 +3133,6 @@ export default function PublicTalentPoolApplicationPage() {
   const selectedAttachmentFile =
     attachmentFileRef.current || form.attachmentFile;
   const isReferralCodeFromEmail = Boolean(initialReferralCodeRef.current);
-  const voiceSelectedQuestions = useMemo(
-    () =>
-      getVoiceSelectedQuestions(
-        applicationQuestions,
-        applicationQuestionAnswers,
-      ),
-    [applicationQuestionAnswers, applicationQuestions],
-  );
 
   useEffect(() => {
     const styleId = "public-talent-pool-hide-sidebar-style";
@@ -3501,6 +3565,7 @@ export default function PublicTalentPoolApplicationPage() {
     setApplicationQuestionAnswers({});
     setApplicationQuestionsError("");
     setCurrentPage(1);
+    setIsPageOneComplete(false);
   }
 
   function updateTrainingAttended(index, value) {
@@ -3660,6 +3725,7 @@ export default function PublicTalentPoolApplicationPage() {
     setForm(createEmptyPublicForm());
     setSubmittedRecord(null);
     setCurrentPage(1);
+    setIsPageOneComplete(false);
     setApplicationForm(null);
     setApplicationQuestions([]);
     setApplicationQuestionAnswers({});
@@ -4126,7 +4192,6 @@ export default function PublicTalentPoolApplicationPage() {
     const questionValidationMessage = validateApplicationQuestionAnswers(
       applicationQuestions,
       applicationQuestionAnswers,
-      Boolean(currentAudioFile),
     );
 
     if (questionValidationMessage) {
@@ -4223,18 +4288,10 @@ export default function PublicTalentPoolApplicationPage() {
     }));
   }
 
-  function handleQuestionAnswerTypeChange(question, answerType) {
-    updateApplicationQuestionAnswer(question.id, {
-      answerType: answerType === "Voice" ? "Voice" : "Text",
-      textAnswer:
-        answerType === "Voice"
-          ? ""
-          : applicationQuestionAnswers?.[String(question.id)]?.textAnswer || "",
-    });
-  }
-
   async function handleNextPage() {
     if (!validatePageOne()) return;
+
+    setIsPageOneComplete(true);
 
     const positionId = cleanText(form.positionId);
 
@@ -4534,12 +4591,14 @@ export default function PublicTalentPoolApplicationPage() {
             </div>
           ) : null}
 
-          <div className="flex items-center justify-between rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3 text-xs font-extrabold text-[#667085]">
-            <span>Public Talent Pool Application</span>
-            <span className="rounded-full bg-white px-3 py-1 text-[#042C51] shadow-sm">
-              Page {currentPage} of 2
-            </span>
-          </div>
+          <ApplicationPageTabs
+            visible={shouldShowApplicationFields}
+            currentPage={currentPage}
+            isPageOneComplete={isPageOneComplete}
+            isLoadingPageTwo={isLoadingApplicationQuestions}
+            onPageOneClick={handlePreviousPage}
+            onPageTwoClick={handleNextPage}
+          />
 
           {currentPage === 1 ? (
             <SectionCard
@@ -5302,7 +5361,7 @@ export default function PublicTalentPoolApplicationPage() {
               icon={BriefcaseBusiness}
               step={7}
               title="Position Questions"
-              description={`Answer the questions configured for ${form.openPosition || "the selected position"}. Each question defaults to Text, but you may switch it to Voice.`}
+              description={`Answer the text questions configured for ${form.openPosition || "the selected position"}.`}
             >
               <div className="space-y-4">
                 {applicationQuestionsError ? (
@@ -5330,8 +5389,6 @@ export default function PublicTalentPoolApplicationPage() {
                           answerType: "Text",
                           textAnswer: "",
                         };
-                      const answerType =
-                        answer.answerType === "Voice" ? "Voice" : "Text";
                       const textOptions =
                         getApplicationQuestionTextOptions(question);
 
@@ -5340,116 +5397,67 @@ export default function PublicTalentPoolApplicationPage() {
                           key={question.id}
                           className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5"
                         >
-                          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFF0EB] text-[10px] font-extrabold text-[#FF5C28]">
-                                  {index + 1}
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFF0EB] text-[10px] font-extrabold text-[#FF5C28]">
+                                {index + 1}
+                              </span>
+                              {question.isRequired ? (
+                                <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-red-600">
+                                  Required
                                 </span>
-                                {question.isRequired ? (
-                                  <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-red-600">
-                                    Required
-                                  </span>
-                                ) : (
-                                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-                                    Optional
-                                  </span>
-                                )}
-                                {question.questionType ? (
-                                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#667085]">
-                                    {question.questionType}
-                                  </span>
-                                ) : null}
-                              </div>
-                              <p className="mt-3 text-sm font-extrabold leading-6 text-[#042C51]">
-                                {question.questionText}
-                              </p>
-                              {question.helperText ? (
-                                <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
-                                  {question.helperText}
-                                </p>
-                              ) : null}
-                            </div>
-
-                            <div className="shrink-0">
-                              <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-                                Answer Type
-                              </p>
-                              <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#DCE6F1] bg-white p-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleQuestionAnswerTypeChange(
-                                      question,
-                                      "Text",
-                                    )
-                                  }
-                                  className={`h-9 rounded-lg px-4 text-xs font-extrabold transition ${
-                                    answerType === "Text"
-                                      ? "bg-[#042C51] text-white shadow-sm"
-                                      : "text-[#667085] hover:bg-[#F8FAFC] hover:text-[#042C51]"
-                                  }`}
-                                >Text</button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleQuestionAnswerTypeChange(
-                                      question,
-                                      "Voice",
-                                    )
-                                  }
-                                  className={`h-9 rounded-lg px-4 text-xs font-extrabold transition ${
-                                    answerType === "Voice"
-                                      ? "bg-[#FF5C28] text-white shadow-sm"
-                                      : "text-[#667085] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-                                  }`}
-                                >Voice</button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {answerType === "Text" ? (
-                            <div className="mt-4">
-                              <FieldLabel>
-                                Text Answer {question.isRequired ? <RequiredMark /> : null}
-                              </FieldLabel>
-                              {textOptions.length ? (
-                                <DatabaseSelect
-                                  required={question.isRequired}
-                                  value={answer.textAnswer || ""}
-                                  options={textOptions}
-                                  placeholder="Select answer"
-                                  onChange={(value) =>
-                                    updateApplicationQuestionAnswer(question.id, {
-                                      answerType: "Text",
-                                      textAnswer: value,
-                                    })
-                                  }
-                                  zIndex="z-[160]"
-                                />
                               ) : (
-                                <AutoResizeTextarea
-                                  required={question.isRequired}
-                                  value={answer.textAnswer || ""}
-                                  onChange={(event) =>
-                                    updateApplicationQuestionAnswer(question.id, {
-                                      answerType: "Text",
-                                      textAnswer: event.target.value,
-                                    })
-                                  }
-                                  placeholder={
-                                    question.placeholderText ||
-                                    "Type your answer here"
-                                  }
-                                  className={textareaClass("min-h-[110px] leading-6")}
-                                />
+                                <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                  Optional
+                                </span>
                               )}
                             </div>
-                          ) : (
-                            <div className="mt-4 rounded-xl border border-[#FFB27A] bg-[#FFF7F1] px-4 py-3 text-xs font-semibold leading-5 text-[#8A3C1D]">
-                              Answer this question in the single shared audio recording in the Audio and File Upload section below.
-                            </div>
-                          )}
+                            <p className="mt-3 text-sm font-extrabold leading-6 text-[#042C51]">
+                              {question.questionText}
+                            </p>
+                            {question.helperText ? (
+                              <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                                {question.helperText}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="mt-4">
+                            <FieldLabel>
+                              Text Answer {question.isRequired ? <RequiredMark /> : null}
+                            </FieldLabel>
+                            {textOptions.length ? (
+                              <DatabaseSelect
+                                required={question.isRequired}
+                                value={answer.textAnswer || ""}
+                                options={textOptions}
+                                placeholder="Select answer"
+                                onChange={(value) =>
+                                  updateApplicationQuestionAnswer(question.id, {
+                                    answerType: "Text",
+                                    textAnswer: value,
+                                  })
+                                }
+                                zIndex="z-[160]"
+                              />
+                            ) : (
+                              <AutoResizeTextarea
+                                required={question.isRequired}
+                                value={answer.textAnswer || ""}
+                                onChange={(event) =>
+                                  updateApplicationQuestionAnswer(question.id, {
+                                    answerType: "Text",
+                                    textAnswer: event.target.value,
+                                  })
+                                }
+                                placeholder={
+                                  question.placeholderText ||
+                                  "Type your answer here"
+                                }
+                                className={textareaClass("min-h-[110px] leading-6")}
+                              />
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -5460,23 +5468,7 @@ export default function PublicTalentPoolApplicationPage() {
                   </div>
                 )}
 
-                {voiceSelectedQuestions.length ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-bold leading-6 text-amber-800 sm:text-sm">
-                    <p className="font-extrabold">
-                      Questions to answer in your recording
-                    </p>
-                    <ul className="mt-2 list-disc space-y-1 pl-5">
-                      {voiceSelectedQuestions.map((question) => (
-                        <li key={`voice-question-${question.id}`}>
-                          {question.questionText}
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="mt-2 text-xs font-semibold">
-                      Use one audio file for all questions you selected as Voice.
-                    </p>
-                  </div>
-                ) : null}
+
               </div>
             </SectionCard>
           </div>
