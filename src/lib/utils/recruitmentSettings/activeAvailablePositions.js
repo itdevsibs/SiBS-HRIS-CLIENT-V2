@@ -261,8 +261,6 @@ export function mergeFormsForActivePositions({
     ? positions.filter(Boolean)
     : [];
 
-  const matchedForms = new Set();
-
   const activePositionForms = activePositions.map(
     (position) => {
       const existingForm =
@@ -270,10 +268,6 @@ export function mergeFormsForActivePositions({
           currentForms,
           position,
         );
-
-      if (existingForm) {
-        matchedForms.add(existingForm);
-      }
 
       const fallbackForm =
         typeof createDefaultForm === "function"
@@ -313,12 +307,5 @@ export function mergeFormsForActivePositions({
     },
   );
 
-  const preservedForms = currentForms.filter(
-    (form) => !matchedForms.has(form),
-  );
-
-  return [
-    ...activePositionForms,
-    ...preservedForms,
-  ];
+  return activePositionForms;
 }

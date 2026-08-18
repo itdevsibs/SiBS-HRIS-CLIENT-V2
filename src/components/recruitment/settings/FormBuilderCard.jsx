@@ -24,6 +24,7 @@ import {
 
 import { useRecruitmentSettings } from "../../../services/context/RecruitmentSettingsContext";
 import StatusModal from "../../modals/StatusModal";
+import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
 
 const FORM_STATUS_OPTIONS = ["Active", "Inactive", "Draft"];
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
@@ -40,12 +41,6 @@ const SECTION_PRESETS = [
         type: "Rating",
         required: true,
       },
-      {
-        label:
-          "Provide detailed feedback on candidate's tone, pacing, and confidence during mock call.",
-        type: "Text",
-        required: true,
-      },
     ],
   },
   {
@@ -58,12 +53,6 @@ const SECTION_PRESETS = [
         type: "Rating",
         required: true,
       },
-      {
-        label:
-          "Documents the candidate's reasoning quality, escalation judgment, and ownership mindset.",
-        type: "Text",
-        required: true,
-      },
     ],
   },
   {
@@ -73,11 +62,6 @@ const SECTION_PRESETS = [
       {
         label:
           "Demonstrates familiarity with required systems, documentation standards, and workflow navigation.",
-        type: "Rating",
-        required: true,
-      },
-      {
-        label: "System navigation and tool proficiency verification.",
         type: "Rating",
         required: true,
       },
@@ -333,6 +317,7 @@ export default function FormBuilderCard() {
     handleSaveSettings,
     handleAddFieldGroup,
     handleUpdateFieldFromModal,
+    handleRenameFieldGroup,
     handleDeleteField,
     handleDeleteFieldGroup,
   } = useRecruitmentSettings();
@@ -558,14 +543,9 @@ export default function FormBuilderCard() {
       <div className="relative z-[80] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <div className="mr-2 inline-flex items-center gap-2 rounded-full border border-[#D9E9F8] bg-[#F2F7FC] px-3 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
-              <PenLine size={14} className="text-[#FF5C28]" />
-              Create & Edit Forms
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E9F8] bg-[#F2F7FC] px-3 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
-              <ListChecks size={14} className="text-[#FF5C28]" />
-              Final Interview
-            </div>
+            <SettingsHeaderCapsules
+              items={[{ label: "Create & Edit Final Interview Forms", icon: PenLine }]}
+            />
 
             <h3 className="mt-3 text-base font-extrabold text-sibs-primary-1">
               Position-based Final Interview Forms
@@ -896,7 +876,9 @@ export default function FormBuilderCard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-            {(saveProgressMessage || saveSuccessMessage || saveErrorMessage) && (
+            {(saveProgressMessage ||
+              saveSuccessMessage ||
+              saveErrorMessage) && (
               <span
                 role="status"
                 aria-live="polite"
@@ -1378,7 +1360,7 @@ export default function FormBuilderCard() {
               <div className="space-y-5">
                 {groupedSections.map((group, groupIndex) => (
                   <div
-                    key={group.section}
+                    key={group.questions[0]?.id || `section-${groupIndex}`}
                     className="overflow-hidden rounded-xl border border-[#D9E2EC] bg-white"
                   >
                     <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1386,9 +1368,30 @@ export default function FormBuilderCard() {
                         <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
                           S{groupIndex + 1}
                         </span>
-                        <div className="min-w-0 flex-1 px-1 text-[13px] font-extrabold uppercase text-sibs-primary-1">
-                          {groupIndex + 1}. {group.section}
-                        </div>
+                        <label className="flex min-w-0 flex-1 items-center gap-1 text-[13px] font-extrabold text-sibs-primary-1">
+                          <span className="shrink-0">{groupIndex + 1}.</span>
+                          <input
+                            defaultValue={group.section}
+                            onBlur={(event) => {
+                              const renamed = handleRenameFieldGroup?.(
+                                group.section,
+                                event.target.value,
+                              );
+
+                              if (renamed === false) {
+                                event.target.value = group.section;
+                              }
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                event.currentTarget.blur();
+                              }
+                            }}
+                            aria-label={`Section ${groupIndex + 1} title`}
+                            className="h-8 min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 text-[13px] font-extrabold uppercase text-sibs-primary-1 outline-none transition hover:border-[#D6DEE8] hover:bg-white focus:border-[#BFD8F1] focus:bg-white focus:ring-4 focus:ring-[#EFF6FF]"
+                          />
+                        </label>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <button
@@ -1572,9 +1575,7 @@ export default function FormBuilderCard() {
         message={manualSaveFeedback.message}
         variant="center"
         lockScroll
-        onClose={() =>
-          setManualSaveFeedback({ type: "idle", message: "" })
-        }
+        onClose={() => setManualSaveFeedback({ type: "idle", message: "" })}
       />
     </div>
   );

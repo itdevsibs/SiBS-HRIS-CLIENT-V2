@@ -87,6 +87,7 @@ export async function getAvailablePositions({
         status,
         departmentId,
         accountId,
+        _t: Date.now(),
       },
       withCredentials: true,
       timeout: REQUEST_TIMEOUT,

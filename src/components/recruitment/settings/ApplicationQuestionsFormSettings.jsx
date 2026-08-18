@@ -28,27 +28,10 @@ import {
 } from "../../../lib/axios/getRecruitmentSettings";
 import { useRecruitmentSettings } from "../../../services/context/RecruitmentSettingsContext";
 import StatusModal from "../../modals/StatusModal";
+import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
 
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
 const APPLICATION_FORMS_TABLE_PAGE_SIZE = 6;
-
-const APPLICATION_SECTIONS = [
-  {
-    id: "sourcing",
-    title: "Sourcing Channel & Attribution",
-    subtitle: "Recruitment source and referral tracking.",
-  },
-  {
-    id: "personal",
-    title: "Personal & Contact Details",
-    subtitle: "Legal name, contact information, and location.",
-  },
-  {
-    id: "voice",
-    title: "Voice Screening",
-    subtitle: "English audio recording prompt.",
-  },
-];
 
 const SECTION_PRESETS = [
   ["Voice Screening", "45-sec English audio recording prompt"],
@@ -143,31 +126,6 @@ function createBlankQuestion(sectionId = "", overrides = {}) {
   };
 }
 
-function createDefaultApplicationSections() {
-  const defaultQuestions = [
-    {
-      label: "How did you find out about SiBS Solutions?",
-      helperText: "Select your primary recruitment channel.",
-    },
-    {
-      label: "Complete your personal and contact details.",
-      helperText:
-        "Candidate contact information is collected from the public form.",
-    },
-    {
-      label: "Why did you apply for this position?",
-      type: "Voice Record",
-    },
-  ];
-
-  return APPLICATION_SECTIONS.map((section, index) => ({
-    ...section,
-    clientSectionId: section.id,
-    description: section.subtitle,
-    questions: [createBlankQuestion(section.id, defaultQuestions[index])],
-  }));
-}
-
 function normalizeQuestion(item = {}, index = 0) {
   return {
     id: String(item.id || item.databaseId || `question-${index}`),
@@ -193,26 +151,34 @@ function normalizeQuestion(item = {}, index = 0) {
 }
 
 function normalizeSection(item = {}, index = 0) {
-  const fallback = APPLICATION_SECTIONS[index] || APPLICATION_SECTIONS[0];
+  const fallbackId = `section-${index + 1}`;
+  const sectionId =
+    item.id || item.clientSectionId || item.client_section_id || fallbackId;
   const questions = Array.isArray(item.questions)
     ? item.questions
     : Array.isArray(item.fields)
       ? item.fields
       : [];
+  const normalizedQuestions = questions.map(normalizeQuestion);
 
   return {
-    id:
-      item.id || item.clientSectionId || item.client_section_id || fallback.id,
+    id: sectionId,
     clientSectionId:
-      item.clientSectionId || item.client_section_id || item.id || fallback.id,
+      item.clientSectionId || item.client_section_id || item.id || fallbackId,
     title:
-      item.title || item.sectionTitle || item.section_title || fallback.title,
+      item.title || item.sectionTitle || item.section_title || `Section ${index + 1}`,
     description:
       item.description ||
       item.sectionDescription ||
       item.section_description ||
-      fallback.subtitle,
-    questions: questions.map(normalizeQuestion),
+      "",
+    questions: normalizedQuestions.length
+      ? normalizedQuestions
+      : [
+          createBlankQuestion(sectionId, {
+            label: "New application question",
+          }),
+        ],
   };
 }
 
@@ -268,9 +234,7 @@ export default function ApplicationQuestionsFormSettings() {
   const [selectedPositionId, setSelectedPositionId] = useState("");
   const [applicationForms, setApplicationForms] = useState([]);
   const [activeApplicationForm, setActiveApplicationForm] = useState(null);
-  const [applicationSections, setApplicationSections] = useState(
-    createDefaultApplicationSections,
-  );
+  const [applicationSections, setApplicationSections] = useState([]);
   const [initialSignature, setInitialSignature] = useState("");
   const [collapsedSectionIds, setCollapsedSectionIds] = useState([]);
   const [previewQuestionId, setPreviewQuestionId] = useState("");
@@ -431,16 +395,9 @@ export default function ApplicationQuestionsFormSettings() {
       const sections = dedupeApplicationSections(
         Array.isArray(form?.sections)
           ? form.sections.map(normalizeSection)
-          : APPLICATION_SECTIONS.map((section, index) =>
-              normalizeSection(section, index),
-            ),
+          : [],
       );
-      const fields = sections.flatMap((section) =>
-        Array.isArray(section.questions) ? section.questions : [],
-      );
-      const nextSections = fields.length
-        ? sections
-        : createDefaultApplicationSections();
+      const nextSections = sections;
       const nextQuestions = nextSections.flatMap((section) =>
         Array.isArray(section.questions) ? section.questions : [],
       );
@@ -725,14 +682,15 @@ export default function ApplicationQuestionsFormSettings() {
       <div className="relative z-[80] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <div className="mr-2 inline-flex items-center gap-2 rounded-full border border-[#D9E9F8] bg-[#F2F7FC] px-3 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
-              <PenLine size={14} className="text-[#FF5C28]" />
-              Create & Edit Questionaire Forms
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D9E9F8] bg-[#F2F7FC] px-3 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
-              <ListChecks size={14} className="text-[#FF5C28]" />
-              Application Screening
-            </div>
+            <SettingsHeaderCapsules
+              items={[
+                {
+                  label:
+                    "Create & Edit Application Screening Questionnaire Forms",
+                  icon: PenLine,
+                },
+              ]}
+            />
 
             <h3 className="mt-3 text-base font-extrabold text-sibs-primary-1">
               Position-based Application Forms
@@ -1480,76 +1438,87 @@ export default function ApplicationQuestionsFormSettings() {
                 const collapsed = collapsedSectionIds.includes(sectionId);
 
                 return (
-                <div
-                  key={section.id}
-                  className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
-                      S{index + 1}
-                    </span>
-                    <input
-                      value={section.title || ""}
-                      onChange={(event) =>
-                        updateSection(sectionId, { title: event.target.value })
-                      }
-                      aria-label={`Section ${index + 1} title`}
-                      className="h-9 min-w-0 flex-1 rounded-lg border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold uppercase text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                    />
-                    <span className="hidden rounded-lg border border-[#D6DEE8] bg-white px-3 py-2 text-xs font-extrabold text-[#475467] sm:inline-flex">
-                      {(section.questions || []).length} {(section.questions || []).length === 1 ? "Field" : "Fields"}
-                    </span>
-                    <div className="flex items-center rounded-lg border border-[#D6DEE8] bg-white">
+                  <div
+                    key={section.id}
+                    className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
+                        S{index + 1}
+                      </span>
+                      <input
+                        value={section.title || ""}
+                        onChange={(event) =>
+                          updateSection(sectionId, {
+                            title: event.target.value,
+                          })
+                        }
+                        aria-label={`Section ${index + 1} title`}
+                        className="h-9 min-w-0 flex-1 rounded-lg border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold uppercase text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                      />
+                      <span className="hidden rounded-lg border border-[#D6DEE8] bg-white px-3 py-2 text-xs font-extrabold text-[#475467] sm:inline-flex">
+                        {(section.questions || []).length}{" "}
+                        {(section.questions || []).length === 1
+                          ? "Field"
+                          : "Fields"}
+                      </span>
+                      <div className="flex items-center rounded-lg border border-[#D6DEE8] bg-white">
+                        <button
+                          type="button"
+                          onClick={() => moveSection(index, -1)}
+                          disabled={index === 0}
+                          className="inline-flex h-9 w-8 items-center justify-center text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-30"
+                          title="Move section up"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveSection(index, 1)}
+                          disabled={index === applicationSections.length - 1}
+                          className="inline-flex h-9 w-8 items-center justify-center text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-30"
+                          title="Move section down"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => moveSection(index, -1)}
-                        disabled={index === 0}
-                        className="inline-flex h-9 w-8 items-center justify-center text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-30"
-                        title="Move section up"
+                        onClick={() => toggleSection(sectionId)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1"
+                        title={
+                          collapsed ? "Expand section" : "Collapse section"
+                        }
                       >
-                        <ChevronUp size={14} />
+                        {collapsed ? (
+                          <ChevronDown size={15} />
+                        ) : (
+                          <ChevronUp size={15} />
+                        )}
                       </button>
                       <button
                         type="button"
-                        onClick={() => moveSection(index, 1)}
-                        disabled={index === applicationSections.length - 1}
-                        className="inline-flex h-9 w-8 items-center justify-center text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-30"
-                        title="Move section down"
+                        onClick={() => removeSection(sectionId)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50"
+                        title="Delete section"
                       >
-                        <ChevronDown size={14} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => toggleSection(sectionId)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1"
-                      title={collapsed ? "Expand section" : "Collapse section"}
-                    >
-                      {collapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeSection(sectionId)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50"
-                      title="Delete section"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    {!collapsed && (
+                      <textarea
+                        rows={2}
+                        value={section.description || ""}
+                        onChange={(event) =>
+                          updateSection(sectionId, {
+                            description: event.target.value,
+                          })
+                        }
+                        placeholder="Section description (optional)"
+                        className="mt-3 w-full resize-none rounded-lg border border-[#D6DEE8] bg-white px-4 py-2 text-xs font-semibold text-[#475467] outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                      />
+                    )}
                   </div>
-                  {!collapsed && (
-                    <textarea
-                      rows={2}
-                      value={section.description || ""}
-                      onChange={(event) =>
-                        updateSection(sectionId, {
-                          description: event.target.value,
-                        })
-                      }
-                      placeholder="Section description (optional)"
-                      className="mt-3 w-full resize-none rounded-lg border border-[#D6DEE8] bg-white px-4 py-2 text-xs font-semibold text-[#475467] outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                    />
-                  )}
-                </div>
                 );
               })}
               {!applicationSections.length && (
@@ -1635,211 +1604,236 @@ export default function ApplicationQuestionsFormSettings() {
               const collapsed = collapsedSectionIds.includes(sectionId);
 
               return (
-              <div
-                key={section.id}
-                className="overflow-hidden rounded-xl border border-[#D9E2EC] bg-white"
-              >
-                <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
-                      S{index + 1}
-                    </span>
-                    <div className="min-w-0 flex-1 px-1 text-[13px] font-extrabold uppercase text-sibs-primary-1">
-                      {index + 1}. {section.title}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleSection(sectionId)}
-                      className="inline-flex h-8 w-10 items-center justify-center rounded-[9px] border border-[#D6DEE8] bg-white text-[#667085]"
-                      title={collapsed ? "Expand section" : "Collapse section"}
-                    >
-                      {collapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addQuestion(sectionId)}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#FF5C28] px-3 text-[10px] font-extrabold text-white"
-                    >
-                      <Plus size={15} />
-                      Add Field
-                    </button>
-                  </div>
-                </div>
-
-                {!collapsed && (
-                <div className="space-y-3 p-5">
-                  {(section.questions || []).map((question, questionIndex) => (
-                  <div key={question.id} className="rounded-2xl border border-[#D9E2EC] bg-white p-4">
-                    <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center">
-                      <div className="flex min-w-[260px] items-center gap-3">
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold text-white">
-                          {questionIndex + 1}
-                        </span>
-                        <span className="text-xs font-extrabold text-sibs-primary-1">
-                          {section.title} Field #{questionIndex + 1}
-                        </span>
-                        <div className="flex items-center rounded-lg border border-[#D6DEE8] bg-[#F1F5F9]">
-                          <button
-                            type="button"
-                            onClick={() => moveQuestion(sectionId, questionIndex, -1)}
-                            disabled={questionIndex === 0}
-                            className="inline-flex h-7 w-7 items-center justify-center text-sibs-tertiary-5 disabled:cursor-not-allowed disabled:opacity-30"
-                            title="Move field up"
-                          >
-                            <ChevronUp size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveQuestion(sectionId, questionIndex, 1)}
-                            disabled={questionIndex === (section.questions || []).length - 1}
-                            className="inline-flex h-7 w-7 items-center justify-center text-sibs-tertiary-5 disabled:cursor-not-allowed disabled:opacity-30"
-                            title="Move field down"
-                          >
-                            <ChevronDown size={13} />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                        <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
-                          Type:
-                          <select
-                            value={question.type || "Multi-line Paragraph"}
-                            onChange={(event) =>
-                              updateQuestion(question.id, {
-                                type: event.target.value,
-                              })
-                            }
-                            className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none"
-                          >
-                            <option>Multi-line Paragraph</option>
-                            <option>Single Line Text</option>
-                            <option>Voice Record</option>
-                            <option>File Upload</option>
-                            <option>Yes/No</option>
-                          </select>
-                        </label>
-                        <label className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1">
-                          <input
-                            type="checkbox"
-                            checked={question.required !== false}
-                            onChange={(event) =>
-                              updateQuestion(question.id, {
-                                required: event.target.checked,
-                              })
-                            }
-                          />
-                          Required
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPreviewQuestionId((previous) =>
-                              previous === question.id ? "" : question.id,
-                            )
-                          }
-                          className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#F1F5F9] px-3 text-xs font-extrabold text-sibs-primary-1"
-                        >
-                          <Sparkles size={14} className="text-[#FF5C28]" />
-                          Quick Preview
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeQuestion(question.id)}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-sibs-tertiary-5 hover:bg-red-50 hover:text-red-600"
-                          title="Delete field"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                <div
+                  key={section.id}
+                  className="overflow-hidden rounded-xl border border-[#D9E2EC] bg-white"
+                >
+                  <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
+                        S{index + 1}
+                      </span>
+                      <div className="min-w-0 flex-1 px-1 text-[13px] font-extrabold uppercase text-sibs-primary-1">
+                        {index + 1}. {section.title}
                       </div>
                     </div>
-
-                    <label className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
-                      Question Prompt / Field Label
-                      <input
-                        value={question.label}
-                        onChange={(event) =>
-                          updateQuestion(question.id, {
-                            label: event.target.value,
-                          })
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection(sectionId)}
+                        className="inline-flex h-8 w-10 items-center justify-center rounded-[9px] border border-[#D6DEE8] bg-white text-[#667085]"
+                        title={
+                          collapsed ? "Expand section" : "Collapse section"
                         }
-                        className="mt-1 h-10 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                      />
-                    </label>
-                    <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                      <label className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
-                        Sublabel / Helper Text (Optional)
-                        <input
-                          value={question.helperText || ""}
-                          onChange={(event) =>
-                            updateQuestion(question.id, {
-                              helperText: event.target.value,
-                            })
-                          }
-                          className="mt-1 h-10 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-semibold text-sibs-primary-1 outline-none"
-                        />
-                      </label>
-                      <label className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
-                        Placeholder / Sample (Optional)
-                        <input
-                          value={question.placeholderText || ""}
-                          onChange={(event) =>
-                            updateQuestion(question.id, {
-                              placeholderText: event.target.value,
-                            })
-                          }
-                          placeholder="e.g. Juan Dela Cruz"
-                          className="mt-1 h-10 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-semibold text-sibs-primary-1 outline-none"
-                        />
-                      </label>
-                    </div>
-                    {previewQuestionId === question.id && (
-                      <div className="mt-4 rounded-xl border border-dashed border-[#BFD1E5] bg-[#F8FAFC] p-4">
-                        <p className="text-xs font-extrabold text-sibs-primary-1">
-                          {question.label || "Untitled question"}
-                          {question.required !== false && (
-                            <span className="ml-1 text-[#FF5C28]">*</span>
-                          )}
-                        </p>
-                        {question.helperText && (
-                          <p className="mt-1 text-[11px] font-medium text-[#667085]">
-                            {question.helperText}
-                          </p>
+                      >
+                        {collapsed ? (
+                          <ChevronDown size={15} />
+                        ) : (
+                          <ChevronUp size={15} />
                         )}
-                        <div className="mt-3 h-10 rounded-lg border border-[#D6DEE8] bg-white px-3 py-2 text-xs text-[#98A2B3]">
-                          {question.placeholderText || question.type}
-                        </div>
-                      </div>
-                    )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addQuestion(sectionId)}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#FF5C28] px-3 text-[10px] font-extrabold text-white"
+                      >
+                        <Plus size={15} />
+                        Add Field
+                      </button>
+                    </div>
                   </div>
-                  ))}
-                  {!(section.questions || []).length && (
-                    <button
-                      type="button"
-                      onClick={() => addQuestion(sectionId)}
-                      className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
-                    >
-                      <Plus size={15} className="text-[#FF5C28]" />
-                      Add First Field
-                    </button>
+
+                  {!collapsed && (
+                    <div className="space-y-3 p-5">
+                      {(section.questions || []).map(
+                        (question, questionIndex) => (
+                          <div
+                            key={question.id}
+                            className="rounded-2xl border border-[#D9E2EC] bg-white p-4"
+                          >
+                            <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center">
+                              <div className="flex min-w-[260px] items-center gap-3">
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold text-white">
+                                  {questionIndex + 1}
+                                </span>
+                                <span className="text-xs font-extrabold text-sibs-primary-1">
+                                  {section.title} Field #{questionIndex + 1}
+                                </span>
+                                <div className="flex items-center rounded-lg border border-[#D6DEE8] bg-[#F1F5F9]">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      moveQuestion(sectionId, questionIndex, -1)
+                                    }
+                                    disabled={questionIndex === 0}
+                                    className="inline-flex h-7 w-7 items-center justify-center text-sibs-tertiary-5 disabled:cursor-not-allowed disabled:opacity-30"
+                                    title="Move field up"
+                                  >
+                                    <ChevronUp size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      moveQuestion(sectionId, questionIndex, 1)
+                                    }
+                                    disabled={
+                                      questionIndex ===
+                                      (section.questions || []).length - 1
+                                    }
+                                    className="inline-flex h-7 w-7 items-center justify-center text-sibs-tertiary-5 disabled:cursor-not-allowed disabled:opacity-30"
+                                    title="Move field down"
+                                  >
+                                    <ChevronDown size={13} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                                <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
+                                  Type:
+                                  <select
+                                    value={
+                                      question.type || "Multi-line Paragraph"
+                                    }
+                                    onChange={(event) =>
+                                      updateQuestion(question.id, {
+                                        type: event.target.value,
+                                      })
+                                    }
+                                    className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none"
+                                  >
+                                    <option>Multi-line Paragraph</option>
+                                    <option>Single Line Text</option>
+                                    <option>Voice Record</option>
+                                    <option>File Upload</option>
+                                    <option>Yes/No</option>
+                                  </select>
+                                </label>
+                                <label className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={question.required !== false}
+                                    onChange={(event) =>
+                                      updateQuestion(question.id, {
+                                        required: event.target.checked,
+                                      })
+                                    }
+                                  />
+                                  Required
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPreviewQuestionId((previous) =>
+                                      previous === question.id
+                                        ? ""
+                                        : question.id,
+                                    )
+                                  }
+                                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#F1F5F9] px-3 text-xs font-extrabold text-sibs-primary-1"
+                                >
+                                  <Sparkles
+                                    size={14}
+                                    className="text-[#FF5C28]"
+                                  />
+                                  Quick Preview
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeQuestion(question.id)}
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-sibs-tertiary-5 hover:bg-red-50 hover:text-red-600"
+                                  title="Delete field"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </div>
+
+                            <label className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
+                              Question Prompt / Field Label
+                              <input
+                                value={question.label}
+                                onChange={(event) =>
+                                  updateQuestion(question.id, {
+                                    label: event.target.value,
+                                  })
+                                }
+                                className="mt-1 h-10 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                              />
+                            </label>
+                            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                              <label className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
+                                Sublabel / Helper Text (Optional)
+                                <input
+                                  value={question.helperText || ""}
+                                  onChange={(event) =>
+                                    updateQuestion(question.id, {
+                                      helperText: event.target.value,
+                                    })
+                                  }
+                                  className="mt-1 h-10 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-semibold text-sibs-primary-1 outline-none"
+                                />
+                              </label>
+                              <label className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
+                                Placeholder / Sample (Optional)
+                                <input
+                                  value={question.placeholderText || ""}
+                                  onChange={(event) =>
+                                    updateQuestion(question.id, {
+                                      placeholderText: event.target.value,
+                                    })
+                                  }
+                                  placeholder="e.g. Juan Dela Cruz"
+                                  className="mt-1 h-10 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-semibold text-sibs-primary-1 outline-none"
+                                />
+                              </label>
+                            </div>
+                            {previewQuestionId === question.id && (
+                              <div className="mt-4 rounded-xl border border-dashed border-[#BFD1E5] bg-[#F8FAFC] p-4">
+                                <p className="text-xs font-extrabold text-sibs-primary-1">
+                                  {question.label || "Untitled question"}
+                                  {question.required !== false && (
+                                    <span className="ml-1 text-[#FF5C28]">
+                                      *
+                                    </span>
+                                  )}
+                                </p>
+                                {question.helperText && (
+                                  <p className="mt-1 text-[11px] font-medium text-[#667085]">
+                                    {question.helperText}
+                                  </p>
+                                )}
+                                <div className="mt-3 h-10 rounded-lg border border-[#D6DEE8] bg-white px-3 py-2 text-xs text-[#98A2B3]">
+                                  {question.placeholderText || question.type}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      )}
+                      {!(section.questions || []).length && (
+                        <button
+                          type="button"
+                          onClick={() => addQuestion(sectionId)}
+                          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+                        >
+                          <Plus size={15} className="text-[#FF5C28]" />
+                          Add First Field
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
-                )}
-              </div>
               );
             })}
-            {!applicationSections.length && (
-              <button
-                type="button"
-                onClick={() => addSection()}
-                className="flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
-              >
-                <Plus size={15} className="text-[#FF5C28]" />
-                Add New Application Section
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => addSection()}
+              className="flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+            >
+              <Plus size={15} className="text-[#FF5C28]" />
+              Add New Application Section
+            </button>
           </div>
 
           <div className="mt-5 flex flex-col gap-3 border-t border-[#E6ECF2] pt-5 sm:flex-row sm:items-center sm:justify-between">

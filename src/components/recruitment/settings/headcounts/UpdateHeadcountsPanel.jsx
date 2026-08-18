@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ClipboardList,
   ChevronLeft,
   ChevronRight,
   Filter,
   Loader2,
   Save,
   Search,
+  UsersRound,
 } from "lucide-react";
 
 import StatusModal from "../../../modals/StatusModal";
@@ -35,6 +37,7 @@ import {
   StatusPill,
   inputClass,
 } from "./RecruitmentHeadcountPrimitives";
+import SettingsHeaderCapsules from "../SettingsHeaderCapsules";
 
 async function saveRequiredHeadcountOverride(item, requiredHeadcount) {
   const cleanRequiredHeadcount = Number(requiredHeadcount);
@@ -683,9 +686,15 @@ function UpdateHeadcountsPanel() {
         className="relative z-[80] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
         style={{ animationDelay: "300ms" }}
       >
-        <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="flex flex-col gap-3 rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="min-w-0">
-            <h2 className="text-base font-extrabold text-[#042C51]">
+            <SettingsHeaderCapsules
+              items={[
+                { label: "Add / Reduce Employee Headcounts", icon: UsersRound },
+              ]}
+            />
+
+            <h2 className="mt-3 text-base font-extrabold text-[#042C51]">
               Update Headcounts
             </h2>
 
@@ -951,13 +960,15 @@ function UpdateHeadcountsPanel() {
           </div>
 
           <div className="hidden lg:block">
-            <div className="overflow-hidden bg-white px-4 pb-4 sm:px-5 sm:pb-5">
+            <div className="overflow-hidden bg-white px-4 py-4 sm:px-5 sm:pb-5">
               <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
                 <table className="w-full min-w-[1120px] border-collapse text-left">
                   <thead>
                     <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC] text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                       <th className="w-[21%] px-3 py-3">Account</th>
-                      <th className="w-[16%] px-3 py-3">Required / Actual HC</th>
+                      <th className="w-[16%] px-3 py-3">
+                        Required / Actual HC
+                      </th>
                       <th className="w-[19%] px-3 py-3">Buffer</th>
                       <th className="w-[14%] px-3 py-3">HC Needs / Leads</th>
                       <th className="w-[11%] px-3 py-3">Hiring Rate</th>
@@ -1111,7 +1122,6 @@ function UpdateHeadcountsPanel() {
                               </div>
                             </td>
 
-
                             <td className="border-b border-[#E6ECF2] px-3 py-3 text-right">
                               {canEditRequiredHeadcount ? (
                                 <button
@@ -1157,7 +1167,7 @@ function UpdateHeadcountsPanel() {
             </div>
           </div>
 
-          <div className="flex flex-col justify-between gap-4 border-t border-[#E6ECF2] px-4 py-4 sm:px-5 md:flex-row md:items-center">
+          <div className="flex flex-col justify-between gap-4 rounded-b-2xl border-t border-[#E6ECF2] bg-white px-4 py-4 sm:px-5 md:flex-row md:items-center">
             <p className="text-xs font-semibold text-sibs-tertiary-5">
               Showing {showingFrom} to {showingTo} of {totalRecords} headcount
               records
