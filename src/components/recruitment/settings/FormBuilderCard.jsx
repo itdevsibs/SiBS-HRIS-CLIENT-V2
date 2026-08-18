@@ -1,23 +1,30 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
+  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
   Eye,
+  Filter,
   Layers,
   Lightbulb,
+  ListChecks,
   Loader2,
+  PenLine,
   Plus,
   RefreshCw,
   Save,
   Search,
   Sparkles,
   Trash2,
+  TriangleAlert,
 } from "lucide-react";
 
 import { useRecruitmentSettings } from "../../../services/context/RecruitmentSettingsContext";
+import StatusModal from "../../modals/StatusModal";
+import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
 
 const FORM_STATUS_OPTIONS = ["Active", "Inactive", "Draft"];
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
@@ -34,12 +41,6 @@ const SECTION_PRESETS = [
         type: "Rating",
         required: true,
       },
-      {
-        label:
-          "Provide detailed feedback on candidate's tone, pacing, and confidence during mock call.",
-        type: "Text",
-        required: true,
-      },
     ],
   },
   {
@@ -52,12 +53,6 @@ const SECTION_PRESETS = [
         type: "Rating",
         required: true,
       },
-      {
-        label:
-          "Documents the candidate's reasoning quality, escalation judgment, and ownership mindset.",
-        type: "Text",
-        required: true,
-      },
     ],
   },
   {
@@ -67,11 +62,6 @@ const SECTION_PRESETS = [
       {
         label:
           "Demonstrates familiarity with required systems, documentation standards, and workflow navigation.",
-        type: "Rating",
-        required: true,
-      },
-      {
-        label: "System navigation and tool proficiency verification.",
         type: "Rating",
         required: true,
       },
@@ -127,6 +117,10 @@ function getPositionDepartment(position = {}) {
 
 function getPositionSite(position = {}) {
   return asText(position.location || position.site || position.branch);
+}
+
+function getPositionJdCode(position = {}) {
+  return asText(position.jdCode || position.jd_code, "");
 }
 
 function getFormName(form = {}, position = {}) {
@@ -204,29 +198,6 @@ function getFieldTypeOptions(fieldTypes = []) {
     .filter(Boolean);
 
   return normalized.length ? normalized : ["Rating", "Text", "Pass/Fail"];
-}
-
-function StatusFilterButton({ active, children, count, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] px-3 text-[11px] font-extrabold transition ${
-        active
-          ? "border border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
-          : "border border-[#D6DEE8] bg-white text-[#475467] hover:border-[#BFD8F1] hover:bg-[#EFF6FF] hover:text-sibs-primary-1"
-      }`}
-    >
-      {children}
-      {Number.isFinite(count) && count > 0 && (
-        <span
-          className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-100 px-1 text-[9px] font-extrabold text-red-600"
-        >
-          {count}
-        </span>
-      )}
-    </button>
-  );
 }
 
 function StepButton({ number, label, active, onClick }) {
@@ -327,7 +298,6 @@ export default function FormBuilderCard() {
     activePositionId,
     setActivePositionId,
     activeForm,
-    settings,
     getFinalInterviewForm,
     formName,
     formStatus,
@@ -339,6 +309,7 @@ export default function FormBuilderCard() {
     setFormDescription,
     fields,
     fieldTypes,
+    saveStatus,
     formSavingStatus,
     formSaveError,
     questionsSaving,
@@ -346,6 +317,7 @@ export default function FormBuilderCard() {
     handleSaveSettings,
     handleAddFieldGroup,
     handleUpdateFieldFromModal,
+    handleRenameFieldGroup,
     handleDeleteField,
     handleDeleteFieldGroup,
   } = useRecruitmentSettings();
@@ -357,10 +329,15 @@ export default function FormBuilderCard() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [formsPage, setFormsPage] = useState(1);
   const [guideHidden, setGuideHidden] = useState(false);
+  const [manualSaveFeedback, setManualSaveFeedback] = useState({
+    type: "idle",
+    message: "",
+  });
 
-  const allPositions = Array.isArray(availablePositions)
-    ? availablePositions
-    : [];
+  const allPositions = useMemo(
+    () => (Array.isArray(availablePositions) ? availablePositions : []),
+    [availablePositions],
+  );
 
   const formsForTable = useMemo(() => {
     const keyword = formsSearch.trim().toLowerCase();
@@ -387,6 +364,7 @@ export default function FormBuilderCard() {
         return [
           getPositionTitle(position),
           getPositionCode(position),
+          getPositionJdCode(form) || getPositionJdCode(position),
           getPositionDepartment(position),
           getPositionSite(position),
           getFormName(form, position),
@@ -397,47 +375,37 @@ export default function FormBuilderCard() {
       });
   }, [allPositions, formsSearch, getFinalInterviewForm, statusFilter]);
 
-  const statusCounts = useMemo(() => {
-    const counts = {
-      All: allPositions.length,
-      Active: 0,
-      Inactive: 0,
-      Draft: 0,
-    };
-
-    allPositions.forEach((position) => {
-      const form =
-        getFinalInterviewForm?.(getPositionId(position)) ||
-        getFinalInterviewForm?.(position.code) ||
-        {};
-
-      const status = getFormStatus(form);
-      counts[status] = (counts[status] || 0) + 1;
-    });
-
-    return counts;
-  }, [allPositions, getFinalInterviewForm]);
-
-  const totalFormsPages = Math.max(
+  const formsTotalPages = Math.max(
     1,
     Math.ceil(formsForTable.length / FORMS_PAGE_LIMIT),
   );
-  const currentFormsPage = Math.min(formsPage, totalFormsPages);
-  const formsPageStart = (currentFormsPage - 1) * FORMS_PAGE_LIMIT;
-  const paginatedForms = formsForTable.slice(
-    formsPageStart,
-    formsPageStart + FORMS_PAGE_LIMIT,
-  );
 
-  function handlePreviousFormsPage() {
-    if (positionsLoading || currentFormsPage <= 1) return;
-    setFormsPage(Math.max(currentFormsPage - 1, 1));
-  }
+  const formsPageRows = useMemo(() => {
+    const safePage = Math.min(Math.max(formsPage, 1), formsTotalPages);
+    const startIndex = (safePage - 1) * FORMS_PAGE_LIMIT;
 
-  function handleNextFormsPage() {
-    if (positionsLoading || currentFormsPage >= totalFormsPages) return;
-    setFormsPage(Math.min(currentFormsPage + 1, totalFormsPages));
-  }
+    return formsForTable.slice(startIndex, startIndex + FORMS_PAGE_LIMIT);
+  }, [formsForTable, formsPage, formsTotalPages]);
+
+  const formsShowingStart = formsForTable.length
+    ? (Math.min(Math.max(formsPage, 1), formsTotalPages) - 1) *
+        FORMS_PAGE_LIMIT +
+      1
+    : 0;
+  const formsShowingEnd = formsForTable.length
+    ? Math.min(
+        formsShowingStart + formsPageRows.length - 1,
+        formsForTable.length,
+      )
+    : 0;
+
+  useEffect(() => {
+    setFormsPage(1);
+  }, [formsSearch, statusFilter]);
+
+  useEffect(() => {
+    setFormsPage((previous) => Math.min(previous, formsTotalPages));
+  }, [formsTotalPages]);
 
   const groupedSections = useMemo(() => groupFieldsBySection(fields), [fields]);
   const typeOptions = useMemo(
@@ -478,6 +446,7 @@ export default function FormBuilderCard() {
 
   function openEditor(position) {
     setActivePositionId?.(getPositionId(position));
+    setManualSaveFeedback({ type: "idle", message: "" });
     setMode("editor");
     setStep(1);
     setShowAllSteps(false);
@@ -485,7 +454,26 @@ export default function FormBuilderCard() {
   }
 
   async function saveForm() {
-    await handleSaveSettings?.();
+    setManualSaveFeedback({
+      type: "saving",
+      message: "Saving form settings...",
+    });
+
+    try {
+      await handleSaveSettings?.();
+      setManualSaveFeedback({
+        type: "success",
+        message: "Form settings saved successfully.",
+      });
+    } catch (error) {
+      setManualSaveFeedback({
+        type: "error",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "The form settings could not be saved.",
+      });
+    }
   }
 
   function addBlankSection() {
@@ -528,308 +516,300 @@ export default function FormBuilderCard() {
   }
 
   const saveBusy =
-    Boolean(questionsSaving) || /saving/i.test(formSavingStatus || "");
-  const configuredCount = Array.isArray(settings?.forms)
-    ? settings.forms.length
-    : formsForTable.length;
+    manualSaveFeedback.type === "saving" ||
+    Boolean(questionsSaving) ||
+    /saving/i.test(formSavingStatus || "");
+  const saveErrorMessage =
+    manualSaveFeedback.type === "error"
+      ? manualSaveFeedback.message
+      : formSaveError || questionsSaveError;
+  const saveSuccessMessage =
+    manualSaveFeedback.type === "success"
+      ? manualSaveFeedback.message
+      : /saved/i.test(saveStatus || "")
+        ? saveStatus
+        : /saved/i.test(formSavingStatus || "")
+          ? formSavingStatus
+          : "";
+  const saveProgressMessage = saveBusy
+    ? manualSaveFeedback.type === "saving"
+      ? manualSaveFeedback.message
+      : formSavingStatus || saveStatus || "Saving form settings..."
+    : "";
+  const configuredCount = allPositions.length;
 
   if (mode === "table") {
-    const shownFrom = formsForTable.length ? formsPageStart + 1 : 0;
-    const shownTo = Math.min(
-      formsPageStart + paginatedForms.length,
-      formsForTable.length,
-    );
-
     return (
-      <>
-        <style>{`
-          @keyframes sibsFinalInterviewRowReveal {
-            from {
-              opacity: 0;
-              transform: translateY(8px);
-            }
+      <div className="relative z-[80] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <SettingsHeaderCapsules
+              items={[{ label: "Create & Edit Final Interview Forms", icon: PenLine }]}
+            />
 
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
+            <h3 className="mt-3 text-base font-extrabold text-sibs-primary-1">
+              Position-based Final Interview Forms
+            </h3>
+            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+              Manage position interview forms, scoring rubrics, passing
+              thresholds, and custom question fields.
+            </p>
+          </div>
 
-          .sibs-final-interview-row-reveal {
-            animation: sibsFinalInterviewRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
-            will-change: opacity, transform;
-          }
+          <div className="flex items-center gap-2">
+            <span className="inline-flex w-fit rounded-full border border-[#D9E9F8] bg-[#F2F7FC] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+              {configuredCount} Records
+            </span>
+            <button
+              type="button"
+              onClick={() => refreshAvailablePositions?.()}
+              disabled={positionsLoading}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#F2F6FA] text-sibs-primary-1 transition hover:bg-[#E8EEF5] disabled:cursor-not-allowed disabled:opacity-60"
+              title="Refresh forms"
+            >
+              <RefreshCw
+                size={16}
+                className={positionsLoading ? "animate-spin" : ""}
+              />
+            </button>
+          </div>
+        </div>
 
-          @media (prefers-reduced-motion: reduce) {
-            .sibs-final-interview-row-reveal {
-              animation: none !important;
-              transform: none !important;
-            }
-          }
-        `}</style>
-
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[10px] font-extrabold text-[#8A98B8]">
-                <span>Settings</span>
-                <span>/</span>
-                <span className="text-sibs-primary-1">
-                  Position-based Final Interview Forms
-                </span>
-              </div>
-              <h3 className="sibs-section-title text-[18px] sm:text-[20px]">
-                Position-based Final Interview Forms
-              </h3>
-              <p className="sibs-section-subtitle mt-1">
-                Manage position interview forms, scoring rubrics, passing thresholds, and custom question fields.
-              </p>
+        <div className="mb-5 grid grid-cols-1 gap-3 border-b border-[#E6ECF2] pb-5 xl:grid-cols-[minmax(280px,1fr)_minmax(220px,260px)_auto] xl:items-end">
+          <div>
+            <label className="mb-1 block text-xs font-bold text-[#101828]">
+              Search
+            </label>
+            <div className="relative">
+              <Search
+                size={17}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+              />
+              <input
+                value={formsSearch}
+                onChange={(event) => setFormsSearch(event.target.value)}
+                className="h-10 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 pl-11 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                placeholder="Search forms by role title, position code, department..."
+              />
             </div>
+          </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="inline-flex h-8 items-center rounded-full border border-blue-100 bg-blue-50 px-3 text-[10px] font-extrabold uppercase tracking-wide text-blue-700">
-                {configuredCount} configured forms
-              </span>
+          <div>
+            <label className="mb-1 block text-xs font-bold text-[#101828]">
+              Status
+            </label>
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="h-10 w-full appearance-none rounded-[10px] border border-[#D6DEE8] bg-white px-4 pr-10 text-xs font-extrabold text-sibs-primary-1 outline-none transition hover:border-[#BFD8F1] focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+              >
+                {TABLE_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {status === "All" ? "All Status" : status}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={16}
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sibs-primary-1"
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setFormsSearch("");
+              setStatusFilter("All");
+            }}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-extrabold text-sibs-tertiary-5 transition-all duration-200 hover:border-[#FF5C28]/30 hover:bg-white hover:text-sibs-primary-1 active:scale-[0.98]"
+          >
+            <Filter size={17} />
+            Clear
+          </button>
+        </div>
+
+        {positionsError && (
+          <div className="mb-4 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] font-bold text-amber-700">
+            {positionsError}
+          </div>
+        )}
+
+        <div className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white">
+          <div className="overflow-x-auto">
+            <table className="min-w-[980px] w-full border-collapse">
+              <thead>
+                <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC] text-left text-[11px] font-extrabold uppercase tracking-normal text-[#667085]">
+                  <th className="px-5 py-4">Position Title & Code</th>
+                  <th className="px-5 py-4">Department & Site</th>
+                  <th className="px-5 py-4">Form Name</th>
+                  <th className="px-5 py-4">Passing Score</th>
+                  <th className="px-5 py-4">Criteria</th>
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E6ECF2]">
+                {formsPageRows.map(({ position, form }) => {
+                  const status = getFormStatus(form);
+                  const jdReference =
+                    getPositionJdCode(form) || getPositionJdCode(position);
+
+                  return (
+                    <tr
+                      key={getPositionId(position)}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openEditor(position)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openEditor(position);
+                        }
+                      }}
+                      className="cursor-pointer bg-white text-xs outline-none transition hover:bg-[#F8FAFC] focus:bg-[#F8FAFC]"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-start gap-3">
+                          <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#FF5C28]" />
+                          <div className="min-w-0">
+                            <p className="max-w-[220px] truncate text-xs font-extrabold text-sibs-primary-1">
+                              {getPositionTitle(position)}
+                            </p>
+                            <p className="mt-1 text-[11px] font-bold text-sibs-tertiary-5">
+                              {getPositionCode(position)}
+                            </p>
+                            {jdReference && (
+                              <p className="mt-0.5 text-[11px] font-extrabold text-[#FF5C28]">
+                                JD: {jdReference}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="text-xs font-extrabold text-sibs-primary-1">
+                          {getPositionDepartment(position)}
+                        </p>
+                        <p className="mt-1 text-[11px] font-semibold text-[#667085]">
+                          {getPositionSite(position)}
+                        </p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="max-w-[260px] truncate text-xs font-semibold text-sibs-primary-1">
+                          {getFormName(form, position)}
+                        </p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex rounded-lg border border-[#BFD8F1] bg-[#EFF6FF] px-3 py-1 text-xs font-extrabold text-[#004B8D]">
+                          {getPassingScore(form)}%
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex rounded-lg bg-[#F1F5F9] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                          {getCriteriaCount(form)} Fields
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold uppercase ${statusBadgeClass(status)}`}
+                        >
+                          {status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openPreview(position, form);
+                            }}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-sibs-tertiary-5 transition hover:bg-[#F1F7FD] hover:text-sibs-primary-1"
+                            title="Preview form"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {positionsLoading && !formsForTable.length && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-14 text-center">
+                      <div className="inline-flex items-center gap-2 text-sm font-extrabold text-sibs-primary-1">
+                        <Loader2 size={18} className="animate-spin" />
+                        Loading final interview forms...
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!positionsLoading && !formsForTable.length && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-14 text-center">
+                      <p className="text-sm font-extrabold text-sibs-tertiary-5">
+                        No final interview forms match the selected filters.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-col justify-between gap-4 border-t border-[#E6ECF2] px-6 py-5 md:flex-row md:items-center">
+            <p className="text-xs font-semibold text-sibs-tertiary-5">
+              Showing {formsShowingStart} to {formsShowingEnd} of{" "}
+              {formsForTable.length} final interview form records
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => refreshAvailablePositions?.()}
-                disabled={positionsLoading}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#DCE6F1] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-                title="Refresh forms"
+                onClick={() => setFormsPage((page) => Math.max(page - 1, 1))}
+                disabled={formsPage <= 1}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-xs font-extrabold text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <RefreshCw
-                  size={14}
-                  className={positionsLoading ? "animate-spin" : ""}
-                />
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+
+              {Array.from({ length: formsTotalPages }, (_, index) => index + 1)
+                .slice(0, 7)
+                .map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setFormsPage(page)}
+                    className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-extrabold transition active:scale-[0.98] ${
+                      formsPage === page
+                        ? "bg-[#FF5C28] text-white shadow-sm"
+                        : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFormsPage((page) => Math.min(page + 1, formsTotalPages))
+                }
+                disabled={formsPage >= formsTotalPages}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#BFD8F1] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
-
-          <div className="relative overflow-visible p-4 sm:p-5">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-              <label className="min-w-0">
-                <span className="mb-1 block text-[10px] font-extrabold text-[#101828]">
-                  Search
-                </span>
-                <div className="relative">
-                  <Search
-                    size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A98B8]"
-                  />
-                  <input
-                    value={formsSearch}
-                    onChange={(event) => {
-                      setFormsSearch(event.target.value);
-                      setFormsPage(1);
-                    }}
-                    className="h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-3 pl-9 text-[11px] font-semibold text-sibs-primary-1 outline-none transition placeholder:text-[#8A98B8] focus:border-[#BFD8F1] focus:ring-2 focus:ring-[#EFF6FF]"
-                    placeholder="Search forms by role title, position code, department..."
-                  />
-                </div>
-              </label>
-
-              <div className="min-w-0">
-                <span className="mb-1 block text-[10px] font-extrabold text-[#101828]">
-                  Status
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {TABLE_STATUS_OPTIONS.map((status) => (
-                    <StatusFilterButton
-                      key={status}
-                      active={statusFilter === status}
-                      count={status === "All" ? undefined : statusCounts[status]}
-                      onClick={() => {
-                        setStatusFilter(status);
-                        setFormsPage(1);
-                      }}
-                    >
-                      {status}
-                    </StatusFilterButton>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {positionsError && (
-              <div className="mt-3 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] font-bold text-amber-700">
-                {positionsError}
-              </div>
-            )}
-
-            <div className="mt-4 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-              <div className="max-h-[580px] overflow-auto sibs-scrollbar">
-                <table className="w-full min-w-[920px] border-collapse bg-white">
-                  <thead className="sibs-data-table-head">
-                    <tr className="sibs-data-table-head-row">
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
-                        Position Title &amp; Code
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
-                        Department &amp; Site
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-left">
-                        Form Name
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
-                        Passing Score
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
-                        Criteria
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
-                        Status
-                      </th>
-                      <th className="sibs-data-table-th whitespace-nowrap py-3 text-center">
-                        Preview
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody
-                    key={`${currentFormsPage}-${formsSearch}-${statusFilter}-${positionsLoading}`}
-                    className="divide-y divide-[#F1F5F9]"
-                  >
-                    {positionsLoading && !paginatedForms.length ? (
-                      Array.from({ length: FORMS_PAGE_LIMIT }).map((_, index) => (
-                        <tr key={index}>
-                          <td colSpan={7} className="px-3 py-3">
-                            <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E6ECF2]" />
-                          </td>
-                        </tr>
-                      ))
-                    ) : paginatedForms.length > 0 ? (
-                      paginatedForms.map(({ position, form }, index) => {
-                        const status = getFormStatus(form);
-
-                        return (
-                          <tr
-                            key={getPositionId(position)}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => openEditor(position)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                openEditor(position);
-                              }
-                            }}
-                            className="sibs-data-table-row sibs-final-interview-row-reveal cursor-pointer outline-none hover:bg-[#FFF9F6] focus:bg-[#FFF9F6]"
-                            style={{
-                              animationDelay: `${Math.min(index, 10) * 36}ms`,
-                            }}
-                          >
-                            <td className="whitespace-nowrap px-3 py-3 text-[11px]">
-                              <div className="flex items-center gap-2.5">
-                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF5C28]" />
-                                <div className="min-w-0">
-                                  <p className="max-w-[210px] truncate font-extrabold text-sibs-primary-1">
-                                    {getPositionTitle(position)}
-                                  </p>
-                                  <p className="mt-0.5 text-[10px] font-bold text-[#52637A]">
-                                    {getPositionCode(position)}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-3 py-3 text-[11px]">
-                              <p className="max-w-[220px] truncate font-extrabold text-sibs-primary-1">
-                                {getPositionDepartment(position)}
-                              </p>
-                              <p className="mt-0.5 text-[10px] font-medium text-[#667085]">
-                                {getPositionSite(position)}
-                              </p>
-                            </td>
-                            <td className="px-3 py-3 text-[11px]">
-                              <p className="max-w-[270px] truncate font-semibold text-sibs-primary-1">
-                                {getFormName(form, position)}
-                              </p>
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <span className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-extrabold text-blue-700">
-                                {getPassingScore(form)}%
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <span className="inline-flex rounded-md bg-[#F1F5F9] px-2 py-1 text-[10px] font-extrabold text-sibs-primary-1">
-                                {getCriteriaCount(form)} Fields
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <span
-                                className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase ${statusBadgeClass(status)}`}
-                              >
-                                {status}
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  openPreview(position, form);
-                                }}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] text-[#52637A] transition hover:bg-[#F1F7FD] hover:text-sibs-primary-1"
-                                title="Preview form"
-                              >
-                                <Eye size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={7} className="p-12 text-center">
-                          <p className="text-sm font-extrabold text-sibs-primary-1">
-                            No final interview forms found
-                          </p>
-                          <p className="mt-1 text-xs font-semibold text-[#667085]">
-                            Adjust the search or status filter to view other forms.
-                          </p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-3 border-t border-[#E6ECF2] pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-[11px] font-semibold text-[#667085]">
-                Showing <span className="font-extrabold text-sibs-primary-1">{shownFrom}</span> to{" "}
-                <span className="font-extrabold text-sibs-primary-1">{shownTo}</span> of{" "}
-                <span className="font-extrabold text-sibs-primary-1">{formsForTable.length}</span> forms
-              </p>
-
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handlePreviousFormsPage}
-                  disabled={positionsLoading || currentFormsPage <= 1}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-[11px] font-bold text-[#52637A] transition hover:border-[#BFD8F1] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronLeft size={14} />
-                  Previous
-                </button>
-
-                <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-[10px] bg-[#FF5C28] px-3 text-[11px] font-extrabold text-white shadow-sm">
-                  {currentFormsPage}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={handleNextFormsPage}
-                  disabled={positionsLoading || currentFormsPage >= totalFormsPages}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-[11px] font-bold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Next
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </>
+        </div>
+      </div>
     );
   }
 
@@ -840,10 +820,45 @@ export default function FormBuilderCard() {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
       <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-wrap items-center gap-3 border-b border-[#E6ECF2] pb-3">
+          <button
+            type="button"
+            onClick={() => setMode("table")}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-3 text-[11px] font-extrabold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#F8FAFC]"
+          >
+            <ArrowLeft size={14} className="text-[#FF5C28]" />
+            Back to Forms
+          </button>
+          <span className="hidden h-5 w-px bg-[#D6DEE8] sm:inline-flex" />
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-[11px] font-extrabold text-sibs-tertiary-5">
+            <button
+              type="button"
+              onClick={() => setMode("table")}
+              className="rounded px-1 py-0.5 text-sibs-primary-1 transition hover:bg-[#F2F7FC] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#BFD8F1]"
+            >
+              Settings
+            </button>
+            <span className="text-[#B8C3D2]">/</span>
+            <button
+              type="button"
+              onClick={() => setMode("table")}
+              className="rounded px-1 py-0.5 text-sibs-primary-1 transition hover:bg-[#F2F7FC] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#BFD8F1]"
+            >
+              Position-based Final Interview Forms
+            </button>
+            <span className="text-[#B8C3D2]">/</span>
+            <span className="inline-flex max-w-[240px] items-center rounded-md border border-[#D9E9F8] bg-[#F2F7FC] px-2.5 py-1 text-[10px] font-extrabold text-sibs-primary-1">
+              <span className="truncate">
+                {getPositionTitle(selectedPosition)}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-sibs-primary-1">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-[#D9E9F8] bg-[#F2F7FC] px-2.5 py-1 text-[10px] font-extrabold uppercase text-sibs-primary-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
                 FINAL INTERVIEW FORM EDITOR
               </span>
@@ -851,70 +866,60 @@ export default function FormBuilderCard() {
                 {getPositionCode(selectedPosition)}
               </span>
             </div>
-            <h3 className="text-[20px] font-extrabold leading-tight text-sibs-primary-1">
-              Position-based Final Interview Forms
+            <h3 className="max-w-4xl truncate text-2xl font-extrabold uppercase leading-tight text-sibs-primary-1">
+              {getPositionTitle(selectedPosition)}
             </h3>
             <p className="mt-1 text-[12px] font-medium leading-5 text-[#667085]">
-              Configure the selected position's final interview form, scoring threshold, sections, and criteria fields.
+              Configure this position's final interview form, scoring threshold,
+              sections, and criteria fields.
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMode("table")}
-              className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-3 text-[11px] font-extrabold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#F8FAFC]"
-            >
-              <ArrowLeft size={14} className="text-[#FF5C28]" />
-              Back to Forms
-            </button>
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+            {(saveProgressMessage ||
+              saveSuccessMessage ||
+              saveErrorMessage) && (
+              <span
+                role="status"
+                aria-live="polite"
+                className={`inline-flex min-h-10 max-w-[320px] items-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold ${
+                  saveErrorMessage
+                    ? "border-red-200 bg-red-50 text-red-700"
+                    : saveProgressMessage
+                      ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                }`}
+              >
+                {saveErrorMessage ? (
+                  <TriangleAlert size={15} className="shrink-0" />
+                ) : saveProgressMessage ? (
+                  <Loader2 size={15} className="shrink-0 animate-spin" />
+                ) : (
+                  <CheckCircle2 size={15} className="shrink-0" />
+                )}
+                <span className="line-clamp-2">
+                  {saveErrorMessage ||
+                    saveProgressMessage ||
+                    saveSuccessMessage}
+                </span>
+              </span>
+            )}
             <button
               type="button"
               onClick={() => refreshAvailablePositions?.()}
               disabled={positionsLoading}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#DCE6F1] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-[#DCE6F1] bg-white text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
               title="Refresh forms"
             >
               <RefreshCw
-                size={14}
+                size={15}
                 className={positionsLoading ? "animate-spin" : ""}
               />
             </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 sm:p-5">
-        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 lg:flex-row lg:items-end lg:justify-between">
-          <label className="min-w-0 flex-1">
-            <span className="mb-1 block text-[10px] font-extrabold text-[#101828]">
-              Currently Editing Role
-            </span>
-            <select
-              value={getPositionId(selectedPosition)}
-              onChange={(event) => {
-                setActivePositionId?.(event.target.value);
-                setStep(1);
-                setShowAllSteps(false);
-              }}
-              className="h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-3 text-[11px] font-extrabold text-sibs-primary-1 outline-none transition focus:border-[#BFD8F1] focus:ring-2 focus:ring-[#EFF6FF] lg:max-w-[560px]"
-            >
-              {allPositions.map((position) => (
-                <option
-                  key={getPositionId(position)}
-                  value={getPositionId(position)}
-                >
-                  {getPositionTitle(position)} ({getPositionCode(position)})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => openPreview()}
-              className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-3 text-[11px] font-extrabold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#EFF6FF]"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-[11px] font-extrabold text-sibs-primary-1 transition hover:border-[#BFD8F1] hover:bg-[#F8FAFC]"
             >
               <Eye size={14} className="text-[#FF5C28]" />
               Test Live Evaluation
@@ -923,7 +928,7 @@ export default function FormBuilderCard() {
               type="button"
               onClick={() => void saveForm()}
               disabled={saveBusy}
-              className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-sibs-primary-1 px-3.5 text-[11px] font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-4 text-[11px] font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {saveBusy ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -934,7 +939,9 @@ export default function FormBuilderCard() {
             </button>
           </div>
         </div>
+      </div>
 
+      <div className="p-4 sm:p-5">
         <section className="mb-4 rounded-xl border border-[#E6ECF2] bg-white p-3.5">
           <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#EDF1F5] pb-2.5">
             <div>
@@ -945,557 +952,604 @@ export default function FormBuilderCard() {
                 Review the selected position before editing its interview form.
               </p>
             </div>
-            <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase ${statusBadgeClass(formStatus || "Active")}`}>
+            <span
+              className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase ${statusBadgeClass(formStatus || "Active")}`}
+            >
               {formStatus || "Active"}
             </span>
           </div>
 
           <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-5">
             <div className="min-w-0 rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 xl:col-span-2">
-              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">Position Title</p>
-              <p className="mt-1 truncate text-[12px] font-extrabold text-sibs-primary-1">{getPositionTitle(selectedPosition)}</p>
-              <p className="mt-0.5 text-[10px] font-bold text-[#FF5C28]">{getPositionCode(selectedPosition)}</p>
+              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">
+                Position Title
+              </p>
+              <p className="mt-1 truncate text-[12px] font-extrabold text-sibs-primary-1">
+                {getPositionTitle(selectedPosition)}
+              </p>
+              <p className="mt-0.5 text-[10px] font-bold text-[#FF5C28]">
+                {getPositionCode(selectedPosition)}
+              </p>
             </div>
             <div className="min-w-0 rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5">
-              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">Department / Site</p>
-              <p className="mt-1 truncate text-[11px] font-extrabold text-sibs-primary-1">{getPositionDepartment(selectedPosition)}</p>
-              <p className="mt-0.5 truncate text-[10px] font-medium text-[#667085]">{getPositionSite(selectedPosition)}</p>
+              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">
+                Department / Site
+              </p>
+              <p className="mt-1 truncate text-[11px] font-extrabold text-sibs-primary-1">
+                {getPositionDepartment(selectedPosition)}
+              </p>
+              <p className="mt-0.5 truncate text-[10px] font-medium text-[#667085]">
+                {getPositionSite(selectedPosition)}
+              </p>
             </div>
             <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5">
-              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">Passing Score</p>
-              <p className="mt-1 text-[16px] font-extrabold tabular-nums text-[#FF5C28]">{passingScore || 80}%</p>
+              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">
+                Passing Score
+              </p>
+              <p className="mt-1 text-[16px] font-extrabold tabular-nums text-[#FF5C28]">
+                {passingScore || 80}%
+              </p>
             </div>
             <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5">
-              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">Criteria Fields</p>
-              <p className="mt-1 text-[16px] font-extrabold tabular-nums text-sibs-primary-1">{totalCriteria}</p>
+              <p className="text-[9px] font-extrabold uppercase text-[#8A98B8]">
+                Criteria Fields
+              </p>
+              <p className="mt-1 text-[16px] font-extrabold tabular-nums text-sibs-primary-1">
+                {totalCriteria}
+              </p>
             </div>
           </div>
         </section>
 
-      {(formSavingStatus || formSaveError || questionsSaveError) && (
-        <div className="mb-3 flex flex-wrap gap-2">
-          {formSavingStatus && (
-            <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-              {/saving/i.test(formSavingStatus) && (
-                <Loader2 size={13} className="animate-spin" />
-              )}
-              {formSavingStatus}
+        {(saveProgressMessage || saveSuccessMessage || saveErrorMessage) && (
+          <div
+            role="alert"
+            aria-live="polite"
+            className={`mb-3 flex items-start gap-2 rounded-[10px] border px-3.5 py-3 text-xs font-extrabold ${
+              saveErrorMessage
+                ? "border-red-200 bg-red-50 text-red-700"
+                : saveProgressMessage
+                  ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            {saveErrorMessage ? (
+              <TriangleAlert size={16} className="mt-0.5 shrink-0" />
+            ) : saveProgressMessage ? (
+              <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin" />
+            ) : (
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+            )}
+            <span>
+              {saveErrorMessage || saveProgressMessage || saveSuccessMessage}
             </span>
-          )}
-          {(formSaveError || questionsSaveError) && (
-            <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-extrabold text-red-700">
-              {formSaveError || questionsSaveError}
-            </span>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
         <div className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white p-1.5 shadow-sm sibs-scrollbar">
-        <StepButton
-          number={1}
-          label="Form Info & Score"
-          active={!showAllSteps && step === 1}
-          onClick={() => {
-            setStep(1);
-            setShowAllSteps(false);
-          }}
-        />
-        <StepButton
-          number={2}
-          label="Sections & Presets"
-          active={!showAllSteps && step === 2}
-          onClick={() => {
-            setStep(2);
-            setShowAllSteps(false);
-          }}
-        />
-        <StepButton
-          number={3}
-          label="Questions & Rating Types"
-          active={!showAllSteps && step === 3}
-          onClick={() => {
-            setStep(3);
-            setShowAllSteps(false);
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => setShowAllSteps((value) => !value)}
-          className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold transition ${
-            showAllSteps
-              ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
-              : "border-transparent bg-white text-[#344054] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
-          }`}
-        >
-          <Layers
-            size={15}
-            className={showAllSteps ? "text-[#FF5C28]" : "text-[#98A2B3]"}
+          <StepButton
+            number={1}
+            label="Form Info & Score"
+            active={!showAllSteps && step === 1}
+            onClick={() => {
+              setStep(1);
+              setShowAllSteps(false);
+            }}
           />
-          {showAllSteps ? "Guided Wizard Mode" : "Show All Steps"}
-        </button>
+          <StepButton
+            number={2}
+            label="Sections & Presets"
+            active={!showAllSteps && step === 2}
+            onClick={() => {
+              setStep(2);
+              setShowAllSteps(false);
+            }}
+          />
+          <StepButton
+            number={3}
+            label="Questions & Rating Types"
+            active={!showAllSteps && step === 3}
+            onClick={() => {
+              setStep(3);
+              setShowAllSteps(false);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowAllSteps((value) => !value)}
+            className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold transition ${
+              showAllSteps
+                ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
+                : "border-transparent bg-white text-[#344054] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+            }`}
+          >
+            <Layers
+              size={15}
+              className={showAllSteps ? "text-[#FF5C28]" : "text-[#98A2B3]"}
+            />
+            {"Show All Steps"}
+          </button>
         </div>
 
         <BeginnerGuide
-        hidden={guideHidden}
-        onToggle={() => setGuideHidden((value) => !value)}
-      />
+          hidden={guideHidden}
+          onToggle={() => setGuideHidden((value) => !value)}
+        />
 
         <div className="mt-4 space-y-4">
-        {showStepOne && (
-          <section className="rounded-xl border border-[#D9E2EC] bg-white p-4">
-            <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-3">
-              <div>
-                <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
-                  Step 1 of 3
-                </span>
-                <h4 className="mt-2 text-[15px] font-extrabold text-sibs-primary-1">
-                  Form Basic Information & Passing Threshold
-                </h4>
+          {showStepOne && (
+            <section className="rounded-xl border border-[#D9E2EC] bg-white p-4">
+              <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-3">
+                <div>
+                  <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
+                    Step 1 of 3
+                  </span>
+                  <h4 className="mt-2 text-[15px] font-extrabold text-sibs-primary-1">
+                    Form Basic Information & Passing Threshold
+                  </h4>
+                </div>
+                <p className="text-[13px] font-medium leading-5 text-sibs-tertiary-5">
+                  Position Code: {getPositionCode(selectedPosition)}
+                  {getPositionJdCode(selectedForm) ||
+                  getPositionJdCode(selectedPosition)
+                    ? ` • JD: ${
+                        getPositionJdCode(selectedForm) ||
+                        getPositionJdCode(selectedPosition)
+                      }`
+                    : ""}
+                </p>
               </div>
-              <p className="text-[13px] font-medium leading-5 text-sibs-tertiary-5">
-                Position Code: {getPositionCode(selectedPosition)}
-              </p>
-            </div>
 
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(220px,0.75fr)_minmax(220px,0.55fr)]">
-              <label className="block">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(220px,0.75fr)_minmax(220px,0.55fr)]">
+                <label className="block">
+                  <span className="text-xs font-extrabold text-sibs-primary-1">
+                    Form Name <span className="text-red-500">*</span>
+                  </span>
+                  <input
+                    value={formName || ""}
+                    onChange={(event) => setFormName?.(event.target.value)}
+                    className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                  />
+                  <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                    Name displayed to interviewers during live evaluation.
+                  </span>
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-extrabold text-sibs-primary-1">
+                    Form Status
+                  </span>
+                  <select
+                    value={formStatus || "Active"}
+                    onChange={(event) => setFormStatus?.(event.target.value)}
+                    className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                  >
+                    {FORM_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status === "Active"
+                          ? "Active (Ready for Hiring)"
+                          : status}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                    Only Active forms appear to interviewers.
+                  </span>
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-extrabold text-sibs-primary-1">
+                    Passing Score (%) <span className="text-red-500">*</span>
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={passingScore ?? 80}
+                    onChange={(event) => setPassingScore?.(event.target.value)}
+                    className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                  />
+                  <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                    Minimum score candidate needs to pass.
+                  </span>
+                </label>
+              </div>
+
+              <label className="mt-4 block">
                 <span className="text-xs font-extrabold text-sibs-primary-1">
-                  Form Name <span className="text-red-500">*</span>
+                  Description / Evaluation Directive
                 </span>
-                <input
-                  value={formName || ""}
-                  onChange={(event) => setFormName?.(event.target.value)}
-                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                <textarea
+                  rows={2}
+                  value={formDescription || ""}
+                  onChange={(event) => setFormDescription?.(event.target.value)}
+                  className="mt-1.5 w-full resize-none rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
                 />
                 <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
-                  Name displayed to interviewers during live evaluation.
+                  Instructions visible at the top of the interview form.
                 </span>
               </label>
 
-              <label className="block">
-                <span className="text-xs font-extrabold text-sibs-primary-1">
-                  Form Status
-                </span>
-                <select
-                  value={formStatus || "Active"}
-                  onChange={(event) => setFormStatus?.(event.target.value)}
-                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                >
-                  {FORM_STATUS_OPTIONS.map((status) => (
-                    <option key={status} value={status}>
-                      {status === "Active"
-                        ? "Active (Ready for Hiring)"
-                        : status}
-                    </option>
-                  ))}
-                </select>
-                <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
-                  Only Active forms appear to interviewers.
-                </span>
-              </label>
+              {!showAllSteps && (
+                <div className="mt-5 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90"
+                  >
+                    Next Step: Add & Organize Sections
+                    <Plus size={15} className="text-[#FF5C28]" />
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
 
-              <label className="block">
-                <span className="text-xs font-extrabold text-sibs-primary-1">
-                  Passing Score (%) <span className="text-red-500">*</span>
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={passingScore ?? 80}
-                  onChange={(event) => setPassingScore?.(event.target.value)}
-                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                />
-                <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
-                  Minimum score candidate needs to pass.
-                </span>
-              </label>
-            </div>
-
-            <label className="mt-4 block">
-              <span className="text-xs font-extrabold text-sibs-primary-1">
-                Description / Evaluation Directive
-              </span>
-              <textarea
-                rows={2}
-                value={formDescription || ""}
-                onChange={(event) => setFormDescription?.(event.target.value)}
-                className="mt-1.5 w-full resize-none rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-              />
-              <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
-                Instructions visible at the top of the interview form.
-              </span>
-            </label>
-
-            {!showAllSteps && (
-              <div className="mt-5 flex justify-end">
+          {showStepTwo && (
+            <section className="rounded-xl border border-[#D9E2EC] bg-white p-4">
+              <div className="mb-3 flex flex-col gap-3 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
+                    Step 2 of 3
+                  </span>
+                  <h4 className="mt-2 text-[15px] font-extrabold text-sibs-primary-1">
+                    Form Sections & 1-Click Presets
+                  </h4>
+                  <p className="text-[13px] font-medium leading-5 text-[#475467]">
+                    Sections organize evaluation criteria into categories.
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90"
+                  onClick={addBlankSection}
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E64E1D]"
                 >
-                  Next Step: Add & Organize Sections
-                  <Plus size={15} className="text-[#FF5C28]" />
+                  <Plus size={15} />
+                  Add Blank Section
                 </button>
               </div>
-            )}
-          </section>
-        )}
 
-        {showStepTwo && (
-          <section className="rounded-xl border border-[#D9E2EC] bg-white p-4">
-            <div className="mb-3 flex flex-col gap-3 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
-                  Step 2 of 3
-                </span>
-                <h4 className="mt-2 text-[15px] font-extrabold text-sibs-primary-1">
-                  Form Sections & 1-Click Presets
-                </h4>
-                <p className="text-[13px] font-medium leading-5 text-[#475467]">
-                  Sections organize evaluation criteria into categories.
+              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+                <p className="mb-3 flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
+                  <Sparkles size={15} className="text-[#FF5C28]" />
+                  Need help structuring your form? Click a 1-Click Standard
+                  Section Preset:
                 </p>
-              </div>
-              <button
-                type="button"
-                onClick={addBlankSection}
-                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E64E1D]"
-              >
-                <Plus size={15} />
-                Add Blank Section
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-              <p className="mb-3 flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
-                <Sparkles size={15} className="text-[#FF5C28]" />
-                Need help structuring your form? Click a 1-Click Standard
-                Section Preset:
-              </p>
-              <div className="grid gap-2.5 lg:grid-cols-4">
-                {SECTION_PRESETS.map((preset) => (
-                  <button
-                    key={preset.title}
-                    type="button"
-                    onClick={() =>
-                      handleAddFieldGroup?.(preset.title, preset.questions)
-                    }
-                    className="rounded-[10px] border border-[#D6DEE8] bg-white px-3 py-2.5 text-left transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
-                  >
-                    <p className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
-                      <Plus size={14} className="text-[#FF5C28]" />
-                      {preset.title}
-                    </p>
-                    <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-                      {preset.subtitle}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="text-xs font-extrabold uppercase text-sibs-primary-1">
-                  Current Form Sections ({groupedSections.length})
-                </p>
-                <div className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
-                  <button type="button" className="hover:text-[#FF5C28]">
-                    Expand All
-                  </button>
-                  <span className="text-sibs-tertiary-5">-</span>
-                  <button type="button" className="hover:text-[#FF5C28]">
-                    Collapse All
-                  </button>
+                <div className="grid gap-2.5 lg:grid-cols-4">
+                  {SECTION_PRESETS.map((preset) => (
+                    <button
+                      key={preset.title}
+                      type="button"
+                      onClick={() =>
+                        handleAddFieldGroup?.(preset.title, preset.questions)
+                      }
+                      className="rounded-[10px] border border-[#D6DEE8] bg-white px-3 py-2.5 text-left transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+                    >
+                      <p className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
+                        <Plus size={14} className="text-[#FF5C28]" />
+                        {preset.title}
+                      </p>
+                      <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
+                        {preset.subtitle}
+                      </p>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {groupedSections.map((group, index) => (
-                  <div
-                    key={group.section}
-                    className="flex items-center gap-2.5 rounded-[10px] border border-[#D9E2EC] bg-[#F8FAFC] px-3 py-2.5"
-                  >
-                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
-                      S{index + 1}
-                    </span>
-                    <div className="min-w-0 flex-1 rounded-lg border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-extrabold uppercase text-sibs-primary-1">
-                      {index + 1}. {group.section}
-                    </div>
-                    <span className="hidden rounded-lg border border-[#D6DEE8] bg-white px-3 py-2 text-xs font-extrabold text-[#475467] sm:inline-flex">
-                      {group.questions.length} Questions
-                    </span>
-                    <button
-                      type="button"
-                      className="inline-flex h-9 w-12 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1"
-                      title="Move section"
-                    >
-                      <ChevronUp size={14} />
-                      <ChevronDown size={14} />
+              <div className="mt-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-xs font-extrabold uppercase text-sibs-primary-1">
+                    Current Form Sections ({groupedSections.length})
+                  </p>
+                  <div className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
+                    <button type="button" className="hover:text-[#FF5C28]">
+                      Expand All
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteFieldGroup?.(group.section)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50"
-                      title="Delete section"
-                    >
-                      <Trash2 size={16} />
+                    <span className="text-sibs-tertiary-5">-</span>
+                    <button type="button" className="hover:text-[#FF5C28]">
+                      Collapse All
                     </button>
                   </div>
-                ))}
+                </div>
 
-                {!groupedSections.length && (
-                  <div className="rounded-xl border border-dashed border-[#C8D7E8] bg-white px-4 py-10 text-center text-sm font-extrabold text-sibs-tertiary-5">
-                    No sections yet. Add a preset or blank section to start.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {!showAllSteps && (
-              <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-5">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
-                >
-                  <ArrowLeft size={15} />
-                  Previous Step
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90"
-                >
-                  Next Step: Edit Criteria Questions
-                  <Plus size={15} className="text-[#FF5C28]" />
-                </button>
-              </div>
-            )}
-          </section>
-        )}
-
-        {showStepThree && (
-          <section>
-            <div className="mb-3 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-white p-3.5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold uppercase text-blue-700">
-                  Step 3 of 3
-                </span>
-                <h4 className="mt-2 text-sm font-extrabold uppercase text-sibs-primary-1">
-                  Configure Criteria Fields & Rating Scales
-                </h4>
-                <p className="text-[13px] font-medium leading-5 text-[#475467]">
-                  {groupedSections.length} Sections - {totalCriteria} Criteria
-                  Fields
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
-                >
-                  Expand All
-                </button>
-                <button
-                  type="button"
-                  className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
-                >
-                  Collapse All
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openPreview()}
-                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white"
-                >
-                  <Eye size={15} className="text-[#FF5C28]" />
-                  Test Live Form
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3.5">
-              {groupedSections.map((group, groupIndex) => (
-                <div
-                  key={group.section}
-                  className="overflow-hidden rounded-xl border border-[#D9E2EC] bg-white"
-                >
-                  <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
-                        S{groupIndex + 1}
+                <div className="space-y-3">
+                  {groupedSections.map((group, index) => (
+                    <div
+                      key={group.section}
+                      className="flex items-center gap-2.5 rounded-[10px] border border-[#D9E2EC] bg-[#F8FAFC] px-3 py-2.5"
+                    >
+                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
+                        S{index + 1}
                       </span>
-                      <div className="min-w-0 flex-1 px-1 text-[13px] font-extrabold uppercase text-sibs-primary-1">
-                        {groupIndex + 1}. {group.section}
+                      <div className="min-w-0 flex-1 rounded-lg border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-extrabold uppercase text-sibs-primary-1">
+                        {index + 1}. {group.section}
                       </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="hidden rounded-lg border border-[#D6DEE8] bg-white px-3 py-2 text-xs font-extrabold text-[#475467] sm:inline-flex">
+                        {group.questions.length} Questions
+                      </span>
                       <button
                         type="button"
-                        className="inline-flex h-8 w-10 items-center justify-center rounded-[9px] border border-[#D6DEE8] bg-white text-[#667085]"
+                        className="inline-flex h-9 w-12 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1"
+                        title="Move section"
                       >
-                        <ChevronUp size={15} />
-                        <ChevronDown size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addFieldToSection(group.section)}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#FF5C28] px-3 text-[10px] font-extrabold text-white"
-                      >
-                        <Plus size={15} />
-                        Add Field
-                      </button>
-                      <button
-                        type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] border border-[#D6DEE8] bg-white text-[#667085]"
-                      >
-                        <ChevronUp size={15} />
+                        <ChevronUp size={14} />
+                        <ChevronDown size={14} />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteFieldGroup?.(group.section)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] border border-red-100 bg-red-50 text-red-500"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50"
+                        title="Delete section"
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {!groupedSections.length && (
+                    <div className="rounded-xl border border-dashed border-[#C8D7E8] bg-white px-4 py-10 text-center text-sm font-extrabold text-sibs-tertiary-5">
+                      No sections yet. Add a preset or blank section to start.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {!showAllSteps && (
+                <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-5">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                  >
+                    <ArrowLeft size={15} />
+                    Previous Step
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90"
+                  >
+                    Next Step: Edit Criteria Questions
+                    <Plus size={15} className="text-[#FF5C28]" />
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
+
+          {showStepThree && (
+            <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+              <div className="mb-4 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <span className="inline-flex rounded-md bg-[#F1F5F9] px-2 py-1 text-xs font-extrabold uppercase text-sibs-primary-1">
+                    Step 3 of 3
+                  </span>
+                  <h4 className="mt-2 text-sm font-extrabold uppercase text-sibs-primary-1">
+                    Configure Criteria Fields & Rating Scales
+                  </h4>
+                  <p className="text-xs font-medium text-[#475467]">
+                    {groupedSections.length} Sections • {totalCriteria} Criteria
+                    Fields
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                  >
+                    Expand All
+                  </button>
+                  <button
+                    type="button"
+                    className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                  >
+                    Collapse All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openPreview()}
+                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white"
+                  >
+                    <Eye size={15} className="text-[#FF5C28]" />
+                    Test Live Form
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                {groupedSections.map((group, groupIndex) => (
+                  <div
+                    key={group.questions[0]?.id || `section-${groupIndex}`}
+                    className="overflow-hidden rounded-xl border border-[#D9E2EC] bg-white"
+                  >
+                    <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
+                          S{groupIndex + 1}
+                        </span>
+                        <label className="flex min-w-0 flex-1 items-center gap-1 text-[13px] font-extrabold text-sibs-primary-1">
+                          <span className="shrink-0">{groupIndex + 1}.</span>
+                          <input
+                            defaultValue={group.section}
+                            onBlur={(event) => {
+                              const renamed = handleRenameFieldGroup?.(
+                                group.section,
+                                event.target.value,
+                              );
+
+                              if (renamed === false) {
+                                event.target.value = group.section;
+                              }
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                event.currentTarget.blur();
+                              }
+                            }}
+                            aria-label={`Section ${groupIndex + 1} title`}
+                            className="h-8 min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 text-[13px] font-extrabold uppercase text-sibs-primary-1 outline-none transition hover:border-[#D6DEE8] hover:bg-white focus:border-[#BFD8F1] focus:bg-white focus:ring-4 focus:ring-[#EFF6FF]"
+                          />
+                        </label>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-10 items-center justify-center rounded-[9px] border border-[#D6DEE8] bg-white text-[#667085]"
+                        >
+                          <ChevronUp size={15} />
+                          <ChevronDown size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => addFieldToSection(group.section)}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#FF5C28] px-3 text-[10px] font-extrabold text-white"
+                        >
+                          <Plus size={15} />
+                          Add Field
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 p-5">
+                      {group.questions.map((field, fieldIndex) => (
+                        <div
+                          key={field.id}
+                          className="rounded-2xl border border-[#D9E2EC] bg-white p-4"
+                        >
+                          <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center">
+                            <div className="flex min-w-[260px] items-center gap-3">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold text-white">
+                                {fieldIndex + 1}
+                              </span>
+                              <span className="text-xs font-extrabold text-sibs-primary-1">
+                                Criteria Field #{fieldIndex + 1}
+                              </span>
+                              <button
+                                type="button"
+                                className="inline-flex h-7 w-11 items-center justify-center rounded-lg border border-[#D6DEE8] bg-[#F1F5F9] text-sibs-tertiary-5"
+                              >
+                                <ChevronUp size={13} />
+                                <ChevronDown size={13} />
+                              </button>
+                            </div>
+
+                            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                              <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
+                                Type:
+                                <select
+                                  defaultValue={field.type || "Rating"}
+                                  onBlur={(event) =>
+                                    updateFieldOnBlur(field, {
+                                      type: event.target.value,
+                                    })
+                                  }
+                                  className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none"
+                                >
+                                  {typeOptions.map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
+                                Scale:
+                                <select className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none">
+                                  <option>1 to 5 Scale</option>
+                                  <option>Pass / Fail</option>
+                                </select>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => openPreview()}
+                                className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#F1F5F9] px-3 text-xs font-extrabold text-sibs-primary-1"
+                              >
+                                <Sparkles
+                                  size={14}
+                                  className="text-[#FF5C28]"
+                                />
+                                Quick Preview
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteField?.(field.id)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-sibs-tertiary-5 hover:bg-red-50 hover:text-red-600"
+                                title="Delete field"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <textarea
+                            rows={5}
+                            defaultValue={field.label || ""}
+                            ref={resizeCriteriaTextarea}
+                            onInput={(event) =>
+                              resizeCriteriaTextarea(event.currentTarget)
+                            }
+                            onBlur={(event) =>
+                              updateFieldOnBlur(field, {
+                                label: event.target.value,
+                              })
+                            }
+                            className="min-h-10 w-full resize-none overflow-hidden rounded-[10px] border border-[#D6DEE8] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                          />
+                        </div>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => addFieldToSection(group.section)}
+                        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+                      >
+                        <Plus size={15} className="text-[#FF5C28]" />
+                        Add Field to "{group.section}"
                       </button>
                     </div>
                   </div>
+                ))}
 
-                  <div className="space-y-3 p-3.5">
-                    {group.questions.map((field, fieldIndex) => (
-                      <div
-                        key={field.id}
-                        className="rounded-xl border border-[#D9E2EC] bg-white p-3"
-                      >
-                        <div className="mb-2.5 flex flex-col gap-2.5 lg:flex-row lg:items-center">
-                          <div className="flex min-w-[210px] items-center gap-3">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold text-white">
-                              {fieldIndex + 1}
-                            </span>
-                            <span className="text-xs font-extrabold text-sibs-primary-1">
-                              Criteria Field #{fieldIndex + 1}
-                            </span>
-                            <button
-                              type="button"
-                              className="inline-flex h-7 w-11 items-center justify-center rounded-lg border border-[#D6DEE8] bg-[#F1F5F9] text-sibs-tertiary-5"
-                            >
-                              <ChevronUp size={13} />
-                              <ChevronDown size={13} />
-                            </button>
-                          </div>
-
-                          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                            <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
-                              Type:
-                              <select
-                                defaultValue={field.type || "Rating"}
-                                onBlur={(event) =>
-                                  updateFieldOnBlur(field, {
-                                    type: event.target.value,
-                                  })
-                                }
-                                className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none"
-                              >
-                                {typeOptions.map((option) => (
-                                  <option key={option} value={option}>
-                                    {option}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
-                              Scale:
-                              <select className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none">
-                                <option>1 to 5 Scale</option>
-                                <option>Pass / Fail</option>
-                              </select>
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => openPreview()}
-                              className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#F1F5F9] px-3 text-xs font-extrabold text-sibs-primary-1"
-                            >
-                              <Sparkles size={14} className="text-[#FF5C28]" />
-                              Quick Preview
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteField?.(field.id)}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-sibs-tertiary-5 hover:bg-red-50 hover:text-red-600"
-                              title="Delete field"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </div>
-
-                        <textarea
-                          rows={5}
-                          defaultValue={field.label || ""}
-                          ref={resizeCriteriaTextarea}
-                          onInput={(event) =>
-                            resizeCriteriaTextarea(event.currentTarget)
-                          }
-                          onBlur={(event) =>
-                            updateFieldOnBlur(field, {
-                              label: event.target.value,
-                            })
-                          }
-                          className="min-h-10 w-full resize-none overflow-hidden rounded-[10px] border border-[#D6DEE8] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                        />
-                      </div>
-                    ))}
-
-                    <button
-                      type="button"
-                      onClick={() => addFieldToSection(group.section)}
-                      className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
-                    >
-                      <Plus size={15} className="text-[#FF5C28]" />
-                      Add Field to "{group.section}"
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              <button
-                type="button"
-                onClick={addBlankSection}
-                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
-              >
-                <Plus size={15} className="text-[#FF5C28]" />
-                Add New Evaluation Section
-              </button>
-            </div>
-
-            {!showAllSteps && (
-              <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-5">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                  onClick={addBlankSection}
+                  className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
                 >
-                  <ArrowLeft size={15} />
-                  Previous Step
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void saveForm()}
-                  disabled={saveBusy}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {saveBusy ? (
-                    <Loader2 size={15} className="animate-spin" />
-                  ) : (
-                    <Save size={15} className="text-[#FF5C28]" />
-                  )}
-                  Save Position Form
+                  <Plus size={15} className="text-[#FF5C28]" />
+                  Add New Evaluation Section
                 </button>
               </div>
-            )}
-          </section>
-        )}
-      </div>
+
+              {!showAllSteps && (
+                <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-5">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                  >
+                    <ArrowLeft size={15} />
+                    Previous Step
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void saveForm()}
+                    disabled={saveBusy}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {saveBusy ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : (
+                      <Save size={15} className="text-[#FF5C28]" />
+                    )}
+                    Save Position Form
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
+        </div>
 
         {questionsSaveError && (
           <p className="mt-3 text-xs font-extrabold text-red-600">
@@ -1503,6 +1557,26 @@ export default function FormBuilderCard() {
           </p>
         )}
       </div>
+
+      <StatusModal
+        open={manualSaveFeedback.type !== "idle"}
+        type={
+          manualSaveFeedback.type === "saving"
+            ? "loading"
+            : manualSaveFeedback.type
+        }
+        title={
+          manualSaveFeedback.type === "saving"
+            ? "Saving Form Settings"
+            : manualSaveFeedback.type === "success"
+              ? "Settings Saved"
+              : "Save Failed"
+        }
+        message={manualSaveFeedback.message}
+        variant="center"
+        lockScroll
+        onClose={() => setManualSaveFeedback({ type: "idle", message: "" })}
+      />
     </div>
   );
 }

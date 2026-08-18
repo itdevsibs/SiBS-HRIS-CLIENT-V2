@@ -11,10 +11,8 @@ import { useLocation } from "react-router-dom";
 import { useUser } from "./UserContext";
 
 import {
-  AVAILABLE_POSITIONS_STORAGE_KEY,
   RECRUITMENT_SETTINGS_STORAGE_KEY,
   createDefaultFormForPosition,
-  defaultAvailablePositions,
   defaultRecruitmentSettings,
   fieldTypes,
   pipelineStages,
@@ -54,11 +52,6 @@ function isPublicRecruitmentPath(pathname = "") {
   });
 }
 
-const FORM_DETAILS_AUTOSAVE_MS = 500;
-
-const FINAL_INTERVIEW_DB_MIGRATION_KEY =
-  "sibs_recruitment_final_interview_db_migrated_v1";
-
 const RecruitmentSettingsContext =
   createContext(null);
 
@@ -78,30 +71,6 @@ const EMPTY_ACTIVE_FORM = {
   description: "",
   fields: [],
 };
-
-function safeReadArray(
-  key,
-  fallback = [],
-) {
-  if (typeof window === "undefined") {
-    return fallback;
-  }
-
-  try {
-    const raw =
-      window.localStorage.getItem(key);
-
-    const parsed = raw
-      ? JSON.parse(raw)
-      : null;
-
-    return Array.isArray(parsed)
-      ? parsed
-      : fallback;
-  } catch {
-    return fallback;
-  }
-}
 
 function safeReadSettings() {
   if (typeof window === "undefined") {
@@ -128,52 +97,12 @@ function safeReadSettings() {
     return {
       ...defaultRecruitmentSettings,
       ...parsed,
-      forms: parsed.forms,
+      activePositionId: "",
+      activeFormId: "",
+      forms: [],
     };
   } catch {
     return defaultRecruitmentSettings;
-  }
-}
-
-function safeReadActualStoredSettings() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const raw =
-      window.localStorage.getItem(
-        RECRUITMENT_SETTINGS_STORAGE_KEY,
-      );
-
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw);
-
-    return parsed &&
-      Array.isArray(parsed.forms)
-      ? parsed
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function safeWriteStorage(
-  key,
-  value,
-) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(
-      key,
-      JSON.stringify(value),
-    );
-  } catch {
-    // The database is the primary storage.
   }
 }
 
@@ -275,21 +204,6 @@ function getFormDetailsPayload(
     description:
       form.description || "",
   };
-}
-
-function hasMeaningfulLocalForm(
-  form = {},
-) {
-  return Boolean(
-    (Array.isArray(form.fields) &&
-      form.fields.length) ||
-    String(form.name || "").trim() ||
-    String(
-      form.description || "",
-    ).trim() ||
-    form.updatedAt ||
-    form.updated_at,
-  );
 }
 
 function upsertForm(
@@ -428,112 +342,6 @@ function buildSettingsForActivePositions(
   };
 }
 
-async function migrateStoredFormsToDatabase({
-  activePositions,
-  databaseForms,
-} = {}) {
-  if (
-    typeof window === "undefined" ||
-    window.localStorage.getItem(
-      FINAL_INTERVIEW_DB_MIGRATION_KEY,
-    ) === "1"
-  ) {
-    return false;
-  }
-
-  const storedSettings =
-    safeReadActualStoredSettings();
-
-  if (
-    !storedSettings ||
-    !Array.isArray(
-      storedSettings.forms,
-    ) ||
-    !storedSettings.forms.length
-  ) {
-    window.localStorage.setItem(
-      FINAL_INTERVIEW_DB_MIGRATION_KEY,
-      "1",
-    );
-
-    return false;
-  }
-
-  let migratedAny = false;
-  let migrationFailed = false;
-
-  for (const position of
-    activePositions || []) {
-    const databaseForm =
-      findFormForAvailablePosition(
-        databaseForms,
-        position,
-      );
-
-    if (databaseForm) {
-      continue;
-    }
-
-    const storedForm =
-      findFormForAvailablePosition(
-        storedSettings.forms,
-        position,
-      );
-
-    if (
-      !storedForm ||
-      !hasMeaningfulLocalForm(storedForm)
-    ) {
-      continue;
-    }
-
-    const positionIdentifier =
-      getPositionDatabaseIdentifier(
-        position,
-      );
-
-    if (!positionIdentifier) {
-      continue;
-    }
-
-    try {
-      await saveFinalInterviewFormDetails(
-        positionIdentifier,
-        getFormDetailsPayload(
-          storedForm,
-        ),
-      );
-
-      await replaceFinalInterviewQuestions(
-        positionIdentifier,
-        Array.isArray(
-          storedForm.fields,
-        )
-          ? storedForm.fields
-          : [],
-      );
-
-      migratedAny = true;
-    } catch (error) {
-      migrationFailed = true;
-
-      console.error(
-        "MIGRATE FINAL INTERVIEW FORM TO DATABASE ERROR:",
-        error,
-      );
-    }
-  }
-
-  if (!migrationFailed) {
-    window.localStorage.setItem(
-      FINAL_INTERVIEW_DB_MIGRATION_KEY,
-      "1",
-    );
-  }
-
-  return migratedAny;
-}
-
 export function RecruitmentSettingsProvider({
   children,
 }) {
@@ -544,23 +352,11 @@ export function RecruitmentSettingsProvider({
   const canLoadRecruitmentSettings =
     Boolean(user) && !userLoading && !publicRoute;
 
-  const detailsTimerRef =
-    useRef(null);
-
-  const pendingDetailsRef =
-    useRef(null);
-
-  const detailsRevisionRef =
-    useRef(0);
-
   const questionSaveQueueRef =
     useRef(Promise.resolve());
 
   const questionSaveSequenceRef =
     useRef(0);
-
-  const [hasLoadedData, setHasLoadedData] =
-    useState(false);
 
   const [
     availablePositions,
@@ -638,143 +434,6 @@ export function RecruitmentSettingsProvider({
       }));
     }, []);
 
-  const flushPendingFormDetailsSave =
-    useCallback(async () => {
-      if (detailsTimerRef.current) {
-        window.clearTimeout(
-          detailsTimerRef.current,
-        );
-
-        detailsTimerRef.current = null;
-      }
-
-      const pending =
-        pendingDetailsRef.current;
-
-      pendingDetailsRef.current = null;
-
-      if (!pending) {
-        return null;
-      }
-
-      if (
-        !String(
-          pending.payload.formName ||
-          "",
-        ).trim()
-      ) {
-        setFormSavingStatus(
-          "Not saved",
-        );
-
-        setFormSaveError(
-          "Form name is required.",
-        );
-
-        return null;
-      }
-
-      try {
-        setFormSavingStatus(
-          "Saving form details...",
-        );
-
-        setFormSaveError("");
-
-        const response =
-          await saveFinalInterviewFormDetails(
-            pending.positionIdentifier,
-            pending.payload,
-          );
-
-        if (!response?.success) {
-          throw new Error(
-            response?.message ||
-            "Failed to save form details.",
-          );
-        }
-
-        if (
-          pending.revision ===
-          detailsRevisionRef.current
-        ) {
-          mergeSavedDatabaseForm(
-            response.data,
-          );
-
-          setFormSavingStatus(
-            "Form details saved",
-          );
-
-          window.setTimeout(() => {
-            setFormSavingStatus("");
-          }, 1800);
-        }
-
-        return response.data;
-      } catch (error) {
-        if (
-          pending.revision ===
-          detailsRevisionRef.current
-        ) {
-          setFormSavingStatus(
-            "Save failed",
-          );
-
-          setFormSaveError(
-            getApiErrorMessage(
-              error,
-              "Failed to save form details.",
-            ),
-          );
-        }
-
-        throw error;
-      }
-    }, [mergeSavedDatabaseForm]);
-
-  const scheduleFormDetailsSave =
-    useCallback(
-      (position, form) => {
-        const positionIdentifier =
-          getPositionDatabaseIdentifier(
-            position,
-          );
-
-        if (!positionIdentifier) {
-          return;
-        }
-
-        detailsRevisionRef.current += 1;
-
-        pendingDetailsRef.current = {
-          positionIdentifier,
-          payload:
-            getFormDetailsPayload(form),
-          revision:
-            detailsRevisionRef.current,
-        };
-
-        if (detailsTimerRef.current) {
-          window.clearTimeout(
-            detailsTimerRef.current,
-          );
-        }
-
-        setFormSavingStatus(
-          "Waiting to save...",
-        );
-
-        setFormSaveError("");
-
-        detailsTimerRef.current =
-          window.setTimeout(() => {
-            void flushPendingFormDetailsSave();
-          }, FORM_DETAILS_AUTOSAVE_MS);
-      },
-      [flushPendingFormDetailsSave],
-    );
-
   const refreshAvailablePositions =
     useCallback(
       async ({
@@ -784,7 +443,6 @@ export function RecruitmentSettingsProvider({
           if (!silent) {
             setPositionsLoading(false);
             setPositionsError("");
-            setHasLoadedData(true);
           }
 
           return [];
@@ -833,37 +491,10 @@ export function RecruitmentSettingsProvider({
               ),
             );
 
-          let databaseForms =
+          const databaseForms =
             getDatabaseFormRows(
               formsResponse,
             );
-
-          const migrated =
-            await migrateStoredFormsToDatabase({
-              activePositions,
-              databaseForms,
-            });
-
-          if (migrated) {
-            const refreshedForms =
-              await getFinalInterviewForms();
-
-            if (refreshedForms?.success) {
-              databaseForms =
-                getDatabaseFormRows(
-                  refreshedForms,
-                );
-            }
-          }
-
-          const storedForms =
-            safeReadActualStoredSettings()
-              ?.forms || [];
-
-          const sourceForms = [
-            ...databaseForms,
-            ...storedForms,
-          ];
 
           setAvailablePositions(
             activePositions,
@@ -873,13 +504,8 @@ export function RecruitmentSettingsProvider({
             buildSettingsForActivePositions(
               previous,
               activePositions,
-              sourceForms,
+              databaseForms,
             ),
-          );
-
-          safeWriteStorage(
-            AVAILABLE_POSITIONS_STORAGE_KEY,
-            activePositions,
           );
 
           return activePositions;
@@ -889,26 +515,13 @@ export function RecruitmentSettingsProvider({
             error,
           );
 
-          const cachedPositions =
-            normalizeActiveAvailablePositions(
-              safeReadArray(
-                AVAILABLE_POSITIONS_STORAGE_KEY,
-                defaultAvailablePositions,
-              ),
-            );
-
-          const cachedSettings =
-            safeReadSettings();
-
-          setAvailablePositions(
-            cachedPositions,
-          );
+          setAvailablePositions([]);
 
           setSettings((previous) =>
             buildSettingsForActivePositions(
               previous,
-              cachedPositions,
-              cachedSettings.forms,
+              [],
+              [],
             ),
           );
 
@@ -919,10 +532,9 @@ export function RecruitmentSettingsProvider({
             ),
           );
 
-          return cachedPositions;
+          return [];
         } finally {
           setPositionsLoading(false);
-          setHasLoadedData(true);
         }
       },
       [canLoadRecruitmentSettings],
@@ -932,7 +544,6 @@ export function RecruitmentSettingsProvider({
     if (!canLoadRecruitmentSettings) {
       setPositionsLoading(false);
       setPositionsError("");
-      setHasLoadedData(true);
       return undefined;
     }
 
@@ -966,39 +577,6 @@ export function RecruitmentSettingsProvider({
       );
     };
   }, [canLoadRecruitmentSettings, refreshAvailablePositions]);
-
-  useEffect(() => {
-    if (!hasLoadedData || !canLoadRecruitmentSettings) return;
-
-    safeWriteStorage(
-      AVAILABLE_POSITIONS_STORAGE_KEY,
-      availablePositions,
-    );
-
-    safeWriteStorage(
-      RECRUITMENT_SETTINGS_STORAGE_KEY,
-      settings,
-    );
-  }, [
-    availablePositions,
-    settings,
-    hasLoadedData,
-    canLoadRecruitmentSettings,
-  ]);
-
-  useEffect(() => {
-    return () => {
-      if (detailsTimerRef.current) {
-        window.clearTimeout(
-          detailsTimerRef.current,
-        );
-      }
-
-      if (pendingDetailsRef.current) {
-        void flushPendingFormDetailsSave();
-      }
-    };
-  }, [flushPendingFormDetailsSave]);
 
   const activePosition = useMemo(() => {
     return (
@@ -1039,11 +617,13 @@ export function RecruitmentSettingsProvider({
     activePosition,
   ]);
 
-  const fields = Array.isArray(
-    activeForm.fields,
-  )
-    ? activeForm.fields
-    : [];
+  const fields = useMemo(
+    () =>
+      Array.isArray(activeForm.fields)
+        ? activeForm.fields
+        : [],
+    [activeForm.fields],
+  );
 
   const filteredPositions =
     useMemo(() => {
@@ -1122,8 +702,6 @@ export function RecruitmentSettingsProvider({
   function setActivePositionId(
     positionId,
   ) {
-    void flushPendingFormDetailsSave();
-
     const selectedPosition =
       availablePositions.find(
         (position) =>
@@ -1165,12 +743,7 @@ export function RecruitmentSettingsProvider({
     setNewField(emptyFieldForm);
   }
 
-  function updateActiveForm(
-    patch,
-    {
-      autosaveDetails = false,
-    } = {},
-  ) {
+  function updateActiveForm(patch) {
     if (!activePosition) {
       return EMPTY_ACTIVE_FORM;
     }
@@ -1213,61 +786,30 @@ export function RecruitmentSettingsProvider({
       ),
     }));
 
-    if (autosaveDetails) {
-      scheduleFormDetailsSave(
-        activePosition,
-        nextForm,
-      );
-    }
-
     return nextForm;
   }
 
   function setFormName(value) {
-    updateActiveForm(
-      {
-        name: value,
-        formName: value,
-        form_name: value,
-      },
-      {
-        autosaveDetails: true,
-      },
-    );
+    updateActiveForm({
+      name: value,
+      formName: value,
+      form_name: value,
+    });
   }
 
   function setFormStatus(value) {
-    updateActiveForm(
-      {
-        status: value,
-      },
-      {
-        autosaveDetails: true,
-      },
-    );
+    updateActiveForm({ status: value });
   }
 
   function setPassingScore(value) {
-    updateActiveForm(
-      {
-        passingScore: value,
-        passing_score: value,
-      },
-      {
-        autosaveDetails: true,
-      },
-    );
+    updateActiveForm({
+      passingScore: value,
+      passing_score: value,
+    });
   }
 
   function setFormDescription(value) {
-    updateActiveForm(
-      {
-        description: value,
-      },
-      {
-        autosaveDetails: true,
-      },
-    );
+    updateActiveForm({ description: value });
   }
 
   function setFieldsLocally(
@@ -1288,7 +830,7 @@ export function RecruitmentSettingsProvider({
     nextFields,
   ) {
     if (!activePosition) {
-      return false;
+      throw new Error("No position is selected.");
     }
 
     const cleanFields =
@@ -1302,11 +844,10 @@ export function RecruitmentSettingsProvider({
       );
 
     if (!positionIdentifier) {
-      setQuestionsSaveError(
-        "The selected position has no database identifier.",
-      );
-
-      return false;
+      const message =
+        "The selected position has no database identifier.";
+      setQuestionsSaveError(message);
+      throw new Error(message);
     }
 
     const saveSequence =
@@ -1384,7 +925,7 @@ export function RecruitmentSettingsProvider({
         );
       }
 
-      return false;
+      throw error;
     } finally {
       if (
         saveSequence ===
@@ -1443,9 +984,7 @@ export function RecruitmentSettingsProvider({
     }
 
     setNewField(emptyFieldForm);
-    void persistQuestionFields(
-      nextFields,
-    );
+    setFieldsLocally(nextFields);
 
     return true;
   }
@@ -1478,9 +1017,7 @@ export function RecruitmentSettingsProvider({
           : field,
     );
 
-    void persistQuestionFields(
-      nextFields,
-    );
+    setFieldsLocally(nextFields);
   }
 
   function handleDeleteField(id) {
@@ -1494,9 +1031,7 @@ export function RecruitmentSettingsProvider({
       setNewField(emptyFieldForm);
     }
 
-    void persistQuestionFields(
-      nextFields,
-    );
+    setFieldsLocally(nextFields);
   }
 
   function handleResetFields() {
@@ -1507,64 +1042,73 @@ export function RecruitmentSettingsProvider({
         activePosition,
       );
 
-    updateActiveForm(
-      {
-        ...resetForm,
-        fields:
-          resetForm.fields || [],
-      },
-      {
-        autosaveDetails: true,
-      },
-    );
-
-    void persistQuestionFields(
-      resetForm.fields || [],
-    );
+    updateActiveForm({
+      ...resetForm,
+      fields: resetForm.fields || [],
+    });
 
     setSearch("");
     setEditingFieldId(null);
     setNewField(emptyFieldForm);
-    setSaveStatus(
-      "Reset saved",
-    );
+    setSaveStatus("");
   }
 
   async function handleSaveSettings() {
-    await flushPendingFormDetailsSave();
+    if (!activePosition) {
+      throw new Error("No position is selected.");
+    }
 
-    const saved =
-      await persistQuestionFields(
-        fields,
+    const positionIdentifier =
+      getPositionDatabaseIdentifier(
+        activePosition,
       );
+    const detailsPayload =
+      getFormDetailsPayload(activeForm);
 
-    const nextSettings = {
-      ...settings,
-      forms: settings.forms.map(
-        (form) =>
-          form.id === activeForm.id
-            ? {
-                ...form,
-                updatedAt:
-                  new Date().toISOString(),
-              }
-            : form,
-      ),
-    };
-
-    setSettings(nextSettings);
-
-    safeWriteStorage(
-      RECRUITMENT_SETTINGS_STORAGE_KEY,
-      nextSettings,
-    );
-
-    if (!saved) {
+    if (!positionIdentifier) {
       throw new Error(
-        questionsSaveError ||
-        "Failed to save Recruitment Settings.",
+        "The selected position has no database identifier.",
       );
     }
+
+    if (!String(detailsPayload.formName || "").trim()) {
+      const message = "Form name is required.";
+      setFormSaveError(message);
+      throw new Error(message);
+    }
+
+    setFormSavingStatus("Saving form details...");
+    setFormSaveError("");
+    setQuestionsSaveError("");
+
+    try {
+      const response =
+        await saveFinalInterviewFormDetails(
+          positionIdentifier,
+          detailsPayload,
+        );
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message ||
+            "Failed to save form details.",
+        );
+      }
+
+      mergeSavedDatabaseForm(response.data);
+      setFormSavingStatus("Form details saved");
+    } catch (error) {
+      setFormSavingStatus("Save failed");
+      setFormSaveError(
+        getApiErrorMessage(
+          error,
+          "Failed to save form details.",
+        ),
+      );
+      throw error;
+    }
+
+    await persistQuestionFields(fields);
 
     return true;
   }
@@ -1667,9 +1211,7 @@ export function RecruitmentSettingsProvider({
     setNewField(emptyFieldForm);
     setEditingFieldId(null);
 
-    void persistQuestionFields(
-      nextFields,
-    );
+    setFieldsLocally(nextFields);
 
     return true;
   }
@@ -1718,9 +1260,7 @@ export function RecruitmentSettingsProvider({
     setEditingFieldId(null);
     setNewField(emptyFieldForm);
 
-    void persistQuestionFields(
-      nextFields,
-    );
+    setFieldsLocally(nextFields);
 
     return true;
   }
@@ -1758,9 +1298,32 @@ export function RecruitmentSettingsProvider({
           : field,
       );
 
-    void persistQuestionFields(
-      nextFields,
+    setFieldsLocally(nextFields);
+  }
+
+  function handleRenameFieldGroup(
+    section,
+    nextSectionTitle,
+  ) {
+    const cleanSection = String(section || "").trim();
+    const cleanNextTitle = String(nextSectionTitle || "").trim();
+
+    if (!cleanSection || !cleanNextTitle) {
+      return false;
+    }
+
+    if (cleanSection === cleanNextTitle) {
+      return true;
+    }
+
+    const nextFields = fields.map((field) =>
+      field.section === cleanSection
+        ? { ...field, section: cleanNextTitle }
+        : field,
     );
+
+    setFieldsLocally(nextFields);
+    return true;
   }
 
   function handleDeleteFieldGroup(
@@ -1788,9 +1351,7 @@ export function RecruitmentSettingsProvider({
       setNewField(emptyFieldForm);
     }
 
-    void persistQuestionFields(
-      nextFields,
-    );
+    setFieldsLocally(nextFields);
   }
 
   return (
@@ -1866,6 +1427,7 @@ export function RecruitmentSettingsProvider({
 
         handleAddFieldGroup,
         handleUpdateFieldFromModal,
+        handleRenameFieldGroup,
         handleToggleFieldGroup,
         handleDeleteFieldGroup,
       }}

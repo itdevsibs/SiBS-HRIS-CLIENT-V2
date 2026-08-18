@@ -1,10 +1,9 @@
 export const RECRUITMENT_SETTINGS_STORAGE_KEY =
   "sibs_recruitment_settings_temp";
 
-export const AVAILABLE_POSITIONS_STORAGE_KEY = "sibs_available_positions_temp";
-
 export const recruitmentTabs = [
   "Final Interview Form",
+  "Application Screening Questionnaires",
   "Pipeline Settings",
   "Assessment Settings",
   "Email Templates",
@@ -31,8 +30,6 @@ export const pipelineStages = [
   "Accepted",
   "Drop-off",
 ];
-
-export const defaultAvailablePositions = [];
 
 export const defaultFinalInterviewFields = [];
 
