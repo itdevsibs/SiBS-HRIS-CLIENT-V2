@@ -99,22 +99,22 @@ function StatCard({
     navy: {
       label: "text-[#174A7C]",
       value: "text-[#042C51]",
-      icon: "bg-[#F2F6FA] text-[#174A7C]",
+      iconWrap: "bg-[#EAF2FB] text-[#042C51]",
     },
     emerald: {
-      label: "text-emerald-700",
-      value: "text-emerald-600",
-      icon: "bg-emerald-50 text-emerald-600",
+      label: "text-[#047857]",
+      value: "text-[#047857]",
+      iconWrap: "bg-[#ECFDF3] text-[#059669]",
     },
     rose: {
-      label: "text-rose-700",
-      value: "text-rose-600",
-      icon: "bg-rose-50 text-rose-600",
+      label: "text-[#BE123C]",
+      value: "text-[#E11D48]",
+      iconWrap: "bg-[#FFF1F2] text-[#E11D48]",
     },
     amber: {
-      label: "text-amber-700",
-      value: "text-amber-500",
-      icon: "bg-amber-50 text-amber-600",
+      label: "text-[#B45309]",
+      value: "text-[#F59E0B]",
+      iconWrap: "bg-[#FFFBEB] text-[#F59E0B]",
     },
   };
 
@@ -123,32 +123,33 @@ function StatCard({
 
   return (
     <article
-      className="sibs-metric-card flex min-h-[112px] flex-col justify-between overflow-hidden p-3.5"
+      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={getAnimationStyle(delay)}
     >
-      <div className="flex items-start justify-between gap-3">
-        <span
-          className={`text-[10px] font-extrabold uppercase ${selectedTone.label}`}
-        >
-          {title}
-        </span>
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 self-stretch">
+          <p
+            className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${selectedTone.label}`}
+          >
+            {title}
+          </p>
 
-        <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
-        >
-          <IconComponent size={17} strokeWidth={2} />
-        </span>
-      </div>
+          <p
+            className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+          >
+            {value}
+          </p>
 
-      <div className="mt-2">
-        <p
-          className={`text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
+            {description}
+          </p>
+        </div>
+
+        <div
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl ${selectedTone.iconWrap}`}
         >
-          {value}
-        </p>
-        <p className="mt-1.5 text-xs font-bold leading-4 text-[#667085]">
-          {description}
-        </p>
+          <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
+        </div>
       </div>
     </article>
   );
@@ -299,137 +300,130 @@ export default function ScheduleTable({
         }
       `}</style>
 
-      <div className="space-y-5 sm:space-y-6">
-      <section
-        className="sibs-profile-tab-panel"
-        style={getAnimationStyle(60)}
-      >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Loaded Schedules"
-            value={loading ? "..." : pageStats.totalLoaded}
-            description="Records loaded on the current page"
-            icon={CalendarDays}
-            tone="navy"
-            delay={0}
-          />
+      <div className="space-y-4 sm:space-y-5">
+        <section
+          className="sibs-profile-tab-panel"
+          style={getAnimationStyle(60)}
+        >
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3">
+            <StatCard
+              title="Loaded Schedules"
+              value={loading ? "..." : pageStats.totalLoaded}
+              description="Records loaded on the current page"
+              icon={CalendarDays}
+              tone="navy"
+              delay={0}
+            />
 
-          <StatCard
-            title="Regular"
-            value={loading ? "..." : pageStats.regularCount}
-            description="Regular work schedules on this page"
-            icon={Clock}
-            tone="emerald"
-            delay={60}
-          />
+            <StatCard
+              title="Regular"
+              value={loading ? "..." : pageStats.regularCount}
+              description="Regular work schedules on this page"
+              icon={Clock}
+              tone="emerald"
+              delay={60}
+            />
 
-          <StatCard
-            title="Day Off"
-            value={loading ? "..." : pageStats.dayOffCount}
-            description="Scheduled days off on this page"
-            icon={Clock}
-            tone="rose"
-            delay={120}
-          />
+            <StatCard
+              title="Day Off"
+              value={loading ? "..." : pageStats.dayOffCount}
+              description="Scheduled days off on this page"
+              icon={Clock}
+              tone="rose"
+              delay={120}
+            />
 
-          <StatCard
-            title="Rest Day"
-            value={loading ? "..." : pageStats.restDayCount}
-            description="Rest days scheduled on this page"
-            icon={Clock}
-            tone="amber"
-            delay={180}
-          />
-        </div>
-      </section>
+            <StatCard
+              title="Rest Day"
+              value={loading ? "..." : pageStats.restDayCount}
+              description="Rest days scheduled on this page"
+              icon={Clock}
+              tone="amber"
+              delay={180}
+            />
+          </div>
+        </section>
 
-      <section
-        className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
-        style={getAnimationStyle(120)}
-      >
-        <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <h2 className="sibs-section-title">Schedule Records</h2>
-              <p className="sibs-section-subtitle">
-                Review your scheduled work days, shift times, breaks, and registered dates.
-              </p>
+        <section
+          className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs"
+          style={getAnimationStyle(120)}
+        >
+          <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
+            <h3 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
+              Schedule Records
+            </h3>
+            <p className="mt-1 text-xs font-semibold text-[#667085]">
+              Review your scheduled work days, shift times, breaks, and registered dates.
+            </p>
+
+            <PaginationTable
+              filterLayout="ta-inline"
+              showFilterPanel={false}
+              showFilterHeader={false}
+              showPagination={false}
+              loading={loading}
+              searchValue={searchInput}
+              searchPlaceholder="Search schedule records..."
+              onSearchChange={(value) => setSearchInput?.(value)}
+              onSearchKeyDown={handleSearchKeyDown}
+              dropdownFilters={[]}
+              rightContent={<InlineScheduleDateRangeFilter visible />}
+              className="mt-4 border-0 bg-transparent p-0 shadow-none"
+            />
+          </div>
+
+          <div className="p-4 sm:p-5 2xl:p-6">
+            <div className="mt-3 block sm:hidden">
+              <button
+                type="button"
+                onClick={runSearch}
+                disabled={loading}
+                className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1D] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Search size={15} />
+                Apply Search
+              </button>
             </div>
 
-            <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
-              Page {currentPage}
-            </span>
-          </div>
-        </div>
-
-        <div className="relative overflow-visible p-4 sm:p-5">
-          <PaginationTable
-            filterLayout="ta-inline"
-            showFilterPanel={false}
-            showFilterHeader={false}
-            showPagination={false}
-            loading={loading}
-            searchValue={searchInput}
-            searchPlaceholder="Search schedule records..."
-            onSearchChange={(value) => setSearchInput?.(value)}
-            onSearchKeyDown={handleSearchKeyDown}
-            dropdownFilters={[]}
-            rightContent={<InlineScheduleDateRangeFilter visible />}
-            className="border-0 bg-transparent p-0 shadow-none"
-          />
-
-          <div className="mt-3 block sm:hidden">
-            <button
-              type="button"
-              onClick={runSearch}
-              disabled={loading}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1D] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Search size={16} />
-              Apply Search
-            </button>
-          </div>
-
-          <div className="mt-5 sibs-data-table-shell">
-            <div className="overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
               <div
                 ref={tableScrollRef}
-                className="max-h-[650px] overflow-auto"
+                className="max-h-[600px] 2xl:max-h-[650px] overflow-auto sibs-scrollbar"
               >
                 <table className="w-full min-w-[980px] border-collapse bg-white text-left">
-                  <thead className="sibs-data-table-head">
+                  <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
                     <tr className="sibs-data-table-head-row">
-                      <th className="sibs-data-table-th">Date</th>
-                      <th className="sibs-data-table-th">Mode</th>
-                      <th className="sibs-data-table-th text-center">Login</th>
-                      <th className="sibs-data-table-th text-center">Break Out</th>
-                      <th className="sibs-data-table-th text-center">Break In</th>
-                      <th className="sibs-data-table-th text-center">Logout</th>
-                      <th className="sibs-data-table-th text-center">Registered</th>
+                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3">Date</th>
+                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3">Mode</th>
+                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Login</th>
+                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Break Out</th>
+                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Break In</th>
+                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Logout</th>
+                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Registered</th>
                     </tr>
                   </thead>
 
                   <tbody
                     key={`${page}-${searchKeyword}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${loading}`}
-                    className="divide-y divide-[#EEF2F6]"
+                    className="divide-y divide-[#E6ECF2]"
                   >
                     {loading ? (
                       Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                         <tr key={`schedule-skeleton-${index}`}>
-                          <td colSpan={7} className="px-4 py-4">
-                            <div className="h-7 w-full animate-sibs-pulse rounded bg-slate-100" />
+                          <td colSpan={7} className="px-4 py-3.5">
+                            <div className="h-6 w-full animate-sibs-pulse rounded bg-slate-100" />
                           </td>
                         </tr>
                       ))
                     ) : schedule.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-12 text-center">
+                        <td colSpan={7} className="p-8 2xl:p-12 text-center">
                           <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-[#667085]">
-                            <CalendarDays size={34} className="text-[#C8D3DF]" />
-                            <p className="text-sm font-extrabold text-[#042C51]">
+                            <CalendarDays size={30} className="text-[#C8D3DF]" />
+                            <p className="text-xs 2xl:text-sm font-extrabold text-[#042C51]">
                               No schedule records found
                             </p>
-                            <p className="text-xs font-semibold">
+                            <p className="text-[11px] 2xl:text-xs font-semibold">
                               Adjust the search or date range filters and try again.
                             </p>
                           </div>
@@ -441,36 +435,37 @@ export default function ScheduleTable({
                           key={item.gy_sched_id || index}
                           className="sibs-data-table-row sibs-schedule-row-reveal"
                           style={{
-                            animationDelay: `${Math.min(index, 10) * 36}ms`,
+                            animationDelay: `${Math.min(index, 10) * 35}ms`,
+                            animationFillMode: "both",
                           }}
                         >
-                          <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold text-[#536887]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-xs font-extrabold text-[#536887]">
                             {formatDate(item.gy_sched_day)}
                           </td>
 
-                          <td className="whitespace-nowrap px-4 py-3.5">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3">
                             <Badge className={getModeBadgeClass(item.gy_sched_mode)}>
                               {formatMode(item.gy_sched_mode)}
                             </Badge>
                           </td>
 
-                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
                             {formatTime(item.gy_sched_login)}
                           </td>
 
-                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-extrabold tabular-nums text-[#7B8DB3]">
                             {formatTime(item.gy_sched_breakout)}
                           </td>
 
-                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-extrabold tabular-nums text-[#7B8DB3]">
                             {formatTime(item.gy_sched_breakin)}
                           </td>
 
-                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
                             {formatTime(item.gy_sched_logout)}
                           </td>
 
-                          <td className="whitespace-nowrap px-4 py-3.5 text-center text-xs font-semibold text-[#667085]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-semibold text-[#667085]">
                             {formatDate(item.gy_sched_reg)}
                           </td>
                         </tr>
@@ -480,26 +475,25 @@ export default function ScheduleTable({
                 </table>
               </div>
             </div>
-          </div>
 
-          <div className="mt-5">
-            <PaginationTable
-              loading={loading}
-              showSearch={false}
-              showPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              loadedCount={schedule.length}
-              totalRecords={totalRecords}
-              recordLabel="schedule records"
-              onPrevious={handlePreviousPage}
-              onNext={handleNextPage}
-              showCount
-              className="border-0 bg-transparent p-0 shadow-none"
-            />
+            <div className="mt-4 2xl:mt-5">
+              <PaginationTable
+                loading={loading}
+                showSearch={false}
+                showPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                loadedCount={schedule.length}
+                totalRecords={totalRecords}
+                recordLabel="schedule records"
+                onPrevious={handlePreviousPage}
+                onNext={handleNextPage}
+                showCount
+                className="border-0 bg-transparent p-0 shadow-none"
+              />
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       </div>
     </>
   );

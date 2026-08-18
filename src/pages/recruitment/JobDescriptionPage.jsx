@@ -227,10 +227,8 @@ function StatCard({
   icon,
   description,
   badgeText,
-  badgeClassName = "bg-slate-100 text-slate-600",
-  labelClassName = "text-[#667085]",
-  valueClassName = "text-[#042C51]",
-  iconClassName = "bg-blue-50 text-[#042C51]",
+  badgeClassName,
+  tone = "navy",
   delay = 0,
 }) {
   const MetricIcon = icon;
@@ -240,33 +238,35 @@ function StatCard({
       className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p
-            className={`truncate sibs-text-micro font-extrabold uppercase tracking-normal ${labelClassName}`}
-          >
-            {title}
-          </p>
-          <div className="mt-1 2xl:mt-1.5 flex flex-wrap items-baseline justify-between gap-2">
-            <p className={`text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${valueClassName}`}>
-              {value}
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${tone}-label`}
+            >
+              {title}
             </p>
-            {badgeText && (
-              <span
-                className={`inline-flex rounded-full px-2 py-0.5 sibs-text-micro font-extrabold ${badgeClassName}`}
-              >
-                {badgeText}
-              </span>
-            )}
+            <div className="mt-1.5 2xl:mt-2 flex flex-wrap items-baseline justify-between gap-2">
+              <p className={`text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}>
+                {value}
+              </p>
+              {badgeText && (
+                <span
+                  className={`inline-flex rounded-full px-2 py-0.5 sibs-text-micro font-extrabold ${badgeClassName || `sibs-tone-${tone}-icon`}`}
+                >
+                  {badgeText}
+                </span>
+              )}
+            </div>
           </div>
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-tight text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
             {description}
           </p>
         </div>
         <span
-          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl sibs-tone-${tone}-icon`}
         >
-          <MetricIcon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
+          <MetricIcon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
       </div>
     </article>
@@ -855,8 +855,7 @@ export default function JobDescriptionPage() {
               value={stats.total}
               icon={ClipboardList}
               description="All job descriptions in database"
-              labelClassName="text-[#667085]"
-              iconClassName="bg-[#EAF2FB] text-[#042C51]"
+              tone="navy"
               delay={0}
             />
             <StatCard
@@ -864,9 +863,7 @@ export default function JobDescriptionPage() {
               value={stats.existing}
               icon={CheckCircle2}
               description="Ready or already available"
-              labelClassName="text-emerald-600"
-              valueClassName="text-emerald-700"
-              iconClassName="bg-emerald-50 text-emerald-700"
+              tone="green"
               delay={60}
             />
             <StatCard
@@ -874,9 +871,7 @@ export default function JobDescriptionPage() {
               value={stats.revision}
               icon={AlertTriangle}
               description="Needs specification update or remarks"
-              labelClassName="text-amber-600"
-              valueClassName="text-amber-700"
-              iconClassName="bg-amber-50 text-amber-700"
+              tone="amber"
               delay={120}
             />
             <StatCard
@@ -884,9 +879,7 @@ export default function JobDescriptionPage() {
               value={stats.newJd}
               icon={FileText}
               description="New or unlinked JD intake"
-              labelClassName="text-indigo-600"
-              valueClassName="text-indigo-700"
-              iconClassName="bg-indigo-50 text-indigo-700"
+              tone="indigo"
               delay={180}
             />
           </section>

@@ -57,7 +57,7 @@ const metricConfig = [
 function MetricCard({ item, value, delay = 0 }) {
   return (
     <article
-      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
@@ -70,19 +70,19 @@ function MetricCard({ item, value, delay = 0 }) {
             </p>
 
             <p
-              className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${item.tone}-label`}
+              className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${item.tone}-label`}
             >
               {value.toLocaleString("en-PH")}
             </p>
           </div>
 
-          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
             {item.description}
           </p>
         </div>
 
         <span
-          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${item.tone}-icon`}
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl sibs-tone-${item.tone}-icon`}
         >
           {React.createElement(item.icon, { className: "h-4 w-4 2xl:h-4.5 2xl:w-4.5", strokeWidth: 2 })}
         </span>

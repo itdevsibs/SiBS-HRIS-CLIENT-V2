@@ -677,14 +677,14 @@ function StatCard({
       icon: "bg-[#EAF2FB] text-[#042C51]",
     },
     emerald: {
-      label: "text-emerald-700",
-      value: "text-emerald-600",
-      icon: "bg-emerald-50 text-emerald-600",
+      label: "text-[#047857]",
+      value: "text-[#047857]",
+      icon: "bg-[#ECFDF3] text-[#059669]",
     },
     amber: {
-      label: "text-amber-700",
-      value: "text-amber-500",
-      icon: "bg-amber-50 text-amber-600",
+      label: "text-[#B45309]",
+      value: "text-[#F59E0B]",
+      icon: "bg-[#FFFBEB] text-[#F59E0B]",
     },
     orange: {
       label: "text-[#C2410C]",
@@ -701,29 +701,32 @@ function StatCard({
       className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={getAnimationStyle(delay)}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span
-          className={`sibs-text-micro font-extrabold uppercase tracking-wide truncate ${selectedTone.label}`}
-        >
-          {title}
-        </span>
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${selectedTone.label}`}
+            >
+              {title}
+            </p>
+
+            <p
+              className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+            >
+              {value}
+            </p>
+          </div>
+
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
+            {description}
+          </p>
+        </div>
 
         <span
           className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl ${selectedTone.icon}`}
         >
-          <IconComponent size={15} strokeWidth={2} className="2xl:h-[17px] 2xl:w-[17px]" />
+          <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
-      </div>
-
-      <div>
-        <p
-          className={`text-xl 2xl:text-2xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
-        >
-          {value}
-        </p>
-        <p className="mt-1 sibs-text-micro font-semibold leading-tight text-[#667085] line-clamp-1 truncate">
-          {description}
-        </p>
       </div>
     </article>
   );
@@ -1436,77 +1439,67 @@ export default function AttendanceTable() {
         className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
         style={getAnimationStyle(120)}
       >
-        <div className="border-b border-[#E6ECF2] bg-white p-4 sm:p-5 2xl:p-6">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
-                Attendance Records
-              </h3>
-              <p className="mt-1 text-xs font-semibold text-[#667085]">
-                {adminView
-                  ? "Review employee time entries, work hours, breaks, and approval status."
-                  : "Review your time entries, work hours, breaks, and approval status."}
-              </p>
-            </div>
+        <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
+          <h3 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
+            Attendance Records
+          </h3>
+          <p className="mt-1 text-xs font-semibold text-[#667085]">
+            {adminView
+              ? "Review employee time entries, work hours, breaks, and approval status."
+              : "Review your time entries, work hours, breaks, and approval status."}
+          </p>
 
-            <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-0.5 sibs-text-micro font-extrabold uppercase text-[#FF5C28]">
-              Page {currentPage}
-            </span>
-          </div>
+          <PaginationTable
+            filterLayout="ta-inline"
+            showFilterPanel={false}
+            showFilterHeader={false}
+            showPagination={false}
+            loading={loading}
+            searchValue={searchInput}
+            searchPlaceholder={
+              adminView
+                ? "Search by employee, SIBS ID, department, or account..."
+                : "Search attendance records..."
+            }
+            onSearchChange={(value) => setSearchInput?.(value)}
+            onSearchKeyDown={handleAttendanceSearchKeyDown}
+            dropdownFilters={
+              attendanceFiltersView
+                ? [
+                    {
+                      key: "department",
+                      value: departmentFilter,
+                      onChange: handleDepartmentSelect,
+                      options: departmentDropdownOptions,
+                      allLabel: "All Departments",
+                      label: "Department",
+                      placeholder: "Search departments...",
+                      searchable: true,
+                      includeAll: true,
+                    },
+                    {
+                      key: "account",
+                      value: accountFilters,
+                      onChange: handleAccountSelect,
+                      multiple: true,
+                      options: accountDropdownOptions,
+                      allLabel: "All Accounts",
+                      label: "Account",
+                      placeholder: "Search accounts...",
+                      searchable: true,
+                      includeAll: true,
+                    },
+                  ]
+                : []
+            }
+            rightContent={
+              <InlineDateRangeFilter visible={attendanceDateRangeView} />
+            }
+            className="mt-4 border-0 bg-transparent p-0 shadow-none"
+          />
         </div>
 
-        <div className="relative overflow-visible p-4 sm:p-5">
-          <div>
-            <PaginationTable
-              filterLayout="ta-inline"
-              showFilterPanel={false}
-              showFilterHeader={false}
-              showPagination={false}
-              loading={loading}
-              searchValue={searchInput}
-              searchPlaceholder={
-                adminView
-                  ? "Search by employee, SIBS ID, department, or account..."
-                  : "Search attendance records..."
-              }
-              onSearchChange={(value) => setSearchInput?.(value)}
-              onSearchKeyDown={handleAttendanceSearchKeyDown}
-              dropdownFilters={
-                attendanceFiltersView
-                  ? [
-                      {
-                        key: "department",
-                        value: departmentFilter,
-                        onChange: handleDepartmentSelect,
-                        options: departmentDropdownOptions,
-                        allLabel: "All Departments",
-                        label: "Department",
-                        placeholder: "Search departments...",
-                        searchable: true,
-                        includeAll: true,
-                      },
-                      {
-                        key: "account",
-                        value: accountFilters,
-                        onChange: handleAccountSelect,
-                        multiple: true,
-                        options: accountDropdownOptions,
-                        allLabel: "All Accounts",
-                        label: "Account",
-                        placeholder: "Search accounts...",
-                        searchable: true,
-                        includeAll: true,
-                      },
-                    ]
-                  : []
-              }
-              rightContent={
-                <InlineDateRangeFilter visible={attendanceDateRangeView} />
-              }
-              className="border-0 bg-transparent p-0 shadow-none"
-            />
-          </div>
-
+        <div className="p-4 sm:p-5 2xl:p-6">
           <div className="mt-3 block sm:hidden">
             <button
               type="button"
@@ -1519,21 +1512,20 @@ export default function AttendanceTable() {
             </button>
           </div>
 
-          <div className="mt-5 sibs-data-table-shell">
-            <div className="overflow-hidden">
-              <div
-                ref={tableScrollRef}
-                onMouseDown={handleDragStart}
-                onMouseMove={handleDragMove}
-                onMouseUp={handleDragEnd}
-                onMouseLeave={handleDragEnd}
-                className={`max-h-[480px] 2xl:max-h-[640px] select-none overflow-auto sibs-scrollbar ${
-                  isDraggingTable ? "cursor-grabbing" : "cursor-grab"
-                }`}
-              >
-                <table className="w-full min-w-[1510px] border-collapse bg-white text-left">
-                  <thead className="sibs-data-table-head">
-                    <tr className="sibs-data-table-head-row">
+          <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white hidden lg:block">
+            <div
+              ref={tableScrollRef}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              className={`max-h-[480px] 2xl:max-h-[640px] select-none overflow-auto sibs-scrollbar ${
+                isDraggingTable ? "cursor-grabbing" : "cursor-grab"
+              }`}
+            >
+              <table className="w-full min-w-[1510px] border-collapse bg-white text-left">
+                <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
+                  <tr className="sibs-data-table-head-row">
                       {adminView ? (
                         <th className="sibs-data-table-th">
                           SiBS ID
@@ -1752,9 +1744,6 @@ export default function AttendanceTable() {
                 </table>
               </div>
             </div>
-
-            
-          </div>
 
           <div className="lg:hidden">
             <div ref={mobileScrollRef} className="max-h-[650px] overflow-y-auto">

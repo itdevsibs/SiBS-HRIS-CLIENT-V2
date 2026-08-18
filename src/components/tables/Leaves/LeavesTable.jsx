@@ -876,21 +876,19 @@ export default function LeavesTable({
       `}</style>
 
       <section
-        className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+        className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs"
         style={{ animationDelay: "80ms", animationFillMode: "both" }}
       >
-        <div className="border-b border-[#E6ECF2] bg-white p-4 sm:p-5 2xl:p-6">
-          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+        <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
+          <h3 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
             {isPersonalView ? "My Leave Records" : "Leave Records"}
           </h3>
           <p className="mt-1 text-xs font-semibold text-[#667085]">
             {isPersonalView
-              ? "Only your current page of leave records is loaded."
-              : "Only 15 leave records are loaded from the backend per page."}
+              ? "Review your filed leaves, approval statuses, justifications, and attachment context."
+              : "Review employee leave requests, approval statuses, justifications, and attachment records."}
           </p>
-        </div>
 
-        <div className="relative overflow-visible p-4 sm:p-5">
           <PaginationTable
             filterLayout="ta-inline"
             showFilterPanel={false}
@@ -949,9 +947,11 @@ export default function LeavesTable({
                 : []),
             ]}
             rightContent={<InlineDateRangeFilter visible />}
-            className="border-0 bg-transparent p-0 shadow-none"
+            className="mt-4 border-0 bg-transparent p-0 shadow-none"
           />
+        </div>
 
+        <div className="p-4 sm:p-5 2xl:p-6">
           <div className="mt-3 block sm:hidden">
             <button
               type="button"
@@ -964,13 +964,13 @@ export default function LeavesTable({
             </button>
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+          <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
             <div
               ref={tableScrollRef}
               className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar"
             >
               <table className="w-full min-w-[1340px] border-collapse bg-white">
-                <thead className="sibs-data-table-head">
+                <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
                   <tr className="sibs-data-table-head-row">
                     <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left">
                       Employee
@@ -1111,18 +1111,22 @@ export default function LeavesTable({
             </div>
           </div>
 
-          <PaginationTable
-            loading={loading}
-            showSearch={false}
-            showPagination
-            currentPage={currentPaginationPage}
-            totalPages={totalPages}
-            loadedCount={leaves.length}
-            totalRecords={0}
-            recordLabel="leave records"
-            onPrevious={handlePreviousPage}
-            onNext={handleNextPage}
-          />
+          <div className="mt-4 2xl:mt-5">
+            <PaginationTable
+              loading={loading}
+              showSearch={false}
+              showPagination
+              currentPage={currentPaginationPage}
+              totalPages={totalPages}
+              loadedCount={leaves.length}
+              totalRecords={0}
+              recordLabel="leave records"
+              onPrevious={handlePreviousPage}
+              onNext={handleNextPage}
+              showCount
+              className="border-0 bg-transparent p-0 shadow-none"
+            />
+          </div>
         </div>
       </section>
 
