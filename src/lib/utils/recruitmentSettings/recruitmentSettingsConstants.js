@@ -32,68 +32,7 @@ export const pipelineStages = [
   "Drop-off",
 ];
 
-export const defaultAvailablePositions = [
-  {
-    id: "POS-001",
-    code: "POS-001",
-    position: "Customer Service Representative",
-    department: "Operations",
-    location: "Davao Site",
-    skills: "English, Customer Service, Chat Support, Voice Support",
-    status: "Active",
-    visibility: "Shown in Public Form / Talent Pool",
-    updatedAt: "May 1, 2026",
-    updatedBy: "Alena Batacan",
-  },
-  {
-    id: "POS-002",
-    code: "POS-002",
-    position: "QA Specialist",
-    department: "Quality Assurance",
-    location: "Davao Site",
-    skills: "QA, Documentation, Coaching, English",
-    status: "Active",
-    visibility: "Shown in Public Form / Talent Pool",
-    updatedAt: "May 1, 2026",
-    updatedBy: "Alena Batacan",
-  },
-  {
-    id: "POS-003",
-    code: "POS-003",
-    position: "RCM Analyst",
-    department: "Operations",
-    location: "Tagum Site",
-    skills: "RCM, Healthcare, Documentation, Excel",
-    status: "Active",
-    visibility: "Shown in Public Form / Talent Pool",
-    updatedAt: "May 1, 2026",
-    updatedBy: "Alena Batacan",
-  },
-  {
-    id: "POS-004",
-    code: "POS-004",
-    position: "IT Support",
-    department: "Information Technology",
-    location: "Any Site",
-    skills: "Technical Support, Troubleshooting, Hardware, Networking",
-    status: "Inactive",
-    visibility: "Hidden from applicant forms",
-    updatedAt: "May 1, 2026",
-    updatedBy: "Alena Batacan",
-  },
-  {
-    id: "POS-005",
-    code: "POS-005",
-    position: "Accounting Staff",
-    department: "Accounting",
-    location: "Davao Site",
-    skills: "Accounting, Excel, Documentation, Reconciliation",
-    status: "Draft",
-    visibility: "Hidden from applicant forms",
-    updatedAt: "May 1, 2026",
-    updatedBy: "Alena Batacan",
-  },
-];
+export const defaultAvailablePositions = [];
 
 export const defaultFinalInterviewFields = [];
 
@@ -117,9 +56,7 @@ export function createDefaultFormForPosition(position) {
 }
 
 export const defaultRecruitmentSettings = {
-  activePositionId: "POS-001",
-  activeFormId: "final-interview-POS-001",
-  forms: defaultAvailablePositions.map((position) =>
-    createDefaultFormForPosition(position),
-  ),
+  activePositionId: "",
+  activeFormId: "",
+  forms: [],
 };

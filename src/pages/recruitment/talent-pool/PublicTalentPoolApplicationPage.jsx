@@ -31,12 +31,12 @@ import {
 } from "lucide-react";
 import StatusModal from "@/components/modals/StatusModal";
 import {
+  getTalentPoolApplicationForm,
   getTalentPoolFormOptions,
   getTalentPoolOpenPositions,
   getTalentPoolReferralPrefill,
   submitPublicTalentPoolApplication,
 } from "@/lib/axios/publicTalentPool";
-import { getPublicApprovedJobDescriptions } from "@/lib/axios/getPublicJobDescription";
 import {
   canRemoveTrainingEntryRow,
   ensureTrainingEntryRows,
@@ -47,6 +47,13 @@ import {
   normalizePhoneNumberInput,
 } from "@/lib/utils/talentPool/phoneNumber";
 import { resolveCalendarSelectionChange } from "@/lib/utils/talentPool/calendarDateSelection";
+import {
+  buildApplicationFormAnswersPayload,
+  createQuestionAnswerState,
+  getVoiceSelectedQuestions,
+  normalizeApplicationFormQuestions,
+  validateApplicationQuestionAnswers,
+} from "@/lib/utils/talentPool/publicApplicationQuestions";
 
 const acceptedAudioTypes =
   ".mp3,.wav,.wave,.m4a,.aac,.ogg,.oga,.webm,.mp4,.mpeg,.mpga,.flac,.amr,.3gp,.opus,.aif,.aiff,.caf,.wma,audio/*,video/mp4,video/3gpp";
@@ -650,6 +657,7 @@ function createEmptyPublicForm(referralCode = "") {
     hearAboutUs: [],
     jobDescriptionId: "",
     selectedAvailablePositionId: "",
+    positionId: "",
     openPosition: "",
     nickname: "",
     applyingLocation: "",
@@ -1143,27 +1151,6 @@ function getPositionKey(position = {}) {
   );
 }
 
-function normalizeJobTitleForMatch(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function getJobDescriptionId(jobDescription = {}) {
-  return (
-    jobDescription.rawId ||
-    jobDescription.raw_id ||
-    jobDescription.jdId ||
-    jobDescription.jd_id ||
-    jobDescription.id ||
-    jobDescription.raw?.id ||
-    ""
-  );
-}
-
 function normalizeAvailablePosition(position = {}) {
   return {
     ...position,
@@ -1177,7 +1164,10 @@ function normalizeAvailablePosition(position = {}) {
       position.position_title ||
       "",
     openPositionDbId:
-      position.openPositionDbId || position.open_position_db_id || position.id || "",
+      position.openPositionDbId ||
+      position.open_position_db_id ||
+      position.id ||
+      "",
     positionId: cleanText(position.positionId || position.position_id),
     positionTitle: cleanText(
       position.positionTitle ||
@@ -1197,7 +1187,9 @@ function normalizeAvailablePosition(position = {}) {
     ),
     departmentId: position.departmentId || position.department_id || "",
     department: cleanText(
-      position.department || position.departmentName || position.department_name,
+      position.department ||
+        position.departmentName ||
+        position.department_name,
     ),
     accountId: position.accountId || position.account_id || "",
     accountName: cleanText(
@@ -1210,237 +1202,67 @@ function normalizeAvailablePosition(position = {}) {
       position.locationSite || position.location_site || position.location,
     ),
     status: cleanText(position.status),
+    approvalStatus: cleanText(
+      position.approvalStatus || position.approval_status,
+    ),
   };
 }
 
-function normalizeApprovedJobDescriptionOption(jobDescription = {}) {
-  const jdId = getJobDescriptionId(jobDescription);
+function isApprovedActivePosition(position = {}) {
+  const normalizedPosition = normalizeAvailablePosition(position);
+  const status = normalizedPosition.status.toLowerCase();
+  const approvalStatus = normalizedPosition.approvalStatus.toLowerCase();
 
-  const roleTitle = cleanText(
-    jobDescription.roleTitle ||
-      jobDescription.role_title ||
-      jobDescription.documentTitle ||
-      jobDescription.document_title ||
-      jobDescription.title ||
-      jobDescription.raw?.roleTitle ||
-      jobDescription.raw?.role_title ||
-      jobDescription.raw?.documentTitle ||
-      jobDescription.raw?.document_title,
-  );
-
-  const documentTitle = cleanText(
-    jobDescription.documentTitle ||
-      jobDescription.document_title ||
-      jobDescription.raw?.documentTitle ||
-      jobDescription.raw?.document_title ||
-      roleTitle,
-  );
-
-  const jdCode = cleanText(
-    jobDescription.jdCode ||
-      jobDescription.jd_code ||
-      jobDescription.raw?.jdCode ||
-      jobDescription.raw?.jd_code,
-  );
-
-  const accountId =
-    jobDescription.accountId ||
-    jobDescription.account_id ||
-    jobDescription.raw?.accountId ||
-    jobDescription.raw?.account_id ||
-    "";
-
-  const accountName = cleanText(
-    jobDescription.account ||
-      jobDescription.accountName ||
-      jobDescription.account_name ||
-      jobDescription.preparedFor ||
-      jobDescription.prepared_for ||
-      jobDescription.raw?.account ||
-      jobDescription.raw?.accountName ||
-      jobDescription.raw?.account_name ||
-      jobDescription.raw?.preparedFor ||
-      jobDescription.raw?.prepared_for,
-  );
-
-  const departmentId =
-    jobDescription.departmentId ||
-    jobDescription.department_id ||
-    jobDescription.raw?.departmentId ||
-    jobDescription.raw?.department_id ||
-    "";
-
-  const department = cleanText(
-    jobDescription.department ||
-      jobDescription.departmentName ||
-      jobDescription.department_name ||
-      jobDescription.raw?.department ||
-      jobDescription.raw?.departmentName ||
-      jobDescription.raw?.department_name,
-  );
-
-  return {
-    id: jdId || roleTitle || documentTitle,
-    value: String(jdId || roleTitle || documentTitle),
-    label: `${roleTitle || documentTitle}${jdCode ? ` (${jdCode})` : ""}`,
-    jdId,
-    jdCode,
-    roleTitle,
-    documentTitle,
-    accountId,
-    accountName,
-    departmentId,
-    department,
-    raw: jobDescription,
-  };
+  return status === "active" && approvalStatus === "approved";
 }
 
-function buildApprovedJobDescriptionOptions(jobDescriptions = []) {
-  const seenIds = new Set();
+function getApplicationQuestionTextOptions(question = {}) {
+  const rawOptions = question?.options;
 
-  return toArray(jobDescriptions)
-    .map(normalizeApprovedJobDescriptionOption)
-    .filter((option) => option.jdId && (option.roleTitle || option.documentTitle))
-    .filter((option) => {
-      const key = String(option.jdId);
-
-      if (seenIds.has(key)) return false;
-
-      seenIds.add(key);
-      return true;
-    })
-    .sort((firstOption, secondOption) =>
-      firstOption.label.localeCompare(secondOption.label, undefined, {
-        sensitivity: "base",
-      }),
-    );
-}
-
-function normalizedIdentity(value) {
-  return cleanText(value).toLowerCase();
-}
-
-function matchesScopedValue(firstId, secondId, firstName, secondName) {
-  const cleanFirstId = cleanText(firstId);
-  const cleanSecondId = cleanText(secondId);
-
-  if (cleanFirstId && cleanSecondId) {
-    return cleanFirstId === cleanSecondId;
+  if (Array.isArray(rawOptions) && rawOptions.length) {
+    return rawOptions;
   }
 
-  const cleanFirstName = normalizedIdentity(firstName);
-  const cleanSecondName = normalizedIdentity(secondName);
-
-  if (cleanFirstName && cleanSecondName) {
-    return cleanFirstName === cleanSecondName;
+  if (rawOptions && typeof rawOptions === "object") {
+    return Object.entries(rawOptions).map(([value, label]) => ({
+      value,
+      label: cleanText(label) || cleanText(value),
+    }));
   }
 
-  return true;
+  const questionType = cleanText(question?.questionType).toLowerCase();
+
+  if (questionType.includes("yes") && questionType.includes("no")) {
+    return ["Yes", "No"];
+  }
+
+  return [];
 }
 
-function filterAvailablePositionsForJobDescription(
-  positions = [],
-  jobDescription = {},
-) {
-  const normalizedJobDescription = normalizeApprovedJobDescriptionOption(
-    jobDescription.raw || jobDescription,
-  );
-
-  const targetJdId = cleanText(
-    jobDescription.jdId || jobDescription.jd_id || normalizedJobDescription.jdId,
-  );
-  const targetJdCode = normalizedIdentity(
-    jobDescription.jdCode ||
-      jobDescription.jd_code ||
-      normalizedJobDescription.jdCode,
-  );
-  const targetTitleCandidates = new Set(
-    [
-      jobDescription.roleTitle,
-      jobDescription.role_title,
-      jobDescription.documentTitle,
-      jobDescription.document_title,
-      normalizedJobDescription.roleTitle,
-      normalizedJobDescription.documentTitle,
+function sortAvailablePositions(positions = []) {
+  return [...toArray(positions)].sort((firstPosition, secondPosition) => {
+    const firstLabel = [
+      firstPosition.positionTitle,
+      firstPosition.accountName || firstPosition.accountGhlName,
+      firstPosition.locationSite,
+      firstPosition.positionId,
     ]
-      .map(normalizeJobTitleForMatch)
-      .filter(Boolean),
-  );
+      .filter(Boolean)
+      .join(" ");
 
-  return toArray(positions)
-    .map(normalizeAvailablePosition)
-    .filter((position) => {
-      if (position.status && normalizedIdentity(position.status) !== "active") {
-        return false;
-      }
+    const secondLabel = [
+      secondPosition.positionTitle,
+      secondPosition.accountName || secondPosition.accountGhlName,
+      secondPosition.locationSite,
+      secondPosition.positionId,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
-      const positionJdId = cleanText(position.jdId);
-      const positionJdCode = normalizedIdentity(position.jdCode);
-
-      if (targetJdId && positionJdId) {
-        return targetJdId === positionJdId;
-      }
-
-      if (targetJdCode && positionJdCode) {
-        return targetJdCode === positionJdCode;
-      }
-
-      if (positionJdId || positionJdCode) {
-        return false;
-      }
-
-      const positionTitle = normalizeJobTitleForMatch(position.positionTitle);
-
-      if (!positionTitle || !targetTitleCandidates.has(positionTitle)) {
-        return false;
-      }
-
-      const accountMatches = matchesScopedValue(
-        position.accountId,
-        jobDescription.accountId || jobDescription.account_id || normalizedJobDescription.accountId,
-        position.accountName || position.accountGhlName,
-        jobDescription.accountName ||
-          jobDescription.account_name ||
-          jobDescription.account ||
-          normalizedJobDescription.accountName,
-      );
-
-      if (!accountMatches) return false;
-
-      return matchesScopedValue(
-        position.departmentId,
-        jobDescription.departmentId ||
-          jobDescription.department_id ||
-          normalizedJobDescription.departmentId,
-        position.department,
-        jobDescription.department ||
-          jobDescription.departmentName ||
-          jobDescription.department_name ||
-          normalizedJobDescription.department,
-      );
-    })
-    .sort((firstPosition, secondPosition) => {
-      const firstLabel = [
-        firstPosition.positionTitle,
-        firstPosition.accountName || firstPosition.accountGhlName,
-        firstPosition.locationSite,
-        firstPosition.positionId,
-      ]
-        .filter(Boolean)
-        .join(" ");
-      const secondLabel = [
-        secondPosition.positionTitle,
-        secondPosition.accountName || secondPosition.accountGhlName,
-        secondPosition.locationSite,
-        secondPosition.positionId,
-      ]
-        .filter(Boolean)
-        .join(" ");
-
-      return firstLabel.localeCompare(secondLabel, undefined, {
-        sensitivity: "base",
-      });
+    return firstLabel.localeCompare(secondLabel, undefined, {
+      sensitivity: "base",
     });
+  });
 }
 
 function getAvailablePositionDisplayLabel(position = {}) {
@@ -1500,7 +1322,7 @@ function SectionCard({
   title,
   description,
   step,
-  totalSteps = 8,
+  totalSteps = 9,
   children,
 }) {
   return (
@@ -3194,6 +3016,7 @@ export default function PublicTalentPoolApplicationPage() {
   const attachmentInputRef = useRef(null);
   const fileSectionRef = useRef(null);
   const educationSectionRef = useRef(null);
+  const questionsSectionRef = useRef(null);
   const consentRef = useRef(null);
   const initialReferralCodeRef = useRef(getReferralCodeFromCurrentUrl());
   const referralPrefillValuesRef = useRef(null);
@@ -3205,9 +3028,16 @@ export default function PublicTalentPoolApplicationPage() {
     initialReferralCodeRef.current ? "Yes" : "",
   );
   const [submittedRecord, setSubmittedRecord] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [applicationForm, setApplicationForm] = useState(null);
+  const [applicationQuestions, setApplicationQuestions] = useState([]);
+  const [applicationQuestionAnswers, setApplicationQuestionAnswers] =
+    useState({});
+  const [isLoadingApplicationQuestions, setIsLoadingApplicationQuestions] =
+    useState(false);
+  const [applicationQuestionsError, setApplicationQuestionsError] =
+    useState("");
   const [activePositionOptions, setActivePositionOptions] = useState([]);
-  const [approvedJobDescriptionOptions, setApprovedJobDescriptionOptions] =
-    useState([]);
   const [formOptions, setFormOptions] = useState(defaultFormOptions);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isLoadingReferralPrefill, setIsLoadingReferralPrefill] =
@@ -3231,6 +3061,14 @@ export default function PublicTalentPoolApplicationPage() {
   const selectedAttachmentFile =
     attachmentFileRef.current || form.attachmentFile;
   const isReferralCodeFromEmail = Boolean(initialReferralCodeRef.current);
+  const voiceSelectedQuestions = useMemo(
+    () =>
+      getVoiceSelectedQuestions(
+        applicationQuestions,
+        applicationQuestionAnswers,
+      ),
+    [applicationQuestionAnswers, applicationQuestions],
+  );
 
   useEffect(() => {
     const styleId = "public-talent-pool-hide-sidebar-style";
@@ -3397,18 +3235,9 @@ export default function PublicTalentPoolApplicationPage() {
       setLoadError("");
 
       try {
-        const [
-          optionsResponse,
-          openPositionsResponse,
-          approvedJobDescriptionsResponse,
-        ] = await Promise.all([
+        const [optionsResponse, openPositionsResponse] = await Promise.all([
           getTalentPoolFormOptions(),
           getTalentPoolOpenPositions(),
-          getPublicApprovedJobDescriptions({
-            page: 1,
-            limit: 500,
-            search: "",
-          }),
         ]);
 
         if (!isMounted) return;
@@ -3426,33 +3255,23 @@ export default function PublicTalentPoolApplicationPage() {
           );
         }
 
-        if (!approvedJobDescriptionsResponse?.success) {
-          throw new Error(
-            approvedJobDescriptionsResponse?.message ||
-              "Failed to load approved job descriptions.",
-          );
-        }
-
         setFormOptions(normalizeOptionsPayload(optionsResponse?.data));
 
-        const approvedJobDescriptions = Array.isArray(
-          approvedJobDescriptionsResponse?.data,
-        )
-          ? approvedJobDescriptionsResponse.data
-          : [];
-
-        const activeAvailablePositions = Array.isArray(
+        const approvedActivePositions = Array.isArray(
           openPositionsResponse?.data,
         )
-          ? openPositionsResponse.data
-              .map(normalizeAvailablePosition)
-              .filter((position) => position.positionTitle)
+          ? sortAvailablePositions(
+              openPositionsResponse.data
+                .map(normalizeAvailablePosition)
+                .filter(
+                  (position) =>
+                    position.positionTitle &&
+                    isApprovedActivePosition(position),
+                ),
+            )
           : [];
 
-        setActivePositionOptions(activeAvailablePositions);
-        setApprovedJobDescriptionOptions(
-          buildApprovedJobDescriptionOptions(approvedJobDescriptions),
-        );
+        setActivePositionOptions(approvedActivePositions);
       } catch (error) {
         console.error("Load public talent pool form data error:", error);
 
@@ -3467,7 +3286,6 @@ export default function PublicTalentPoolApplicationPage() {
         setLoadError(errorMessage);
         setFormOptions(defaultFormOptions);
         setActivePositionOptions([]);
-        setApprovedJobDescriptionOptions([]);
 
         showStatusModal({
           type: "error",
@@ -3508,26 +3326,6 @@ export default function PublicTalentPoolApplicationPage() {
     [form.hearAboutUs, formOptions.hearAboutUs],
   );
 
-  const selectedJobDescription = useMemo(
-    () =>
-      approvedJobDescriptionOptions.find(
-        (option) =>
-          String(option.value) === String(form.jobDescriptionId || ""),
-      ) || null,
-    [approvedJobDescriptionOptions, form.jobDescriptionId],
-  );
-
-  const matchingAvailablePositions = useMemo(
-    () =>
-      selectedJobDescription
-        ? filterAvailablePositionsForJobDescription(
-            activePositionOptions,
-            selectedJobDescription,
-          )
-        : [],
-    [activePositionOptions, selectedJobDescription],
-  );
-
   const completionPercentage = useMemo(() => {
     if (!shouldShowApplicationFields) return 0;
 
@@ -3539,7 +3337,6 @@ export default function PublicTalentPoolApplicationPage() {
       );
 
     const checks = [
-      Boolean(form.jobDescriptionId),
       Boolean(form.openPosition),
       Boolean(form.applyingLocation),
       Boolean(form.firstName.trim()),
@@ -3639,7 +3436,6 @@ export default function PublicTalentPoolApplicationPage() {
       position?.jd_id ||
       position?.jobDescriptionId ||
       position?.job_description_id ||
-      selectedJobDescription?.jdId ||
       "";
 
     if (!positionTitle || !jdId) {
@@ -3690,23 +3486,21 @@ export default function PublicTalentPoolApplicationPage() {
     }));
   }
 
-  function handleJobDescriptionChange(jobDescriptionId) {
-    setForm((previous) => ({
-      ...previous,
-      jobDescriptionId,
-      selectedAvailablePositionId: "",
-      openPosition: "",
-    }));
-  }
-
   function handleAvailablePositionChange(positionKey, position) {
     const normalizedPosition = normalizeAvailablePosition(position);
 
     setForm((previous) => ({
       ...previous,
+      jobDescriptionId: String(normalizedPosition.jdId || ""),
       selectedAvailablePositionId: String(positionKey || ""),
+      positionId: normalizedPosition.positionId,
       openPosition: normalizedPosition.positionTitle,
     }));
+    setApplicationForm(null);
+    setApplicationQuestions([]);
+    setApplicationQuestionAnswers({});
+    setApplicationQuestionsError("");
+    setCurrentPage(1);
   }
 
   function updateTrainingAttended(index, value) {
@@ -3865,6 +3659,12 @@ export default function PublicTalentPoolApplicationPage() {
     setIsLoadingReferralPrefill(false);
     setForm(createEmptyPublicForm());
     setSubmittedRecord(null);
+    setCurrentPage(1);
+    setApplicationForm(null);
+    setApplicationQuestions([]);
+    setApplicationQuestionAnswers({});
+    setApplicationQuestionsError("");
+    setIsLoadingApplicationQuestions(false);
     setHighlightAudio(false);
     setHighlightAttachment(false);
     setHighlightConsent(false);
@@ -3996,11 +3796,7 @@ export default function PublicTalentPoolApplicationPage() {
     }));
   }
 
-  function validateBeforeSubmit() {
-    const currentAudioFile = audioFileRef.current || form.audioFile;
-    const currentAttachmentFile =
-      attachmentFileRef.current || form.attachmentFile;
-
+  function validatePageOne() {
     if (isLoadingData) {
       showStatusModal({
         type: "error",
@@ -4046,20 +3842,12 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!approvedJobDescriptionOptions.length) {
-      showStatusModal({
-        type: "error",
-        title: "No approved job descriptions",
-        message: "No approved public job descriptions are available.",
-      });
-      return false;
-    }
-
     if (!activePositionOptions.length) {
       showStatusModal({
         type: "error",
         title: "No open positions",
-        message: "No active available positions are currently available.",
+        message:
+          "No approved and active available positions are currently available.",
       });
       return false;
     }
@@ -4102,30 +3890,11 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.jobDescriptionId) {
-      showStatusModal({
-        type: "error",
-        title: "Job description required",
-        message: "Please select a job description first.",
-      });
-      return false;
-    }
-
-    if (!matchingAvailablePositions.length) {
-      showStatusModal({
-        type: "error",
-        title: "No matching open positions",
-        message:
-          "There are no active available positions linked to the selected job description.",
-      });
-      return false;
-    }
-
     if (!form.selectedAvailablePositionId || !form.openPosition) {
       showStatusModal({
         type: "error",
         title: "Open position required",
-        message: "Please select one of the matching active open positions.",
+        message: "Please select one of the approved active open positions.",
       });
       return false;
     }
@@ -4346,6 +4115,31 @@ export default function PublicTalentPoolApplicationPage() {
       }
     }
 
+    return true;
+  }
+
+  function validatePageTwo() {
+    const currentAudioFile = audioFileRef.current || form.audioFile;
+    const currentAttachmentFile =
+      attachmentFileRef.current || form.attachmentFile;
+
+    const questionValidationMessage = validateApplicationQuestionAnswers(
+      applicationQuestions,
+      applicationQuestionAnswers,
+      Boolean(currentAudioFile),
+    );
+
+    if (questionValidationMessage) {
+      scrollToRef(questionsSectionRef);
+
+      showStatusModal({
+        type: "error",
+        title: "Position question required",
+        message: questionValidationMessage,
+      });
+      return false;
+    }
+
     if (!currentAudioFile) {
       setHighlightAudio(true);
       scrollToRef(fileSectionRef);
@@ -4354,7 +4148,7 @@ export default function PublicTalentPoolApplicationPage() {
         type: "error",
         title: "Audio file required",
         message:
-          "Please upload a single audio file. Click the audio upload box and select your MP3 file again.",
+          "Please upload a single audio file. Click the audio upload box and select your audio file again.",
       });
       return false;
     }
@@ -4413,10 +4207,108 @@ export default function PublicTalentPoolApplicationPage() {
     return true;
   }
 
+  function updateApplicationQuestionAnswer(questionId, patch) {
+    const key = String(questionId);
+
+    setApplicationQuestionAnswers((previous) => ({
+      ...previous,
+      [key]: {
+        ...(previous?.[key] || {
+          questionId: Number(questionId || 0),
+          answerType: "Text",
+          textAnswer: "",
+        }),
+        ...patch,
+      },
+    }));
+  }
+
+  function handleQuestionAnswerTypeChange(question, answerType) {
+    updateApplicationQuestionAnswer(question.id, {
+      answerType: answerType === "Voice" ? "Voice" : "Text",
+      textAnswer:
+        answerType === "Voice"
+          ? ""
+          : applicationQuestionAnswers?.[String(question.id)]?.textAnswer || "",
+    });
+  }
+
+  async function handleNextPage() {
+    if (!validatePageOne()) return;
+
+    const positionId = cleanText(form.positionId);
+
+    if (!positionId) {
+      showStatusModal({
+        type: "error",
+        title: "Position configuration unavailable",
+        message:
+          "The selected open position does not have a Position ID. Please select the position again.",
+      });
+      return;
+    }
+
+    setIsLoadingApplicationQuestions(true);
+    setApplicationQuestionsError("");
+
+    try {
+      const response = await getTalentPoolApplicationForm(positionId);
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message || "Failed to load application questions.",
+        );
+      }
+
+      const nextForm = response?.data?.form || null;
+      const nextQuestions = normalizeApplicationFormQuestions(
+        response?.data || {},
+      );
+
+      setApplicationForm(nextForm);
+      setApplicationQuestions(nextQuestions);
+      setApplicationQuestionAnswers((previous) =>
+        createQuestionAnswerState(nextQuestions, previous),
+      );
+      setCurrentPage(2);
+
+      window.setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, 50);
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to load application questions.";
+
+      setApplicationQuestionsError(message);
+
+      showStatusModal({
+        type: "error",
+        title: "Unable to load position questions",
+        message,
+      });
+    } finally {
+      setIsLoadingApplicationQuestions(false);
+    }
+  }
+
+  function handlePreviousPage() {
+    setCurrentPage(1);
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 50);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!validateBeforeSubmit()) return;
+    if (currentPage !== 2) {
+      await handleNextPage();
+      return;
+    }
+
+    if (!validatePageOne() || !validatePageTwo()) return;
 
     setIsSubmitting(true);
 
@@ -4432,6 +4324,11 @@ export default function PublicTalentPoolApplicationPage() {
       educationDetails: normalizeEducationDetails(form.educationDetails),
       trainingAttended: normalizeTrainingEntries(form.trainingAttended),
       otherExperiences: form.otherExperiences.map(normalizeExperienceValues),
+      positionId: form.positionId,
+      applicationFormAnswers: buildApplicationFormAnswersPayload(
+        applicationQuestions,
+        applicationQuestionAnswers,
+      ),
       audioFile: audioFileRef.current || form.audioFile,
       attachmentFile: attachmentFileRef.current || form.attachmentFile,
     };
@@ -4470,6 +4367,12 @@ export default function PublicTalentPoolApplicationPage() {
       setReferralLookupMessage("");
       setIsLoadingReferralPrefill(false);
       setForm(createEmptyPublicForm());
+      setCurrentPage(1);
+      setApplicationForm(null);
+      setApplicationQuestions([]);
+      setApplicationQuestionAnswers({});
+      setApplicationQuestionsError("");
+      setIsLoadingApplicationQuestions(false);
       setHighlightAudio(false);
       setHighlightAttachment(false);
       setHighlightConsent(false);
@@ -4626,12 +4529,20 @@ export default function PublicTalentPoolApplicationPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {isLoadingData ? (
             <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-[#174A7C] shadow-sm">
-              Loading form options and approved job descriptions from the
+              Loading form options and approved open positions from the
               database...
             </div>
           ) : null}
 
-          <SectionCard
+          <div className="flex items-center justify-between rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3 text-xs font-extrabold text-[#667085]">
+            <span>Public Talent Pool Application</span>
+            <span className="rounded-full bg-white px-3 py-1 text-[#042C51] shadow-sm">
+              Page {currentPage} of 2
+            </span>
+          </div>
+
+          {currentPage === 1 ? (
+            <SectionCard
             icon={BriefcaseBusiness}
             step={1}
             title="Application Source and Position"
@@ -4771,57 +4682,26 @@ export default function PublicTalentPoolApplicationPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <FieldLabel>
-                    Select Job Description <RequiredMark />
-                  </FieldLabel>
-
-                  <DatabaseSelect
-                    required
-                    value={form.jobDescriptionId}
-                    options={approvedJobDescriptionOptions}
-                    placeholder={
-                      isLoadingData
-                        ? "Loading job descriptions..."
-                        : approvedJobDescriptionOptions.length
-                          ? "Select job description"
-                          : "No approved job descriptions found"
-                    }
-                    disabled={
-                      isLoadingData || !approvedJobDescriptionOptions.length
-                    }
-                    onChange={handleJobDescriptionChange}
-                    zIndex="z-[205]"
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>
                     Check our open positions <RequiredMark />
                   </FieldLabel>
 
                   <PositionJobDescriptionDropdown
                     value={form.selectedAvailablePositionId}
-                    disabled={
-                      isLoadingData ||
-                      !form.jobDescriptionId ||
-                      !matchingAvailablePositions.length
-                    }
-                    positions={matchingAvailablePositions}
+                    disabled={isLoadingData || !activePositionOptions.length}
+                    positions={activePositionOptions}
                     placeholder={
                       isLoadingData
                         ? "Loading positions..."
-                        : !form.jobDescriptionId
-                          ? "Select job description first"
-                          : matchingAvailablePositions.length
-                            ? "Select matching open position"
-                            : "No matching open positions"
+                        : activePositionOptions.length
+                          ? "Select open position"
+                          : "No approved active positions found"
                     }
                     onChange={handleAvailablePositionChange}
                     onOpenJobDescription={handleOpenPositionJobDescription}
                   />
 
                   <p className="mt-2 text-xs font-semibold text-gray-500">
-                    Only active available positions linked to the selected job
-                    description are shown.
+                    Only approved and active available positions are shown.
                   </p>
                 </div>
 
@@ -4899,9 +4779,12 @@ export default function PublicTalentPoolApplicationPage() {
               )}
             </div>
           </SectionCard>
+          ) : null}
 
           {shouldShowApplicationFields ? (
             <>
+              {currentPage === 1 ? (
+                <>
               <SectionCard
                 icon={UserPlus}
             step={2}
@@ -5372,10 +5255,236 @@ export default function PublicTalentPoolApplicationPage() {
             </div>
           </SectionCard>
 
+          <section className="flex flex-col gap-4 rounded-[12px] border border-[#DCE6F1] bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                Page 1 complete
+              </p>
+              <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+                Continue to the questions for {form.openPosition || "your selected position"}.
+              </p>
+              <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                Your answers, uploads, consent, and final submission are on the next page.
+              </p>
+            </div>
+
+            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={isSubmitting || isLoadingApplicationQuestions}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RotateCcw size={16} />
+                Reset Form
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNextPage}
+                disabled={!canSubmit || isLoadingApplicationQuestions}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-md shadow-[#FF5C28]/15 transition hover:-translate-y-0.5 hover:bg-[#E94F1F] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+              >
+                {isLoadingApplicationQuestions ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <ChevronRight size={16} />
+                )}
+                {isLoadingApplicationQuestions ? "Loading Questions..." : "Next"}
+              </button>
+            </div>
+          </section>
+                </>
+              ) : (
+                <>
+          <div ref={questionsSectionRef}>
+            <SectionCard
+              icon={BriefcaseBusiness}
+              step={7}
+              title="Position Questions"
+              description={`Answer the questions configured for ${form.openPosition || "the selected position"}. Each question defaults to Text, but you may switch it to Voice.`}
+            >
+              <div className="space-y-4">
+                {applicationQuestionsError ? (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                    {applicationQuestionsError}
+                  </div>
+                ) : null}
+
+                {applicationForm?.formName ? (
+                  <div className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      Application Form
+                    </p>
+                    <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+                      {applicationForm.formName}
+                    </p>
+                  </div>
+                ) : null}
+
+                {applicationQuestions.length ? (
+                  <div className="space-y-4">
+                    {applicationQuestions.map((question, index) => {
+                      const answer =
+                        applicationQuestionAnswers?.[String(question.id)] || {
+                          answerType: "Text",
+                          textAnswer: "",
+                        };
+                      const answerType =
+                        answer.answerType === "Voice" ? "Voice" : "Text";
+                      const textOptions =
+                        getApplicationQuestionTextOptions(question);
+
+                      return (
+                        <div
+                          key={question.id}
+                          className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5"
+                        >
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFF0EB] text-[10px] font-extrabold text-[#FF5C28]">
+                                  {index + 1}
+                                </span>
+                                {question.isRequired ? (
+                                  <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-red-600">
+                                    Required
+                                  </span>
+                                ) : (
+                                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                    Optional
+                                  </span>
+                                )}
+                                {question.questionType ? (
+                                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#667085]">
+                                    {question.questionType}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <p className="mt-3 text-sm font-extrabold leading-6 text-[#042C51]">
+                                {question.questionText}
+                              </p>
+                              {question.helperText ? (
+                                <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                                  {question.helperText}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div className="shrink-0">
+                              <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                Answer Type
+                              </p>
+                              <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#DCE6F1] bg-white p-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleQuestionAnswerTypeChange(
+                                      question,
+                                      "Text",
+                                    )
+                                  }
+                                  className={`h-9 rounded-lg px-4 text-xs font-extrabold transition ${
+                                    answerType === "Text"
+                                      ? "bg-[#042C51] text-white shadow-sm"
+                                      : "text-[#667085] hover:bg-[#F8FAFC] hover:text-[#042C51]"
+                                  }`}
+                                >Text</button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleQuestionAnswerTypeChange(
+                                      question,
+                                      "Voice",
+                                    )
+                                  }
+                                  className={`h-9 rounded-lg px-4 text-xs font-extrabold transition ${
+                                    answerType === "Voice"
+                                      ? "bg-[#FF5C28] text-white shadow-sm"
+                                      : "text-[#667085] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                                  }`}
+                                >Voice</button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {answerType === "Text" ? (
+                            <div className="mt-4">
+                              <FieldLabel>
+                                Text Answer {question.isRequired ? <RequiredMark /> : null}
+                              </FieldLabel>
+                              {textOptions.length ? (
+                                <DatabaseSelect
+                                  required={question.isRequired}
+                                  value={answer.textAnswer || ""}
+                                  options={textOptions}
+                                  placeholder="Select answer"
+                                  onChange={(value) =>
+                                    updateApplicationQuestionAnswer(question.id, {
+                                      answerType: "Text",
+                                      textAnswer: value,
+                                    })
+                                  }
+                                  zIndex="z-[160]"
+                                />
+                              ) : (
+                                <AutoResizeTextarea
+                                  required={question.isRequired}
+                                  value={answer.textAnswer || ""}
+                                  onChange={(event) =>
+                                    updateApplicationQuestionAnswer(question.id, {
+                                      answerType: "Text",
+                                      textAnswer: event.target.value,
+                                    })
+                                  }
+                                  placeholder={
+                                    question.placeholderText ||
+                                    "Type your answer here"
+                                  }
+                                  className={textareaClass("min-h-[110px] leading-6")}
+                                />
+                              )}
+                            </div>
+                          ) : (
+                            <div className="mt-4 rounded-xl border border-[#FFB27A] bg-[#FFF7F1] px-4 py-3 text-xs font-semibold leading-5 text-[#8A3C1D]">
+                              Answer this question in the single shared audio recording in the Audio and File Upload section below.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-semibold leading-6 text-emerald-800">
+                    No additional application questions are configured for this position. You can continue with the uploads and consent below.
+                  </div>
+                )}
+
+                {voiceSelectedQuestions.length ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-bold leading-6 text-amber-800 sm:text-sm">
+                    <p className="font-extrabold">
+                      Questions to answer in your recording
+                    </p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {voiceSelectedQuestions.map((question) => (
+                        <li key={`voice-question-${question.id}`}>
+                          {question.questionText}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-xs font-semibold">
+                      Use one audio file for all questions you selected as Voice.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </SectionCard>
+          </div>
+
           <div ref={fileSectionRef}>
             <SectionCard
               icon={Mic}
-              step={7}
+              step={8}
               title="Audio and File Upload"
               description="Upload a single audio file answering the listed questions and one supporting document/file."
             >
@@ -5524,7 +5633,7 @@ export default function PublicTalentPoolApplicationPage() {
           <div ref={consentRef}>
             <SectionCard
               icon={ShieldCheck}
-              step={8}
+              step={9}
               title="Terms and Privacy Consent"
               description="Review the consent statement before submitting your candidate profile."
             >
@@ -5587,6 +5696,16 @@ export default function PublicTalentPoolApplicationPage() {
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
               <button
                 type="button"
+                onClick={handlePreviousPage}
+                disabled={isSubmitting}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#174A7C]/50 hover:bg-blue-50 hover:text-[#174A7C] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronLeft size={16} />
+                Back
+              </button>
+
+              <button
+                type="button"
                 onClick={handleReset}
                 disabled={isSubmitting}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
@@ -5605,6 +5724,8 @@ export default function PublicTalentPoolApplicationPage() {
               </button>
             </div>
           </section>
+                </>
+              )}
             </>
           ) : null}
         </form>

@@ -83,7 +83,9 @@ function appendPublicApplicationFormData(formData, form = {}) {
   appendJson(formData, "hearAboutUs", form.hearAboutUs);
 
   appendValue(formData, "candidateId", form.candidateId);
+  appendValue(formData, "positionId", form.positionId);
   appendValue(formData, "openPosition", form.openPosition);
+  appendJson(formData, "applicationFormAnswers", form.applicationFormAnswers);
   appendValue(formData, "nickname", form.nickname);
   appendValue(formData, "applyingLocation", form.applyingLocation);
   appendValue(formData, "referralCode", form.referralCode);
@@ -366,6 +368,42 @@ export async function getTalentPoolOpenPositions() {
         err?.response?.data?.error ||
         err?.message ||
         "Failed to load talent pool open positions.",
+    };
+  }
+}
+
+export async function getTalentPoolApplicationForm(positionId) {
+  const cleanPositionId = String(positionId || "").trim();
+
+  if (!cleanPositionId) {
+    return {
+      success: true,
+      data: { form: null, questions: [] },
+      message: "No position selected.",
+    };
+  }
+
+  try {
+    const res = await publicApi.get(
+      `/api/talent-pool/application-form/${encodeURIComponent(positionId)}`,
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Public getTalentPoolApplicationForm API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return {
+      success: false,
+      data: { form: null, questions: [] },
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to load the application form questions.",
     };
   }
 }
