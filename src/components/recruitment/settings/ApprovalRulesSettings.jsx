@@ -9,12 +9,14 @@ import {
   Loader2,
   Plus,
   Search,
+  ShieldCheck,
   Trash2,
   UserRoundCheck,
 } from "lucide-react";
 
 import StatusModal from "../../modals/StatusModal";
 import { useUser } from "../../../services/context/UserContext";
+import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
 
 import {
   addOfferApprovalUser,
@@ -1024,10 +1026,11 @@ export default function ApprovalRulesSettings() {
       <div className="mb-5 border-b border-[#E6ECF2] pb-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
-              <UserRoundCheck size={14} />
-              Approval Configuration
-            </div>
+            <SettingsHeaderCapsules
+              items={[
+                { label: "Approval Rules Configuration", icon: UserRoundCheck }
+              ]}
+            />
 
             <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
               Recruitment Approval Rules

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  CalendarClock,
   CalendarDays,
   CheckCircle2,
   Loader2,
@@ -17,6 +18,7 @@ import {
   updateRecruitmentHoliday,
 } from "../../../lib/axios/getRecruitmentSettings";
 import StatusModal from "../../modals/StatusModal";
+import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
 
 const EMPTY_FORM = {
   id: "",
@@ -218,14 +220,15 @@ export default function RecruitmentHolidayCalendar() {
   }
 
   return (
-    <div className="space-y-5 bg-[#F5F7FA] p-4 sm:p-5">
+    <div className="space-y-5">
       <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <CalendarDays size={14} />
-              Philippine Working-Day Calendar
-            </div>
+            <SettingsHeaderCapsules
+              items={[
+                { label: "Add Regular & non-regular Holidays", icon: CalendarDays }
+              ]}
+            />
             <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
               Interview Follow-up Holidays
             </h2>

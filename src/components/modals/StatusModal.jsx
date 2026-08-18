@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, XCircle } from "lucide-react";
 
 export default function StatusModal({
   open,
@@ -31,6 +31,10 @@ export default function StatusModal({
 
     const handleEscape = (e) => {
       if (e.key === "Escape") {
+        if (type === "loading") {
+          return;
+        }
+
         if (type === "confirm") {
           onCancel?.();
         } else {
@@ -66,10 +70,13 @@ export default function StatusModal({
 
   const isSuccess = type === "success";
   const isConfirm = type === "confirm";
+  const isLoading = type === "loading";
 
   const finalTitle =
     title ||
-    (isConfirm
+    (isLoading
+      ? "Saving Changes"
+      : isConfirm
       ? "Confirm Action"
       : isSuccess
         ? "Success"
@@ -77,11 +84,15 @@ export default function StatusModal({
 
   const finalMessage =
     message ||
-    (isConfirm
+    (isLoading
+      ? "Please wait while your changes are being saved."
+      : isConfirm
       ? "Are you sure you want to continue?"
       : "Operation completed.");
 
   const handleClose = () => {
+    if (isLoading) return;
+
     if (isConfirm) {
       onCancel?.();
     } else {
@@ -114,6 +125,8 @@ export default function StatusModal({
                 className={`shrink-0 rounded-2xl p-3 ${
                   isConfirm
                     ? "bg-amber-50 text-amber-500"
+                    : isLoading
+                      ? "bg-[#EFF6FF] text-sibs-primary-1"
                     : isSuccess
                       ? "bg-emerald-50 text-emerald-500"
                       : "bg-red-50 text-red-500"
@@ -121,6 +134,8 @@ export default function StatusModal({
               >
                 {isConfirm ? (
                   <AlertTriangle size={24} />
+                ) : isLoading ? (
+                  <Loader2 size={24} className="animate-spin" />
                 ) : isSuccess ? (
                   <CheckCircle2 size={24} />
                 ) : (
@@ -138,6 +153,7 @@ export default function StatusModal({
             {finalMessage}
           </p>
 
+          {!isLoading && (
           <div className="mt-6 flex justify-end gap-2.5">
             {isConfirm && (
               <button
@@ -159,6 +175,7 @@ export default function StatusModal({
               {isConfirm ? confirmLabel : "OK"}
             </button>
           </div>
+          )}
         </div>
       ) : (
         <div
@@ -172,6 +189,8 @@ export default function StatusModal({
               className={`mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
                 isConfirm
                   ? "bg-amber-50 text-amber-500"
+                  : isLoading
+                    ? "bg-[#EFF6FF] text-sibs-primary-1"
                   : isSuccess
                     ? "bg-emerald-50 text-emerald-500"
                     : "bg-red-50 text-red-500"
@@ -179,6 +198,8 @@ export default function StatusModal({
             >
               {isConfirm ? (
                 <AlertTriangle size={28} />
+              ) : isLoading ? (
+                <Loader2 size={28} className="animate-spin" />
               ) : isSuccess ? (
                 <CheckCircle2 size={28} />
               ) : (
@@ -194,6 +215,7 @@ export default function StatusModal({
               {finalMessage}
             </p>
 
+            {!isLoading && (
             <div className="mt-6 flex w-full gap-2.5">
               {isConfirm && (
                 <button
@@ -215,6 +237,7 @@ export default function StatusModal({
                 {isConfirm ? confirmLabel : "OK"}
               </button>
             </div>
+            )}
           </div>
         </div>
       )}

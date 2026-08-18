@@ -94,12 +94,7 @@ export default function RecruitmentSettingsPage() {
           />
 
           <section
-            className={`sibs-profile-tab-panel overflow-hidden ${
-              activeTab === "Final Interview Form" ||
-              activeTab === "Update Headcounts"
-                ? ""
-                : "rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
-            }`}
+            className="sibs-profile-tab-panel"
             style={{ animationDelay: "120ms" }}
           >
             <RecruitmentSettingsPanelRouter
