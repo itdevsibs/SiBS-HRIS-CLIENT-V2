@@ -402,6 +402,39 @@ export async function getTalentPoolApplicationById(id) {
   }
 }
 
+export async function getTalentPoolApplicationAnswers(id) {
+  try {
+    const res = await api.get(
+      `/api/talent-pool/applications/${id}/application-answers`,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios getTalentPoolApplicationAnswers API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return {
+      success: false,
+      data: {
+        form: null,
+        applicationCount: 1,
+        answers: [],
+      },
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to load application questions and answers.",
+    };
+  }
+}
+
 /* =========================================
    PUBLIC APPLICATION
 ========================================= */
@@ -675,6 +708,7 @@ export default {
   getTalentPoolOpenPositions,
   getTalentPoolApplications,
   getTalentPoolApplicationById,
+  getTalentPoolApplicationAnswers,
   submitPublicTalentPoolApplication,
   createTalentPoolCandidate,
   updateTalentPoolCandidate,

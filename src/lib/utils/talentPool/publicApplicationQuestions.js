@@ -86,16 +86,12 @@ export function createQuestionAnswerState(questions = [], previousState = {}) {
   return normalizeApplicationFormQuestions(questions).reduce((acc, question) => {
     const key = String(question.id);
     const previous = previousState?.[key] || {};
-    const answerType =
-      cleanText(previous.answerType).toLowerCase() === "voice"
-        ? "Voice"
-        : "Text";
 
     acc[key] = {
       questionId: question.id,
       questionKey: question.questionKey,
-      answerType,
-      textAnswer: answerType === "Text" ? String(previous.textAnswer ?? "") : "",
+      answerType: "Text",
+      textAnswer: String(previous.textAnswer ?? ""),
     };
 
     return acc;
@@ -108,44 +104,24 @@ export function buildApplicationFormAnswersPayload(
 ) {
   return normalizeApplicationFormQuestions(questions).map((question) => {
     const state = answerState?.[String(question.id)] || {};
-    const answerType =
-      cleanText(state.answerType).toLowerCase() === "voice" ? "Voice" : "Text";
 
     return {
       questionId: question.id,
       questionKey: question.questionKey,
-      answerType,
-      textAnswer: answerType === "Text" ? cleanText(state.textAnswer) : "",
+      answerType: "Text",
+      textAnswer: cleanText(state.textAnswer),
     };
-  });
-}
-
-export function getVoiceSelectedQuestions(questions = [], answerState = {}) {
-  return normalizeApplicationFormQuestions(questions).filter((question) => {
-    const state = answerState?.[String(question.id)] || {};
-    return cleanText(state.answerType).toLowerCase() === "voice";
   });
 }
 
 export function validateApplicationQuestionAnswers(
   questions = [],
   answerState = {},
-  hasAudio = false,
 ) {
   for (const question of normalizeApplicationFormQuestions(questions)) {
     if (!question.isRequired) continue;
 
     const state = answerState?.[String(question.id)] || {};
-    const answerType =
-      cleanText(state.answerType).toLowerCase() === "voice" ? "Voice" : "Text";
-
-    if (answerType === "Voice") {
-      if (!hasAudio) {
-        return `Please upload an audio file for the required voice answer: ${question.questionText}`;
-      }
-
-      continue;
-    }
 
     if (!cleanText(state.textAnswer)) {
       return `Please provide a text answer for the required question: ${question.questionText}`;

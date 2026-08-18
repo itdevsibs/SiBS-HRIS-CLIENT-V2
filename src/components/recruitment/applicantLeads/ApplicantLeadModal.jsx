@@ -137,7 +137,16 @@ export default function ApplicantLeadModal() {
     ? getApplicantLeadEditedFields(formData, editingLead)
     : {};
   const isEditFormEdited = Object.keys(editedFields).length > 0;
-  const isSubmitDisabled = isSaving || (editingLead && !isEditFormEdited);
+  const cpNumber = String(formData.cpNum ?? "");
+  const isCpNumberValid = /^\d{11}$/.test(cpNumber);
+  const cpNumberError =
+    cpNumber.length > 0 && !isCpNumberValid
+      ? "CP number must be exactly 11 digits."
+      : "";
+  const isSubmitDisabled =
+    isSaving ||
+    !isCpNumberValid ||
+    (editingLead && !isEditFormEdited);
 
   function isAnyEdited(...fields) {
     return fields.some((field) => editedFields[field]);
@@ -296,14 +305,14 @@ export default function ApplicantLeadModal() {
                   <input
                     required
                     value={formData.firstName}
+                    placeholder="Enter First Name"
                     onChange={(event) =>
                       updateFormField(
                         setFormData,
                         "firstName",
-                        event.target.value,
+                        event.target.value.toUpperCase(),
                       )
                     }
-                    placeholder="e.g. Maria"
                     className={INPUT_CLASS}
                   />
                 </label>
@@ -316,14 +325,14 @@ export default function ApplicantLeadModal() {
                   <input
                     required
                     value={formData.lastName}
+                    placeholder="Enter Last Name"
                     onChange={(event) =>
                       updateFormField(
                         setFormData,
                         "lastName",
-                        event.target.value,
+                        event.target.value.toUpperCase(),
                       )
                     }
-                    placeholder="e.g. Santos"
                     className={INPUT_CLASS}
                   />
                 </label>
@@ -335,14 +344,14 @@ export default function ApplicantLeadModal() {
                   </span>
                   <input
                     value={formData.middleName}
+                    placeholder="Enter Middle Name"
                     onChange={(event) =>
                       updateFormField(
                         setFormData,
                         "middleName",
-                        event.target.value,
+                        event.target.value.toUpperCase(),
                       )
                     }
-                    placeholder="e.g. Clara"
                     className={INPUT_CLASS}
                   />
                 </label>
@@ -358,7 +367,7 @@ export default function ApplicantLeadModal() {
                       updateFormField(
                         setFormData,
                         "suffix",
-                        event.target.value,
+                        event.target.value.toUpperCase(),
                       )
                     }
                     placeholder="e.g. Jr., Sr., III"
@@ -373,13 +382,26 @@ export default function ApplicantLeadModal() {
                   </span>
                   <input
                     required
+                    inputMode="numeric"
+                    pattern="[0-9]{11}"
+                    maxLength={11}
                     value={formData.cpNum}
                     onChange={(event) =>
-                      updateFormField(setFormData, "cpNum", event.target.value)
+                      updateFormField(
+                        setFormData,
+                        "cpNum",
+                        event.target.value.replace(/\D/g, "").slice(0, 11),
+                      )
                     }
-                    placeholder="e.g. 0917-889-1234"
+                    placeholder="e.g. 09123456789"
+                    aria-invalid={Boolean(cpNumberError)}
                     className={INPUT_CLASS}
                   />
+                  {cpNumberError ? (
+                    <span className="mt-1 block text-[10px] font-semibold text-red-500">
+                      {cpNumberError}
+                    </span>
+                  ) : null}
                 </label>
 
                 <label className="block">
@@ -393,7 +415,7 @@ export default function ApplicantLeadModal() {
                     onChange={(event) =>
                       updateFormField(setFormData, "email", event.target.value)
                     }
-                    placeholder="e.g. candidate@gmail.com"
+                    placeholder="Enter Email Address"
                     className={INPUT_CLASS}
                   />
                 </label>
@@ -516,7 +538,11 @@ export default function ApplicantLeadModal() {
                   rows={3}
                   value={formData.notes}
                   onChange={(event) =>
-                    updateFormField(setFormData, "notes", event.target.value)
+                    updateFormField(
+                      setFormData,
+                      "notes",
+                      event.target.value.toUpperCase(),
+                    )
                   }
                   placeholder="Record preliminary background, shift availability, or interview notes..."
                   className={TEXTAREA_CLASS}

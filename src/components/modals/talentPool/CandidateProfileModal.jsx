@@ -17,6 +17,7 @@ import {
   Loader2,
   Mail,
   MapPin,
+  MessageSquareText,
   Network,
   Phone,
   RefreshCcw,
@@ -57,6 +58,7 @@ import NhoUploadModal from "../candidatePipeline/NhoUploadModal";
 import api from "../../../lib/axios/api-template";
 import {
   getTalentPoolApplicationById,
+  getTalentPoolApplicationAnswers,
   markTalentPoolCandidateAsDropOff,
   updateTalentPoolApplicationStatus,
 } from "../../../lib/axios/getTalentPool";
@@ -3305,6 +3307,15 @@ export default function CandidateProfileModal() {
   const [talentPoolCandidateDetails, setTalentPoolCandidateDetails] =
     useState(null);
 
+  const [applicationAnswers, setApplicationAnswers] = useState({
+    form: null,
+    applicationCount: 1,
+    answers: [],
+  });
+  const [applicationAnswersLoading, setApplicationAnswersLoading] =
+    useState(false);
+  const [applicationAnswersError, setApplicationAnswersError] = useState("");
+
   const [pipelineCandidateDetails, setPipelineCandidateDetails] = useState(null);
   const [pipelineCandidateDetailsLoading, setPipelineCandidateDetailsLoading] =
     useState(false);
@@ -3357,6 +3368,9 @@ export default function CandidateProfileModal() {
     setSelectedNhoFile(null);
     setShowNhoUploadModal(false);
     setTalentPoolCandidateDetails(null);
+    setApplicationAnswers({ form: null, applicationCount: 1, answers: [] });
+    setApplicationAnswersLoading(false);
+    setApplicationAnswersError("");
     setPipelineCandidateDetails(null);
     setResolvedPipelineId("");
     setCandidatePipelineFiles([]);
@@ -3455,6 +3469,68 @@ export default function CandidateProfileModal() {
   useEffect(() => {
     loadTalentPoolCandidateDetails();
   }, [loadTalentPoolCandidateDetails]);
+
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (activeTab !== "answers") return undefined;
+
+    if (!selectedCandidate || !talentPoolApplicationId) {
+      setApplicationAnswers({ form: null, applicationCount: 1, answers: [] });
+      setApplicationAnswersError("");
+      setApplicationAnswersLoading(false);
+      return undefined;
+    }
+
+    async function loadApplicationAnswers() {
+      setApplicationAnswersLoading(true);
+      setApplicationAnswersError("");
+
+      try {
+        const response = await getTalentPoolApplicationAnswers(
+          talentPoolApplicationId,
+        );
+
+        if (!response?.success) {
+          throw new Error(
+            response?.message ||
+              "Unable to load application questions and answers.",
+          );
+        }
+
+        if (cancelled) return;
+
+        const payload = safeObject(response?.data);
+
+        setApplicationAnswers({
+          form: safeObject(payload.form),
+          applicationCount: Number(payload.applicationCount || 1),
+          answers: safeArray(payload.answers),
+        });
+      } catch (error) {
+        if (cancelled) return;
+
+        setApplicationAnswers({ form: null, applicationCount: 1, answers: [] });
+        setApplicationAnswersError(
+          getApiErrorMessage(
+            error,
+            "Unable to load application questions and answers.",
+          ),
+        );
+      } finally {
+        if (!cancelled) {
+          setApplicationAnswersLoading(false);
+        }
+      }
+    }
+
+    loadApplicationAnswers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, selectedCandidate, talentPoolApplicationId]);
 
   const loadCandidatePipelineNhoFiles = useCallback(async () => {
     if (!selectedCandidate) return;
@@ -3897,6 +3973,11 @@ export default function CandidateProfileModal() {
       children: [
         { key: "documents.vault", label: "Document Vault" },
       ],
+    },
+    {
+      key: "answers",
+      label: "Application Response",
+      icon: MessageSquareText,
     },
     {
       key: "notes",
@@ -5841,18 +5922,13 @@ export default function CandidateProfileModal() {
   }
 
   function renderDocumentVault() {
-    const otherFilesCount = [
-      activeCandidate.audioFileUrl,
-      activeCandidate.attachmentFileUrl,
-    ].filter(Boolean).length;
-
     return (
       <DocumentVaultManager
         title="Document Vault Manager"
-        description="Manage Talent Pool attachments and Candidate Pipeline pre-employment files in one place."
-        otherFilesCount={otherFilesCount}
+        description="Manage Candidate Pipeline pre-employment files in one place."
         preEmploymentCount={displayedPreEmploymentFiles.length}
-        renderOtherFiles={renderUploadedFiles}
+        defaultSection="pre-employment"
+        showOtherFiles={false}
         renderPreEmploymentFiles={renderPreEmploymentFiles}
       />
     );
@@ -6018,6 +6094,106 @@ export default function CandidateProfileModal() {
     );
   }
 
+  function renderApplicationAnswers() {
+    const answers = safeArray(applicationAnswers.answers);
+    const form = safeObject(applicationAnswers.form);
+
+    return (
+      <div className="space-y-6">
+        <section className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <SectionTitle
+            icon={MessageSquareText}
+            title="Application Questions & Answers"
+            description="Read-only answers submitted by the applicant for the selected open position."
+          />
+
+          {answers.length > 0 && (
+            <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+              {answers.length} answer{answers.length > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+
+        {form.formName ? (
+          <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+              Application Form
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+              {form.formName}
+            </p>
+          </div>
+        ) : null}
+
+        {applicationAnswersLoading ? (
+          <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-[#E6ECF2] bg-white p-6">
+            <div className="flex items-center gap-2 text-sm font-bold text-[#667085]">
+              <Loader2 size={18} className="animate-spin text-[#FF5C28]" />
+              Loading application questions and answers...
+            </div>
+          </div>
+        ) : applicationAnswersError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">
+            {applicationAnswersError}
+          </div>
+        ) : answers.length === 0 ? (
+          <EmptyState title="No application questions were submitted for this candidate." />
+        ) : (
+          <div className="space-y-3">
+            {answers.map((answer, index) => (
+              <article
+                key={answer.id || `${answer.questionId || "question"}-${index}`}
+                className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-lg bg-[#FFF0EA] px-2 text-[10px] font-black text-[#FF5C28]">
+                        {index + 1}
+                      </span>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide ${
+                          answer.isRequired
+                            ? "bg-red-50 text-red-600"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {answer.isRequired ? "Required" : "Optional"}
+                      </span>
+                    </div>
+
+                    <h4 className="mt-3 break-words text-sm font-extrabold leading-6 text-[#042C51]">
+                      {answer.questionText || "Application Question"}
+                    </h4>
+
+                    {answer.helperText ? (
+                      <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                        {answer.helperText}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                    Applicant Answer
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-[#344054]">
+                    {cleanText(answer.textAnswer) || "No text answer submitted."}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+        </section>
+
+        {renderUploadedFiles()}
+      </div>
+    );
+  }
+
   function renderRemarks() {
   return (
     <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
@@ -6070,6 +6246,8 @@ export default function CandidateProfileModal() {
     if (activeTab === "application.history") return renderApplicationHistory();
 
     if (activeTab === "documents.vault") return renderDocumentVault();
+
+    if (activeTab === "answers") return renderApplicationAnswers();
 
     if (activeTab === "notes") return renderRemarks();
 
