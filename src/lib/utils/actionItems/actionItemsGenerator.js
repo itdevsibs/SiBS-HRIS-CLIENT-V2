@@ -111,6 +111,31 @@ export function buildSystemGeneratedActions(
     });
   }
 
+  if (context.assessmentCandidates?.length > 0) {
+    actions.push({
+      id: "SYS-ASSESS-004B",
+      actionId: "SYS-004B",
+      actionItem: `Follow up assessment results and verify scores for ${context.assessmentCandidates.length} candidate/s in online assessment.`,
+      roleAccount: "Online Assessment",
+      roleTitle: "Assessment Candidates",
+      account: "Recruitment",
+      owner: "System Suggested",
+      deadline: dateAfterDays(2),
+      status: "Planned",
+      riskLevel: context.assessmentCandidates.length >= 10 ? "High" : "Medium",
+      linkedGap: "Screening",
+      module: "Candidate Pipeline",
+      sourceType: "System Suggested",
+      remarks:
+        "Ensure candidate assessment scores and test requirements are verified before moving to interview scheduling.",
+      requirement: context.assessmentCandidates.length,
+      filled: 0,
+      createdDate: today,
+      completedDate: null,
+      systemGenerated: true,
+    });
+  }
+
   if (context.interviewCandidates.length > 0) {
     actions.push({
       id: "SYS-INTERVIEW-005",
@@ -249,8 +274,14 @@ export function getModuleInsightCards(context) {
       iconKey: "Layers3",
       value: context.candidateApplications.length + context.pipelineCandidates.length,
       riskValue:
-        context.screeningCandidates.length + context.interviewCandidates.length,
-      description: `${context.interviewCandidates.length} interview-stage candidate/s`,
+        context.screeningCandidates.length +
+        (context.assessmentCandidates?.length || 0) +
+        context.interviewCandidates.length,
+      description: `${
+        context.screeningCandidates.length +
+        (context.assessmentCandidates?.length || 0) +
+        context.interviewCandidates.length
+      } active in-progress candidate/s`,
     },
     {
       module: "Offers",

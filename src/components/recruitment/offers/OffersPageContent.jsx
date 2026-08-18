@@ -133,25 +133,15 @@ export default function OffersPageContent() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
+            className="sibs-page-card-in sibs-card relative z-[10] overflow-visible font-jakarta"
             style={{ animationDelay: "120ms" }}
           >
-            <div className="border-b border-[#E6ECF2]">
-              <OfferFilters />
-            </div>
+            <OfferFilters />
 
-            <div className="p-4 sm:p-6">
-              <div
-                className="sibs-page-card-in hidden lg:block"
-                style={{ animationDelay: "180ms" }}
-              >
-                <OfferRecordsTable />
-              </div>
+            <div className="relative z-[1] overflow-hidden rounded-b-2xl">
+              <OfferRecordsTable />
 
-              <div
-                className="sibs-page-card-in lg:hidden"
-                style={{ animationDelay: "180ms" }}
-              >
+              <div className="p-4 sm:p-5 lg:hidden">
                 <OfferMobileCards />
               </div>
             </div>

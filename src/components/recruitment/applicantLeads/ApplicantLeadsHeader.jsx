@@ -4,10 +4,11 @@ import { Plus, RefreshCw } from "lucide-react";
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 
 export default function ApplicantLeadsHeader() {
-  const { openAddModal, refreshApplicantLeads } = useApplicantLeadsPage();
+  const { openAddModal, refreshApplicantLeads, isManualRefreshing } =
+    useApplicantLeadsPage();
 
   return (
-    <section className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
+    <section className="sibs-page-header-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
       <span className="sibs-top-accent" aria-hidden="true" />
 
       <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -32,17 +33,22 @@ export default function ApplicantLeadsHeader() {
         <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
           <button
             type="button"
+            disabled={isManualRefreshing}
             onClick={refreshApplicantLeads}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+            className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
             title="Refresh Applicant Leads"
+            aria-label="Refresh Applicant Leads"
           >
-            <RefreshCw size={15} />
+            <RefreshCw
+              size={15}
+              className={isManualRefreshing ? "animate-spin" : ""}
+            />
           </button>
 
           <button
             type="button"
             onClick={openAddModal}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
           >
             <Plus size={15} />
             Log New Lead

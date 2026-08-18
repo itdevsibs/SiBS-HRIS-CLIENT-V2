@@ -41,7 +41,10 @@ export default function ActionItemsReportingScope() {
   }));
 
   return (
-    <section className="relative z-30 overflow-visible sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5 font-jakarta">
+    <section
+      className="relative z-30 overflow-visible sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5 font-jakarta"
+      style={{ animationDelay: "60ms", animationFillMode: "both" }}
+    >
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-[minmax(220px,1.5fr)_minmax(220px,1.5fr)_1fr_1fr_1fr_1fr_auto_auto] xl:items-end">
         <div className="min-w-0 space-y-1.5">
           <label className="block font-jakarta text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">

@@ -235,10 +235,20 @@ export default function useWeeklyReportsPage() {
     scrollToTopAfterRender();
   }
 
-  function handleRefreshData() {
-    setRefreshKey((previous) => previous + 1);
-    setCurrentPage(1);
-    scrollToTopAfterRender();
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  async function handleRefreshData() {
+    if (isManualRefreshing) return;
+    setIsManualRefreshing(true);
+    try {
+      setRefreshKey((previous) => previous + 1);
+      setCurrentPage(1);
+      scrollToTopAfterRender();
+      // brief debounce for natural tactile feedback
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    } finally {
+      setIsManualRefreshing(false);
+    }
   }
 
   return {
@@ -257,6 +267,7 @@ export default function useWeeklyReportsPage() {
     showingTo,
     stats,
     moduleSignalCards,
+    isManualRefreshing,
     handlePageChange,
     handleGenerateCurrentWeek,
     handleMarkSent,

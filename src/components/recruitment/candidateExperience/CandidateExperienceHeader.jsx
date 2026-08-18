@@ -1,8 +1,11 @@
-import { Download, Plus, RefreshCcw } from "lucide-react";
+import { Download, Plus, RefreshCw } from "lucide-react";
 
 export default function CandidateExperienceHeader({ onAddManual, onRefresh, refreshing, onExport }) {
   return (
-    <section className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm 2xl:p-6">
+    <section
+      className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
+      style={{ animationDelay: "0ms", animationFillMode: "both" }}
+    >
       <span className="sibs-top-accent" aria-hidden="true" />
 
       <div className="mt-0.5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -22,11 +25,11 @@ export default function CandidateExperienceHeader({ onAddManual, onRefresh, refr
           </p>
         </div>
 
-        <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">
+        <div className="flex w-full flex-wrap items-center gap-2.5 xl:w-auto xl:justify-end">
           <button
             type="button"
             onClick={onExport}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#063B6B] hover:shadow-md active:scale-[0.98]"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#063B6B] active:scale-[0.98]"
           >
             <Download className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#FF5C28]" />
             Export CSV
@@ -38,17 +41,17 @@ export default function CandidateExperienceHeader({ onAddManual, onRefresh, refr
             disabled={refreshing}
             aria-label="Refresh Candidate Experience"
             title="Refresh Candidate Experience"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-[#042C51] shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98] disabled:opacity-60"
+            className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <RefreshCcw size={16} className={refreshing ? "animate-spin text-[#FF5C28]" : ""} />
+            <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
           </button>
 
           <button
             type="button"
             onClick={onAddManual}
-            className="sibs-button-primary inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E04F20] hover:shadow-md active:scale-[0.98]"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] active:scale-[0.98]"
           >
-            <Plus size={16} />
+            <Plus size={15} />
             Add Manual Entry
           </button>
         </div>

@@ -1,6 +1,7 @@
 import {
   BadgeCheck,
   Briefcase,
+  CalendarClock,
   CalendarDays,
   CheckCircle2,
   FileText,
@@ -56,6 +57,7 @@ export function ApplicationSection({
 }) {
   const config = {
     overview: ["Application Overview", "Candidate source, role preference, and recruitment application details.", Briefcase],
+    schedule: ["Work Schedule & Shifts", "Assigned shift timing, weekly roster arrangements, and working hours.", CalendarClock],
     pipeline: ["Pipeline Link", "Current pipeline status, assignment, and TA ownership.", UserCheck],
     assessment: ["Assessment Results", "Testing scores, evaluations, and outcome status.", BadgeCheck],
     readiness: ["Readiness and Compliance", "Availability, work setup, and compliance readiness.", ShieldCheck],
@@ -125,6 +127,114 @@ export function ApplicationSection({
               ]}
             />
           </ProfilePanel>
+        </div>
+      )}
+
+      {selectedSubTab === "schedule" && (
+        <div className="space-y-5">
+          {isEditing ? (
+            <ProfilePanel title="Edit Work Schedule & Shift Details">
+              <ApplicationFieldGrid
+                employee={employee}
+                isEditing
+                onChange={onChange}
+                fields={[
+                  ["shift", "Shift Name / Schedule Type"],
+                  ["shiftStart", "Shift Start Time"],
+                  ["shiftEnd", "Shift End Time"],
+                  ["workArrangement", "Work Arrangement (e.g. On-site, Hybrid, WFH)"],
+                  ["workDays", "Scheduled Working Days (e.g. Mon - Fri)"],
+                  ["restDays", "Designated Rest Days (e.g. Sat, Sun)"],
+                  ["site", "Assigned Location / Site"],
+                  ["gracePeriod", "Grace Period (Minutes)"],
+                  ["overtimeEligible", "Overtime Eligible (Yes / No)"],
+                  ["scheduleRemarks", "Schedule Notes / Instructions", "textarea"],
+                ]}
+              />
+            </ProfilePanel>
+          ) : (
+            <>
+              <ProfilePanel title="Shift Timing & Work Setup Overview">
+                <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 xl:grid-cols-4">
+                  <ProfileReadField
+                    label="Current Shift"
+                    value={employee?.shift || employee?.shiftSchedule || "Regular Day Shift"}
+                  />
+                  <ProfileReadField
+                    label="Working Hours"
+                    value={
+                      employee?.shiftStart && employee?.shiftEnd
+                        ? `${employee.shiftStart} – ${employee.shiftEnd}`
+                        : "08:00 AM – 05:00 PM"
+                    }
+                  />
+                  <ProfileReadField
+                    label="Work Setup"
+                    value={employee?.workArrangement || employee?.workSetup || "On-site"}
+                  />
+                  <ProfileReadField
+                    label="Assigned Site"
+                    value={employee?.site || employee?.workLocation || "Tagum Site"}
+                  />
+                  <ProfileReadField
+                    label="Working Days"
+                    value={employee?.workDays || "Monday – Friday"}
+                  />
+                  <ProfileReadField
+                    label="Designated Rest Days"
+                    value={employee?.restDays || "Saturday, Sunday"}
+                  />
+                  <ProfileReadField
+                    label="Grace Period"
+                    value={employee?.gracePeriod ? `${employee.gracePeriod} mins` : "15 mins"}
+                  />
+                  <ProfileReadField
+                    label="Overtime Policy"
+                    value={employee?.overtimeEligible || "Eligible"}
+                  />
+                </div>
+              </ProfilePanel>
+
+              <ProfilePanel title="Standard Weekly Shift Roster">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
+                  {[
+                    { day: "Mon", full: "Monday", type: "work", time: employee?.shiftStart && employee?.shiftEnd ? `${employee.shiftStart} - ${employee.shiftEnd}` : "08:00 AM - 05:00 PM" },
+                    { day: "Tue", full: "Tuesday", type: "work", time: employee?.shiftStart && employee?.shiftEnd ? `${employee.shiftStart} - ${employee.shiftEnd}` : "08:00 AM - 05:00 PM" },
+                    { day: "Wed", full: "Wednesday", type: "work", time: employee?.shiftStart && employee?.shiftEnd ? `${employee.shiftStart} - ${employee.shiftEnd}` : "08:00 AM - 05:00 PM" },
+                    { day: "Thu", full: "Thursday", type: "work", time: employee?.shiftStart && employee?.shiftEnd ? `${employee.shiftStart} - ${employee.shiftEnd}` : "08:00 AM - 05:00 PM" },
+                    { day: "Fri", full: "Friday", type: "work", time: employee?.shiftStart && employee?.shiftEnd ? `${employee.shiftStart} - ${employee.shiftEnd}` : "08:00 AM - 05:00 PM" },
+                    { day: "Sat", full: "Saturday", type: "rest", time: "Rest Day" },
+                    { day: "Sun", full: "Sunday", type: "rest", time: "Rest Day" },
+                  ].map((item) => (
+                    <div
+                      key={item.day}
+                      className={`rounded-xl border p-3 text-center transition ${
+                        item.type === "work"
+                          ? "border-[#E6ECF2] bg-white shadow-xs"
+                          : "border-dashed border-[#D7DEE8] bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <span className="block text-[10px] font-black uppercase tracking-wider text-[#042C51]">
+                        {item.full}
+                      </span>
+                      <span
+                        className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide ${
+                          item.type === "work"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {item.type === "work" ? "Work Day" : "Rest Day"}
+                      </span>
+                      <p className="mt-2 text-[10px] font-semibold text-[#667085]">
+                        {item.time}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </ProfilePanel>
+            </>
+          )}
         </div>
       )}
 

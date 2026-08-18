@@ -3,38 +3,92 @@ export default function SummaryCard({
   value,
   icon: Icon,
   description,
-  valueClassName = "text-sibs-primary-1",
-  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  tone = "navy",
+  badge = null,
   delay = 0,
 }) {
+  const toneMap = {
+    navy: {
+      label: "text-[#042C51]",
+      value: "text-[#042C51]",
+      iconWrap: "bg-[#EAF2FB]",
+      icon: "text-[#042C51]",
+    },
+    green: {
+      label: "text-[#047857]",
+      value: "text-[#047857]",
+      iconWrap: "bg-[#ECFDF3]",
+      icon: "text-[#059669]",
+    },
+    amber: {
+      label: "text-[#B45309]",
+      value: "text-[#F59E0B]",
+      iconWrap: "bg-[#FFFBEB]",
+      icon: "text-[#F59E0B]",
+    },
+    red: {
+      label: "text-[#BE123C]",
+      value: "text-[#E11D48]",
+      iconWrap: "bg-[#FFF1F2]",
+      icon: "text-[#E11D48]",
+    },
+    orange: {
+      label: "text-[#C2410C]",
+      value: "text-[#FF5C28]",
+      iconWrap: "bg-[#FFF3ED]",
+      icon: "text-[#FF5C28]",
+    },
+    indigo: {
+      label: "text-[#4338CA]",
+      value: "text-[#6366F1]",
+      iconWrap: "bg-[#EEF2FF]",
+      icon: "text-[#6366F1]",
+    },
+  };
+
+  const currentTone = toneMap[tone] || toneMap.navy;
+
   return (
-    <div
-      className="sibs-page-card-in group rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+    <article
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      style={{
+        animationDelay: `${delay}ms`,
+        animationFillMode: "both",
+      }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-            {title}
-          </p>
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
+          <div>
+            <p className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${currentTone.label}`}>
+              {title}
+            </p>
 
-          <p className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}>
-            {value}
-          </p>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <p className={`truncate text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${currentTone.value}`}>
+                {typeof value === "number" ? value.toLocaleString("en-US") : value}
+              </p>
 
-          {description && (
-            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+              {badge ? (
+                <span className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                  {badge}
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          {description ? (
+            <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
               {description}
             </p>
-          )}
+          ) : null}
         </div>
 
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105 ${iconClassName}`}
+        <span
+          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${currentTone.iconWrap} ${currentTone.icon}`}
         >
-          <Icon size={22} />
-        </div>
+          <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
+        </span>
       </div>
-    </div>
+    </article>
   );
 }

@@ -2,9 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BriefcaseBusiness,
+  CalendarDays,
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   FileText,
   Info,
@@ -138,6 +141,310 @@ function ThemedSelectDropdown({
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const weekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function parseDateInputValue(value) {
+  if (!value) return null;
+  const [year, month, day] = String(value).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function toDateInputValue(date) {
+  if (!date || !(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateDisplay(value) {
+  const date = parseDateInputValue(value);
+  if (!date) return "";
+  return date.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function isSameDate(first, second) {
+  if (!first || !second) return false;
+  return (
+    first.getFullYear() === second.getFullYear() &&
+    first.getMonth() === second.getMonth() &&
+    first.getDate() === second.getDate()
+  );
+}
+
+function buildCalendarDays(targetDate) {
+  const year = targetDate.getFullYear();
+  const month = targetDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const firstDayIndex = firstDay.getDay();
+
+  const calendarStart = new Date(year, month, 1 - firstDayIndex);
+  const days = [];
+
+  for (let index = 0; index < 42; index += 1) {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
+
+    days.push({
+      date,
+      dateValue: toDateInputValue(date),
+      dayNumber: date.getDate(),
+      isCurrentMonth: date.getMonth() === month,
+    });
+  }
+
+  return days;
+}
+
+function ActionItemDatePicker({
+  value,
+  onChange,
+  placeholder = "Select deadline",
+  disabled = false,
+  dropdownId = "deadline",
+  activeDropdown = "",
+  setActiveDropdown,
+}) {
+  const calendarRef = useRef(null);
+  const selectedDate = parseDateInputValue(value);
+  const today = new Date();
+
+  const isControlled = typeof setActiveDropdown === "function" && Boolean(dropdownId);
+  const [localOpen, setLocalOpen] = useState(false);
+  const open = isControlled ? activeDropdown === dropdownId : localOpen;
+
+  const [displayDate, setDisplayDate] = useState(
+    selectedDate || new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+
+  const calendarDays = useMemo(
+    () => buildCalendarDays(displayDate),
+    [displayDate],
+  );
+
+  const displayText = value ? formatDateDisplay(value) : placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        if (isControlled) {
+          setActiveDropdown("");
+        } else {
+          setLocalOpen(false);
+        }
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        if (isControlled) {
+          setActiveDropdown("");
+        } else {
+          setLocalOpen(false);
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isControlled, setActiveDropdown]);
+
+  function goPreviousMonth() {
+    setDisplayDate(
+      (previous) => new Date(previous.getFullYear(), previous.getMonth() - 1, 1),
+    );
+  }
+
+  function goNextMonth() {
+    setDisplayDate(
+      (previous) => new Date(previous.getFullYear(), previous.getMonth() + 1, 1),
+    );
+  }
+
+  function handleSelectDate(date) {
+    onChange(toDateInputValue(date));
+    if (isControlled) {
+      setActiveDropdown("");
+    } else {
+      setLocalOpen(false);
+    }
+  }
+
+  function handleClear() {
+    onChange("");
+    if (isControlled) {
+      setActiveDropdown("");
+    } else {
+      setLocalOpen(false);
+    }
+  }
+
+  function handleToday() {
+    onChange(toDateInputValue(today));
+    setDisplayDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    if (isControlled) {
+      setActiveDropdown("");
+    } else {
+      setLocalOpen(false);
+    }
+  }
+
+  function handleToggleOpen() {
+    if (disabled) return;
+    if (!open && selectedDate) {
+      setDisplayDate(
+        new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+      );
+    }
+
+    if (isControlled) {
+      setActiveDropdown(open ? "" : dropdownId);
+    } else {
+      setLocalOpen((previous) => !previous);
+    }
+  }
+
+  return (
+    <div ref={calendarRef} className="relative z-[220] min-w-0">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleToggleOpen}
+        className={`flex h-9 w-full min-w-0 items-center justify-between gap-3 rounded-lg border px-3 text-left text-xs font-bold outline-none transition ${
+          open
+            ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
+            : "border-[#D0D5DD] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
+        } ${
+          disabled
+            ? "cursor-not-allowed border-[#D7DEE8] bg-[#F2F4F7] text-[#667085] opacity-70"
+            : "text-[#042C51]"
+        }`}
+      >
+        <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
+          <CalendarDays size={15} className="shrink-0 text-[#215789]" />
+          <span className={`min-w-0 truncate ${value ? "text-[#042C51]" : "text-[#98A2B3]"}`}>
+            {displayText}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="sibs-dropdown-pop-in absolute right-0 top-[calc(100%+6px)] z-[100050] w-[280px] overflow-visible rounded-2xl border border-[#D7DEE8] bg-white p-3.5 shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-2.5">
+            <button
+              type="button"
+              onClick={goPreviousMonth}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-[#F8FAFC] text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            >
+              <ChevronLeft size={15} />
+            </button>
+
+            <span className="text-xs font-extrabold text-[#042C51]">
+              {monthNames[displayDate.getMonth()]} {displayDate.getFullYear()}
+            </span>
+
+            <button
+              type="button"
+              onClick={goNextMonth}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-[#F8FAFC] text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            >
+              <ChevronRight size={15} />
+            </button>
+          </div>
+
+          {/* Weekdays */}
+          <div className="mt-2.5 grid grid-cols-7 gap-1">
+            {weekdayLabels.map((dayLabel) => (
+              <div
+                key={dayLabel}
+                className="flex h-6 items-center justify-center text-[10px] font-extrabold text-[#7B8DB3]"
+              >
+                {dayLabel}
+              </div>
+            ))}
+
+            {calendarDays.map((day) => {
+              const active = selectedDate && isSameDate(day.date, selectedDate);
+              const currentDay = isSameDate(day.date, today);
+
+              return (
+                <button
+                  key={day.dateValue}
+                  type="button"
+                  onClick={() => handleSelectDate(day.date)}
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-extrabold transition-all duration-150 mx-auto ${
+                    active
+                      ? "bg-[#FF5C28] text-white shadow-xs"
+                      : currentDay
+                        ? "border border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28]"
+                        : day.isCurrentMonth
+                          ? "text-[#042C51] hover:bg-[#EAF2FB]"
+                          : "text-[#C2CEDC] hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  {day.dayNumber}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Footer */}
+          <div className="mt-2.5 flex items-center justify-between border-t border-[#E6ECF2] pt-2 text-xs font-extrabold">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="text-[#667085] transition hover:text-red-600"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToday}
+              className="text-[#FF5C28] transition hover:underline"
+            >
+              Today
+            </button>
           </div>
         </div>
       )}
@@ -540,16 +847,15 @@ export default function AddActionItemModal() {
                   />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <FieldLabel required>Target Deadline</FieldLabel>
-                  <input
-                    required
-                    type="date"
+                  <ActionItemDatePicker
+                    dropdownId="deadline"
+                    activeDropdown={activeDropdown}
+                    setActiveDropdown={setActiveDropdown}
                     value={actionForm.deadline}
-                    onChange={(event) =>
-                      updateField("deadline", event.target.value)
-                    }
-                    className={inputClass}
+                    onChange={(val) => updateField("deadline", val)}
+                    placeholder="Select deadline"
                   />
                 </div>
               </div>

@@ -422,29 +422,30 @@ const METRIC_TONES = {
   },
 };
 
-function PipelineMetricCard({ label, value, description, icon: Icon, tone, delay }) {
-  const colors = METRIC_TONES[tone] || METRIC_TONES.navy;
-
+function PipelineMetricCard({ label, value, description, icon: Icon, tone = "navy", delay = 0 }) {
   return (
     <article
-      className="sibs-page-card-in sibs-metric-card min-h-[96px] 2xl:min-h-[112px]"
-      style={{ animationDelay: `${delay}ms` }}
+      className="sibs-page-card-in sibs-metric-card flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="flex h-full items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className={`sibs-text-micro truncate font-extrabold uppercase tracking-wide ${colors.label}`}>
-            {label}
-          </p>
-          <p className={`mt-2 text-2xl font-extrabold leading-none tabular-nums 2xl:text-3xl ${colors.value}`}>
-            {Number(value || 0).toLocaleString("en-US")}
-          </p>
-          <p className="mt-1.5 sibs-text-micro font-semibold text-[#667085]">
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
+          <div>
+            <p className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${tone}-label`}>
+              {label}
+            </p>
+            <p className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}>
+              {Number(value || 0).toLocaleString("en-US")}
+            </p>
+          </div>
+
+          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
             {description}
           </p>
         </div>
 
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border 2xl:h-9 2xl:w-9 ${colors.icon}`}>
-          <Icon size={16} strokeWidth={2.2} />
+        <span className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}>
+          <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
       </div>
     </article>
@@ -743,7 +744,10 @@ export default function CandidatePipelinePage() {
 
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1600px] space-y-5 2xl:space-y-6">
-          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6 md:flex-row md:items-center">
+          <section
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6 md:flex-row md:items-center"
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
+          >
             <span className="sibs-top-accent" aria-hidden="true" />
 
             <div className="mt-1 min-w-0">
@@ -788,6 +792,7 @@ export default function CandidatePipelinePage() {
             <section
               role="alert"
               className="sibs-page-card-in rounded-xl border border-red-200 bg-red-50 px-4 py-3 sibs-text-xs font-bold leading-5 text-red-700"
+              style={{ animationDelay: "45ms", animationFillMode: "both" }}
             >
               {loadError}
             </section>
@@ -808,7 +813,7 @@ export default function CandidatePipelinePage() {
               icon={ClipboardCheck}
               description="Matched candidates"
               tone="indigo"
-              delay={60}
+              delay={45}
             />
             <PipelineMetricCard
               label="Interview Scheduled"
@@ -816,7 +821,7 @@ export default function CandidatePipelinePage() {
               icon={CalendarDays}
               description="Booked sessions"
               tone="blue"
-              delay={120}
+              delay={90}
             />
             <PipelineMetricCard
               label="Interviewed"
@@ -824,7 +829,7 @@ export default function CandidatePipelinePage() {
               icon={ShieldCheck}
               description="Evaluations complete"
               tone="green"
-              delay={180}
+              delay={135}
             />
             <PipelineMetricCard
               label="Offered"
@@ -832,7 +837,7 @@ export default function CandidatePipelinePage() {
               icon={BriefcaseBusiness}
               description="Offers processing"
               tone="amber"
-              delay={240}
+              delay={180}
             />
             <PipelineMetricCard
               label="Accepted"
@@ -840,11 +845,14 @@ export default function CandidatePipelinePage() {
               icon={UserCheck}
               description="Ready for NHO"
               tone="orange"
-              delay={300}
+              delay={225}
             />
           </section>
 
-          <section className="sibs-page-card-in sibs-card relative z-[100] overflow-visible p-4 sm:p-5">
+          <section
+            className="sibs-page-card-in sibs-card relative z-[100] overflow-visible p-4 sm:p-5"
+            style={{ animationDelay: "120ms", animationFillMode: "both" }}
+          >
             <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
               <div className="flex shrink-0 items-center gap-2">
                 <div className="flex items-center gap-1 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1">

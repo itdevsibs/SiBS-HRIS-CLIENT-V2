@@ -247,7 +247,10 @@ export default function ActionItemsCurrentStatus() {
   };
 
   return (
-    <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+    <section
+      className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+      style={{ animationDelay: "180ms", animationFillMode: "both" }}
+    >
       <header className="flex flex-col gap-2 border-b border-[#E6ECF2] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="sibs-section-title">

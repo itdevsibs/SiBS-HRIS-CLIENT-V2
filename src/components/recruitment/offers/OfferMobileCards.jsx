@@ -44,7 +44,7 @@ export default function OfferMobileCards({
 
   return (
     <div className="space-y-4 lg:hidden">
-      {displayedOffers.map((offer) => {
+      {displayedOffers.map((offer, index) => {
         const approvalStatus = getOfferApprovalStatus
           ? getOfferApprovalStatus(offer)
           : offer.offerApprovalStatus || offer.status || "For Review";
@@ -58,7 +58,8 @@ export default function OfferMobileCards({
         return (
           <article
             key={`mobile-${offer.offerId}-${offer.candidateApplicationId}-${offer.id}`}
-            className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm"
+            className="sibs-page-card-in rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm"
+            style={{ animationDelay: `${index * 45}ms`, animationFillMode: "both" }}
           >
             <button
               type="button"
@@ -67,16 +68,16 @@ export default function OfferMobileCards({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="break-words text-base font-extrabold text-[#101828]">
+                  <p className="break-words font-jakarta text-sm font-extrabold text-[#042C51]">
                     {offer.candidateName || "—"}
                   </p>
-                  <p className="mt-1 break-words text-xs font-semibold text-[#475467]">
+                  <p className="mt-0.5 break-words font-jakarta text-[10px] font-semibold text-[#667085]">
                     {offer.offerId || "—"} • {offer.candidateId || "—"}
                   </p>
                 </div>
 
                 <span
-                  className={`shrink-0 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
+                  className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(
                     approvalStatus,
                   )}`}
                 >
@@ -85,24 +86,24 @@ export default function OfferMobileCards({
               </div>
             </button>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl bg-[#F8FAFC] p-3 sm:grid-cols-2">
+            <div className="mt-3 grid grid-cols-1 gap-2.5 rounded-xl bg-[#F8FAFC] p-3 sm:grid-cols-2">
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
                   Final Role / Account
                 </p>
-                <p className="mt-1 break-words text-sm font-extrabold text-[#101828]">
+                <p className="mt-0.5 break-words font-jakarta text-xs font-extrabold text-[#042C51]">
                   {offer.roleTitle || "—"}
                 </p>
-                <p className="mt-1 break-words text-xs font-bold text-[#475467]">
+                <p className="mt-0.5 break-words font-jakarta text-[10px] font-semibold text-[#667085]">
                   {offer.account || "—"}
                 </p>
               </div>
 
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
                   Owner
                 </p>
-                <p className="mt-1 break-words text-sm font-bold text-[#344054]">
+                <p className="mt-0.5 break-words font-jakarta text-xs font-bold text-[#042C51]">
                   {offer.owner || "—"}
                 </p>
               </div>

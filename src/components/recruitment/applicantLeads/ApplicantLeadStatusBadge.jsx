@@ -24,12 +24,12 @@ export default function ApplicantLeadStatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-0.5 whitespace-nowrap rounded-full border px-2 py-1 text-[10px] font-extrabold ${
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold uppercase tracking-wide ${
         statusStyles[status] || statusStyles["New Lead"]
       }`}
     >
       {Icon ? (
-        <Icon size={12} />
+        <Icon size={11} strokeWidth={2.5} />
       ) : (
         <span className="h-1.5 w-1.5 rounded-full bg-current" />
       )}

@@ -97,7 +97,20 @@ export function buildModuleContextFromRecords({
 
   const screeningCandidates = pipelineSource.filter((item) => {
     const status = getCandidateStatus(item).toLowerCase();
-    return status.includes("screen") || status.includes("initial");
+    return (
+      status.includes("screen") ||
+      status.includes("initial") ||
+      status.includes("matched")
+    );
+  });
+
+  const assessmentCandidates = pipelineSource.filter((item) => {
+    const status = getCandidateStatus(item).toLowerCase();
+    return (
+      status.includes("assess") ||
+      status.includes("exam") ||
+      status.includes("test")
+    );
   });
 
   const interviewCandidates = pipelineSource.filter((item) =>
@@ -221,6 +234,7 @@ export function buildModuleContextFromRecords({
     newPublicApplicants,
     newTalentPoolApplicants,
     screeningCandidates,
+    assessmentCandidates,
     interviewCandidates,
     offeredCandidates,
     pendingOffers,

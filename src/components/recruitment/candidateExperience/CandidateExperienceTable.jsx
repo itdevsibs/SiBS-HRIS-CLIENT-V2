@@ -49,7 +49,7 @@ export default function CandidateExperienceTable({ records, onSelect }) {
           </thead>
           <tbody className="divide-y divide-[#E6ECF2] font-jakarta">
             {paginatedRecords.length ? (
-              paginatedRecords.map((record) => (
+              paginatedRecords.map((record, index) => (
                 <tr
                   key={record.id}
                   role="button"
@@ -61,7 +61,8 @@ export default function CandidateExperienceTable({ records, onSelect }) {
                       onSelect(record);
                     }
                   }}
-                  className="sibs-data-table-row cursor-pointer bg-white outline-none transition hover:bg-[#F8FAFC] focus:bg-[#E9F0FC]/60 focus:ring-2 focus:ring-inset focus:ring-[#FF5C28]/20"
+                  className="sibs-data-table-row sibs-page-card-in cursor-pointer bg-white outline-none transition hover:bg-[#F8FAFC] focus:bg-[#E9F0FC]/60 focus:ring-2 focus:ring-inset focus:ring-[#FF5C28]/20"
+                  style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                 >
                   <td className="px-4 py-3 align-middle">
                     <p className="text-xs font-extrabold text-[#042C51]">{record.candidateName || "Unnamed Candidate"}</p>

@@ -7,8 +7,8 @@ import {
   MapPin,
   Phone,
   RotateCw,
-  Trash2,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
@@ -22,7 +22,14 @@ function cleanText(value, fallback = "-") {
 
 export default function ApplicantLeadsTable() {
   const {
-    filteredLeads,
+    paginatedLeads = [],
+    filteredLeads = [],
+    currentPage = 1,
+    setCurrentPage,
+    totalPages = 1,
+    totalRecords = 0,
+    pageSize = 10,
+    setPageSize,
     isLoading,
     errorMessage,
     markApplicationLinkSent,
@@ -31,362 +38,336 @@ export default function ApplicantLeadsTable() {
     leadView,
   } = useApplicantLeadsPage();
 
-  const totalRecords = Array.isArray(filteredLeads) ? filteredLeads.length : 0;
+  function goToPreviousPage() {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  }
+
+  function goToNextPage() {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  }
 
   return (
-    <div className="w-full bg-white px-5 py-5">
+    <div className="w-full">
       {/* =====================================================
-          TABLE
+          TABLE SHELL (Seamlessly connected to tabs above)
       ===================================================== */}
-
-      <div className="overflow-hidden rounded-xl border border-[#D9E3EC] bg-white">
+      <div className="overflow-hidden rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white">
         <div className="overflow-x-auto sibs-scrollbar">
-          <table className="w-full min-w-[1280px] border-collapse text-left">
-            <thead>
-            <tr className="border-b border-[#DCE4ED] bg-[#F8FAFC]">
-              <th className="w-[17%] px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.03em] text-[#5D7290]">
-                Lead ID &amp; Name
-              </th>
+          <table className="w-full min-w-[1100px] border-collapse text-left">
+            <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+              <tr className="border-b border-[#E6ECF2]">
+                <th className="w-[18%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  Lead ID &amp; Name
+                </th>
 
-              <th className="w-[17%] px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.03em] text-[#5D7290]">
-                CP Number / Email
-              </th>
+                <th className="w-[18%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  CP Number / Email
+                </th>
 
-              <th className="w-[25%] px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.03em] text-[#5D7290]">
-                Department &amp; Account / Client
-              </th>
+                <th className="w-[24%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  Department &amp; Account / Client
+                </th>
 
-              {/* SOURCE REMOVED */}
-              <th className="w-[12%] px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.03em] text-[#5D7290]">
-                Site
-              </th>
+                <th className="w-[12%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  Site
+                </th>
 
-              <th className="w-[10%] px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.03em] text-[#5D7290]">
-                Status
-              </th>
+                <th className="w-[10%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  Status
+                </th>
 
-              <th className="w-[13%] px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.03em] text-[#5D7290]">
-                Inputted By Account
-              </th>
+                <th className="w-[12%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  Inputted By
+                </th>
 
-              <th className="w-[6%] px-5 py-4 text-right text-[10px] font-extrabold uppercase tracking-[0.03em] text-[#5D7290]">
-                Quick Actions
-              </th>
-            </tr>
+                <th className="w-[6%] px-4 py-3.5 text-right text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  Actions
+                </th>
+              </tr>
             </thead>
 
-            <tbody className="divide-y divide-[#E7EDF3] bg-white">
-            {filteredLeads.map((lead) => {
-              const leadId = cleanText(lead.leadId || lead.lead_id, "");
+            <tbody className="divide-y divide-[#E6ECF2] bg-white">
+              {paginatedLeads.map((lead, index) => {
+                const leadId = cleanText(lead.leadId || lead.lead_id, "");
+                const fullName = cleanText(lead.fullName, "Unnamed Applicant");
+                const phone = cleanText(lead.cpNum);
+                const email = cleanText(lead.email);
+                const department = cleanText(lead.department);
+                const account = cleanText(lead.specificAccount);
+                const site = cleanText(lead.preferredSite);
+                const inputtedBy = cleanText(lead.inputtedBy);
+                const dateLogged = cleanText(lead.dateLogged);
+                const applicationLinkSent = isApplicantLeadApplicationLinkSent(lead);
+                const talentPoolApplicationId = cleanText(
+                  lead.talentPoolApplicationId,
+                  "",
+                );
 
-              const fullName = cleanText(lead.fullName, "Unnamed Applicant");
-
-              const phone = cleanText(lead.cpNum);
-
-              const email = cleanText(lead.email);
-
-              const department = cleanText(lead.department);
-
-              const account = cleanText(lead.specificAccount);
-
-              const site = cleanText(lead.preferredSite);
-
-              const inputtedBy = cleanText(lead.inputtedBy);
-
-              const dateLogged = cleanText(lead.dateLogged);
-              const applicationLinkSent = isApplicantLeadApplicationLinkSent(lead);
-              const talentPoolApplicationId = cleanText(
-                lead.talentPoolApplicationId,
-                "",
-              );
-
-              return (
-                <tr
-                  key={lead.id}
-                  onClick={() => openEditModal(lead)}
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      openEditModal(lead);
-                    }
-                  }}
-                  className="group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-[#FBFCFE] focus:bg-[#FBFCFE] focus:outline-none"
-                >
-                  {/* =========================================
-                      LEAD ID & NAME
-                  ========================================= */}
-
-                  <td className="px-5 py-4 align-middle">
-                    <div className="min-w-0">
-                      <p className="truncate text-[12px] font-extrabold leading-5 text-[#002D55]">
-                        {fullName}
-                      </p>
-
-                      {leadId && (
-                        <p className="mt-0.5 truncate text-[9px] font-semibold uppercase tracking-[0.035em] text-[#91A2B8]">
-                          Lead ID: {leadId}
-                        </p>
-                      )}
-                      {leadView === "archive" && talentPoolApplicationId ? (
-                        <p className="mt-0.5 truncate text-[9px] font-extrabold uppercase tracking-[0.035em] text-emerald-700">
-                          TP ID: {talentPoolApplicationId}
-                        </p>
-                      ) : null}
-                    </div>
-                  </td>
-
-                  {/* =========================================
-                      CP NUMBER / EMAIL
-                  ========================================= */}
-
-                  <td className="px-5 py-4 align-middle">
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <Phone
-                          size={12}
-                          strokeWidth={2}
-                          className="shrink-0 text-[#11A873]"
-                        />
-
-                        <span className="truncate text-[11px] font-extrabold text-[#173B61]">
-                          {phone}
-                        </span>
-                      </div>
-
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <Mail
-                          size={12}
-                          strokeWidth={2}
-                          className="shrink-0 text-[#98AABD]"
-                        />
-
-                        <span
-                          title={lead.email || ""}
-                          className="max-w-[185px] truncate text-[10px] font-medium text-[#7A8CA3]"
-                        >
-                          {email}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* =========================================
-                      DEPARTMENT / ACCOUNT
-                  ========================================= */}
-
-                  <td className="px-5 py-4 align-middle">
-                    <div className="min-w-0">
-                      <p className="truncate text-[11px] font-extrabold text-[#042C51]">
-                        {department}
-                      </p>
-
-                      <p
-                        title={lead.specificAccount || ""}
-                        className="mt-0.5 max-w-[280px] truncate text-[10px] font-medium text-[#536B89]"
-                      >
-                        <span className="font-semibold">Account:</span>{" "}
-                        {account}
-                      </p>
-                    </div>
-                  </td>
-
-                  {/* =========================================
-                      SITE ONLY
-                  ========================================= */}
-
-                  <td className="px-5 py-4 align-middle">
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <MapPin
-                        size={12}
-                        strokeWidth={2}
-                        className="shrink-0 text-[#9AABBF]"
-                      />
-
-                      <span
-                        title={lead.preferredSite || ""}
-                        className="max-w-[170px] truncate text-[10px] font-medium text-[#91A2B8]"
-                      >
-                        {site}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* =========================================
-                      STATUS
-                  ========================================= */}
-
-                  <td className="px-5 py-4 align-middle">
-                    <div className="flex items-center">
-                      <ApplicantLeadStatusBadge status={lead.status} />
-                    </div>
-                  </td>
-
-                  {/* =========================================
-                      INPUTTED BY ACCOUNT
-                  ========================================= */}
-
-                  <td className="px-5 py-4 align-middle">
-                    <div className="flex min-w-0 items-start gap-1.5">
-                      <UserRound
-                        size={13}
-                        strokeWidth={2}
-                        className="mt-0.5 shrink-0 text-[#FF5C28]"
-                      />
-
+                return (
+                  <tr
+                    key={lead.id || `lead-${index}`}
+                    onClick={() => openEditModal(lead)}
+                    tabIndex={0}
+                    style={{
+                      animationDelay: `${index * 30}ms`,
+                      animationFillMode: "both",
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openEditModal(lead);
+                      }
+                    }}
+                    className="sibs-page-card-in group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-[#F8FAFC] focus:bg-[#F8FAFC] focus:outline-none"
+                  >
+                    {/* LEAD ID & NAME */}
+                    <td className="px-4 py-3 align-middle">
                       <div className="min-w-0">
-                        <p className="truncate text-[11px] font-extrabold text-[#042C51]">
-                          {inputtedBy}
+                        <p className="truncate text-xs font-extrabold leading-5 text-[#042C51] group-hover:text-[#FF5C28] transition-colors">
+                          {fullName}
                         </p>
 
-                        <p className="mt-0.5 truncate text-[9px] font-medium text-[#91A2B8]">
-                          Logged: {dateLogged}
+                        {leadId && (
+                          <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wide text-[#98A2B3]">
+                            Lead ID: {leadId}
+                          </p>
+                        )}
+                        {leadView === "archive" && talentPoolApplicationId ? (
+                          <p className="mt-0.5 truncate text-[9px] font-extrabold uppercase tracking-wide text-emerald-700">
+                            TP ID: {talentPoolApplicationId}
+                          </p>
+                        ) : null}
+                      </div>
+                    </td>
+
+                    {/* CP NUMBER / EMAIL */}
+                    <td className="px-4 py-3 align-middle">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <Phone
+                            size={12}
+                            strokeWidth={2}
+                            className="shrink-0 text-emerald-600"
+                          />
+                          <span className="truncate text-[11px] font-bold text-[#344054]">
+                            {phone}
+                          </span>
+                        </div>
+
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <Mail
+                            size={12}
+                            strokeWidth={2}
+                            className="shrink-0 text-[#98A2B3]"
+                          />
+                          <span
+                            title={lead.email || ""}
+                            className="max-w-[185px] truncate text-[10px] font-medium text-[#667085]"
+                          >
+                            {email}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* DEPARTMENT / ACCOUNT */}
+                    <td className="px-4 py-3 align-middle">
+                      <div className="min-w-0">
+                        <p className="truncate text-[11px] font-bold text-[#042C51]">
+                          {department}
+                        </p>
+
+                        <p
+                          title={lead.specificAccount || ""}
+                          className="mt-0.5 max-w-[280px] truncate text-[10px] font-medium text-[#667085]"
+                        >
+                          <span className="font-bold text-[#98A2B3]">Account:</span>{" "}
+                          {account}
                         </p>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* =========================================
-                      QUICK ACTIONS
-                  ========================================= */}
-
-                  <td className="px-5 py-4 align-middle">
-                    {leadView === "archive" ? (
-                      <div className="h-7" />
-                    ) : (
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        type="button"
-                        disabled={isSendingApplicationLink}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          markApplicationLinkSent(lead);
-                        }}
-                        title={
-                          applicationLinkSent
-                            ? "Resend application link email"
-                            : "Send application link email"
-                        }
-                        aria-label={
-                          applicationLinkSent
-                            ? `Resend application link email to ${fullName}`
-                            : `Send application link email to ${fullName}`
-                        }
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-[7px] border transition active:scale-95 disabled:cursor-not-allowed disabled:active:scale-100 ${
-                          applicationLinkSent
-                            ? "cursor-pointer border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-60"
-                            : "cursor-pointer border-[#E7C7FF] bg-[#FCF7FF] text-[#9E28FF] hover:border-[#D7A3FF] hover:bg-[#F7EBFF] disabled:opacity-60"
-                        }`}
-                      >
-                        {applicationLinkSent ? (
-                          <RotateCw size={13} strokeWidth={2.2} />
-                        ) : (
-                          <Mail size={13} strokeWidth={2} />
-                        )}
-                      </button>
-                      {applicationLinkSent ? (
+                    {/* SITE */}
+                    <td className="px-4 py-3 align-middle">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <MapPin
+                          size={12}
+                          strokeWidth={2}
+                          className="shrink-0 text-[#98A2B3]"
+                        />
                         <span
-                          title="Application link email has been sent"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-[7px] border border-emerald-200 bg-white text-emerald-600"
+                          title={lead.preferredSite || ""}
+                          className="max-w-[170px] truncate text-[10px] font-medium text-[#667085]"
                         >
-                          <CircleCheckBig size={13} strokeWidth={2.2} />
+                          {site}
                         </span>
-                      ) : null}
+                      </div>
+                    </td>
 
-                      <button
-                        type="button"
-                        disabled
-                        onClick={(event) => event.stopPropagation()}
-                        title="Delete action is not connected yet"
-                        aria-label={`Delete ${fullName}`}
-                        className="inline-flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-[7px] border border-[#FFC6CF] bg-[#FFF5F6] text-[#F04461]"
-                      >
-                        <Trash2 size={13} strokeWidth={2} />
-                      </button>
-                    </div>
-                    )}
+                    {/* STATUS */}
+                    <td className="px-4 py-3 align-middle">
+                      <div className="flex items-center">
+                        <ApplicantLeadStatusBadge status={lead.status} />
+                      </div>
+                    </td>
+
+                    {/* INPUTTED BY */}
+                    <td className="px-4 py-3 align-middle">
+                      <div className="flex min-w-0 items-start gap-1.5">
+                        <UserRound
+                          size={12}
+                          strokeWidth={2}
+                          className="mt-0.5 shrink-0 text-[#FF5C28]"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-[11px] font-bold text-[#042C51]">
+                            {inputtedBy}
+                          </p>
+                          <p className="mt-0.5 truncate text-[9px] font-medium text-[#98A2B3]">
+                            Logged: {dateLogged}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* ACTIONS */}
+                    <td className="px-4 py-3 align-middle">
+                      {leadView === "archive" ? (
+                        <div className="h-7" />
+                      ) : (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            disabled={isSendingApplicationLink}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              markApplicationLinkSent(lead);
+                            }}
+                            title={
+                              applicationLinkSent
+                                ? "Resend application link email"
+                                : "Send application link email"
+                            }
+                            aria-label={
+                              applicationLinkSent
+                                ? `Resend application link email to ${fullName}`
+                                : `Send application link email to ${fullName}`
+                            }
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border transition active:scale-95 disabled:cursor-not-allowed disabled:active:scale-100 ${
+                              applicationLinkSent
+                                ? "cursor-pointer border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-60"
+                                : "cursor-pointer border-purple-200 bg-purple-50 text-purple-600 hover:border-purple-300 hover:bg-purple-100 disabled:opacity-60"
+                            }`}
+                          >
+                            {applicationLinkSent ? (
+                              <RotateCw size={13} strokeWidth={2.2} />
+                            ) : (
+                              <Mail size={13} strokeWidth={2} />
+                            )}
+                          </button>
+
+                          {applicationLinkSent ? (
+                            <span
+                              title="Application link email has been sent"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600"
+                            >
+                              <CircleCheckBig size={13} strokeWidth={2.2} />
+                            </span>
+                          ) : null}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {/* LOADING */}
+              {isLoading && (
+                <tr>
+                  <td colSpan={7} className="px-5 py-14 text-center">
+                    <p className="text-xs font-bold text-[#667085]">
+                      Loading applicant leads from the database...
+                    </p>
                   </td>
                 </tr>
-              );
-            })}
+              )}
 
-            {/* =================================================
-                LOADING
-            ================================================= */}
+              {/* ERROR */}
+              {!isLoading && errorMessage && (
+                <tr>
+                  <td colSpan={7} className="px-5 py-14 text-center">
+                    <p className="text-xs font-bold text-red-600">
+                      {errorMessage}
+                    </p>
+                  </td>
+                </tr>
+              )}
 
-            {isLoading && (
-              <tr>
-                <td colSpan={7} className="px-5 py-14 text-center">
-                  <p className="text-xs font-bold text-[#667085]">
-                    Loading applicant leads from the database...
-                  </p>
-                </td>
-              </tr>
-            )}
-
-            {/* =================================================
-                ERROR
-            ================================================= */}
-
-            {!isLoading && errorMessage && (
-              <tr>
-                <td colSpan={7} className="px-5 py-14 text-center">
-                  <p className="text-xs font-bold text-red-600">
-                    {errorMessage}
-                  </p>
-                </td>
-              </tr>
-            )}
-
-            {/* =================================================
-                EMPTY
-            ================================================= */}
-
-            {!isLoading && !errorMessage && !filteredLeads.length && (
-              <tr>
-                <td colSpan={7} className="px-5 py-14 text-center">
-                  <p className="text-xs font-bold text-[#667085]">
-                    No applicant leads match the selected filters.
-                  </p>
-                </td>
-              </tr>
-            )}
+              {/* EMPTY */}
+              {!isLoading && !errorMessage && !paginatedLeads.length && (
+                <tr>
+                  <td colSpan={7} className="px-5 py-14 text-center">
+                    <div className="flex flex-col items-center justify-center text-[#667085]">
+                      <UsersRound className="h-6 w-6 text-[#98A2B3]" />
+                      <p className="mt-2 text-[13px] font-extrabold text-[#042C51]">
+                        No applicant leads found
+                      </p>
+                      <p className="mt-1 text-xs font-medium">
+                        Try changing or resetting your search and filter criteria.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col justify-between gap-3 border-t border-[#E6ECF2] pt-4 sm:flex-row sm:items-center">
-        <p className="text-xs font-semibold text-[#667085]">
-          Showing{" "}
-          <span className="font-extrabold text-[#042C51]">{totalRecords}</span>{" "}
-          loaded applicant leads out of{" "}
-          <span className="font-extrabold text-[#042C51]">{totalRecords}</span>
+      {/* =====================================================
+          SIBS PAGINATION
+      ===================================================== */}
+      <div className="sibs-pagination sibs-pagination--compact mt-4">
+        <p className="sibs-pagination__summary">
+          Showing <span>{paginatedLeads.length}</span> loaded applicant leads
+          {totalRecords > 0 ? (
+            <>
+              {" "}
+              out of <span>{totalRecords}</span>
+            </>
+          ) : null}
         </p>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-xs font-extrabold text-[#98A2B3] transition disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            <ChevronLeft size={14} />
-            Previous
-          </button>
+        {totalRecords > 0 ? (
+          <div className="sibs-pagination__controls">
+            <button
+              type="button"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+              aria-label="Go to previous page"
+              className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
+            >
+              <ChevronLeft size={15} />
+              <span>Previous</span>
+            </button>
 
-          <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl bg-[#FF5C28] px-4 text-sm font-extrabold text-white shadow-sm">
-            1
-          </span>
+            <span className="sibs-pagination__page is-active h-10 px-3 sm:px-4">
+              Page {currentPage}
+              {totalPages > 1 ? ` of ${totalPages}` : ""}
+            </span>
 
-          <button
-            type="button"
-            disabled
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-xs font-extrabold text-[#98A2B3] transition disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            Next
-            <ChevronRight size={14} />
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              aria-label="Go to next page"
+              className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
+            >
+              <span>Next</span>
+              <ChevronRight size={15} />
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

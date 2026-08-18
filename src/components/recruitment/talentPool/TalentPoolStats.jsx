@@ -14,34 +14,40 @@ function StatCard({
   icon,
   description,
   tone = "navy",
+  delay = 0,
 }) {
   const IconComponent = icon;
 
   return (
-    <article className="sibs-metric-card overflow-hidden">
-      <div className="flex h-full items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p
-            className={`truncate text-[10px] font-extrabold uppercase tracking-normal sibs-tone-${tone}-label`}
-          >
-            {title}
-          </p>
+    <article
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
+    >
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${tone}-label`}
+            >
+              {title}
+            </p>
 
-          <p
-            className={`mt-2.5 truncate text-[30px] font-extrabold leading-none tabular-nums tracking-normal sibs-tone-${tone}-label`}
-          >
-            {value ?? 0}
-          </p>
+            <p
+              className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}
+            >
+              {value ?? 0}
+            </p>
+          </div>
 
-          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
             {description}
           </p>
         </div>
 
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}
+          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}
         >
-          <IconComponent size={17} strokeWidth={2} />
+          <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
       </div>
     </article>
@@ -53,13 +59,14 @@ export default function TalentPoolStats() {
 
   return (
     <section aria-labelledby="talent-pool-summary-title">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <StatCard
           title="Total Candidates"
           value={stats.total}
           icon={UsersRound}
           description="Database profiles"
           tone="navy"
+          delay={0}
         />
         <StatCard
           title="Silver Pool"
@@ -67,6 +74,7 @@ export default function TalentPoolStats() {
           icon={UserCheck}
           description="Passed, no opening"
           tone="indigo"
+          delay={45}
         />
         <StatCard
           title="Recyclable"
@@ -74,6 +82,7 @@ export default function TalentPoolStats() {
           icon={RefreshCcw}
           description="Can be reconsidered"
           tone="amber"
+          delay={90}
         />
         <StatCard
           title="Do Not Reprocess"
@@ -81,6 +90,7 @@ export default function TalentPoolStats() {
           icon={Ban}
           description="Not fit"
           tone="red"
+          delay={135}
         />
         <StatCard
           title="Hired / Active"
@@ -88,6 +98,7 @@ export default function TalentPoolStats() {
           icon={BriefcaseBusiness}
           description="Converted"
           tone="green"
+          delay={180}
         />
         <StatCard
           title="Public Entries"
@@ -95,6 +106,7 @@ export default function TalentPoolStats() {
           icon={ExternalLink}
           description="From outside form"
           tone="indigo"
+          delay={225}
         />
       </div>
     </section>
