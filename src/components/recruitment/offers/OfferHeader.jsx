@@ -6,7 +6,10 @@ export default function OfferHeader({
   onClearRouteFilter,
 }) {
   return (
-    <section className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6">
+    <section
+      className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6"
+      style={{ animationDelay: "0ms", animationFillMode: "both" }}
+    >
       <span className="sibs-top-accent" aria-hidden="true" />
 
       <div className="mt-0.5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

@@ -223,43 +223,51 @@ export default function OnboardingPage() {
 
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1600px] space-y-5 2xl:space-y-6">
-          <section className="sibs-page-header-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden p-5 sm:p-6 md:flex-row md:items-center">
+          <section
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
+          >
             <span className="sibs-top-accent" aria-hidden="true" />
 
-            <div className="mt-1 min-w-0">
-              <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
-                Recruitment Lifecycle
+            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    Recruitment View
+                  </span>
+                </div>
+
+                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                  Onboarding
+                </h1>
+
+                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                  Track accepted offers through expected start, actual start, Show / No Show, pre-start withdrawal, and final True Hire conversion.
+                </p>
               </div>
 
-              <h1 className="mt-2.5 text-xl font-extrabold tracking-normal text-[#042C51] sm:text-2xl">
-                Onboarding
-              </h1>
-              <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-[#667085] sm:text-sm sm:leading-6">
-                Track accepted offers through expected start, actual start, Show / No Show, pre-start withdrawal, and final True Hire conversion.
-              </p>
-            </div>
+              <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleManualRefresh}
+                  disabled={isManualRefreshing}
+                  title="Refresh onboarding data"
+                  aria-label="Refresh onboarding data"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RefreshCw size={15} className={isManualRefreshing ? "animate-spin" : ""} />
+                </button>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2.5">
-              <button
-                type="button"
-                onClick={handleManualRefresh}
-                disabled={isManualRefreshing}
-                title="Refresh onboarding data"
-                aria-label="Refresh onboarding data"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <RefreshCw size={15} className={isManualRefreshing ? "animate-spin" : ""} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
-              >
-                <Plus size={15} />
-                Add Onboarding Record
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
+                >
+                  <Plus size={15} />
+                  Add Onboarding Record
+                </button>
+              </div>
             </div>
           </section>
 

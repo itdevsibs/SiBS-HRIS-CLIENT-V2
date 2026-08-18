@@ -58,6 +58,7 @@ export const PROFILE_TABS = [
     icon: FileCheck2,
     children: [
       { key: "application.overview", label: "Overview" },
+      { key: "application.schedule", label: "Work Schedule" },
       { key: "application.pipeline", label: "Pipeline" },
       { key: "application.assessment", label: "Assessment" },
       { key: "application.readiness", label: "Readiness" },

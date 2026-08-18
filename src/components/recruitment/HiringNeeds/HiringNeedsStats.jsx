@@ -57,24 +57,26 @@ const metricConfig = [
 function MetricCard({ item, value, delay = 0 }) {
   return (
     <article
-      className="sibs-metric-card"
-      style={{ animationDelay: `${delay}ms` }}
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="flex h-full items-start justify-between gap-3 2xl:gap-4">
-        <div className="min-w-0 flex-1 self-stretch">
-          <p
-            className={`truncate sibs-text-micro font-extrabold uppercase tracking-normal sibs-tone-${item.tone}-label`}
-          >
-            {item.title}
-          </p>
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${item.tone}-label`}
+            >
+              {item.title}
+            </p>
 
-          <p
-            className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums tracking-normal sibs-tone-${item.tone}-label`}
-          >
-            {value.toLocaleString("en-PH")}
-          </p>
+            <p
+              className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${item.tone}-label`}
+            >
+              {value.toLocaleString("en-PH")}
+            </p>
+          </div>
 
-          <p className="mt-1 line-clamp-2 sibs-text-micro font-bold leading-4 text-[#667085]">
+          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
             {item.description}
           </p>
         </div>

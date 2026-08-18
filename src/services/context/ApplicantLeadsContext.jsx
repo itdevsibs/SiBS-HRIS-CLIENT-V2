@@ -138,6 +138,9 @@ export function ApplicantLeadsProvider({ children }) {
   const [applicationLinkSendStatus, setApplicationLinkSendStatus] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [lookupOptions, setLookupOptions] = useState(DEFAULT_LOOKUP_OPTIONS);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const activeLeads = useMemo(
     () => leads.filter((lead) => !isMovedToTalentPoolLead(lead)),
@@ -168,6 +171,25 @@ export function ApplicantLeadsProvider({ children }) {
       statusFilter,
     ],
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchTerm,
+    statusFilter,
+    sourceFilter,
+    siteFilter,
+    departmentFilter,
+    leadView,
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLeads.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const paginatedLeads = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * pageSize;
+    return filteredLeads.slice(startIndex, startIndex + pageSize);
+  }, [filteredLeads, safeCurrentPage, pageSize]);
 
   const metrics = useMemo(() => getApplicantLeadMetrics(leads), [leads]);
   const channelSourceSummary = useMemo(
@@ -353,12 +375,15 @@ export function ApplicantLeadsProvider({ children }) {
   }
 
   async function refreshApplicantLeads() {
-    const result = await loadApplicantLeads();
-    showToast(
-      result.success
-        ? "Applicant leads data refreshed."
-        : result.message || "Failed to refresh applicant leads.",
-    );
+    setIsManualRefreshing(true);
+    try {
+      const result = await loadApplicantLeads();
+      if (!result.success && result.message) {
+        showToast(result.message);
+      }
+    } finally {
+      setIsManualRefreshing(false);
+    }
   }
 
   function showTalentPoolHandoffMessage() {
@@ -371,12 +396,20 @@ export function ApplicantLeadsProvider({ children }) {
       activeLeads,
       archivedLeads,
       filteredLeads,
+      paginatedLeads,
+      currentPage: safeCurrentPage,
+      setCurrentPage,
+      pageSize,
+      setPageSize,
+      totalPages,
+      totalRecords: filteredLeads.length,
       metrics,
       channelSourceSummary,
       accountLeadSummary,
       currentAccountName,
       isLoading,
       isSaving,
+      isManualRefreshing,
       sendingApplicationLinkLead,
       isSendingApplicationLink: Boolean(sendingApplicationLinkLead),
       applicationLinkSendStatus,
@@ -428,9 +461,14 @@ export function ApplicantLeadsProvider({ children }) {
       channelSourceSummary,
       accountLeadSummary,
       filteredLeads,
+      paginatedLeads,
+      safeCurrentPage,
+      pageSize,
+      totalPages,
       formData,
       isLoading,
       isSaving,
+      isManualRefreshing,
       leadView,
       sendingApplicationLinkLead,
       applicationLinkSendStatus,

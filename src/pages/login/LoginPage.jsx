@@ -99,7 +99,7 @@ function getLoginFailureMessage(result = {}) {
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setUser } = useUser();
+  const { completeInteractiveLogin } = useUser();
 
   const [sibsId, setSibsId] = useState("");
   const [password, setPassword] = useState("");
@@ -154,7 +154,7 @@ export default function LoginPage() {
       const expiresAt = getResponseExpiry(result);
       const expiresInMs = getResponseExpiresInMs(result);
 
-      setUser(user, expiresAt, expiresInMs);
+      completeInteractiveLogin(user, expiresAt, expiresInMs);
 
       const postLoginRedirect =
         getSafePostLoginRedirect(location.search);

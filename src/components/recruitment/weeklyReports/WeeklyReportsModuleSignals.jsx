@@ -19,26 +19,53 @@ const ICONS = {
   actionItems: ListChecks,
 };
 
+const TONES = {
+  hiringNeeds: "navy",
+  candidatePipeline: "indigo",
+  offers: "green",
+  onboarding: "teal",
+  actionItems: "orange",
+  talentPool: "purple",
+};
+
 export default function WeeklyReportsModuleSignals({ items }) {
+  const safeItems = Array.isArray(items) ? items : [];
+  const publicTalentPool = safeItems.find((item) => item.iconKey === "publicTalentPool");
+
+  const desiredOrder = [
+    "hiringNeeds",
+    "candidatePipeline",
+    "offers",
+    "onboarding",
+    "actionItems",
+    "talentPool",
+  ];
+
+  const visibleItems = desiredOrder
+    .map((iconKey) => safeItems.find((item) => item.iconKey === iconKey))
+    .filter(Boolean)
+    .map((item) => {
+      if (item.iconKey !== "talentPool" || !publicTalentPool) return item;
+
+      return {
+        ...item,
+        description: `${item.description} · ${publicTalentPool.value || 0} public applicants`,
+        hasRisk: item.hasRisk || publicTalentPool.hasRisk,
+      };
+    });
+
   return (
     <section
-      className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+      className="font-jakarta"
       style={{ animationDelay: "240ms" }}
     >
-      <h2 className="text-base font-bold text-[#101828]">
-        Recruitment Module Signals
-      </h2>
-
-      <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-        These values are pulled from other recruitment module local records.
-      </p>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {items.map((item, index) => (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        {visibleItems.map((item, index) => (
           <ModuleSignalCard
-            key={item.title}
+            key={`${item.iconKey}-${item.title}`}
             item={{ ...item, icon: ICONS[item.iconKey] || ListChecks }}
-            delay={index * 60}
+            tone={TONES[item.iconKey] || "navy"}
+            delay={180 + index * 45}
           />
         ))}
       </div>

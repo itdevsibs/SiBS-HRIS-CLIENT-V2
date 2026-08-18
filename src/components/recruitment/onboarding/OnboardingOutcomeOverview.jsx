@@ -89,7 +89,7 @@ export default function OnboardingOutcomeOverview() {
               </p>
             </div>
 
-            <span className="inline-flex w-fit shrink-0 rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-extrabold text-[#475467]">
+            <span className="inline-flex w-fit shrink-0 rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 sibs-text-micro font-extrabold text-[#475467]">
               Total Records: {Number(stats.total || 0).toLocaleString("en-US")}
             </span>
           </div>
@@ -114,30 +114,30 @@ export default function OnboardingOutcomeOverview() {
         <div className="relative z-10">
           <div className="flex items-center gap-2 text-[#FF5C28]">
             <ShieldCheck size={17} />
-            <h3 className="text-xs font-extrabold uppercase tracking-wider">
+            <h3 className="sibs-text-micro font-extrabold uppercase tracking-wider">
               Onboarding Governance Rule
             </h3>
           </div>
 
           <div className="mt-4 rounded-xl border border-white/10 bg-white/10 p-4">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#94A9C1]">
+            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-[#94A9C1]">
               Target Rule Flow
             </p>
-            <p className="mt-1 text-base font-extrabold text-white sm:text-lg">
+            <p className="mt-1 text-sm 2xl:text-base font-extrabold text-white">
               Accepted Offer → Onboarding → Final Start Outcome
             </p>
 
-            <p className="mt-3.5 text-[10px] font-extrabold uppercase tracking-wider text-[#94A9C1]">
+            <p className="mt-3.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#94A9C1]">
               Conversion Policy
             </p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-[#FFB9A2]">
+            <p className="mt-1 sibs-text-xs font-semibold leading-5 text-[#FFB9A2]">
               Accepted Offer creates onboarding. Only a candidate marked as
               <span className="font-extrabold text-emerald-300"> Show </span>
               becomes a True Hire.
             </p>
           </div>
 
-          <p className="mt-4 text-xs font-semibold leading-5 text-[#BECBDA]">
+          <p className="mt-4 sibs-text-xs font-semibold leading-5 text-[#BECBDA]">
             No Show and Pre-start Withdrawal do not count as filled placements or True Hires.
           </p>
         </div>

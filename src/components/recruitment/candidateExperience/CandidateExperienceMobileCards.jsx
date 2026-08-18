@@ -12,12 +12,13 @@ export default function CandidateExperienceMobileCards({ records, onSelect }) {
 
   return (
     <div className="space-y-3 md:hidden font-jakarta">
-      {records.map((record) => (
+      {records.map((record, index) => (
         <button
           key={record.id}
           type="button"
           onClick={() => onSelect(record)}
-          className="w-full rounded-2xl border border-sibs-subtle-border bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-tertiary-8 hover:shadow-md active:scale-[0.99]"
+          className="sibs-page-card-in w-full rounded-2xl border border-sibs-subtle-border bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-tertiary-8 hover:shadow-md active:scale-[0.99]"
+          style={{ animationDelay: `${index * 45}ms`, animationFillMode: "both" }}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">

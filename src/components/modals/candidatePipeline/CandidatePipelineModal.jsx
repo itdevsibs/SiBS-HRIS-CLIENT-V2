@@ -9098,6 +9098,7 @@ async function handleConfirmScheduleNho() {
         closeDisabled={isCandidateProcessRunning}
         maxWidth="max-w-6xl"
         zIndex="z-[9999]"
+        movementHistoryCandidate={activeCandidate}
         footer={recordFooter}
         headerContent={
           <div className="flex min-w-0 items-start gap-3">
@@ -9150,40 +9151,37 @@ async function handleConfirmScheduleNho() {
                   <span className="text-xs font-semibold text-[#667085]">
                     Lead PRF Action:
                   </span>
-                  <div className="w-48 sm:w-56">
-                    <DropdownField
-                      value={
-                        activePrfStatus === "Matched" || activePrfStatus === "Not Matched"
-                          ? activePrfStatus
-                          : ""
-                      }
-                      displayValue={
-                        activePrfStatus === "Matched"
-                          ? "Matched"
-                          : activePrfStatus === "Not Matched"
-                            ? "Unmatched"
-                            : ""
-                      }
-                      options={[
-                        {
-                          value: "Not Matched",
-                          label: "Unmatched",
-                          description: "Candidate is not yet matched to the PRF.",
-                        },
-                        {
-                          value: "Matched",
-                          label: "Matched",
-                          description: "Candidate can move to Online Assessment.",
-                        },
-                      ]}
-                      onChange={(value) => handleLocalPrfStatusUpdate(value)}
-                      placeholder="Lead PRF Status"
-                      searchable={false}
-                      controlVariant="secondaryAction"
-                      menuClassName="!rounded-lg"
-                      maxMenuHeight={180}
-                      className="w-full"
-                    />
+                  <div
+                    className="flex flex-wrap items-center gap-2"
+                    role="radiogroup"
+                    aria-label="Lead PRF Action"
+                  >
+                    {[
+                      { value: "Matched", label: "Matched" },
+                      { value: "Not Matched", label: "Unmatched" },
+                    ].map((option) => {
+                      const isChecked = activePrfStatus === option.value;
+                      return (
+                        <label
+                          key={option.value}
+                          className={`group inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition ${
+                            isChecked
+                              ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm font-bold"
+                              : "border-[#DCE6F1] bg-white text-[#52637A] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="leadPrfAction"
+                            value={option.value}
+                            checked={isChecked}
+                            onChange={() => handleLocalPrfStatusUpdate(option.value)}
+                            className="h-3.5 w-3.5 shrink-0 cursor-pointer border-[#98A2B3] accent-[#FF5C28]"
+                          />
+                          <span className="whitespace-nowrap">{option.label}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
@@ -9198,26 +9196,11 @@ async function handleConfirmScheduleNho() {
           >
             <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                [
-                  "Candidate ID",
-                  activeCandidate.candidateId || activeCandidate.candidateApplicationId || "—",
-                ],
-                ["Target Position", activeCandidate.roleTitle || activeCandidate.roleAccount || "—"],
-                ["Client Account", activeCandidate.account || "Not assigned yet"],
-                ["Department", activeCandidate.department || activeCandidate.metadata?.department || "—"],
                 ["Source", activeCandidate.source || activeCandidate.metadata?.source || "—"],
                 ["PRF Status", activePrfStatus || "Review"],
                 [
                   "Created Date",
                   compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : "—",
-                ],
-                ["Highest Education", compactProfileSummary.highestEducation || "—"],
-                ["Relevant Experience", compactProfileSummary.relevantExperience || "—"],
-                [
-                  "Expected Salary",
-                  compactProfileSummary.expectedSalary
-                    ? `${formatCurrency(compactProfileSummary.expectedSalary)}/month`
-                    : "—",
                 ],
                 ["Current Location", compactProfileSummary.currentLocation || "—"],
               ].map(([label, value]) => (

@@ -169,19 +169,34 @@ export default function OnboardingTable({ onView }) {
         )}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white lg:block">
-        <table className="w-full min-w-[1250px] border-collapse text-left font-jakarta text-xs">
-          <thead className="bg-[#F8FAFC]">
-            <tr className="whitespace-nowrap border-b border-[#E6ECF2]">
-              {["Onboarding ID", "Candidate", "Role / Account", "Accepted Offer", "Expected Start", "Actual Start", "Show Status", "Final Outcome", "Owner", "Action"].map((label) => (
-                <th key={label} className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#042C51] ${label === "Action" ? "text-right" : label === "Show Status" || label === "Final Outcome" ? "text-center" : ""}`}>
-                  {label}
+      <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:block">
+        <div className="overflow-x-auto sibs-scrollbar">
+          <table className="w-full min-w-[1020px] border-collapse bg-white">
+            <thead className="sibs-data-table-head">
+              <tr className="sibs-data-table-head-row">
+              {[
+                ["ONBOARDING ID", "text-left"],
+                ["CANDIDATE", "text-left"],
+                ["ASSIGNMENT", "text-left"],
+                ["OFFER ACCEPTED", "text-left"],
+                ["EXPECTED START", "text-left"],
+                ["ACTUAL START", "text-left"],
+                ["SHOW STATUS", "text-center"],
+                ["FINAL OUTCOME", "text-center"],
+                ["TA OWNER", "text-left"],
+                ["ACTION", "text-right"],
+              ].map(([header, align]) => (
+                <th
+                  key={header}
+                  className={`sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap ${align}`}
+                >
+                  {header}
                 </th>
               ))}
             </tr>
           </thead>
 
-          <tbody>
+          <tbody className="divide-y divide-[#F1F5F9]">
             {loading ? (
               <tr>
                 <td colSpan={10} className="px-5 py-12 text-center sibs-text-xs font-bold text-[#667085]">
@@ -195,7 +210,7 @@ export default function OnboardingTable({ onView }) {
                 </td>
               </tr>
             ) : (
-              paginatedData.map((item) => {
+              paginatedData.map((item, index) => {
                 const candidateName = getRecordValue(
                   item,
                   "candidateName",
@@ -225,10 +240,10 @@ export default function OnboardingTable({ onView }) {
                 return (
                   <tr
                     key={item.id || getOnboardingDisplayId(item)}
-                    className="sibs-page-card-in group transition-colors hover:bg-[#FFF9F6]"
+                    className="sibs-data-table-row sibs-page-card-in group transition-colors"
                     style={{ animationDelay: `${index * 35}ms` }}
                   >
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6]">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-extrabold text-[#042C51]">
                       <button
                         type="button"
                         onClick={() => onView(item)}
@@ -238,49 +253,49 @@ export default function OnboardingTable({ onView }) {
                       </button>
                     </td>
 
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6]">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs">
                       <div className="flex min-w-0 items-center gap-2.5">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#042C51] text-[9px] font-extrabold text-white shadow-sm">
+                        <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-full bg-[#042C51] sibs-text-micro font-extrabold text-white shadow-sm">
                           {getInitials(candidateName)}
                         </span>
                         <div className="min-w-0">
-                          <p className="max-w-[210px] truncate font-extrabold text-[#101828]">
+                          <p className="m-0 max-w-[210px] truncate font-extrabold text-[#042C51]">
                             {candidateName}
                           </p>
-                          <p className="mt-0.5 max-w-[210px] truncate text-[9px] font-semibold text-[#667085] 2xl:text-[10px]">
+                          <p className="mt-0.5 max-w-[210px] truncate sibs-text-micro font-semibold text-[#667085]">
                             {candidateEmail || "No email saved"}
                           </p>
                         </div>
                       </div>
                     </td>
 
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6]">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs">
                       <p className="max-w-[210px] truncate font-extrabold text-[#344054]">
                         {roleTitle}
                       </p>
-                      <span className="mt-1 inline-flex max-w-[210px] truncate rounded-md border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-0.5 text-[9px] font-bold text-[#667085]">
+                      <span className="mt-0.5 inline-flex max-w-[210px] truncate rounded bg-[#E6ECF2] px-1.5 py-0.5 sibs-text-micro font-bold text-[#52637A]">
                         {item.account || "No account"}
                       </span>
                     </td>
 
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6]">
-                      <div className="flex items-center gap-1.5 font-semibold text-[#475467]">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-semibold text-[#52637A]">
+                      <div className="flex items-center gap-1.5">
                         <CalendarDays size={13} className="shrink-0 text-[#98A2B3]" />
                         {formatDate(getRecordValue(item, "acceptedOfferDate", "accepted_offer_date"))}
                       </div>
                     </td>
 
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6] font-extrabold text-[#344054]">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-extrabold text-[#042C51]">
                       {formatDate(getRecordValue(item, "expectedStartDate", "expected_start_date"))}
                     </td>
 
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6] font-semibold text-[#475467]">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-semibold text-[#52637A]">
                       {formatDate(getRecordValue(item, "actualStartDate", "actual_start_date"))}
                     </td>
 
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6] text-center">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs">
                       <span
-                        className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getShowStatusClass(
+                        className={`inline-flex rounded-full border px-2.5 py-1 sibs-text-micro font-extrabold ${getShowStatusClass(
                           showStatus,
                         )}`}
                       >
@@ -288,9 +303,9 @@ export default function OnboardingTable({ onView }) {
                       </span>
                     </td>
 
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6] text-center">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs">
                       <span
-                        className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getOutcomeClass(
+                        className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 sibs-text-micro font-extrabold ${getOutcomeClass(
                           finalOutcome,
                         )}`}
                       >
@@ -298,15 +313,15 @@ export default function OnboardingTable({ onView }) {
                       </span>
                     </td>
 
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6] font-semibold text-[#344054]">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-semibold text-[#344054]">
                       <span className="block max-w-[150px] truncate">{item.owner || "—"}</span>
                     </td>
 
-                    <td className="sibs-data-table-td border-b border-[#EEF2F6] text-right">
+                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-right sibs-text-xs">
                       <button
                         type="button"
                         onClick={() => onView(item)}
-                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 text-[9px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] active:scale-[0.98]"
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-micro font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] active:scale-[0.98]"
                       >
                         <Eye size={13} />
                         View Record
@@ -318,6 +333,7 @@ export default function OnboardingTable({ onView }) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="mt-2 font-jakarta">
