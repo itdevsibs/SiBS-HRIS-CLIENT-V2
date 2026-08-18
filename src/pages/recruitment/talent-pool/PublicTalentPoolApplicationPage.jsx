@@ -32,6 +32,7 @@ import {
 import StatusModal from "@/components/modals/StatusModal";
 import {
   getTalentPoolFormOptions,
+  getTalentPoolOpenPositions,
   getTalentPoolReferralPrefill,
   submitPublicTalentPoolApplication,
 } from "@/lib/axios/publicTalentPool";
@@ -647,6 +648,8 @@ function getReferralCodeFromCurrentUrl() {
 function createEmptyPublicForm(referralCode = "") {
   return {
     hearAboutUs: [],
+    jobDescriptionId: "",
+    selectedAvailablePositionId: "",
     openPosition: "",
     nickname: "",
     applyingLocation: "",
@@ -1132,12 +1135,10 @@ function normalizeOptionsPayload(payload) {
 function getPositionKey(position = {}) {
   return String(
     position.id ||
-      position.jdId ||
-      position.jd_id ||
+      position.openPositionDbId ||
+      position.open_position_db_id ||
       position.positionId ||
       position.position_id ||
-      position.positionTitle ||
-      position.position_title ||
       "",
   );
 }
@@ -1163,10 +1164,59 @@ function getJobDescriptionId(jobDescription = {}) {
   );
 }
 
-function normalizeApprovedJobDescriptionPosition(jobDescription = {}) {
+function normalizeAvailablePosition(position = {}) {
+  return {
+    ...position,
+    id:
+      position.id ||
+      position.openPositionDbId ||
+      position.open_position_db_id ||
+      position.positionId ||
+      position.position_id ||
+      position.positionTitle ||
+      position.position_title ||
+      "",
+    openPositionDbId:
+      position.openPositionDbId || position.open_position_db_id || position.id || "",
+    positionId: cleanText(position.positionId || position.position_id),
+    positionTitle: cleanText(
+      position.positionTitle ||
+        position.position_title ||
+        position.title ||
+        position.name,
+    ),
+    jdId:
+      position.jdId ||
+      position.jd_id ||
+      position.jobDescriptionId ||
+      position.job_description_id ||
+      "",
+    jdCode: cleanText(position.jdCode || position.jd_code),
+    documentTitle: cleanText(
+      position.documentTitle || position.document_title,
+    ),
+    departmentId: position.departmentId || position.department_id || "",
+    department: cleanText(
+      position.department || position.departmentName || position.department_name,
+    ),
+    accountId: position.accountId || position.account_id || "",
+    accountName: cleanText(
+      position.accountName || position.account_name || position.account,
+    ),
+    accountGhlName: cleanText(
+      position.accountGhlName || position.account_ghl_name,
+    ),
+    locationSite: cleanText(
+      position.locationSite || position.location_site || position.location,
+    ),
+    status: cleanText(position.status),
+  };
+}
+
+function normalizeApprovedJobDescriptionOption(jobDescription = {}) {
   const jdId = getJobDescriptionId(jobDescription);
 
-  const positionTitle = cleanText(
+  const roleTitle = cleanText(
     jobDescription.roleTitle ||
       jobDescription.role_title ||
       jobDescription.documentTitle ||
@@ -1183,66 +1233,226 @@ function normalizeApprovedJobDescriptionPosition(jobDescription = {}) {
       jobDescription.document_title ||
       jobDescription.raw?.documentTitle ||
       jobDescription.raw?.document_title ||
-      positionTitle,
+      roleTitle,
+  );
+
+  const jdCode = cleanText(
+    jobDescription.jdCode ||
+      jobDescription.jd_code ||
+      jobDescription.raw?.jdCode ||
+      jobDescription.raw?.jd_code,
+  );
+
+  const accountId =
+    jobDescription.accountId ||
+    jobDescription.account_id ||
+    jobDescription.raw?.accountId ||
+    jobDescription.raw?.account_id ||
+    "";
+
+  const accountName = cleanText(
+    jobDescription.account ||
+      jobDescription.accountName ||
+      jobDescription.account_name ||
+      jobDescription.preparedFor ||
+      jobDescription.prepared_for ||
+      jobDescription.raw?.account ||
+      jobDescription.raw?.accountName ||
+      jobDescription.raw?.account_name ||
+      jobDescription.raw?.preparedFor ||
+      jobDescription.raw?.prepared_for,
+  );
+
+  const departmentId =
+    jobDescription.departmentId ||
+    jobDescription.department_id ||
+    jobDescription.raw?.departmentId ||
+    jobDescription.raw?.department_id ||
+    "";
+
+  const department = cleanText(
+    jobDescription.department ||
+      jobDescription.departmentName ||
+      jobDescription.department_name ||
+      jobDescription.raw?.department ||
+      jobDescription.raw?.departmentName ||
+      jobDescription.raw?.department_name,
   );
 
   return {
-    id: jdId || positionTitle,
-    positionId: jdId,
-    positionTitle,
+    id: jdId || roleTitle || documentTitle,
+    value: String(jdId || roleTitle || documentTitle),
+    label: `${roleTitle || documentTitle}${jdCode ? ` (${jdCode})` : ""}`,
     jdId,
-    jdCode: cleanText(
-      jobDescription.jdCode ||
-        jobDescription.jd_code ||
-        jobDescription.raw?.jdCode ||
-        jobDescription.raw?.jd_code,
-    ),
+    jdCode,
+    roleTitle,
     documentTitle,
-    department: cleanText(
-      jobDescription.department ||
-        jobDescription.departmentName ||
-        jobDescription.department_name ||
-        jobDescription.raw?.department ||
-        jobDescription.raw?.departmentName ||
-        jobDescription.raw?.department_name,
-    ),
-    locationSite: cleanText(
-      jobDescription.locationSite ||
-        jobDescription.location_site ||
-        jobDescription.location ||
-        jobDescription.raw?.locationSite ||
-        jobDescription.raw?.location_site ||
-        jobDescription.raw?.location,
-    ),
-    status: "Approved",
+    accountId,
+    accountName,
+    departmentId,
+    department,
+    raw: jobDescription,
   };
 }
 
-function buildApprovedPositionOptions(jobDescriptions = []) {
-  const seenTitles = new Set();
+function buildApprovedJobDescriptionOptions(jobDescriptions = []) {
+  const seenIds = new Set();
 
   return toArray(jobDescriptions)
-    .map(normalizeApprovedJobDescriptionPosition)
-    .filter((position) => position.positionTitle && position.jdId)
-    .filter((position) => {
-      const titleKey = normalizeJobTitleForMatch(position.positionTitle);
+    .map(normalizeApprovedJobDescriptionOption)
+    .filter((option) => option.jdId && (option.roleTitle || option.documentTitle))
+    .filter((option) => {
+      const key = String(option.jdId);
 
-      if (!titleKey || seenTitles.has(titleKey)) {
+      if (seenIds.has(key)) return false;
+
+      seenIds.add(key);
+      return true;
+    })
+    .sort((firstOption, secondOption) =>
+      firstOption.label.localeCompare(secondOption.label, undefined, {
+        sensitivity: "base",
+      }),
+    );
+}
+
+function normalizedIdentity(value) {
+  return cleanText(value).toLowerCase();
+}
+
+function matchesScopedValue(firstId, secondId, firstName, secondName) {
+  const cleanFirstId = cleanText(firstId);
+  const cleanSecondId = cleanText(secondId);
+
+  if (cleanFirstId && cleanSecondId) {
+    return cleanFirstId === cleanSecondId;
+  }
+
+  const cleanFirstName = normalizedIdentity(firstName);
+  const cleanSecondName = normalizedIdentity(secondName);
+
+  if (cleanFirstName && cleanSecondName) {
+    return cleanFirstName === cleanSecondName;
+  }
+
+  return true;
+}
+
+function filterAvailablePositionsForJobDescription(
+  positions = [],
+  jobDescription = {},
+) {
+  const normalizedJobDescription = normalizeApprovedJobDescriptionOption(
+    jobDescription.raw || jobDescription,
+  );
+
+  const targetJdId = cleanText(
+    jobDescription.jdId || jobDescription.jd_id || normalizedJobDescription.jdId,
+  );
+  const targetJdCode = normalizedIdentity(
+    jobDescription.jdCode ||
+      jobDescription.jd_code ||
+      normalizedJobDescription.jdCode,
+  );
+  const targetTitleCandidates = new Set(
+    [
+      jobDescription.roleTitle,
+      jobDescription.role_title,
+      jobDescription.documentTitle,
+      jobDescription.document_title,
+      normalizedJobDescription.roleTitle,
+      normalizedJobDescription.documentTitle,
+    ]
+      .map(normalizeJobTitleForMatch)
+      .filter(Boolean),
+  );
+
+  return toArray(positions)
+    .map(normalizeAvailablePosition)
+    .filter((position) => {
+      if (position.status && normalizedIdentity(position.status) !== "active") {
         return false;
       }
 
-      seenTitles.add(titleKey);
-      return true;
+      const positionJdId = cleanText(position.jdId);
+      const positionJdCode = normalizedIdentity(position.jdCode);
+
+      if (targetJdId && positionJdId) {
+        return targetJdId === positionJdId;
+      }
+
+      if (targetJdCode && positionJdCode) {
+        return targetJdCode === positionJdCode;
+      }
+
+      if (positionJdId || positionJdCode) {
+        return false;
+      }
+
+      const positionTitle = normalizeJobTitleForMatch(position.positionTitle);
+
+      if (!positionTitle || !targetTitleCandidates.has(positionTitle)) {
+        return false;
+      }
+
+      const accountMatches = matchesScopedValue(
+        position.accountId,
+        jobDescription.accountId || jobDescription.account_id || normalizedJobDescription.accountId,
+        position.accountName || position.accountGhlName,
+        jobDescription.accountName ||
+          jobDescription.account_name ||
+          jobDescription.account ||
+          normalizedJobDescription.accountName,
+      );
+
+      if (!accountMatches) return false;
+
+      return matchesScopedValue(
+        position.departmentId,
+        jobDescription.departmentId ||
+          jobDescription.department_id ||
+          normalizedJobDescription.departmentId,
+        position.department,
+        jobDescription.department ||
+          jobDescription.departmentName ||
+          jobDescription.department_name ||
+          normalizedJobDescription.department,
+      );
     })
-    .sort((firstPosition, secondPosition) =>
-      firstPosition.positionTitle.localeCompare(
+    .sort((firstPosition, secondPosition) => {
+      const firstLabel = [
+        firstPosition.positionTitle,
+        firstPosition.accountName || firstPosition.accountGhlName,
+        firstPosition.locationSite,
+        firstPosition.positionId,
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const secondLabel = [
         secondPosition.positionTitle,
-        undefined,
-        {
-          sensitivity: "base",
-        },
-      ),
-    );
+        secondPosition.accountName || secondPosition.accountGhlName,
+        secondPosition.locationSite,
+        secondPosition.positionId,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      return firstLabel.localeCompare(secondLabel, undefined, {
+        sensitivity: "base",
+      });
+    });
+}
+
+function getAvailablePositionDisplayLabel(position = {}) {
+  const normalizedPosition = normalizeAvailablePosition(position);
+  const details = [
+    normalizedPosition.accountName || normalizedPosition.accountGhlName,
+    normalizedPosition.locationSite,
+  ].filter(Boolean);
+
+  return details.length
+    ? `${normalizedPosition.positionTitle} — ${details.join(" • ")}`
+    : normalizedPosition.positionTitle;
 }
 
 function FieldLabel({ children }) {
@@ -1546,15 +1756,12 @@ function PositionJobDescriptionDropdown({
   );
 
   const selectedPosition = cleanPositions.find(
-    (position) =>
-      String(position?.positionTitle || position?.position_title || "") ===
-      String(value || ""),
+    (position) => String(getPositionKey(position)) === String(value || ""),
   );
 
-  const displayText =
-    selectedPosition?.positionTitle ||
-    selectedPosition?.position_title ||
-    placeholder;
+  const displayText = selectedPosition
+    ? getAvailablePositionDisplayLabel(selectedPosition)
+    : placeholder;
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -1609,13 +1816,11 @@ function PositionJobDescriptionDropdown({
   }, [open]);
 
   function handleSelect(position) {
-    const positionTitle = cleanText(
-      position?.positionTitle || position?.position_title,
-    );
+    const positionKey = getPositionKey(position);
 
-    if (!positionTitle) return;
+    if (!positionKey) return;
 
-    onChange(positionTitle);
+    onChange(positionKey, position);
     setOpen(false);
   }
 
@@ -1680,11 +1885,11 @@ function PositionJobDescriptionDropdown({
                       position?.positionTitle || position?.position_title,
                     );
 
-                    const active =
-                      String(positionTitle) === String(value || "");
-
                     const positionKey =
                       getPositionKey(position) || positionTitle;
+
+                    const active =
+                      String(positionKey) === String(value || "");
 
                     const isOpening = openingKeys.includes(positionKey);
 
@@ -1705,7 +1910,7 @@ function PositionJobDescriptionDropdown({
                           }`}
                         >
                           <span className="block min-w-0 truncate">
-                            {positionTitle}
+                            {getAvailablePositionDisplayLabel(position)}
                           </span>
                         </button>
 
@@ -1739,7 +1944,7 @@ function PositionJobDescriptionDropdown({
                   })
                 ) : (
                   <div className="px-3 py-3 text-xs font-semibold text-[#98A2B3]">
-                    No approved positions found.
+                    No matching open positions found.
                   </div>
                 )}
               </div>
@@ -2990,12 +3195,19 @@ export default function PublicTalentPoolApplicationPage() {
   const fileSectionRef = useRef(null);
   const educationSectionRef = useRef(null);
   const consentRef = useRef(null);
+  const initialReferralCodeRef = useRef(getReferralCodeFromCurrentUrl());
+  const referralPrefillValuesRef = useRef(null);
 
   const [form, setForm] = useState(() =>
-    createEmptyPublicForm(getReferralCodeFromCurrentUrl()),
+    createEmptyPublicForm(initialReferralCodeRef.current),
+  );
+  const [hasReferralCode, setHasReferralCode] = useState(() =>
+    initialReferralCodeRef.current ? "Yes" : "",
   );
   const [submittedRecord, setSubmittedRecord] = useState(null);
   const [activePositionOptions, setActivePositionOptions] = useState([]);
+  const [approvedJobDescriptionOptions, setApprovedJobDescriptionOptions] =
+    useState([]);
   const [formOptions, setFormOptions] = useState(defaultFormOptions);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isLoadingReferralPrefill, setIsLoadingReferralPrefill] =
@@ -3018,7 +3230,7 @@ export default function PublicTalentPoolApplicationPage() {
   const selectedAudioFile = audioFileRef.current || form.audioFile;
   const selectedAttachmentFile =
     attachmentFileRef.current || form.attachmentFile;
-  const isReferralCodeFromEmail = Boolean(getReferralCodeFromCurrentUrl());
+  const isReferralCodeFromEmail = Boolean(initialReferralCodeRef.current);
 
   useEffect(() => {
     const styleId = "public-talent-pool-hide-sidebar-style";
@@ -3093,6 +3305,13 @@ export default function PublicTalentPoolApplicationPage() {
     const referralCode = cleanText(form.referralCode).toUpperCase();
     const referralCodeReachedLimit = referralCode.length === 10;
 
+    if (hasReferralCode !== "Yes") {
+      setReferralLookupStatus("");
+      setReferralLookupMessage("");
+      setIsLoadingReferralPrefill(false);
+      return undefined;
+    }
+
     if (!referralCode) {
       setReferralLookupStatus("");
       setReferralLookupMessage("");
@@ -3121,19 +3340,31 @@ export default function PublicTalentPoolApplicationPage() {
 
       if (response?.success && response.data) {
         const prefill = response.data;
+        const matchedPrefillValues = {
+          firstName: cleanText(prefill.firstName),
+          middleName: cleanText(prefill.middleName),
+          lastName: cleanText(prefill.lastName),
+          suffix: cleanText(prefill.suffix),
+          email: cleanText(prefill.email),
+          phone1: cleanText(prefill.phone1),
+          applyingLocation: cleanText(prefill.applyingLocation),
+          hearAboutUs: [OUTBOUND_SOURCE],
+        };
+
+        referralPrefillValuesRef.current = matchedPrefillValues;
 
         setForm((previous) => ({
           ...previous,
           referralCode: prefill.referralCode || previous.referralCode,
-          firstName: prefill.firstName || previous.firstName,
-          middleName: prefill.middleName || previous.middleName,
-          lastName: prefill.lastName || previous.lastName,
-          suffix: prefill.suffix || previous.suffix,
-          email: prefill.email || previous.email,
-          phone1: prefill.phone1 || previous.phone1,
+          firstName: matchedPrefillValues.firstName || previous.firstName,
+          middleName: matchedPrefillValues.middleName || previous.middleName,
+          lastName: matchedPrefillValues.lastName || previous.lastName,
+          suffix: matchedPrefillValues.suffix || previous.suffix,
+          email: matchedPrefillValues.email || previous.email,
+          phone1: matchedPrefillValues.phone1 || previous.phone1,
           applyingLocation:
-            prefill.applyingLocation || previous.applyingLocation,
-          hearAboutUs: [OUTBOUND_SOURCE],
+            matchedPrefillValues.applyingLocation || previous.applyingLocation,
+          hearAboutUs: matchedPrefillValues.hearAboutUs,
           referredBy: "",
           employeeId: "",
         }));
@@ -3156,7 +3387,7 @@ export default function PublicTalentPoolApplicationPage() {
       isCurrent = false;
       window.clearTimeout(lookupTimer);
     };
-  }, [form.referralCode, isReferralCodeFromEmail]);
+  }, [form.referralCode, hasReferralCode, isReferralCodeFromEmail]);
 
   useEffect(() => {
     let isMounted = true;
@@ -3166,21 +3397,32 @@ export default function PublicTalentPoolApplicationPage() {
       setLoadError("");
 
       try {
-        const [optionsResponse, approvedJobDescriptionsResponse] =
-          await Promise.all([
-            getTalentPoolFormOptions(),
-            getPublicApprovedJobDescriptions({
-              page: 1,
-              limit: 500,
-              search: "",
-            }),
-          ]);
+        const [
+          optionsResponse,
+          openPositionsResponse,
+          approvedJobDescriptionsResponse,
+        ] = await Promise.all([
+          getTalentPoolFormOptions(),
+          getTalentPoolOpenPositions(),
+          getPublicApprovedJobDescriptions({
+            page: 1,
+            limit: 500,
+            search: "",
+          }),
+        ]);
 
         if (!isMounted) return;
 
         if (!optionsResponse?.success) {
           throw new Error(
             optionsResponse?.message || "Failed to load form options.",
+          );
+        }
+
+        if (!openPositionsResponse?.success) {
+          throw new Error(
+            openPositionsResponse?.message ||
+              "Failed to load active available positions.",
           );
         }
 
@@ -3199,8 +3441,17 @@ export default function PublicTalentPoolApplicationPage() {
           ? approvedJobDescriptionsResponse.data
           : [];
 
-        setActivePositionOptions(
-          buildApprovedPositionOptions(approvedJobDescriptions),
+        const activeAvailablePositions = Array.isArray(
+          openPositionsResponse?.data,
+        )
+          ? openPositionsResponse.data
+              .map(normalizeAvailablePosition)
+              .filter((position) => position.positionTitle)
+          : [];
+
+        setActivePositionOptions(activeAvailablePositions);
+        setApprovedJobDescriptionOptions(
+          buildApprovedJobDescriptionOptions(approvedJobDescriptions),
         );
       } catch (error) {
         console.error("Load public talent pool form data error:", error);
@@ -3216,6 +3467,7 @@ export default function PublicTalentPoolApplicationPage() {
         setLoadError(errorMessage);
         setFormOptions(defaultFormOptions);
         setActivePositionOptions([]);
+        setApprovedJobDescriptionOptions([]);
 
         showStatusModal({
           type: "error",
@@ -3243,6 +3495,9 @@ export default function PublicTalentPoolApplicationPage() {
     "Has work Experience (at least 6 months relevant work experience)";
 
   const isReferralCodeMatched = referralLookupStatus === "matched";
+  const shouldShowApplicationFields =
+    hasReferralCode === "No" ||
+    (hasReferralCode === "Yes" && isReferralCodeMatched);
 
   const hasEmployeeReferralProgram = useMemo(
     () =>
@@ -3253,7 +3508,29 @@ export default function PublicTalentPoolApplicationPage() {
     [form.hearAboutUs, formOptions.hearAboutUs],
   );
 
+  const selectedJobDescription = useMemo(
+    () =>
+      approvedJobDescriptionOptions.find(
+        (option) =>
+          String(option.value) === String(form.jobDescriptionId || ""),
+      ) || null,
+    [approvedJobDescriptionOptions, form.jobDescriptionId],
+  );
+
+  const matchingAvailablePositions = useMemo(
+    () =>
+      selectedJobDescription
+        ? filterAvailablePositionsForJobDescription(
+            activePositionOptions,
+            selectedJobDescription,
+          )
+        : [],
+    [activePositionOptions, selectedJobDescription],
+  );
+
   const completionPercentage = useMemo(() => {
+    if (!shouldShowApplicationFields) return 0;
+
     const educationComplete =
       Boolean(form.highestEducationalAttainment) &&
       !validateEducationDetails(
@@ -3262,6 +3539,7 @@ export default function PublicTalentPoolApplicationPage() {
       );
 
     const checks = [
+      Boolean(form.jobDescriptionId),
       Boolean(form.openPosition),
       Boolean(form.applyingLocation),
       Boolean(form.firstName.trim()),
@@ -3326,14 +3604,21 @@ export default function PublicTalentPoolApplicationPage() {
     hasRelevantExperience,
     selectedAttachmentFile,
     selectedAudioFile,
+    shouldShowApplicationFields,
   ]);
 
   const canSubmit = useMemo(() => {
+    if (!shouldShowApplicationFields) return false;
     if (isLoadingData) return false;
     if (isSubmitting) return false;
     if (loadError) return false;
     return true;
-  }, [isLoadingData, isSubmitting, loadError]);
+  }, [
+    isLoadingData,
+    isSubmitting,
+    loadError,
+    shouldShowApplicationFields,
+  ]);
 
   function showStatusModal({ type = "success", title = "", message = "" }) {
     setStatusModal({
@@ -3354,6 +3639,7 @@ export default function PublicTalentPoolApplicationPage() {
       position?.jd_id ||
       position?.jobDescriptionId ||
       position?.job_description_id ||
+      selectedJobDescription?.jdId ||
       "";
 
     if (!positionTitle || !jdId) {
@@ -3404,6 +3690,25 @@ export default function PublicTalentPoolApplicationPage() {
     }));
   }
 
+  function handleJobDescriptionChange(jobDescriptionId) {
+    setForm((previous) => ({
+      ...previous,
+      jobDescriptionId,
+      selectedAvailablePositionId: "",
+      openPosition: "",
+    }));
+  }
+
+  function handleAvailablePositionChange(positionKey, position) {
+    const normalizedPosition = normalizeAvailablePosition(position);
+
+    setForm((previous) => ({
+      ...previous,
+      selectedAvailablePositionId: String(positionKey || ""),
+      openPosition: normalizedPosition.positionTitle,
+    }));
+  }
+
   function updateTrainingAttended(index, value) {
     setForm((previous) => {
       const rows = ensureTrainingEntryRows(previous.trainingAttended);
@@ -3435,6 +3740,72 @@ export default function PublicTalentPoolApplicationPage() {
         ...previous,
         trainingAttended: nextRows.length ? nextRows : [""],
       };
+    });
+  }
+
+  function handleReferralChoiceChange(value) {
+    if (value === "Yes") {
+      setHasReferralCode("Yes");
+      setReferralLookupStatus("");
+      setReferralLookupMessage("");
+      setIsLoadingReferralPrefill(false);
+
+      setForm((previous) => ({
+        ...previous,
+        referralCode: initialReferralCodeRef.current || "",
+      }));
+
+      return;
+    }
+
+    const referralPrefillValues = referralPrefillValuesRef.current;
+
+    setHasReferralCode("No");
+    setReferralLookupStatus("");
+    setReferralLookupMessage("");
+    setIsLoadingReferralPrefill(false);
+    referralPrefillValuesRef.current = null;
+
+    setForm((previous) => {
+      const next = {
+        ...previous,
+        referralCode: "",
+        referredBy: "",
+        employeeId: "",
+      };
+
+      if (!referralPrefillValues) {
+        return next;
+      }
+
+      [
+        "firstName",
+        "middleName",
+        "lastName",
+        "suffix",
+        "email",
+        "phone1",
+        "applyingLocation",
+      ].forEach((field) => {
+        const prefilledValue = cleanText(referralPrefillValues[field]);
+
+        if (
+          prefilledValue &&
+          cleanText(next[field]).toLowerCase() === prefilledValue.toLowerCase()
+        ) {
+          next[field] = "";
+        }
+      });
+
+      if (
+        Array.isArray(next.hearAboutUs) &&
+        next.hearAboutUs.length === 1 &&
+        next.hearAboutUs[0] === OUTBOUND_SOURCE
+      ) {
+        next.hearAboutUs = [];
+      }
+
+      return next;
     });
   }
 
@@ -3487,6 +3858,11 @@ export default function PublicTalentPoolApplicationPage() {
       attachmentInputRef.current.value = "";
     }
 
+    referralPrefillValuesRef.current = null;
+    setHasReferralCode("");
+    setReferralLookupStatus("");
+    setReferralLookupMessage("");
+    setIsLoadingReferralPrefill(false);
     setForm(createEmptyPublicForm());
     setSubmittedRecord(null);
     setHighlightAudio(false);
@@ -3643,11 +4019,47 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
+    if (!hasReferralCode) {
+      showStatusModal({
+        type: "error",
+        title: "Referral selection required",
+        message: "Please select whether you have a referral code.",
+      });
+      return false;
+    }
+
+    if (hasReferralCode === "Yes" && !cleanText(form.referralCode)) {
+      showStatusModal({
+        type: "error",
+        title: "Referral code required",
+        message: "Please enter your referral code before continuing.",
+      });
+      return false;
+    }
+
+    if (hasReferralCode === "Yes" && !isReferralCodeMatched) {
+      showStatusModal({
+        type: "error",
+        title: "Referral code not matched",
+        message: "Please enter a valid matched referral code before continuing.",
+      });
+      return false;
+    }
+
+    if (!approvedJobDescriptionOptions.length) {
+      showStatusModal({
+        type: "error",
+        title: "No approved job descriptions",
+        message: "No approved public job descriptions are available.",
+      });
+      return false;
+    }
+
     if (!activePositionOptions.length) {
       showStatusModal({
         type: "error",
-        title: "No approved positions",
-        message: "No approved public job descriptions are available.",
+        title: "No open positions",
+        message: "No active available positions are currently available.",
       });
       return false;
     }
@@ -3690,11 +4102,30 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.openPosition) {
+    if (!form.jobDescriptionId) {
+      showStatusModal({
+        type: "error",
+        title: "Job description required",
+        message: "Please select a job description first.",
+      });
+      return false;
+    }
+
+    if (!matchingAvailablePositions.length) {
+      showStatusModal({
+        type: "error",
+        title: "No matching open positions",
+        message:
+          "There are no active available positions linked to the selected job description.",
+      });
+      return false;
+    }
+
+    if (!form.selectedAvailablePositionId || !form.openPosition) {
       showStatusModal({
         type: "error",
         title: "Open position required",
-        message: "Please select an active open position.",
+        message: "Please select one of the matching active open positions.",
       });
       return false;
     }
@@ -4033,6 +4464,11 @@ export default function PublicTalentPoolApplicationPage() {
       }
 
       setSubmittedRecord(savedSubmission);
+      referralPrefillValuesRef.current = null;
+      setHasReferralCode("");
+      setReferralLookupStatus("");
+      setReferralLookupMessage("");
+      setIsLoadingReferralPrefill(false);
       setForm(createEmptyPublicForm());
       setHighlightAudio(false);
       setHighlightAttachment(false);
@@ -4202,79 +4638,127 @@ export default function PublicTalentPoolApplicationPage() {
             description="Tell us where you learned about SiBS and what position you are applying for."
           >
             <div className="space-y-4">
-              <div className="rounded-2xl border border-[#FFB27A] bg-[#FFF7F1] p-4 shadow-sm">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 shadow-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-wide text-[#E6531B]">
-                      Referral Code
+                      Referral
                     </p>
                     <p className="mt-1 text-sm font-extrabold text-[#042C51]">
-                      Use this code to connect your application to your referral.
+                      Do you have a referral code? <RequiredMark />
                     </p>
-                    {isReferralCodeFromEmail ? (
-                      <p className="mt-1 text-xs font-semibold text-emerald-700">
-                        {isLoadingReferralPrefill
-                          ? "Loading your saved applicant lead information..."
-                          : "This was applied from your email invitation."}
-                      </p>
-                    ) : (
-                      <p className="mt-1 text-xs font-semibold text-[#667085]">
-                        Enter a referral code if one was shared with you.
-                      </p>
-                    )}
+                    <p className="mt-1 text-xs font-semibold text-[#667085]">
+                      Select Yes if a referral code was shared with you. Select
+                      No to continue with the regular application form.
+                    </p>
                   </div>
-                  <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
-                    {referralLookupStatus ? (
-                      <div
-                        className={[
-                          "flex min-h-10 items-center gap-1.5 text-xs font-extrabold md:max-w-[190px]",
-                          referralLookupStatus === "matched"
-                            ? "text-emerald-700"
-                            : referralLookupStatus === "missing"
-                              ? "text-amber-700"
-                              : "text-[#174A7C]",
-                        ].join(" ")}
-                      >
-                        {referralLookupStatus === "checking" ? (
-                          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-                        ) : referralLookupStatus === "matched" ? (
-                          <CircleCheckBig className="h-3.5 w-3.5 shrink-0" />
-                        ) : (
-                          <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-                        )}
-                        <span className="leading-tight">
-                          {referralLookupMessage}
-                        </span>
-                      </div>
-                    ) : null}
-                    <input
-                      value={form.referralCode}
-                      disabled={isReferralCodeFromEmail}
-                      maxLength={10}
-                      onChange={(e) =>
-                        updateFormField(
-                          "referralCode",
-                          e.target.value.toUpperCase().slice(0, 10),
-                        )
-                      }
-                      placeholder="e.g. REF-******"
-                      className={[
-                        "public-referral-code-input h-10 w-full rounded-[10px] border bg-white px-3 text-xs font-semibold uppercase text-[#042C51] transition placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] md:w-[260px]",
-                        referralLookupStatus === "matched"
-                          ? "public-referral-code-input--matched"
-                          : referralLookupStatus === "missing"
-                            ? "public-referral-code-input--missing"
-                            : "public-referral-code-input--default",
-                        isReferralCodeFromEmail ? "cursor-not-allowed" : "",
-                      ].join(" ")}
-                    />
+
+                  <div className="grid w-full grid-cols-2 gap-2 md:w-[260px]">
+                    <button
+                      type="button"
+                      onClick={() => handleReferralChoiceChange("Yes")}
+                      className={`h-10 rounded-[10px] border px-4 text-xs font-extrabold transition ${
+                        hasReferralCode === "Yes"
+                          ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
+                          : "border-[#DCE6F1] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                      }`}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleReferralChoiceChange("No")}
+                      className={`h-10 rounded-[10px] border px-4 text-xs font-extrabold transition ${
+                        hasReferralCode === "No"
+                          ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
+                          : "border-[#DCE6F1] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                      }`}
+                    >
+                      No
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <FieldLabel>
-                  How did you first hear about us? <RequiredMark />
+              {hasReferralCode === "Yes" ? (
+                <div className="rounded-2xl border border-[#FFB27A] bg-[#FFF7F1] p-4 shadow-sm">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wide text-[#E6531B]">
+                        Referral Code
+                      </p>
+                      <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+                        Enter and match your referral code to continue.
+                      </p>
+                      {isReferralCodeFromEmail ? (
+                        <p className="mt-1 text-xs font-semibold text-emerald-700">
+                          {isLoadingReferralPrefill
+                            ? "Loading your saved applicant lead information..."
+                            : "This referral code came from your email invitation."}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs font-semibold text-[#667085]">
+                          The remaining application fields will appear after a
+                          valid referral code is matched.
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+                      {referralLookupStatus ? (
+                        <div
+                          className={[
+                            "flex min-h-10 items-center gap-1.5 text-xs font-extrabold md:max-w-[190px]",
+                            referralLookupStatus === "matched"
+                              ? "text-emerald-700"
+                              : referralLookupStatus === "missing"
+                                ? "text-amber-700"
+                                : "text-[#174A7C]",
+                          ].join(" ")}
+                        >
+                          {referralLookupStatus === "checking" ? (
+                            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                          ) : referralLookupStatus === "matched" ? (
+                            <CircleCheckBig className="h-3.5 w-3.5 shrink-0" />
+                          ) : (
+                            <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                          )}
+                          <span className="leading-tight">
+                            {referralLookupMessage}
+                          </span>
+                        </div>
+                      ) : null}
+                      <input
+                        value={form.referralCode}
+                        disabled={isReferralCodeFromEmail}
+                        maxLength={10}
+                        onChange={(e) =>
+                          updateFormField(
+                            "referralCode",
+                            e.target.value.toUpperCase().slice(0, 10),
+                          )
+                        }
+                        placeholder="e.g. REF-******"
+                        className={[
+                          "public-referral-code-input h-10 w-full rounded-[10px] border bg-white px-3 text-xs font-semibold uppercase text-[#042C51] transition placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] md:w-[260px]",
+                          referralLookupStatus === "matched"
+                            ? "public-referral-code-input--matched"
+                            : referralLookupStatus === "missing"
+                              ? "public-referral-code-input--missing"
+                              : "public-referral-code-input--default",
+                          isReferralCodeFromEmail ? "cursor-not-allowed" : "",
+                        ].join(" ")}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+
+              {shouldShowApplicationFields ? (
+                <>
+                  <div>
+                    <FieldLabel>
+                      How did you first hear about us? <RequiredMark />
                 </FieldLabel>
                 <MultiSelectCheckboxGroup
                   options={formOptions.hearAboutUs}
@@ -4287,40 +4771,58 @@ export default function PublicTalentPoolApplicationPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <FieldLabel>
+                    Select Job Description <RequiredMark />
+                  </FieldLabel>
+
+                  <DatabaseSelect
+                    required
+                    value={form.jobDescriptionId}
+                    options={approvedJobDescriptionOptions}
+                    placeholder={
+                      isLoadingData
+                        ? "Loading job descriptions..."
+                        : approvedJobDescriptionOptions.length
+                          ? "Select job description"
+                          : "No approved job descriptions found"
+                    }
+                    disabled={
+                      isLoadingData || !approvedJobDescriptionOptions.length
+                    }
+                    onChange={handleJobDescriptionChange}
+                    zIndex="z-[205]"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
                     Check our open positions <RequiredMark />
                   </FieldLabel>
 
                   <PositionJobDescriptionDropdown
-                    value={form.openPosition}
-                    disabled={isLoadingData || !activePositionOptions.length}
-                    positions={activePositionOptions}
+                    value={form.selectedAvailablePositionId}
+                    disabled={
+                      isLoadingData ||
+                      !form.jobDescriptionId ||
+                      !matchingAvailablePositions.length
+                    }
+                    positions={matchingAvailablePositions}
                     placeholder={
                       isLoadingData
                         ? "Loading positions..."
-                        : activePositionOptions.length
-                          ? "Select open position"
-                          : "No approved positions found"
+                        : !form.jobDescriptionId
+                          ? "Select job description first"
+                          : matchingAvailablePositions.length
+                            ? "Select matching open position"
+                            : "No matching open positions"
                     }
-                    onChange={(value) => updateFormField("openPosition", value)}
+                    onChange={handleAvailablePositionChange}
                     onOpenJobDescription={handleOpenPositionJobDescription}
                   />
 
                   <p className="mt-2 text-xs font-semibold text-gray-500">
-                    Use the button at the right of any position to open that
-                    position's job description in a new tab.
+                    Only active available positions linked to the selected job
+                    description are shown.
                   </p>
-                </div>
-
-                <div>
-                  <FieldLabel>Nickname</FieldLabel>
-                  <input
-                    value={form.nickname}
-                    onChange={(e) =>
-                      updateFormField("nickname", e.target.value)
-                    }
-                    placeholder="Preferred nickname"
-                    className={inputClass()}
-                  />
                 </div>
 
                 <div>
@@ -4336,6 +4838,18 @@ export default function PublicTalentPoolApplicationPage() {
                       updateFormField("applyingLocation", value)
                     }
                     zIndex="z-[190]"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Nickname</FieldLabel>
+                  <input
+                    value={form.nickname}
+                    onChange={(e) =>
+                      updateFormField("nickname", e.target.value)
+                    }
+                    placeholder="Preferred nickname"
+                    className={inputClass()}
                   />
                 </div>
 
@@ -4372,12 +4886,24 @@ export default function PublicTalentPoolApplicationPage() {
                     </div>
                   </>
                 )}
-              </div>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-[#667085]">
+                  {!hasReferralCode
+                    ? "Select Yes or No above to continue with the application."
+                    : referralLookupStatus === "checking"
+                      ? "Checking your referral code. The application will open after the code is matched."
+                      : "Enter a valid referral code and wait for the matched confirmation to continue."}
+                </div>
+              )}
             </div>
           </SectionCard>
 
-          <SectionCard
-            icon={UserPlus}
+          {shouldShowApplicationFields ? (
+            <>
+              <SectionCard
+                icon={UserPlus}
             step={2}
             title="Personal Information"
             description="Enter your legal name, contact details, and address."
@@ -5079,6 +5605,8 @@ export default function PublicTalentPoolApplicationPage() {
               </button>
             </div>
           </section>
+            </>
+          ) : null}
         </form>
       </main>
 
