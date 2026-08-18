@@ -202,10 +202,6 @@ export default function SchedulePage() {
                     <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
                     Schedule View
                   </span>
-
-                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
-                    Module: Core HR
-                  </span>
                 </div>
 
                 <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">

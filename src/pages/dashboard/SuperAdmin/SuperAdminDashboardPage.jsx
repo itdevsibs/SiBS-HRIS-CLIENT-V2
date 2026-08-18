@@ -24,7 +24,6 @@ import {
 import SuperAdminDashboardHeader from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminDashboardHeader";
 import SuperAdminDashboardStats from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminDashboardStats";
 import SuperAdminQuickActions from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminQuickActions";
-import SuperAdminFilters from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminFilters";
 import SuperAdminTabs from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminTabs";
 import SuperAdminOverview from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminOverview";
 import SuperAdminExceptions from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminExceptions";
@@ -51,7 +50,6 @@ export default function SuperAdminDashboardPage() {
     commitSearch,
     filterValues,
     setFilter,
-    resetFilters,
   } = usePagination(SUPER_ADMIN_ENTITY);
 
   const [activeTab, setActiveTab] = useState("overview");
@@ -64,11 +62,25 @@ export default function SuperAdminDashboardPage() {
     ...INITIAL_ACTIVITY_LOGS,
   ]);
   const [notice, setNotice] = useState("");
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   const accessLevel = filterValues?.accessLevel || "All Access Levels";
   const module = filterValues?.module || "All Modules";
   const account = filterValues?.account || "All Accounts";
   const status = filterValues?.status || "All Statuses";
+
+  async function handleManualRefresh() {
+    if (isManualRefreshing) return;
+    setIsManualRefreshing(true);
+    try {
+      setLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      setNotice("Super Admin dashboard data refreshed.");
+    } finally {
+      setIsManualRefreshing(false);
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -158,13 +170,6 @@ export default function SuperAdminDashboardPage() {
     [activityLogs, adminUsers],
   );
 
-  const hasActiveFilters =
-    Boolean(String(searchInput || "").trim()) ||
-    accessLevel !== "All Access Levels" ||
-    module !== "All Modules" ||
-    account !== "All Accounts" ||
-    status !== "All Statuses";
-
   function handleSearchKeyDown(event) {
     if (event.key !== "Enter") return;
 
@@ -175,15 +180,6 @@ export default function SuperAdminDashboardPage() {
   function handleTabChange(nextTab) {
     setActiveTab(nextTab);
     setPage(1);
-  }
-
-  function handleResetFilters() {
-    setSearchInput("");
-    resetFilters();
-    setFilter("accessLevel", "All Access Levels");
-    setFilter("module", "All Modules");
-    setFilter("account", "All Accounts");
-    setFilter("status", "All Statuses");
   }
 
   function addAdmin(newAdmin) {
@@ -230,41 +226,56 @@ export default function SuperAdminDashboardPage() {
     activity: activityLogs.length,
   };
 
+  function handleMetricClick(metric) {
+    if (!metric) return;
+    if (metric.key === "admins") {
+      handleTabChange("access_roles");
+      return;
+    }
+    if (metric.key === "employees") {
+      navigate(SUPER_ADMIN_ROUTES.employees);
+      return;
+    }
+    if (metric.key === "attendance") {
+      navigate("/attendance");
+      return;
+    }
+    if (metric.key === "approvals") {
+      navigate(SUPER_ADMIN_ROUTES.approvals);
+      return;
+    }
+    if (metric.key === "leaves") {
+      navigate("/leaves");
+      return;
+    }
+    if (metric.key === "recruitment") {
+      navigate(SUPER_ADMIN_ROUTES.taDashboard);
+    }
+  }
+
   return (
     <div className="sibs-dashboard-shell">
       <Header />
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1900px] space-y-5 pb-10">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6 pb-10">
           <SuperAdminDashboardHeader
             displayName={getUserDisplayName(user)}
             onAddUser={() => setIsAddAdminOpen(true)}
             onOpenEmployees={() => navigate(SUPER_ADMIN_ROUTES.employees)}
+            onRefresh={handleManualRefresh}
+            isManualRefreshing={isManualRefreshing}
           />
 
-          <SuperAdminDashboardStats adminCount={adminUsers.length} />
+          <SuperAdminDashboardStats
+            adminCount={adminUsers.length}
+            onMetricClick={handleMetricClick}
+          />
 
           <SuperAdminQuickActions
             onNavigate={navigate}
             onAddUser={() => setIsAddAdminOpen(true)}
             onTabChange={handleTabChange}
-          />
-
-          <SuperAdminFilters
-            searchInput={searchInput}
-            onSearchChange={setSearchInput}
-            onSearchKeyDown={handleSearchKeyDown}
-            accessLevel={accessLevel}
-            module={module}
-            account={account}
-            status={status}
-            accessOptions={["All Access Levels", ...ACCESS_LEVELS]}
-            moduleOptions={moduleOptions}
-            accountOptions={["All Accounts", ...ACCOUNT_GROUPS]}
-            statusOptions={statusOptions}
-            onFilterChange={setFilter}
-            onReset={handleResetFilters}
-            hasActiveFilters={hasActiveFilters}
           />
 
           <section className="sibs-page-card-in sibs-card overflow-hidden">
@@ -295,6 +306,12 @@ export default function SuperAdminDashboardPage() {
                   pagination={paginationProps}
                   onNavigate={navigate}
                   onResolve={resolveException}
+                  searchInput={searchInput}
+                  onSearchChange={setSearchInput}
+                  onSearchKeyDown={handleSearchKeyDown}
+                  module={module}
+                  moduleOptions={moduleOptions}
+                  onFilterChange={setFilter}
                 />
               ) : null}
 
@@ -305,6 +322,16 @@ export default function SuperAdminDashboardPage() {
                   pagination={paginationProps}
                   onAddUser={() => setIsAddAdminOpen(true)}
                   onEditAccess={handleEditAccess}
+                  searchInput={searchInput}
+                  onSearchChange={setSearchInput}
+                  onSearchKeyDown={handleSearchKeyDown}
+                  accessLevel={accessLevel}
+                  account={account}
+                  status={status}
+                  accessOptions={["All Access Levels", ...ACCESS_LEVELS]}
+                  accountOptions={["All Accounts", ...ACCOUNT_GROUPS]}
+                  statusOptions={statusOptions}
+                  onFilterChange={setFilter}
                 />
               ) : null}
 
@@ -320,6 +347,14 @@ export default function SuperAdminDashboardPage() {
                   onExport={() =>
                     setNotice("Activity log export prepared for frontend preview.")
                   }
+                  searchInput={searchInput}
+                  onSearchChange={setSearchInput}
+                  onSearchKeyDown={handleSearchKeyDown}
+                  module={module}
+                  status={status}
+                  moduleOptions={moduleOptions}
+                  statusOptions={statusOptions}
+                  onFilterChange={setFilter}
                 />
               ) : null}
             </div>

@@ -20,7 +20,7 @@ export default function SuperAdminTabs({ activeTab, onChange, counts }) {
     <div
       role="tablist"
       aria-label="Super Admin dashboard sections"
-      className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4"
+      className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-2.5 pt-2 sm:px-3 sm:pt-2.5 2xl:px-4 2xl:pt-3 sibs-scrollbar font-jakarta"
     >
       {TABS.map((tab) => {
         const active = activeTab === tab.id;
@@ -33,20 +33,20 @@ export default function SuperAdminTabs({ activeTab, onChange, counts }) {
             role="tab"
             aria-selected={active}
             onClick={() => onChange(tab.id)}
-            className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-xs font-extrabold uppercase tracking-wide transition sm:px-5 ${
+            className={`inline-flex h-9 2xl:h-10 shrink-0 items-center gap-1.5 2xl:gap-2 border-b-2 px-3 sm:px-3.5 2xl:px-4.5 sibs-text-micro font-extrabold uppercase tracking-wide transition-all ${
               active
-                ? "rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
+                ? "rounded-t-lg 2xl:rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
                 : "border-transparent text-[#667085] hover:text-[#042C51]"
             }`}
           >
             {createElement(tab.icon, {
-              size: 15,
-              className: "text-[#FF5C28]",
+              size: 13,
+              className: active ? "text-[#FF5C28]" : "text-[#98A2B3]",
             })}
-            {tab.label}
+            <span>{tab.label}</span>
             {Number.isFinite(Number(count)) ? (
               <span
-                className={`rounded-full px-2 py-0.5 text-[9px] ${
+                className={`rounded-full px-1.5 py-0.5 sibs-text-micro font-extrabold tabular-nums ${
                   active
                     ? "bg-[#042C51] text-white"
                     : "bg-slate-200 text-slate-600"
@@ -61,3 +61,4 @@ export default function SuperAdminTabs({ activeTab, onChange, counts }) {
     </div>
   );
 }
+

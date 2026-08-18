@@ -698,30 +698,30 @@ function StatCard({
 
   return (
     <article
-      className="sibs-metric-card flex min-h-[112px] flex-col justify-between overflow-hidden p-3.5"
+      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={getAnimationStyle(delay)}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2">
         <span
-          className={`text-[10px] font-extrabold uppercase ${selectedTone.label}`}
+          className={`sibs-text-micro font-extrabold uppercase tracking-wide truncate ${selectedTone.label}`}
         >
           {title}
         </span>
 
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl ${selectedTone.icon}`}
         >
-          <IconComponent size={17} strokeWidth={2} />
+          <IconComponent size={15} strokeWidth={2} className="2xl:h-[17px] 2xl:w-[17px]" />
         </span>
       </div>
 
-      <div className="mt-2">
+      <div>
         <p
-          className={`text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+          className={`text-xl 2xl:text-2xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
         >
           {value}
         </p>
-        <p className="mt-1.5 text-xs font-bold leading-4 text-[#667085]">
+        <p className="mt-1 sibs-text-micro font-semibold leading-tight text-[#667085] line-clamp-1 truncate">
           {description}
         </p>
       </div>
@@ -1436,18 +1436,20 @@ export default function AttendanceTable() {
         className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
         style={getAnimationStyle(120)}
       >
-        <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div className="border-b border-[#E6ECF2] bg-white p-4 sm:p-5 2xl:p-6">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <h2 className="sibs-section-title">Attendance Records</h2>
-              <p className="sibs-section-subtitle">
+              <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                Attendance Records
+              </h3>
+              <p className="mt-1 text-xs font-semibold text-[#667085]">
                 {adminView
                   ? "Review employee time entries, work hours, breaks, and approval status."
                   : "Review your time entries, work hours, breaks, and approval status."}
               </p>
             </div>
 
-            <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
+            <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-0.5 sibs-text-micro font-extrabold uppercase text-[#FF5C28]">
               Page {currentPage}
             </span>
           </div>
@@ -1525,7 +1527,7 @@ export default function AttendanceTable() {
                 onMouseMove={handleDragMove}
                 onMouseUp={handleDragEnd}
                 onMouseLeave={handleDragEnd}
-                className={`max-h-[650px] select-none overflow-auto ${
+                className={`max-h-[480px] 2xl:max-h-[640px] select-none overflow-auto sibs-scrollbar ${
                   isDraggingTable ? "cursor-grabbing" : "cursor-grab"
                 }`}
               >

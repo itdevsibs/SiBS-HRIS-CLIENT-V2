@@ -76,34 +76,48 @@ export default function SuperAdminQuickActions({
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card p-4">
-      <div className="flex items-center justify-between border-b border-[#EEF2F6] pb-3">
-        <h2 className="sibs-section-title flex items-center gap-2">
-          <SlidersHorizontal size={16} className="text-[#FF5C28]" />
-          Super Admin Operations Quick Actions
-        </h2>
-        <span className="hidden text-[10px] font-bold text-[#98A2B3] sm:block">
+    <section
+      className="sibs-page-card-in sibs-card font-jakarta p-3.5 2xl:p-4"
+      style={{ animationDelay: "180ms", animationFillMode: "both" }}
+    >
+      <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-2 2xl:pb-2.5">
+        <div className="min-w-0 space-y-0.5">
+          <h2 className="text-xs 2xl:text-sm font-extrabold text-[#042C51] flex items-center gap-1.5 2xl:gap-2">
+            <SlidersHorizontal size={14} className="text-[#FF5C28]" />
+            Quick Actions
+          </h2>
+          <p className="sibs-text-micro font-semibold text-[#667085]">
+            Instant shortcuts for common governance and admin tasks
+          </p>
+        </div>
+        <span className="hidden sibs-text-micro font-bold text-[#98A2B3] sm:block">
           Direct Governance Links
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="mt-2.5 2xl:mt-3 grid grid-cols-2 gap-2 2xl:gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
         {ACTIONS.map((item, index) => (
           <button
             key={item.id}
             type="button"
             onClick={() => handleAction(item)}
-            className="sibs-page-card-in group flex min-h-[102px] flex-col items-start justify-between rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:shadow-sm"
-            style={{ animationDelay: `${440 + index * 55}ms` }}
+            className="group flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-slate-200 bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB]"
+            style={{
+              animationDelay: `${240 + index * 40}ms`,
+              animationFillMode: "both",
+            }}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#042C51] text-white transition group-hover:bg-[#FF5C28]">
-              {createElement(item.icon, { size: 15 })}
+            <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-[#FF5C28] transition-colors group-hover:bg-[#FF5C28] group-hover:text-white">
+              {createElement(item.icon, {
+                className: "h-3.5 w-3.5 2xl:h-4 2xl:w-4",
+              })}
             </span>
-            <span className="mt-3">
-              <span className="block text-xs font-extrabold text-[#042C51]">
+
+            <span className="mt-1.5 min-w-0 flex-1">
+              <span className="block sibs-text-xs font-extrabold text-[#042C51] transition group-hover:text-[#FF5C28]">
                 {item.title}
               </span>
-              <span className="mt-1 block text-[10px] font-semibold leading-4 text-[#98A2B3]">
+              <span className="mt-0.5 block sibs-text-micro text-[#667085] line-clamp-1 truncate">
                 {item.description}
               </span>
             </span>
@@ -113,3 +127,5 @@ export default function SuperAdminQuickActions({
     </section>
   );
 }
+
+

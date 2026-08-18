@@ -383,8 +383,8 @@ export default function TADashboardPage() {
     <div className="sibs-dashboard-shell">
       <Header />
 
-      <main className="sibs-dashboard-main">
-        <div className="mx-auto w-full max-w-[1700px] space-y-5 sm:space-y-6">
+      <main className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6 pb-10">
           <TADashboardWelcome
             onOpenHiringPlan={() => navigate(HIRING_PLAN_ROUTE)}
           />
@@ -423,39 +423,40 @@ export default function TADashboardPage() {
 
           <TADashboardStats metrics={metricCards} />
 
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <TARequirementProgress roles={rolesData} delay={210} />
-            <TAWeeklyMovement funnel={summaryMetrics.funnel} delay={260} />
+          <TAWeeklyMovement funnel={summaryMetrics.funnel} delay={180} />
+
+          <section className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-12">
+            <div className="flex xl:col-span-7 2xl:col-span-8">
+              <TARequirementProgress roles={rolesData} delay={220} />
+            </div>
+
+            <div className="flex xl:col-span-5 2xl:col-span-4">
+              <TARecruiterLoad recruiters={recruiters} delay={260} />
+            </div>
           </section>
 
-          <section className="grid grid-cols-1 items-stretch gap-5 2xl:grid-cols-12">
-            <div className="flex 2xl:col-span-8">
-              <TARoleHiringStatus
-                roles={paginatedRoles}
-                totalRoles={filteredRoles.length}
-                searchInput={searchInput}
-                onSearchChange={setSearchInput}
-                onSearchKeyDown={handleSearchKeyDown}
-                status={statusFilter}
-                onStatusChange={(value) => setFilter("status", value)}
-                hasActiveFilters={hasActiveRoleFilters}
-                onClearFilters={clearRoleFilters}
-                onViewRole={setSelectedRole}
-                currentPage={safeCurrentPage}
-                totalPages={totalPages}
-                onPrevious={() =>
-                  setPage(Math.max(safeCurrentPage - 1, 1))
-                }
-                onNext={() =>
-                  setPage(Math.min(safeCurrentPage + 1, totalPages))
-                }
-                delay={310}
-              />
-            </div>
-
-            <div className="flex 2xl:col-span-4">
-              <TARecruiterLoad recruiters={recruiters} delay={360} />
-            </div>
+          <section className="w-full">
+            <TARoleHiringStatus
+              roles={paginatedRoles}
+              totalRoles={filteredRoles.length}
+              searchInput={searchInput}
+              onSearchChange={setSearchInput}
+              onSearchKeyDown={handleSearchKeyDown}
+              status={statusFilter}
+              onStatusChange={(value) => setFilter("status", value)}
+              hasActiveFilters={hasActiveRoleFilters}
+              onClearFilters={clearRoleFilters}
+              onViewRole={setSelectedRole}
+              currentPage={safeCurrentPage}
+              totalPages={totalPages}
+              onPrevious={() =>
+                setPage(Math.max(safeCurrentPage - 1, 1))
+              }
+              onNext={() =>
+                setPage(Math.min(safeCurrentPage + 1, totalPages))
+              }
+              delay={300}
+            />
           </section>
         </div>
       </main>

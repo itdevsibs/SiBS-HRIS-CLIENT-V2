@@ -1,9 +1,10 @@
-import { X } from "lucide-react";
+import { useEffect } from "react";
+import { Target, X } from "lucide-react";
 
 import {
   formatDate,
   safePercentage,
-} from "../../../../lib/utils/OMDashboard/omDashboardHelpers.js";
+} from "../../../lib/utils/Dashboards/OMDashboard/omDashboardHelpers.js";
 
 function getStatusClass(status) {
   if (status === "Delayed") {
@@ -18,114 +19,150 @@ function getStatusClass(status) {
 }
 
 export default function OMRoleDetailsModal({ role, onClose }) {
+  useEffect(() => {
+    if (!role) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") onClose?.();
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [role, onClose]);
+
   if (!role) return null;
 
   const progress = safePercentage(role.filled, role.req);
 
   return (
     <div
-      className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/65 p-4 backdrop-blur-md"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1200] flex items-center justify-center p-2 font-jakarta sm:p-4"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) onClose?.();
       }}
     >
-      <section className="max-h-[90dvh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#D9E2EC] bg-white shadow-2xl">
-        <header className="flex items-center justify-between gap-4 bg-[#042C51] px-5 py-4 text-white">
-          <div>
-            <h2 className="text-base font-extrabold">Role KPI Details</h2>
-            <p className="mt-1 text-xs text-slate-300">
-              Manager-accessible recruitment analytics
-            </p>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="om-role-kpi-title"
+        className="sibs-modal-pop-in flex max-h-[84vh] w-full max-w-[700px] 2xl:max-w-3xl flex-col overflow-hidden rounded-xl bg-[#042C51] font-jakarta shadow-2xl sm:rounded-2xl"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#042C51] px-4 py-2.5 2xl:px-5 2xl:py-3.5 text-white">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28]">
+              <Target className="h-3.5 w-3.5 2xl:h-[18px] 2xl:w-[18px] text-white" />
+            </span>
+            <div className="min-w-0">
+              <h2 id="om-role-kpi-title" className="truncate text-xs 2xl:text-sm font-extrabold text-white">
+                Role KPI Details
+              </h2>
+              <p className="mt-0.5 truncate sibs-text-micro font-medium text-slate-300">
+                Manager-accessible recruitment analytics
+              </p>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-white/10 p-2 transition hover:bg-white/20"
+            className="flex h-7 w-7 2xl:h-8 2xl:w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
             aria-label="Close role details"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
           </button>
         </header>
 
-        <div className="space-y-5 p-5">
-          <div className="flex flex-col justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center">
+        <div className="flex-1 space-y-2.5 2xl:space-y-3.5 overflow-y-auto bg-white p-3.5 2xl:p-5 sibs-scrollbar">
+          <div className="flex flex-col justify-between gap-2.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 2xl:p-3.5 sm:flex-row sm:items-center">
             <div className="min-w-0">
-              <h3 className="break-words text-lg font-extrabold text-[#042C51]">
+              <h3 className="break-words text-sm 2xl:text-base font-extrabold text-[#042C51]">
                 {role.roleTitle}
               </h3>
-              <p className="mt-1 break-words text-sm text-[#667085]">
+              <p className="mt-0.5 break-words sibs-text-micro font-semibold text-[#667085]">
                 {role.account} · {role.department}
               </p>
             </div>
 
             <div className="text-left sm:text-right">
-              <span className="text-[10px] font-extrabold uppercase text-[#667085]">
+              <span className="block sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">
                 Progress
               </span>
-              <p className="text-2xl font-extrabold text-[#FF5C28]">
+              <p className="text-lg 2xl:text-xl font-extrabold tabular-nums text-[#FF5C28]">
                 {progress}%
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {[
               ["Requirement", role.req],
               ["Filled", role.filled],
               ["Open", role.open],
               ["Aging", `${role.aging}d`],
             ].map(([label, value]) => (
-              <div key={label} className="sibs-info-tile text-center">
-                <span className="sibs-kicker">{label}</span>
-                <p className="mt-1 text-xl font-extrabold text-[#042C51]">
+              <div key={label} className="sibs-info-tile rounded-xl border border-[#E6ECF2] bg-white p-2 2xl:p-2.5 text-center shadow-2xs">
+                <span className="block sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">{label}</span>
+                <p className="mt-0.5 text-base 2xl:text-lg font-extrabold tabular-nums text-[#042C51]">
                   {value}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {Object.entries(role.movement || {}).map(([label, value]) => (
-              <div key={label} className="sibs-info-tile text-center">
-                <span className="text-[8px] font-extrabold uppercase text-[#667085]">
-                  {label}
-                </span>
-                <p className="mt-1 text-sm font-extrabold text-[#042C51]">
-                  {value}
-                </p>
-              </div>
-            ))}
+          <div>
+            <p className="mb-1.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]">
+              Movement Pipeline Stages
+            </p>
+            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+              {Object.entries(role.movement || {}).map(([label, value]) => (
+                <div key={label} className="sibs-info-tile rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-2 text-center">
+                  <span className="block truncate sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]">
+                    {label}
+                  </span>
+                  <p className="mt-0.5 text-xs 2xl:text-sm font-extrabold tabular-nums text-[#042C51]">
+                    {value}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-              <p className="text-[10px] font-extrabold uppercase text-blue-700">
+          <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+            <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3">
+              <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-blue-700">
                 Current Action Item
               </p>
-              <p className="mt-2 text-sm font-medium leading-6 text-blue-950">
+              <p className="mt-1 sibs-text-xs font-semibold leading-relaxed text-blue-950">
                 {role.actionItem}
               </p>
             </div>
 
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="text-[10px] font-extrabold uppercase text-amber-700">
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+              <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-amber-700">
                 Delivery Status
               </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span
-                  className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase ${getStatusClass(
+                  className={`inline-flex rounded border px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide ${getStatusClass(
                     role.status,
                   )}`}
                 >
                   {role.status}
                 </span>
-                <span className="text-xs font-bold text-amber-900">
+                <span className="sibs-text-xs font-bold text-amber-900">
                   Risk: {role.riskFlag}
                 </span>
               </div>
-              <p className="mt-3 text-xs text-amber-900">
-                Due {formatDate(role.dueDate)} · TA Owner: {role.taOwner}
+              <p className="mt-1.5 sibs-text-xs font-semibold text-amber-900">
+                Due: <strong className="font-extrabold">{formatDate(role.dueDate)}</strong> · TA Owner: <strong className="font-extrabold">{role.taOwner}</strong>
               </p>
             </div>
           </div>

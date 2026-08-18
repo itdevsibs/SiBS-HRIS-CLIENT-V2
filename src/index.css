@@ -500,9 +500,49 @@
     transform: scale(0.98);
   }
 
-  .sibs-modal-close-btn:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+  /* Centralized Responsive Typography System */
+  .sibs-text-micro {
+    font-size: 9.5px;
+    line-height: 1.35;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  @media (min-width: 1536px) {
+    .sibs-text-micro {
+      font-size: 10px;
+    }
+  }
+
+  .sibs-text-xs {
+    font-size: 11.5px;
+    line-height: 1.4;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  @media (min-width: 1536px) {
+    .sibs-text-xs {
+      font-size: 12px;
+    }
+  }
+
+  .sibs-text-sm {
+    font-size: 12.5px;
+    line-height: 1.45;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  @media (min-width: 1536px) {
+    .sibs-text-sm {
+      font-size: 14px;
+    }
+  }
+
+  .sibs-text-base {
+    font-size: 15px;
+    line-height: 1.5;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  @media (min-width: 1536px) {
+    .sibs-text-base {
+      font-size: 16px;
+    }
   }
 
   /* Shared KPI / Metric Card Base */

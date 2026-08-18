@@ -10,10 +10,6 @@ export default function EmployeeDirectoryHeader() {
               <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
               Employee Directory View
             </span>
-
-            <span className="inline-flex max-w-full rounded border border-orange-200 bg-orange-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#FF5C28]">
-              Module: Core HR
-            </span>
           </div>
 
           <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">

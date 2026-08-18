@@ -212,7 +212,7 @@ function StatCard({
 
   return (
     <article
-      className="sibs-metric-card flex min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
@@ -232,16 +232,16 @@ function StatCard({
             {value}
           </p>
 
-          <p className="mt-1 line-clamp-2 sibs-text-micro font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
             {description}
           </p>
         </div>
 
-        <span
-          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${currentTone.iconWrap} ${currentTone.icon}`}
+        <div
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl ${currentTone.iconWrap} ${currentTone.icon}`}
         >
           <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
-        </span>
+        </div>
       </div>
     </article>
   );
@@ -667,10 +667,6 @@ export default function LeavesPage() {
                     <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
                     Leave Management View
                   </span>
-
-                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#FF5C28]">
-                    Module: Core HR
-                  </span>
                 </div>
 
                 <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
@@ -692,7 +688,7 @@ export default function LeavesPage() {
           </section>
 
           <section
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6"
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
             style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
             <StatCard

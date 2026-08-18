@@ -1824,10 +1824,6 @@ export default function ResignationManagementPage() {
                     Resignation Management View
                   </span>
 
-                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#FF5C28]">
-                    Module: Core HR
-                  </span>
-
                   {isViewOnly && (
                     <span className="inline-flex rounded border border-slate-200 bg-slate-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#667085]">
                       Read-Only Access
