@@ -1,6 +1,5 @@
 import {
   AVAILABLE_POSITIONS_STORAGE_KEY,
-  openPositionOptions,
   leadUploadTemplateColumns,
   leadUploadTemplateRows,
 } from "./talentPoolConstants";
@@ -416,21 +415,19 @@ export function mergeCandidateLists(
 }
 
 export function getActiveOpenPositionOptions() {
-  if (typeof window === "undefined") return openPositionOptions;
+  if (typeof window === "undefined") return [];
 
   try {
     const positions = readLocalStorage(AVAILABLE_POSITIONS_STORAGE_KEY, []);
 
-    if (!Array.isArray(positions)) return openPositionOptions;
+    if (!Array.isArray(positions)) return [];
 
-    const activePositions = positions
+    return positions
       .filter((position) => position?.status === "Active")
       .map((position) => position?.positionTitle)
       .filter(Boolean);
-
-    return activePositions.length > 0 ? activePositions : openPositionOptions;
   } catch {
-    return openPositionOptions;
+    return [];
   }
 }
 

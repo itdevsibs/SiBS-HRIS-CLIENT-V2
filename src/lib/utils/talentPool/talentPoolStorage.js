@@ -1,7 +1,4 @@
-import {
-  AVAILABLE_POSITIONS_STORAGE_KEY,
-  fallbackAvailablePositions,
-} from "./talentPoolConstants";
+import { AVAILABLE_POSITIONS_STORAGE_KEY } from "./talentPoolConstants";
 
 export function readLocalStorage(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -51,15 +48,9 @@ export function normalizeAvailablePosition(position) {
 }
 
 export function getAvailablePositions() {
-  const storedPositions = readLocalStorage(
-    AVAILABLE_POSITIONS_STORAGE_KEY,
-    fallbackAvailablePositions,
-  );
+  const storedPositions = readLocalStorage(AVAILABLE_POSITIONS_STORAGE_KEY, []);
 
-  const sourcePositions =
-    Array.isArray(storedPositions) && storedPositions.length > 0
-      ? storedPositions
-      : fallbackAvailablePositions;
+  const sourcePositions = Array.isArray(storedPositions) ? storedPositions : [];
 
   return sourcePositions
     .map(normalizeAvailablePosition)
