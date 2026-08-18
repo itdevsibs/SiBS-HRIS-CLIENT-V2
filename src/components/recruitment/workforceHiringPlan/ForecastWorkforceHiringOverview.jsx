@@ -277,7 +277,7 @@ export default function ForecastWorkforceHiringOverviewSummary({ rows = [] }) {
 
   return (
     <section className="space-y-3">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 xl:gap-3 2xl:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-9 xl:gap-3 2xl:gap-4">
         {metrics.map((metric, index) => (
           <KpiCard key={metric.title} {...metric} delay={60 + index * 45} />
         ))}

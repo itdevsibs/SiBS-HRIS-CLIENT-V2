@@ -264,9 +264,9 @@ export default function SourcingAnalyticsTable({
           )}
         </div>
 
-        <div className="hidden overflow-x-auto lg:block">
+        <div className="hidden overflow-x-auto lg:block max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
           <table className="w-full min-w-[1450px] border-collapse bg-white text-left text-xs">
-            <thead className="sibs-data-table-head">
+            <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="sibs-data-table-head-row">
                 <th className="sibs-data-table-th text-left">
                   Source Channel
@@ -358,12 +358,13 @@ export default function SourcingAnalyticsTable({
                       style={{
                         animationDelay:
                           `${index * 30}ms`,
+                        animationFillMode: "both",
                       }}
                       aria-label={`View sourcing channel ${
                         source?.source || ""
                       }`}
                     >
-                      <td className="px-4 py-2.5 align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <p
                           className="max-w-[280px] truncate text-xs font-extrabold leading-5 text-[#042C51]"
                           title={source?.source || ""}
@@ -372,7 +373,7 @@ export default function SourcingAnalyticsTable({
                         </p>
 
                         <span
-                          className={`mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-extrabold leading-none ${getSourceStatusClass(
+                          className={`mt-0.5 inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-extrabold leading-none ${getSourceStatusClass(
                             source,
                           )}`}
                         >
@@ -380,49 +381,49 @@ export default function SourcingAnalyticsTable({
                         </span>
                       </td>
 
-                      <td className="px-3 py-2.5 text-center text-xs font-extrabold tabular-nums text-[#042C51] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-[#042C51] align-middle">
                         {formatCurrency(
                           source?.sourceCost,
                         )}
                       </td>
 
-                      <td className="px-3 py-2.5 text-center text-xs font-bold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-bold tabular-nums text-[#475467] align-middle">
                         {source?.costEntries?.length || 0}
                       </td>
 
-                      <td className="px-3 py-2.5 text-center text-xs font-extrabold tabular-nums text-[#042C51] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-[#042C51] align-middle">
                         {source?.volume || 0}
                       </td>
 
-                      <td className="px-3 py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
                         {source?.screened || 0}
                       </td>
 
-                      <td className="px-3 py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
                         {source?.interviewed || 0}
                       </td>
 
-                      <td className="px-3 py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
                         {source?.offered || 0}
                       </td>
 
-                      <td className="px-3 py-2.5 text-center text-xs font-extrabold tabular-nums text-emerald-600 align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-emerald-600 align-middle">
                         {source?.hired || 0}
                       </td>
 
-                      <td className="px-3 py-2.5 text-center align-middle">
-                        <span className="inline-flex rounded-lg bg-[#F2F6FA] px-2.5 py-1 text-[10px] font-extrabold tabular-nums text-[#042C51]">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
+                        <span className="inline-flex rounded-lg bg-[#F2F6FA] px-2 py-0.5 text-[10px] font-extrabold tabular-nums text-[#042C51]">
                           {Number(
                             source?.conversionRate || 0,
                           ).toFixed(1)}%
                         </span>
                       </td>
 
-                      <td className="px-3 py-2.5 text-center text-xs font-extrabold tabular-nums text-[#FF5C28] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-[#FF5C28] align-middle">
                         {formatCostPerHire(source)}
                       </td>
 
-                      <td className="px-4 py-2.5 align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <p
                           className="max-w-[190px] truncate text-xs font-semibold text-[#475467]"
                           title={
@@ -433,7 +434,7 @@ export default function SourcingAnalyticsTable({
                         </p>
                       </td>
 
-                      <td className="px-4 py-2.5 text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs font-semibold tabular-nums text-[#475467] align-middle">
                         {formatDate(
                           source?.lastActivity,
                         )}

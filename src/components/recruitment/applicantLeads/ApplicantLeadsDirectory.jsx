@@ -31,13 +31,13 @@ export default function ApplicantLeadsDirectory() {
         : leads.length;
 
   return (
-    <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs">
-      <div className="border-b border-[#E6ECF2] px-5 py-4 sm:py-5">
+    <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs font-jakarta">
+      <div className="border-b border-[#E6ECF2] px-4 py-3.5 sm:px-5 2xl:py-4">
         <div className="flex flex-col gap-0.5">
-          <h2 className="sibs-section-title">
+          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
             {title}
-          </h2>
-          <p className="sibs-section-subtitle">
+          </h3>
+          <p className="mt-0.5 text-xs font-semibold text-[#667085]">
             {description}
           </p>
         </div>
@@ -45,7 +45,7 @@ export default function ApplicantLeadsDirectory() {
 
       <ApplicantLeadsFilters />
 
-      <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
+      <div className="min-h-0 flex-1 p-3.5 sm:p-4 2xl:p-5 pt-0">
         <ApplicantLeadViewTabs />
         {leadView === "channels" ? (
           <ApplicantLeadsChannelSources />

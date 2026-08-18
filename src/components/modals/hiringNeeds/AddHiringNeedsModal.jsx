@@ -74,21 +74,20 @@ function FormSection({
   headerAction = null,
 }) {
   return (
-    <section className="rounded-2xl border border-[#D6E0EA] bg-white p-4 sm:p-5">
-      <div className="mb-4 flex flex-col gap-3 border-b border-[#EEF2F6] pb-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-2.5">
+    <section className="rounded-2xl border border-[#D6E0EA] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm">
+      <div className="mb-3 2xl:mb-4 flex flex-col gap-2.5 border-b border-[#EEF2F6] pb-2.5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-2 2xl:gap-2.5">
           {React.createElement(SectionIcon, {
-            size: 17,
-            className: "mt-0.5 shrink-0 text-[#FF5C28]",
+            className: "mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#FF5C28]",
             "aria-hidden": "true",
           })}
 
           <div className="min-w-0">
-            <h3 className="font-jakarta text-xs font-extrabold uppercase tracking-normal text-[#042C51]">
+            <h3 className="font-jakarta text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
               {title}
             </h3>
 
-            <p className="mt-1 font-jakarta text-xs font-semibold leading-5 text-[#667085]">
+            <p className="mt-0.5 font-jakarta text-xs font-semibold leading-relaxed text-[#667085]">
               {subtitle}
             </p>
           </div>
@@ -2604,25 +2603,25 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
         aria-labelledby="add-hiring-needs-title"
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-[1050px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+        className="sibs-modal-pop-in flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[1050px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-2xl font-jakarta"
       >
-        <header className="shrink-0 bg-[#07365F] px-4 py-4 text-white sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[#FF5C28]">
-                <FileText size={20} />
+        <header className="shrink-0 bg-[#042C51] px-4 py-2.5 text-white sm:px-6 2xl:py-3">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
+                <FileText className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
               </span>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2
                     id="add-hiring-needs-title"
-                    className="text-base font-extrabold text-white"
+                    className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-white"
                   >
                     New Personnel Requisition
                   </h2>
 
-                  <span className="inline-flex rounded bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">
+                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-white">
                     {form.requestType === "downsize"
                       ? "Downsize"
                       : form.requestType === "requisition"
@@ -2631,7 +2630,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   </span>
                 </div>
 
-                <p className="mt-0.5 text-xs font-semibold leading-relaxed text-blue-100">
+                <p className="mt-0.5 sibs-text-micro font-medium leading-relaxed text-blue-100">
                   Create a Requisition or Downsize request and route it for approval.
                 </p>
               </div>
@@ -2642,9 +2641,9 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                 type="button"
                 onClick={handleReset}
                 disabled={isSubmitting}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-white/10 bg-white/10 px-3 text-[10px] font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-3 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <RotateCcw size={14} />
+                <RotateCcw className="h-3.5 w-3.5" />
                 Reset
               </button>
 
@@ -2652,12 +2651,12 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                 type="submit"
                 form="add-hiring-needs-form"
                 disabled={isSubmitting}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#FF5C28] px-3.5 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E95324] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
                 ) : (
-                  <Save size={14} />
+                  <Save className="h-3.5 w-3.5" />
                 )}
                 {isSubmitting ? "Submitting..." : "Submit for Approval"}
               </button>
@@ -2666,23 +2665,23 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Close Personnel Requisition modal"
                 title="Close"
               >
-                <X size={18} />
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
         </header>
 
-        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-5">
-          <div className="space-y-4">
-            <section className="rounded-2xl border border-blue-200 bg-[#EEF5FF] p-4">
+        <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-4 2xl:p-5">
+          <div className="space-y-3.5 2xl:space-y-4">
+            <section className="rounded-2xl border border-blue-200 bg-[#EEF5FF] p-3 2xl:p-3.5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-start gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#245BFF] text-white">
-                    <Info size={16} />
+                <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
+                  <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-[#245BFF] text-white">
+                    <Info className="h-4 w-4" />
                   </span>
 
                   <div className="min-w-0">

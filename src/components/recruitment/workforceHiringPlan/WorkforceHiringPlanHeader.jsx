@@ -18,7 +18,10 @@ export default function WorkforceHiringPlanHeader() {
   }
 
   return (
-    <section className="sibs-page-header-in sibs-page-card-in sibs-card relative mb-4 2xl:mb-5 overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6">
+    <section
+      className="sibs-page-header-in sibs-page-card-in relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
+      style={{ animationDelay: "0ms", animationFillMode: "both" }}
+    >
       <span
         className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 overflow-hidden rounded-t-[15px]"
         aria-hidden="true"
@@ -26,7 +29,7 @@ export default function WorkforceHiringPlanHeader() {
         <span className="block h-full w-full bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
       </span>
 
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div className="mt-0.5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="min-w-0 space-y-1 xl:max-w-[560px] xl:flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
@@ -54,9 +57,9 @@ export default function WorkforceHiringPlanHeader() {
                 type="button"
                 onClick={handleOpenAiInsight}
                 disabled={aiInsightLoading || accountsLoading}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] disabled:hover:shadow-sm"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Sparkles size={15} />
+                <Sparkles className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#FF5C28]" />
 
                 {aiInsightLoading
                   ? "Thinking..."

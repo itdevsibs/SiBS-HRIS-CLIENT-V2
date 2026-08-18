@@ -429,30 +429,30 @@ export default function ViewJobDescriptionDetailsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="view-job-description-modal-title"
-        className="flex h-[94dvh] w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[84vh] 2xl:max-h-[88vh] h-full w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="shrink-0 border-b border-[#D9E2EC] bg-white px-4 py-4 sm:px-6">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div className="shrink-0 border-b border-[#D9E2EC] bg-white px-4 py-3 sm:px-6 2xl:py-3.5">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1/80">
+              <div className="inline-flex items-center gap-2 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-primary-1/80">
                 Job Description Overview
               </div>
 
               <h2
                 id="view-job-description-modal-title"
-                className="mt-1 min-w-0 break-words text-lg font-extrabold leading-tight text-sibs-primary-1 sm:text-2xl"
+                className="mt-0.5 min-w-0 break-words text-base 2xl:text-xl font-extrabold leading-tight text-sibs-primary-1"
               >
                 {jdTitle}
               </h2>
 
-              <p className="mt-1 text-sm font-semibold text-[#475467]">
+              <p className="mt-0.5 sibs-text-xs font-semibold text-[#475467]">
                 {item.department || "—"} • {item.account || "—"}
               </p>
             </div>
 
             <span
-              className={`inline-flex w-fit min-w-[92px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-center text-xs font-extrabold leading-none ${getJdStatusClass(
+              className={`inline-flex w-fit min-w-[92px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-center sibs-text-micro font-extrabold leading-none ${getJdStatusClass(
                 displayJdStatus,
               )}`}
             >
@@ -461,9 +461,9 @@ export default function ViewJobDescriptionDetailsModal({
           </div>
 
           {!approvalPage && (
-            <div className="relative mt-4 flex gap-8 overflow-x-auto text-sm font-bold text-[#344054] no-scrollbar">
+            <div className="relative mt-2.5 flex gap-6 overflow-x-auto text-xs font-bold text-[#344054] no-scrollbar">
               <span
-                className="absolute bottom-0 h-[2px] rounded-full bg-blue-500 transition-all duration-300 ease-in-out"
+                className="absolute bottom-0 h-[2px] rounded-full bg-[#FF5C28] transition-all duration-300 ease-in-out"
                 style={{
                   left: `${tabIndicator.left}px`,
                   width: `${tabIndicator.width}px`,
@@ -481,10 +481,10 @@ export default function ViewJobDescriptionDetailsModal({
                     }}
                     type="button"
                     onClick={() => setActiveDetailTab(tab)}
-                    className={`relative z-10 whitespace-nowrap px-4 pb-3 transition ${
+                    className={`relative z-10 whitespace-nowrap px-3 pb-2 transition ${
                       isActive
-                        ? "text-blue-600"
-                        : "text-[#344054] hover:text-blue-600"
+                        ? "text-[#042C51] font-extrabold"
+                        : "text-[#667085] hover:text-[#042C51]"
                     }`}
                   >
                     {tab}
@@ -496,7 +496,7 @@ export default function ViewJobDescriptionDetailsModal({
         </div>
 
         <div className="relative min-h-0 flex-1 overflow-hidden bg-[#EEF2F6]">
-          <div className="thin-scroll h-full overflow-y-auto px-3 py-5 sm:px-5 sm:py-7 lg:px-8">
+          <div className="sibs-scrollbar h-full overflow-y-auto px-3 py-3.5 sm:px-5 sm:py-5 lg:px-6">
             {shouldShowDetails && (
               <Details
                 onOpenRevision={handleOpenRevisionFromDetails}
@@ -509,35 +509,35 @@ export default function ViewJobDescriptionDetailsModal({
             )}
 
             {!approvalPage && activeDetailTab === "Revision History" && (
-              <div className="mx-auto w-full max-w-[900px] rounded-2xl bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:p-6">
+              <div className="mx-auto w-full max-w-[900px] rounded-2xl bg-white p-4 shadow-sm sm:p-5">
                 <RevisionHistory revisionHistory={revisionHistory} item={item} />
               </div>
             )}
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#D9E2EC] bg-white px-4 py-3 sm:px-6 sm:py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <div className="shrink-0 border-t border-[#D9E2EC] bg-white px-4 py-2.5 sm:px-6 2xl:py-3">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-end">
             {!hasRevisionComments && hasEditedChanges && (
-              <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-extrabold text-amber-700">
-                <AlertTriangle size={16} />
+              <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-amber-700">
+                <AlertTriangle className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                 Tagged for revision
               </div>
             )}
 
             {!hasRevisionComments && hasEditedChanges && (
               <>
-                <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 text-sm font-extrabold text-sibs-primary-1">
-                  <AlertTriangle size={16} />
+                <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51]">
+                  <AlertTriangle className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   New version changes
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setShowEditedChanges(true)}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] active:scale-[0.98]"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-bold text-[#042C51] shadow-sm transition hover:border-[#042C51] hover:bg-[#F8FAFC]"
                 >
-                  <Eye size={16} />
+                  <Eye className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   View Changes
                 </button>
               </>
@@ -547,9 +547,9 @@ export default function ViewJobDescriptionDetailsModal({
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Cancel
+              {approvalPage ? "Cancel" : "Close"}
             </button>
 
             {approvalPage && (
@@ -558,14 +558,16 @@ export default function ViewJobDescriptionDetailsModal({
                 onClick={handlePrimaryAction}
                 disabled={saving}
                 title={primaryButtonTitle}
-                className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${
-                  hasRevisionComments
-                    ? "bg-sibs-primary-2 hover:opacity-90"
-                    : "bg-sibs-primary-1 hover:opacity-90"
-                }`}
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {saving && <Loader2 size={16} className="animate-spin" />}
-                {saving ? "Saving..." : primaryButtonLabel}
+                {saving ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  primaryButtonLabel
+                )}
               </button>
             )}
           </div>

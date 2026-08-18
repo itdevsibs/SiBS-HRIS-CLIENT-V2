@@ -589,15 +589,17 @@ export default function JobDescriptionTable({
 
   return (
     <section className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
-      <div className="border-b border-[#E6ECF2] px-4 py-5 sm:px-5">
-        <h2 className="sibs-section-title">Job Description Records</h2>
-        <p className="sibs-section-subtitle">
+      <div className="border-b border-[#E6ECF2] px-4 py-3.5 sm:px-5 2xl:py-4">
+        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          Job Description Records
+        </h3>
+        <p className="mt-1 text-xs font-semibold text-[#667085]">
           Search and filter JD records by role, department, account, and
           supervisory level.
         </p>
       </div>
 
-      <div className="relative space-y-5 overflow-visible p-4 sm:p-5">
+      <div className="relative space-y-4 overflow-visible p-3.5 sm:p-4 2xl:p-5">
         <PaginationTable
           filterLayout="ta-inline"
           showFilterPanel={false}
@@ -646,7 +648,7 @@ export default function JobDescriptionTable({
               type="button"
               onClick={handleResetFilters}
               disabled={!hasActiveFilters}
-              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] xl:w-auto"
+              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#52637A] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#52637A] xl:w-auto"
             >
               <RotateCcw size={14} />
               Clear
@@ -656,7 +658,7 @@ export default function JobDescriptionTable({
         />
 
         <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-          <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
+          <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
             {STATUS_TABS.map((tab) => {
               const active = selectedStatusTab === tab.key;
 
@@ -665,7 +667,7 @@ export default function JobDescriptionTable({
                   key={tab.key}
                   type="button"
                   onClick={() => updateFilter(setSelectedStatusTab, tab.key)}
-                  className={`relative inline-flex h-10 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold uppercase tracking-normal transition-colors ${
+                  className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 sibs-text-micro font-extrabold uppercase tracking-normal transition-colors ${
                     active
                       ? "rounded-t-xl bg-white text-[#042C51]"
                       : "text-[#667085] hover:text-[#042C51]"
@@ -697,7 +699,7 @@ export default function JobDescriptionTable({
             })}
           </div>
 
-          <div className="p-4 lg:hidden">
+          <div className="p-3.5 lg:hidden">
             {paginatedList.length > 0 ? (
               <div className="space-y-3">
                 {paginatedList.map((item) => (
@@ -721,7 +723,7 @@ export default function JobDescriptionTable({
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="mt-4 rounded-[10px] bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
+                  className="mt-4 rounded-lg bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
                 >
                   Reset Search & Filters
                 </button>
@@ -729,9 +731,9 @@ export default function JobDescriptionTable({
             )}
           </div>
 
-          <div className="hidden overflow-x-auto lg:block">
+          <div className="hidden overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar lg:block">
             <table className="w-full min-w-[1180px] table-fixed border-collapse text-left text-xs">
-              <thead className="sibs-data-table-head">
+              <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
                 <tr className="sibs-data-table-head-row">
                   <th className="sibs-data-table-th w-[32%] text-left">
                     Role & Document Title
@@ -765,11 +767,14 @@ export default function JobDescriptionTable({
                         }
                         onClick={() => handleOpenFullPageView(item)}
                         className="sibs-data-table-row sibs-page-card-in cursor-pointer hover:bg-[#FFFDFC]"
-                        style={{ animationDelay: `${index * 30}ms` }}
+                        style={{
+                          animationDelay: `${index * 30}ms`,
+                          animationFillMode: "both",
+                        }}
                       >
-                        <td className="px-4 py-3.5">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                           <div className="flex items-start gap-2">
-                            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
+                            <FileText className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#FF5C28]" />
                             <div className="min-w-0">
                               <p
                                 title={documentTitle}
@@ -779,14 +784,14 @@ export default function JobDescriptionTable({
                               </p>
                               <p
                                 title={roleTitle}
-                                className="mt-0.5 max-w-[340px] truncate text-[10px] font-semibold text-[#98A2B3]"
+                                className="mt-0.5 max-w-[340px] truncate sibs-text-micro font-semibold text-[#98A2B3]"
                               >
                                 {roleTitle}
                               </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3.5">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                           <p
                             title={getDepartment(item) || ""}
                             className="truncate text-xs font-extrabold text-[#042C51]"
@@ -795,23 +800,23 @@ export default function JobDescriptionTable({
                           </p>
                           <p
                             title={getAccount(item) || ""}
-                            className="mt-0.5 truncate text-[10px] font-semibold text-[#667085]"
+                            className="mt-0.5 truncate sibs-text-micro font-semibold text-[#667085]"
                           >
                             {getAccount(item) || "--"}
                           </p>
                         </td>
 
-                        <td className="px-4 py-3.5 text-xs font-semibold text-[#475467]">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs font-semibold text-[#475467]">
                           {getSupervisoryLevel(item) || "--"}
                         </td>
-                        <td className="px-4 py-3.5">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                           <JdStatusBadge status={status} />
                         </td>
-                        <td className="px-4 py-3.5">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                           <p className="text-xs font-extrabold text-[#042C51]">
                             {getVersion(item) || "--"}
                           </p>
-                          <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3]">
+                          <p className="mt-0.5 sibs-text-micro font-semibold text-[#98A2B3]">
                             {formatDate(getDateValue(item))}
                           </p>
                         </td>
@@ -832,7 +837,7 @@ export default function JobDescriptionTable({
                       <button
                         type="button"
                         onClick={handleResetFilters}
-                        className="mt-4 rounded-[10px] bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
+                        className="mt-4 rounded-lg bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
                       >
                         Reset Search & Filters
                       </button>

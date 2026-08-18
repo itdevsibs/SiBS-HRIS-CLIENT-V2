@@ -1332,6 +1332,27 @@
 }
 
 /* =========================
+   PROCESS NOTE / FOOTNOTE CALLOUT
+========================= */
+@layer components {
+  .sibs-process-note {
+    @apply rounded-xl border border-[#D6E4F8] bg-[#F1F6FD] p-2.5 sm:p-3 2xl:p-3.5 shadow-sm font-jakarta;
+  }
+
+  .sibs-process-note__icon {
+    @apply flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg border border-[#D0E0F5] bg-white text-[#042C51] shadow-xs;
+  }
+
+  .sibs-process-note__title {
+    @apply text-xs font-extrabold uppercase tracking-wide text-[#042C51];
+  }
+
+  .sibs-process-note__body {
+    @apply mt-0.5 text-xs font-medium leading-relaxed text-[#3B5474];
+  }
+}
+
+/* =========================
    TABLE FOOTER PAGINATION
 ========================= */
 @layer components {

@@ -8,11 +8,11 @@ export default function ApplicantLeadsHeader() {
     useApplicantLeadsPage();
 
   return (
-    <section className="sibs-page-header-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+    <section className="sibs-page-header-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6 font-jakarta">
       <span className="sibs-top-accent" aria-hidden="true" />
 
-      <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0 space-y-1.5">
+      <div className="mt-1 flex flex-col gap-3.5 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
@@ -20,11 +20,11 @@ export default function ApplicantLeadsHeader() {
             </span>
           </div>
 
-          <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+          <h1 className="break-words text-xl 2xl:text-2xl font-extrabold text-[#042C51]">
             Applicant Leads & Inquiries
           </h1>
 
-          <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+          <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085]">
             Capture walk-ins, calls, social inquiries, referrals, and job fair
             leads before converting them into full Talent Pool applicants.
           </p>
@@ -48,7 +48,7 @@ export default function ApplicantLeadsHeader() {
           <button
             type="button"
             onClick={openAddModal}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
           >
             <Plus size={15} />
             Log New Lead

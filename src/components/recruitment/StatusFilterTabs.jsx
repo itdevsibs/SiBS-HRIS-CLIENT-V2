@@ -11,7 +11,7 @@ export default function StatusFilterTabs({
   if (!Array.isArray(tabs) || tabs.length === 0) return null;
 
   return (
-    <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
+    <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
       {tabs.map((tab) => {
         const active = activeValue === tab.value;
         const showCount = countKeys.includes(tab.value);
@@ -21,7 +21,7 @@ export default function StatusFilterTabs({
             key={tab.value}
             type="button"
             onClick={() => onChange?.(tab.value)}
-            className={`relative inline-flex h-10 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold uppercase tracking-normal transition-colors ${
+            className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 sibs-text-micro font-extrabold uppercase tracking-normal transition-colors ${
               active
                 ? "rounded-t-xl bg-white text-[#042C51]"
                 : "text-[#667085] hover:text-[#042C51]"

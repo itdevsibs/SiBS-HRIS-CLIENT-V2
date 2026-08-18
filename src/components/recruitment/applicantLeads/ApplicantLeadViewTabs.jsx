@@ -40,7 +40,7 @@ export default function ApplicantLeadViewTabs() {
               key={tab.id}
               type="button"
               onClick={() => setLeadView(tab.id)}
-              className={`relative inline-flex h-10 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
+              className={`relative inline-flex h-8.5 2xl:h-9.5 shrink-0 items-center gap-1.5 2xl:gap-2 px-3.5 2xl:px-4 text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide transition-colors font-jakarta ${
                 active
                   ? "rounded-t-xl bg-white text-[#042C51]"
                   : "text-[#667085] hover:text-[#042C51]"

@@ -69,7 +69,7 @@ export default function ApplicantLeadsFilters() {
     siteFilter !== "All";
 
   return (
-    <div className="relative z-[90] overflow-visible border-b border-[#E6ECF2] bg-white p-4 sm:p-5">
+    <div className="relative z-[90] overflow-visible border-b border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 font-jakarta">
       <PaginationTable
         filterLayout="ta-inline"
         showFilterPanel={false}
@@ -122,9 +122,9 @@ export default function ApplicantLeadsFilters() {
             type="button"
             onClick={clearFilters}
             disabled={!hasActiveFilters || isLoading}
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+            className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#52637A] outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
           >
-            <Filter size={15} />
+            <Filter size={14} />
             Clear
           </button>
         }

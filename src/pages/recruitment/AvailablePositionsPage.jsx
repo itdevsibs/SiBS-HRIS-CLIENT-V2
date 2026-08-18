@@ -1322,24 +1322,35 @@ export default function AvailablePositionsPage() {
 
       <main
         ref={mainRef}
-        className="sibs-dashboard-main-wide"
+        className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-7"
       >
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
-          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative z-[30] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
-            <span className="sibs-top-accent" aria-hidden="true" />
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+          <section
+            className="sibs-page-header-in sibs-page-card-in relative z-[30] overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
+          >
+            <span
+              className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 overflow-hidden rounded-t-[15px]"
+              aria-hidden="true"
+            >
+              <span className="block h-full w-full bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
+            </span>
 
-            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1.5">
-                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
-                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
-                  Recruitment View
-                </span>
+            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    <Database className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" strokeWidth={2.2} />
+                    Recruitment View
+                  </span>
+                </div>
 
-                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold tracking-tight text-[#042C51]">
                   Available Positions
                 </h1>
 
-                <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                <p className="max-w-3xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
                   Manage canonical roles, organizational mapping, linked Job Descriptions, and applicant visibility.
                 </p>
               </div>
@@ -1351,13 +1362,12 @@ export default function AvailablePositionsPage() {
                   disabled={isRefreshing || isSaving}
                   aria-label="Refresh available positions"
                   title="Refresh available positions"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RefreshCw
-                    size={16}
-                    className={
-                      isRefreshing ? "animate-spin" : ""
-                    }
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                    }`}
                   />
                 </button>
 
@@ -1370,9 +1380,9 @@ export default function AvailablePositionsPage() {
                     !departmentOptions.length ||
                     !accountOptions.length
                   }
-                  className="sibs-button-primary inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Plus size={16} />
+                  <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   Add New Position
                 </button>
               </div>
@@ -1380,7 +1390,7 @@ export default function AvailablePositionsPage() {
           </section>
 
           {loadError ? (
-            <section className="rounded-xl border border-red-100 bg-red-50 p-4 text-xs font-bold text-red-700">
+            <section className="rounded-xl border border-red-100 bg-red-50 p-3.5 2xl:p-4 text-xs font-bold text-red-700">
               {loadError}
             </section>
           ) : null}
@@ -1388,7 +1398,7 @@ export default function AvailablePositionsPage() {
           {!isLoading &&
           !loadError &&
           !departmentOptions.length ? (
-            <section className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-xs font-bold text-amber-700">
+            <section className="rounded-xl border border-amber-100 bg-amber-50 p-3.5 2xl:p-4 text-xs font-bold text-amber-700">
               No departments were returned by the
               Available Positions metadata API.
             </section>
@@ -1397,33 +1407,36 @@ export default function AvailablePositionsPage() {
           {!isLoading &&
           !loadError &&
           !accountOptions.length ? (
-            <section className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-xs font-bold text-amber-700">
+            <section className="rounded-xl border border-amber-100 bg-amber-50 p-3.5 2xl:p-4 text-xs font-bold text-amber-700">
               No accounts were returned by the Available
               Positions metadata API.
             </section>
           ) : null}
 
-          <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
-            <div className="rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-5 sm:px-5">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <section
+            className="sibs-profile-tab-panel sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm"
+            style={{ animationDelay: "180ms", animationFillMode: "both" }}
+          >
+            <div className="rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-3.5 sm:px-5 2xl:py-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="sibs-section-title">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
                     Available Position Records
-                  </h2>
+                  </h3>
 
-                  <p className="sibs-section-subtitle">
+                  <p className="mt-1 text-xs font-semibold text-[#667085]">
                     Search and filter positions by title,
                     department, account, status, and site.
                   </p>
                 </div>
 
-                <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
+                <span className="inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 sibs-text-micro font-extrabold text-[#042C51]">
                   {filteredPositions.length} Records
                 </span>
               </div>
             </div>
 
-            <div className="relative z-[1] space-y-5 rounded-b-2xl p-4 sm:p-5">
+            <div className="relative z-[1] space-y-4 rounded-b-2xl p-3.5 sm:p-4 2xl:p-5">
               <PaginationTable
                 filterLayout="ta-inline"
                 showFilterPanel={false}
@@ -1491,7 +1504,7 @@ export default function AvailablePositionsPage() {
                     type="button"
                     onClick={handleClearFilters}
                     disabled={!hasActiveFilters || isLoading}
-                    className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] xl:w-auto"
+                    className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#52637A] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#52637A] xl:w-auto"
                   >
                     <RotateCcw size={14} />
                     Clear
@@ -1531,18 +1544,29 @@ export default function AvailablePositionsPage() {
             </div>
           </section>
 
-          <section className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-4">
-            <h3 className="text-xs font-extrabold text-[#042C51]">
-              Database Mapping Rule
-            </h3>
+          <section
+            className="sibs-profile-tab-panel sibs-process-note"
+            style={{ animationDelay: "240ms", animationFillMode: "both" }}
+          >
+            <div className="flex items-start gap-2.5 sm:gap-3">
+              <span className="sibs-process-note__icon">
+                <Database className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
+              </span>
 
-            <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
-              Departments and accounts are loaded from the
-              database. Account choices depend on the selected
-              department. Active positions appear in
-              applicant-facing forms, while Inactive and Archived
-              positions remain unavailable.
-            </p>
+              <div className="min-w-0">
+                <h3 className="sibs-process-note__title">
+                  Database Mapping Rule
+                </h3>
+
+                <p className="sibs-process-note__body">
+                  Departments and accounts are loaded from the
+                  database. Account choices depend on the selected
+                  department. Active positions appear in
+                  applicant-facing forms, while Inactive and Archived
+                  positions remain unavailable.
+                </p>
+              </div>
+            </div>
           </section>
         </div>
       </main>

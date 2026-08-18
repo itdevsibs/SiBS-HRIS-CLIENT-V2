@@ -135,19 +135,19 @@ export default function SourcingAnalyticsFilters() {
 
   return (
     <>
-      <div className="rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-5 font-jakarta sm:px-5">
-        <h2 className="sibs-section-title">
+      <div className="rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-3.5 sm:px-5 2xl:py-4 font-jakarta">
+        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
           Sourcing Channel Performance Directory
-        </h2>
+        </h3>
 
-        <p className="sibs-section-subtitle">
+        <p className="mt-1 text-xs font-semibold text-[#667085]">
           Search and filter sourcing channels by source,
           applicant activity, cost status, and hiring
           performance.
         </p>
       </div>
 
-      <div className="relative overflow-visible p-4 font-jakarta sm:p-5">
+      <div className="relative overflow-visible p-3.5 sm:p-4 2xl:p-5 font-jakarta">
         <PaginationTable
           filterLayout="ta-inline"
           showFilterPanel={false}
@@ -205,7 +205,7 @@ export default function SourcingAnalyticsFilters() {
               type="button"
               onClick={handleClearAll}
               disabled={!hasActiveFilters}
-              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] xl:w-auto"
+              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#52637A] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#52637A] xl:w-auto"
             >
               <RotateCcw size={14} />
               Clear

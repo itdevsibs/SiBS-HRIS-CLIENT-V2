@@ -78,22 +78,23 @@ export default function RequisitionByDepartmentTable({
 
   return (
     <section
-      className="sibs-page-card-in sibs-card flex min-h-full flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm"
+      className="sibs-page-card-in sibs-card flex min-h-full flex-col rounded-2xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 font-jakarta shadow-sm"
       style={{
         animationDelay: `${delay}ms`,
+        animationFillMode: "both",
       }}
     >
       <div>
-        <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
           Requisition by Department
-        </h2>
+        </h3>
 
-        <p className="mt-1 text-xs font-semibold text-[#667085]">
+        <p className="mt-0.5 text-xs font-semibold text-[#667085]">
           Active approved and pending request quota
         </p>
       </div>
 
-      <div className="mt-4 flex-1 space-y-3">
+      <div className="mt-3 2xl:mt-4 flex-1 space-y-2.5 2xl:space-y-3">
         {rows.length > 0 ? (
           rows.map((item) => {
             const percentage =
