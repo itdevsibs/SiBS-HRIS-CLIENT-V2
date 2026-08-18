@@ -38,7 +38,7 @@ export default function RecruitmentSettingsTabs({
               key={tab}
               type="button"
               onClick={() => onTabChange(tab)}
-              className={`inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold transition ${
+              className={`inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-[10px] border px-3 text-xs font-extrabold leading-none transition ${
                 isActive
                   ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
                   : "border-transparent bg-white text-[#344054] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
