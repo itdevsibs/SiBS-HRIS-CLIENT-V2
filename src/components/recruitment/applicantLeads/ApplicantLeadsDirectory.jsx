@@ -45,10 +45,12 @@ export default function ApplicantLeadsDirectory() {
 
       <ApplicantLeadsFilters />
 
-      <div className="min-h-0 flex-1 p-3.5 sm:p-4 2xl:p-5 pt-0">
+      <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
         <ApplicantLeadViewTabs />
         {leadView === "channels" ? (
-          <ApplicantLeadsChannelSources />
+          <div className="overflow-hidden rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white">
+            <ApplicantLeadsChannelSources />
+          </div>
         ) : (
           <ApplicantLeadsTable />
         )}

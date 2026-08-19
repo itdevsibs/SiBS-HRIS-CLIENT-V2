@@ -1,5 +1,6 @@
 import React from "react";
 import { Archive, BarChart3, ClipboardList } from "lucide-react";
+import { motion as Motion } from "framer-motion";
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 
@@ -30,7 +31,7 @@ export default function ApplicantLeadViewTabs() {
 
   return (
     <div className="overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
-      <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
+      <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = leadView === tab.id;
@@ -40,7 +41,7 @@ export default function ApplicantLeadViewTabs() {
               key={tab.id}
               type="button"
               onClick={() => setLeadView(tab.id)}
-              className={`relative inline-flex h-8.5 2xl:h-9.5 shrink-0 items-center gap-1.5 2xl:gap-2 px-3.5 2xl:px-4 text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide transition-colors font-jakarta ${
+              className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-1.5 2xl:gap-2 px-3.5 2xl:px-4 text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide transition-colors font-jakarta ${
                 active
                   ? "rounded-t-xl bg-white text-[#042C51]"
                   : "text-[#667085] hover:text-[#042C51]"
@@ -65,7 +66,11 @@ export default function ApplicantLeadViewTabs() {
               ) : null}
 
               {active ? (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]" />
+                <Motion.div
+                  layoutId="applicantLeadTabIndicator"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
               ) : null}
             </button>
           );

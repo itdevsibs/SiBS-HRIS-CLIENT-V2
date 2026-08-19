@@ -157,13 +157,14 @@ export default function ActionItemsTable() {
           </thead>
           <tbody className="divide-y divide-[#E6ECF2] font-jakarta">
             {paginatedItems.length ? (
-              paginatedItems.map((item) => {
+              paginatedItems.map((item, index) => {
                 const systemGenerated = item.systemGenerated || String(item.sourceType || "").toLowerCase().includes("system");
                 return (
                   <tr
                     key={`${item.sourceType}-${item.id}-${item.actionId}`}
                     onClick={() => setSelectedItem(item)}
-                    className="sibs-data-table-row cursor-pointer transition hover:bg-[#F8FAFC]"
+                    className="sibs-data-table-row sibs-page-card-in cursor-pointer transition hover:bg-[#F8FAFC]"
+                    style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                   >
                     <td className="max-w-[360px] border-r border-[#E6ECF2] px-3.5 py-2.5 align-middle">
                       <div className="flex items-center gap-2">
@@ -231,10 +232,11 @@ export default function ActionItemsTable() {
       </div>
 
       <div className="space-y-3 p-3 lg:hidden">
-        {paginatedItems.length ? paginatedItems.map((item) => (
+        {paginatedItems.length ? paginatedItems.map((item, index) => (
           <ActionItemMobileCard
             key={`${item.sourceType}-${item.id}-${item.actionId}`}
             item={item}
+            delay={index * 40}
             onOpen={() => setSelectedItem(item)}
             onComplete={() => completeActionItem(item)}
           />

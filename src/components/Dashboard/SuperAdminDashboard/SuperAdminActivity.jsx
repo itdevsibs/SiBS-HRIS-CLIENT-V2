@@ -75,8 +75,15 @@ export default function SuperAdminActivity({
 
       <div className="space-y-3 lg:hidden">
         {items.length > 0 ? (
-          items.map((item) => (
-            <article key={item.id} className="sibs-card p-3.5 sm:p-4">
+          items.map((item, index) => (
+            <article
+              key={item.id}
+              className="sibs-card sibs-page-card-in p-3.5 sm:p-4"
+              style={{
+                animationDelay: `${index * 40}ms`,
+                animationFillMode: "both",
+              }}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-extrabold text-[#042C51]">{item.action}</p>
@@ -124,7 +131,7 @@ export default function SuperAdminActivity({
                 items.map((item, index) => (
                   <tr
                     key={item.id}
-                    className="sibs-data-table-row"
+                    className="sibs-data-table-row sibs-page-card-in"
                     style={{
                       animationDelay: `${index * 35}ms`,
                       animationFillMode: "both",

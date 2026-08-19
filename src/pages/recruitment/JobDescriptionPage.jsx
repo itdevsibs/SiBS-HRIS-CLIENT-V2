@@ -264,7 +264,7 @@ function StatCard({
           </p>
         </div>
         <span
-          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl sibs-tone-${tone}-icon`}
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}
         >
           <MetricIcon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>

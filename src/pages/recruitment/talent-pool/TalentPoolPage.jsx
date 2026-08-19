@@ -224,35 +224,47 @@ export default function TalentPoolPage() {
           <TalentPoolStats />
 
           <section
-            className="sibs-page-card-in sibs-card relative z-[10] overflow-visible"
+            className="sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs font-jakarta"
           >
-            <TalentPoolTabs
-              activeTab={activeTab}
-              onChange={setActiveTab}
-              counts={tabCounts}
-            />
-
-            {activeTab === TALENT_POOL_TABS.DROP_OFF ? (
-              <div className="p-4 sm:p-5">
-                <DropOffListSection
-                  candidates={dropOffCandidates}
-                  isLoading={dropOffListLoading}
-                  loadError={dropOffListError}
-                  onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
-                />
+            <div className="border-b border-[#E6ECF2] px-4 py-3.5 sm:px-5 2xl:py-4">
+              <div className="flex flex-col gap-0.5">
+                <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  Candidate Directory
+                </h3>
+                <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+                  Search and narrow the reusable candidate database
+                </p>
               </div>
-            ) : (
-              <>
-                <TalentPoolFilters />
-                <div className="relative z-[1] overflow-hidden rounded-b-2xl">
+            </div>
+
+            <TalentPoolFilters />
+
+            <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
+              <TalentPoolTabs
+                activeTab={activeTab}
+                onChange={setActiveTab}
+                counts={tabCounts}
+              />
+
+              {activeTab === TALENT_POOL_TABS.DROP_OFF ? (
+                <div className="overflow-hidden rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white p-4 sm:p-5">
+                  <DropOffListSection
+                    candidates={dropOffCandidates}
+                    isLoading={dropOffListLoading}
+                    loadError={dropOffListError}
+                    onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
+                  />
+                </div>
+              ) : (
+                <div className="relative z-[1]">
                   <TalentPoolTable
                     candidates={tabCandidates}
                     emptyTitle={activeTabCopy.title}
                     emptyMessage={activeTabCopy.message}
                   />
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </section>
 
         </div>

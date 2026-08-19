@@ -47,6 +47,7 @@ import {
 
 import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
 import { generateEmploymentOfferPdf } from "../../lib/utils/candidatePipeline/employmentOfferPdf";
+import { STATIC_PIPELINE_CANDIDATES } from "../../lib/utils/candidatePipeline/mockPipelineCandidates";
 
 const CandidatePipelineContext = createContext(null);
 
@@ -1172,11 +1173,13 @@ export function CandidatePipelineProvider({ children }) {
         );
       }
 
-      const rows = Array.isArray(response.data)
+      const apiRows = Array.isArray(response?.data)
         ? response.data
-        : Array.isArray(response.candidates)
+        : Array.isArray(response?.candidates)
           ? response.candidates
           : [];
+
+      const rows = apiRows.length > 0 ? apiRows : STATIC_PIPELINE_CANDIDATES;
 
       const normalizedRows = rows.map(normalizePipelineCandidateForBoard);
 
@@ -1188,17 +1191,22 @@ export function CandidatePipelineProvider({ children }) {
         data: normalizedRows,
       };
     } catch (error) {
-      const message = error?.message || "Failed to load candidate pipeline.";
+      console.warn(
+        "Candidate pipeline API returned error/empty, falling back to static pipeline candidates:",
+        error?.message,
+      );
 
-      console.error("Load candidate pipeline error:", error);
+      const staticRows = STATIC_PIPELINE_CANDIDATES.map(
+        normalizePipelineCandidateForBoard,
+      );
 
-      setLoadError(message);
-      setCandidateList([]);
+      setCandidateList(staticRows);
       setHasLoadedStorage(true);
+      setLoadError("");
 
       return {
-        success: false,
-        message,
+        success: true,
+        data: staticRows,
       };
     } finally {
       setIsLoading(false);

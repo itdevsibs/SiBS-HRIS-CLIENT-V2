@@ -81,7 +81,7 @@ function SuperAdminMetricCard({ item, value, onClick, delay = 0 }) {
     <button
       type="button"
       onClick={onClick}
-      className="group sibs-metric-card font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 text-left active:translate-y-0"
+      className="group sibs-metric-card sibs-page-card-in font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 text-left active:translate-y-0"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
@@ -133,7 +133,7 @@ function SuperAdminMetricCard({ item, value, onClick, delay = 0 }) {
 
 export default function SuperAdminDashboardStats({ adminCount, onMetricClick }) {
   return (
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
       {METRICS.map((metric, index) => {
         const val = metric.key === "admins" ? String(adminCount) : metric.value;
         return (
@@ -142,7 +142,7 @@ export default function SuperAdminDashboardStats({ adminCount, onMetricClick }) 
             item={metric}
             value={val}
             onClick={() => onMetricClick?.(metric)}
-            delay={80 + index * 55}
+            delay={index * 60}
           />
         );
       })}

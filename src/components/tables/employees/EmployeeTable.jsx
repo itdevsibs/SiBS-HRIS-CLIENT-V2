@@ -1121,7 +1121,7 @@ export default function EmployeeTable({
       <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
         {tabs.length > 1 ? (
           <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
-            <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
+            <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
               {tabs.map((tab) => {
                 const TabIcon = tab.icon || UserRoundCheck;
                 const isActive = activeTab === tab.label;
@@ -1131,13 +1131,16 @@ export default function EmployeeTable({
                     key={tab.label}
                     type="button"
                     onClick={() => onTabChange?.(tab.label)}
-                    className={`relative inline-flex h-10 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
+                    className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
                       isActive
                         ? "rounded-t-xl bg-white text-[#042C51]"
                         : "text-[#667085] hover:text-[#042C51]"
                     }`}
                   >
-                    <TabIcon size={15} className="shrink-0" />
+                    <TabIcon
+                      size={14}
+                      className={`shrink-0 ${isActive ? "text-[#FF5C28]" : "text-[#98A2B3]"}`}
+                    />
                     <span className="truncate">{tab.label}</span>
 
                     {Number(tab.count || 0) > 0 ? (

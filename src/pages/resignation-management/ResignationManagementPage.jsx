@@ -527,7 +527,7 @@ function ResignationSummaryCards({ stats, loading }) {
               </div>
 
               <span
-                className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl ${tone.iconWrap} ${tone.icon}`}
+                className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${tone.iconWrap} ${tone.icon}`}
               >
                 {loading ? (
                   <Loader2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 animate-spin" />

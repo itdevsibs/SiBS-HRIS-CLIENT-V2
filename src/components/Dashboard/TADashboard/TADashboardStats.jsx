@@ -14,7 +14,7 @@ function MetricCard({ item, delay }) {
 
   return (
     <article
-      className="sibs-metric-card font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card sibs-page-card-in font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
@@ -56,12 +56,12 @@ function MetricCard({ item, delay }) {
 
 export default function TADashboardStats({ metrics = [] }) {
   return (
-    <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 xl:gap-3 2xl:gap-4">
+    <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8 xl:gap-3 2xl:gap-3">
       {metrics.map((item, index) => (
         <MetricCard
           key={item.id || item.label}
           item={item}
-          delay={80 + index * 40}
+          delay={index * 60}
         />
       ))}
     </section>

@@ -137,8 +137,15 @@ export default function SuperAdminAccessGovernance({
 
       <div className="space-y-3 lg:hidden">
         {admins.length > 0 ? (
-          admins.map((item) => (
-            <article key={item.id} className="sibs-card p-3.5 sm:p-4">
+          admins.map((item, index) => (
+            <article
+              key={item.id}
+              className="sibs-card sibs-page-card-in p-3.5 sm:p-4"
+              style={{
+                animationDelay: `${index * 40}ms`,
+                animationFillMode: "both",
+              }}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="break-words text-sm font-extrabold text-[#042C51]">
@@ -190,16 +197,16 @@ export default function SuperAdminAccessGovernance({
 
       <div className="mt-4 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white hidden lg:block">
         <div className="max-h-[520px] overflow-auto sibs-scrollbar">
-          <table className="w-full min-w-[1050px] border-collapse bg-white text-left text-xs">
+          <table className="w-full min-w-[980px] border-collapse bg-white text-left text-xs">
             <thead className="sibs-data-table-head">
               <tr className="sibs-data-table-head-row">
-                <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">User Name &amp; Email</th>
+                <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Name & Email</th>
                 <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Access Level</th>
                 <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Department</th>
                 <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Account Group</th>
                 <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Last Active</th>
                 <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Status</th>
-                <th className="sibs-data-table-th text-right px-3 2xl:px-4 py-2.5 2xl:py-3">Actions</th>
+                <th className="sibs-data-table-th text-right px-3 2xl:px-4 py-2.5 2xl:py-3">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EEF2F6]">
@@ -207,7 +214,7 @@ export default function SuperAdminAccessGovernance({
                 admins.map((item, index) => (
                   <tr
                     key={item.id}
-                    className="sibs-data-table-row"
+                    className="sibs-data-table-row sibs-page-card-in"
                     style={{
                       animationDelay: `${index * 35}ms`,
                       animationFillMode: "both",

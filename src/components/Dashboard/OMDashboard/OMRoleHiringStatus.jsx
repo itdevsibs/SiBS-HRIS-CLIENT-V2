@@ -38,12 +38,16 @@ function StatusBadge({ status }) {
   );
 }
 
-function RoleMobileCard({ role, onViewRole }) {
+function RoleMobileCard({ role, onViewRole, delay = 0 }) {
   return (
     <button
       type="button"
       onClick={() => onViewRole(role)}
-      className="sibs-card w-full p-4 text-left transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/30"
+      className="sibs-card sibs-page-card-in w-full p-4 text-left transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/30"
+      style={{
+        animationDelay: `${delay}ms`,
+        animationFillMode: "both",
+      }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -112,7 +116,7 @@ export default function OMRoleHiringStatus({
 }) {
   return (
     <section
-      className="sibs-page-card-in sibs-card h-full w-full overflow-hidden"
+      className="sibs-page-card-in sibs-card flex h-full w-full flex-col justify-between overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
@@ -173,7 +177,7 @@ export default function OMRoleHiringStatus({
         />
       </div>
 
-      <div className="p-4 sm:p-5 2xl:p-6">
+      <div className="flex flex-1 flex-col justify-between p-4 sm:p-5 2xl:p-6">
         <div className="space-y-3 lg:hidden">
           {loading ? (
             <div className="sibs-empty-panel">Loading accessible roles...</div>
@@ -182,11 +186,12 @@ export default function OMRoleHiringStatus({
               No roles match the current search and status filter.
             </div>
           ) : (
-            roles.map((role) => (
+            roles.map((role, index) => (
               <RoleMobileCard
                 key={role.id || role.roleAccount}
                 role={role}
                 onViewRole={onViewRole}
+                delay={index * 40}
               />
             ))
           )}
@@ -222,7 +227,7 @@ export default function OMRoleHiringStatus({
                     </td>
                   </tr>
                 ) : (
-                  roles.map((role) => (
+                  roles.map((role, index) => (
                     <tr
                       key={role.id || role.roleAccount}
                       role="button"
@@ -233,7 +238,11 @@ export default function OMRoleHiringStatus({
                         event.preventDefault();
                         onViewRole(role);
                       }}
-                      className="sibs-data-table-row"
+                      className="sibs-data-table-row sibs-page-card-in"
+                      style={{
+                        animationDelay: `${index * 35}ms`,
+                        animationFillMode: "both",
+                      }}
                       aria-label={`Open details for ${role.roleTitle}`}
                     >
                       <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">

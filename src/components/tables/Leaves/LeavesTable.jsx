@@ -876,8 +876,8 @@ export default function LeavesTable({
       `}</style>
 
       <section
-        className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs"
-        style={{ animationDelay: "80ms", animationFillMode: "both" }}
+        className="sibs-profile-tab-panel sibs-page-card-in sibs-card flex min-h-full flex-1 flex-col justify-between min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs"
+        style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
         <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
           <h3 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
@@ -1034,9 +1034,10 @@ export default function LeavesTable({
                             setSelectedLeave(item);
                           }
                         }}
-                        className="sibs-data-table-row sibs-leaves-row-reveal"
+                        className="sibs-data-table-row sibs-page-card-in"
                         style={{
-                          animationDelay: `${Math.min(index, 10) * 36}ms`,
+                          animationDelay: `${index * 35}ms`,
+                          animationFillMode: "both",
                         }}
                       >
                         <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs">

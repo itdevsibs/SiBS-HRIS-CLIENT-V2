@@ -69,7 +69,7 @@ export default function ApplicantLeadsFilters() {
     siteFilter !== "All";
 
   return (
-    <div className="relative z-[90] overflow-visible border-b border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 font-jakarta">
+    <div className="relative z-[90] overflow-visible bg-white p-4 sm:p-5 font-jakarta">
       <PaginationTable
         filterLayout="ta-inline"
         showFilterPanel={false}

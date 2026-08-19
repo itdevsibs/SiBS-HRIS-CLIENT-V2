@@ -222,7 +222,7 @@ export default function OnboardingPage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 2xl:space-y-6">
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
           <section
             className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}

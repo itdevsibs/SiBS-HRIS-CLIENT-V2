@@ -31,8 +31,8 @@ function EmptyMessage() {
 
 export default function ChwcpTable() {
   return (
-    <div className="min-w-0 p-4 font-jakarta sm:p-5">
-      <div className="lg:hidden">
+    <div className="font-jakarta">
+      <div className="space-y-3 pt-3 lg:hidden">
         <article className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EB] text-[#FF5C28]">
@@ -54,7 +54,7 @@ export default function ChwcpTable() {
         </article>
       </div>
 
-      <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:block">
+      <div className="hidden overflow-hidden rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white lg:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse">
             <thead className="bg-[#F8FAFC]">
@@ -63,7 +63,7 @@ export default function ChwcpTable() {
                   <th
                     key={column}
                     scope="col"
-                    className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#667085]"
+                    className="px-4 py-2.5 2xl:py-3 text-left text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]"
                   >
                     {column}
                   </th>

@@ -212,7 +212,7 @@ function StatCard({
 
   return (
     <article
-      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
@@ -238,7 +238,7 @@ function StatCard({
         </div>
 
         <div
-          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl ${currentTone.iconWrap} ${currentTone.icon}`}
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${currentTone.iconWrap} ${currentTone.icon}`}
         >
           <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </div>
@@ -653,7 +653,7 @@ export default function LeavesPage() {
       </div>
 
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-1 flex-col space-y-4 sm:space-y-5">
           <section
             className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
@@ -688,8 +688,7 @@ export default function LeavesPage() {
           </section>
 
           <section
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-            style={{ animationDelay: "60ms", animationFillMode: "both" }}
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
           >
             <StatCard
               title="Loaded Leaves"
@@ -697,6 +696,7 @@ export default function LeavesPage() {
               description="Records loaded on this page"
               icon={FileText}
               tone="navy"
+              delay={0}
             />
 
             <StatCard
@@ -745,7 +745,7 @@ export default function LeavesPage() {
             />
           </section>
 
-          <section className="min-w-0">
+          <section className="flex flex-1 flex-col min-w-0">
             <LeavesTable
               leaves={paginatedLeaves}
               loading={loading}

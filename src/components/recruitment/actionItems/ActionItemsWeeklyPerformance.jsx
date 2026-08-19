@@ -102,11 +102,12 @@ export default function ActionItemsWeeklyPerformance() {
 
           <tbody className="divide-y divide-[#E6ECF2]">
             {filteredWeeklyPerformanceRows.length ? (
-              filteredWeeklyPerformanceRows.map((row) => {
+              filteredWeeklyPerformanceRows.map((row, index) => {
                 return (
                   <tr
                     key={row.id}
-                    className="hover:bg-[#F8FAFC] transition"
+                    className="sibs-page-card-in hover:bg-[#F8FAFC] transition"
+                    style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                   >
                     <td className="border-r border-[#E6ECF2] px-3.5 py-3">
                       <p className="text-sm font-extrabold text-[#042C51] truncate">

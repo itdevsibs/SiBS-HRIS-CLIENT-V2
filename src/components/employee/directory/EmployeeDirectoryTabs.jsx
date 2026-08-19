@@ -1,28 +1,34 @@
+import { motion as Motion } from "framer-motion";
+import { UserRoundCheck } from "lucide-react";
+
 export default function EmployeeDirectoryTabs({ tabs, activeTab, onTabChange }) {
   return (
-    <div className="overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
-      <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4">
+    <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
+      <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
         {tabs.map((tab) => {
-          const TabIcon = tab.icon;
+          const TabIcon = tab.icon || UserRoundCheck;
           const isActive = activeTab === tab.label;
 
           return (
             <button
               key={tab.label}
               type="button"
-              onClick={() => onTabChange(tab.label)}
-              className={`inline-flex h-10 shrink-0 items-center gap-2 border-b-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition ${
+              onClick={() => onTabChange?.(tab.label)}
+              className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
                 isActive
-                  ? "rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
-                  : "border-transparent text-[#667085] hover:text-[#042C51]"
+                  ? "rounded-t-xl bg-white text-[#042C51]"
+                  : "text-[#667085] hover:text-[#042C51]"
               }`}
             >
-              <TabIcon size={15} className="shrink-0" />
+              <TabIcon
+                size={14}
+                className={`shrink-0 ${isActive ? "text-[#FF5C28]" : "text-[#98A2B3]"}`}
+              />
               <span className="truncate">{tab.label}</span>
 
-              {tab.count > 0 ? (
+              {Number(tab.count || 0) > 0 ? (
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums ${
+                  className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors ${
                     isActive
                       ? "bg-[#042C51] text-white"
                       : "bg-slate-200 text-slate-600"
@@ -30,6 +36,14 @@ export default function EmployeeDirectoryTabs({ tabs, activeTab, onTabChange }) 
                 >
                   {tab.count}
                 </span>
+              ) : null}
+
+              {isActive ? (
+                <Motion.div
+                  layoutId="employeeDirectoryTabIndicator"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
               ) : null}
             </button>
           );

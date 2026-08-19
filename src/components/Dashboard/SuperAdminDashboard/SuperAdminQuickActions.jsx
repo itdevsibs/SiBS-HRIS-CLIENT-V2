@@ -78,7 +78,7 @@ export default function SuperAdminQuickActions({
   return (
     <section
       className="sibs-page-card-in sibs-card font-jakarta p-3.5 2xl:p-4"
-      style={{ animationDelay: "180ms", animationFillMode: "both" }}
+      style={{ animationDelay: "120ms", animationFillMode: "both" }}
     >
       <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-2 2xl:pb-2.5">
         <div className="min-w-0 space-y-0.5">
@@ -101,9 +101,9 @@ export default function SuperAdminQuickActions({
             key={item.id}
             type="button"
             onClick={() => handleAction(item)}
-            className="group flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-slate-200 bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB]"
+            className="group sibs-page-card-in flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-slate-200 bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB]"
             style={{
-              animationDelay: `${240 + index * 40}ms`,
+              animationDelay: `${160 + index * 40}ms`,
               animationFillMode: "both",
             }}
           >

@@ -20,7 +20,7 @@ export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
 
   return (
     <aside
-      className="sibs-page-card-in sibs-card font-jakarta flex h-full w-full flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
+      className="sibs-page-card-in sibs-card font-jakarta flex h-full w-full flex-col justify-between rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div>
@@ -32,7 +32,7 @@ export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
         </p>
       </div>
 
-      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3 max-h-[380px] overflow-y-auto sibs-scrollbar">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3 overflow-y-auto sibs-scrollbar">
         {recruiters.length === 0 ? (
           <div className="sibs-empty-panel rounded-xl border border-dashed border-[#D6E0EA] bg-white px-5 py-10 text-center text-xs font-bold text-[#667085]">
             No recruiter load records are available.

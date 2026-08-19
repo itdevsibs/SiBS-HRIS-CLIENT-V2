@@ -315,13 +315,14 @@ export default function ActionItemsCurrentStatus() {
 
           <tbody className="divide-y divide-[#E6ECF2]">
             {rows.length ? (
-              rows.map((row) => {
+              rows.map((row, index) => {
                 const fillRate = getFillRate(row);
 
                 return (
                   <tr
                     key={row.id || row.roleAccountKey}
-                    className="transition hover:bg-[#F8FAFC]"
+                    className="sibs-page-card-in transition hover:bg-[#F8FAFC]"
+                    style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                   >
                     <td className="border-r border-[#E6ECF2] px-3.5 py-3">
                       <p className="text-sm font-extrabold text-[#042C51] truncate">

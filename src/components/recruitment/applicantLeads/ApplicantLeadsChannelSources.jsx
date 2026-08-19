@@ -32,7 +32,7 @@ export default function ApplicantLeadsChannelSources() {
   const accents = ["#2563EB", "#A855F7", "#FF5C28", "#10B981", "#F59E0B"];
 
   return (
-    <div className="grid gap-3.5 2xl:gap-4 bg-white p-3.5 sm:p-4 2xl:p-5 lg:grid-cols-2 font-jakarta">
+    <div className="grid gap-3.5 2xl:gap-4 p-3.5 sm:p-4 2xl:p-5 lg:grid-cols-2 font-jakarta">
       <section className="rounded-2xl border border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-xs">
         <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
           Lead Generation Channel Breakdown
