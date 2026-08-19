@@ -111,16 +111,7 @@ export default function TalentPoolFilters() {
     cleanText(search) || statusFilter !== "All" || positionFilter !== "All";
 
   return (
-    <div className="relative z-[90] overflow-visible rounded-t-2xl border-b border-[#E6ECF2] bg-white p-4 sm:p-5">
-      <div className="mb-4">
-        <h2 className="sibs-section-title">
-          Candidate Directory
-        </h2>
-        <p className="sibs-section-subtitle">
-          Search and narrow the reusable candidate database
-        </p>
-      </div>
-
+    <div className="relative z-[90] overflow-visible bg-white p-4 sm:p-5">
       <PaginationTable
         filterLayout="ta-inline"
         showFilterPanel={false}

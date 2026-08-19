@@ -38,10 +38,10 @@ const EMPTY_EXPENSE_FORM = {
 };
 
 const FIELD_CLASS =
-  "h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
 
 const TEXTAREA_CLASS =
-  "w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -719,37 +719,37 @@ export default function SourceDetailsModal({
           aria-modal="true"
           aria-labelledby="source-performance-title"
           onClick={(event) => event.stopPropagation()}
-          className="sibs-modal-pop-in my-4 flex max-h-[94dvh] w-full max-w-[1180px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-white text-slate-900 shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+          className="sibs-modal-pop-in my-auto flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-white text-slate-900 shadow-[0_30px_90px_rgba(2,26,48,0.42)] font-jakarta"
         >
-          <header className="relative shrink-0 overflow-hidden border-b border-[#063866] bg-[#042C51] px-4 py-4 text-white sm:px-5">
+          <header className="relative shrink-0 overflow-hidden border-b border-[#063866] bg-[#042C51] px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white">
             <span
               className="pointer-events-none absolute -right-12 -top-14 h-48 w-48 rounded-full bg-[#FF5C28]/10 blur-3xl"
               aria-hidden="true"
             />
 
             <div className="relative z-10 flex items-start justify-between gap-4">
-              <div className="flex min-w-0 items-start gap-3.5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-[#FF5C28] shadow-inner">
-                  <Compass size={20} />
+              <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
+                <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-[#FF5C28]">
+                  <Compass className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
                 </span>
 
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2
                       id="source-performance-title"
-                      className="break-words text-base font-black tracking-tight text-white sm:text-lg"
+                      className="break-words text-sm sm:text-base font-extrabold tracking-tight text-white"
                     >
                       {liveSource.source || "—"}
                     </h2>
 
                     <span
-                      className={`inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${performance.className}`}
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${performance.className}`}
                     >
                       {performance.label}
                     </span>
                   </div>
 
-                  <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-300">
+                  <p className="mt-0.5 flex flex-wrap items-center gap-2 sibs-text-xs font-medium text-slate-300">
                     <span>Channel Sourcing Performance & Cost Metrics</span>
                     <span className="text-slate-500">•</span>
                     <span>
@@ -765,14 +765,14 @@ export default function SourceDetailsModal({
                 onClick={onClose}
                 disabled={mutating || isSaving || isRemoving}
                 aria-label="Close source performance modal"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-300 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X size={16} />
               </button>
             </div>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-white p-4 sm:p-5">
+          <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white p-3 sm:p-4 2xl:p-5">
             <div className="space-y-5">
               <div className="space-y-3">
                 <ModalMessage type="success">

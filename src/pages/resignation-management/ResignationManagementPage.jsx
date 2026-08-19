@@ -499,33 +499,35 @@ function ResignationSummaryCards({ stats, loading }) {
         return (
           <article
             key={card.title}
-            className="sibs-metric-card flex min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+            className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
             style={{
               animationDelay: `${index * 55}ms`,
               animationFillMode: "both",
             }}
           >
             <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-              <div className="min-w-0 flex-1 self-stretch">
-                <p
-                  className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${tone.label}`}
-                >
-                  {card.title}
-                </p>
+              <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
+                <div>
+                  <p
+                    className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${tone.label}`}
+                  >
+                    {card.title}
+                  </p>
 
-                <p
-                  className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${tone.value}`}
-                >
-                  {loading ? "..." : card.value}
-                </p>
+                  <p
+                    className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${tone.value}`}
+                  >
+                    {loading ? "..." : card.value}
+                  </p>
+                </div>
 
-                <p className="mt-1 line-clamp-2 sibs-text-micro font-bold leading-4 text-[#667085]">
+                <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
                   {card.description}
                 </p>
               </div>
 
               <span
-                className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${tone.iconWrap} ${tone.icon}`}
+                className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${tone.iconWrap} ${tone.icon}`}
               >
                 {loading ? (
                   <Loader2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 animate-spin" />
@@ -1822,10 +1824,6 @@ export default function ResignationManagementPage() {
                   <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#042C51]">
                     <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
                     Resignation Management View
-                  </span>
-
-                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#FF5C28]">
-                    Module: Core HR
                   </span>
 
                   {isViewOnly && (

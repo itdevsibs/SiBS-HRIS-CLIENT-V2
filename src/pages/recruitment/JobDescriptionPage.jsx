@@ -227,46 +227,46 @@ function StatCard({
   icon,
   description,
   badgeText,
-  badgeClassName = "bg-slate-100 text-slate-600",
-  labelClassName = "text-[#667085]",
-  valueClassName = "text-[#042C51]",
-  iconClassName = "bg-blue-50 text-[#042C51]",
+  badgeClassName,
+  tone = "navy",
   delay = 0,
 }) {
   const MetricIcon = icon;
 
   return (
     <article
-      className="sibs-metric-card font-jakarta"
-      style={{ animationDelay: `${delay}ms` }}
+      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <p
-            className={`truncate text-[10px] font-extrabold uppercase tracking-normal ${labelClassName}`}
-          >
-            {title}
-          </p>
-          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
-            <p className={`text-3xl font-extrabold leading-none ${valueClassName}`}>
-              {value}
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${tone}-label`}
+            >
+              {title}
             </p>
-            {badgeText && (
-              <span
-                className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${badgeClassName}`}
-              >
-                {badgeText}
-              </span>
-            )}
+            <div className="mt-1.5 2xl:mt-2 flex flex-wrap items-baseline justify-between gap-2">
+              <p className={`text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}>
+                {value}
+              </p>
+              {badgeText && (
+                <span
+                  className={`inline-flex rounded-full px-2 py-0.5 sibs-text-micro font-extrabold ${badgeClassName || `sibs-tone-${tone}-icon`}`}
+                >
+                  {badgeText}
+                </span>
+              )}
+            </div>
           </div>
-          <p className="mt-2 text-xs font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
             {description}
           </p>
         </div>
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}
         >
-          <MetricIcon size={17} />
+          <MetricIcon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
       </div>
     </article>
@@ -293,6 +293,7 @@ export default function JobDescriptionPage() {
 
   const [jobDescriptionList, setJobDescriptionList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { canApprove: canApproveJobDescriptions } = useApprovalRuleAccess(
     "jobDescription",
     user,
@@ -382,23 +383,28 @@ export default function JobDescriptionPage() {
   }
 
   async function loadJobDescriptionRecords() {
-    const result = await getJobDescriptions({
-      page: 1,
-      limit: 100,
-    });
-
-    if (!result.success) {
-      showStatus({
-        type: "error",
-        title: "Load Failed",
-        message: result.message || "Failed to load job descriptions.",
+    setIsRefreshing(true);
+    try {
+      const result = await getJobDescriptions({
+        page: 1,
+        limit: 100,
       });
-      forceScrollToTop();
-      return;
-    }
 
-    setJobDescriptionList((result.data || []).map(normalizeJobDescriptionItem));
-    forceScrollToTop();
+      if (!result.success) {
+        showStatus({
+          type: "error",
+          title: "Load Failed",
+          message: result.message || "Failed to load job descriptions.",
+        });
+        forceScrollToTop();
+        return;
+      }
+
+      setJobDescriptionList((result.data || []).map(normalizeJobDescriptionItem));
+      forceScrollToTop();
+    } finally {
+      setIsRefreshing(false);
+    }
   }
 
   useEffect(() => {
@@ -782,29 +788,35 @@ export default function JobDescriptionPage() {
 
       <main
         ref={mainRef}
-        className="sibs-dashboard-main-wide"
+        className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-7"
       >
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
           <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6"
+            className="sibs-page-header-in sibs-page-card-in relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
-            <span className="sibs-top-accent" aria-hidden="true" />
+            <span
+              className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 overflow-hidden rounded-t-[15px]"
+              aria-hidden="true"
+            >
+              <span className="block h-full w-full bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
+            </span>
 
-            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1.5">
+            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
                     <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    <ClipboardList className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" strokeWidth={2.2} />
                     Recruitment View
                   </span>
                 </div>
 
-                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold tracking-tight text-[#042C51]">
                   Job Description
                 </h1>
 
-                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                <p className="max-w-2xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
                   Manage JD readiness for Existing, For Revision, and New Job Description requirements.
                 </p>
               </div>
@@ -813,33 +825,37 @@ export default function JobDescriptionPage() {
                 <button
                   type="button"
                   onClick={loadJobDescriptionRecords}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-95"
+                  disabled={isRefreshing}
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
                   title="Refresh Job Descriptions"
                   aria-label="Refresh Job Descriptions"
                 >
-                  <RefreshCw size={16} />
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                    }`}
+                  />
                 </button>
 
                 <button
                   type="button"
                   onClick={handleOpenCreateModal}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
                 >
-                  <Plus size={15} />
+                  <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   New Job Description
                 </button>
               </div>
             </div>
           </section>
 
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-4">
             <StatCard
               title="Total JD"
               value={stats.total}
               icon={ClipboardList}
               description="All job descriptions in database"
-              labelClassName="text-[#667085]"
-              iconClassName="bg-[#EAF2FB] text-[#042C51]"
+              tone="navy"
               delay={0}
             />
             <StatCard
@@ -847,9 +863,7 @@ export default function JobDescriptionPage() {
               value={stats.existing}
               icon={CheckCircle2}
               description="Ready or already available"
-              labelClassName="text-emerald-600"
-              valueClassName="text-emerald-700"
-              iconClassName="bg-emerald-50 text-emerald-700"
+              tone="green"
               delay={60}
             />
             <StatCard
@@ -857,9 +871,7 @@ export default function JobDescriptionPage() {
               value={stats.revision}
               icon={AlertTriangle}
               description="Needs specification update or remarks"
-              labelClassName="text-amber-600"
-              valueClassName="text-amber-700"
-              iconClassName="bg-amber-50 text-amber-700"
+              tone="amber"
               delay={120}
             />
             <StatCard
@@ -867,9 +879,7 @@ export default function JobDescriptionPage() {
               value={stats.newJd}
               icon={FileText}
               description="New or unlinked JD intake"
-              labelClassName="text-indigo-600"
-              valueClassName="text-indigo-700"
-              iconClassName="bg-indigo-50 text-indigo-700"
+              tone="indigo"
               delay={180}
             />
           </section>

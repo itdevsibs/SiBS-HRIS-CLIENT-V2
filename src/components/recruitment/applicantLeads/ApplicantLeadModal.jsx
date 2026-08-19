@@ -18,10 +18,10 @@ import { getApplicantLeadEditedFields } from "../../../lib/utils/applicantLeads/
 import DropdownField from "../availablePositions/DropdownField";
 
 const INPUT_CLASS =
-  "h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
 
 const TEXTAREA_CLASS =
-  "min-h-24 w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "min-h-20 2xl:min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
 
 function updateFormField(setFormData, field, value) {
   setFormData((current) => ({
@@ -92,9 +92,9 @@ function EditedIndicator({ show }) {
 
 function FormSection({ title, subtitle, icon: Icon, children }) {
   return (
-    <section className="rounded-2xl border border-[#DCE6F1] bg-white p-4 shadow-[0_8px_24px_rgba(4,44,81,0.04)] sm:p-5">
-      <div className="mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-3">
-        <Icon size={17} className="mt-0.5 shrink-0 text-[#FF5C28]" />
+    <section className="rounded-2xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
+      <div className="mb-3 2xl:mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
+        <Icon size={16} className="mt-0.5 shrink-0 text-[#FF5C28]" />
         <div className="min-w-0">
           <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
             {title}
@@ -193,19 +193,21 @@ export default function ApplicantLeadModal() {
   });
 
   return (
-    <div className="sibs-modal-backdrop-in fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/60 p-3 sm:p-4 backdrop-blur-xs">
-      <div className="sibs-modal-pop-in relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white shadow-2xl">
+    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-4 font-jakarta">
+      <div className="sibs-modal-pop-in relative flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white shadow-2xl">
         {/* Modal Header */}
-        <header className="shrink-0 bg-[#07365F] px-5 py-4 text-white sm:px-6 sm:py-5">
+        <header className="shrink-0 bg-[#042C51] px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <UserPlus size={20} className="mt-0.5 shrink-0 text-[#FF5C28]" />
+            <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
+              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-[#FF5C28]">
+                <UserPlus className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
+              </span>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2
                     id="applicant-lead-modal-title"
-                    className="text-sm font-extrabold leading-5 text-white sm:text-base"
+                    className="text-sm sm:text-base font-extrabold leading-5 text-white"
                   >
                     {isEditMode
                       ? "Edit Applicant Lead"
@@ -217,7 +219,7 @@ export default function ApplicantLeadModal() {
                   </span>
                 </div>
 
-                <p className="mt-0.5 text-xs font-semibold text-blue-100">
+                <p className="mt-0.5 sibs-text-xs font-medium text-blue-100">
                   Capture preliminary inquiries before moving to Talent Pool.
                 </p>
               </div>
@@ -228,9 +230,9 @@ export default function ApplicantLeadModal() {
               onClick={closeLeadModal}
               disabled={isSaving}
               aria-label="Close applicant lead modal"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <X size={17} />
+              <X size={16} />
             </button>
           </div>
         </header>
@@ -242,7 +244,7 @@ export default function ApplicantLeadModal() {
         >
           <div
             data-dropdown-boundary="true"
-            className="thin-scroll min-h-0 flex-1 space-y-4 overflow-y-auto bg-[#F7F9FC] p-3 sm:p-5"
+            className="sibs-scrollbar min-h-0 flex-1 space-y-3.5 2xl:space-y-4 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-4 2xl:p-5"
           >
             {/* Auto Logging Account Info Bar */}
             <div className="flex flex-col gap-2 rounded-xl border border-blue-200 bg-[#E9F0FC] p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
@@ -552,13 +554,13 @@ export default function ApplicantLeadModal() {
           </div>
 
           {/* Footer Actions */}
-          <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-3.5 sm:px-6">
+          <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-3 sm:px-5">
             <div className="flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={closeLeadModal}
                 disabled={isSaving}
-                className="inline-flex h-9.5 items-center justify-center rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-4 text-xs font-extrabold text-[#344054] transition hover:bg-white hover:text-[#042C51]"
+                className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-white hover:text-[#042C51]"
               >
                 Cancel
               </button>
@@ -566,12 +568,12 @@ export default function ApplicantLeadModal() {
               <button
                 type="submit"
                 disabled={isSubmitDisabled}
-                className="inline-flex h-9.5 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-5 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:border disabled:border-[#D6E0EA] disabled:bg-[#EEF3F8] disabled:text-[#6F8196] disabled:shadow-none"
+                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:border disabled:border-[#D6E0EA] disabled:bg-[#EEF3F8] disabled:text-[#6F8196] disabled:shadow-none"
               >
                 {isSaving ? (
-                  <Loader2 size={15} className="animate-spin text-white" />
+                  <Loader2 size={13} className="animate-spin text-white" />
                 ) : (
-                  <Check size={15} className="text-white" />
+                  <Check size={13} className="text-white" />
                 )}
                 {isSaving
                   ? "Saving..."

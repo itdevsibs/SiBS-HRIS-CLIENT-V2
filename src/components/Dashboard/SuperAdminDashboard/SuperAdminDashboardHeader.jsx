@@ -1,63 +1,78 @@
-import { ShieldCheck, UserPlus, Users } from "lucide-react";
+import { ArrowRight, RefreshCw, UserPlus, Users } from "lucide-react";
 
 export default function SuperAdminDashboardHeader({
   displayName,
   onAddUser,
   onOpenEmployees,
+  onRefresh,
+  isManualRefreshing = false,
 }) {
   return (
-    <section className="sibs-page-header-in sibs-card relative overflow-hidden p-5 sm:p-6">
+    <section
+      className="sibs-page-header-in sibs-page-card-in sibs-card font-jakarta relative overflow-hidden p-4 2xl:p-6"
+      style={{ animationDelay: "0ms", animationFillMode: "both" }}
+    >
       <span className="sibs-top-accent" aria-hidden="true" />
 
-      <div className="mt-1 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-        <div className="min-w-0">
+      <div className="mt-0.5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 flex-1 lg:pr-4 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
-              <ShieldCheck size={14} className="text-[#FF5C28]" />
-              Super Admin Operations Dashboard
-            </span>
-
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-extrabold text-emerald-800">
-              <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-emerald-500" />
-              System Governance Online
+            <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-[#042C51]">
+              <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+              Super Admin Operations View
             </span>
           </div>
 
-          <h1 className="mt-3 break-words text-xl font-extrabold tracking-tight text-[#042C51] sm:text-2xl">
+          <h1 className="break-words text-lg 2xl:text-2xl font-extrabold tracking-tight text-[#042C51]">
             Whole-System HRIS Operations &amp; Governance
           </h1>
 
-          <p className="mt-1 max-w-4xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
-            Cross-module visibility, user access role governance, risk exception
-            monitoring, approval queue routing, and operational snapshots across
-            HR, TA, OM, and Finance modules.
-          </p>
-
-          <p className="mt-2 text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-            Signed in as {displayName}
+          <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+            Welcome back,{" "}
+            <span className="font-extrabold text-[#042C51]">{displayName}</span>.
+            You have whole-system administrative permissions across all HRIS modules.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 2xl:gap-2.5 lg:flex-nowrap">
+          {onRefresh ? (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isManualRefreshing}
+              title="Refresh Dashboard Data"
+              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                  isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                }`}
+              />
+            </button>
+          ) : null}
+
           <button
             type="button"
             onClick={onAddUser}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#063866] hover:shadow-md"
+            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
           >
-            <UserPlus size={15} className="text-[#FF5C28]" />
+            <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#FF5C28]" />
             Add Admin / User
           </button>
 
           <button
             type="button"
             onClick={onOpenEmployees}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E95324] hover:shadow-md"
+            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
           >
-            <Users size={15} />
-            Employee Directory
+            <Users className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#042C51]" />
+            Launch Employee Directory
+            <ArrowRight className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" />
           </button>
         </div>
       </div>
     </section>
   );
 }
+
+

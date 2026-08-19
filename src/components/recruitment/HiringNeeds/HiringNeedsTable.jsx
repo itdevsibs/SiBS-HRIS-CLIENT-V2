@@ -303,9 +303,9 @@ export default function HiringNeedsTable({
         </div>
 
         {/* Desktop table */}
-        <div className="hidden overflow-x-auto lg:block">
+        <div className="hidden overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar lg:block">
           <table className="w-full min-w-[1180px] table-fixed border-collapse bg-white text-left text-xs">
-            <thead className="sibs-data-table-head">
+            <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="sibs-data-table-head-row">
                 <th className="sibs-data-table-th w-[15%] text-left">
                   ID / Request Type
@@ -398,12 +398,13 @@ export default function HiringNeedsTable({
                         style={{
                           animationDelay:
                             `${index * 30}ms`,
+                          animationFillMode: "both",
                         }}
                         aria-label={`View Hiring Needs request ${
                           item.id || ""
                         }`}
                       >
-                        <td className="px-4 py-2.5 align-middle">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                           <div className="flex items-center gap-2 whitespace-nowrap">
                             <p className="text-xs font-extrabold leading-none text-[#042C51]">
                               {item.id || "--"}
@@ -419,7 +420,7 @@ export default function HiringNeedsTable({
                           </div>
                         </td>
 
-                        <td className="px-4 py-2.5 align-middle">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                           <p
                             className="max-w-[260px] truncate text-xs font-extrabold leading-5 text-[#042C51]"
                             title={getHiringNeedsDepartmentAccount(
@@ -432,27 +433,27 @@ export default function HiringNeedsTable({
                           </p>
                         </td>
 
-                        <td className="px-4 py-2.5 align-middle">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                           <p className="max-w-[320px] text-xs font-extrabold leading-5 text-[#042C51]">
                             {title}
                           </p>
 
-                          <p className="mt-0.5 max-w-[320px] truncate text-[10px] font-semibold leading-4 text-[#98A2B3]">
+                          <p className="mt-0.5 max-w-[320px] truncate sibs-text-micro font-semibold leading-4 text-[#98A2B3]">
                             {getHiringNeedsSubtitle(
                               item,
                             )}
                           </p>
                         </td>
 
-                        <td className="px-4 py-2.5 text-center align-middle">
-                          <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-[#F2F6FA] px-2.5 py-1 text-xs font-extrabold leading-none tabular-nums text-[#042C51]">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
+                          <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-[#F2F6FA] px-2 py-0.5 text-xs font-extrabold leading-none tabular-nums text-[#042C51]">
                             {getHiringNeedsHeadcount(
                               item,
                             )}
                           </span>
                         </td>
 
-                        <td className="px-4 py-2.5 align-middle">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                           <p className="max-w-[220px] text-xs font-semibold leading-5 text-[#475467]">
                             {getHiringNeedsReason(
                               item,
@@ -460,19 +461,19 @@ export default function HiringNeedsTable({
                           </p>
                         </td>
 
-                        <td className="px-4 py-2.5 text-xs font-semibold text-[#475467] align-middle">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs font-semibold text-[#475467] align-middle">
                           {getHiringNeedsSite(item)}
                         </td>
 
-                        <td className="px-4 py-2.5 text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs font-semibold tabular-nums text-[#475467] align-middle">
                           {getHiringNeedsDateOrWeek(
                             item,
                           )}
                         </td>
 
-                        <td className="px-4 py-2.5 text-center align-middle">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
                           <span
-                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[9px] font-extrabold leading-none ${getHiringNeedsStatusClass(
+                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold leading-none ${getHiringNeedsStatusClass(
                               status,
                             )}`}
                           >

@@ -6,7 +6,10 @@ export default function AdminDashboardWelcome({
   onOpenEmployees,
 }) {
   return (
-    <section className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden p-4 2xl:p-6">
+    <section
+      className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden p-4 2xl:p-6"
+      style={{ animationDelay: "0ms", animationFillMode: "both" }}
+    >
       <span className="sibs-top-accent" aria-hidden="true" />
 
       <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

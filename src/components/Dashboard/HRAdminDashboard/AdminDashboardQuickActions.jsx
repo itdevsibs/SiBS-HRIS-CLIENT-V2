@@ -26,12 +26,16 @@ export default function AdminDashboardQuickActions({
       </div>
 
       <div className="mt-3 2xl:mt-4 space-y-2.5 2xl:space-y-3">
-        {actions.map((action) => (
+        {actions.map((action, index) => (
           <button
             key={action.id}
             type="button"
             onClick={() => onAction?.(action)}
-            className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 2xl:p-3 text-left transition-all hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB]"
+            className="group sibs-page-card-in flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 2xl:p-3 text-left transition-all hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB]"
+            style={{
+              animationDelay: `${index * 40}ms`,
+              animationFillMode: "both",
+            }}
           >
             <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-[#FF5C28] transition-colors group-hover:bg-[#FF5C28] group-hover:text-white">
               {action.icon ? createElement(action.icon, { className: "h-4 w-4 2xl:h-[18px] 2xl:w-[18px]" }) : null}

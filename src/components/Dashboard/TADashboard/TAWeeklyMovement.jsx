@@ -42,33 +42,41 @@ export default function TAWeeklyMovement({ funnel = {}, delay = 0 }) {
 
   return (
     <section
-      className="sibs-page-card-in sibs-card p-5 sm:p-6"
-      style={{ animationDelay: `${delay}ms` }}
+      className="sibs-page-card-in sibs-card font-jakarta flex h-full flex-col justify-between p-4 sm:p-5 2xl:p-6"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <h2 className="sibs-section-title">Weekly Movement Pipeline</h2>
-      <p className="sibs-section-subtitle">
-        Candidate progression from sourcing through hire
-      </p>
+      <div>
+        <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
+          Weekly Movement Pipeline
+        </h2>
+        <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+          Candidate progression from sourcing through hire
+        </p>
 
-      <div className="mt-5 grid grid-cols-2 gap-2 text-center sm:grid-cols-3 xl:grid-cols-6">
-        {stages.map(([label, value]) => (
-          <div
-            key={label}
-            className={`flex min-h-[74px] flex-col justify-between rounded-xl border p-2.5 ${stageTone[label]}`}
-          >
-            <span className="text-[9px] font-extrabold uppercase tracking-normal">
-              {label}
-            </span>
-            <span className="mt-2 text-lg font-extrabold tabular-nums">
-              {formatNumber(value)}
-            </span>
-          </div>
-        ))}
+        <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-3 xl:grid-cols-6">
+          {stages.map(([label, value], index) => (
+            <div
+              key={label}
+              className={`flex min-h-[68px] 2xl:min-h-[76px] flex-col justify-between rounded-xl border p-2 2xl:p-2.5 ${stageTone[label] || "border-slate-200 bg-slate-50 text-slate-700"}`}
+              style={{
+                animationDelay: `${delay + 40 + index * 30}ms`,
+                animationFillMode: "both",
+              }}
+            >
+              <span className="text-[9px] 2xl:text-[10px] font-extrabold uppercase tracking-normal">
+                {label}
+              </span>
+              <span className="mt-1.5 2xl:mt-2 text-base 2xl:text-xl font-extrabold tabular-nums">
+                {formatNumber(value)}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+      <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 2xl:p-3.5">
         <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-[#042C51]" />
-        <p className="text-xs font-semibold leading-6 text-[#667085]">
+        <p className="sibs-text-xs font-semibold leading-relaxed text-[#667085]">
           Conversion from Sourced to Hired is{" "}
           <strong className="text-[#042C51]">{conversion}%</strong>. The
           largest volume drop is between{" "}

@@ -247,7 +247,7 @@ export default function UserDropdown({
         aria-expanded={open}
         aria-haspopup="menu"
         className={[
-          "group flex max-w-[360px] cursor-pointer items-center gap-2.5 rounded-xl border px-2 py-1.5 text-left transition-all duration-150",
+          "group flex max-w-[360px] cursor-pointer items-center gap-2 2xl:gap-2.5 rounded-xl border px-2 py-1 2xl:py-1.5 text-left transition-all duration-150",
           mobileCompact ? "max-[430px]:gap-0 max-[430px]:px-0 max-[430px]:py-0" : "",
           open
             ? "border-sibs-primary-1/25 bg-white shadow-sm ring-2 ring-sibs-primary-1/10"
@@ -258,7 +258,7 @@ export default function UserDropdown({
           ref={avatarPreviewAnchorRef}
           onMouseEnter={showAvatarPreview}
           onMouseLeave={hideAvatarPreview}
-          className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-8 max-[360px]:w-8"
+          className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-[11px] 2xl:text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-7.5 max-[360px]:w-7.5"
         >
           {profilePictureUrl && !profileImageFailed ? (
             <img
@@ -278,20 +278,20 @@ export default function UserDropdown({
             mobileCompact ? "hidden lg:flex" : "flex",
           ].join(" ")}
         >
-          <span className="max-w-[220px] truncate text-xs font-bold text-sibs-primary-1">
+          <span className="max-w-[220px] truncate text-[11px] 2xl:text-xs font-extrabold text-sibs-primary-1">
             {formattedName || "USER"}
           </span>
 
-          <span className="mt-0.5 max-w-[220px] truncate text-[10px] font-medium text-sibs-primary-2">
+          <span className="mt-0.5 max-w-[220px] truncate text-[9px] 2xl:text-[10px] font-semibold text-sibs-primary-2">
             {email || "no-email@sibs.com"}
           </span>
         </div>
 
         <ChevronDown
-          size={15}
+          size={14}
           strokeWidth={2}
           className={[
-            "shrink-0 text-sibs-tertiary-6 transition-transform duration-200 group-hover:text-sibs-primary-1",
+            "shrink-0 text-sibs-tertiary-6 transition-transform duration-200 group-hover:text-sibs-primary-1 2xl:h-4 2xl:w-4",
             open ? "rotate-180 text-sibs-primary-1" : "",
             mobileCompact ? "hidden lg:block" : "",
           ].join(" ")}
@@ -328,9 +328,9 @@ export default function UserDropdown({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%+8px)] z-[999999] w-[286px] origin-top-right overflow-hidden rounded-xl border border-[#D7E0E9] bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)] animate-[sibsUserDropdownOpen_180ms_ease-out_both]"
+          className="absolute right-0 top-[calc(100%+8px)] z-[999999] w-[260px] 2xl:w-[286px] origin-top-right overflow-hidden rounded-xl border border-[#D7E0E9] bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)] animate-[sibsUserDropdownOpen_180ms_ease-out_both]"
         >
-          <div className="p-2">
+          <div className="p-1.5 2xl:p-2">
             {!isAdminSide && canSwitchToAdmin && (
               <DropdownItem
                 icon={UserKey}
@@ -357,15 +357,15 @@ export default function UserDropdown({
               role="menuitem"
               onClick={onLogout}
               disabled={Boolean(actionLoading)}
-              className="mt-1 flex min-h-[50px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-0.5 flex min-h-[44px] 2xl:min-h-[50px] w-full items-center gap-2.5 2xl:gap-3 rounded-lg px-2.5 2xl:px-3 py-2 2xl:py-2.5 text-left text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {actionLoading === "logout" ? (
-                <Loader2 size={18} className="shrink-0 animate-spin" />
+                <Loader2 size={16} className="shrink-0 animate-spin" />
               ) : (
-                <LogOut size={18} className="shrink-0" />
+                <LogOut size={16} className="shrink-0" />
               )}
 
-              <span className="text-xs font-bold">
+              <span className="text-[11px] 2xl:text-xs font-extrabold">
                 {actionLoading === "logout" ? "Logging out..." : "Logout"}
               </span>
             </button>
@@ -408,21 +408,21 @@ function DropdownItem({
       role="menuitem"
       onClick={onClick}
       disabled={disabled}
-      className="flex min-h-[58px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sibs-primary-1 transition hover:bg-[#F1F5F9] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex min-h-[48px] 2xl:min-h-[58px] w-full items-center gap-2.5 2xl:gap-3 rounded-lg px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 text-left text-sibs-primary-1 transition hover:bg-[#F1F5F9] disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EAF0F7] text-sibs-primary-1">
+      <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-[#EAF0F7] text-sibs-primary-1">
         {loading ? (
-          <Loader2 size={17} className="animate-spin" />
+          <Loader2 size={15} className="animate-spin" />
         ) : (
-          <MenuIcon size={17} />
+          <MenuIcon size={15} />
         )}
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-extrabold text-sibs-primary-1">
+        <span className="block truncate text-[11px] 2xl:text-xs font-extrabold text-sibs-primary-1">
           {loading ? "Switching..." : title}
         </span>
-        <span className="mt-0.5 block truncate text-[10px] text-sibs-tertiary-6">
+        <span className="mt-0.5 block truncate text-[9px] 2xl:text-[10px] font-semibold text-sibs-tertiary-6">
           {subtitle}
         </span>
       </span>

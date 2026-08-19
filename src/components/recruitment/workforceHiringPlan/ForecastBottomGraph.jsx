@@ -251,28 +251,28 @@ function AnalyticsCard({
   footerValueClassName,
 }) {
   return (
-    <article className="flex h-full min-h-[390px] flex-col overflow-hidden rounded-[18px] border border-[#DDE5EE] bg-white p-4 shadow-[0_2px_5px_rgba(15,23,42,0.08)]">
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[#E9EEF4] pb-3">
+    <article className="flex h-full min-h-[360px] 2xl:min-h-[390px] flex-col overflow-hidden rounded-xl border border-[#DDE5EE] bg-white p-3.5 2xl:p-4 shadow-sm">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[#E9EEF4] pb-2.5">
         <div className="min-w-0">
-          <h3 className="truncate text-xs font-extrabold leading-5 text-[#042C51]">
+          <h3 className="truncate text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
             {title}
           </h3>
-          <p className="truncate text-[10px] font-semibold leading-4 text-[#6B88A8]">
+          <p className="mt-0.5 truncate sibs-text-micro font-semibold text-[#667085]">
             {subtitle}
           </p>
         </div>
 
         <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${badgeClassName}`}
+          className={`shrink-0 rounded-full border px-2 py-0.5 sibs-text-micro font-extrabold ${badgeClassName}`}
         >
           {badge}
         </span>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col py-4">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col py-3 2xl:py-4">{children}</div>
 
-      <div className="mt-auto flex shrink-0 items-center justify-between gap-3 border-t border-[#E9EEF4] pt-3 text-[10px]">
-        <span className="font-medium text-[#6B88A8]">{footerLabel}:</span>
+      <div className="mt-auto flex shrink-0 items-center justify-between gap-3 border-t border-[#E9EEF4] pt-2.5 sibs-text-micro font-bold">
+        <span className="font-semibold text-[#667085]">{footerLabel}:</span>
         <strong className={`text-right font-extrabold ${footerValueClassName}`}>
           {footerValue}
         </strong>

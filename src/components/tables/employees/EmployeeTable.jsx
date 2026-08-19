@@ -1121,7 +1121,7 @@ export default function EmployeeTable({
       <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
         {tabs.length > 1 ? (
           <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
-            <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
+            <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
               {tabs.map((tab) => {
                 const TabIcon = tab.icon || UserRoundCheck;
                 const isActive = activeTab === tab.label;
@@ -1131,13 +1131,16 @@ export default function EmployeeTable({
                     key={tab.label}
                     type="button"
                     onClick={() => onTabChange?.(tab.label)}
-                    className={`relative inline-flex h-10 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
+                    className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
                       isActive
                         ? "rounded-t-xl bg-white text-[#042C51]"
                         : "text-[#667085] hover:text-[#042C51]"
                     }`}
                   >
-                    <TabIcon size={15} className="shrink-0" />
+                    <TabIcon
+                      size={14}
+                      className={`shrink-0 ${isActive ? "text-[#FF5C28]" : "text-[#98A2B3]"}`}
+                    />
                     <span className="truncate">{tab.label}</span>
 
                     {Number(tab.count || 0) > 0 ? (
@@ -1198,26 +1201,26 @@ export default function EmployeeTable({
             tabs.length > 1 ? "rounded-b-xl border-t-0" : "rounded-xl"
           }`}
         >
-          <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
-            <table className="w-full min-w-[1180px] table-fixed border-collapse text-left">
+          <div ref={tableScrollRef} className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar">
+            <table className="w-full min-w-[1100px] table-fixed border-collapse text-left">
               <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
                 <tr className="border-b border-[#E6ECF2]">
-                  <th scope="col" className="w-[12%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  <th scope="col" className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     SIBS ID
                   </th>
-                  <th scope="col" className="w-[26%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  <th scope="col" className="w-[24%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     EMPLOYEE NAME
                   </th>
-                  <th scope="col" className="w-[20%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  <th scope="col" className="w-[19%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     ACCOUNT / SITE
                   </th>
-                  <th scope="col" className="w-[18%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     DEPARTMENT
                   </th>
-                  <th scope="col" className="w-[14%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     CONTACT & EMAIL
                   </th>
-                  <th scope="col" className="w-[10%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  <th scope="col" className="w-[11%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     HR METADATA
                   </th>
                 </tr>
@@ -1230,8 +1233,8 @@ export default function EmployeeTable({
                 {loading ? (
                   Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                     <tr key={`employee-skeleton-${index}`}>
-                      <td colSpan={columns.length} className="px-4 py-4">
-                        <div className="h-7 w-full animate-sibs-pulse rounded bg-slate-100" />
+                      <td colSpan={columns.length} className="px-3 2xl:px-4 py-3">
+                        <div className="h-6 w-full animate-sibs-pulse rounded bg-slate-100" />
                       </td>
                     </tr>
                   ))
@@ -1258,12 +1261,12 @@ export default function EmployeeTable({
                           animationDelay: `${Math.min(index, 10) * 36}ms`,
                         }}
                       >
-                        <td className="whitespace-nowrap px-4 py-4 align-middle text-xs font-extrabold text-[#FF5C28]">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-xs font-extrabold text-[#FF5C28]">
                           {getSibsId(employee) || "N/A"}
                         </td>
 
-                        <td className="px-4 py-4 align-middle">
-                          <div className="flex min-w-[230px] items-center gap-3">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                          <div className="flex min-w-[200px] items-center gap-2.5 2xl:gap-3">
                             <EmployeeAvatar employee={employee} />
 
                             <div className="min-w-0">
@@ -1272,7 +1275,7 @@ export default function EmployeeTable({
                               </p>
 
                               {preferredName ? (
-                                <p className="mt-1 text-[10px] font-semibold text-[#8A98B8]">
+                                <p className="mt-0.5 text-[10px] font-semibold text-[#8A98B8]">
                                   Preferred: {preferredName}
                                 </p>
                               ) : null}
@@ -1280,24 +1283,24 @@ export default function EmployeeTable({
                           </div>
                         </td>
 
-                        <td className="px-4 py-4 align-middle">
-                          <div className="min-w-[170px]">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                          <div className="min-w-[150px]">
                             <EmployeeAccountChips employee={employee} compact />
 
-                            <div className="mt-2">
+                            <div className="mt-1 2xl:mt-1.5">
                               <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
                             </div>
                           </div>
                         </td>
 
-                        <td className="px-4 py-4 align-middle">
-                          <div className="min-w-[210px]">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                          <div className="min-w-[180px]">
                             {getPosition(employee) ? (
                               <>
                                 <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
                                   {getPosition(employee)}
                                 </p>
-                                <div className="mt-1">
+                                <div className="mt-0.5 2xl:mt-1">
                                   <DetailLine icon={Briefcase}>{getDepartment(employee)}</DetailLine>
                                 </div>
                               </>
@@ -1309,8 +1312,8 @@ export default function EmployeeTable({
                           </div>
                         </td>
 
-                        <td className="px-4 py-4 align-middle">
-                          <div className="w-full min-w-0 max-w-full space-y-1 overflow-hidden">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                          <div className="w-full min-w-0 max-w-full space-y-0.5 2xl:space-y-1 overflow-hidden">
                             <DetailLine icon={Mail} breakAll>
                               {getEmail(employee)}
                             </DetailLine>
@@ -1318,8 +1321,8 @@ export default function EmployeeTable({
                           </div>
                         </td>
 
-                        <td className="px-4 py-4 align-middle">
-                          <div className="min-w-[135px] space-y-0.5 text-[10px] font-semibold leading-4 text-[#7B8DB3]">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                          <div className="min-w-[120px] space-y-0.5 text-[10px] font-semibold leading-4 text-[#7B8DB3]">
                             <p>Gender: {getGender(employee)}</p>
                             <p>Civil: {getCivilStatus(employee)}</p>
                             <p>

@@ -505,13 +505,13 @@ export default function EmployeeDataPage() {
                 >
                   <div className="mb-4 2xl:mb-5 flex flex-col gap-2.5 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-xs 2xl:text-sm font-black uppercase tracking-wider text-[#042C51]">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
                         {activeProfileLabel.primary}
                         {activeProfileLabel.secondary
                           ? ` - ${activeProfileLabel.secondary}`
                           : ""}
-                      </h2>
-                      <p className="mt-0.5 text-[10px] 2xl:text-[11px] font-semibold text-slate-400">
+                      </h3>
+                      <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
                         {isEditing
                           ? "Editable input mode. Save the profile to lock the current updates."
                           : "Official record values are shown from the existing employee data source."}
@@ -520,13 +520,13 @@ export default function EmployeeDataPage() {
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span
-                        className={`h-2.5 w-2.5 rounded-full ${
+                        className={`h-2 w-2 rounded-full ${
                           isEditing
                             ? "animate-pulse bg-amber-400"
                             : "bg-[#042C51]"
                         }`}
                       />
-                      <span className="text-[10px] font-bold uppercase text-slate-500">
+                      <span className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">
                         {isEditing ? "Modified Draft" : "Official Profile Record"}
                       </span>
                     </div>

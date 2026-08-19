@@ -17,7 +17,7 @@ function AdminDashboardMetricCard({ item, onClick, delay = 0 }) {
     <button
       type="button"
       onClick={onClick}
-      className="group sibs-metric-card relative overflow-hidden text-left active:translate-y-0 p-3 2xl:p-4 min-h-[104px] 2xl:min-h-[116px]"
+      className="group sibs-metric-card sibs-page-card-in relative overflow-hidden text-left active:translate-y-0 p-3 2xl:p-4 min-h-[104px] 2xl:min-h-[116px]"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
@@ -78,7 +78,7 @@ export default function AdminDashboardStats({
           key={metric.id}
           item={metric}
           onClick={() => onMetricClick?.(metric)}
-          delay={80 + index * 55}
+          delay={index * 60}
         />
       ))}
     </section>

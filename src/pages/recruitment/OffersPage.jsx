@@ -519,7 +519,7 @@ export default function OffersPage() {
         {isProcessingOfferDecision ? (
           <OffersDecisionSkeleton />
         ) : (
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
           <OfferHeader
             routeFilterActive={Boolean(routeCandidate)}
             routeCandidateLabel={routeCandidateLabel}

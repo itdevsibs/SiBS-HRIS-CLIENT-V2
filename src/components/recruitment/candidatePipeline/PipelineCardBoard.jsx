@@ -53,6 +53,11 @@ const REFERENCE_STAGE_THEMES = {
     header: "border-cyan-200/90 bg-cyan-50/90 text-cyan-900",
     badge: "bg-cyan-500 text-white",
   },
+  "Drop-off": {
+    dot: "bg-rose-500",
+    header: "border-rose-200/90 bg-rose-50/90 text-rose-900",
+    badge: "bg-rose-600 text-white",
+  },
 };
 
 function getCandidateStage(candidate = {}) {
@@ -83,6 +88,7 @@ function getAccountLabelByStage(stage = "") {
 
 export default function PipelineCardsBoard({
   candidates = [],
+  dropOffCandidates = [],
   stageCounts = {},
   activeStage,
   onViewCandidate,
@@ -128,8 +134,8 @@ export default function PipelineCardsBoard({
     if (!isDraggingBoard || !scrollRef.current) return;
 
     event.preventDefault();
-    const currentX = event.pageX - scrollRef.current.offsetLeft;
-    const walk = currentX - dragStartX;
+    const x = event.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - dragStartX) * 1.25;
     scrollRef.current.scrollLeft = dragStartScrollLeft - walk;
   }
 
@@ -143,9 +149,11 @@ export default function PipelineCardsBoard({
 
   if (viewMode === "list") {
     return (
-      <div className="bg-[#F7F9FC] p-3 sm:p-4">
+      <div className="w-full min-w-0">
         <PipelineListView
           candidates={candidates}
+          dropOffCandidates={dropOffCandidates}
+          stageCounts={stageCounts}
           activeStage={activeStage}
           onViewCandidate={onViewCandidate}
           onOpenMoveModal={onOpenMoveModal}
@@ -210,7 +218,9 @@ export default function PipelineCardsBoard({
                       key={getCandidateKey(candidate, index)}
                       data-no-board-drag="true"
                       className="sibs-page-card-in"
-                      style={{ animationDelay: `${stageIndex * 50 + index * 40}ms` }}
+                      style={{
+                        animationDelay: `${stageIndex * 50 + index * 40}ms`,
+                      }}
                     >
                       <PipelineCandidateCard
                         candidate={candidate}

@@ -9096,13 +9096,13 @@ async function handleConfirmScheduleNho() {
         title="Candidate Pipeline Record"
         onClose={onClose}
         closeDisabled={isCandidateProcessRunning}
-        maxWidth="max-w-6xl"
+        maxWidth="max-w-4xl"
         zIndex="z-[9999]"
         movementHistoryCandidate={activeCandidate}
         footer={recordFooter}
         headerContent={
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-sm font-extrabold text-white shadow-sm">
+            <div className="flex h-10 w-10 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-xs 2xl:text-sm font-extrabold text-white shadow-sm">
               {String(activeCandidate.name || "?")
                 .split(/\s+/)
                 .filter(Boolean)
@@ -9117,26 +9117,17 @@ async function handleConfirmScheduleNho() {
                 <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/60">
                   Candidate Pipeline Record
                 </span>
-                <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white/90">
+                <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white/90">
                   {currentStage}
                 </span>
-                <span className="rounded-full border border-emerald-300/25 bg-emerald-400/15 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide text-emerald-100">
+                <span className="rounded-full border border-emerald-300/25 bg-emerald-400/15 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-emerald-100">
                   PRF: {activePrfStatus}
                 </span>
               </div>
 
-              <h3 className="mt-1 break-words text-lg font-extrabold text-white sm:text-xl">
+              <h3 className="mt-0.5 break-words text-base font-extrabold text-white sm:text-lg">
                 {activeCandidate.name || "Unnamed Candidate"}
               </h3>
-
-              <p className="mt-1 max-w-[850px] break-words sibs-text-xs font-semibold text-white/70">
-                {activeCandidate.email || "No email saved"}
-                {activeCandidate.roleTitle || activeCandidate.roleAccount
-                  ? ` • ${activeCandidate.roleTitle || activeCandidate.roleAccount}`
-                  : ""}
-                {activeCandidate.account ? ` • ${activeCandidate.account}` : ""}
-                {activeCandidate.candidateId ? ` • ID: ${activeCandidate.candidateId}` : ""}
-              </p>
             </div>
           </div>
         }
@@ -9194,15 +9185,20 @@ async function handleConfirmScheduleNho() {
               )
             }
           >
-            <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-3.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
+                ["Applied Role", activeCandidate.roleTitle || activeCandidate.roleAccount || "—"],
+                ["Target Account", activeCandidate.account || "—"],
+                ["Email Address", activeCandidate.email || "—"],
+                ["Candidate ID", activeCandidate.candidateId || "—"],
+                ["Contact Number", activeCandidate.phone || activeCandidate.contactNumber || "—"],
+                ["Current Location", compactProfileSummary.currentLocation || activeCandidate.applyingLocation || "—"],
                 ["Source", activeCandidate.source || activeCandidate.metadata?.source || "—"],
                 ["PRF Status", activePrfStatus || "Review"],
                 [
                   "Created Date",
                   compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : "—",
                 ],
-                ["Current Location", compactProfileSummary.currentLocation || "—"],
               ].map(([label, value]) => (
                 <div key={label} className="min-w-0">
                   <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
@@ -9210,7 +9206,7 @@ async function handleConfirmScheduleNho() {
                   </p>
                   <p
                     className={`mt-0.5 break-words text-xs font-extrabold leading-5 ${
-                      label === "PRF Status" ? "text-[#FF5C28]" : "text-[#344054]"
+                      label === "PRF Status" ? "text-[#FF5C28]" : "text-[#042C51]"
                     }`}
                   >
                     {value}

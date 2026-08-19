@@ -56,10 +56,14 @@ export default function AdminDashboardActivity({
             </p>
           </div>
         ) : (
-          activities.slice(0, 6).map((activity) => (
+          activities.slice(0, 6).map((activity, index) => (
             <article
               key={activity.id}
-              className="flex items-start gap-2.5 2xl:gap-3 px-1 py-2 2xl:py-3 transition hover:bg-slate-50/70"
+              className="sibs-page-card-in flex items-start gap-2.5 2xl:gap-3 px-1 py-2 2xl:py-3 transition hover:bg-slate-50/70"
+              style={{
+                animationDelay: `${index * 35}ms`,
+                animationFillMode: "both",
+              }}
             >
               <span
                 className={`mt-1.5 h-2 w-2 2xl:h-2.5 2xl:w-2.5 shrink-0 rounded-full ${

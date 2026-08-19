@@ -78,9 +78,10 @@ export async function getEmployeeDashboardSources({
     api.get("/api/attendance", {
       params: {
         page: 1,
+        limit: 10,
         search: commonEmployeeSearch,
-        dateFrom: today,
-        dateTo: today,
+        dateFrom: "",
+        dateTo: "",
         department: "All",
         account: "All",
         includeDepartments: 0,
@@ -92,14 +93,14 @@ export async function getEmployeeDashboardSources({
     api.get("/api/kronos-attendance", {
       params: {
         page: 1,
+        limit: 10,
         search: commonEmployeeSearch,
-        dateFrom: today,
-        dateTo: today,
+        dateFrom: "",
+        dateTo: "",
         department: "All",
         account: "All",
         includeDepartments: 0,
         includeAccounts: 0,
-        limit: 50,
         _fresh: 1,
         _ts: Date.now(),
       },
@@ -113,9 +114,10 @@ export async function getEmployeeDashboardSources({
     api.get("/api/employee-schedule", {
       params: {
         page: 1,
-        search: commonEmployeeSearch,
-        dateFrom: week.dateFrom,
-        dateTo: week.dateTo,
+        limit: 50,
+        search: "",
+        dateFrom: "",
+        dateTo: "",
       },
       withCredentials: true,
       signal,
@@ -123,9 +125,10 @@ export async function getEmployeeDashboardSources({
     api.get("/api/leaves", {
       params: {
         page: 1,
-        limit: 5,
-        search: commonEmployeeSearch,
+        limit: 10,
+        search: "",
         status: "All",
+        department: "All",
         account: "All",
         dateFrom: "",
         dateTo: "",

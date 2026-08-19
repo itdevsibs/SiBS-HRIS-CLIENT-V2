@@ -758,20 +758,18 @@ export default function ForecastHeadcountPlanTable({
   return (
     <>
       <section className="sibs-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 2xl:px-5 2xl:py-4">
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="sibs-section-title">
-                6-Week Forecast Headcount Plan
-              </h2>
-            </div>
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+              6-Week Forecast Headcount Plan
+            </h3>
 
-            <p className="sibs-section-subtitle">
+            <p className="mt-1 text-xs font-semibold text-[#667085]">
               Projected next 6 weeks from the past 6 actual workforce weeks.
             </p>
           </div>
 
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-500">
+          <span className="rounded-full bg-slate-100 px-3 py-1 sibs-text-micro font-extrabold text-[#52637A]">
             {forecastData.loading
               ? "Loading forecast..."
               : hasRows
@@ -781,19 +779,19 @@ export default function ForecastHeadcountPlanTable({
         </div>
 
         {forecastData.error ? (
-          <div className="mx-5 mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+          <div className="mx-4 mt-3.5 2xl:mx-5 2xl:mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
             {forecastData.error}
           </div>
         ) : null}
 
-        <div className="p-4 sm:p-5">
+        <div className="p-3.5 sm:p-4 2xl:p-5">
           <div
             ref={dragScrollRef}
             onMouseDown={handleDragStart}
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
             onMouseLeave={handleDragEnd}
-            className={`sibs-data-table-shell !block overflow-x-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
+            className={`sibs-data-table-shell !block max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
               isDragging ? "cursor-grabbing" : "cursor-grab"
             }`}
           >

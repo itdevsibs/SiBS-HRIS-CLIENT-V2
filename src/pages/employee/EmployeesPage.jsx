@@ -168,16 +168,16 @@ export default function EmployeesPage() {
             className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
             style={getAnimationStyle(animationTiming.table)}
           >
-            <div className="border-b border-[#E6ECF2] bg-white px-3 py-2 2xl:px-5 2xl:py-4">
+            <div className="border-b border-[#E6ECF2] bg-white p-4 sm:p-5 2xl:p-6">
               <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-                <div className="min-w-0 space-y-0.5">
-                  <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
+                <div className="min-w-0">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
                     {activeTab.label === "Employees"
                       ? "Employee Records"
                       : `${activeTab.label} Records`}
-                  </h2>
+                  </h3>
 
-                  <p className="sibs-text-xs font-semibold text-[#667085]">
+                  <p className="mt-1 text-xs font-semibold text-[#667085]">
                     {activeTab.description}
                   </p>
                 </div>

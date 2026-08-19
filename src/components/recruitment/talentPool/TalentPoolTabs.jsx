@@ -5,6 +5,7 @@ import {
   UserRoundPlus,
   UserRoundX,
 } from "lucide-react";
+import { motion as Motion } from "framer-motion";
 import { TALENT_POOL_TABS } from "../../../lib/utils/talentPool/talentPoolTabs";
 
 const tabs = [
@@ -18,8 +19,12 @@ const tabs = [
 
 export default function TalentPoolTabs({ activeTab, onChange, counts = {} }) {
   return (
-    <div className="overflow-x-auto border-b border-[#E6ECF2] bg-white px-4 sm:px-5">
-      <div className="flex min-w-max items-end gap-1" role="tablist" aria-label="Talent Pool candidate groups">
+    <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
+      <div
+        className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-no-scrollbar sm:px-4"
+        role="tablist"
+        aria-label="Talent Pool candidate groups"
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = activeTab === tab.key;
@@ -30,14 +35,33 @@ export default function TalentPoolTabs({ activeTab, onChange, counts = {} }) {
               role="tab"
               aria-selected={active}
               onClick={() => onChange?.(tab.key)}
-              className={`relative inline-flex h-12 items-center gap-2 px-3 text-[11px] font-extrabold uppercase tracking-normal transition ${active ? "text-sibs-primary-1" : "text-[#7B87A3] hover:text-sibs-primary-1"}`}
+              className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
+                active
+                  ? "rounded-t-xl bg-white text-[#042C51]"
+                  : "text-[#667085] hover:text-[#042C51]"
+              }`}
             >
-              <Icon size={15} />
-              <span>{tab.label}</span>
-              <span className={`inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ${active ? "bg-sibs-primary-1 text-white" : "bg-[#E9EEF5] text-[#667085]"}`}>
+              <Icon
+                size={14}
+                className={`shrink-0 ${active ? "text-[#FF5C28]" : "text-[#98A2B3]"}`}
+              />
+              <span className="truncate">{tab.label}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors ${
+                  active
+                    ? "bg-[#042C51] text-white"
+                    : "bg-slate-200 text-slate-600"
+                }`}
+              >
                 {counts[tab.key] ?? 0}
               </span>
-              {active ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#FF5C28]" /> : null}
+              {active ? (
+                <Motion.div
+                  layoutId="talentPoolTabIndicator"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              ) : null}
             </button>
           );
         })}

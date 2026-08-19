@@ -66,12 +66,16 @@ function RiskBadge({ riskFlag }) {
   );
 }
 
-function RoleMobileCard({ role, onViewRole }) {
+function RoleMobileCard({ role, onViewRole, delay = 0 }) {
   return (
     <button
       type="button"
       onClick={() => onViewRole(role)}
-      className="sibs-card w-full p-4 text-left transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/30"
+      className="sibs-card sibs-page-card-in w-full p-4 text-left transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/30"
+      style={{
+        animationDelay: `${delay}ms`,
+        animationFillMode: "both",
+      }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -143,12 +147,14 @@ export default function TARoleHiringStatus({
 }) {
   return (
     <section
-      className="sibs-page-card-in sibs-card h-full w-full overflow-hidden"
+      className="sibs-page-card-in sibs-card flex h-full w-full flex-col justify-between overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="border-b border-[#E6ECF2] p-5 sm:p-6">
-        <h2 className="sibs-section-title">Role Hiring Status</h2>
-        <p className="sibs-section-subtitle">
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
+        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          Role Hiring Status
+        </h3>
+        <p className="mt-1 text-xs font-semibold text-[#667085]">
           Detailed recruitment telemetry per requisition
         </p>
 
@@ -190,7 +196,7 @@ export default function TARoleHiringStatus({
         />
       </div>
 
-      <div className="p-5 sm:p-6">
+      <div className="flex flex-1 flex-col justify-between p-4 sm:p-5 2xl:p-6">
         <div className="space-y-3 lg:hidden">
           {loading ? (
             <div className="sibs-empty-panel">Loading hiring roles...</div>
@@ -199,31 +205,32 @@ export default function TARoleHiringStatus({
               No roles match the current search and status filter.
             </div>
           ) : (
-            roles.map((role) => (
+            roles.map((role, index) => (
               <RoleMobileCard
                 key={role.id || role.roleAccount}
                 role={role}
                 onViewRole={onViewRole}
+                delay={index * 40}
               />
             ))
           )}
         </div>
 
-        <div className="sibs-data-table-shell hidden lg:block">
-          <div className="overflow-x-auto">
+        <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white hidden lg:block">
+          <div className="max-h-[480px] overflow-auto sibs-scrollbar">
             <table className="w-full min-w-[920px] border-collapse bg-white text-left text-xs">
               <thead className="sibs-data-table-head">
                 <tr className="sibs-data-table-head-row">
-                  <th className="sibs-data-table-th text-left">
+                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">
                     Role / Account
                   </th>
-                  <th className="sibs-data-table-th text-center">Req.</th>
-                  <th className="sibs-data-table-th text-center">Filled</th>
-                  <th className="sibs-data-table-th text-center">Open</th>
-                  <th className="sibs-data-table-th text-left">Due Date</th>
-                  <th className="sibs-data-table-th text-left">Status</th>
-                  <th className="sibs-data-table-th text-left">TA Owner</th>
-                  <th className="sibs-data-table-th text-center">Aging</th>
+                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Req.</th>
+                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Filled</th>
+                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Open</th>
+                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Due Date</th>
+                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Status</th>
+                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">TA Owner</th>
+                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Aging</th>
                 </tr>
               </thead>
 
@@ -247,7 +254,7 @@ export default function TARoleHiringStatus({
                     </td>
                   </tr>
                 ) : (
-                  roles.map((role) => (
+                  roles.map((role, index) => (
                     <tr
                       key={role.id || role.roleAccount}
                       role="button"
@@ -258,10 +265,14 @@ export default function TARoleHiringStatus({
                         event.preventDefault();
                         onViewRole(role);
                       }}
-                      className="sibs-data-table-row"
+                      className="sibs-data-table-row sibs-page-card-in"
+                      style={{
+                        animationDelay: `${index * 35}ms`,
+                        animationFillMode: "both",
+                      }}
                       aria-label={`Open details for ${role.roleTitle}`}
                     >
-                      <td className="px-4 py-3 align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <strong className="block text-xs font-extrabold leading-snug text-[#042C51]">
                           {role.roleTitle}
                         </strong>
@@ -269,28 +280,28 @@ export default function TARoleHiringStatus({
                           {role.account}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center font-extrabold tabular-nums text-[#042C51]">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#042C51]">
                         {role.req}
                       </td>
-                      <td className="px-4 py-3 text-center font-extrabold tabular-nums text-emerald-600">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-emerald-600">
                         {role.filled}
                       </td>
-                      <td className="px-4 py-3 text-center font-extrabold tabular-nums text-[#FF5C28]">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#FF5C28]">
                         {role.open}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 font-bold text-[#344054]">
+                      <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-[#344054]">
                         {formatDate(role.dueDate)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                         <div className="flex flex-col items-start gap-1">
                           <StatusBadge status={role.status} />
                           <RiskBadge riskFlag={role.riskFlag} />
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-bold text-[#344054]">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-[#344054]">
                         {role.taOwner}
                       </td>
-                      <td className="px-4 py-3 text-center font-extrabold tabular-nums text-[#344054]">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#344054]">
                         {role.aging}d
                       </td>
                     </tr>

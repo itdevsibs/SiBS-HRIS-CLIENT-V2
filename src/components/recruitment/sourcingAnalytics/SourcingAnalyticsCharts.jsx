@@ -132,21 +132,21 @@ function NativeSvgBarChart({ items = [], getValue, formatValue, activeColor = "#
 function ChartCard({ title, description, icon: Icon, children, delay = 0 }) {
   return (
     <section
-      className="sibs-page-card-in sibs-card rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm"
-      style={{ animationDelay: `${delay}ms` }}
+      className="sibs-page-card-in sibs-card rounded-2xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 font-jakarta shadow-sm"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="mb-2.5 2xl:mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
             {title}
-          </h2>
-          <p className="mt-1 text-xs font-semibold leading-4 text-[#667085]">
+          </h3>
+          <p className="mt-0.5 text-xs font-medium leading-relaxed text-[#667085]">
             {description}
           </p>
         </div>
 
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF2FB] text-[#042C51]">
-          <Icon size={15} />
+        <span className="flex h-7.5 w-7.5 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-full bg-[#EAF2FB] text-[#042C51]">
+          <Icon className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
         </span>
       </div>
 

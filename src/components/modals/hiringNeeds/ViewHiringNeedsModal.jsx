@@ -742,27 +742,26 @@ export default function ViewHiringNeedsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="view-hiring-needs-title"
-        className="sibs-modal-pop-in flex max-h-[94dvh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-[0_28px_80px_rgba(2,26,48,0.42)]"
+        className="sibs-modal-pop-in flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#07365F] px-5 py-4 text-white sm:px-6 sm:py-5">
+        <header className="shrink-0 bg-[#042C51] px-4 py-2.5 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
+            <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
               <FileText
-                size={20}
-                className="mt-0.5 shrink-0 text-[#FF5C28]"
+                className="mt-0.5 h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 text-[#FF5C28]"
               />
 
               <div className="min-w-0">
                 <h2
                   id="view-hiring-needs-title"
-                  className="text-sm font-extrabold leading-5 text-white sm:text-base"
+                  className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-white"
                 >
                   Personnel Requisition Form Details
                 </h2>
 
                 <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-extrabold text-blue-100">
+                  <span className="sibs-text-micro font-extrabold text-blue-100">
                     {requestIdDisplay}
                   </span>
 
@@ -781,15 +780,15 @@ export default function ViewHiringNeedsModal({
               type="button"
               onClick={onClose}
               disabled={decisionLoading}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Close Personnel Requisition details"
             >
-              <X size={17} />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </header>
 
-        <main className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6 sm:py-6">
+        <main className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-white px-4 py-3.5 sm:px-5 sm:py-4">
           <div className="space-y-5">
             <section className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
               <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">

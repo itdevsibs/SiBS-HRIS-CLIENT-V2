@@ -500,9 +500,49 @@
     transform: scale(0.98);
   }
 
-  .sibs-modal-close-btn:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+  /* Centralized Responsive Typography System */
+  .sibs-text-micro {
+    font-size: 9.5px;
+    line-height: 1.35;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  @media (min-width: 1536px) {
+    .sibs-text-micro {
+      font-size: 10px;
+    }
+  }
+
+  .sibs-text-xs {
+    font-size: 11.5px;
+    line-height: 1.4;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  @media (min-width: 1536px) {
+    .sibs-text-xs {
+      font-size: 12px;
+    }
+  }
+
+  .sibs-text-sm {
+    font-size: 12.5px;
+    line-height: 1.45;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  @media (min-width: 1536px) {
+    .sibs-text-sm {
+      font-size: 14px;
+    }
+  }
+
+  .sibs-text-base {
+    font-size: 15px;
+    line-height: 1.5;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  @media (min-width: 1536px) {
+    .sibs-text-base {
+      font-size: 16px;
+    }
   }
 
   /* Shared KPI / Metric Card Base */
@@ -1292,6 +1332,27 @@
 }
 
 /* =========================
+   PROCESS NOTE / FOOTNOTE CALLOUT
+========================= */
+@layer components {
+  .sibs-process-note {
+    @apply rounded-xl border border-[#D6E4F8] bg-[#F1F6FD] p-2.5 sm:p-3 2xl:p-3.5 shadow-sm font-jakarta;
+  }
+
+  .sibs-process-note__icon {
+    @apply flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg border border-[#D0E0F5] bg-white text-[#042C51] shadow-xs;
+  }
+
+  .sibs-process-note__title {
+    @apply text-xs font-extrabold uppercase tracking-wide text-[#042C51];
+  }
+
+  .sibs-process-note__body {
+    @apply mt-0.5 text-xs font-medium leading-relaxed text-[#3B5474];
+  }
+}
+
+/* =========================
    TABLE FOOTER PAGINATION
 ========================= */
 @layer components {
@@ -1412,6 +1473,17 @@
 
 .sibs-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+.sibs-no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.sibs-no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* =========================
