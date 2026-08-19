@@ -12,9 +12,6 @@ import {
 } from "lucide-react";
 
 import api from "../../../lib/axios/api-template";
-import {
-  getNhoIncompleteRoutingDecision,
-} from "../../../lib/utils/candidatePipeline/nhoRequirementRouting";
 import StatusModal from "../StatusModal";
 
 import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
@@ -972,10 +969,8 @@ export default function NhoUploadModal({
   currentFile = null,
   previousEmploymentEnabled: _initialPreviousEmploymentEnabled = true,
   onSave,
-  onSaveError,
 }) {
   const onSaveRef = useRef(onSave);
-  const onSaveErrorRef = useRef(onSaveError);
   const initialFilesRef = useRef(initialFiles);
   const currentFileRef = useRef(currentFile);
   const latestRequestRef = useRef(0);
@@ -994,10 +989,6 @@ export default function NhoUploadModal({
   useEffect(() => {
     onSaveRef.current = onSave;
   }, [onSave]);
-
-  useEffect(() => {
-    onSaveErrorRef.current = onSaveError;
-  }, [onSaveError]);
 
   useEffect(() => {
     initialFilesRef.current = initialFiles;
@@ -1493,45 +1484,7 @@ export default function NhoUploadModal({
           getMajorProgressFromApiPayload(response, savedFiles) ||
           calculateMajorProgress(savedFiles);
 
-        let routedStage = getRoutedStageFromApiPayload(response);
-        let routedCandidate = getCandidateFromApiPayload(response);
-        let routedResponse = response;
-
-        const incompleteRouting = getNhoIncompleteRoutingDecision(
-          savedMajorProgress,
-          routedStage,
-          savedFiles.length,
-        );
-
-        if (incompleteRouting.shouldMove) {
-          const moveResponse = await api.post(
-            `/api/candidate-pipeline/${encodeURIComponent(candidateId)}/move`,
-            {
-              targetStage: incompleteRouting.targetStage,
-              nextStage: incompleteRouting.targetStage,
-              stage: incompleteRouting.targetStage,
-              reason: "Candidate has incomplete major pre-employment requirements.",
-              remarks: `${savedMajorProgress.completed} / ${savedMajorProgress.total} major requirements submitted.`,
-            },
-            { withCredentials: true },
-          );
-
-          const movePayload = moveResponse?.data || {};
-
-          if (movePayload?.success === false) {
-            throw new Error(
-              movePayload?.message ||
-                "Requirements were saved, but the candidate status could not be updated.",
-            );
-          }
-
-          routedCandidate =
-            getCandidateFromApiPayload(movePayload) || routedCandidate;
-          routedStage =
-            getRoutedStageFromApiPayload(movePayload) ||
-            incompleteRouting.targetStage;
-          routedResponse = movePayload;
-        }
+        const routedStage = getRoutedStageFromApiPayload(response);
 
         onSaveRef.current?.({
           files: savedFiles,
@@ -1553,14 +1506,14 @@ export default function NhoUploadModal({
 
           routedStage,
           previousEmploymentEnabled: true,
-          candidate: routedCandidate,
-          response: routedResponse,
+          candidate: getCandidateFromApiPayload(response),
+          response,
         });
 
         window.dispatchEvent(
           new CustomEvent("ta-pipeline-candidates-updated", {
             detail: {
-              candidate: routedCandidate,
+              candidate: getCandidateFromApiPayload(response),
               files: savedFiles,
               majorProgress: savedMajorProgress,
               routedStage,
@@ -1571,7 +1524,7 @@ export default function NhoUploadModal({
         window.dispatchEvent(
           new CustomEvent("ta-talent-pool-updated", {
             detail: {
-              candidate: routedCandidate,
+              candidate: getCandidateFromApiPayload(response),
               files: savedFiles,
               majorProgress: savedMajorProgress,
               routedStage,
@@ -1600,13 +1553,7 @@ export default function NhoUploadModal({
 
       onClose?.();
     } catch (error) {
-      const errorMessage = getApiErrorMessage(
-        error,
-        "Failed to save uploads.",
-      );
-
-      setSaveError(errorMessage);
-      onSaveErrorRef.current?.(errorMessage);
+      setSaveError(getApiErrorMessage(error, "Failed to save uploads."));
     } finally {
       setIsSaving(false);
     }
@@ -1710,20 +1657,12 @@ export default function NhoUploadModal({
                   </div>
                 </div>
 
-                {!majorProgress.isComplete && completedRequirements === 0 && (
-                  <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
-                    No requirement files are uploaded yet. After saving, this
-                    candidate will remain under{" "}
-                    <span className="font-extrabold">For NHO</span>.
-                  </div>
-                )}
-
-                {!majorProgress.isComplete && completedRequirements > 0 && (
+                {!majorProgress.isComplete && (
                   <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
                     Candidate has fewer than 5 major requirements. After saving,
                     this candidate should stay under{" "}
                     <span className="font-extrabold">
-                      Incomplete Requirements
+                      For Onboarding - Incomplete Requirements
                     </span>{" "}
                     for Talent Pool follow-up.
                   </div>

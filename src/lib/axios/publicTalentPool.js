@@ -446,6 +446,45 @@ export async function getTalentPoolReferralPrefill(referralCode) {
 }
 
 /* =========================================
+   PUBLIC APPLICANT NAME CHECK
+========================================= */
+
+export async function checkTalentPoolApplicantNameAvailability({
+  firstName = "",
+  middleName = "",
+  lastName = "",
+} = {}) {
+  try {
+    const res = await publicApi.get(
+      "/api/talent-pool/public-applicant-name-check",
+      {
+        params: { firstName, middleName, lastName },
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Public checkTalentPoolApplicantNameAvailability API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return {
+      success: false,
+      data: null,
+      status: err?.response?.status || null,
+      code: err?.response?.data?.code || null,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to verify applicant name.",
+    };
+  }
+}
+
+/* =========================================
    PUBLIC APPLICATION SUBMIT
 ========================================= */
 

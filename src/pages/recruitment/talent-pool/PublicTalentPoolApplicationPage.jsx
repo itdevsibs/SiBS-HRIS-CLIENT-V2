@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import StatusModal from "@/components/modals/StatusModal";
 import {
+  checkTalentPoolApplicantNameAvailability,
   getTalentPoolApplicationForm,
   getTalentPoolFormOptions,
   getTalentPoolOpenPositions,
@@ -781,6 +782,42 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function normalizeReferencePhoneInput(value, previousValue = "") {
+  const digitsOnly = String(value ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 11);
+
+  if (!digitsOnly || digitsOnly === "0" || digitsOnly.startsWith("09")) {
+    return digitsOnly;
+  }
+
+  return String(previousValue ?? "");
+}
+
+function isValidReferencePhoneNumber(value = "") {
+  return /^09\d{9}$/.test(cleanText(value));
+}
+
+function buildApplicantNameCheckKey({
+  firstName = "",
+  middleName = "",
+  lastName = "",
+} = {}) {
+  return [firstName, middleName, lastName]
+    .map((value) => cleanText(value).toUpperCase().replace(/\s+/g, " "))
+    .join("|");
+}
+
+function hasCompleteApplicantNameForDuplicateCheck({
+  firstName = "",
+  middleName = "",
+  lastName = "",
+} = {}) {
+  return Boolean(
+    cleanText(firstName) && cleanText(middleName) && cleanText(lastName),
+  );
+}
+
 const uppercasePublicTextFields = new Set([
   "nickname",
   "referredBy",
@@ -1081,6 +1118,22 @@ function normalizeDropdownOptions(options = []) {
     .filter(Boolean);
 }
 
+function hasMatchingOptionValue(options, value) {
+  const normalizedValue = String(value || "");
+
+  if (!normalizedValue) return false;
+
+  return normalizeDropdownOptions(options).some(
+    (option) => String(option.value) === normalizedValue,
+  );
+}
+
+function hasMatchingMultiOptionValue(options, values) {
+  return toArray(values).some((value) =>
+    hasMatchingOptionValue(options, value),
+  );
+}
+
 function ensureOption(options = [], optionValue) {
   const normalizedTarget = cleanText(optionValue).toLowerCase();
   const hasOption = toArray(options).some((option) => {
@@ -1266,13 +1319,11 @@ function sortAvailablePositions(positions = []) {
 
 function getAvailablePositionDisplayLabel(position = {}) {
   const normalizedPosition = normalizeAvailablePosition(position);
-  const details = [
-    normalizedPosition.accountName || normalizedPosition.accountGhlName,
-    normalizedPosition.locationSite,
-  ].filter(Boolean);
+  const accountName =
+    normalizedPosition.accountName || normalizedPosition.accountGhlName;
 
-  return details.length
-    ? `${normalizedPosition.positionTitle} — ${details.join(" • ")}`
+  return accountName
+    ? `${normalizedPosition.positionTitle} — ${accountName}`
     : normalizedPosition.positionTitle;
 }
 
@@ -1560,7 +1611,7 @@ function HiringNeedsDropdown({
       {required && (
         <input
           tabIndex={-1}
-          value={value || ""}
+          value={selectedOption?.value || ""}
           onChange={() => {}}
           required
           className="pointer-events-none absolute bottom-0 left-0 h-px w-px opacity-0"
@@ -1754,7 +1805,7 @@ function PositionJobDescriptionDropdown({
 
       <input
         tabIndex={-1}
-        value={value || ""}
+        value={selectedPosition ? getPositionKey(selectedPosition) : ""}
         onChange={() => {}}
         required
         className="pointer-events-none absolute bottom-0 left-0 h-px w-px opacity-0"
@@ -1951,6 +2002,7 @@ function CalendarDatePicker({
   placeholder = "Select date",
   disabled = false,
   hasError = false,
+  required = false,
 }) {
   const calendarRef = useRef(null);
   const calendarPanelRef = useRef(null);
@@ -2019,29 +2071,31 @@ function CalendarDatePicker({
     };
   }, []);
 
+  function updateCalendarPanelPosition() {
+    if (!calendarRef.current) return;
+
+    const rect = calendarRef.current.getBoundingClientRect();
+    const panelWidth = 340;
+    const gutter = 12;
+    const maxLeft = window.innerWidth - panelWidth - gutter;
+
+    setPanelPosition({
+      top: rect.bottom + 8,
+      left: Math.max(gutter, Math.min(rect.left, maxLeft)),
+      width: panelWidth,
+    });
+  }
+
   useEffect(() => {
     if (!open || !calendarRef.current) return;
 
-    function updatePanelPosition() {
-      const rect = calendarRef.current.getBoundingClientRect();
-      const panelWidth = 340;
-      const gutter = 12;
-      const maxLeft = window.innerWidth - panelWidth - gutter;
-
-      setPanelPosition({
-        top: rect.bottom + 8,
-        left: Math.max(gutter, Math.min(rect.left, maxLeft)),
-        width: panelWidth,
-      });
-    }
-
-    updatePanelPosition();
-    window.addEventListener("resize", updatePanelPosition);
-    window.addEventListener("scroll", updatePanelPosition, true);
+    updateCalendarPanelPosition();
+    window.addEventListener("resize", updateCalendarPanelPosition);
+    window.addEventListener("scroll", updateCalendarPanelPosition, true);
 
     return () => {
-      window.removeEventListener("resize", updatePanelPosition);
-      window.removeEventListener("scroll", updatePanelPosition, true);
+      window.removeEventListener("resize", updateCalendarPanelPosition);
+      window.removeEventListener("scroll", updateCalendarPanelPosition, true);
     };
   }, [open]);
 
@@ -2104,17 +2158,35 @@ function CalendarDatePicker({
   }
 
   function handleToggleOpen() {
-    if (!open && selectedDate) {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+
+    if (selectedDate) {
       setDisplayDate(
         new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
       );
     }
 
-    setOpen((previous) => !previous);
+    updateCalendarPanelPosition();
+    setOpen(true);
   }
 
   return (
     <div ref={calendarRef} className="relative z-[220] min-w-0">
+      {required ? (
+        <input
+          tabIndex={-1}
+          value={value || ""}
+          onChange={() => {}}
+          required
+          disabled={disabled}
+          aria-label="Date of Birth"
+          className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+        />
+      ) : null}
+
       <button
         type="button"
         disabled={disabled}
@@ -2693,7 +2765,13 @@ function EducationDetailsFields({ attainment, details, onChange }) {
   );
 }
 
-function MultiSelectCheckboxGroup({ options, values, onChange, disabled = false }) {
+function MultiSelectCheckboxGroup({
+  options,
+  values,
+  onChange,
+  disabled = false,
+  required = false,
+}) {
   function toggleValue(optionValue) {
     if (disabled) return;
 
@@ -2710,7 +2788,18 @@ function MultiSelectCheckboxGroup({ options, values, onChange, disabled = false 
   }
 
   return (
-    <div className="grid grid-cols-1 gap-2 rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="relative grid grid-cols-1 gap-2 rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-3 sm:grid-cols-2 lg:grid-cols-3">
+      {required ? (
+        <input
+          tabIndex={-1}
+          value={values.length ? "selected" : ""}
+          onChange={() => {}}
+          required
+          aria-label="Application source"
+          className="pointer-events-none absolute bottom-0 left-0 h-px w-px opacity-0"
+        />
+      ) : null}
+
       {options.map((option) => {
         const optionValue = getOptionValue(option);
         const optionLabel = getOptionLabel(option);
@@ -3091,6 +3180,7 @@ export default function PublicTalentPoolApplicationPage() {
   const consentRef = useRef(null);
   const initialReferralCodeRef = useRef(getReferralCodeFromCurrentUrl());
   const referralPrefillValuesRef = useRef(null);
+  const applicantNameCheckRequestRef = useRef(0);
 
   const [form, setForm] = useState(() =>
     createEmptyPublicForm(initialReferralCodeRef.current),
@@ -3121,6 +3211,12 @@ export default function PublicTalentPoolApplicationPage() {
   const [highlightAudio, setHighlightAudio] = useState(false);
   const [highlightAttachment, setHighlightAttachment] = useState(false);
   const [highlightConsent, setHighlightConsent] = useState(false);
+  const [applicantNameCheck, setApplicantNameCheck] = useState({
+    status: "idle",
+    key: "",
+    duplicate: false,
+    source: null,
+  });
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -3133,6 +3229,18 @@ export default function PublicTalentPoolApplicationPage() {
   const selectedAttachmentFile =
     attachmentFileRef.current || form.attachmentFile;
   const isReferralCodeFromEmail = Boolean(initialReferralCodeRef.current);
+  const currentApplicantNameCheckKey = buildApplicantNameCheckKey({
+    firstName: form.firstName,
+    middleName: form.middleName,
+    lastName: form.lastName,
+  });
+  const isApplicantNameVerifiedAvailable =
+    applicantNameCheck.status === "available" &&
+    applicantNameCheck.key === currentApplicantNameCheckKey;
+  const isApplicantNameGateLocked = !isApplicantNameVerifiedAvailable;
+  const hasDuplicateApplicantName =
+    applicantNameCheck.status === "duplicate" &&
+    applicantNameCheck.key === currentApplicantNameCheckKey;
 
   useEffect(() => {
     const styleId = "public-talent-pool-hide-sidebar-style";
@@ -3292,6 +3400,67 @@ export default function PublicTalentPoolApplicationPage() {
   }, [form.referralCode, hasReferralCode, isReferralCodeFromEmail]);
 
   useEffect(() => {
+    const namePayload = {
+      firstName: form.firstName,
+      middleName: form.middleName,
+      lastName: form.lastName,
+    };
+    const nameKey = buildApplicantNameCheckKey(namePayload);
+    const requestId = applicantNameCheckRequestRef.current + 1;
+    applicantNameCheckRequestRef.current = requestId;
+
+    if (!hasCompleteApplicantNameForDuplicateCheck(namePayload)) {
+      setApplicantNameCheck({
+        status: "idle",
+        key: nameKey,
+        duplicate: false,
+        source: null,
+      });
+      return undefined;
+    }
+
+    setApplicantNameCheck({
+      status: "checking",
+      key: nameKey,
+      duplicate: false,
+      source: null,
+    });
+
+    const lookupTimer = window.setTimeout(async () => {
+      const response = await checkTalentPoolApplicantNameAvailability(
+        namePayload,
+      );
+
+      if (applicantNameCheckRequestRef.current !== requestId) return;
+
+      if (!response?.success) {
+        setApplicantNameCheck({
+          status: "error",
+          key: nameKey,
+          duplicate: false,
+          source: null,
+        });
+        return;
+      }
+
+      const duplicate = Boolean(response?.data?.duplicate);
+      const source = response?.data?.source || null;
+
+      setApplicantNameCheck({
+        status: duplicate ? "duplicate" : "available",
+        key: nameKey,
+        duplicate,
+        source,
+      });
+
+    }, 450);
+
+    return () => {
+      window.clearTimeout(lookupTimer);
+    };
+  }, [form.firstName, form.middleName, form.lastName]);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function loadDatabaseData() {
@@ -3380,6 +3549,7 @@ export default function PublicTalentPoolApplicationPage() {
   const shouldShowApplicationFields =
     hasReferralCode === "No" ||
     (hasReferralCode === "Yes" && isReferralCodeMatched);
+  const shouldRenderApplicationFields = shouldShowApplicationFields;
 
   const hasEmployeeReferralProgram = useMemo(
     () =>
@@ -3411,9 +3581,18 @@ export default function PublicTalentPoolApplicationPage() {
       Boolean(form.workExperience),
       Boolean(form.highestEducationalAttainment),
       educationComplete,
-      Boolean(form.reference1Name.trim() && form.reference1Phone.trim()),
-      Boolean(form.reference2Name.trim() && form.reference2Phone.trim()),
-      Boolean(form.reference3Name.trim() && form.reference3Phone.trim()),
+      Boolean(
+        form.reference1Name.trim() &&
+          isValidReferencePhoneNumber(form.reference1Phone),
+      ),
+      Boolean(
+        form.reference2Name.trim() &&
+          isValidReferencePhoneNumber(form.reference2Phone),
+      ),
+      Boolean(
+        form.reference3Name.trim() &&
+          isValidReferencePhoneNumber(form.reference3Phone),
+      ),
       Boolean(selectedAudioFile),
       Boolean(selectedAttachmentFile),
       Boolean(form.consent),
@@ -3469,12 +3648,14 @@ export default function PublicTalentPoolApplicationPage() {
   ]);
 
   const canSubmit = useMemo(() => {
+    if (!isApplicantNameVerifiedAvailable) return false;
     if (!shouldShowApplicationFields) return false;
     if (isLoadingData) return false;
     if (isSubmitting) return false;
     if (loadError) return false;
     return true;
   }, [
+    isApplicantNameVerifiedAvailable,
     isLoadingData,
     isSubmitting,
     loadError,
@@ -3488,6 +3669,79 @@ export default function PublicTalentPoolApplicationPage() {
       title,
       message,
     });
+  }
+
+  async function ensureApplicantNameAvailable() {
+    const namePayload = {
+      firstName: form.firstName,
+      middleName: form.middleName,
+      lastName: form.lastName,
+    };
+
+    if (!hasCompleteApplicantNameForDuplicateCheck(namePayload)) {
+      return true;
+    }
+
+    const nameKey = buildApplicantNameCheckKey(namePayload);
+
+    if (
+      applicantNameCheck.key === nameKey &&
+      applicantNameCheck.status === "available"
+    ) {
+      return true;
+    }
+
+    if (
+      applicantNameCheck.key === nameKey &&
+      applicantNameCheck.status === "duplicate"
+    ) {
+      return false;
+    }
+
+    setApplicantNameCheck({
+      status: "checking",
+      key: nameKey,
+      duplicate: false,
+      source: null,
+    });
+
+    const response = await checkTalentPoolApplicantNameAvailability(
+      namePayload,
+    );
+
+    if (!response?.success) {
+      setApplicantNameCheck({
+        status: "error",
+        key: nameKey,
+        duplicate: false,
+        source: null,
+      });
+
+      showStatusModal({
+        type: "error",
+        title: "Unable to Verify Applicant",
+        message:
+          response?.message ||
+          "The applicant name could not be verified. Please try again before continuing.",
+      });
+      return false;
+    }
+
+    const duplicate = Boolean(response?.data?.duplicate);
+    const source = response?.data?.source || null;
+
+    setApplicantNameCheck({
+      status: duplicate ? "duplicate" : "available",
+      key: nameKey,
+      duplicate,
+      source,
+    });
+
+    if (duplicate) {
+      return false;
+    }
+
+    return true;
   }
 
   function handleOpenPositionJobDescription(position) {
@@ -3734,6 +3988,13 @@ export default function PublicTalentPoolApplicationPage() {
     setHighlightAudio(false);
     setHighlightAttachment(false);
     setHighlightConsent(false);
+    applicantNameCheckRequestRef.current += 1;
+    setApplicantNameCheck({
+      status: "idle",
+      key: "",
+      duplicate: false,
+      source: null,
+    });
 
     showStatusModal({
       type: "success",
@@ -3862,6 +4123,163 @@ export default function PublicTalentPoolApplicationPage() {
     }));
   }
 
+  function isPageOneReadyForQuestions() {
+    if (!isApplicantNameVerifiedAvailable) return false;
+    if (isLoadingData || loadError) return false;
+    if (!hasReferralCode) return false;
+    if (hasReferralCode === "Yes" && !cleanText(form.referralCode)) return false;
+    if (hasReferralCode === "Yes" && !isReferralCodeMatched) return false;
+    if (!activePositionOptions.length) return false;
+    if (
+      !formOptions.hearAboutUs.length ||
+      !hasMatchingMultiOptionValue(formOptions.hearAboutUs, form.hearAboutUs)
+    ) {
+      return false;
+    }
+
+    if (
+      hasEmployeeReferralProgram &&
+      (!cleanText(form.referredBy) || !cleanText(form.employeeId))
+    ) {
+      return false;
+    }
+
+    const selectedAvailablePosition = activePositionOptions.find(
+      (position) =>
+        String(getPositionKey(position)) ===
+        String(form.selectedAvailablePositionId || ""),
+    );
+
+    if (!selectedAvailablePosition || !form.openPosition) return false;
+    if (!hasMatchingOptionValue(formOptions.locations, form.applyingLocation)) {
+      return false;
+    }
+    if (!cleanText(form.firstName)) return false;
+    if (!cleanText(form.lastName)) return false;
+    if (!form.dateOfBirth) return false;
+    if (!cleanText(form.email)) return false;
+    if (!cleanText(form.physicalAddress)) return false;
+    if (!hasMatchingOptionValue(formOptions.workExperience, form.workExperience)) {
+      return false;
+    }
+    if (
+      !hasMatchingOptionValue(
+        formOptions.educationalAttainment,
+        form.highestEducationalAttainment,
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      validateEducationDetails(
+        form.highestEducationalAttainment,
+        form.educationDetails,
+      )
+    ) {
+      return false;
+    }
+
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.fullyVaccinated)) {
+      return false;
+    }
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.comfortableOnSite)) {
+      return false;
+    }
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.willingGraveyard)) {
+      return false;
+    }
+    if (
+      !hasMatchingOptionValue(
+        formOptions.employmentInterest,
+        form.employmentInterest,
+      )
+    ) {
+      return false;
+    }
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.remoteWorkAccess)) {
+      return false;
+    }
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.willingDrugTest)) {
+      return false;
+    }
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.willingBackgroundCheck)) {
+      return false;
+    }
+
+    if (hasRelevantExperience) {
+      if (
+        !hasMatchingOptionValue(
+          formOptions.lengthOfExperience,
+          form.lengthOfWorkExperience,
+        )
+      ) {
+        return false;
+      }
+
+      const requiredExperienceValues = [
+        form.lengthOfWorkExperience,
+        form.years,
+        form.role,
+        form.company,
+        form.monthlyCompensation,
+        form.reasonForLeaving,
+      ];
+
+      if (requiredExperienceValues.some((value) => !cleanText(value))) {
+        return false;
+      }
+
+      if (form.hasOtherExperience === "Yes") {
+        if (!form.otherExperiences.length) return false;
+
+        const requiredOtherExperienceFields = [
+          "lengthOfWorkExperience",
+          "years",
+          "role",
+          "company",
+          "monthlyCompensation",
+          "reasonForLeaving",
+        ];
+
+        const hasIncompleteOtherExperience = form.otherExperiences.some(
+          (experience) =>
+            requiredOtherExperienceFields.some(
+              (field) => !cleanText(experience?.[field]),
+            ),
+        );
+
+        if (hasIncompleteOtherExperience) return false;
+
+        const hasInvalidOtherExperienceLength = form.otherExperiences.some(
+          (experience) =>
+            !hasMatchingOptionValue(
+              formOptions.lengthOfExperience,
+              experience?.lengthOfWorkExperience,
+            ),
+        );
+
+        if (hasInvalidOtherExperienceLength) return false;
+      }
+    }
+
+    const requiredReferenceNames = [
+      form.reference1Name,
+      form.reference2Name,
+      form.reference3Name,
+    ];
+
+    if (!requiredReferenceNames.every((value) => Boolean(cleanText(value)))) {
+      return false;
+    }
+
+    return [
+      form.reference1Phone,
+      form.reference2Phone,
+      form.reference3Phone,
+    ].every(isValidReferencePhoneNumber);
+  }
+
   function validatePageOne() {
     if (isLoadingData) {
       showStatusModal({
@@ -3928,7 +4346,7 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (form.hearAboutUs.length === 0) {
+    if (!hasMatchingMultiOptionValue(formOptions.hearAboutUs, form.hearAboutUs)) {
       showStatusModal({
         type: "error",
         title: "Application source required",
@@ -3956,7 +4374,13 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.selectedAvailablePositionId || !form.openPosition) {
+    const selectedAvailablePosition = activePositionOptions.find(
+      (position) =>
+        String(getPositionKey(position)) ===
+        String(form.selectedAvailablePositionId || ""),
+    );
+
+    if (!selectedAvailablePosition || !form.openPosition) {
       showStatusModal({
         type: "error",
         title: "Open position required",
@@ -3965,7 +4389,7 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.applyingLocation) {
+    if (!hasMatchingOptionValue(formOptions.locations, form.applyingLocation)) {
       showStatusModal({
         type: "error",
         title: "Location required",
@@ -4019,7 +4443,7 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.workExperience) {
+    if (!hasMatchingOptionValue(formOptions.workExperience, form.workExperience)) {
       showStatusModal({
         type: "error",
         title: "Work experience required",
@@ -4028,7 +4452,12 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.highestEducationalAttainment) {
+    if (
+      !hasMatchingOptionValue(
+        formOptions.educationalAttainment,
+        form.highestEducationalAttainment,
+      )
+    ) {
       showStatusModal({
         type: "error",
         title: "Educational attainment required",
@@ -4053,7 +4482,7 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.fullyVaccinated) {
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.fullyVaccinated)) {
       showStatusModal({
         type: "error",
         title: "Missing required field",
@@ -4062,7 +4491,7 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.comfortableOnSite) {
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.comfortableOnSite)) {
       showStatusModal({
         type: "error",
         title: "Missing required field",
@@ -4071,7 +4500,7 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.willingGraveyard) {
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.willingGraveyard)) {
       showStatusModal({
         type: "error",
         title: "Missing required field",
@@ -4080,7 +4509,12 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.employmentInterest) {
+    if (
+      !hasMatchingOptionValue(
+        formOptions.employmentInterest,
+        form.employmentInterest,
+      )
+    ) {
       showStatusModal({
         type: "error",
         title: "Employment preference required",
@@ -4089,7 +4523,7 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.remoteWorkAccess) {
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.remoteWorkAccess)) {
       showStatusModal({
         type: "error",
         title: "Missing required field",
@@ -4099,7 +4533,7 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.willingDrugTest) {
+    if (!hasMatchingOptionValue(formOptions.yesNo, form.willingDrugTest)) {
       showStatusModal({
         type: "error",
         title: "Missing required field",
@@ -4109,7 +4543,9 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (!form.willingBackgroundCheck) {
+    if (
+      !hasMatchingOptionValue(formOptions.yesNo, form.willingBackgroundCheck)
+    ) {
       showStatusModal({
         type: "error",
         title: "Missing required field",
@@ -4120,6 +4556,20 @@ export default function PublicTalentPoolApplicationPage() {
     }
 
     if (hasRelevantExperience) {
+      if (
+        !hasMatchingOptionValue(
+          formOptions.lengthOfExperience,
+          form.lengthOfWorkExperience,
+        )
+      ) {
+        showStatusModal({
+          type: "error",
+          title: "Length of work experience required",
+          message: "Please select a valid length of work experience.",
+        });
+        return false;
+      }
+
       const requiredExperienceFields = [
         [form.lengthOfWorkExperience, "Length of work experience"],
         [form.years, "Years"],
@@ -4178,7 +4628,62 @@ export default function PublicTalentPoolApplicationPage() {
           });
           return false;
         }
+
+        const hasInvalidOtherExperienceLength = form.otherExperiences.some(
+          (experience) =>
+            !hasMatchingOptionValue(
+              formOptions.lengthOfExperience,
+              experience?.lengthOfWorkExperience,
+            ),
+        );
+
+        if (hasInvalidOtherExperienceLength) {
+          showStatusModal({
+            type: "error",
+            title: "Invalid work experience length",
+            message:
+              "Please select a valid length of work experience for every additional experience.",
+          });
+          return false;
+        }
       }
+    }
+
+    const requiredReferenceFields = [
+      [form.reference1Name, "Reference 1 full name"],
+      [form.reference1Phone, "Reference 1 phone number"],
+      [form.reference2Name, "Reference 2 full name"],
+      [form.reference2Phone, "Reference 2 phone number"],
+      [form.reference3Name, "Reference 3 full name"],
+      [form.reference3Phone, "Reference 3 phone number"],
+    ];
+
+    const missingReferenceField = requiredReferenceFields.find(
+      ([value]) => !cleanText(value),
+    );
+
+    if (missingReferenceField) {
+      showStatusModal({
+        type: "error",
+        title: "Character reference required",
+        message: `${missingReferenceField[1]} is required.`,
+      });
+      return false;
+    }
+
+    const invalidReferencePhone = [
+      [form.reference1Phone, "Reference 1 phone number"],
+      [form.reference2Phone, "Reference 2 phone number"],
+      [form.reference3Phone, "Reference 3 phone number"],
+    ].find(([value]) => !isValidReferencePhoneNumber(value));
+
+    if (invalidReferencePhone) {
+      showStatusModal({
+        type: "error",
+        title: "Invalid reference phone number",
+        message: `${invalidReferencePhone[1]} must be exactly 11 digits and start with 09.`,
+      });
+      return false;
     }
 
     return true;
@@ -4288,7 +4793,26 @@ export default function PublicTalentPoolApplicationPage() {
     }));
   }
 
+  async function handlePageTwoTabClick() {
+    if (currentPage === 2 || isLoadingApplicationQuestions) return;
+
+    if (!isPageOneReadyForQuestions()) {
+      showStatusModal({
+        type: "error",
+        title: "Required Information Incomplete",
+        message:
+          "Please complete all required fields in Page 1 before proceeding to Position Screening Questions.",
+      });
+      return;
+    }
+
+    await handleNextPage();
+  }
+
   async function handleNextPage() {
+    const applicantNameAvailable = await ensureApplicantNameAvailable();
+
+    if (!applicantNameAvailable) return;
     if (!validatePageOne()) return;
 
     setIsPageOneComplete(true);
@@ -4394,6 +4918,24 @@ export default function PublicTalentPoolApplicationPage() {
       const response = await submitPublicTalentPoolApplication(submitForm);
 
       if (!response?.success) {
+        if (response?.code === "APPLICANT_NAME_EXISTS") {
+          const nameKey = buildApplicantNameCheckKey({
+            firstName: form.firstName,
+            middleName: form.middleName,
+            lastName: form.lastName,
+          });
+
+          setApplicantNameCheck({
+            status: "duplicate",
+            key: nameKey,
+            duplicate: true,
+            source: null,
+          });
+          setCurrentPage(1);
+          setIsPageOneComplete(false);
+          return;
+        }
+
         showStatusModal({
           type: "error",
           title: "Application not saved",
@@ -4592,12 +5134,14 @@ export default function PublicTalentPoolApplicationPage() {
           ) : null}
 
           <ApplicationPageTabs
-            visible={shouldShowApplicationFields}
+            visible={shouldRenderApplicationFields}
             currentPage={currentPage}
             isPageOneComplete={isPageOneComplete}
-            isLoadingPageTwo={isLoadingApplicationQuestions}
+            isLoadingPageTwo={
+              isLoadingApplicationQuestions || isApplicantNameGateLocked
+            }
             onPageOneClick={handlePreviousPage}
-            onPageTwoClick={handleNextPage}
+            onPageTwoClick={handlePageTwoTabClick}
           />
 
           {currentPage === 1 ? (
@@ -4731,6 +5275,7 @@ export default function PublicTalentPoolApplicationPage() {
                       How did you first hear about us? <RequiredMark />
                 </FieldLabel>
                 <MultiSelectCheckboxGroup
+                  required
                   options={formOptions.hearAboutUs}
                   values={form.hearAboutUs}
                   onChange={handleHearAboutUsChange}
@@ -4840,7 +5385,7 @@ export default function PublicTalentPoolApplicationPage() {
           </SectionCard>
           ) : null}
 
-          {shouldShowApplicationFields ? (
+          {shouldRenderApplicationFields ? (
             <>
               {currentPage === 1 ? (
                 <>
@@ -4856,22 +5401,36 @@ export default function PublicTalentPoolApplicationPage() {
                   First Name <RequiredMark />
                 </FieldLabel>
                 <input
+                  required
                   value={form.firstName}
                   onChange={(e) => updateFormField("firstName", e.target.value)}
                   placeholder="Enter first name"
-                  className={inputClass()}
+                  aria-invalid={hasDuplicateApplicantName}
+                  className={inputClass(
+                    hasDuplicateApplicantName
+                      ? "border-red-300 bg-red-50 ring-4 ring-red-100 focus:border-red-400 focus:ring-red-100"
+                      : "",
+                  )}
                 />
               </div>
 
               <div>
-                <FieldLabel>Middle Name</FieldLabel>
+                <FieldLabel>
+                  Middle Name <RequiredMark />
+                </FieldLabel>
                 <input
+                  required
                   value={form.middleName}
                   onChange={(e) =>
                     updateFormField("middleName", e.target.value)
                   }
                   placeholder="Enter middle name"
-                  className={inputClass()}
+                  aria-invalid={hasDuplicateApplicantName}
+                  className={inputClass(
+                    hasDuplicateApplicantName
+                      ? "border-red-300 bg-red-50 ring-4 ring-red-100 focus:border-red-400 focus:ring-red-100"
+                      : "",
+                  )}
                 />
               </div>
 
@@ -4880,10 +5439,16 @@ export default function PublicTalentPoolApplicationPage() {
                   Last Name <RequiredMark />
                 </FieldLabel>
                 <input
+                  required
                   value={form.lastName}
                   onChange={(e) => updateFormField("lastName", e.target.value)}
                   placeholder="Enter last name"
-                  className={inputClass()}
+                  aria-invalid={hasDuplicateApplicantName}
+                  className={inputClass(
+                    hasDuplicateApplicantName
+                      ? "border-red-300 bg-red-50 ring-4 ring-red-100 focus:border-red-400 focus:ring-red-100"
+                      : "",
+                  )}
                 />
               </div>
 
@@ -4897,12 +5462,42 @@ export default function PublicTalentPoolApplicationPage() {
                 />
               </div>
 
+              {hasDuplicateApplicantName ? (
+                <div
+                  data-testid="duplicate-applicant-name-error"
+                  className="md:col-span-4 -mt-1 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-bold leading-5 text-red-700"
+                  role="alert"
+                >
+                  Applicant already exists in SiBS records. The same First Name,
+                  Middle Name, and Last Name cannot be used for another application.
+                </div>
+              ) : applicantNameCheck.status === "checking" ? (
+                <div className="md:col-span-4 -mt-1 rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs font-bold leading-5 text-[#174A7C]">
+                  Checking applicant name in Kronos and Talent Pool...
+                </div>
+              ) : applicantNameCheck.status === "error" ? (
+                <div className="md:col-span-4 -mt-1 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-bold leading-5 text-amber-700">
+                  Applicant name could not be verified. Update the name fields to try again.
+                </div>
+              ) : !isApplicantNameVerifiedAvailable ? (
+                <div className="md:col-span-4 -mt-1 rounded-[10px] border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-2.5 text-xs font-bold leading-5 text-[#667085]">
+                  Complete First Name, Middle Name, and Last Name to unlock the rest of the form.
+                </div>
+              ) : null}
+
+              <fieldset
+                data-testid="applicant-name-dependent-fields"
+                disabled={isApplicantNameGateLocked}
+                className={`contents ${isApplicantNameGateLocked ? "opacity-60" : ""}`}
+              >
               <div>
                 <FieldLabel>
                   Date of Birth <RequiredMark />
                 </FieldLabel>
 
                 <CalendarDatePicker
+                  required
+                  disabled={isApplicantNameGateLocked}
                   value={form.dateOfBirth}
                   onChange={(value) => updateFormField("dateOfBirth", value)}
                   placeholder="Select date"
@@ -4920,6 +5515,8 @@ export default function PublicTalentPoolApplicationPage() {
                   Email <RequiredMark />
                 </FieldLabel>
                 <input
+                  required
+                  disabled={isApplicantNameGateLocked}
                   type="email"
                   value={form.email}
                   onChange={(e) => updateFormField("email", e.target.value)}
@@ -4931,6 +5528,7 @@ export default function PublicTalentPoolApplicationPage() {
               <div>
                 <FieldLabel>Phone 1</FieldLabel>
                 <input
+                  disabled={isApplicantNameGateLocked}
                   value={form.phone1}
                   onChange={(e) =>
                     updateFormField(
@@ -4948,6 +5546,7 @@ export default function PublicTalentPoolApplicationPage() {
               <div>
                 <FieldLabel>Phone 2</FieldLabel>
                 <input
+                  disabled={isApplicantNameGateLocked}
                   value={form.phone2}
                   onChange={(e) =>
                     updateFormField(
@@ -4968,6 +5567,7 @@ export default function PublicTalentPoolApplicationPage() {
                 </FieldLabel>
                 <AutoResizeTextarea
                   required
+                  disabled={isApplicantNameGateLocked}
                   value={form.physicalAddress}
                   onChange={(e) =>
                     updateFormField("physicalAddress", e.target.value)
@@ -4976,9 +5576,14 @@ export default function PublicTalentPoolApplicationPage() {
                   className={textareaClass("min-h-11 leading-6")}
                 />
               </div>
+              </fieldset>
             </div>
           </SectionCard>
 
+          <fieldset
+            disabled={isApplicantNameGateLocked}
+            className={isApplicantNameGateLocked ? "space-y-6 opacity-60" : "space-y-6"}
+          >
           <SectionCard
             icon={BriefcaseBusiness}
             step={3}
@@ -5278,6 +5883,7 @@ export default function PublicTalentPoolApplicationPage() {
                         Full Name <RequiredMark />
                       </FieldLabel>
                       <input
+                        required
                         value={reference.name}
                         onChange={(event) =>
                           updateFormField(
@@ -5295,16 +5901,23 @@ export default function PublicTalentPoolApplicationPage() {
                         Phone Number <RequiredMark />
                       </FieldLabel>
                       <input
+                        required
+                        type="tel"
                         value={reference.phone}
                         onChange={(event) =>
                           updateFormField(
                             reference.phoneField,
-                            normalizePhoneNumberInput(event.target.value),
+                            normalizeReferencePhoneInput(
+                              event.target.value,
+                              reference.phone,
+                            ),
                           )
                         }
-                        placeholder="Reference phone"
+                        placeholder="09xxxxxxxxx"
                         inputMode="numeric"
                         maxLength={11}
+                        pattern="09[0-9]{9}"
+                        title="Enter an 11-digit phone number starting with 09"
                         className={inputClass()}
                       />
                     </div>
@@ -5339,8 +5952,7 @@ export default function PublicTalentPoolApplicationPage() {
               </button>
 
               <button
-                type="button"
-                onClick={handleNextPage}
+                type="submit"
                 disabled={!canSubmit || isLoadingApplicationQuestions}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-md shadow-[#FF5C28]/15 transition hover:-translate-y-0.5 hover:bg-[#E94F1F] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
               >
@@ -5353,6 +5965,7 @@ export default function PublicTalentPoolApplicationPage() {
               </button>
             </div>
           </section>
+          </fieldset>
                 </>
               ) : (
                 <>
@@ -5506,8 +6119,10 @@ export default function PublicTalentPoolApplicationPage() {
                     <FieldLabel>
                       Upload single audio file <RequiredMark />
                     </FieldLabel>
-                    <label
-                      className={`flex min-h-[190px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
+                    <button
+                      type="button"
+                      onClick={() => audioInputRef.current?.click()}
+                      className={`flex min-h-[190px] w-full cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAudio && !selectedAudioFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAudioFile
@@ -5535,23 +6150,26 @@ export default function PublicTalentPoolApplicationPage() {
                         Accepted: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC, AMR,
                         3GP, OPUS, AIFF, CAF, WMA
                       </p>
-                      <input
-                        ref={audioInputRef}
-                        type="file"
-                        accept={acceptedAudioTypes}
-                        onChange={(e) => {
-                          const accepted = handleFileChange(
-                            "audioFile",
-                            e.target.files?.[0],
-                          );
+                    </button>
+                    <input
+                      ref={audioInputRef}
+                      type="file"
+                      accept={acceptedAudioTypes}
+                      onClick={(event) => {
+                        event.currentTarget.value = "";
+                      }}
+                      onChange={(e) => {
+                        const accepted = handleFileChange(
+                          "audioFile",
+                          e.target.files?.[0],
+                        );
 
-                          if (!accepted) {
-                            e.target.value = "";
-                          }
-                        }}
-                        className="hidden"
-                      />
-                    </label>
+                        if (!accepted) {
+                          e.target.value = "";
+                        }
+                      }}
+                      className="hidden"
+                    />
 
                     {highlightAudio && !selectedAudioFile && (
                       <p className="mt-2 text-sm font-bold text-red-600">
@@ -5564,8 +6182,10 @@ export default function PublicTalentPoolApplicationPage() {
                     <FieldLabel>
                       Upload supporting file <RequiredMark />
                     </FieldLabel>
-                    <label
-                      className={`flex min-h-[190px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
+                    <button
+                      type="button"
+                      onClick={() => attachmentInputRef.current?.click()}
+                      className={`flex min-h-[190px] w-full cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAttachment && !selectedAttachmentFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAttachmentFile
@@ -5593,23 +6213,26 @@ export default function PublicTalentPoolApplicationPage() {
                       <p className="mt-1 text-xs font-semibold text-[#667085]">
                         PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
                       </p>
-                      <input
-                        ref={attachmentInputRef}
-                        type="file"
-                        accept={acceptedDocumentTypes}
-                        onChange={(e) => {
-                          const accepted = handleFileChange(
-                            "attachmentFile",
-                            e.target.files?.[0],
-                          );
+                    </button>
+                    <input
+                      ref={attachmentInputRef}
+                      type="file"
+                      accept={acceptedDocumentTypes}
+                      onClick={(event) => {
+                        event.currentTarget.value = "";
+                      }}
+                      onChange={(e) => {
+                        const accepted = handleFileChange(
+                          "attachmentFile",
+                          e.target.files?.[0],
+                        );
 
-                          if (!accepted) {
-                            e.target.value = "";
-                          }
-                        }}
-                        className="hidden"
-                      />
-                    </label>
+                        if (!accepted) {
+                          e.target.value = "";
+                        }
+                      }}
+                      className="hidden"
+                    />
 
                     {highlightAttachment && !selectedAttachmentFile && (
                       <p className="mt-2 text-sm font-bold text-red-600">

@@ -62,6 +62,9 @@ function appendCandidateFormData(formData, form = {}) {
 
   appendValue(formData, "candidateId", form.candidateId);
   appendValue(formData, "openPosition", form.openPosition);
+  appendValue(formData, "positionId", form.positionId || form.openPositionId);
+  appendValue(formData, "referralCode", form.referralCode);
+  appendJson(formData, "applicationFormAnswers", normalizeArray(form.applicationFormAnswers));
   appendValue(formData, "nickname", form.nickname);
   appendValue(formData, "applyingLocation", form.applyingLocation);
   appendValue(formData, "referredBy", form.referredBy);
@@ -301,7 +304,7 @@ export async function getTalentPoolFormOptions() {
 
 export async function getTalentPoolOpenPositions() {
   try {
-    const res = await api.get("/api/available-position/active", {
+    const res = await api.get("/api/talent-pool/open-positions", {
       withCredentials: true,
     });
 
@@ -321,6 +324,76 @@ export async function getTalentPoolOpenPositions() {
         err?.response?.data?.error ||
         err?.message ||
         "Failed to load talent pool open positions.",
+    };
+  }
+}
+
+/* =========================================
+   REFERRAL + POSITION APPLICATION FORM
+========================================= */
+
+export async function getTalentPoolReferralPrefill(referralCode) {
+  const safeReferralCode = String(referralCode || "").trim().toUpperCase();
+
+  if (!safeReferralCode) {
+    return {
+      success: false,
+      data: null,
+      status: 400,
+      message: "Referral code is required.",
+    };
+  }
+
+  try {
+    const res = await api.get(
+      `/api/talent-pool/referrals/${encodeURIComponent(safeReferralCode)}`,
+      { withCredentials: true },
+    );
+
+    return res.data;
+  } catch (err) {
+    return {
+      success: false,
+      data: null,
+      status: err?.response?.status || 500,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to load referral code information.",
+    };
+  }
+}
+
+export async function getTalentPoolApplicationForm(positionId) {
+  const safePositionId = String(positionId || "").trim();
+
+  if (!safePositionId) {
+    return {
+      success: false,
+      data: { form: null, questions: [] },
+      status: 400,
+      message: "Position ID is required.",
+    };
+  }
+
+  try {
+    const res = await api.get(
+      `/api/talent-pool/application-form/${encodeURIComponent(safePositionId)}`,
+      { withCredentials: true },
+    );
+
+    return res.data;
+  } catch (err) {
+    return {
+      success: false,
+      data: { form: null, questions: [] },
+      status: err?.response?.status || 500,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to load application form questions.",
     };
   }
 }
@@ -706,6 +779,8 @@ export function getTalentPoolFileUrl(applicationId, type = "attachment") {
 export default {
   getTalentPoolFormOptions,
   getTalentPoolOpenPositions,
+  getTalentPoolReferralPrefill,
+  getTalentPoolApplicationForm,
   getTalentPoolApplications,
   getTalentPoolApplicationById,
   getTalentPoolApplicationAnswers,
