@@ -383,8 +383,8 @@ export default function TADashboardPage() {
     <div className="sibs-dashboard-shell">
       <Header />
 
-      <main className="sibs-dashboard-main">
-        <div className="mx-auto w-full max-w-[1700px] space-y-5 sm:space-y-6">
+      <main className="sibs-dashboard-main-wide">
+        <div className="mx-auto flex min-h-full w-full max-w-[1600px] flex-1 flex-col space-y-4 2xl:space-y-5">
           <TADashboardWelcome
             onOpenHiringPlan={() => navigate(HIRING_PLAN_ROUTE)}
           />
@@ -423,13 +423,13 @@ export default function TADashboardPage() {
 
           <TADashboardStats metrics={metricCards} />
 
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <TARequirementProgress roles={rolesData} delay={210} />
-            <TAWeeklyMovement funnel={summaryMetrics.funnel} delay={260} />
+          <section className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
+            <TARequirementProgress roles={rolesData} delay={120} />
+            <TAWeeklyMovement funnel={summaryMetrics.funnel} delay={180} />
           </section>
 
           <section className="grid grid-cols-1 items-stretch gap-5 2xl:grid-cols-12">
-            <div className="flex 2xl:col-span-8">
+            <div className="2xl:col-span-8">
               <TARoleHiringStatus
                 roles={paginatedRoles}
                 totalRoles={filteredRoles.length}
@@ -449,13 +449,13 @@ export default function TADashboardPage() {
                 onNext={() =>
                   setPage(Math.min(safeCurrentPage + 1, totalPages))
                 }
-                delay={310}
+                delay={240}
               />
             </div>
 
-            <div className="flex 2xl:col-span-4">
-              <TARecruiterLoad recruiters={recruiters} delay={360} />
-            </div>
+            <aside className="2xl:col-span-4">
+              <TARecruiterLoad recruiters={recruiters} delay={300} />
+            </aside>
           </section>
         </div>
       </main>

@@ -1,4 +1,4 @@
-import { RotateCcw } from "lucide-react";
+import { Filter, RotateCcw } from "lucide-react";
 
 import PaginationTable from "../../../services/pagination/PaginationTable";
 
@@ -19,24 +19,30 @@ export default function SuperAdminFilters({
   hasActiveFilters,
 }) {
   return (
-    <section className="sibs-page-card-in sibs-card overflow-visible">
-      <div className="border-b border-[#EEF2F6] px-4 py-4 sm:px-5">
-        <h2 className="sibs-section-title">
-          Filter Super Admin Operations, Roles &amp; Exceptions
-        </h2>
-        <p className="sibs-section-subtitle">
-          Search and filter command-center records using the shared dashboard controls.
-        </p>
+    <section
+      className="sibs-page-card-in sibs-card font-jakarta overflow-visible"
+      style={{ animationDelay: "240ms", animationFillMode: "both" }}
+    >
+      <div className="border-b border-[#E6ECF2] px-4 py-3 2xl:px-5 2xl:py-3.5">
+        <div className="min-w-0 space-y-0.5">
+          <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51] flex items-center gap-2">
+            <Filter size={15} className="text-[#FF5C28]" />
+            Refine &amp; Filter Operations
+          </h2>
+          <p className="sibs-text-xs font-semibold text-[#667085]">
+            Search and filter governance records across modules, accounts, and access tiers
+          </p>
+        </div>
       </div>
 
       <PaginationTable
-        className="border-0 bg-transparent p-4 shadow-none sm:p-5"
+        className="border-0 bg-transparent p-3.5 shadow-none sm:p-4 2xl:p-5"
         showPagination={false}
         searchValue={searchInput}
         searchPlaceholder="Search then press Enter..."
         onSearchChange={onSearchChange}
         onSearchKeyDown={onSearchKeyDown}
-        controlsClassName="grid grid-cols-1 gap-3 overflow-visible md:grid-cols-2 xl:grid-cols-[1.2fr_repeat(4,minmax(0,1fr))_auto] xl:items-end"
+        controlsClassName="grid grid-cols-1 gap-2.5 2xl:gap-3 overflow-visible md:grid-cols-2 xl:grid-cols-[1.2fr_repeat(4,minmax(0,1fr))_auto] xl:items-end"
         searchClassName="relative w-full"
         filters={[
           {
@@ -85,9 +91,9 @@ export default function SuperAdminFilters({
             type="button"
             onClick={onReset}
             disabled={!hasActiveFilters}
-            className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+            className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={13} />
             Reset
           </button>
         }
@@ -95,3 +101,4 @@ export default function SuperAdminFilters({
     </section>
   );
 }
+

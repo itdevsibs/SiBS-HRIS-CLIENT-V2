@@ -61,7 +61,7 @@ export default function AdminDashboardNotifications({
             </p>
           </div>
         ) : (
-          notifications.slice(0, 4).map((notification) => {
+          notifications.slice(0, 4).map((notification, index) => {
             const tone =
               notificationTone[notification.type] || notificationTone.info;
             const Icon = notification.icon || Bell;
@@ -69,7 +69,11 @@ export default function AdminDashboardNotifications({
             return (
               <article
                 key={notification.id}
-                className={`flex items-start gap-2 2xl:gap-3 rounded-xl border px-2.5 py-1.5 sm:px-3 sm:py-2 2xl:p-3.5 ${tone.wrapper}`}
+                className={`sibs-page-card-in flex items-start gap-2 2xl:gap-3 rounded-xl border px-2.5 py-1.5 sm:px-3 sm:py-2 2xl:p-3.5 ${tone.wrapper}`}
+                style={{
+                  animationDelay: `${index * 40}ms`,
+                  animationFillMode: "both",
+                }}
               >
                 <span
                   className={`flex h-6.5 w-6.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg ${tone.icon}`}

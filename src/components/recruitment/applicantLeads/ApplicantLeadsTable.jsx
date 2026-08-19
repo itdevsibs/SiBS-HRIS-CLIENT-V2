@@ -51,36 +51,36 @@ export default function ApplicantLeadsTable() {
       {/* =====================================================
           TABLE SHELL (Seamlessly connected to tabs above)
       ===================================================== */}
-      <div className="overflow-hidden rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white">
-        <div className="overflow-x-auto sibs-scrollbar">
+      <div className="overflow-hidden rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white font-jakarta">
+        <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
           <table className="w-full min-w-[1100px] border-collapse text-left">
             <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="border-b border-[#E6ECF2]">
-                <th className="w-[18%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Lead ID &amp; Name
                 </th>
 
-                <th className="w-[18%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   CP Number / Email
                 </th>
 
-                <th className="w-[24%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[24%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Department &amp; Account / Client
                 </th>
 
-                <th className="w-[12%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[12%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Site
                 </th>
 
-                <th className="w-[10%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Status
                 </th>
 
-                <th className="w-[12%] px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[12%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Inputted By
                 </th>
 
-                <th className="w-[6%] px-4 py-3.5 text-right text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[6%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-right text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Actions
                 </th>
               </tr>
@@ -121,7 +121,7 @@ export default function ApplicantLeadsTable() {
                     className="sibs-page-card-in group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-[#F8FAFC] focus:bg-[#F8FAFC] focus:outline-none"
                   >
                     {/* LEAD ID & NAME */}
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                       <div className="min-w-0">
                         <p className="truncate text-xs font-extrabold leading-5 text-[#042C51] group-hover:text-[#FF5C28] transition-colors">
                           {fullName}
@@ -141,8 +141,8 @@ export default function ApplicantLeadsTable() {
                     </td>
 
                     {/* CP NUMBER / EMAIL */}
-                    <td className="px-4 py-3 align-middle">
-                      <div className="min-w-0 space-y-1">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                      <div className="min-w-0 space-y-0.5">
                         <div className="flex min-w-0 items-center gap-1.5">
                           <Phone
                             size={12}
@@ -171,7 +171,7 @@ export default function ApplicantLeadsTable() {
                     </td>
 
                     {/* DEPARTMENT / ACCOUNT */}
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                       <div className="min-w-0">
                         <p className="truncate text-[11px] font-bold text-[#042C51]">
                           {department}
@@ -188,7 +188,7 @@ export default function ApplicantLeadsTable() {
                     </td>
 
                     {/* SITE */}
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                       <div className="flex min-w-0 items-center gap-1.5">
                         <MapPin
                           size={12}
@@ -205,14 +205,14 @@ export default function ApplicantLeadsTable() {
                     </td>
 
                     {/* STATUS */}
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                       <div className="flex items-center">
                         <ApplicantLeadStatusBadge status={lead.status} />
                       </div>
                     </td>
 
                     {/* INPUTTED BY */}
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                       <div className="flex min-w-0 items-start gap-1.5">
                         <UserRound
                           size={12}
@@ -231,7 +231,7 @@ export default function ApplicantLeadsTable() {
                     </td>
 
                     {/* ACTIONS */}
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                       {leadView === "archive" ? (
                         <div className="h-7" />
                       ) : (
@@ -253,25 +253,25 @@ export default function ApplicantLeadsTable() {
                                 ? `Resend application link email to ${fullName}`
                                 : `Send application link email to ${fullName}`
                             }
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border transition active:scale-95 disabled:cursor-not-allowed disabled:active:scale-100 ${
+                            className={`inline-flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 items-center justify-center rounded-lg border transition active:scale-95 disabled:cursor-not-allowed disabled:active:scale-100 ${
                               applicationLinkSent
                                 ? "cursor-pointer border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-60"
                                 : "cursor-pointer border-purple-200 bg-purple-50 text-purple-600 hover:border-purple-300 hover:bg-purple-100 disabled:opacity-60"
                             }`}
                           >
                             {applicationLinkSent ? (
-                              <RotateCw size={13} strokeWidth={2.2} />
+                              <RotateCw size={12} strokeWidth={2.2} />
                             ) : (
-                              <Mail size={13} strokeWidth={2} />
+                              <Mail size={12} strokeWidth={2} />
                             )}
                           </button>
 
                           {applicationLinkSent ? (
                             <span
                               title="Application link email has been sent"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600"
+                              className="inline-flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600"
                             >
-                              <CircleCheckBig size={13} strokeWidth={2.2} />
+                              <CircleCheckBig size={12} strokeWidth={2.2} />
                             </span>
                           ) : null}
                         </div>
@@ -285,9 +285,12 @@ export default function ApplicantLeadsTable() {
               {isLoading && (
                 <tr>
                   <td colSpan={7} className="px-5 py-14 text-center">
-                    <p className="text-xs font-bold text-[#667085]">
-                      Loading applicant leads from the database...
-                    </p>
+                    <div className="flex flex-col items-center justify-center text-[#667085]">
+                      <RotateCw className="h-6 w-6 animate-spin text-[#FF5C28]" />
+                      <p className="mt-2 text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                        Loading applicant leads...
+                      </p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -295,8 +298,8 @@ export default function ApplicantLeadsTable() {
               {/* ERROR */}
               {!isLoading && errorMessage && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-14 text-center">
-                    <p className="text-xs font-bold text-red-600">
+                  <td colSpan={7} className="px-5 py-10 text-center">
+                    <p className="text-xs font-bold text-red-500">
                       {errorMessage}
                     </p>
                   </td>
@@ -327,7 +330,7 @@ export default function ApplicantLeadsTable() {
       {/* =====================================================
           SIBS PAGINATION
       ===================================================== */}
-      <div className="sibs-pagination sibs-pagination--compact mt-4">
+      <div className="sibs-pagination sibs-pagination--compact mt-3.5 2xl:mt-4 font-jakarta">
         <p className="sibs-pagination__summary">
           Showing <span>{paginatedLeads.length}</span> loaded applicant leads
           {totalRecords > 0 ? (
@@ -345,13 +348,13 @@ export default function ApplicantLeadsTable() {
               onClick={goToPreviousPage}
               disabled={currentPage === 1}
               aria-label="Go to previous page"
-              className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
+              className="sibs-pagination__button h-8.5 2xl:h-10 gap-1.5 px-3 sm:px-4"
             >
-              <ChevronLeft size={15} />
+              <ChevronLeft size={14} />
               <span>Previous</span>
             </button>
 
-            <span className="sibs-pagination__page is-active h-10 px-3 sm:px-4">
+            <span className="sibs-pagination__page is-active h-8.5 2xl:h-10 px-3 sm:px-4">
               Page {currentPage}
               {totalPages > 1 ? ` of ${totalPages}` : ""}
             </span>
@@ -361,10 +364,10 @@ export default function ApplicantLeadsTable() {
               onClick={goToNextPage}
               disabled={currentPage === totalPages}
               aria-label="Go to next page"
-              className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
+              className="sibs-pagination__button h-8.5 2xl:h-10 gap-1.5 px-3 sm:px-4"
             >
               <span>Next</span>
-              <ChevronRight size={15} />
+              <ChevronRight size={14} />
             </button>
           </div>
         ) : null}

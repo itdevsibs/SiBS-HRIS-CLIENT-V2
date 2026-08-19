@@ -7,10 +7,13 @@ import {
   getStatusClass,
 } from "../../../lib/utils/actionItems/actionItemsHelpers.js";
 
-export default function ActionItemMobileCard({ item, onOpen, onComplete }) {
+export default function ActionItemMobileCard({ item, delay = 0, onOpen, onComplete }) {
   const systemGenerated = item.systemGenerated || String(item.sourceType || "").toLowerCase().includes("system");
   return (
-    <article className="sibs-card rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+    <article
+      className="sibs-card sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">

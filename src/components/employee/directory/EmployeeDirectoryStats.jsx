@@ -14,7 +14,7 @@ function SummaryCard({ item, delay = 0 }) {
 
   return (
     <article
-      className="sibs-metric-card flex min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
@@ -31,7 +31,7 @@ function SummaryCard({ item, delay = 0 }) {
             {item.count}
           </p>
 
-          <p className="mt-1 line-clamp-2 sibs-text-micro font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-4 text-[#667085]">
             {item.description}
           </p>
         </div>

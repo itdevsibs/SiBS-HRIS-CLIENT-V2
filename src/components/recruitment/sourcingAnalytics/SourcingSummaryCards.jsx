@@ -23,9 +23,7 @@ const metricConfig = [
     key: "totalSources",
     title: "Tracked Channels",
     icon: Compass,
-    labelClassName: "text-[#667085]",
-    valueClassName: "text-[#042C51]",
-    iconClassName: "bg-[#EAF2FB] text-[#042C51]",
+    tone: "navy",
     description: (totals) =>
       `${Number(totals?.activeSources || 0).toLocaleString(
         "en-PH",
@@ -37,9 +35,7 @@ const metricConfig = [
     key: "totalVolume",
     title: "Public Applicants",
     icon: UsersRound,
-    labelClassName: "text-blue-600",
-    valueClassName: "text-[#042C51]",
-    iconClassName: "bg-blue-50 text-blue-700",
+    tone: "indigo",
     description: () => "Based on current records",
     format: (value) =>
       Number(value || 0).toLocaleString("en-PH"),
@@ -48,9 +44,7 @@ const metricConfig = [
     key: "totalHired",
     title: "Total Hires",
     icon: UserCheck,
-    labelClassName: "text-emerald-600",
-    valueClassName: "text-emerald-700",
-    iconClassName: "bg-emerald-50 text-emerald-700",
+    tone: "green",
     description: () => "Current hired candidate count",
     format: (value) =>
       Number(value || 0).toLocaleString("en-PH"),
@@ -59,9 +53,7 @@ const metricConfig = [
     key: "totalSourceCost",
     title: "Total Source Cost",
     icon: ReceiptText,
-    labelClassName: "text-amber-600",
-    valueClassName: "text-amber-700",
-    iconClassName: "bg-amber-50 text-amber-700",
+    tone: "amber",
     description: (totals) =>
       `${Number(
         totals?.totalCostEntries || 0,
@@ -72,9 +64,7 @@ const metricConfig = [
     key: "overallCostPerHire",
     title: "Overall Cost / Hire",
     icon: Target,
-    labelClassName: "text-[#FF5C28]",
-    valueClassName: "text-[#FF5C28]",
-    iconClassName: "bg-[#FFF0EB] text-[#FF5C28]",
+    tone: "orange",
     description: () => "Total cost / total hires",
     format: formatCurrency,
   },
@@ -86,39 +76,43 @@ function MetricCard({
   delay = 0,
 }) {
   const value = totals?.[item.key] ?? 0;
+  const formattedValue = item.format(value);
+  const isLongValue = typeof formattedValue === "string" && formattedValue.length > 9;
 
   return (
     <article
-      className="sibs-metric-card"
-      style={{ animationDelay: `${delay}ms` }}
+      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="flex h-full items-start justify-between gap-4">
-        <div className="min-w-0 flex-1 self-stretch">
-          <p
-            className={`truncate text-[10px] font-extrabold uppercase tracking-normal ${
-              item.labelClassName || "text-[#667085]"
-            }`}
-          >
-            {item.title}
-          </p>
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="flex flex-col justify-between h-full min-w-0 flex-1 self-stretch">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${item.tone}-label`}
+            >
+              {item.title}
+            </p>
 
-          <p
-            className={`mt-2 truncate text-2xl font-extrabold leading-none tabular-nums tracking-normal sm:text-3xl ${item.valueClassName}`}
-            title={item.format(value)}
-          >
-            {item.format(value)}
-          </p>
+            <p
+              className={`mt-1.5 2xl:mt-2 truncate font-extrabold leading-none tabular-nums sibs-tone-${item.tone}-label ${
+                isLongValue ? "text-lg sm:text-xl 2xl:text-2xl" : "text-2xl 2xl:text-3xl"
+              }`}
+              title={formattedValue}
+            >
+              {formattedValue}
+            </p>
+          </div>
 
-          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
             {item.description(totals)}
           </p>
         </div>
 
         <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.iconClassName}`}
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${item.tone}-icon`}
         >
           {React.createElement(item.icon, {
-            size: 17,
+            className: "h-4 w-4 2xl:h-4.5 2xl:w-4.5",
             strokeWidth: 2,
           })}
         </span>
@@ -131,13 +125,13 @@ export default function SourcingSummaryCards({
   totals,
 }) {
   return (
-    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {metricConfig.map((item, index) => (
         <MetricCard
           key={item.key}
           item={item}
           totals={totals}
-          delay={index * 60}
+          delay={index * 50}
         />
       ))}
     </section>

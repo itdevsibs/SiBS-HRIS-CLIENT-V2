@@ -87,16 +87,16 @@ export function FamilySection({
 
       {selectedSubTab === "parents" && (
         isEditing ? (
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <ProfilePanel title="Father's Name Information" accent="navy">
-              <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+            <ProfilePanel title="Father's Name Information" accent="navy" className="p-3.5 2xl:p-4">
+              <div className="space-y-3">
                 <ProfileFieldControl label="Surname" value={employee?.fatherSurname} onChange={(v) => onChange("fatherSurname", v)} />
                 <ProfileFieldControl label="First Name" value={employee?.fatherFirstName} onChange={(v) => onChange("fatherFirstName", v)} />
                 <ProfileFieldControl label="Middle Name" value={employee?.fatherMiddleName} onChange={(v) => onChange("fatherMiddleName", v)} />
               </div>
             </ProfilePanel>
-            <ProfilePanel title="Mother's Maiden Name Information">
-              <div className="space-y-4">
+            <ProfilePanel title="Mother's Maiden Name Information" className="p-3.5 2xl:p-4">
+              <div className="space-y-3">
                 <ProfileFieldControl label="Maiden Surname" value={employee?.motherMaidenSurname} onChange={(v) => onChange("motherMaidenSurname", v)} />
                 <ProfileFieldControl label="First Name" value={employee?.motherFirstName} onChange={(v) => onChange("motherFirstName", v)} />
                 <ProfileFieldControl label="Middle Name" value={employee?.motherMiddleName} onChange={(v) => onChange("motherMiddleName", v)} />
@@ -104,16 +104,16 @@ export function FamilySection({
             </ProfilePanel>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <ProfilePanel title="Father's Details" accent="navy">
-              <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+            <ProfilePanel title="Father's Details" accent="navy" className="p-3.5 2xl:p-4">
+              <div className="space-y-3">
                 <ProfileReadField label="Surname" value={employee?.fatherSurname} />
                 <ProfileReadField label="First Name" value={employee?.fatherFirstName} />
                 <ProfileReadField label="Middle Name" value={employee?.fatherMiddleName} />
               </div>
             </ProfilePanel>
-            <ProfilePanel title="Mother's Details (Maiden Name)">
-              <div className="space-y-5">
+            <ProfilePanel title="Mother's Details (Maiden Name)" className="p-3.5 2xl:p-4">
+              <div className="space-y-3">
                 <ProfileReadField label="Maiden Surname" value={employee?.motherMaidenSurname} />
                 <ProfileReadField label="First Name" value={employee?.motherFirstName} />
                 <ProfileReadField label="Middle Name" value={employee?.motherMiddleName} />

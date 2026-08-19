@@ -83,30 +83,29 @@ export default function ForecastClusterAccountAverageTable({
 
   return (
     <section className="sibs-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3.5 border-b border-slate-200 px-4 py-3.5 2xl:px-5 2xl:py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="sibs-section-title">
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
               Details by Cluster / Account
-            </h2>
+            </h3>
 
-
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-500">
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 sibs-text-micro font-extrabold text-[#52637A]">
               {loading
                 ? "Loading details..."
                 : `${filteredRows.length} of ${averageRows.length} accounts`}
             </span>
           </div>
 
-          <p className="sibs-section-subtitle">
+          <p className="mt-1 text-xs font-semibold text-[#667085]">
             Average workforce capacity, hiring demand, and pipeline volume per
             cluster and account across the complete forecast period.
           </p>
         </div>
 
-        <div className="group relative w-full lg:max-w-sm">
+        <div className="group relative w-full lg:max-w-xs 2xl:max-w-sm">
           <Search
-            size={17}
+            size={15}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
           />
           <input
@@ -114,25 +113,25 @@ export default function ForecastClusterAccountAverageTable({
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
             placeholder="Search cluster or account..."
-            className="h-10 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 font-jakarta text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+            className="h-8.5 2xl:h-10 w-full rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-8.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
           />
         </div>
       </div>
 
       {error ? (
-        <div className="mx-5 mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+        <div className="mx-4 mt-3.5 2xl:mx-5 2xl:mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
           Account-level forecast details are unavailable: {error}
         </div>
       ) : null}
 
-      <div className="p-4 sm:p-5">
+      <div className="p-3.5 sm:p-4 2xl:p-5">
         <div
           ref={dragScrollRef}
           onMouseDown={handleDragStart}
           onMouseMove={handleDragMove}
           onMouseUp={handleDragEnd}
           onMouseLeave={handleDragEnd}
-          className={`sibs-data-table-shell !block max-h-[610px] overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
+          className={`sibs-data-table-shell !block max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
             isDragging ? "cursor-grabbing" : "cursor-grab"
           }`}
         >

@@ -38,14 +38,86 @@ export function NotesSection({ employee, onCommitNote, onFeedback, canEditDetail
 
   return (
     <div className="space-y-4">
-      <ProfileSectionHeader title="Private Operational Notes" subtitle="Confidential administrative notes visible only to authorized HR users." icon={FileText} />
-      <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs leading-5 text-red-800"><Lock size={18} className="mt-0.5 shrink-0 text-red-600" /><div><p className="font-extrabold uppercase tracking-wide">Restricted HR information</p><p className="mt-1 font-medium">Keep employee notes factual, work-related, and limited to authorized administrative use.</p></div></div>
+      <ProfileSectionHeader
+        title="Private Operational Notes"
+        subtitle="Confidential administrative notes visible only to authorized HR users."
+        icon={FileText}
+      />
+      <div className="mb-4 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 2xl:p-4 text-xs leading-5 text-rose-800">
+        <Lock size={16} className="mt-0.5 shrink-0 text-rose-600" />
+        <div>
+          <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-rose-800">
+            Restricted HR Information
+          </p>
+          <p className="mt-0.5 sibs-text-xs font-semibold text-rose-900">
+            Keep employee notes factual, work-related, and limited to authorized administrative use.
+          </p>
+        </div>
+      </div>
       {canEditDetails ? (
         <ProfilePanel title="Compose New Administrative Note">
-          <form onSubmit={saveNote} className="space-y-3"><textarea rows={5} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Document a private administrative note..." className="w-full resize-y rounded-xl border border-[#D0D5DD] bg-[#F8FAFC] p-3.5 text-xs font-semibold leading-6 outline-none focus:border-[#042C51] focus:bg-white" /><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><span className="text-[10px] font-medium text-[#667085]">The entry will be timestamped under the current HR user.</span><button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-5 text-xs font-extrabold text-white"><Save size={14} className="text-[#FF5C28]" />Log Internal Note</button></div></form>
+          <form onSubmit={saveNote} className="space-y-3">
+            <textarea
+              rows={4}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Document a private administrative note..."
+              className="w-full resize-y rounded-xl border border-[#D0D5DD] bg-[#F8FAFC] p-3 sibs-text-xs font-semibold leading-relaxed outline-none transition focus:border-[#042C51] focus:bg-white"
+            />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <span className="sibs-text-micro font-semibold text-[#667085]">
+                The entry will be timestamped under the current HR user.
+              </span>
+              <button
+                type="submit"
+                className="inline-flex h-8.5 2xl:h-9 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-white transition hover:bg-[#063c6d]"
+              >
+                <Save size={14} className="text-[#FF5C28]" />
+                Log Internal Note
+              </button>
+            </div>
+          </form>
         </ProfilePanel>
       ) : null}
-      <div className="mt-6 space-y-4"><h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">Confidential History ({history.length})</h3>{history.length === 0 ? <ProfileEmptyState message="No private notes logged." /> : history.map((note) => <article key={note.id} className="group relative rounded-2xl border border-[#D6E0EA] bg-white p-5"><div className="flex flex-col gap-1 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-center sm:justify-between"><span className="flex items-center gap-2 text-xs font-extrabold text-[#042C51]"><User size={14} className="text-[#667085]" />{note.author || "HR User"}</span><span className="flex items-center gap-1.5 font-mono text-[10px] text-[#667085]"><CalendarDays size={13} />{formatDisplayDate(note.date)}</span></div><p className="mt-4 whitespace-pre-wrap text-xs font-semibold leading-6 text-[#52637A]">{note.content}</p>{canEditDetails ? <button type="button" onClick={() => removeNote(note.id)} className="absolute bottom-4 right-4 rounded-lg p-1.5 text-red-500 opacity-0 hover:bg-red-50 group-hover:opacity-100" title="Delete note"><Trash2 size={14} /></button> : null}</article>)}</div>
+      <div className="mt-5 space-y-3">
+        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          Confidential History ({history.length})
+        </h3>
+        {history.length === 0 ? (
+          <ProfileEmptyState message="No private notes logged." />
+        ) : (
+          history.map((note) => (
+            <article
+              key={note.id}
+              className="group relative rounded-xl border border-[#D6E0EA] bg-white p-4"
+            >
+              <div className="flex flex-col gap-1 border-b border-[#E6ECF2] pb-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <span className="flex items-center gap-2 sibs-text-xs font-extrabold text-[#042C51]">
+                  <User size={13} className="text-[#667085]" />
+                  {note.author || "HR User"}
+                </span>
+                <span className="flex items-center gap-1.5 font-mono sibs-text-micro text-[#667085]">
+                  <CalendarDays size={12} />
+                  {formatDisplayDate(note.date)}
+                </span>
+              </div>
+              <p className="mt-3 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-[#52637A]">
+                {note.content}
+              </p>
+              {canEditDetails ? (
+                <button
+                  type="button"
+                  onClick={() => removeNote(note.id)}
+                  className="absolute bottom-3 right-3 rounded-lg p-1.5 text-rose-500 opacity-0 transition hover:bg-rose-50 group-hover:opacity-100"
+                  title="Delete note"
+                >
+                  <Trash2 size={13} />
+                </button>
+              ) : null}
+            </article>
+          ))
+        )}
+      </div>
     </div>
   );
 }

@@ -13,7 +13,7 @@ export const DEFAULT_QUICK_ACTIONS = [
 function ContextCard({ title, children }) {
   return (
     <section className="sibs-page-card-in sibs-card p-3.5 2xl:p-4">
-      <h3 className="mb-2.5 2xl:mb-3 border-b border-[#F1F5F9] pb-2 text-[10px] 2xl:text-[11px] font-black uppercase tracking-wider text-[#042C51]">
+      <h3 className="mb-2.5 2xl:mb-3 border-b border-[#F1F5F9] pb-2 text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
         {title}
       </h3>
       {children}
@@ -102,8 +102,8 @@ export default function EmployeeProfileContextPanel({
             </svg>
 
             <div className="absolute text-center">
-              <p className="text-lg 2xl:text-xl font-black text-[#042C51]">{score}%</p>
-              <p className="text-[8px] font-black uppercase text-slate-400">
+              <p className="text-lg 2xl:text-xl font-extrabold tabular-nums text-[#042C51]">{score}%</p>
+              <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]">
                 Completed
               </p>
             </div>
@@ -114,10 +114,10 @@ export default function EmployeeProfileContextPanel({
             onClick={() => onNavigate?.(healthNavigateTarget)}
             className="w-full rounded-xl border border-slate-100 bg-[#F8FAFC] p-2 2xl:p-2.5 text-center transition hover:bg-[#E9F0FC]"
           >
-            <p className="text-xs font-bold text-[#042C51]">
+            <p className="sibs-text-xs font-extrabold text-[#042C51]">
               Primary records complete
             </p>
-            <p className="mt-0.5 text-[10px] text-slate-400">
+            <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
               Review the employee&apos;s attached documents and declarations.
             </p>
           </button>
@@ -134,7 +134,7 @@ export default function EmployeeProfileContextPanel({
                 key={`${action.label}-${index}`}
                 type="button"
                 onClick={() => handleQuickAction(item)}
-                className="flex w-full items-center justify-between rounded-lg bg-[#F1F5F9] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left text-[10px] 2xl:text-[11px] font-bold text-[#042C51] transition hover:bg-[#E9F0FC]"
+                className="flex w-full items-center justify-between rounded-lg bg-[#F8FAFC] border border-[#E6ECF2] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-micro 2xl:sibs-text-xs font-bold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
               >
                 <span className="truncate pr-2">{action.label}</span>
                 <ChevronRight size={14} className="shrink-0 text-[#FF5C28]" />

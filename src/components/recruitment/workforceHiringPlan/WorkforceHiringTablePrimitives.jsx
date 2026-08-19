@@ -23,7 +23,7 @@ export function WorkforceGroupHeaderTh({
     <th
       {...props}
       className={joinClasses(
-        "sticky top-0 z-30 sibs-data-table-th border border-slate-200 !bg-[#EBF3FA] !px-3 !py-2 !text-[10px] !font-black !text-sibs-primary-1 text-center align-middle font-jakarta uppercase tracking-wider",
+        "sticky top-0 z-30 sibs-data-table-th border border-slate-200 !bg-[#EBF3FA] !px-2.5 !py-1.5 2xl:!px-3 2xl:!py-2 !text-[9px] 2xl:!text-[10px] !font-black !text-sibs-primary-1 text-center align-middle font-jakarta uppercase tracking-wider",
         className,
       )}
     >
@@ -41,7 +41,7 @@ export function WorkforceHeaderTh({
     <th
       {...props}
       className={joinClasses(
-        "sticky top-[35px] z-20 sibs-data-table-th border border-slate-200 !bg-[#F8FAFC] !px-3 !py-2.5 !text-[10px] !font-extrabold !text-slate-500 text-center align-middle font-jakarta uppercase tracking-wider",
+        "sticky top-[30px] 2xl:top-[35px] z-20 sibs-data-table-th border border-slate-200 !bg-[#F8FAFC] !px-2.5 !py-1.5 2xl:!px-3 2xl:!py-2 !text-[9px] 2xl:!text-[10px] !font-extrabold !text-slate-500 text-center align-middle font-jakarta uppercase tracking-wider",
         className,
       )}
     >
@@ -68,7 +68,7 @@ export function WorkforceBodyTd({
     <td
       {...props}
       className={joinClasses(
-        "whitespace-nowrap border-b border-[#E6ECF2] px-3 py-2.5 align-middle text-xs leading-tight font-jakarta text-sibs-primary-1",
+        "whitespace-nowrap border-b border-[#E6ECF2] px-2.5 py-1.5 2xl:px-3 2xl:py-2 align-middle text-xs leading-tight font-jakarta text-sibs-primary-1",
         numeric ? "tabular-nums" : "",
         alignmentClass,
         className,
@@ -97,7 +97,7 @@ export function WorkforceFooterTd({
     <td
       {...props}
       className={joinClasses(
-        "whitespace-nowrap border-t-2 border-[#D7DEE8] bg-[#EBF3FA] px-3 py-2.5 align-middle text-xs leading-tight font-jakarta font-medium text-[#042C51]",
+        "whitespace-nowrap border-t-2 border-[#D7DEE8] bg-[#EBF3FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 align-middle text-xs leading-tight font-jakarta font-medium text-[#042C51]",
         numeric ? "tabular-nums" : "",
         alignmentClass,
         className,

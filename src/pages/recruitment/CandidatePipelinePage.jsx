@@ -29,7 +29,6 @@ import CandidateOfferDetailsModal from "../../components/modals/candidatePipelin
 import CandidatePipelineModal from "../../components/modals/candidatePipeline/CandidatePipelineModal";
 import PipelineCardsBoard from "../../components/recruitment/candidatePipeline/PipelineCardBoard";
 import InterviewCalendar from "../../components/recruitment/candidatePipeline/InterviewCalendar";
-import DropOffListSection from "../../components/recruitment/shared/DropOffListSection";
 import useCombinedDropOffCandidates from "../../hooks/useCombinedDropOffCandidates";
 import {
   filterDropOffCandidates,
@@ -444,7 +443,7 @@ function PipelineMetricCard({ label, value, description, icon: Icon, tone = "nav
           </p>
         </div>
 
-        <span className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}>
+        <span className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}>
           <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
       </div>
@@ -743,24 +742,24 @@ export default function CandidatePipelinePage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 2xl:space-y-6">
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
           <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6 md:flex-row md:items-center"
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm sm:p-5 2xl:p-6 md:flex-row md:items-center"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <span className="sibs-top-accent" aria-hidden="true" />
 
-            <div className="mt-1 min-w-0">
-              <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+            <div className="mt-0.5 min-w-0">
+              <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
                 Recruitment Lifecycle
               </div>
 
-              <h1 className="mt-2.5 break-words text-xl font-extrabold tracking-normal text-[#042C51] sm:text-2xl">
+              <h1 className="mt-1 break-words text-lg 2xl:text-2xl font-extrabold tracking-normal text-[#042C51]">
                 Candidate Pipeline
               </h1>
 
-              <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-[#667085] sm:text-sm sm:leading-6">
+              <p className="mt-0.5 max-w-3xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
                 Stage-by-stage applicant progress engine. Review PRFs, issue online assessments, schedule interviews, process offers, and track onboarding conversions.
               </p>
             </div>
@@ -772,17 +771,17 @@ export default function CandidatePipelinePage() {
                 disabled={isLoading}
                 title="Refresh pipeline data"
                 aria-label="Refresh pipeline data"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={isLoading ? "animate-spin" : ""} />
               </button>
 
               <button
                 type="button"
                 onClick={() => navigate("/recruitment/talent-pool")}
-                className="sibs-button-primary inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] active:scale-[0.98]"
+                className="sibs-button-primary inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] active:scale-[0.98]"
               >
-                <Users size={16} />
+                <Users size={15} />
                 Sourced Talent Pool
               </button>
             </div>
@@ -996,7 +995,12 @@ export default function CandidatePipelinePage() {
                 <LoadingPipelineBoard />
               ) : (
                 <PipelineCardsBoard
-                  candidates={safeStageVisibleCandidates}
+                  candidates={
+                    boardSubView === "list"
+                      ? safeFilteredCandidates
+                      : safeStageVisibleCandidates
+                  }
+                  dropOffCandidates={dropOffCandidates}
                   stageCounts={safeStageCounts}
                   activeStage={activeStage}
                   setActiveStage={setActiveStage}
@@ -1009,13 +1013,6 @@ export default function CandidatePipelinePage() {
                   viewMode={boardSubView}
                 />
               )}
-
-              <DropOffListSection
-                candidates={dropOffCandidates}
-                isLoading={dropOffListLoading}
-                loadError={dropOffListError}
-                onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
-              />
             </div>
           )}
 

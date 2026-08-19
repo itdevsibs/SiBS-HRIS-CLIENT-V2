@@ -592,14 +592,14 @@ export default function AdminDashboardPage() {
                   refreshFeed({ forceRefresh: true });
                 }}
                 isSyncing={overviewRefreshing || feedRefreshing}
-                delay={210}
+                delay={120}
                 onViewAll={() => navigate(EXISTING_ADMIN_ROUTES.approvals)}
               />
 
               <AdminDashboardNotifications
                 notifications={notifications}
                 onAction={handleNotificationAction}
-                delay={260}
+                delay={180}
                 onViewAll={() => navigate(EXISTING_ADMIN_ROUTES.approvals)}
               />
             </div>
@@ -608,12 +608,12 @@ export default function AdminDashboardPage() {
               <AdminDashboardQuickActions
                 actions={quickActions}
                 onAction={handleQuickAction}
-                delay={310}
+                delay={240}
               />
               <AdminDashboardWorkforceKpi
                 utilization={overview.workforceKpi.utilization}
                 absenteeismBuffer={overview.workforceKpi.absenteeismBuffer}
-                delay={360}
+                delay={300}
               />
             </aside>
           </section>

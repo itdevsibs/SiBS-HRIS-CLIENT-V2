@@ -8,36 +8,7 @@ import {
 } from "lucide-react";
 import { useOffers } from "../../../services/context/OffersContext";
 
-const TONES = {
-  navy: {
-    label: "text-[#667085]",
-    value: "text-[#042C51]",
-    icon: "bg-[#E9F0FC] text-[#042C51]",
-  },
-  amber: {
-    label: "text-amber-600",
-    value: "text-amber-700",
-    icon: "bg-amber-50 text-amber-700",
-  },
-  green: {
-    label: "text-emerald-600",
-    value: "text-emerald-700",
-    icon: "bg-emerald-50 text-emerald-700",
-  },
-  blue: {
-    label: "text-blue-600",
-    value: "text-blue-700",
-    icon: "bg-blue-50 text-blue-700",
-  },
-  red: {
-    label: "text-red-600",
-    value: "text-red-700",
-    icon: "bg-red-50 text-red-700",
-  },
-};
-
 function StatCard({ title, value, icon, description, tone = "navy", delay = 0 }) {
-  const classes = TONES[tone] || TONES.navy;
   const IconComponent = icon;
 
   return (
@@ -49,12 +20,12 @@ function StatCard({ title, value, icon, description, tone = "navy", delay = 0 })
         <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
           <div>
             <p
-              className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${classes.label}`}
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${tone}-label`}
             >
               {title}
             </p>
             <p
-              className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${classes.value}`}
+              className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}
             >
               {value ?? 0}
             </p>
@@ -66,7 +37,7 @@ function StatCard({ title, value, icon, description, tone = "navy", delay = 0 })
         </div>
 
         <span
-          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${classes.icon}`}
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}
         >
           <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
@@ -109,7 +80,7 @@ export default function OfferSummaryCards() {
           value={stats.contractSent}
           icon={Send}
           description="Awaiting response"
-          tone="blue"
+          tone="indigo"
           delay={135}
         />
         <StatCard

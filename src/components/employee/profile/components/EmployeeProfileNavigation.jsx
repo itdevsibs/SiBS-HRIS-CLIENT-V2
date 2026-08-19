@@ -28,15 +28,15 @@ export default function EmployeeProfileNavigation({
               type="button"
               onClick={() => handlePrimaryClick(tab)}
               aria-current={active ? "page" : undefined}
-              className={`inline-flex h-8 2xl:h-9 min-w-max items-center justify-center gap-1.5 rounded-lg border px-2.5 2xl:px-3.5 text-[11px] 2xl:text-xs font-bold transition-all ${
+              className={`inline-flex h-8 2xl:h-9 min-w-max items-center justify-center gap-1.5 rounded-lg border px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold transition-all ${
                 active
                   ? "border-[#BFD3F2] bg-[#E9F0FC] text-[#042C51] shadow-sm"
-                  : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  : "border-transparent text-[#667085] hover:bg-[#F8FAFC] hover:text-[#042C51]"
               }`}
             >
               <Icon
                 size={13}
-                className={`2xl:h-[14px] 2xl:w-[14px] ${active ? "text-[#FF5C28]" : "text-slate-400"}`}
+                className={`2xl:h-[14px] 2xl:w-[14px] ${active ? "text-[#FF5C28]" : "text-[#98A2B3]"}`}
               />
               {tab.label}
             </button>
@@ -46,7 +46,7 @@ export default function EmployeeProfileNavigation({
 
       {secondaryTabs.length > 0 ? (
         <div className="mt-1.5 2xl:mt-2 flex items-center gap-1.5 overflow-x-auto border-t border-[#F1F5F9] pt-1.5 2xl:pt-2 pb-0.5 sibs-scrollbar">
-          <span className="shrink-0 px-1.5 text-[9px] font-black uppercase tracking-wider text-slate-400">
+          <span className="shrink-0 px-1.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#98A2B3]">
             Subsections:
           </span>
 
@@ -59,10 +59,10 @@ export default function EmployeeProfileNavigation({
                 type="button"
                 onClick={() => onTabChange(child.key)}
                 aria-selected={active}
-                className={`h-6 2xl:h-7 min-w-max rounded-full px-2.5 2xl:px-3 text-[9.5px] 2xl:text-[10px] font-bold transition-all ${
+                className={`h-6 2xl:h-7 min-w-max rounded-full px-2.5 2xl:px-3 sibs-text-micro font-extrabold transition-all ${
                   active
                     ? "bg-[#042C51] text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    : "bg-[#F1F5F9] text-[#667085] hover:bg-[#E2E8F0] hover:text-[#042C51]"
                 }`}
               >
                 {child.label}

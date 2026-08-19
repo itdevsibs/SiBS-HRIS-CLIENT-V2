@@ -335,29 +335,35 @@ export default function CandidateMovementHistoryDrawer({
         {/* Drawer Header */}
         <header className="shrink-0 bg-[#042C51] px-5 py-4 text-white">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
-                <History size={17} strokeWidth={2.4} />
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="inline-flex h-10 w-10 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+                <History size={18} strokeWidth={2.4} />
               </span>
 
-              <div className="min-w-0">
-                <h3 className="truncate text-xs font-extrabold uppercase tracking-wide text-white">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/60">
+                    Audit Trail
+                  </span>
+                  <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white/90">
+                    {timeline.length} {timeline.length === 1 ? "Record" : "Records"}
+                  </span>
+                </div>
+
+                <h3 className="mt-0.5 break-words text-base font-extrabold text-white sm:text-lg">
                   Movement History
                 </h3>
-                <p className="truncate text-[10px] font-semibold text-blue-100">
-                  Candidate Pipeline Audit Trail ({timeline.length})
-                </p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={handleClose}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white"
+              className="sibs-modal-close-btn"
               aria-label="Close Movement History"
               title="Close"
             >
-              <X size={17} />
+              <X size={18} />
             </button>
           </div>
         </header>

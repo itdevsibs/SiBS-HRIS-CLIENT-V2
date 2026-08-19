@@ -390,35 +390,35 @@ export default function ForecastWeekAccountDetailsModal({
   if (!open) return null;
 
   return createPortal(
-    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="sibs-modal-pop-in flex max-h-[92vh] w-full max-w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white font-jakarta shadow-2xl">
+    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
+      <div className="sibs-modal-pop-in flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[96vw] 2xl:max-w-7xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white font-jakarta shadow-2xl">
         <div
           data-layout="forecast-week-details-header-v2"
-          className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-slate-700 bg-[#042C51] px-6 py-4 text-white"
+          className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-[#042C51] px-4 py-2.5 2xl:px-6 2xl:py-3.5 text-white"
         >
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-md">
-              <BarChart2 className="h-5 w-5" />
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <BarChart2 className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
             </div>
 
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h2 className="text-base font-black uppercase tracking-wide text-white">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-white">
                   FORECAST WEEK DETAILS
                 </h2>
 
                 <span className="font-bold text-slate-400">|</span>
 
-                <span className="text-xs font-bold text-slate-300">
+                <span className="sibs-text-micro font-bold text-slate-300">
                   Account / Cluster Breakdown
                 </span>
 
-                <span className="rounded-full bg-[#FF5C28] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
+                <span className="rounded-full bg-[#FF5C28] px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wider text-white shadow-sm">
                   {filteredRows.length} of {normalizedRows.length} rows
                 </span>
               </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-xs text-slate-300">
+              <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono sibs-text-micro text-slate-300">
                 <span className="font-extrabold text-blue-300">
                   {forecastWeek?.label || "Selected forecast week"}
                 </span>
@@ -427,7 +427,7 @@ export default function ForecastWeekAccountDetailsModal({
                 forecastWeek?.forecastBasisEnd ? (
                   <>
                     <span className="text-slate-500">•</span>
-                    <span className="text-[11px] font-medium text-slate-300">
+                    <span className="font-medium text-slate-300">
                       Forecast basis: {forecastWeek.forecastBasisStart} to{" "}
                       {forecastWeek.forecastBasisEnd}
                     </span>
@@ -440,22 +440,22 @@ export default function ForecastWeekAccountDetailsModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-slate-300 transition hover:bg-white/20 hover:text-white"
+            className="inline-flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300 transition hover:bg-white/20 hover:text-white"
             aria-label="Close forecast details"
             title="Close Modal"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5 2xl:px-5 2xl:py-3">
+          <p className="sibs-text-micro font-bold uppercase tracking-wide text-slate-500">
             Clicked forecast week rows are shown per account and cluster.
           </p>
 
-          <div className="group relative w-full max-w-md">
+          <div className="group relative w-full max-w-xs 2xl:max-w-md">
             <Search
-              size={17}
+              size={15}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
             />
 
@@ -464,12 +464,12 @@ export default function ForecastWeekAccountDetailsModal({
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder="Search cluster or account..."
-              className="h-10 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 font-jakarta text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+              className="h-8 2xl:h-8.5 w-full rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-8.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
             />
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-auto sibs-scrollbar px-5 py-4">
+        <div className="min-h-0 flex-1 overflow-auto sibs-scrollbar p-3 2xl:p-4">
           <div className="overflow-hidden rounded-xl border border-slate-200">
             <div
               ref={dragScrollRef}
@@ -477,7 +477,7 @@ export default function ForecastWeekAccountDetailsModal({
               onMouseMove={handleDragMove}
               onMouseUp={handleDragEnd}
               onMouseLeave={handleDragEnd}
-              className={`max-h-[62vh] overflow-auto sibs-scrollbar ${
+              className={`max-h-[48vh] 2xl:max-h-[54vh] overflow-auto sibs-scrollbar ${
                 isDragging ? "cursor-grabbing" : "cursor-grab"
               }`}
             >

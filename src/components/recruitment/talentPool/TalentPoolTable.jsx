@@ -138,28 +138,32 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
   }
 
   return (
-    <div className="p-4 font-jakarta sm:p-5">
+    <div className="font-jakarta">
       {isLoading ? (
-        <TableState
-          icon={LoaderCircle}
-          title="Loading candidates"
-          message="Retrieving current candidate profiles from the database."
-          spin
-        />
+        <div className="py-4">
+          <TableState
+            icon={LoaderCircle}
+            title="Loading candidates"
+            message="Retrieving current candidate profiles from the database."
+            spin
+          />
+        </div>
       ) : null}
 
       {!isLoading && loadError ? (
-        <TableState
-          icon={AlertCircle}
-          title="Candidate directory unavailable"
-          message={loadError}
-          tone="error"
-        />
+        <div className="py-4">
+          <TableState
+            icon={AlertCircle}
+            title="Candidate directory unavailable"
+            message={loadError}
+            tone="error"
+          />
+        </div>
       ) : null}
 
       {!isLoading && !loadError ? (
         <>
-          <div className="space-y-3 lg:hidden">
+          <div className="space-y-3 pt-3 lg:hidden">
             {paginatedCandidates.length > 0 ? (
               paginatedCandidates.map((candidate) => (
                 <TalentPoolMobileCard
@@ -177,7 +181,7 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
           </div>
 
           <div className="hidden lg:block">
-            <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white">
+            <div className="overflow-x-auto rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white">
               <table className="w-full min-w-[1060px] table-fixed border-separate border-spacing-0 text-left">
                 <thead className="sibs-data-table-head">
                   <tr className="sibs-data-table-head-row">

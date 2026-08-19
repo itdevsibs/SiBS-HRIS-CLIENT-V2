@@ -54,6 +54,18 @@ const DASHBOARD_ROUTES = {
 function getStatusTone(status = "") {
   const normalized = cleanDashboardText(status).toLowerCase();
 
+  if (
+    normalized.includes("not clocked") ||
+    normalized.includes("logged out") ||
+    normalized.includes("no punch") ||
+    !normalized
+  ) {
+    return {
+      wrapper: "border-slate-200 bg-slate-100 text-slate-600",
+      dot: "bg-slate-400",
+    };
+  }
+
   if (normalized.includes("clocked in") || normalized.includes("present")) {
     return {
       wrapper: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -72,6 +84,13 @@ function getStatusTone(status = "") {
     return {
       wrapper: "border-rose-200 bg-rose-50 text-rose-700",
       dot: "bg-rose-500",
+    };
+  }
+
+  if (normalized.includes("completed") || normalized.includes("shift end")) {
+    return {
+      wrapper: "border-blue-200 bg-blue-50 text-blue-700",
+      dot: "bg-blue-500",
     };
   }
 
@@ -380,12 +399,14 @@ export default function EmployeeDashboardPage() {
       getAttendanceSummaryFromResponses({
         attendanceResponse: liveSources?.attendance,
         kronosResponse: liveSources?.kronosAttendance,
+        scheduleResponse: liveSources?.schedule,
         user: profileSource,
         now,
       }),
     [
       liveSources?.attendance,
       liveSources?.kronosAttendance,
+      liveSources?.schedule,
       profileSource,
       dashboardDateKey,
     ],
@@ -473,17 +494,17 @@ export default function EmployeeDashboardPage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1600px] space-y-6 pb-8">
-          <section className="sibs-page-header-in relative overflow-hidden rounded-2xl border border-[#084075] bg-gradient-to-r from-[#042C51] via-[#063968] to-[#042C51] p-5 text-white shadow-lg sm:p-6">
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5 pb-8">
+          <section className="sibs-page-header-in relative overflow-hidden rounded-2xl border border-[#084075] bg-gradient-to-r from-[#042C51] via-[#063968] to-[#042C51] p-4 text-white shadow-sm sm:p-5 2xl:p-6">
             <div className="pointer-events-none absolute -bottom-16 -right-12 h-56 w-56 rounded-full bg-white/5" />
             <div className="pointer-events-none absolute -top-16 right-36 h-40 w-40 rounded-full bg-[#FF5C28]/10" />
 
-            <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+            <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex min-w-0 flex-col items-center gap-3.5 text-center sm:flex-row sm:text-left">
                 <button
                   type="button"
                   onClick={() => navigate(DASHBOARD_ROUTES.profile)}
-                  className="group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#FF5C28] bg-white/10 text-xl font-black text-white shadow-md transition hover:-translate-y-0.5 sm:h-[72px] sm:w-[72px]"
+                  className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#FF5C28] bg-white/10 text-lg font-black text-white shadow-md transition hover:-translate-y-0.5 sm:h-16 sm:w-16 2xl:h-[72px] 2xl:w-[72px]"
                   title="Open My Profile"
                 >
                   {profilePicture ? (
@@ -497,41 +518,41 @@ export default function EmployeeDashboardPage() {
                     <span>{profile.initials}</span>
                   )}
 
-                  <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-[#042C51] bg-emerald-500" />
+                  <span className="absolute bottom-0 right-0 h-3.5 w-3.5 2xl:h-4 2xl:w-4 rounded-full border-2 border-[#042C51] bg-emerald-500" />
                 </button>
 
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                    <span className="rounded-full border border-[#FF5C28]/30 bg-[#FF5C28]/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#FF8A63]">
+                    <span className="rounded-full border border-[#FF5C28]/30 bg-[#FF5C28]/15 px-2.5 py-0.5 text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-[#FF8A63]">
                       SIBS Employee Portal
                     </span>
                     {profile.sibsId ? (
-                      <span className="font-mono text-[11px] font-semibold text-slate-300">
+                      <span className="font-mono text-[10px] 2xl:text-[11px] font-semibold text-slate-300">
                         ID: {profile.sibsId}
                       </span>
                     ) : null}
                   </div>
 
-                  <h1 className="mt-1 break-words text-2xl font-black tracking-tight text-white sm:text-3xl">
+                  <h1 className="mt-0.5 break-words text-xl font-black tracking-tight text-white sm:text-2xl 2xl:text-3xl">
                     Welcome Back, {profile.firstName}!
                   </h1>
 
-                  <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-slate-300">
+                  <p className="mt-0.5 max-w-3xl text-[11px] 2xl:text-xs font-semibold leading-5 text-slate-300">
                     {profileSubtitle ||
                       "Your employee self-service records and HRIS shortcuts are available below."}
                   </p>
                 </div>
               </div>
 
-              <div className="w-full shrink-0 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-center backdrop-blur-sm sm:w-[220px] md:text-right">
-                <div className="flex items-center justify-center gap-2 text-xs font-medium text-slate-300 md:justify-end">
-                  <Clock size={15} className="text-[#FF5C28]" />
+              <div className="w-full shrink-0 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-center backdrop-blur-sm sm:w-[200px] 2xl:w-[220px] md:text-right">
+                <div className="flex items-center justify-center gap-1.5 text-[11px] 2xl:text-xs font-medium text-slate-300 md:justify-end">
+                  <Clock size={13} className="text-[#FF5C28]" />
                   Current Time (PHT)
                 </div>
-                <p className="mt-1 font-mono text-2xl font-black tabular-nums tracking-tight text-white">
+                <p className="mt-0.5 font-mono text-xl 2xl:text-2xl font-black tabular-nums tracking-tight text-white">
                   {formatPhtTime(now)}
                 </p>
-                <p className="mt-0.5 text-[11px] font-semibold text-slate-300">
+                <p className="mt-0.5 text-[10px] 2xl:text-[11px] font-semibold text-slate-300">
                   {formatPhtDate(now)}
                 </p>
               </div>
@@ -542,8 +563,8 @@ export default function EmployeeDashboardPage() {
             <DashboardSourceNotice message={sourceErrors.dashboard.message} />
           ) : null}
 
-          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2">
+          <div className="grid grid-cols-1 items-start gap-4 sm:gap-5 lg:grid-cols-3">
+            <div className="space-y-4 sm:space-y-5 lg:col-span-2">
               <DashboardCard>
                 <DashboardCardHeader
                   icon={Clock}
@@ -551,10 +572,10 @@ export default function EmployeeDashboardPage() {
                   description="Today’s attendance status, punch information, and recorded activity."
                   action={
                     <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-black ${attendanceTone.wrapper}`}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] 2xl:text-[10px] font-black ${attendanceTone.wrapper}`}
                     >
                       <span
-                        className={`h-2 w-2 rounded-full ${attendanceTone.dot}`}
+                        className={`h-1.5 w-1.5 2xl:h-2 2xl:w-2 rounded-full ${attendanceTone.dot}`}
                       />
                       {dashboardDataLoading
                         ? "Loading attendance…"
@@ -579,8 +600,8 @@ export default function EmployeeDashboardPage() {
                   />
                 ) : null}
 
-                <div className="grid grid-cols-1 gap-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-3.5 2xl:p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                     <MetricBox label="Clock In" value={attendance.clockIn} />
                     <MetricBox label="Clock Out" value={attendance.clockOut} />
                     <MetricBox
@@ -593,16 +614,16 @@ export default function EmployeeDashboardPage() {
                   <button
                     type="button"
                     onClick={() => navigate(DASHBOARD_ROUTES.attendance)}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-xs font-black text-white shadow-sm transition hover:bg-[#E04B1D]"
+                    className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04B1D]"
                   >
                     Open My Attendance
-                    <ArrowUpRight size={15} />
+                    <ArrowUpRight size={13} />
                   </button>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <h3 className="text-xs font-black uppercase tracking-wide text-[#042C51]">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
                       Today&apos;s Punch Activity Log
                     </h3>
                     <span className="text-[10px] font-semibold text-slate-400">
@@ -611,38 +632,42 @@ export default function EmployeeDashboardPage() {
                   </div>
 
                   {attendance.logs.length ? (
-                    <div className="overflow-x-auto rounded-xl border border-[#E6ECF2]">
-                      <table className="w-full min-w-[720px] border-collapse text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-[#CBD5E1] bg-[#F8FAFC] text-[10px] font-black uppercase text-[#042C51]">
-                            <th className="px-3.5 py-2.5">Activity</th>
-                            <th className="px-3.5 py-2.5">Timestamp</th>
-                            <th className="px-3.5 py-2.5">Location / IP</th>
-                            <th className="px-3.5 py-2.5">Status</th>
-                            <th className="px-3.5 py-2.5 text-right">Device</th>
+                    <div className="max-h-[220px] 2xl:max-h-[300px] overflow-y-auto overflow-x-auto rounded-xl border border-[#E6ECF2] sibs-scrollbar">
+                      <table className="w-full min-w-[640px] border-collapse text-left text-xs">
+                        <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                          <tr className="border-b border-[#CBD5E1] text-[10px] font-black uppercase text-[#042C51]">
+                            <th className="px-3 2xl:px-3.5 py-2">Activity</th>
+                            <th className="px-3 2xl:px-3.5 py-2">Timestamp</th>
+                            <th className="px-3 2xl:px-3.5 py-2">Location / IP</th>
+                            <th className="px-3 2xl:px-3.5 py-2">Status</th>
+                            <th className="px-3 2xl:px-3.5 py-2 text-right">Device</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E6ECF2] bg-white text-slate-600">
-                          {attendance.logs.map((log) => (
+                          {attendance.logs.map((log, index) => (
                             <tr
                               key={log.id}
                               className="transition hover:bg-slate-50"
+                              style={{
+                                animationDelay: `${index * 35}ms`,
+                                animationFillMode: "both",
+                              }}
                             >
-                              <td className="px-3.5 py-2.5 font-bold text-[#042C51]">
+                              <td className="px-3 2xl:px-3.5 py-2 font-bold text-[#042C51]">
                                 {log.type || "Activity"}
                               </td>
-                              <td className="px-3.5 py-2.5 font-mono text-[11px]">
+                              <td className="px-3 2xl:px-3.5 py-2 font-mono text-[10px] 2xl:text-[11px]">
                                 {log.timestamp || "—"}
                               </td>
-                              <td className="px-3.5 py-2.5">
+                              <td className="px-3 2xl:px-3.5 py-2 text-[11px] 2xl:text-xs">
                                 {log.location || "—"}
                               </td>
-                              <td className="px-3.5 py-2.5">
-                                <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-600">
+                              <td className="px-3 2xl:px-3.5 py-2">
+                                <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] 2xl:text-[10px] font-bold text-slate-600">
                                   {log.status || "Recorded"}
                                 </span>
                               </td>
-                              <td className="px-3.5 py-2.5 text-right text-[10px] text-slate-400">
+                              <td className="px-3 2xl:px-3.5 py-2 text-right text-[10px] text-slate-400">
                                 {log.device || "—"}
                               </td>
                             </tr>
@@ -669,10 +694,10 @@ export default function EmployeeDashboardPage() {
                     <button
                       type="button"
                       onClick={() => navigate(DASHBOARD_ROUTES.schedule)}
-                      className="inline-flex items-center gap-1 text-[11px] font-black text-[#FF5C28] hover:underline"
+                      className="inline-flex items-center gap-1 text-[10px] 2xl:text-[11px] font-black text-[#FF5C28] hover:underline"
                     >
                       Open Schedule
-                      <ArrowUpRight size={13} />
+                      <ArrowUpRight size={12} />
                     </button>
                   }
                 />
@@ -691,7 +716,7 @@ export default function EmployeeDashboardPage() {
                   />
                 ) : null}
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <SummaryTile
                     tone="navy"
                     label="Today's Shift"
@@ -714,38 +739,38 @@ export default function EmployeeDashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-xs font-black uppercase tracking-wide text-[#042C51]">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
                     Weekly Schedule Timeline
                   </h3>
 
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-7">
                     {weeklySchedule.map((item) => (
                       <div
                         key={item.id}
-                        className={`rounded-xl border p-3 text-center transition ${
+                        className={`rounded-xl border p-2.5 text-center transition ${
                           item.isToday
-                            ? "border-[#042C51] bg-[#042C51] text-white shadow-md ring-2 ring-[#FF5C28]"
+                            ? "border-[#042C51] bg-[#042C51] text-white shadow-sm ring-2 ring-[#FF5C28]"
                             : item.isOff
                               ? "border-slate-200 bg-slate-50 text-slate-400"
                               : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                         }`}
                       >
                         <p
-                          className={`text-[10px] font-black uppercase ${
+                          className={`text-[9px] 2xl:text-[10px] font-black uppercase ${
                             item.isToday ? "text-[#FF8A63]" : "text-slate-400"
                           }`}
                         >
                           {item.day || "Day"} · {item.date || "—"}
                         </p>
                         <p
-                          className={`mt-1 min-h-8 text-[10px] font-bold leading-4 ${
+                          className={`mt-1 min-h-7 text-[9px] 2xl:text-[10px] font-bold leading-3.5 2xl:leading-4 ${
                             item.isToday ? "text-white" : "text-[#042C51]"
                           }`}
                         >
                           {item.shift}
                         </p>
                         <span
-                          className={`mt-2 inline-flex rounded-md px-2 py-1 text-[9px] font-black ${
+                          className={`mt-1.5 inline-flex rounded-md px-1.5 py-0.5 text-[8px] 2xl:text-[9px] font-black ${
                             item.isToday
                               ? "bg-[#FF5C28] text-white"
                               : item.isOff
@@ -761,37 +786,32 @@ export default function EmployeeDashboardPage() {
                 </div>
               </DashboardCard>
 
-              <section className="sibs-page-card-in relative overflow-hidden rounded-2xl border border-dashed border-amber-300 bg-gradient-to-br from-white via-amber-50/20 to-amber-100/30 p-5 shadow-sm">
-                <div className="flex flex-col gap-3 border-b border-amber-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
-                      <TrendingUp size={17} />
-                    </span>
-                    <div>
-                      <h2 className="text-sm font-black uppercase tracking-wider text-[#042C51]">
-                        Performance & Appraisal Center
-                      </h2>
-                      <p className="mt-1 text-xs font-semibold text-[#667085]">
-                        KPI scorecards, appraisal cycles, and employee goals.
-                      </p>
-                    </div>
+              <section className="sibs-page-card-in relative overflow-hidden rounded-2xl border border-dashed border-amber-300 bg-gradient-to-br from-white via-amber-50/20 to-amber-100/30 p-4 sm:p-5 shadow-xs">
+                <div className="flex flex-col gap-2.5 border-b border-amber-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <h2 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
+                      Performance & Appraisal Center
+                    </h2>
+                    <p className="mt-0.5 text-[11px] 2xl:text-xs font-semibold text-[#667085]">
+                      KPI scorecards, appraisal cycles, and employee goals.
+                    </p>
                   </div>
 
-                  <span className="inline-flex self-start items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white sm:self-center">
-                    <Sparkles size={13} />
+                  <span className="inline-flex self-start items-center gap-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-white sm:self-center">
+                    <Sparkles size={11} />
                     Future Implementation
                   </span>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                   <FutureFeature icon={Gauge} label="KPI Scorecards" />
                   <FutureFeature icon={ShieldCheck} label="Appraisal Reviews" />
                   <FutureFeature icon={TrendingUp} label="Goal Tracking" />
                 </div>
 
-                <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-[11px] font-semibold leading-5 text-slate-600">
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 p-2.5 text-[10px] 2xl:text-[11px] font-semibold leading-5 text-slate-600">
                   <LockKeyhole
-                    size={16}
+                    size={14}
                     className="mt-0.5 shrink-0 text-amber-600"
                   />
                   The performance workspace is intentionally read-only until the
@@ -800,19 +820,19 @@ export default function EmployeeDashboardPage() {
               </section>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-5">
               <DashboardCard>
                 <DashboardCardHeader
                   icon={User}
                   title="My Profile & Summary"
                   action={
-                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-700">
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[8px] 2xl:text-[9px] font-black uppercase text-emerald-700">
                       {profile.status || "Employee"}
                     </span>
                   }
                 />
 
-                <div className="space-y-2.5 text-xs">
+                <div className="space-y-2 text-[11px] 2xl:text-xs">
                   <ProfileSummaryRow
                     label="Position Title"
                     value={profile.position}
@@ -833,8 +853,8 @@ export default function EmployeeDashboardPage() {
                   />
                 </div>
 
-                <div className="space-y-2 border-t border-[#E6ECF2] pt-4">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="space-y-2 border-t border-[#E6ECF2] pt-3">
+                  <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-slate-400">
                     Quick Action Shortcuts
                   </p>
 
@@ -864,13 +884,13 @@ export default function EmployeeDashboardPage() {
                   <button
                     type="button"
                     onClick={() => handleQuickAction("resignation")}
-                    className="flex w-full items-center justify-between rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5 text-left text-xs font-black text-rose-700 transition hover:border-rose-200 hover:bg-rose-100"
+                    className="flex h-8 2xl:h-8.5 w-full items-center justify-between rounded-lg border border-rose-100 bg-rose-50 px-3 text-left text-[11px] 2xl:text-xs font-black text-rose-700 transition hover:border-rose-200 hover:bg-rose-100"
                   >
-                    <span className="inline-flex items-center gap-2">
-                      <UserRoundX size={15} />
+                    <span className="inline-flex items-center gap-1.5">
+                      <UserRoundX size={14} />
                       Submit Resignation
                     </span>
-                    <ChevronRight size={15} />
+                    <ChevronRight size={14} />
                   </button>
                 </div>
               </DashboardCard>
@@ -884,10 +904,10 @@ export default function EmployeeDashboardPage() {
                     <button
                       type="button"
                       onClick={() => navigate(DASHBOARD_ROUTES.leaves)}
-                      className="inline-flex items-center gap-1 text-[11px] font-black text-[#FF5C28] hover:underline"
+                      className="inline-flex items-center gap-1 text-[10px] 2xl:text-[11px] font-black text-[#FF5C28] hover:underline"
                     >
                       Open Leaves
-                      <ArrowUpRight size={13} />
+                      <ArrowUpRight size={12} />
                     </button>
                   }
                 />
@@ -908,7 +928,7 @@ export default function EmployeeDashboardPage() {
                   />
                 ) : null}
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <LeaveBalanceCard
                     label="Vacation Leave"
                     code="VL"
@@ -925,29 +945,29 @@ export default function EmployeeDashboardPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="space-y-1.5">
+                  <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-slate-400">
                     Recent Filed Leave Requests
                   </p>
 
                   {leaveData.recent.length ? (
-                    <div className="max-h-[220px] space-y-2 overflow-y-auto pr-0.5 sibs-scrollbar">
+                    <div className="max-h-[160px] 2xl:max-h-[200px] space-y-1.5 overflow-y-auto pr-0.5 sibs-scrollbar">
                       {leaveData.recent.slice(0, 5).map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs"
+                          className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] 2xl:text-xs"
                         >
                           <div className="min-w-0">
                             <p className="truncate font-bold text-[#042C51]">
                               {item.type}
                             </p>
-                            <p className="mt-0.5 truncate text-[10px] text-slate-500">
+                            <p className="mt-0.5 truncate text-[9px] 2xl:text-[10px] text-slate-500">
                               {[item.dates, item.days].filter(Boolean).join(" · ") ||
                                 "Pending Review"}
                             </p>
                           </div>
                           <span
-                            className={`shrink-0 rounded-md border px-2 py-1 text-[9px] font-black ${getRequestStatusTone(
+                            className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[8px] 2xl:text-[9px] font-black ${getRequestStatusTone(
                               item.status,
                             )}`}
                           >
@@ -972,14 +992,14 @@ export default function EmployeeDashboardPage() {
                   icon={Bell}
                   title="Announcements & Holidays"
                   action={
-                    <span className="font-mono text-[10px] font-bold text-slate-400">
+                    <span className="font-mono text-[9px] 2xl:text-[10px] font-bold text-slate-400">
                       {monthLabel}
                     </span>
                   }
                 />
 
-                <div className="space-y-2.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="space-y-2">
+                  <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-slate-400">
                     Latest HR Bulletins & Notices
                   </p>
 
@@ -989,24 +1009,24 @@ export default function EmployeeDashboardPage() {
                         key={item.id}
                         type="button"
                         onClick={() => setSelectedAnnouncement(item)}
-                        className="w-full space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-blue-300 hover:bg-[#E9F0FC]/60"
+                        className="w-full space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-left transition hover:border-blue-300 hover:bg-[#E9F0FC]/60"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span
-                            className={`rounded px-2 py-0.5 text-[9px] font-black uppercase ${getAnnouncementTone(
+                            className={`rounded px-1.5 py-0.5 text-[8px] 2xl:text-[9px] font-black uppercase ${getAnnouncementTone(
                               item.category,
                             )}`}
                           >
                             {item.category}
                           </span>
-                          <span className="shrink-0 font-mono text-[9px] text-slate-400">
+                          <span className="shrink-0 font-mono text-[8px] 2xl:text-[9px] text-slate-400">
                             {formatDashboardDate(item.date, "")}
                           </span>
                         </div>
-                        <p className="line-clamp-1 text-xs font-bold text-[#042C51]">
+                        <p className="line-clamp-1 text-[11px] 2xl:text-xs font-bold text-[#042C51]">
                           {item.title}
                         </p>
-                        <p className="line-clamp-2 text-[10px] font-medium leading-4 text-slate-500">
+                        <p className="line-clamp-2 text-[9px] 2xl:text-[10px] font-medium leading-3.5 2xl:leading-4 text-slate-500">
                           {item.summary || "Open this notice to review the details."}
                         </p>
                       </button>
@@ -1021,8 +1041,8 @@ export default function EmployeeDashboardPage() {
                   )}
                 </div>
 
-                <div className="space-y-2.5 border-t border-[#E6ECF2] pt-4">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="space-y-2 border-t border-[#E6ECF2] pt-3">
+                  <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-slate-400">
                     Upcoming Holidays
                   </p>
 
@@ -1046,14 +1066,14 @@ export default function EmployeeDashboardPage() {
                       return (
                         <div
                           key={holiday.id}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs"
+                          className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-2 text-[11px] 2xl:text-xs"
                         >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-[#042C51] text-center text-white">
-                              <span className="text-[8px] font-bold uppercase text-[#FF8A63]">
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <div className="flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-[#042C51] text-center text-white">
+                              <span className="text-[7px] 2xl:text-[8px] font-bold uppercase text-[#FF8A63]">
                                 {dayLabel}
                               </span>
-                              <span className="font-mono text-xs font-black leading-none">
+                              <span className="font-mono text-[11px] 2xl:text-xs font-black leading-none">
                                 {dateNumber}
                               </span>
                             </div>
@@ -1061,13 +1081,13 @@ export default function EmployeeDashboardPage() {
                               <p className="truncate font-bold text-[#042C51]">
                                 {holiday.name}
                               </p>
-                              <p className="truncate text-[10px] text-slate-500">
+                              <p className="truncate text-[9px] 2xl:text-[10px] text-slate-500">
                                 {holiday.type || formatDashboardDate(holiday.date)}
                               </p>
                             </div>
                           </div>
                           {holiday.upcoming ? (
-                            <span className="shrink-0 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[9px] font-black text-amber-700">
+                            <span className="shrink-0 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[8px] 2xl:text-[9px] font-black text-amber-700">
                               Upcoming
                             </span>
                           ) : null}
@@ -1207,22 +1227,21 @@ function DashboardSourceNotice({ message, loading = false }) {
 
 function DashboardCard({ children }) {
   return (
-    <section className="sibs-page-card-in space-y-5 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <section className="sibs-page-card-in space-y-3.5 2xl:space-y-4 rounded-2xl border border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-xs">
       {children}
     </section>
   );
 }
 
-function DashboardCardHeader({ icon: Icon, title, description, action }) {
+function DashboardCardHeader({ title, description, action }) {
   return (
-    <div className="flex flex-col gap-3 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-2.5 border-b border-[#E6ECF2] pb-2.5 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
-        <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-[#042C51]">
-          <Icon size={16} className="shrink-0 text-[#FF5C28]" />
+        <h2 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
           {title}
         </h2>
         {description ? (
-          <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+          <p className="mt-0.5 text-[11px] 2xl:text-xs font-semibold leading-4 2xl:leading-5 text-[#667085]">
             {description}
           </p>
         ) : null}
@@ -1234,11 +1253,11 @@ function DashboardCardHeader({ icon: Icon, title, description, action }) {
 
 function MetricBox({ label, value, valueClassName = "text-[#042C51]" }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
-      <p className="text-[9px] font-black uppercase tracking-wide text-slate-400">
+    <div className="rounded-xl border border-slate-200 bg-white p-2.5 2xl:p-3">
+      <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wide text-slate-400">
         {label}
       </p>
-      <p className={`mt-1 font-mono text-sm font-black ${valueClassName}`}>
+      <p className={`mt-0.5 font-mono text-xs 2xl:text-sm font-black ${valueClassName}`}>
         {value || "—"}
       </p>
     </div>
@@ -1250,19 +1269,19 @@ function SummaryTile({ tone = "light", label, value, detail, icon: Icon }) {
 
   return (
     <div
-      className={`rounded-xl border p-4 ${
+      className={`rounded-xl border p-3 2xl:p-3.5 ${
         dark
           ? "border-[#042C51] bg-gradient-to-br from-slate-900 to-[#042C51] text-white"
           : "border-slate-200 bg-slate-50 text-[#042C51]"
       }`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <Icon
-          size={15}
+          size={14}
           className={dark ? "text-[#FF8A63]" : "text-slate-500"}
         />
         <p
-          className={`text-[9px] font-black uppercase tracking-wider ${
+          className={`text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider ${
             dark ? "text-slate-300" : "text-slate-400"
           }`}
         >
@@ -1270,14 +1289,14 @@ function SummaryTile({ tone = "light", label, value, detail, icon: Icon }) {
         </p>
       </div>
       <p
-        className={`mt-2 break-words text-sm font-black leading-5 ${
+        className={`mt-1.5 break-words text-xs 2xl:text-sm font-black leading-4 2xl:leading-5 ${
           dark ? "text-white" : "text-[#042C51]"
         }`}
       >
         {value}
       </p>
       <p
-        className={`mt-1 break-words text-[10px] font-semibold ${
+        className={`mt-0.5 break-words text-[9px] 2xl:text-[10px] font-semibold ${
           dark ? "text-slate-300" : "text-slate-500"
         }`}
       >
@@ -1289,14 +1308,14 @@ function SummaryTile({ tone = "light", label, value, detail, icon: Icon }) {
 
 function FutureFeature({ icon: Icon, label }) {
   return (
-    <div className="rounded-xl border border-amber-200/80 bg-white/80 p-4">
+    <div className="rounded-xl border border-amber-200/80 bg-white/80 p-3 2xl:p-3.5">
       <div className="flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-          <Icon size={15} />
+        <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+          <Icon size={14} />
         </span>
-        <span className="text-xs font-black text-[#042C51]">{label}</span>
+        <span className="text-[11px] 2xl:text-xs font-black text-[#042C51]">{label}</span>
       </div>
-      <p className="mt-2 text-[10px] font-semibold leading-4 text-slate-500">
+      <p className="mt-1.5 text-[9px] 2xl:text-[10px] font-semibold leading-4 text-slate-500">
         Awaiting the connected performance data source.
       </p>
     </div>
@@ -1306,7 +1325,7 @@ function FutureFeature({ icon: Icon, label }) {
 function ProfileSummaryRow({ label, value, mono = false, last = false }) {
   return (
     <div
-      className={`flex items-start justify-between gap-3 py-1.5 ${
+      className={`flex items-start justify-between gap-2.5 py-1 2xl:py-1.5 ${
         last ? "" : "border-b border-slate-100"
       }`}
     >
@@ -1327,10 +1346,10 @@ function QuickAction({ icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-center text-slate-700 transition hover:border-blue-200 hover:bg-[#E9F0FC] hover:text-[#042C51]"
+      className="flex min-h-[64px] 2xl:min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-2 2xl:p-2.5 text-center text-slate-700 transition hover:border-blue-200 hover:bg-[#E9F0FC] hover:text-[#042C51]"
     >
-      <Icon size={17} className="text-[#FF5C28]" />
-      <span className="text-[10px] font-black">{label}</span>
+      <Icon size={15} className="text-[#FF5C28]" />
+      <span className="text-[9px] 2xl:text-[10px] font-black">{label}</span>
     </button>
   );
 }
@@ -1341,28 +1360,28 @@ function LeaveBalanceCard({ label, code, available, total, tone }) {
 
   return (
     <div
-      className={`rounded-xl border p-3 ${
+      className={`rounded-xl border p-2.5 2xl:p-3 ${
         emerald
           ? "border-emerald-200 bg-emerald-50/70"
           : "border-blue-200 bg-blue-50/70"
       }`}
     >
       <div
-        className={`flex items-center justify-between text-[9px] font-black uppercase ${
+        className={`flex items-center justify-between text-[8px] 2xl:text-[9px] font-black uppercase ${
           emerald ? "text-emerald-700" : "text-blue-800"
         }`}
       >
         <span>{label}</span>
         <span className="font-mono">{code}</span>
       </div>
-      <p className="mt-1 font-mono text-lg font-black text-[#042C51]">
+      <p className="mt-0.5 font-mono text-base 2xl:text-lg font-black text-[#042C51]">
         {formatLeaveValue(available)}
-        <span className="ml-1 text-[10px] font-normal text-slate-500">
+        <span className="ml-1 text-[9px] 2xl:text-[10px] font-normal text-slate-500">
           / {formatLeaveValue(total)} Days
         </span>
       </p>
       <div
-        className={`mt-2 h-1.5 overflow-hidden rounded-full ${
+        className={`mt-1.5 h-1.5 overflow-hidden rounded-full ${
           emerald ? "bg-emerald-200" : "bg-blue-200"
         }`}
       >
@@ -1386,15 +1405,15 @@ function DashboardEmptyState({
   return (
     <div
       className={`rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center ${
-        compact ? "p-4" : "p-6"
+        compact ? "p-3 2xl:p-4" : "p-4 2xl:p-5"
       }`}
     >
       <Icon
-        size={compact ? 18 : 22}
+        size={compact ? 16 : 20}
         className="mx-auto text-slate-400"
       />
-      <p className="mt-2 text-xs font-black text-[#042C51]">{title}</p>
-      <p className="mx-auto mt-1 max-w-xl text-[10px] font-semibold leading-4 text-slate-500">
+      <p className="mt-1.5 text-[11px] 2xl:text-xs font-black text-[#042C51]">{title}</p>
+      <p className="mx-auto mt-0.5 max-w-xl text-[9px] 2xl:text-[10px] font-semibold leading-4 text-slate-500">
         {message}
       </p>
     </div>

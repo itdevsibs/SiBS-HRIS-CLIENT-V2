@@ -16,14 +16,14 @@ import DropdownField from "@/components/recruitment/availablePositions/DropdownF
 import RichTextEditor from "@/components/modals/jobDescription/RichTextEditor";
 
 const INPUT_CLASS =
-  "h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
 
 const TEXTAREA_CLASS =
-  "min-h-28 w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "min-h-20 2xl:min-h-28 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+    <label className="mb-1 block text-xs font-extrabold text-[#042C51]">
       {children}
       {required ? <span className="ml-1 text-red-500">*</span> : null}
     </label>
@@ -37,16 +37,16 @@ function PositionFormSection({
   children,
 }) {
   return (
-    <section className="rounded-2xl border border-[#DCE6F1] bg-white p-4 shadow-[0_8px_24px_rgba(4,44,81,0.04)] sm:p-5">
-      <div className="mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-3">
-        <Icon size={17} className="mt-0.5 shrink-0 text-[#FF5C28]" />
+    <section className="rounded-2xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
+      <div className="mb-3 2xl:mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
+        <Icon className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#FF5C28]" />
 
         <div className="min-w-0">
           <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
             {title}
           </h3>
 
-          <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+          <p className="mt-0.5 text-xs font-semibold leading-relaxed text-[#667085]">
             {subtitle}
           </p>
         </div>
@@ -380,7 +380,7 @@ export default function PositionFormModal({
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/65 p-2 backdrop-blur-[2px] sm:p-4"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/65 p-2 backdrop-blur-[2px] sm:p-4 font-jakarta"
     >
       <form
         id="available-position-form"
@@ -389,17 +389,17 @@ export default function PositionFormModal({
         aria-labelledby="available-position-modal-title"
         onSubmit={onSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-[1050px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+        className="sibs-modal-pop-in flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[880px] 2xl:max-w-[1000px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
       >
-        <header className="shrink-0 bg-[#07365F] px-4 py-4 text-white sm:px-6">
+        <header className="shrink-0 bg-[#042C51] px-4 py-2.5 sm:px-6 2xl:py-3.5 text-white">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[#FF5C28]">
-                <BriefcaseBusiness size={20} />
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
+                <BriefcaseBusiness className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
               </span>
 
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <span className="rounded bg-[#FF5C28] px-2 py-0.5 text-[9px] font-extrabold uppercase text-white">
                     Position Dictionary
                   </span>
@@ -411,14 +411,14 @@ export default function PositionFormModal({
 
                 <h2
                   id="available-position-modal-title"
-                  className="mt-1 text-base font-extrabold text-white"
+                  className="mt-0.5 text-sm sm:text-base font-extrabold text-white"
                 >
                   {isEditMode
                     ? "Edit Available Position"
                     : "Register Available Position"}
                 </h2>
 
-                <p className="mt-0.5 text-xs font-semibold text-blue-100">
+                <p className="mt-0.5 sibs-text-xs font-medium text-blue-100">
                   Link an approved JD, confirm the organizational mapping, and
                   manage applicant visibility.
                 </p>
@@ -430,21 +430,21 @@ export default function PositionFormModal({
                 type="button"
                 onClick={onReset}
                 disabled={isSaving}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-white/10 bg-white/10 px-3 text-[10px] font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={13} />
                 Reset
               </button>
 
               <button
                 type="submit"
                 disabled={isSaving}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#FF5C28] px-3.5 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSaving ? (
-                  <Loader2 size={14} className="animate-spin" />
+                  <Loader2 size={13} className="animate-spin" />
                 ) : (
-                  <Save size={14} />
+                  <Save size={13} />
                 )}
 
                 {isSaving
@@ -459,9 +459,9 @@ export default function PositionFormModal({
                 onClick={onClose}
                 disabled={isSaving}
                 aria-label="Close Available Position modal"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
           </div>
@@ -470,7 +470,7 @@ export default function PositionFormModal({
         <div
           ref={modalBodyRef}
           data-dropdown-boundary="true"
-          className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-3 sm:p-5"
+          className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-4 2xl:p-5"
         >
           <div className="space-y-4">
             <PositionFormSection

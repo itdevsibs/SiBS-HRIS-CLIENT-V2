@@ -138,15 +138,15 @@ export default function OfferRecordsTable({
       <div className="hidden lg:block">
         <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white">
           <table className="w-full min-w-[1180px] table-fixed border-separate border-spacing-0 text-left">
-            <thead className="sibs-data-table-head">
+            <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="sibs-data-table-head-row">
-                <th className="sibs-data-table-th w-[18%] text-left">Candidate</th>
-                <th className="sibs-data-table-th w-[15%] text-left">Final Role / Account</th>
-                <th className="sibs-data-table-th w-[14%] text-left">Evaluation Scores</th>
-                <th className="sibs-data-table-th w-[17%] text-left">Negotiation</th>
-                <th className="sibs-data-table-th w-[10%] text-center">Status</th>
-                <th className="sibs-data-table-th w-[9%] text-left">Owner</th>
-                <th className="sibs-data-table-th w-[17%] text-right">Actions</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[18%] text-left">Candidate</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[15%] text-left">Final Role / Account</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[14%] text-left">Evaluation Scores</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[17%] text-left">Negotiation</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[10%] text-center">Status</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[9%] text-left">Owner</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[17%] text-right">Actions</th>
               </tr>
             </thead>
 
@@ -170,9 +170,9 @@ export default function OfferRecordsTable({
                         }
                       }}
                       className="sibs-page-card-in cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25"
-                      style={{ animationDelay: `${index * 30}ms` }}
+                      style={{ animationDelay: `${index * 30}ms`, animationFillMode: "both" }}
                     >
-                      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
+                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2.5 2xl:py-3 align-middle">
                         <div className="min-w-0">
                           <p
                             title={offer.candidateName}
