@@ -365,6 +365,10 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
             `Unable to ${status === "Approved" ? "approve" : "decline"} the offer.`,
         );
       }
+
+      if (status === "Approved") {
+        onClose?.();
+      }
     } catch (error) {
       openStatusModal?.({
         type: "error",
