@@ -2150,11 +2150,10 @@ function CalendarDatePicker({
   function updateCalendarPanelPosition() {
     if (!calendarRef.current) return;
 
-    function updatePanelPosition() {
-      const rect = calendarRef.current.getBoundingClientRect();
-      const panelWidth = 330;
-      const gutter = 12;
-      const maxLeft = window.innerWidth - panelWidth - gutter;
+    const rect = calendarRef.current.getBoundingClientRect();
+    const panelWidth = 330;
+    const gutter = 12;
+    const maxLeft = window.innerWidth - panelWidth - gutter;
 
     setPanelPosition({
       top: rect.bottom + 8,
@@ -6171,7 +6170,9 @@ export default function PublicTalentPoolApplicationPage() {
                     <FieldLabel>
                       Upload single audio file <RequiredMark />
                     </FieldLabel>
-                    <label
+                    <button
+                      type="button"
+                      onClick={() => audioInputRef.current?.click()}
                       className={`group flex min-h-[140px] 2xl:min-h-[170px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-7 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAudio && !selectedAudioFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
@@ -6227,7 +6228,9 @@ export default function PublicTalentPoolApplicationPage() {
                     <FieldLabel>
                       Upload supporting file <RequiredMark />
                     </FieldLabel>
-                    <label
+                    <button
+                      type="button"
+                      onClick={() => attachmentInputRef.current?.click()}
                       className={`group flex min-h-[140px] 2xl:min-h-[170px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-7 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAttachment && !selectedAttachmentFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
