@@ -9,7 +9,7 @@ import React, {
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
 import StatusModal from "../../components/modals/StatusModal";
-import { Plus, RefreshCw, RotateCcw } from "lucide-react";
+import { Database, Plus, RefreshCw, RotateCcw } from "lucide-react";
 import {
   createAvailablePosition,
   getAvailablePositionMeta,
@@ -1888,12 +1888,14 @@ export default function AvailablePositionsPage() {
                   Database Mapping Rule
                 </h3>
 
-            <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
-              Departments and accounts are loaded from the database. Account
-              choices depend on the selected department. Active positions appear
-              in applicant-facing forms, while Inactive and Archived positions
-              remain unavailable.
-            </p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
+                  Departments and accounts are loaded from the database. Account
+                  choices depend on the selected department. Active positions
+                  appear in applicant-facing forms, while Inactive and Archived
+                  positions remain unavailable.
+                </p>
+              </div>
+            </div>
           </section>
         </div>
       </main>
