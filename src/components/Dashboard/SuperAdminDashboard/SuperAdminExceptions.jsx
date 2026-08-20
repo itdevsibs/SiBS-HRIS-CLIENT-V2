@@ -19,7 +19,7 @@ export default function SuperAdminExceptions({
   return (
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
       <div>
-        <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
+        <h2 className="font-heading text-base 2xl:text-lg font-bold text-[#042C51] tracking-tight">
           Risk &amp; Exception Escalation Desk ({totalItems})
         </h2>
         <p className="sibs-text-xs font-semibold text-[#667085]">

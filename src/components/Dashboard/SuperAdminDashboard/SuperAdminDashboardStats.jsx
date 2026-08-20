@@ -96,7 +96,7 @@ function SuperAdminMetricCard({ item, value, onClick, delay = 0 }) {
           </p>
 
           <div className="mt-1.5 2xl:mt-2 flex flex-wrap items-baseline gap-1.5 2xl:gap-2">
-            <span className="text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums tracking-tight text-[#042C51]">
+            <span className="font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-[#042C51]">
               {value}
             </span>
 

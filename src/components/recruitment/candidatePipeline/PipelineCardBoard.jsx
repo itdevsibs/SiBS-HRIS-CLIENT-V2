@@ -173,7 +173,7 @@ export default function PipelineCardsBoard({
       onMouseMove={handleBoardMouseMove}
       onMouseUp={handleBoardMouseUp}
       onMouseLeave={handleBoardMouseLeave}
-      className={`overflow-x-auto bg-[#E6EAF0] p-1.5 pb-3 select-none sm:p-2 sm:pb-4 ${BOARD_SCROLLBAR_CLASS} ${
+      className={`overflow-x-auto bg-[#FFF9F0] p-1.5 pb-3 select-none sm:p-2 sm:pb-4 ${BOARD_SCROLLBAR_CLASS} ${
         isDraggingBoard ? "cursor-grabbing" : "cursor-default"
       }`}
     >

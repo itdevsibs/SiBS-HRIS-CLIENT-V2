@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Condensed:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
 @import "tailwindcss";
 
@@ -7,6 +7,8 @@
 ========================= */
 @theme {
   --font-jakarta: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-heading: "Roboto Condensed", system-ui, sans-serif;
+  --font-roboto-condensed: "Roboto Condensed", system-ui, sans-serif;
   --font-mono: "Plus Jakarta Sans", system-ui, sans-serif;
 
   --color-sibs-primary-1: #042c51;
@@ -26,7 +28,11 @@
   --color-sibs-tertiary-7: #6b88a8;
   --color-sibs-tertiary-8: #94a9c1;
   --color-sibs-tertiary-9: #becbda;
-  --color-sibs-tertiary-10: #e6eaf0;
+  --color-sibs-tertiary-10: #fff9f0;
+
+  --color-sibs-tab-active-bg: #ffedd2;
+  --color-sibs-button-hover: #eb3800;
+  --color-sibs-button-active: #ff8450;
 
   --color-sibs-success: #2ecc71;
   --color-sibs-warning: #e67e22;
@@ -65,7 +71,7 @@
   --sibs-tertiary-7: #6b88a8;
   --sibs-tertiary-8: #94a9c1;
   --sibs-tertiary-9: #becbda;
-  --sibs-tertiary-10: #e6eaf0;
+  --sibs-tertiary-10: #fff9f0;
 
   --sibs-status-1: #2ecc71;
   --sibs-status-2: #e67e22;
@@ -99,6 +105,10 @@
     height: 100%;
     min-height: 100%;
     font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+
+  html {
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -500,7 +510,11 @@
     transform: scale(0.98);
   }
 
-  /* Centralized Responsive Typography System */
+  /* Website Heading Font & Centralized Responsive Typography System */
+  .font-heading {
+    font-family: "Roboto Condensed", system-ui, sans-serif;
+  }
+
   .sibs-text-micro {
     font-size: 9.5px;
     line-height: 1.35;

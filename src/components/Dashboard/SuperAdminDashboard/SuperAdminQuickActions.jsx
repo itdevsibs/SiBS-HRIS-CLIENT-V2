@@ -82,7 +82,7 @@ export default function SuperAdminQuickActions({
     >
       <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-2 2xl:pb-2.5">
         <div className="min-w-0 space-y-0.5">
-          <h2 className="text-xs 2xl:text-sm font-extrabold text-[#042C51] flex items-center gap-1.5 2xl:gap-2">
+          <h2 className="font-heading text-sm 2xl:text-base font-bold text-[#042C51] tracking-tight flex items-center gap-1.5 2xl:gap-2">
             <SlidersHorizontal size={14} className="text-[#FF5C28]" />
             Quick Actions
           </h2>
@@ -101,7 +101,7 @@ export default function SuperAdminQuickActions({
             key={item.id}
             type="button"
             onClick={() => handleAction(item)}
-            className="group sibs-page-card-in flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-slate-200 bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB]"
+            className="group sibs-page-card-in flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-slate-200 bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-[#FF5C28]/50 hover:bg-[#FFEDD2]/70"
             style={{
               animationDelay: `${160 + index * 40}ms`,
               animationFillMode: "both",

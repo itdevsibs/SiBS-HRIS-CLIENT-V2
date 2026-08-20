@@ -23,7 +23,7 @@ export default function SuperAdminDashboardHeader({
             </span>
           </div>
 
-          <h1 className="break-words text-lg 2xl:text-2xl font-extrabold tracking-tight text-[#042C51]">
+          <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-[#042C51]">
             Whole-System HRIS Operations &amp; Governance
           </h1>
 
@@ -41,7 +41,7 @@ export default function SuperAdminDashboardHeader({
               onClick={onRefresh}
               disabled={isManualRefreshing}
               title="Refresh Dashboard Data"
-              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF4ED] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
@@ -54,7 +54,7 @@ export default function SuperAdminDashboardHeader({
           <button
             type="button"
             onClick={onAddUser}
-            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-[#E6ECF2] bg-white px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#042C51] shadow-xs transition hover:border-[#FF5C28]/40 hover:bg-[#FFEDD2] hover:text-[#042C51]"
           >
             <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#FF5C28]" />
             Add Admin / User
@@ -63,9 +63,9 @@ export default function SuperAdminDashboardHeader({
           <button
             type="button"
             onClick={onOpenEmployees}
-            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-[#FF5C28] px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-[#EB3800] active:bg-[#FF8450]"
           >
-            <Users className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#042C51]" />
+            <Users className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
             Launch Employee Directory
             <ArrowRight className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" />
           </button>

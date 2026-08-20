@@ -35,8 +35,8 @@ export default function SuperAdminTabs({ activeTab, onChange, counts }) {
             onClick={() => onChange(tab.id)}
             className={`inline-flex h-9 2xl:h-10 shrink-0 items-center gap-1.5 2xl:gap-2 border-b-2 px-3 sm:px-3.5 2xl:px-4.5 sibs-text-micro font-extrabold uppercase tracking-wide transition-all ${
               active
-                ? "rounded-t-lg 2xl:rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
-                : "border-transparent text-[#667085] hover:text-[#042C51]"
+                ? "rounded-t-lg 2xl:rounded-t-xl border-[#FF5C28] bg-[#FFEDD2] text-[#042C51] shadow-2xs"
+                : "border-transparent text-[#667085] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
             }`}
           >
             {createElement(tab.icon, {
@@ -46,7 +46,7 @@ export default function SuperAdminTabs({ activeTab, onChange, counts }) {
             <span>{tab.label}</span>
             {Number.isFinite(Number(count)) ? (
               <span
-                className={`rounded-full px-1.5 py-0.5 sibs-text-micro font-extrabold tabular-nums ${
+                className={`rounded-full px-1.5 py-0.5 sibs-text-micro font-extrabold tabular-nums transition-colors ${
                   active
                     ? "bg-[#042C51] text-white"
                     : "bg-slate-200 text-slate-600"
