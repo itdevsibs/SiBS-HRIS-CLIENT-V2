@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Download,
   Eye,
+  FileDown,
   FileImage,
   FileSpreadsheet,
   FileText,
@@ -60,6 +61,7 @@ import api from "../../../lib/axios/api-template";
 import {
   getTalentPoolApplicationById,
   getTalentPoolApplicationAnswers,
+  getTalentPoolResumePdf,
   markTalentPoolCandidateAsDropOff,
   updateTalentPoolApplicationStatus,
 } from "../../../lib/axios/getTalentPool";
@@ -4014,6 +4016,7 @@ export default function CandidateProfileModal() {
   const [dropOffReason, setDropOffReason] = useState("");
   const [dropOffSaving, setDropOffSaving] = useState(false);
   const [dropOffValidation, setDropOffValidation] = useState("");
+  const [isGeneratingResume, setIsGeneratingResume] = useState(false);
 
   const talentPoolApplicationId = useMemo(
     () => getTalentPoolApplicationId(selectedCandidate),
@@ -4053,6 +4056,7 @@ export default function CandidateProfileModal() {
     setDropOffOpen(false);
     setDropOffReason("");
     setDropOffValidation("");
+    setIsGeneratingResume(false);
   }, [selectedCandidate?.id, selectedCandidate?.candidateId]);
 
   const loadTalentPoolCandidateDetails = useCallback(async () => {
@@ -4774,6 +4778,62 @@ export default function CandidateProfileModal() {
 
   function handleCloseCandidateProfile() {
     setSelectedCandidate(null);
+  }
+
+  async function handleGenerateResume() {
+    if (!talentPoolApplicationId || isGeneratingResume) return;
+
+    const previewWindow = window.open("", "_blank");
+    if (previewWindow) {
+      previewWindow.opener = null;
+      previewWindow.document.title = "Generating SiBS Candidate Resume";
+      previewWindow.document.body.textContent = "Generating candidate resume...";
+    }
+
+    setIsGeneratingResume(true);
+    try {
+      const result = await getTalentPoolResumePdf(talentPoolApplicationId);
+      if (!result.success || !result.data) {
+        throw new Error(
+          result.message || "Unable to generate the candidate resume.",
+        );
+      }
+
+      const objectUrl = URL.createObjectURL(result.data);
+      if (previewWindow) {
+        previewWindow.location.replace(objectUrl);
+      } else {
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = result.filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setStatusModal({
+          open: true,
+          type: "success",
+          title: "Resume generated",
+          message:
+            "The PDF preview was blocked, so the candidate resume was downloaded instead.",
+          closeProfileOnClose: false,
+        });
+      }
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      if (previewWindow && !previewWindow.closed) previewWindow.close();
+      setStatusModal({
+        open: true,
+        type: "error",
+        title: "Resume generation failed",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Unable to generate the candidate resume.",
+        closeProfileOnClose: false,
+      });
+    } finally {
+      setIsGeneratingResume(false);
+    }
   }
 
   function handleUpdateCandidateStatus(event) {
@@ -7409,6 +7469,25 @@ export default function CandidateProfileModal() {
                   </div>
 
                   <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                    <button
+                      type="button"
+                      onClick={handleGenerateResume}
+                      disabled={!talentPoolApplicationId || isGeneratingResume}
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 text-xs font-black text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/50 hover:bg-[#FFF9F6] hover:text-[#C9360A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isGeneratingResume ? (
+                        <>
+                          <Loader2 size={15} className="animate-spin text-[#FF5C28]" />
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileDown size={15} className="text-[#FF5C28]" />
+                          <span>Generate Resume</span>
+                        </>
+                      )}
+                    </button>
+
                     <button
                       type="button"
                       onClick={handleUpdateCandidateStatus}
