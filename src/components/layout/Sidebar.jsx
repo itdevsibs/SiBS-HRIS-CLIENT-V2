@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion as framerMotion } from "framer-motion";
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
   BookOpen,
   BriefcaseBusiness,
@@ -38,6 +39,9 @@ import { getJobDescriptions } from "../../lib/axios/getJobDescription";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
+import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
+import { getAvailablePositions } from "../../lib/axios/getAvailablePosition";
+import { isHiringNeedUnlinkedFromJd } from "../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 import { buildSidebarBadgeText } from "../../lib/utils/sidebarNotifications";
 import {
   DASHBOARD_ACCESS,
@@ -75,6 +79,9 @@ const APPROVAL_SETTINGS_API_BY_MODULE = {
   "Available Positions": getAvailablePositionApprovalUsers,
 };
 
+const HIRING_NEEDS_ACCESS = [1, 2, 3, 5, 6, 7, 10];
+const AVAILABLE_POSITIONS_ACCESS = [1, 2, 3, 7];
+
 const MotionDiv = framerMotion.div;
 const MotionSpan = framerMotion.span;
 
@@ -89,6 +96,26 @@ function normalizeRole(value = "") {
     .trim()
     .toLowerCase()
     .replace(/[\s-]+/g, "_");
+}
+
+function isAvailablePositionUnlinkedFromJd(position = {}) {
+  const raw = position?.raw || {};
+  const status = String(
+    position.jdLinkStatus ||
+      position.jd_link_status ||
+      raw.jdLinkStatus ||
+      raw.jd_link_status ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  return [
+    "unlinked from jd",
+    "unlinked from job description",
+    "unlinked from job descriptions",
+    "unlinked",
+  ].includes(status);
 }
 
 function getAdminAccess(user = {}) {
@@ -429,10 +456,7 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const [
-    approvalRequestNotificationCount,
-    setApprovalRequestNotificationCount,
-  ] = useState(0);
+  const [, setApprovalRequestNotificationCount] = useState(0);
 
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
@@ -459,6 +483,8 @@ export default function Sidebar() {
         setSidebarNotification?.("jobDescriptionApprovals", null);
         setSidebarNotification?.("hiringNeedsApprovals", null);
         setSidebarNotification?.("availablePositionApprovals", null);
+        setSidebarNotification?.("hiringNeedsUnlinkedJd", null);
+        setSidebarNotification?.("availablePositionsUnlinkedJd", null);
         setSidebarNotification?.("approvalRequests", null);
         return;
       }
@@ -541,6 +567,85 @@ export default function Sidebar() {
       setSidebarNotification?.("hiringNeedsApprovals", null);
       setSidebarNotification?.("availablePositionApprovals", null);
       setSidebarNotification?.("approvalRequests", null);
+    }
+  }, [setSidebarNotification, user]);
+
+  const loadUnlinkedJdNotifications = useCallback(async () => {
+    const adminAccess = getAdminAccess(user);
+    const canViewHiringNeeds = HIRING_NEEDS_ACCESS.includes(adminAccess);
+    const canViewAvailablePositions =
+      AVAILABLE_POSITIONS_ACCESS.includes(adminAccess);
+
+    const [hiringNeedsResult, availablePositionsResult] =
+      await Promise.allSettled([
+        canViewHiringNeeds ? getHiringNeeds() : Promise.resolve(null),
+        canViewAvailablePositions
+          ? getAvailablePositions({
+              page: 1,
+              limit: 1,
+              search: "",
+              status: "All",
+              departmentId: "All",
+              accountId: "All",
+              jdLinkStatus: "Unlinked from JD",
+            })
+          : Promise.resolve(null),
+      ]);
+
+    if (canViewHiringNeeds && hiringNeedsResult.status === "fulfilled") {
+      const response = hiringNeedsResult.value;
+      const rows = response?.success
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : [];
+      const count = (Array.isArray(rows) ? rows : []).filter(
+        isHiringNeedUnlinkedFromJd,
+      ).length;
+
+      setSidebarNotification?.(
+        "hiringNeedsUnlinkedJd",
+        count > 0
+          ? {
+              name: "Hiring Needs Intake",
+              count,
+              tone: "warning",
+              title: `${count > 99 ? "99+" : count} hiring needs unlinked from Job Descriptions`,
+            }
+          : null,
+      );
+    } else {
+      setSidebarNotification?.("hiringNeedsUnlinkedJd", null);
+    }
+
+    if (
+      canViewAvailablePositions &&
+      availablePositionsResult.status === "fulfilled"
+    ) {
+      const response = availablePositionsResult.value;
+      const responseCount = Number(
+        response?.counts?.unlinkedFromJd ??
+          response?.counts?.unlinked_from_jd ??
+          response?.pagination?.total,
+      );
+      const rows = Array.isArray(response?.data) ? response.data : [];
+      const count = Number.isFinite(responseCount)
+        ? responseCount
+        : rows.filter(isAvailablePositionUnlinkedFromJd).length;
+
+      setSidebarNotification?.(
+        "availablePositionsUnlinkedJd",
+        count > 0
+          ? {
+              name: "Available Positions",
+              count,
+              tone: "warning",
+              title: `${count > 99 ? "99+" : count} available positions unlinked from Job Descriptions`,
+            }
+          : null,
+      );
+    } else {
+      setSidebarNotification?.("availablePositionsUnlinkedJd", null);
     }
   }, [setSidebarNotification, user]);
 
@@ -644,10 +749,12 @@ export default function Sidebar() {
 
     const initialLoadTimer = window.setTimeout(() => {
       loadApprovalRequestNotifications();
+      loadUnlinkedJdNotifications();
     }, 0);
 
     const interval = window.setInterval(() => {
       loadApprovalRequestNotifications();
+      loadUnlinkedJdNotifications();
     }, 30000);
 
     return () => {
@@ -661,6 +768,7 @@ export default function Sidebar() {
     pathname,
     ADMIN_ROLES,
     loadApprovalRequestNotifications,
+    loadUnlinkedJdNotifications,
     setSidebarNotification,
   ]);
 
@@ -773,6 +881,7 @@ export default function Sidebar() {
       path: "/recruitment/hiring-needs",
       allowedUsers: [1, 2, 3, 5, 6, 7, 10],
       notificationKey: "hiringNeedsApprovals",
+      alertNotificationKey: "hiringNeedsUnlinkedJd",
     },
     {
       name: "Available Positions",
@@ -780,6 +889,7 @@ export default function Sidebar() {
       path: "/recruitment/available-positions",
       allowedUsers: [1, 2, 3, 7],
       notificationKey: "availablePositionApprovals",
+      alertNotificationKey: "availablePositionsUnlinkedJd",
     },
     {
       name: "Sourcing Analytics",
@@ -940,6 +1050,10 @@ export default function Sidebar() {
         item.notificationKey && typeof getNotification === "function"
           ? getNotification(item.notificationKey)
           : null;
+      const alertSidebarNotification =
+        item.alertNotificationKey && typeof getNotification === "function"
+          ? getNotification(item.alertNotificationKey)
+          : null;
       const notificationCount = Number(item.notificationCount || 0);
       const hasNotification = notificationCount > 0;
       const staticBadge = String(item.badge || "").trim();
@@ -958,6 +1072,12 @@ export default function Sidebar() {
           ? sidebarBadgeToneClass.info
           : sidebarBadgeToneClass[badgeTone] || sidebarBadgeToneClass.info;
       const badgeTitle = sidebarNotification?.title || badgeText;
+      const alertBadgeText = buildSidebarBadgeText(alertSidebarNotification);
+      const alertBadgeTitle =
+        alertSidebarNotification?.title || alertBadgeText;
+      const combinedBadgeTitle = [badgeTitle, alertBadgeTitle]
+        .filter(Boolean)
+        .join(". ");
 
       const isCollapsedMode = !isMobile && collapsed;
       const isNumericBadge = /^\d+\+?$/.test(badgeText);
@@ -969,8 +1089,16 @@ export default function Sidebar() {
           draggable={false}
           onDragStart={(event) => event.preventDefault()}
           onClick={handleLinkClick}
-          title={!isCollapsedMode ? badgeTitle || undefined : badgeTitle || item.name}
-          aria-label={badgeTitle ? `${item.name}, ${badgeTitle}` : item.name}
+          title={
+            !isCollapsedMode
+              ? combinedBadgeTitle || undefined
+              : combinedBadgeTitle || item.name
+          }
+          aria-label={
+            combinedBadgeTitle
+              ? `${item.name}, ${combinedBadgeTitle}`
+              : item.name
+          }
           className={[
             "group relative flex select-none items-center font-semibold transition-all duration-300 rounded-xl",
             isCollapsedMode
@@ -1011,6 +1139,12 @@ export default function Sidebar() {
                   {isNumericBadge ? badgeText : "•"}
                 </span>
               )}
+
+              {alertBadgeText && isCollapsedMode && (
+                <span className="absolute -bottom-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF5C28] px-1 text-[7.5px] font-black leading-none text-white ring-2 ring-sibs-primary-1 shadow-sm">
+                  {alertBadgeText}
+                </span>
+              )}
             </div>
 
             {/* Expanded Text */}
@@ -1027,12 +1161,30 @@ export default function Sidebar() {
           </div>
 
           {/* Expanded Badge */}
-          {badgeText && !isCollapsedMode && (
-            <span
-              className={`ml-auto shrink-0 inline-flex h-5 items-center justify-center rounded px-1.5 2xl:px-2 sibs-text-micro font-bold uppercase leading-none tracking-wide transition-all duration-300 max-w-[70px] opacity-100 ${badgeClass}`}
-            >
-              {badgeText}
-            </span>
+          {(badgeText || alertBadgeText) && !isCollapsedMode && (
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              {badgeText ? (
+                <span
+                  className={`inline-flex h-5 max-w-[70px] items-center justify-center rounded px-1.5 sibs-text-micro font-bold uppercase leading-none tracking-wide transition-all duration-300 opacity-100 2xl:px-2 ${badgeClass}`}
+                >
+                  {badgeText}
+                </span>
+              ) : null}
+
+              {alertBadgeText ? (
+                <span
+                  className={`inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded-full px-1.5 text-[8px] font-black leading-none shadow-sm ring-1 transition-all duration-300 ${
+                    isActive
+                      ? "bg-[#7A2713] text-white ring-white/50"
+                      : "bg-[#FF5C28] text-white ring-[#FFAA8F]/70"
+                  }`}
+                  title={alertBadgeTitle}
+                >
+                  <AlertTriangle size={9} strokeWidth={2.5} />
+                  {alertBadgeText}
+                </span>
+              ) : null}
+            </div>
           )}
 
           {/* Floating Tooltip in Folded Mode */}
@@ -1044,6 +1196,12 @@ export default function Sidebar() {
                   className={`rounded px-1.5 py-0.5 text-[9px] font-black uppercase leading-none ${badgeClass}`}
                 >
                   {badgeText}
+                </span>
+              )}
+              {alertBadgeText && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#FF5C28] px-1.5 py-0.5 text-[9px] font-black leading-none text-white">
+                  <AlertTriangle size={9} strokeWidth={2.5} />
+                  {alertBadgeText}
                 </span>
               )}
               <span className="absolute -left-1 top-1/2 -translate-y-1/2 border-y-4 border-r-4 border-y-transparent border-r-[#083A69]" />
@@ -1217,7 +1375,7 @@ export default function Sidebar() {
   );
 }
 
-function Section({ title, short, collapsed, children }) {
+function Section({ title, collapsed, children }) {
   return (
     <section className="select-none">
       <div className="overflow-hidden whitespace-nowrap transition-all duration-300">

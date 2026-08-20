@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2, Loader2, XCircle } from "lucide-react";
 
@@ -12,19 +12,16 @@ export default function StatusModal({
   onCancel,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  confirmTone = "danger",
   variant = "center", // center | compact
   lockScroll = false,
 }) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = typeof document !== "undefined";
 
   const previousOverflowRef = useRef({
     body: "",
     html: "",
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open || typeof document === "undefined") return undefined;
@@ -169,7 +166,11 @@ export default function StatusModal({
               type="button"
               onClick={isConfirm ? () => onConfirm?.() : handleClose}
               className={`h-10 rounded-[10px] px-5 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
-                isConfirm ? "bg-red-600 hover:bg-red-700" : "bg-[#FF5C28] hover:bg-[#e04d1c]"
+                  isConfirm
+                    ? confirmTone === "brand"
+                      ? "bg-[#042C51] hover:bg-[#073B6C]"
+                      : "bg-red-600 hover:bg-red-700"
+                    : "bg-[#FF5C28] hover:bg-[#e04d1c]"
               }`}
             >
               {isConfirm ? confirmLabel : "OK"}
@@ -231,7 +232,11 @@ export default function StatusModal({
                 type="button"
                 onClick={isConfirm ? () => onConfirm?.() : handleClose}
                 className={`h-10 flex-1 rounded-[10px] px-4 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
-                  isConfirm ? "bg-red-600 hover:bg-red-700" : "bg-[#FF5C28] hover:bg-[#e04d1c]"
+                isConfirm
+                  ? confirmTone === "brand"
+                    ? "bg-[#042C51] hover:bg-[#073B6C]"
+                    : "bg-red-600 hover:bg-red-700"
+                  : "bg-[#FF5C28] hover:bg-[#e04d1c]"
                 }`}
               >
                 {isConfirm ? confirmLabel : "OK"}

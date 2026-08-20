@@ -1,20 +1,29 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
+
+const UNLINKED_JD_TABS = [
+  "Unlinked From Job Descriptions",
+  "Unlinked from JD",
+];
 
 export default function StatusFilterTabs({
   tabs = [],
   activeValue = "All",
   counts = {},
   onChange,
-  countKeys = ["For Approval"],
+  countKeys = ["For Approval", ...UNLINKED_JD_TABS],
 }) {
-  if (!Array.isArray(tabs) || tabs.length === 0) return null;
+  if (!Array.isArray(tabs) || tabs.length === 0) {
+    return null;
+  }
 
   return (
     <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
       {tabs.map((tab) => {
         const active = activeValue === tab.value;
         const showCount = countKeys.includes(tab.value);
+        const isUnlinkedJd = UNLINKED_JD_TABS.includes(tab.value);
+        const count = Number(counts?.[tab.value] || 0);
 
         return (
           <button
@@ -28,22 +37,34 @@ export default function StatusFilterTabs({
             }`}
           >
             {tab.label}
+
             {showCount ? (
               <span
                 className={[
-                  "rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors",
-                  active ? "bg-red-600 text-white" : "bg-red-100 text-red-700",
+                  "inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-extrabold tabular-nums transition-all",
+
+                  isUnlinkedJd
+                    ? active
+                      ? "bg-[#FF3B1F] text-white shadow-[0_0_0_3px_rgba(255,59,31,0.12)]"
+                      : "bg-[#FFE1D8] text-[#D92D20]"
+                    : active
+                      ? "bg-red-600 text-white"
+                      : "bg-red-100 text-red-700",
                 ].join(" ")}
               >
-                {Number(counts?.[tab.value] || 0)}
+                {count}
               </span>
             ) : null}
 
             {active ? (
-              <motion.div
+              <Motion.div
                 layoutId="statusFilterActiveTabIndicator"
                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
-                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 380,
+                  damping: 30,
+                }}
               />
             ) : null}
           </button>

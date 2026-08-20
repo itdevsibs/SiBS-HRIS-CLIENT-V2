@@ -9,16 +9,12 @@ import React, {
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
 import StatusModal from "../../components/modals/StatusModal";
-import {
-  Database,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-} from "lucide-react";
+import { Plus, RefreshCw, RotateCcw } from "lucide-react";
 import {
   createAvailablePosition,
   getAvailablePositionMeta,
   getAvailablePositions,
+  relinkAvailablePositionJobDescription,
   updateAvailablePosition,
   updateAvailablePositionStatus,
 } from "../../lib/axios/getAvailablePosition";
@@ -49,12 +45,19 @@ import {
   normalizeAvailablePositionRecord,
   normalizeAvailablePositionRecords,
 } from "../../lib/utils/availablePositions/availablePositionId";
-import {
-  getAvailablePositionSearchText,
-} from "../../lib/utils/availablePositions/availablePositionsPresentation";
+import { getAvailablePositionSearchText } from "../../lib/utils/availablePositions/availablePositionsPresentation";
+
+const UNLINKED_JD_TAB = "Unlinked From Job Descriptions";
+const UNLINKED_JD_STATUS = "Unlinked from JD";
 
 function normalizeSibsId(value = "") {
   return cleanText(value).replace(/^SIBS[-_ ]?/i, "");
+}
+
+function normalizeText(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function getCurrentUserSibsId(user = {}) {
@@ -107,7 +110,9 @@ function getRequestValue(request = {}, keys = [], fallback = "") {
   for (const key of keys) {
     const value = request[key] ?? raw[key];
 
-    if (cleanText(value)) return value;
+    if (cleanText(value)) {
+      return value;
+    }
   }
 
   return fallback;
@@ -126,8 +131,40 @@ function normalizeApprovalStatus(value = "") {
   return cleanText(value);
 }
 
+function normalizeJdLinkStatus(value = "") {
+  const status = normalizeText(value);
+
+  if (!status) {
+    return "Linked";
+  }
+
+  if (
+    status === "unlinked from jd" ||
+    status === "unlinked from job description" ||
+    status === "unlinked from job descriptions" ||
+    status === "unlinked"
+  ) {
+    return UNLINKED_JD_STATUS;
+  }
+
+  return cleanText(value);
+}
+
+function getPositionJdLinkStatus(position = {}) {
+  const raw = position.raw || {};
+
+  return normalizeJdLinkStatus(
+    position.jdLinkStatus ||
+      position.jd_link_status ||
+      raw.jdLinkStatus ||
+      raw.jd_link_status ||
+      "",
+  );
+}
+
 function normalizeAvailablePositionApprovalRequest(request = {}) {
   const raw = request.raw || {};
+
   const recordId = getRequestValue(
     request,
     [
@@ -140,6 +177,7 @@ function normalizeAvailablePositionApprovalRequest(request = {}) {
     ],
     "",
   );
+
   const positionId = getRequestValue(
     request,
     ["positionId", "position_id"],
@@ -149,62 +187,82 @@ function normalizeAvailablePositionApprovalRequest(request = {}) {
   return normalizeAvailablePositionRecord({
     ...raw,
     ...request,
+
     id: recordId || request.id,
+
     rawId: recordId || request.rawId || request.raw_id || "",
+
     raw_id: recordId || request.raw_id || request.rawId || "",
+
     positionId,
     position_id: positionId,
+
     positionTitle: getRequestValue(
       request,
       ["positionTitle", "position_title", "title"],
       request.title || "",
     ),
+
     position_title: getRequestValue(
       request,
       ["position_title", "positionTitle", "title"],
       request.title || "",
     ),
+
     jdCode: getRequestValue(request, ["jdCode", "jd_code"], ""),
+
     jd_code: getRequestValue(request, ["jd_code", "jdCode"], ""),
+
     documentTitle: getRequestValue(
       request,
       ["documentTitle", "document_title"],
       "",
     ),
+
     document_title: getRequestValue(
       request,
       ["document_title", "documentTitle"],
       "",
     ),
+
     department: getRequestValue(request, ["department", "departmentName"], ""),
+
     accountName: getRequestValue(
       request,
       ["accountName", "account_name", "account"],
       "",
     ),
+
     account_name: getRequestValue(
       request,
       ["account_name", "accountName", "account"],
       "",
     ),
+
     locationSite: getRequestValue(
       request,
       ["locationSite", "location_site"],
       "",
     ),
+
     location_site: getRequestValue(
       request,
       ["location_site", "locationSite"],
       "",
     ),
+
     status: getRequestValue(
       request,
       ["positionStatus", "position_status"],
       "Inactive",
     ),
-    approvalRequestId: request.id || request.requestId || request.request_id || "",
+
+    approvalRequestId:
+      request.id || request.requestId || request.request_id || "",
+
     approval_request_id:
       request.id || request.request_id || request.requestId || "",
+
     approvalStatus: normalizeApprovalStatus(
       request.status ||
         request.approvalStatus ||
@@ -212,6 +270,7 @@ function normalizeAvailablePositionApprovalRequest(request = {}) {
         request.recruitmentSettingsStatus ||
         request.recruitment_settings_status,
     ),
+
     approval_status: normalizeApprovalStatus(
       request.status ||
         request.approval_status ||
@@ -219,9 +278,13 @@ function normalizeAvailablePositionApprovalRequest(request = {}) {
         request.recruitment_settings_status ||
         request.recruitmentSettingsStatus,
     ),
+
     requestedBy: request.requestedBy || request.requested_by || "",
+
     requested_by: request.requested_by || request.requestedBy || "",
+
     dateRequested: request.dateRequested || request.requestDate || "",
+
     date_requested: request.date_requested || request.dateRequested || "",
   });
 }
@@ -274,6 +337,7 @@ function mergeAvailablePositionApprovalRequests(positions = [], requests = []) {
 
   requests.forEach((request) => {
     const approvalPosition = normalizeAvailablePositionApprovalRequest(request);
+
     const approvalKeys = new Set(
       getAvailablePositionMergeKeys(approvalPosition),
     );
@@ -285,18 +349,18 @@ function mergeAvailablePositionApprovalRequests(positions = [], requests = []) {
     );
 
     if (matchIndex < 0) {
-      // Approval requests are metadata for an existing canonical
-      // Available Position. Never add an unmatched request as another
-      // position row because that duplicates the database record in
-      // the All Positions tab.
       return;
     }
 
     merged[matchIndex] = {
       ...merged[matchIndex],
+
       approvalRequestId: approvalPosition.approvalRequestId,
+
       approval_request_id: approvalPosition.approval_request_id,
+
       approvalStatus: approvalPosition.approvalStatus,
+
       approval_status: approvalPosition.approval_status,
     };
   });
@@ -305,23 +369,51 @@ function mergeAvailablePositionApprovalRequests(positions = [], requests = []) {
 }
 
 const AVAILABLE_POSITION_STATUS_TABS = [
-  { label: "All Positions", value: "All" },
-  { label: "For Approval", value: "For Approval" },
-  { label: "Active", value: "Active" },
-  { label: "Inactive", value: "Inactive" },
-  { label: "Approved", value: "Approved" },
-  { label: "Rejected", value: "Rejected" },
-  { label: "Archived", value: "Archived" },
+  {
+    label: "All Positions",
+    value: "All",
+  },
+  {
+    label: "For Approval",
+    value: "For Approval",
+  },
+  {
+    label: "Active",
+    value: "Active",
+  },
+  {
+    label: "Inactive",
+    value: "Inactive",
+  },
+  {
+    label: "Approved",
+    value: "Approved",
+  },
+  {
+    label: "Rejected",
+    value: "Rejected",
+  },
+  {
+    label: "Archived",
+    value: "Archived",
+  },
+  {
+    label: "Unlinked From Job Descriptions",
+    value: UNLINKED_JD_TAB,
+  },
 ];
 
-// main function
 export default function AvailablePositionsPage() {
   const mainRef = useRef(null);
+
   const { user } = useUser();
+
   const currentUserName = getUserDisplayName(user);
+
   const currentUserSibsId = useMemo(() => getCurrentUserSibsId(user), [user]);
 
   const [positionList, setPositionList] = useState([]);
+
   const [meta, setMeta] = useState({
     statusOptions: [],
     departments: [],
@@ -331,23 +423,36 @@ export default function AvailablePositionsPage() {
   const [approvedJdPositions, setApprovedJdPositions] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
+
   const [isSaving, setIsSaving] = useState(false);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
+
   const [canApproveAvailablePositions, setCanApproveAvailablePositions] =
     useState(false);
+
   const [loadError, setLoadError] = useState("");
 
   const [search, setSearch] = useState("");
+
   const [statusFilter, setStatusFilter] = useState("All");
+
   const [departmentFilter, setDepartmentFilter] = useState("All");
+
   const [accountFilter, setAccountFilter] = useState("All");
+
   const [locationFilter, setLocationFilter] = useState("All");
 
   const [showFormModal, setShowFormModal] = useState(false);
+
   const [formMode, setFormMode] = useState("add");
+
   const [positionForm, setPositionForm] = useState(emptyForm);
+
   const [editTarget, setEditTarget] = useState(null);
+
   const [confirmState, setConfirmState] = useState(null);
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const [statusModal, setStatusModal] = useState({
@@ -374,7 +479,9 @@ export default function AvailablePositionsPage() {
   }
 
   const databaseStatusOptions = STATUS_OPTIONS;
+
   const activeStatus = "Active";
+
   const inactiveStatus = "Inactive";
 
   const statusFilterOptions = useMemo(() => {
@@ -394,7 +501,9 @@ export default function AvailablePositionsPage() {
   }, [meta.accounts]);
 
   const filteredAccountOptions = useMemo(() => {
-    if (departmentFilter === "All") return accountOptions;
+    if (departmentFilter === "All") {
+      return accountOptions;
+    }
 
     return accountOptions.filter(
       (account) => String(account.departmentId) === String(departmentFilter),
@@ -408,9 +517,12 @@ export default function AvailablePositionsPage() {
         value: "All",
         label: "All Departments",
       },
+
       ...departmentOptions.map((department) => ({
         id: department.departmentId,
+
         value: department.departmentId,
+
         label: department.departmentName,
       })),
     ];
@@ -423,11 +535,16 @@ export default function AvailablePositionsPage() {
         value: "All",
         label: "All Accounts",
       },
+
       ...filteredAccountOptions.map((account) => ({
         id: account.accountId,
+
         value: account.accountId,
+
         label: account.accountName,
+
         description: account.accountGhlName || "",
+
         searchText: [
           account.accountId,
           account.accountName,
@@ -447,6 +564,7 @@ export default function AvailablePositionsPage() {
         value: "All",
         label: "All Locations",
       },
+
       ...LOCATION_SITE_OPTIONS.map((location) => ({
         id: location,
         value: location,
@@ -494,30 +612,32 @@ export default function AvailablePositionsPage() {
           positionsResponse,
           approvedJdResponse,
           approvalRequestsResponse,
-        ] =
-          await Promise.all([
-            getAvailablePositionMeta(),
-            getAvailablePositions({
-              page: 1,
-              limit: 500,
-              search: "",
-              status: "All",
-              departmentId: "All",
-              accountId: "All",
-            }),
-            getApprovedJobDescriptions({
-              page: 1,
-              limit: 500,
-              search: "",
-            }),
-            getAvailablePositionApprovalRequests({
-              page: 1,
-              limit: 500,
-              search: "",
-              status: "",
-              type: "Available Position",
-            }),
-          ]);
+        ] = await Promise.all([
+          getAvailablePositionMeta(),
+
+          getAvailablePositions({
+            page: 1,
+            limit: 500,
+            search: "",
+            status: "All",
+            departmentId: "All",
+            accountId: "All",
+          }),
+
+          getApprovedJobDescriptions({
+            page: 1,
+            limit: 500,
+            search: "",
+          }),
+
+          getAvailablePositionApprovalRequests({
+            page: 1,
+            limit: 500,
+            search: "",
+            status: "",
+            type: "Available Position",
+          }),
+        ]);
 
         if (!metaResponse?.success) {
           throw new Error(
@@ -532,12 +652,12 @@ export default function AvailablePositionsPage() {
         }
 
         setMeta({
-          // Keep the frontend status list fixed and independent from
-          // legacy status values returned by the API.
           statusOptions: [...STATUS_OPTIONS],
+
           departments: Array.isArray(metaResponse.data?.departments)
             ? metaResponse.data.departments.filter(Boolean)
             : [],
+
           accounts: Array.isArray(metaResponse.data?.accounts)
             ? metaResponse.data.accounts.filter(Boolean)
             : [],
@@ -546,6 +666,7 @@ export default function AvailablePositionsPage() {
         setPositionList(
           mergeAvailablePositionApprovalRequests(
             positionsResponse.data,
+
             approvalRequestsResponse?.success &&
               Array.isArray(approvalRequestsResponse.data)
               ? approvalRequestsResponse.data
@@ -562,8 +683,11 @@ export default function AvailablePositionsPage() {
         console.error("Load available positions error:", error);
 
         setLoadError(error?.message || "Failed to load available positions.");
+
         setPositionList([]);
+
         setApprovedJdPositions([]);
+
         setMeta({
           statusOptions: [...STATUS_OPTIONS],
           departments: [],
@@ -602,7 +726,9 @@ export default function AvailablePositionsPage() {
 
       try {
         const result = await getAvailablePositionApprovalUsers();
+
         const rows = getApprovalSettingsRows(result);
+
         const allowed = rows.some(
           (row) =>
             getApprovalSettingsSibsId(row).toLowerCase() ===
@@ -652,7 +778,9 @@ export default function AvailablePositionsPage() {
   }, [refreshPositions]);
 
   const handleRefresh = useCallback(async () => {
-    if (isRefreshing || isSaving) return;
+    if (isRefreshing || isSaving) {
+      return;
+    }
 
     try {
       setIsRefreshing(true);
@@ -663,18 +791,22 @@ export default function AvailablePositionsPage() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [
-    isRefreshing,
-    isSaving,
-    refreshPositions,
-  ]);
+  }, [isRefreshing, isSaving, refreshPositions]);
 
   function requestConfirm({ title, message, confirmLabel, onConfirm }) {
-    setConfirmState({ title, message, confirmLabel, onConfirm });
+    setConfirmState({
+      title,
+      message,
+      confirmLabel,
+      onConfirm,
+    });
   }
 
   function closeConfirm() {
-    if (isSaving) return;
+    if (isSaving) {
+      return;
+    }
+
     setConfirmState(null);
   }
 
@@ -685,6 +817,7 @@ export default function AvailablePositionsPage() {
         "Not Allowed",
         "Only users added in Recruitment Settings > Approval Rules > Available Positions can approve or reject this request.",
       );
+
       return;
     }
 
@@ -696,6 +829,7 @@ export default function AvailablePositionsPage() {
         "Invalid Request",
         "The Available Position approval request ID is missing.",
       );
+
       return;
     }
 
@@ -704,11 +838,18 @@ export default function AvailablePositionsPage() {
         action === "approve"
           ? "Approve Available Position"
           : "Reject Available Position",
+
       message:
         action === "approve"
-          ? `${position.positionTitle || "This position"} will be approved and refreshed in the Available Positions table.`
-          : `${position.positionTitle || "This position"} will be rejected and refreshed in the Available Positions table.`,
+          ? `${
+              position.positionTitle || "This position"
+            } will be approved and refreshed in the Available Positions table.`
+          : `${
+              position.positionTitle || "This position"
+            } will be rejected and refreshed in the Available Positions table.`,
+
       confirmLabel: action === "approve" ? "Approve" : "Reject",
+
       onConfirm: async () => {
         setIsSaving(true);
 
@@ -725,14 +866,22 @@ export default function AvailablePositionsPage() {
               response?.message ||
                 "Failed to update the Available Position approval request.",
             );
+
             return;
           }
 
-          await refreshPositions({ showPageLoading: false });
+          setShowFormModal(false);
+
+          setEditTarget(null);
+
+          await refreshPositions({
+            showPageLoading: false,
+          });
 
           openStatusModal(
             "success",
             action === "approve" ? "Position Approved" : "Position Rejected",
+
             response?.message ||
               `The Available Position request was ${
                 action === "approve" ? "approved" : "rejected"
@@ -759,36 +908,82 @@ export default function AvailablePositionsPage() {
   function buildAddForm() {
     return {
       ...emptyForm,
-      status: "Active",
+      status: "Inactive",
     };
   }
 
   function resetForm() {
     if (formMode === "edit" && editTarget) {
       setPositionForm({
+        id: editTarget.id || "",
+
+        positionId: editTarget.positionId || editTarget.position_id || "",
+
+        position_id: editTarget.position_id || editTarget.positionId || "",
+
         jdId: editTarget.jdId || editTarget.jd_id || "",
+
         jd_id: editTarget.jd_id || editTarget.jdId || "",
 
         jdCode: editTarget.jdCode || editTarget.jd_code || "",
+
         jd_code: editTarget.jd_code || editTarget.jdCode || "",
 
         documentTitle:
           editTarget.documentTitle || editTarget.document_title || "",
+
         document_title:
           editTarget.document_title || editTarget.documentTitle || "",
 
         positionTitle: editTarget.positionTitle || "",
+
         departmentId: editTarget.departmentId || "",
+
         department: editTarget.department || "",
+
         accountId: editTarget.accountId || "",
+
         accountName: editTarget.accountName || "",
+
         accountGhlName: editTarget.accountGhlName || "",
+
         description: editTarget.description || "",
+
         preferredSkills: editTarget.preferredSkills || "",
+
         locationSite: editTarget.locationSite || "",
+
         status: editTarget.status || "",
+
         remarks: editTarget.remarks || "",
+
+        approvalStatus:
+          editTarget.approvalStatus || editTarget.approval_status || "",
+
+        approval_status:
+          editTarget.approval_status || editTarget.approvalStatus || "",
+
+        approvalRequestId:
+          editTarget.approvalRequestId || editTarget.approval_request_id || "",
+
+        approval_request_id:
+          editTarget.approval_request_id || editTarget.approvalRequestId || "",
+
+        jdLinkStatus:
+          editTarget.jdLinkStatus || editTarget.jd_link_status || "Linked",
+
+        jd_link_status:
+          editTarget.jd_link_status || editTarget.jdLinkStatus || "Linked",
+
+        createdAt: editTarget.createdAt || editTarget.created_at || null,
+
+        created_at: editTarget.created_at || editTarget.createdAt || null,
+
+        updatedAt: editTarget.updatedAt || editTarget.updated_at || null,
+
+        updated_at: editTarget.updated_at || editTarget.updatedAt || null,
       });
+
       return;
     }
 
@@ -797,52 +992,110 @@ export default function AvailablePositionsPage() {
 
   function openAddModal() {
     setFormMode("add");
+
     setEditTarget(null);
+
     setPositionForm(buildAddForm());
+
     setShowFormModal(true);
   }
 
   function openEditModal(position) {
     setFormMode("edit");
+
     setEditTarget(position);
+
     setPositionForm({
+      id: position.id || "",
+
+      positionId: position.positionId || position.position_id || "",
+
+      position_id: position.position_id || position.positionId || "",
+
       jdId: position.jdId || position.jd_id || "",
+
       jd_id: position.jd_id || position.jdId || "",
 
       jdCode: position.jdCode || position.jd_code || "",
+
       jd_code: position.jd_code || position.jdCode || "",
 
       documentTitle: position.documentTitle || position.document_title || "",
+
       document_title: position.document_title || position.documentTitle || "",
 
       positionTitle: position.positionTitle || "",
+
       departmentId: position.departmentId || "",
+
       department: position.department || "",
+
       accountId: position.accountId || "",
+
       accountName: position.accountName || "",
+
       accountGhlName: position.accountGhlName || "",
+
       description: position.description || "",
+
       preferredSkills: position.preferredSkills || "",
+
       locationSite: position.locationSite || "",
+
       status: position.status || "",
+
       remarks: position.remarks || "",
+
+      approvalStatus: position.approvalStatus || position.approval_status || "",
+
+      approval_status:
+        position.approval_status || position.approvalStatus || "",
+
+      approvalRequestId:
+        position.approvalRequestId || position.approval_request_id || "",
+
+      approval_request_id:
+        position.approval_request_id || position.approvalRequestId || "",
+
+      jdLinkStatus:
+        position.jdLinkStatus || position.jd_link_status || "Linked",
+
+      jd_link_status:
+        position.jd_link_status || position.jdLinkStatus || "Linked",
+
+      createdAt: position.createdAt || position.created_at || null,
+
+      created_at: position.created_at || position.createdAt || null,
+
+      updatedAt: position.updatedAt || position.updated_at || null,
+
+      updated_at: position.updated_at || position.updatedAt || null,
     });
+
     setShowFormModal(true);
   }
 
   function closeFormModal() {
-    if (isSaving) return;
+    if (isSaving) {
+      return;
+    }
 
     setShowFormModal(false);
+
     setFormMode("add");
+
     setEditTarget(null);
+
     setPositionForm(emptyForm);
   }
 
   function closeFormAfterSave() {
     setShowFormModal(false);
+
     setFormMode("add");
+
     setEditTarget(null);
+
     setPositionForm(emptyForm);
   }
 
@@ -857,9 +1110,7 @@ export default function AvailablePositionsPage() {
         accountId: "All",
       });
 
-      const rows = normalizeAvailablePositionRecords(
-        result?.data,
-      );
+      const rows = normalizeAvailablePositionRecords(result?.data);
 
       if (result?.success) {
         setPositionList(rows);
@@ -869,11 +1120,11 @@ export default function AvailablePositionsPage() {
         const sameJd =
           payload.jdId || payload.jd_id || payload.jdCode || payload.jd_code
             ? String(position.jdId || position.jd_id || "") ===
-            String(payload.jdId || payload.jd_id || "") ||
-            sameText(
-              position.jdCode || position.jd_code,
-              payload.jdCode || payload.jd_code,
-            )
+                String(payload.jdId || payload.jd_id || "") ||
+              sameText(
+                position.jdCode || position.jd_code,
+                payload.jdCode || payload.jd_code,
+              )
             : false;
 
         const samePosition = sameText(
@@ -890,53 +1141,90 @@ export default function AvailablePositionsPage() {
       });
     } catch (error) {
       console.error("Verify saved available position error:", error);
+
       return false;
     }
   }
 
   async function savePosition() {
-    if (isSaving) return;
+    if (isSaving) {
+      return;
+    }
 
     setIsSaving(true);
 
     const payload = {
       jdId: positionForm.jdId || positionForm.jd_id || null,
+
       jd_id: positionForm.jd_id || positionForm.jdId || null,
 
       jdCode: cleanText(positionForm.jdCode || positionForm.jd_code),
+
       jd_code: cleanText(positionForm.jd_code || positionForm.jdCode),
 
       documentTitle: cleanText(
         positionForm.documentTitle || positionForm.document_title,
       ),
+
       document_title: cleanText(
         positionForm.document_title || positionForm.documentTitle,
       ),
 
       positionTitle: cleanText(positionForm.positionTitle),
+
       departmentId: positionForm.departmentId,
+
       department: cleanText(positionForm.department),
+
       accountId: positionForm.accountId,
+
       accountName: cleanText(positionForm.accountName),
+
       accountGhlName: cleanText(positionForm.accountGhlName),
 
       description: cleanText(positionForm.description),
+
       preferredSkills: cleanText(positionForm.preferredSkills),
+
       locationSite: positionForm.locationSite,
+
       status: positionForm.status,
+
       remarks: cleanText(positionForm.remarks),
 
       createdBy: currentUserName,
+
       updatedBy: currentUserName,
     };
 
+    const isRelinking =
+      formMode === "edit" &&
+      editTarget &&
+      normalizeText(getPositionJdLinkStatus(editTarget)) ===
+        normalizeText(UNLINKED_JD_STATUS);
+
     try {
-      const response =
-        formMode === "edit" && editTarget
+      const response = isRelinking
+        ? await relinkAvailablePositionJobDescription(editTarget.id, {
+            jobDescriptionId: payload.jdId,
+            updatedBy: currentUserName,
+          })
+        : formMode === "edit" && editTarget
           ? await updateAvailablePosition(editTarget.id, payload)
           : await createAvailablePosition(payload);
 
       if (!response?.success) {
+        if (isRelinking) {
+          openStatusModal(
+            "error",
+            "Job Description not relinked",
+            response?.message ||
+              "Failed to relink the available position Job Description.",
+          );
+
+          return;
+        }
+
         const wasActuallySaved = await verifySavedPosition(payload);
 
         if (!wasActuallySaved) {
@@ -945,10 +1233,12 @@ export default function AvailablePositionsPage() {
             "Position not saved",
             response?.message || "Failed to save available position.",
           );
+
           return;
         }
 
         closeFormAfterSave();
+
         scrollToTop("auto");
 
         openStatusModal(
@@ -962,10 +1252,7 @@ export default function AvailablePositionsPage() {
 
       if (response.data) {
         setPositionList((prev) => {
-          const savedItem =
-            normalizeAvailablePositionRecord(
-              response.data,
-            );
+          const savedItem = normalizeAvailablePositionRecord(response.data);
 
           if (formMode === "edit" && editTarget) {
             return prev.map((item) =>
@@ -975,12 +1262,14 @@ export default function AvailablePositionsPage() {
 
           return [
             savedItem,
+
             ...prev.filter((item) => String(item.id) !== String(savedItem.id)),
           ];
         });
       }
 
       closeFormAfterSave();
+
       scrollToTop("auto");
 
       window.setTimeout(() => {
@@ -989,13 +1278,22 @@ export default function AvailablePositionsPage() {
 
       openStatusModal(
         "success",
-        formMode === "edit" ? "Position updated" : "Position saved",
-        formMode === "edit"
+        isRelinking
+          ? "Job Description relinked"
+          : formMode === "edit"
+            ? "Position updated"
+            : "Position saved",
+
+        isRelinking
+          ? "The available position was relinked successfully."
+          : formMode === "edit"
           ? "The available position was updated successfully."
           : "The available position was saved successfully.",
       );
 
-      void refreshPositions({ showPageLoading: false });
+      void refreshPositions({
+        showPageLoading: false,
+      });
     } catch (error) {
       console.error("Save available position error:", error);
 
@@ -1003,6 +1301,7 @@ export default function AvailablePositionsPage() {
 
       if (wasActuallySaved) {
         closeFormAfterSave();
+
         scrollToTop("auto");
 
         openStatusModal(
@@ -1018,16 +1317,22 @@ export default function AvailablePositionsPage() {
         "error",
         "Position not saved",
         error?.response?.data?.message ||
-        error?.message ||
-        "Failed to save available position.",
+          error?.message ||
+          "Failed to save available position.",
       );
     } finally {
       setIsSaving(false);
     }
   }
 
-  function handleSubmitPosition(e) {
-    e.preventDefault();
+  function handleSubmitPosition(event) {
+    event.preventDefault();
+
+    const isRelinking =
+      formMode === "edit" &&
+      editTarget &&
+      normalizeText(getPositionJdLinkStatus(editTarget)) ===
+        normalizeText(UNLINKED_JD_STATUS);
 
     if (!cleanText(positionForm.positionTitle)) {
       openStatusModal(
@@ -1035,6 +1340,7 @@ export default function AvailablePositionsPage() {
         "Required field missing",
         "Position Title is required.",
       );
+
       return;
     }
 
@@ -1044,6 +1350,18 @@ export default function AvailablePositionsPage() {
         "Approved JD Required",
         "Please select a position from the approved JD dropdown.",
       );
+
+      return;
+    }
+
+    if (isRelinking) {
+      requestConfirm({
+        title: "Relink Job Description",
+        message: `${positionForm.positionTitle} will be linked to the selected approved Job Description without changing its position status or approval details.`,
+        confirmLabel: "Relink",
+        onConfirm: savePosition,
+      });
+
       return;
     }
 
@@ -1053,6 +1371,7 @@ export default function AvailablePositionsPage() {
         "Required field missing",
         "Department is required.",
       );
+
       return;
     }
 
@@ -1062,11 +1381,13 @@ export default function AvailablePositionsPage() {
         "Required field missing",
         "Account is required.",
       );
+
       return;
     }
 
     if (!positionForm.status) {
       openStatusModal("error", "Required field missing", "Status is required.");
+
       return;
     }
 
@@ -1076,17 +1397,22 @@ export default function AvailablePositionsPage() {
         "Required field missing",
         "Location / Site is required.",
       );
+
       return;
     }
 
     requestConfirm({
       title: formMode === "edit" ? "Update Position" : "Save Position",
+
       message:
         cleanText(positionForm.status) === cleanText(activeStatus)
           ? `${positionForm.positionTitle} will be visible in the Public Form and Talent Pool form.`
-          : `${positionForm.positionTitle} will not be visible to applicants unless status is ${activeStatus || "configured as visible"
-          }.`,
+          : `${positionForm.positionTitle} will not be visible to applicants unless status is ${
+              activeStatus || "configured as visible"
+            }.`,
+
       confirmLabel: formMode === "edit" ? "Update" : "Save",
+
       onConfirm: savePosition,
     });
   }
@@ -1098,22 +1424,27 @@ export default function AvailablePositionsPage() {
         "Status option missing",
         "Status option is missing from the database.",
       );
+
       return;
     }
 
     requestConfirm({
       title: "Update Position Status",
+
       message:
         nextStatus === activeStatus
           ? `${position.positionTitle} will be shown in the Public Form and Talent Pool form.`
           : `${position.positionTitle} will be hidden from applicant-facing forms.`,
+
       confirmLabel: `Set ${nextStatus}`,
+
       onConfirm: async () => {
         setIsSaving(true);
 
         try {
           const response = await updateAvailablePositionStatus(position.id, {
             status: nextStatus,
+
             updatedBy: currentUserName,
           });
 
@@ -1123,10 +1454,13 @@ export default function AvailablePositionsPage() {
               "Status not updated",
               response?.message || "Failed to update position status.",
             );
+
             return;
           }
 
-          await refreshPositions({ showPageLoading: false });
+          await refreshPositions({
+            showPageLoading: false,
+          });
 
           scrollToTop("auto");
 
@@ -1141,6 +1475,7 @@ export default function AvailablePositionsPage() {
           );
         } catch (error) {
           console.error("Update position status error:", error);
+
           openStatusModal(
             "error",
             "Status not updated",
@@ -1155,28 +1490,37 @@ export default function AvailablePositionsPage() {
 
   function handleDepartmentFilterChange(value) {
     setDepartmentFilter(value);
+
     setAccountFilter("All");
   }
 
   function handleStatusFilterChange(value) {
     setStatusFilter(value);
+
     setCurrentPage(1);
   }
 
   useEffect(() => {
     if (!canApproveAvailablePositions && statusFilter === "For Approval") {
       setStatusFilter("All");
+
       setCurrentPage(1);
     }
   }, [canApproveAvailablePositions, statusFilter]);
 
   function handleClearFilters() {
     setSearch("");
+
     setStatusFilter("All");
+
     setDepartmentFilter("All");
+
     setAccountFilter("All");
+
     setLocationFilter("All");
+
     setCurrentPage(1);
+
     scrollToTop("auto");
 
     window.setTimeout(() => {
@@ -1186,33 +1530,42 @@ export default function AvailablePositionsPage() {
 
   const filteredPositions = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    const normalizedStatusFilter = String(statusFilter || "").toLowerCase();
+
+    const normalizedStatusFilter = normalizeText(statusFilter);
 
     return positionList.filter((position) => {
-      const text =
-        getAvailablePositionSearchText(position);
+      const text = getAvailablePositionSearchText(position);
 
-      const normalizedPositionStatus = String(
-        position.status || "",
-      ).toLowerCase();
-      const normalizedApprovalStatus = String(
+      const operationalStatus = normalizeText(position.status);
+
+      const approvalStatus = normalizeText(
         normalizeApprovalStatus(
-          position.approvalStatus ||
-            position.approval_status,
+          position.approvalStatus || position.approval_status,
         ),
-      ).toLowerCase();
+      );
+
+      const jdLinkStatus = normalizeText(getPositionJdLinkStatus(position));
 
       const matchesSearch = !keyword || text.includes(keyword);
-      const matchesStatus =
-        statusFilter === "All" ||
-        normalizedPositionStatus === normalizedStatusFilter ||
-        normalizedApprovalStatus === normalizedStatusFilter;
+
+      let matchesStatus = true;
+
+      if (statusFilter === UNLINKED_JD_TAB) {
+        matchesStatus = jdLinkStatus === normalizeText(UNLINKED_JD_STATUS);
+      } else if (statusFilter !== "All") {
+        matchesStatus =
+          operationalStatus === normalizedStatusFilter ||
+          approvalStatus === normalizedStatusFilter;
+      }
+
       const matchesDepartment =
         departmentFilter === "All" ||
         String(position.departmentId) === String(departmentFilter);
+
       const matchesAccount =
         accountFilter === "All" ||
         String(position.accountId) === String(accountFilter);
+
       const matchesLocation =
         locationFilter === "All" || position.locationSite === locationFilter;
 
@@ -1237,12 +1590,17 @@ export default function AvailablePositionsPage() {
     return positionList.reduce(
       (counts, position) => {
         const operationalStatus = cleanText(position.status);
+
         const approvalStatus = normalizeApprovalStatus(
           position.approvalStatus || position.approval_status,
         );
+
+        const jdLinkStatus = getPositionJdLinkStatus(position);
+
         const nextCounts = {
           ...counts,
-          All: counts.All + 1,
+
+          All: Number(counts.All || 0) + 1,
         };
 
         if (operationalStatus) {
@@ -1255,6 +1613,11 @@ export default function AvailablePositionsPage() {
             Number(nextCounts[approvalStatus] || 0) + 1;
         }
 
+        if (normalizeText(jdLinkStatus) === normalizeText(UNLINKED_JD_STATUS)) {
+          nextCounts[UNLINKED_JD_TAB] =
+            Number(nextCounts[UNLINKED_JD_TAB] || 0) + 1;
+        }
+
         return nextCounts;
       },
       {
@@ -1265,6 +1628,7 @@ export default function AvailablePositionsPage() {
         Approved: 0,
         Rejected: 0,
         Archived: 0,
+        [UNLINKED_JD_TAB]: 0,
       },
     );
   }, [positionList]);
@@ -1276,7 +1640,9 @@ export default function AvailablePositionsPage() {
 
   const paginatedPositions = useMemo(() => {
     const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+
     const start = (safePage - 1) * POSITIONS_PER_PAGE;
+
     const end = start + POSITIONS_PER_PAGE;
 
     return filteredPositions.slice(start, end);
@@ -1304,6 +1670,7 @@ export default function AvailablePositionsPage() {
 
   function handlePageChange(nextPage) {
     const safePage = Math.min(Math.max(nextPage, 1), totalPages);
+
     setCurrentPage(safePage);
   }
 
@@ -1320,21 +1687,10 @@ export default function AvailablePositionsPage() {
         <Header />
       </div>
 
-      <main
-        ref={mainRef}
-        className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-7"
-      >
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
-          <section
-            className="sibs-page-header-in sibs-page-card-in relative z-[30] overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span
-              className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 overflow-hidden rounded-t-[15px]"
-              aria-hidden="true"
-            >
-              <span className="block h-full w-full bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
-            </span>
+      <main ref={mainRef} className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
+          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative z-[30] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
+            <span className="sibs-top-accent" aria-hidden="true" />
 
             <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 space-y-1">
@@ -1350,8 +1706,9 @@ export default function AvailablePositionsPage() {
                   Available Positions
                 </h1>
 
-                <p className="max-w-3xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
-                  Manage canonical roles, organizational mapping, linked Job Descriptions, and applicant visibility.
+                <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  Manage canonical roles, organizational mapping, linked Job
+                  Descriptions, and applicant visibility.
                 </p>
               </div>
 
@@ -1365,9 +1722,8 @@ export default function AvailablePositionsPage() {
                   className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RefreshCw
-                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
-                    }`}
+                    size={16}
+                    className={isRefreshing ? "animate-spin" : ""}
                   />
                 </button>
 
@@ -1395,24 +1751,6 @@ export default function AvailablePositionsPage() {
             </section>
           ) : null}
 
-          {!isLoading &&
-          !loadError &&
-          !departmentOptions.length ? (
-            <section className="rounded-xl border border-amber-100 bg-amber-50 p-3.5 2xl:p-4 text-xs font-bold text-amber-700">
-              No departments were returned by the
-              Available Positions metadata API.
-            </section>
-          ) : null}
-
-          {!isLoading &&
-          !loadError &&
-          !accountOptions.length ? (
-            <section className="rounded-xl border border-amber-100 bg-amber-50 p-3.5 2xl:p-4 text-xs font-bold text-amber-700">
-              No accounts were returned by the Available
-              Positions metadata API.
-            </section>
-          ) : null}
-
           <section
             className="sibs-profile-tab-panel sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm"
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
@@ -1424,9 +1762,9 @@ export default function AvailablePositionsPage() {
                     Available Position Records
                   </h3>
 
-                  <p className="mt-1 text-xs font-semibold text-[#667085]">
-                    Search and filter positions by title,
-                    department, account, status, and site.
+                  <p className="sibs-section-subtitle">
+                    Search and filter positions by title, department, account,
+                    status, and site.
                   </p>
                 </div>
 
@@ -1516,9 +1854,7 @@ export default function AvailablePositionsPage() {
               <AvailablePositionsTable
                 isLoading={isLoading}
                 paginatedPositions={paginatedPositions}
-                filteredPositionsCount={
-                  filteredPositions.length
-                }
+                filteredPositionsCount={filteredPositions.length}
                 showingFrom={showingFrom}
                 showingTo={showingTo}
                 currentPage={currentPage}
@@ -1526,12 +1862,6 @@ export default function AvailablePositionsPage() {
                 onPageChange={handlePageChange}
                 onEdit={openEditModal}
                 onSetStatus={handleSetStatus}
-                onApproveRequest={(position) =>
-                  handleAvailablePositionApproval(position, "approve")
-                }
-                onRejectRequest={(position) =>
-                  handleAvailablePositionApproval(position, "reject")
-                }
                 isSaving={isSaving}
                 canApproveAvailablePositions={canApproveAvailablePositions}
                 statusTabs={AVAILABLE_POSITION_STATUS_TABS}
@@ -1558,15 +1888,12 @@ export default function AvailablePositionsPage() {
                   Database Mapping Rule
                 </h3>
 
-                <p className="sibs-process-note__body">
-                  Departments and accounts are loaded from the
-                  database. Account choices depend on the selected
-                  department. Active positions appear in
-                  applicant-facing forms, while Inactive and Archived
-                  positions remain unavailable.
-                </p>
-              </div>
-            </div>
+            <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
+              Departments and accounts are loaded from the database. Account
+              choices depend on the selected department. Active positions appear
+              in applicant-facing forms, while Inactive and Archived positions
+              remain unavailable.
+            </p>
           </section>
         </div>
       </main>
@@ -1582,6 +1909,14 @@ export default function AvailablePositionsPage() {
         meta={meta}
         approvedJdPositions={approvedJdPositions}
         isSaving={isSaving}
+        position={editTarget}
+        canApproveAvailablePositions={canApproveAvailablePositions}
+        onApproveRequest={(position) =>
+          handleAvailablePositionApproval(position, "approve")
+        }
+        onRejectRequest={(position) =>
+          handleAvailablePositionApproval(position, "reject")
+        }
       />
 
       <ConfirmationModal
@@ -1592,8 +1927,7 @@ export default function AvailablePositionsPage() {
         isSaving={isSaving}
         onCancel={closeConfirm}
         onConfirm={() => {
-          const action =
-            confirmState?.onConfirm;
+          const action = confirmState?.onConfirm;
 
           setConfirmState(null);
 

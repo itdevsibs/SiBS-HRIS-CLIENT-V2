@@ -108,3 +108,39 @@ export async function updateHiringNeedApproval(id, payload = {}) {
     );
   }
 }
+
+export async function relinkHiringNeedJobDescription(
+  id,
+  jobDescriptionId,
+) {
+  try {
+    const cleanId = String(id || "").trim();
+    const cleanJobDescriptionId = String(jobDescriptionId || "").trim();
+
+    if (!cleanId) {
+      throw new Error("Hiring need ID is required.");
+    }
+
+    if (!cleanJobDescriptionId) {
+      throw new Error("Select an approved Job Description before relinking.");
+    }
+
+    const response = await api.patch(
+      `/api/hiring-needs/${encodeURIComponent(cleanId)}/job-description`,
+      {
+        jobDescriptionId: cleanJobDescriptionId,
+        job_description_id: cleanJobDescriptionId,
+      },
+      { withCredentials: true },
+    );
+
+    return unwrapResponse(response);
+  } catch (error) {
+    throw new Error(
+      getApiErrorMessage(
+        error,
+        "Failed to relink the personnel requisition.",
+      ),
+    );
+  }
+}

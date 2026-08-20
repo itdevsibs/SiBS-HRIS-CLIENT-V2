@@ -41,52 +41,48 @@ function getCanonicalPositionKey(position = {}) {
   return positionId.toLowerCase();
 }
 
-export function formatAvailablePositionId(
-  positionId,
-  fallbackRecordId = "",
-) {
+export function formatAvailablePositionId(positionId, fallbackRecordId = "") {
   const rawPositionId = cleanText(positionId);
 
   const sequenceNumber =
-    getTrailingNumber(rawPositionId) ||
-    getTrailingNumber(fallbackRecordId);
+    getTrailingNumber(rawPositionId) || getTrailingNumber(fallbackRecordId);
 
   if (!sequenceNumber) {
     return rawPositionId || "—";
   }
 
-  const normalizedNumber = String(
-    Number(sequenceNumber),
-  ).padStart(3, "0");
+  const normalizedNumber = String(Number(sequenceNumber)).padStart(3, "0");
 
   return `POS-${normalizedNumber}`;
 }
 
-export function normalizeAvailablePositionRecord(
-  position = {},
-) {
+export function normalizeAvailablePositionRecord(position = {}) {
   const rawPositionId = cleanText(
-    position.positionId ||
-      position.position_id ||
-      "",
+    position.positionId || position.position_id || "",
+  );
+
+  const jdLinkStatus = cleanText(
+    position.jdLinkStatus || position.jd_link_status || "Linked",
   );
 
   return {
     ...position,
+
     sourcePositionId:
-      position.sourcePositionId ||
-      position.source_position_id ||
-      rawPositionId,
-    positionId: formatAvailablePositionId(
-      rawPositionId,
-      position.id,
-    ),
+      position.sourcePositionId || position.source_position_id || rawPositionId,
+
+    source_position_id:
+      position.source_position_id || position.sourcePositionId || rawPositionId,
+
+    positionId: formatAvailablePositionId(rawPositionId, position.id),
+
+    jdLinkStatus,
+
+    jd_link_status: jdLinkStatus,
   };
 }
 
-export function normalizeAvailablePositionRecords(
-  positions = [],
-) {
+export function normalizeAvailablePositionRecords(positions = []) {
   if (!Array.isArray(positions)) {
     return [];
   }
@@ -109,16 +105,15 @@ export function normalizeAvailablePositionRecords(
 
       if (existingIndex === undefined) {
         indexByPositionId.set(key, uniquePositions.length);
+
         uniquePositions.push(position);
+
         return;
       }
 
       const existingPosition = uniquePositions[existingIndex];
 
-      if (
-        getRecordPriority(position) <
-        getRecordPriority(existingPosition)
-      ) {
+      if (getRecordPriority(position) < getRecordPriority(existingPosition)) {
         uniquePositions[existingIndex] = position;
       }
     });
