@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
   Clock3,
-  Edit3,
-  Eye,
   FileText,
   RotateCcw,
 } from "lucide-react";
@@ -20,12 +18,17 @@ const PAGE_LIMIT = 15;
 
 const STATUS_TABS = [
   { key: "all", label: "All JDs" },
+  { key: "approval", label: "For Approval" },
   { key: "existing", label: "Existing / Ready" },
   { key: "revision", label: "For Revision" },
   { key: "new", label: "New Job Description" },
-  { key: "approval", label: "For Approval" },
+  { key: "archived", label: "Archived" },
   { key: "rejected", label: "Rejected" },
 ];
+
+/* =====================================================
+GENERIC HELPERS
+===================================================== */
 
 function getFirstValue(...values) {
   return values.find((value) => String(value ?? "").trim()) ?? "";
@@ -37,11 +40,20 @@ function safeText(value) {
     .toLowerCase();
 }
 
+/* =====================================================
+STATUS HELPERS
+===================================================== */
+
 function normalizeJdStatus(status) {
   const value = String(status || "").trim();
 
-  if (value === "New JD") return "New Job Description";
-  if (value === "Archived JD") return "Archived";
+  if (value === "New JD") {
+    return "New Job Description";
+  }
+
+  if (value === "Archived JD") {
+    return "Archived";
+  }
 
   return value || "New Job Description";
 }
@@ -58,6 +70,68 @@ function getRealJdStatus(item = {}) {
     ),
   );
 }
+
+function isExistingStatus(status) {
+  const normalizedStatus = normalizeJdStatus(status);
+
+  return ["Existing", "Active", "Approved"].includes(normalizedStatus);
+}
+
+function isRevisionStatus(status) {
+  const normalizedStatus = normalizeJdStatus(status);
+
+  return ["For Revision", "Returned for Revision"].includes(normalizedStatus);
+}
+
+function isNewStatus(status) {
+  const normalizedStatus = normalizeJdStatus(status);
+
+  return ["New Job Description", "Draft"].includes(normalizedStatus);
+}
+
+function isArchivedStatus(status) {
+  return normalizeJdStatus(status) === "Archived";
+}
+
+function isRejectedStatus(status) {
+  const normalizedStatus = normalizeJdStatus(status);
+
+  return ["Rejected", "Declined"].includes(normalizedStatus);
+}
+
+function matchesStatusTab(status, tabKey) {
+  const normalizedStatus = normalizeJdStatus(status);
+
+  switch (tabKey) {
+    case "all":
+      return true;
+
+    case "approval":
+      return normalizedStatus === "For Approval";
+
+    case "existing":
+      return isExistingStatus(normalizedStatus);
+
+    case "revision":
+      return isRevisionStatus(normalizedStatus);
+
+    case "new":
+      return isNewStatus(normalizedStatus);
+
+    case "archived":
+      return isArchivedStatus(normalizedStatus);
+
+    case "rejected":
+      return isRejectedStatus(normalizedStatus);
+
+    default:
+      return true;
+  }
+}
+
+/* =====================================================
+RECORD VALUE HELPERS
+===================================================== */
 
 function getRecordId(item = {}) {
   return getFirstValue(item.rawId, item.raw_id, item.raw?.id, item.id);
@@ -149,14 +223,21 @@ function getSupervisoryLevel(item = {}) {
     item.raw?.level,
   );
 
-  if (explicitLevel) return String(explicitLevel).trim();
+  if (explicitLevel) {
+    return String(explicitLevel).trim();
+  }
 
   const supervisory = getFirstValue(item.supervisory, item.raw?.supervisory);
+
   const normalized = safeText(supervisory);
 
-  if (["yes", "true", "1"].includes(normalized)) return "Supervisory";
-  if (["no", "false", "0"].includes(normalized))
+  if (["yes", "true", "1"].includes(normalized)) {
+    return "Supervisory";
+  }
+
+  if (["no", "false", "0"].includes(normalized)) {
     return "Individual Contributor";
+  }
 
   return String(supervisory || "").trim();
 }
@@ -202,11 +283,15 @@ function getDateValue(item = {}) {
 }
 
 function formatDate(value) {
-  if (!value) return "--";
+  if (!value) {
+    return "--";
+  }
 
   const parsed = new Date(value);
 
-  if (Number.isNaN(parsed.getTime())) return String(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
 
   return parsed.toLocaleDateString("en-PH", {
     year: "numeric",
@@ -215,38 +300,9 @@ function formatDate(value) {
   });
 }
 
-function isExistingStatus(status) {
-  return ["Existing", "Active", "Approved"].includes(status);
-}
-
-function isRevisionStatus(status) {
-  return ["For Revision", "Returned for Revision"].includes(status);
-}
-
-function isNewStatus(status) {
-  return ["New Job Description", "Draft", "For Approval"].includes(status);
-}
-
-function isRejectedStatus(status) {
-  return ["Rejected", "Declined"].includes(status);
-}
-
-function matchesStatusTab(status, tabKey) {
-  switch (tabKey) {
-    case "existing":
-      return isExistingStatus(status);
-    case "revision":
-      return isRevisionStatus(status);
-    case "new":
-      return isNewStatus(status);
-    case "approval":
-      return status === "For Approval";
-    case "rejected":
-      return isRejectedStatus(status);
-    default:
-      return true;
-  }
-}
+/* =====================================================
+STATUS BADGE
+===================================================== */
 
 function getJdStatusClass(status) {
   switch (normalizeJdStatus(status)) {
@@ -254,28 +310,43 @@ function getJdStatusClass(status) {
     case "Active":
     case "Approved":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
+
     case "For Revision":
     case "Returned for Revision":
       return "border-amber-200 bg-amber-50 text-amber-700";
+
     case "For Approval":
       return "border-orange-200 bg-orange-50 text-[#D9480F]";
+
     case "New Job Description":
     case "Draft":
       return "border-blue-200 bg-blue-50 text-blue-700";
+
     case "Rejected":
     case "Declined":
       return "border-red-200 bg-red-50 text-red-700";
+
     case "Archived":
       return "border-slate-200 bg-slate-50 text-slate-600";
+
     default:
       return "border-slate-200 bg-slate-50 text-slate-600";
   }
 }
 
 function StatusIcon({ status }) {
-  if (isExistingStatus(status)) return <CheckCircle2 size={13} />;
-  if (isRevisionStatus(status)) return <AlertTriangle size={13} />;
-  if (isRejectedStatus(status)) return <AlertCircle size={13} />;
+  if (isExistingStatus(status)) {
+    return <CheckCircle2 size={13} />;
+  }
+
+  if (isRevisionStatus(status)) {
+    return <AlertTriangle size={13} />;
+  }
+
+  if (isRejectedStatus(status)) {
+    return <AlertCircle size={13} />;
+  }
+
   return <Clock3 size={13} />;
 }
 
@@ -293,6 +364,10 @@ function JdStatusBadge({ status }) {
     </span>
   );
 }
+
+/* =====================================================
+DROPDOWN HELPERS
+===================================================== */
 
 function uniqueOptions(items, getter, allLabel) {
   const values = [
@@ -313,14 +388,25 @@ function toDropdownOptions(options, allLabel) {
     }));
 }
 
-function JobDescriptionMobileCard({ item, onView, onRevise }) {
+/* =====================================================
+MOBILE CARD
+===================================================== */
+
+function JobDescriptionMobileCard({ item, onView }) {
   const status = getRealJdStatus(item);
+
   const roleTitle = getRoleTitle(item) || "Untitled Job Description";
+
   const documentTitle = getDocumentTitle(item) || getJdCode(item) || "--";
+
   const department = getDepartment(item) || "--";
+
   const account = getAccount(item) || "--";
+
   const linkedHiringNeed = getLinkedHiringNeed(item) || "--";
+
   const supervisoryLevel = getSupervisoryLevel(item) || "--";
+
   const version = getVersion(item) || "--";
 
   return (
@@ -334,22 +420,25 @@ function JobDescriptionMobileCard({ item, onView, onRevise }) {
           onView(item);
         }
       }}
-      className="cursor-pointer rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:border-[#FF5C28]/35 hover:bg-[#FFFDFC] hover:shadow-md"
+      className="cursor-pointer rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:border-[#FF5C28]/35 hover:bg-[#FFFDFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-start gap-2">
             <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
+
             <div className="min-w-0">
               <h3 className="text-sm font-extrabold leading-5 text-[#042C51]">
                 {roleTitle}
               </h3>
+
               <p className="mt-0.5 break-all text-[10px] font-semibold text-[#98A2B3]">
                 {documentTitle}
               </p>
             </div>
           </div>
         </div>
+
         <JdStatusBadge status={status} />
       </div>
 
@@ -358,20 +447,25 @@ function JobDescriptionMobileCard({ item, onView, onRevise }) {
           <p className="text-[9px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
             Department / Account
           </p>
+
           <p className="mt-1 text-xs font-extrabold text-[#042C51]">
             {department}
           </p>
+
           <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
             {account}
           </p>
         </div>
+
         <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[9px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
             Date / Version
           </p>
+
           <p className="mt-1 text-xs font-extrabold text-[#042C51]">
             {version}
           </p>
+
           <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
             {formatDate(getDateValue(item))}
           </p>
@@ -385,6 +479,7 @@ function JobDescriptionMobileCard({ item, onView, onRevise }) {
           </dt>{" "}
           <dd className="inline">{linkedHiringNeed}</dd>
         </div>
+
         <div>
           <dt className="inline font-extrabold text-[#042C51]">
             Supervisory Level:
@@ -392,49 +487,50 @@ function JobDescriptionMobileCard({ item, onView, onRevise }) {
           <dd className="inline">{supervisoryLevel}</dd>
         </div>
       </dl>
-
-      <div className="mt-4 flex justify-end gap-2 border-t border-[#EEF2F6] pt-3">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onView(item);
-          }}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#F2F6FA] px-3 text-xs font-extrabold text-[#042C51] transition hover:bg-[#042C51] hover:text-white"
-        >
-          <Eye size={14} />
-          View
-        </button>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRevise(item);
-          }}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-amber-50 px-3 text-xs font-extrabold text-amber-700 transition hover:bg-amber-600 hover:text-white"
-        >
-          <Edit3 size={14} />
-          Revise
-        </button>
-      </div>
     </article>
   );
 }
 
+/* =====================================================
+JOB DESCRIPTION TABLE
+===================================================== */
+
 export default function JobDescriptionTable({
   jobDescriptionList = [],
-  onRevise,
   canApproveJobDescriptions = false,
 }) {
   const navigate = useNavigate();
+
   const { setPagination } = usePagination(JOB_DESCRIPTION_ENTITY);
 
+  /* =====================================================
+  LOCAL STATE
+  ===================================================== */
+
   const [selectedStatusTab, setSelectedStatusTab] = useState("all");
+
   const [searchTerm, setSearchTerm] = useState("");
+
   const [departmentFilter, setDepartmentFilter] = useState("All Departments");
+
   const [accountFilter, setAccountFilter] = useState("All Accounts");
+
   const [supervisoryFilter, setSupervisoryFilter] = useState("All Levels");
+
   const [currentPage, setCurrentPage] = useState(1);
+
+  /*
+   * Prevent identical pagination values from being written
+   * repeatedly into PaginationContext.
+   *
+   * This protects against context-driven render loops when
+   * setPagination has an unstable reference.
+   */
+  const lastPaginationSignatureRef = useRef("");
+
+  /* =====================================================
+  VISIBLE STATUS TABS
+  ===================================================== */
 
   const visibleStatusTabs = useMemo(
     () =>
@@ -444,34 +540,68 @@ export default function JobDescriptionTable({
     [canApproveJobDescriptions],
   );
 
+  /* =====================================================
+  DROPDOWN OPTIONS
+  ===================================================== */
+
   const departmentOptions = useMemo(
     () => uniqueOptions(jobDescriptionList, getDepartment, "All Departments"),
     [jobDescriptionList],
   );
+
   const accountOptions = useMemo(
     () => uniqueOptions(jobDescriptionList, getAccount, "All Accounts"),
     [jobDescriptionList],
   );
+
   const supervisoryOptions = useMemo(
     () => uniqueOptions(jobDescriptionList, getSupervisoryLevel, "All Levels"),
     [jobDescriptionList],
   );
+
+  /* =====================================================
+  STATUS COUNTS
+  ===================================================== */
 
   const statusCounts = useMemo(() => {
     const counts = Object.fromEntries(STATUS_TABS.map((tab) => [tab.key, 0]));
 
     for (const item of jobDescriptionList) {
       const status = getRealJdStatus(item);
+
       counts.all += 1;
-      if (isExistingStatus(status)) counts.existing += 1;
-      if (isRevisionStatus(status)) counts.revision += 1;
-      if (isNewStatus(status)) counts.new += 1;
-      if (status === "For Approval") counts.approval += 1;
-      if (isRejectedStatus(status)) counts.rejected += 1;
+
+      if (status === "For Approval") {
+        counts.approval += 1;
+      }
+
+      if (isExistingStatus(status)) {
+        counts.existing += 1;
+      }
+
+      if (isRevisionStatus(status)) {
+        counts.revision += 1;
+      }
+
+      if (isNewStatus(status)) {
+        counts.new += 1;
+      }
+
+      if (isArchivedStatus(status)) {
+        counts.archived += 1;
+      }
+
+      if (isRejectedStatus(status)) {
+        counts.rejected += 1;
+      }
     }
 
     return counts;
   }, [jobDescriptionList]);
+
+  /* =====================================================
+  APPROVAL TAB ACCESS
+  ===================================================== */
 
   useEffect(() => {
     if (!canApproveJobDescriptions && selectedStatusTab === "approval") {
@@ -480,13 +610,20 @@ export default function JobDescriptionTable({
     }
   }, [canApproveJobDescriptions, selectedStatusTab]);
 
+  /* =====================================================
+  FILTERED LIST
+  ===================================================== */
+
   const filteredList = useMemo(() => {
     const keyword = safeText(searchTerm);
 
     return jobDescriptionList.filter((item) => {
       const status = getRealJdStatus(item);
+
       const department = getDepartment(item);
+
       const account = getAccount(item);
+
       const supervisoryLevel = getSupervisoryLevel(item);
 
       const searchableValues = [
@@ -503,14 +640,18 @@ export default function JobDescriptionTable({
       const matchesSearch =
         !keyword ||
         searchableValues.some((value) => safeText(value).includes(keyword));
+
       const matchesDepartment =
         departmentFilter === "All Departments" ||
         department === departmentFilter;
+
       const matchesAccount =
         accountFilter === "All Accounts" || account === accountFilter;
+
       const matchesSupervisory =
         supervisoryFilter === "All Levels" ||
         supervisoryLevel === supervisoryFilter;
+
       const matchesTab = matchesStatusTab(status, selectedStatusTab);
 
       return (
@@ -530,7 +671,12 @@ export default function JobDescriptionTable({
     supervisoryFilter,
   ]);
 
+  /* =====================================================
+  PAGINATION
+  ===================================================== */
+
   const totalPages = Math.max(Math.ceil(filteredList.length / PAGE_LIMIT), 1);
+
   const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
 
   const paginatedList = useMemo(() => {
@@ -539,7 +685,28 @@ export default function JobDescriptionTable({
     return filteredList.slice(start, start + PAGE_LIMIT);
   }, [filteredList, safeCurrentPage]);
 
+  /*
+   * Synchronize local pagination with PaginationContext.
+   *
+   * Important:
+   * Do not repeatedly call setPagination with identical values.
+   * This prevents unnecessary context updates and protects
+   * against Maximum update depth loops.
+   */
   useEffect(() => {
+    const paginationSignature = [
+      totalPages,
+      safeCurrentPage,
+      filteredList.length,
+      PAGE_LIMIT,
+    ].join("|");
+
+    if (lastPaginationSignatureRef.current === paginationSignature) {
+      return;
+    }
+
+    lastPaginationSignatureRef.current = paginationSignature;
+
     setPagination({
       totalPages,
       currentPage: safeCurrentPage,
@@ -548,6 +715,10 @@ export default function JobDescriptionTable({
     });
   }, [filteredList.length, safeCurrentPage, setPagination, totalPages]);
 
+  /* =====================================================
+  ACTIVE FILTER CHECK
+  ===================================================== */
+
   const hasActiveFilters =
     searchTerm.trim() ||
     departmentFilter !== "All Departments" ||
@@ -555,24 +726,36 @@ export default function JobDescriptionTable({
     supervisoryFilter !== "All Levels" ||
     selectedStatusTab !== "all";
 
+  /* =====================================================
+  HANDLERS
+  ===================================================== */
+
   function handleResetFilters() {
     setSearchTerm("");
+
     setDepartmentFilter("All Departments");
+
     setAccountFilter("All Accounts");
+
     setSupervisoryFilter("All Levels");
+
     setSelectedStatusTab("all");
+
     setCurrentPage(1);
   }
 
   function updateFilter(setter, value) {
     setter(value);
+
     setCurrentPage(1);
   }
 
   function handleOpenFullPageView(item) {
     const jdId = getRecordId(item);
 
-    if (!jdId) return;
+    if (!jdId) {
+      return;
+    }
 
     navigate(`/recruitment/job-description/view/${encodeURIComponent(jdId)}`, {
       state: {
@@ -581,19 +764,16 @@ export default function JobDescriptionTable({
     });
   }
 
-  function handleOpenRevision(item) {
-    if (typeof onRevise === "function") {
-      onRevise(item);
-    }
-  }
+  /* =====================================================
+  RENDER
+  ===================================================== */
 
   return (
     <section className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
-      <div className="border-b border-[#E6ECF2] px-4 py-3.5 sm:px-5 2xl:py-4">
-        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
-          Job Description Records
-        </h3>
-        <p className="mt-1 text-xs font-semibold text-[#667085]">
+      <div className="border-b border-[#E6ECF2] px-4 py-5 sm:px-5">
+        <h2 className="sibs-section-title">Job Description Records</h2>
+
+        <p className="sibs-section-subtitle">
           Search and filter JD records by role, department, account, and
           supervisory level.
         </p>
@@ -658,8 +838,12 @@ export default function JobDescriptionTable({
         />
 
         <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-          <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
-            {STATUS_TABS.map((tab) => {
+          {/* =================================================
+              STATUS TABS
+          ================================================= */}
+
+          <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
+            {visibleStatusTabs.map((tab) => {
               const active = selectedStatusTab === tab.key;
 
               return (
@@ -674,6 +858,7 @@ export default function JobDescriptionTable({
                   }`}
                 >
                   {tab.label}
+
                   {tab.key === "approval" ? (
                     <span
                       className={[
@@ -691,7 +876,11 @@ export default function JobDescriptionTable({
                     <motion.div
                       layoutId="jdActiveTabIndicator"
                       className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 380,
+                        damping: 30,
+                      }}
                     />
                   ) : null}
                 </button>
@@ -699,7 +888,11 @@ export default function JobDescriptionTable({
             })}
           </div>
 
-          <div className="p-3.5 lg:hidden">
+          {/* =================================================
+              MOBILE
+          ================================================= */}
+
+          <div className="p-4 lg:hidden">
             {paginatedList.length > 0 ? (
               <div className="space-y-3">
                 {paginatedList.map((item) => (
@@ -707,19 +900,21 @@ export default function JobDescriptionTable({
                     key={getRecordId(item) || getRoleTitle(item)}
                     item={item}
                     onView={handleOpenFullPageView}
-                    onRevise={handleOpenRevision}
                   />
                 ))}
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-5 py-10 text-center">
                 <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+
                 <p className="mt-3 text-sm font-extrabold text-[#042C51]">
                   No Job Descriptions Found
                 </p>
+
                 <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
                   No records matched the active search, filters, and status tab.
                 </p>
+
                 <button
                   type="button"
                   onClick={handleResetFilters}
@@ -731,32 +926,47 @@ export default function JobDescriptionTable({
             )}
           </div>
 
-          <div className="hidden overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar lg:block">
+          {/* =================================================
+              DESKTOP
+          ================================================= */}
+
+          <div className="hidden overflow-x-auto lg:block">
             <table className="w-full min-w-[1180px] table-fixed border-collapse text-left text-xs">
               <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
                 <tr className="sibs-data-table-head-row">
                   <th className="sibs-data-table-th w-[32%] text-left">
                     Role & Document Title
                   </th>
+
                   <th className="sibs-data-table-th w-[26%] text-left">
                     Department / Account
                   </th>
+
                   <th className="sibs-data-table-th w-[18%] text-left">
                     Supervisory Level
                   </th>
-                  <th className="sibs-data-table-th w-[12%] text-left">Status</th>
+
+                  <th className="sibs-data-table-th w-[12%] text-left">
+                    Status
+                  </th>
+
                   <th className="sibs-data-table-th w-[12%] text-left">
                     Date & Version
                   </th>
                 </tr>
               </thead>
 
-              <tbody key={selectedStatusTab} className="divide-y divide-[#E6ECF2]">
+              <tbody
+                key={selectedStatusTab}
+                className="divide-y divide-[#E6ECF2]"
+              >
                 {paginatedList.length > 0 ? (
                   paginatedList.map((item, index) => {
                     const status = getRealJdStatus(item);
+
                     const roleTitle =
                       getRoleTitle(item) || "Untitled Job Description";
+
                     const documentTitle =
                       getDocumentTitle(item) || getJdCode(item) || "--";
 
@@ -769,12 +979,14 @@ export default function JobDescriptionTable({
                         className="sibs-data-table-row sibs-page-card-in cursor-pointer hover:bg-[#FFFDFC]"
                         style={{
                           animationDelay: `${index * 30}ms`,
-                          animationFillMode: "both",
                         }}
                       >
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
+                        {/* ROLE / DOCUMENT */}
+
+                        <td className="px-4 py-3.5">
                           <div className="flex items-start gap-2">
-                            <FileText className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#FF5C28]" />
+                            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
+
                             <div className="min-w-0">
                               <p
                                 title={documentTitle}
@@ -782,6 +994,7 @@ export default function JobDescriptionTable({
                               >
                                 {documentTitle}
                               </p>
+
                               <p
                                 title={roleTitle}
                                 className="mt-0.5 max-w-[340px] truncate sibs-text-micro font-semibold text-[#98A2B3]"
@@ -791,13 +1004,17 @@ export default function JobDescriptionTable({
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
+
+                        {/* DEPARTMENT / ACCOUNT */}
+
+                        <td className="px-4 py-3.5">
                           <p
                             title={getDepartment(item) || ""}
                             className="truncate text-xs font-extrabold text-[#042C51]"
                           >
                             {getDepartment(item) || "--"}
                           </p>
+
                           <p
                             title={getAccount(item) || ""}
                             className="mt-0.5 truncate sibs-text-micro font-semibold text-[#667085]"
@@ -806,17 +1023,26 @@ export default function JobDescriptionTable({
                           </p>
                         </td>
 
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs font-semibold text-[#475467]">
+                        {/* SUPERVISORY */}
+
+                        <td className="px-4 py-3.5 text-xs font-semibold text-[#475467]">
                           {getSupervisoryLevel(item) || "--"}
                         </td>
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
+
+                        {/* STATUS */}
+
+                        <td className="px-4 py-3.5">
                           <JdStatusBadge status={status} />
                         </td>
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
+
+                        {/* DATE / VERSION */}
+
+                        <td className="px-4 py-3.5">
                           <p className="text-xs font-extrabold text-[#042C51]">
                             {getVersion(item) || "--"}
                           </p>
-                          <p className="mt-0.5 sibs-text-micro font-semibold text-[#98A2B3]">
+
+                          <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3]">
                             {formatDate(getDateValue(item))}
                           </p>
                         </td>
@@ -825,15 +1051,18 @@ export default function JobDescriptionTable({
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-5 py-14 text-center">
+                    <td colSpan={5} className="px-5 py-14 text-center">
                       <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+
                       <p className="mt-3 text-sm font-extrabold text-[#042C51]">
                         No Job Descriptions Found
                       </p>
+
                       <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
                         No records matched the active search, filters, and
                         status tab.
                       </p>
+
                       <button
                         type="button"
                         onClick={handleResetFilters}
@@ -848,6 +1077,10 @@ export default function JobDescriptionTable({
             </table>
           </div>
         </div>
+
+        {/* =================================================
+            PAGINATION
+        ================================================= */}
 
         <PaginationTable
           loading={false}

@@ -108,6 +108,12 @@ function normalizeItem(item = {}) {
       item.jd_id ||
       "",
 
+    jdLinkStatus:
+      item.jdLinkStatus || item.jd_link_status || "Linked",
+
+    jd_link_status:
+      item.jd_link_status || item.jdLinkStatus || "Linked",
+
     jobDescriptionTitle,
 
     jdCode,

@@ -1,7 +1,7 @@
 import api from "./api-template";
 
 /* =========================================
-   AVAILABLE POSITION API
+AVAILABLE POSITION API
 ========================================= */
 
 const REQUEST_TIMEOUT = 15000;
@@ -21,7 +21,9 @@ function normalizePageLimit(value) {
 function normalizeApiError(err, fallbackMessage) {
   const isTimeout =
     err?.code === "ECONNABORTED" ||
-    String(err?.message || "").toLowerCase().includes("timeout");
+    String(err?.message || "")
+      .toLowerCase()
+      .includes("timeout");
 
   return {
     success: false,
@@ -58,11 +60,10 @@ export async function getAvailablePositionMeta() {
         departments: [],
         accounts: [],
       },
-      message:
-        normalizeApiError(
-          err,
-          "Failed to load available position metadata.",
-        ).message,
+      message: normalizeApiError(
+        err,
+        "Failed to load available position metadata.",
+      ).message,
       status: err?.response?.status || 500,
     };
   }
@@ -75,6 +76,7 @@ export async function getAvailablePositions({
   status = "All",
   departmentId = "All",
   accountId = "All",
+  jdLinkStatus = "All",
 } = {}) {
   const normalizedLimit = normalizePageLimit(limit);
 
@@ -87,6 +89,7 @@ export async function getAvailablePositions({
         status,
         departmentId,
         accountId,
+        jdLinkStatus,
         _t: Date.now(),
       },
       withCredentials: true,
@@ -106,6 +109,8 @@ export async function getAvailablePositions({
       data: [],
       counts: {
         total: 0,
+        unlinkedFromJd: 0,
+        unlinked_from_jd: 0,
       },
       pagination: {
         page,
@@ -113,8 +118,8 @@ export async function getAvailablePositions({
         total: 0,
         totalPages: 1,
       },
-      message:
-        normalizeApiError(err, "Failed to load available positions.").message,
+      message: normalizeApiError(err, "Failed to load available positions.")
+        .message,
       status: err?.response?.status || 500,
     };
   }
@@ -138,9 +143,10 @@ export async function getActiveAvailablePositions() {
     return {
       success: false,
       data: [],
-      message:
-        normalizeApiError(err, "Failed to load active available positions.")
-          .message,
+      message: normalizeApiError(
+        err,
+        "Failed to load active available positions.",
+      ).message,
       status: err?.response?.status || 500,
     };
   }
@@ -203,6 +209,32 @@ export async function updateAvailablePosition(id, payload) {
   }
 }
 
+export async function relinkAvailablePositionJobDescription(id, payload = {}) {
+  try {
+    const res = await api.patch(
+      `/api/available-position/${id}/job-description`,
+      payload,
+      {
+        withCredentials: true,
+        timeout: REQUEST_TIMEOUT,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios relinkAvailablePositionJobDescription API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return normalizeApiError(
+      err,
+      "Failed to relink the available position Job Description.",
+    );
+  }
+}
+
 export async function updateAvailablePositionStatus(id, payload) {
   try {
     const res = await api.patch(
@@ -256,6 +288,7 @@ export default {
   getAvailablePositionById,
   createAvailablePosition,
   updateAvailablePosition,
+  relinkAvailablePositionJobDescription,
   updateAvailablePositionStatus,
   deleteAvailablePosition,
 };

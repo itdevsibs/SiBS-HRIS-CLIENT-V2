@@ -22,6 +22,7 @@ import {
   approveRequestByModule,
   rejectRequestByModule,
 } from "../../lib/axios/getApprovalRequest";
+import { relinkHiringNeedJobDescription } from "../../lib/axios/getHiringNeeds";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -94,7 +95,12 @@ function getHiringNeedsRequestId(item = {}) {
 export default function HiringNeedsPage() {
   const mainRef = useRef(null);
   const { user } = useUser();
-  const { fetchList, fetchJobDescriptions } = useHiringNeeds();
+  const {
+    fetchList,
+    fetchJobDescriptions,
+    jobDescriptions,
+    jobDescriptionLoading,
+  } = useHiringNeeds();
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -316,6 +322,59 @@ export default function HiringNeedsPage() {
     showStatusModal,
   ]);
 
+  const handleRelinkJobDescription = useCallback(
+    async ({ item, jobDescriptionId }) => {
+      const requestId = getHiringNeedsRequestId(item);
+
+      if (!requestId) {
+        showStatusModal({
+          type: "error",
+          title: "Invalid Request",
+          message: "The Hiring Needs request ID is missing.",
+        });
+        return false;
+      }
+
+      try {
+        const result = await relinkHiringNeedJobDescription(
+          requestId,
+          jobDescriptionId,
+        );
+
+        if (!result?.success) {
+          throw new Error(
+            result?.message || "Failed to relink the personnel requisition.",
+          );
+        }
+
+        await Promise.all([fetchList(), fetchJobDescriptions()]);
+        setSelectedItem(null);
+
+        showStatusModal({
+          type: "success",
+          title: "Job Description Relinked",
+          message:
+            result?.message ||
+            "The personnel requisition was relinked successfully.",
+        });
+
+        return true;
+      } catch (error) {
+        showStatusModal({
+          type: "error",
+          title: "Relink Failed",
+          message:
+            error?.response?.data?.message ||
+            error?.message ||
+            "Something went wrong while relinking the Job Description.",
+        });
+
+        return false;
+      }
+    },
+    [fetchJobDescriptions, fetchList, showStatusModal],
+  );
+
   return (
     <div className="sibs-dashboard-shell">
       <div className="shrink-0">
@@ -440,6 +499,9 @@ export default function HiringNeedsPage() {
         approvalAccessLoading={approvalAccessLoading}
         approvalUsers={approvalUsers}
         onDecision={handleApprovalDecision}
+        jobDescriptions={jobDescriptions}
+        jobDescriptionLoading={jobDescriptionLoading}
+        onRelink={handleRelinkJobDescription}
       />
 
       <StatusModal

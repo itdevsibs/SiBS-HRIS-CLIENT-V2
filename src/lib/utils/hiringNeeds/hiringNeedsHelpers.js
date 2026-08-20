@@ -17,6 +17,38 @@ export function normalizeHiringNeedsStatus(status) {
   return value;
 }
 
+export function normalizeHiringNeedsJdLinkStatus(status) {
+  const value = cleanText(status).toLowerCase();
+
+  if (
+    value === "unlinked from jd" ||
+    value === "unlinked from job description" ||
+    value === "unlinked from job descriptions" ||
+    value === "unlinked"
+  ) {
+    return "Unlinked from JD";
+  }
+
+  return "Linked";
+}
+
+export function getHiringNeedsJdLinkStatus(item = {}) {
+  if (getHiringNeedsRequestType(item).toLowerCase() === "downsize") {
+    return "Not Applicable";
+  }
+
+  return normalizeHiringNeedsJdLinkStatus(
+    item.jdLinkStatus ||
+      item.jd_link_status ||
+      item.raw?.jdLinkStatus ||
+      item.raw?.jd_link_status,
+  );
+}
+
+export function isHiringNeedUnlinkedFromJd(item = {}) {
+  return getHiringNeedsJdLinkStatus(item) === "Unlinked from JD";
+}
+
 export function getHiringNeedsRequestType(item = {}) {
   return (
     firstValue(
@@ -167,6 +199,7 @@ export function getHiringNeedsSearchText(item = {}) {
     getHiringNeedsSite(item),
     getHiringNeedsDateOrWeek(item),
     normalizeHiringNeedsStatus(item.approvalStatus || item.approval_status),
+    getHiringNeedsJdLinkStatus(item),
   ]
     .map((value) => cleanText(value).toLowerCase())
     .join(" ");
