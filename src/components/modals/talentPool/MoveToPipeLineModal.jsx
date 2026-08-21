@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronDown, UserX, X } from "lucide-react";
+import { ArrowRight, ChevronDown, TrendingUp, UserX, X } from "lucide-react";
 
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import {
@@ -754,41 +754,53 @@ export default function MoveToPipeLineModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[10002] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10002] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={isBusy ? undefined : closeMoveToPipeline}
     >
       <div
-        className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-modal-pop-in relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
-          <div>
-            <h2 className="text-lg font-bold text-sibs-primary-1">
-              {dropOffResume
-                ? hasPipelineHistory
-                  ? "Resume Candidate in Pipeline"
-                  : "Resume Candidate in Talent Pool"
-                : "Move to Candidate Pipeline"}
-            </h2>
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[#083A69] bg-sibs-navy px-4 py-3 text-white sm:px-6 2xl:py-3.5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
+              <TrendingUp size={17} />
+            </span>
 
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              {candidateName}
-            </p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-xs 2xl:text-sm font-extrabold text-white">
+                  {dropOffResume
+                    ? hasPipelineHistory
+                      ? "Resume Candidate in Pipeline"
+                      : "Resume Candidate in Talent Pool"
+                    : "Move to Candidate Pipeline"}
+                </h2>
+
+                <span className="rounded bg-white/10 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white/90 ring-1 ring-white/15">
+                  Pipeline Action
+                </span>
+              </div>
+
+              <p className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-semibold text-blue-100">
+                {candidateName}
+              </p>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={closeMoveToPipeline}
             disabled={isBusy}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             aria-label="Close move candidate modal"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleMoveCandidate} className="space-y-4 p-5">
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
+        <form onSubmit={handleMoveCandidate} className="space-y-3.5 p-4 sm:p-5">
+          <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-3.5 text-xs font-semibold leading-relaxed text-sibs-navy">
             {dropOffResume
               ? hasPipelineHistory
                 ? "Select New Applicant to return the candidate to Talent Pool, or choose a stage already entered by the candidate. Future or unvisited stages are not available."
@@ -800,14 +812,14 @@ export default function MoveToPipeLineModal() {
             <FieldLabel>Position Applied</FieldLabel>
 
             <div
-              className="mt-2 flex min-h-11 w-full items-center rounded-xl border border-[#D0D5DD] bg-[#F8FAFC] px-4 py-3 text-sm font-extrabold text-sibs-primary-1"
+              className="mt-1.5 flex min-h-10 w-full items-center rounded-xl border border-sibs-border bg-[#F8FAFC] px-3.5 py-2.5 sibs-text-xs font-extrabold text-sibs-navy"
               aria-readonly="true"
               title={positionApplied}
             >
               {positionApplied}
             </div>
 
-            <p className="mt-1.5 text-xs font-semibold text-sibs-tertiary-5">
+            <p className="mt-1 text-[10.5px] font-semibold text-sibs-text-muted">
               This value is read-only and comes from the candidate&apos;s applied
               position record.
             </p>
@@ -828,7 +840,7 @@ export default function MoveToPipeLineModal() {
                 }
               />
 
-              <p className="mt-1.5 text-xs font-semibold text-sibs-tertiary-5">
+              <p className="mt-1 text-[10.5px] font-semibold text-sibs-text-muted">
                 {hasPipelineHistory
                   ? "Select New Applicant to return the candidate to Talent Pool, or choose a stage already recorded before Drop-off."
                   : "New Applicant is the only available stage because this candidate has not yet entered Candidate Pipeline."}
@@ -839,7 +851,7 @@ export default function MoveToPipeLineModal() {
           <div>
             <FieldLabel>Remarks</FieldLabel>
             <textarea
-              rows={5}
+              rows={4}
               value={form.remarks || ""}
               onChange={(event) =>
                 setMoveToPipelineForm({
@@ -858,13 +870,13 @@ export default function MoveToPipeLineModal() {
           </div>
         </form>
 
-        <div className="border-t border-gray-100 px-5 py-4">
+        <div className="border-t border-sibs-border bg-white px-4 py-2.5 sm:px-6 sm:py-3.5">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={closeMoveToPipeline}
               disabled={isBusy}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -874,9 +886,9 @@ export default function MoveToPipeLineModal() {
                 type="button"
                 onClick={handleOpenDropOff}
                 disabled={isBusy}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-red-200 bg-red-50 px-4 sibs-text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-xs disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <UserX size={17} />
+                <UserX size={15} />
                 Mark as Drop Off
               </button>
             )}
@@ -890,16 +902,14 @@ export default function MoveToPipeLineModal() {
                     !resumeStageOptions.includes(selectedResumeStage)))
               }
               onClick={handleMoveCandidate}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-4.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <ArrowRight size={16} />
+              <ArrowRight size={15} />
               {moveSaving
-                ? dropOffResume
-                  ? "Resuming..."
-                  : "Moving..."
+                ? "Processing..."
                 : dropOffResume
                   ? "Resume Candidate"
-                  : "Move Candidate"}
+                  : "Move to Screening"}
             </button>
           </div>
         </div>

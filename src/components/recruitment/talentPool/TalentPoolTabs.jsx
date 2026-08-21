@@ -19,9 +19,9 @@ const tabs = [
 
 export default function TalentPoolTabs({ activeTab, onChange, counts = {} }) {
   return (
-    <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
+    <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-sibs-border bg-white">
       <div
-        className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-no-scrollbar sm:px-4"
+        className="flex overflow-x-auto border-b border-sibs-border bg-[#F8FAFC] px-3 pt-2.5 sibs-no-scrollbar sm:px-4"
         role="tablist"
         aria-label="Talent Pool candidate groups"
       >
@@ -35,22 +35,22 @@ export default function TalentPoolTabs({ activeTab, onChange, counts = {} }) {
               role="tab"
               aria-selected={active}
               onClick={() => onChange?.(tab.key)}
-              className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
+              className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-1.5 2xl:gap-2 px-3 2xl:px-4 sibs-text-micro font-extrabold uppercase tracking-wide transition-colors ${
                 active
-                  ? "rounded-t-xl bg-white text-[#042C51]"
-                  : "text-[#667085] hover:text-[#042C51]"
+                  ? "rounded-t-xl bg-white text-sibs-navy"
+                  : "text-sibs-text-muted hover:text-sibs-navy"
               }`}
             >
               <Icon
-                size={14}
-                className={`shrink-0 ${active ? "text-[#FF5C28]" : "text-[#98A2B3]"}`}
+                size={13}
+                className={`shrink-0 ${active ? "text-sibs-orange" : "text-sibs-text-faint"}`}
               />
               <span className="truncate">{tab.label}</span>
               <span
-                className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors ${
+                className={`rounded-full px-1.5 2xl:px-2 py-0.2 text-[9px] font-extrabold tabular-nums transition-colors ${
                   active
-                    ? "bg-[#042C51] text-white"
-                    : "bg-slate-200 text-slate-600"
+                    ? "bg-sibs-navy text-white"
+                    : "bg-slate-200 text-slate-700"
                 }`}
               >
                 {counts[tab.key] ?? 0}
@@ -58,7 +58,7 @@ export default function TalentPoolTabs({ activeTab, onChange, counts = {} }) {
               {active ? (
                 <Motion.div
                   layoutId="talentPoolTabIndicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-sibs-orange"
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               ) : null}

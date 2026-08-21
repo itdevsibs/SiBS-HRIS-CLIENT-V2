@@ -4490,29 +4490,29 @@ export default function AddCandidateModal() {
   return (
     <>
       <div
-        className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10001] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
+        className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10001] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-3 2xl:p-4"
         onClick={closeAddCandidateModal}
       >
         <div
-          className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-[1060px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F4F7FB] font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+          className="sibs-modal-pop-in flex max-h-[88dvh] 2xl:max-h-[92dvh] w-full max-w-[1060px] flex-col overflow-hidden rounded-2xl border border-sibs-border bg-[#F4F7FB] font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex shrink-0 flex-col gap-3 border-b border-[#083A69] bg-[#042C51] px-4 py-4 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex shrink-0 flex-col gap-2.5 border-b border-[#083A69] bg-[#042C51] px-4 py-3 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6 2xl:py-3.5">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#FF5C28] ring-1 ring-white/15">
-                <UserPlus size={19} />
+              <span className="flex h-8.5 w-8.5 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-sibs-orange ring-1 ring-white/15">
+                <UserPlus size={18} />
               </span>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-base font-extrabold text-white">
+                  <h2 className="text-sm 2xl:text-base font-extrabold text-white">
                     Add Candidate
                   </h2>
-                  <span className="rounded bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-normal text-white">
+                  <span className="rounded bg-sibs-orange px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-normal text-white">
                     Registration
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs font-semibold leading-relaxed text-blue-100">
+                <p className="mt-0.5 sibs-text-xs font-semibold leading-relaxed text-blue-100">
                   Create a reusable candidate profile using database options and backend storage.
                 </p>
               </div>
@@ -4523,9 +4523,9 @@ export default function AddCandidateModal() {
                 type="button"
                 onClick={handleResetCandidate}
                 disabled={isSaving}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-white/10 bg-white/10 px-3 text-[10px] font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 text-[10px] 2xl:text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={13} />
                 Reset
               </button>
 
@@ -4534,14 +4534,14 @@ export default function AddCandidateModal() {
                 type="submit"
                 form="add-candidate-form"
                 disabled={isSaving || isLoadingApplicationQuestions || isApplicantNameGateLocked}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#FF5C28] px-3.5 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E95324] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-3.5 text-[10px] 2xl:text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSaving || isLoadingApplicationQuestions ? (
-                  <Loader2 size={14} className="animate-spin" />
+                  <Loader2 size={13} className="animate-spin" />
                 ) : currentPage === 1 ? (
-                  <ChevronRight size={14} />
+                  <ChevronRight size={13} />
                 ) : (
-                  <Save size={14} />
+                  <Save size={13} />
                 )}
                 {isSaving
                   ? "Saving..."
@@ -4558,9 +4558,9 @@ export default function AddCandidateModal() {
                 onClick={closeAddCandidateModal}
                 disabled={isSaving}
                 aria-label="Close add candidate modal"
-                className="sibs-modal-close-btn"
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
           </div>
@@ -4569,9 +4569,9 @@ export default function AddCandidateModal() {
             ref={formScrollRef}
             id="add-candidate-form"
             onSubmit={handleSubmitCandidate}
-            className="thin-scroll flex-1 space-y-6 overflow-y-auto bg-[#F4F7FB] p-4 sm:p-6"
+            className="thin-scroll flex-1 space-y-4 2xl:space-y-5 overflow-y-auto bg-[#F4F7FB] p-3.5 sm:p-4 2xl:p-6"
           >
-            <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_24px_rgba(4,44,81,0.05)]">
+            <div className="rounded-2xl border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-xs">
               <div className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EB] text-[#FF5C28]">
                   <ShieldCheck size={17} />
@@ -5593,16 +5593,16 @@ export default function AddCandidateModal() {
             )}
           </form>
 
-          <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+          <div className="shrink-0 border-t border-sibs-border bg-white px-4 py-2.5 2xl:px-6 2xl:py-3.5">
             <div className="flex flex-col justify-end gap-2 sm:flex-row">
               {currentPage === 2 ? (
                 <button
                   type="button"
                   onClick={handlePreviousPage}
                   disabled={isSaving}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#D6E0EA] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={15} />
                   Back
                 </button>
               ) : null}
@@ -5611,9 +5611,9 @@ export default function AddCandidateModal() {
                 type="button"
                 onClick={handleResetCandidate}
                 disabled={isSaving}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#D6E0EA] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <RotateCcw size={16} />
+                <RotateCcw size={15} />
                 Reset
               </button>
 
@@ -5622,14 +5622,14 @@ export default function AddCandidateModal() {
                 type="submit"
                 form="add-candidate-form"
                 disabled={isSaving || isLoadingApplicationQuestions || isApplicantNameGateLocked}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#E95324] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:bg-sibs-orange/90 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSaving || isLoadingApplicationQuestions ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 size={15} className="animate-spin" />
                 ) : currentPage === 1 ? (
-                  <ChevronRight size={16} />
+                  <ChevronRight size={15} />
                 ) : (
-                  <Save size={16} />
+                  <Save size={15} />
                 )}
                 {isSaving
                   ? "Saving..."

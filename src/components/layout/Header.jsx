@@ -40,6 +40,7 @@ import { useUser } from "../../services/context/UserContext";
 import { getEmployee } from "../../lib/axios/getEmployee";
 import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
 import UserDropdown from "./dropdown/UserDropdown";
+import NotificationDropdown from "./dropdown/NotificationDropdown";
 import HeaderCalendarModal from "./HeaderCalendarModal";
 import AuditNotificationBell from "./AuditNotificationBell";
 
@@ -1404,15 +1405,16 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setCalendarOpen(true)}
-            className="hidden h-8.5 2xl:h-10 items-center gap-1.5 2xl:gap-2 rounded-[12px] border border-transparent px-2.5 2xl:px-3 sibs-text-micro font-semibold text-[#667085] transition hover:border-[#C9D6E4] hover:bg-white hover:text-sibs-primary-1 hover:shadow-sm xl:flex hover:cursor-pointer"
+            className="group hidden h-8.5 2xl:h-10 items-center gap-1.5 2xl:gap-2 rounded-xl border border-transparent px-2.5 2xl:px-3 sibs-text-micro font-semibold text-[#667085] transition-all duration-150 hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs xl:flex hover:cursor-pointer"
             aria-label="Open HR and talent acquisition calendar"
           >
-            <CalendarDays className="h-3.5 w-3.5 text-[#98A2B3]" />
+            <CalendarDays className="h-3.5 w-3.5 text-[#98A2B3] transition-colors group-hover:text-sibs-orange" />
             <span className="whitespace-nowrap">{timeStr}</span>
           </button>
 
           <div className="hidden h-5 2xl:h-6 w-px bg-[#E0E6ED] xl:block" />
-          <AuditNotificationBell user={user} />
+
+          <NotificationDropdown />
 
           <div className="hidden h-5 2xl:h-6 w-px bg-[#E0E6ED] sm:block" />
 

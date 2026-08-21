@@ -25,7 +25,7 @@ export function CandidateModalPrimaryButton({
   return (
     <button
       {...props}
-      className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-xs font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-60 ${variantClass} ${className}`}
+      className={`inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg px-3.5 2xl:px-4 text-xs font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] ${variantClass} ${className}`}
     >
       {icon}
       {children}
@@ -41,7 +41,7 @@ export function CandidateModalSecondaryButton({
   return (
     <button
       {...props}
-      className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#042C51]/10 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#042C51]/10 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] ${className}`}
     >
       {children}
     </button>
@@ -58,7 +58,7 @@ export function CandidateModalSection({
 }) {
   return (
     <section
-      className={`rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)] ${className}`}
+      className={`rounded-xl border border-[#E6ECF2] bg-white p-3 sm:p-3.5 2xl:p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)] ${className}`}
     >
       {title || subtitle ? (
         <div className="mb-4 flex flex-col gap-3 border-b border-[#EEF2F6] pb-3 sm:flex-row sm:items-start sm:justify-between">
@@ -336,7 +336,7 @@ export default function CandidatePipelineModalShell({
         className={`sibs-modal-pop-in relative flex max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-sm:max-h-[calc(100dvh-1rem)]`}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+        <header className="shrink-0 bg-[#042C51] px-3.5 py-2 text-white sm:px-5 2xl:py-2.5">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               {headerContent ? (
@@ -347,31 +347,31 @@ export default function CandidatePipelineModalShell({
                   {headerContent}
                 </>
               ) : (
-                <div className="flex min-w-0 items-center gap-3">
+                <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
                   {Icon ? (
-                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
-                      <Icon size={17} />
+                    <span className="inline-flex h-7.5 w-7.5 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+                      <Icon size={15} />
                     </span>
                   ) : null}
 
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <h2
                         id={titleId}
-                        className="truncate text-sm font-extrabold text-white sm:text-base"
+                        className="truncate text-xs sm:text-sm 2xl:text-base font-extrabold text-white"
                       >
                         {title}
                       </h2>
 
                       {badge ? (
-                        <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[8px] font-extrabold uppercase tracking-wide text-white/90 sm:text-[9px]">
+                        <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white/90 sm:text-[8.5px]">
                           {badge}
                         </span>
                       ) : null}
                     </div>
 
                     {subtitle ? (
-                      <p className="mt-1 truncate text-[10px] font-semibold text-white/65 sm:text-xs">
+                      <p className="mt-0.5 truncate text-[9.5px] font-semibold text-white/65 sm:text-[11px]">
                         {subtitle}
                       </p>
                     ) : null}
@@ -380,7 +380,7 @@ export default function CandidatePipelineModalShell({
               )}
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               {movementHistoryEnabled ? (
                 <button
                   ref={movementTriggerRef}
@@ -394,13 +394,13 @@ export default function CandidatePipelineModalShell({
                       ? "Close Movement History"
                       : `Open Movement History, ${movementHistoryItems.length} records`
                   }
-                  className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border px-3 text-[9px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 sm:h-9 sm:px-3.5 sm:text-[10px] ${
+                  className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[9px] 2xl:text-[10px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 ${
                     movementHistoryOpen
                       ? "border-[#FF5C28] bg-[#0D4676] shadow-[0_0_12px_rgba(255,92,40,0.2)]"
                       : "border-white/15 bg-[#063560] hover:border-[#FF5C28]/60 hover:bg-[#0D4676]"
                   }`}
                 >
-                  <History size={13} className="text-[#FF5C28]" />
+                  <History size={12} className="text-[#FF5C28]" />
                   <span className="hidden sm:inline">Movement History</span>
                   <span>({movementHistoryItems.length})</span>
                 </button>
@@ -410,21 +410,21 @@ export default function CandidatePipelineModalShell({
                 type="button"
                 onClick={onClose}
                 disabled={closeDisabled}
-                className="sibs-modal-close-btn"
+                className="inline-flex h-7 w-7 2xl:h-8 2xl:w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label="Close modal"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-4 sm:p-5 sibs-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-2.5 sm:p-3.5 2xl:p-5 sibs-scrollbar">
           {children}
         </div>
 
         {footer ? (
-          <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3.5 sm:px-6">
+          <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-3.5 py-2 sm:px-5 2xl:py-2.5">
             {footer}
           </footer>
         ) : null}

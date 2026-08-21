@@ -173,7 +173,7 @@ export default function PipelineCardsBoard({
       onMouseMove={handleBoardMouseMove}
       onMouseUp={handleBoardMouseUp}
       onMouseLeave={handleBoardMouseLeave}
-      className={`overflow-x-auto bg-[#FFF9F0] p-1.5 pb-3 select-none sm:p-2 sm:pb-4 ${BOARD_SCROLLBAR_CLASS} ${
+      className={`overflow-x-auto bg-[#F8FAFC] p-1.5 pb-3 select-none sm:p-2 sm:pb-4 ${BOARD_SCROLLBAR_CLASS} ${
         isDraggingBoard ? "cursor-grabbing" : "cursor-default"
       }`}
     >
@@ -187,11 +187,11 @@ export default function PipelineCardsBoard({
           return (
             <div
               key={stage}
-              style={{ animationDelay: `${stageIndex * 60}ms` }}
-              className="sibs-page-card-in flex h-[600px] w-[292px] shrink-0 flex-col overflow-hidden rounded-2xl border border-[#D7DEE8] bg-[#EEF3F8] shadow-[0_7px_18px_rgba(4,44,81,0.035)] transition 2xl:h-[760px]"
+              style={{ animationDelay: `${stageIndex * 60}ms`, animationFillMode: "both" }}
+              className="sibs-page-card-in flex h-[520px] 2xl:h-[720px] w-[275px] 2xl:w-[292px] shrink-0 flex-col overflow-hidden rounded-2xl border border-[#D7DEE8] bg-[#EEF3F8] shadow-[0_7px_18px_rgba(4,44,81,0.035)] transition"
             >
               <div
-                className={`mx-1.5 mt-1.5 flex min-h-[44px] items-center justify-between gap-3 rounded-xl border px-3 text-left shadow-[0_1px_2px_rgba(4,44,81,0.025)] ${theme.header}`}
+                className={`mx-1.5 mt-1.5 flex min-h-[38px] 2xl:min-h-[44px] items-center justify-between gap-2 rounded-xl border px-2.5 2xl:px-3 text-left shadow-[0_1px_2px_rgba(4,44,81,0.025)] ${theme.header}`}
               >
                 <div className="flex min-w-0 items-center gap-2">
                   <span
@@ -203,14 +203,14 @@ export default function PipelineCardsBoard({
                 </div>
 
                 <span
-                  className={`inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-2 text-[10px] font-extrabold shadow-sm ${theme.badge}`}
+                  className={`inline-flex h-5.5 min-w-5.5 2xl:h-6 2xl:min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 2xl:px-2 text-[9.5px] 2xl:text-[10px] font-extrabold shadow-sm ${theme.badge}`}
                 >
                   {count}
                 </span>
               </div>
 
               <div
-                className={`min-h-0 flex-1 space-y-3 overflow-y-auto p-1.5 pt-3 2xl:p-2 2xl:pt-3 ${COLUMN_SCROLLBAR_CLASS}`}
+                className={`min-h-0 flex-1 space-y-2.5 2xl:space-y-3 overflow-y-auto p-1.5 pt-2.5 2xl:p-2 2xl:pt-3 ${COLUMN_SCROLLBAR_CLASS}`}
               >
                 {stageCandidates.length > 0 ? (
                   stageCandidates.map((candidate, index) => (
@@ -220,6 +220,7 @@ export default function PipelineCardsBoard({
                       className="sibs-page-card-in"
                       style={{
                         animationDelay: `${stageIndex * 50 + index * 40}ms`,
+                        animationFillMode: "both",
                       }}
                     >
                       <PipelineCandidateCard

@@ -80,10 +80,10 @@ export default function SuperAdminQuickActions({
       className="sibs-page-card-in sibs-card font-jakarta p-3.5 2xl:p-4"
       style={{ animationDelay: "120ms", animationFillMode: "both" }}
     >
-      <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-2 2xl:pb-2.5">
+      <div className="flex items-center justify-between border-b border-sibs-border pb-2 2xl:pb-2.5">
         <div className="min-w-0 space-y-0.5">
-          <h2 className="font-heading text-sm 2xl:text-base font-bold text-[#042C51] tracking-tight flex items-center gap-1.5 2xl:gap-2">
-            <SlidersHorizontal size={14} className="text-[#FF5C28]" />
+          <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight flex items-center gap-1.5 2xl:gap-2">
+            <SlidersHorizontal size={14} className="text-sibs-orange" />
             Quick Actions
           </h2>
           <p className="sibs-text-micro font-semibold text-[#667085]">
@@ -101,20 +101,20 @@ export default function SuperAdminQuickActions({
             key={item.id}
             type="button"
             onClick={() => handleAction(item)}
-            className="group sibs-page-card-in flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-slate-200 bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-[#FF5C28]/50 hover:bg-[#FFEDD2]/70"
+            className="group sibs-page-card-in flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-slate-200 bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-sibs-orange/50 hover:bg-sibs-cream/70"
             style={{
               animationDelay: `${160 + index * 40}ms`,
               animationFillMode: "both",
             }}
           >
-            <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-[#FF5C28] transition-colors group-hover:bg-[#FF5C28] group-hover:text-white">
+            <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-sibs-orange transition-colors group-hover:bg-sibs-orange group-hover:text-white">
               {createElement(item.icon, {
                 className: "h-3.5 w-3.5 2xl:h-4 2xl:w-4",
               })}
             </span>
 
             <span className="mt-1.5 min-w-0 flex-1">
-              <span className="block sibs-text-xs font-extrabold text-[#042C51] transition group-hover:text-[#FF5C28]">
+              <span className="block sibs-text-xs font-extrabold text-sibs-navy transition group-hover:text-sibs-orange">
                 {item.title}
               </span>
               <span className="mt-0.5 block sibs-text-micro text-[#667085] line-clamp-1 truncate">

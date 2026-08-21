@@ -19,10 +19,10 @@ const ASSESSMENT_RESULT_OPTIONS = [
 ];
 
 const INPUT_CLASS =
-  "h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:hover:border-[#E6ECF2] disabled:hover:bg-[#F2F4F7] disabled:focus:ring-0";
+  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:hover:border-[#E6ECF2] disabled:hover:bg-[#F2F4F7] disabled:focus:ring-0";
 
 const TEXTAREA_CLASS =
-  "min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 sibs-text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3]";
+  "min-h-18 2xl:min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 sibs-text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3]";
 
 function cleanText(value) {
   return String(value ?? "").trim();

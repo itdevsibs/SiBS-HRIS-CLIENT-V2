@@ -28,7 +28,7 @@
   --color-sibs-tertiary-7: #6b88a8;
   --color-sibs-tertiary-8: #94a9c1;
   --color-sibs-tertiary-9: #becbda;
-  --color-sibs-tertiary-10: #fff9f0;
+  --color-sibs-tertiary-10: #f4f7fa;
 
   --color-sibs-tab-active-bg: #ffedd2;
   --color-sibs-button-hover: #eb3800;
@@ -41,6 +41,23 @@
   --color-sibs-surface: #f7f9fc;
   --color-sibs-card: #ffffff;
   --color-sibs-subtle-border: #d7dee8;
+
+  /* Semantic Design Tokens */
+  --color-sibs-navy: #042c51;
+  --color-sibs-orange: #ff5c28;
+  --color-sibs-border: #e6ecf2;
+  --color-sibs-border-subtle: #d7dee8;
+  --color-sibs-border-panel: #dde5ee;
+  --color-sibs-canvas: #f4f7fa;
+  --color-sibs-cream: #ffedd2;
+  --color-sibs-cream-light: #fff8f5;
+  --color-sibs-cream-subtle: #fff4ed;
+
+  /* Global Text Hierarchy & Contrast Tokens */
+  --color-sibs-text-primary: #042c51;
+  --color-sibs-text-secondary: #344054;
+  --color-sibs-text-muted: #667085;
+  --color-sibs-text-faint: #98a2b3;
 
   --z-dropdown: 100;
   --z-sticky: 500;
@@ -71,7 +88,7 @@
   --sibs-tertiary-7: #6b88a8;
   --sibs-tertiary-8: #94a9c1;
   --sibs-tertiary-9: #becbda;
-  --sibs-tertiary-10: #fff9f0;
+  --sibs-tertiary-10: #f4f7fa;
 
   --sibs-status-1: #2ecc71;
   --sibs-status-2: #e67e22;
@@ -408,7 +425,7 @@
   }
 
   .sibs-modal-input {
-    height: 2.5rem;
+    height: 2.125rem;
     width: 100%;
     border-radius: 0.75rem;
     border: 1px solid #d7dee8;
@@ -424,6 +441,7 @@
 
   @media (min-width: 1536px) {
     .sibs-modal-input {
+      height: 2.5rem;
       font-size: 12px;
     }
   }
@@ -508,6 +526,15 @@
 
   .sibs-modal-close-btn:active:not(:disabled) {
     transform: scale(0.98);
+  }
+
+  /* No Scrollbar Utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   /* Website Heading Font & Centralized Responsive Typography System */

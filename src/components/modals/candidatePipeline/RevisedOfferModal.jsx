@@ -143,27 +143,27 @@ export default function RevisedOfferModal({
         <div className="fixed inset-0 z-[24000] cursor-wait bg-transparent" aria-hidden="true" />
       )}
 
-      <form id="candidate-revised-offer-form" onSubmit={handleSubmit} className="space-y-4">
+      <form id="candidate-revised-offer-form" onSubmit={handleSubmit} className="space-y-2.5 2xl:space-y-3.5">
         <CandidateModalSummary candidate={candidate} stage={candidate?.currentStage || "Offered"} />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2.5 2xl:gap-3.5 lg:grid-cols-2">
           <CandidateModalSection title="Current Compensation">
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="sibs-info-tile">
                 <p className="sibs-kicker">Current Basic Daily Rate</p>
-                <p className="mt-1 sibs-text-base font-extrabold tabular-nums text-[#101828]">
+                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-[#101828]">
                   {formatCurrency(currentBasicDailyRate)}
                 </p>
               </div>
               <div className="sibs-info-tile">
                 <p className="sibs-kicker">Current Daily De Minimis</p>
-                <p className="mt-1 sibs-text-base font-extrabold tabular-nums text-[#101828]">
+                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-[#101828]">
                   {formatCurrency(currentDailyDeMinimis)}
                 </p>
               </div>
-              <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+              <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
                 <p className="sibs-kicker text-sibs-primary-1">Current Total Daily Rate</p>
-                <p className="mt-1 sibs-text-base font-extrabold tabular-nums text-sibs-primary-1">
+                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-primary-1">
                   {formatCurrency(toNumber(currentBasicDailyRate) + toNumber(currentDailyDeMinimis))}
                 </p>
               </div>
@@ -171,9 +171,9 @@ export default function RevisedOfferModal({
           </CandidateModalSection>
 
           <CandidateModalSection title="Proposed Compensation">
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               <label className="block">
-                <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">New Basic Daily Rate</span>
+                <span className="mb-1 block sibs-kicker text-sibs-primary-1">New Basic Daily Rate</span>
                 <input
                   type="number"
                   min="0"
@@ -185,12 +185,12 @@ export default function RevisedOfferModal({
                   onKeyDown={preventNumberArrowChange}
                   onChange={(event) => setBasicDailyRate(event.target.value)}
                   placeholder="Enter new basic daily rate"
-                  className="h-11 w-full rounded-xl border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-bold tabular-nums text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-bold tabular-nums text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">New Daily De Minimis</span>
+                <span className="mb-1 block sibs-kicker text-sibs-primary-1">New Daily De Minimis</span>
                 <input
                   type="number"
                   min="0"
@@ -202,13 +202,13 @@ export default function RevisedOfferModal({
                   onKeyDown={preventNumberArrowChange}
                   onChange={(event) => setDailyDeMinimis(event.target.value)}
                   placeholder="Enter new daily de minimis"
-                  className="h-11 w-full rounded-xl border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-bold tabular-nums text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-bold tabular-nums text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
                 />
               </label>
 
-              <div className="rounded-xl border border-[#FF5C28]/25 bg-[#FFF9F6] px-4 py-3">
+              <div className="rounded-xl border border-[#FF5C28]/25 bg-[#FFF9F6] px-3 py-2">
                 <p className="sibs-kicker text-[#FF5C28]">Proposed Total Daily Rate</p>
-                <p className="mt-1 sibs-text-base font-extrabold tabular-nums text-sibs-primary-1">
+                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-primary-1">
                   {formatCurrency(proposedTotal)}
                 </p>
               </div>
@@ -221,9 +221,9 @@ export default function RevisedOfferModal({
             value={remarks}
             disabled={isSubmitting}
             onChange={(event) => setRemarks(event.target.value)}
-            rows={4}
+            rows={3}
             placeholder="Add a reason or justification for the new offer..."
-            className="w-full resize-none rounded-xl border border-[#D6E0EA] bg-white px-3 py-3 sibs-text-xs font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+            className="w-full resize-none rounded-xl border border-[#D6E0EA] bg-white px-3 py-2 sibs-text-xs font-semibold leading-5 text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
           />
         </CandidateModalSection>
 

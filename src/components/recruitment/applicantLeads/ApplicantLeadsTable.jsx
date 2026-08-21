@@ -1,7 +1,5 @@
 import React from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
   CircleCheckBig,
   Mail,
   MapPin,
@@ -12,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 import { isApplicantLeadApplicationLinkSent } from "../../../lib/utils/applicantLeads/applicantLeadEmailStatus";
 import ApplicantLeadStatusBadge from "./ApplicantLeadStatusBadge";
 
@@ -327,51 +326,19 @@ export default function ApplicantLeadsTable() {
         </div>
       </div>
 
-      {/* =====================================================
-          SIBS PAGINATION
-      ===================================================== */}
-      <div className="sibs-pagination sibs-pagination--compact mt-3.5 2xl:mt-4 font-jakarta">
-        <p className="sibs-pagination__summary">
-          Showing <span>{paginatedLeads.length}</span> loaded applicant leads
-          {totalRecords > 0 ? (
-            <>
-              {" "}
-              out of <span>{totalRecords}</span>
-            </>
-          ) : null}
-        </p>
-
-        {totalRecords > 0 ? (
-          <div className="sibs-pagination__controls">
-            <button
-              type="button"
-              onClick={goToPreviousPage}
-              disabled={currentPage === 1}
-              aria-label="Go to previous page"
-              className="sibs-pagination__button h-8.5 2xl:h-10 gap-1.5 px-3 sm:px-4"
-            >
-              <ChevronLeft size={14} />
-              <span>Previous</span>
-            </button>
-
-            <span className="sibs-pagination__page is-active h-8.5 2xl:h-10 px-3 sm:px-4">
-              Page {currentPage}
-              {totalPages > 1 ? ` of ${totalPages}` : ""}
-            </span>
-
-            <button
-              type="button"
-              onClick={goToNextPage}
-              disabled={currentPage === totalPages}
-              aria-label="Go to next page"
-              className="sibs-pagination__button h-8.5 2xl:h-10 gap-1.5 px-3 sm:px-4"
-            >
-              <span>Next</span>
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        ) : null}
-      </div>
+      <PaginationTable
+        showSearch={false}
+        showPagination
+        showCount
+        currentPage={currentPage}
+        totalPages={totalPages}
+        loadedCount={paginatedLeads.length}
+        totalRecords={totalRecords}
+        recordLabel="applicant leads"
+        onPrevious={goToPreviousPage}
+        onNext={goToNextPage}
+        className="border-0 bg-transparent p-0 shadow-none"
+      />
     </div>
   );
 }

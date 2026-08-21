@@ -124,39 +124,40 @@ export default function TalentPoolPage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
+        <div className="mx-auto w-full max-w-[1600px] space-y-4 sm:space-y-5 2xl:space-y-6">
           <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6"
+            className="sibs-page-header-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 2xl:p-6 font-jakarta shadow-sm"
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <span className="sibs-top-accent" aria-hidden="true" />
 
-            <div className="mt-1 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="mt-1 flex flex-col gap-3.5 sm:gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="min-w-0">
-                <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-sibs-tertiary-10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-sibs-primary-2" />
+                <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-sibs-canvas px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
                   Recruitment View
                 </div>
 
-                <h1 className="mt-2.5 break-words text-xl font-extrabold tracking-normal text-sibs-primary-1 sm:text-2xl">
+                <h1 className="font-heading mt-2 break-words text-xl sm:text-2xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
                   Talent Pool / Candidate Database
                 </h1>
 
-                <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-sibs-tertiary-6 sm:text-sm sm:leading-6">
+                <p className="mt-0.5 max-w-3xl sibs-text-xs font-semibold leading-relaxed text-sibs-text-muted">
                   Store reusable candidate master profiles, import leads from CSV,
                   and move qualified candidates to the pipeline.
                 </p>
               </div>
 
-              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-1.5 2xl:gap-2 sm:justify-end xl:flex-nowrap shrink-0">
                 <button
                   type="button"
                   onClick={handleRefreshPage}
                   disabled={pageIsRefreshing}
                   aria-label="Refresh"
-                  className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-sibs-tertiary-9 bg-white text-sibs-primary-1 shadow-sm outline-none transition hover:border-sibs-primary-2/40 hover:bg-sibs-primary-3 hover:text-sibs-primary-2 focus-visible:ring-2 focus-visible:ring-sibs-primary-2/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-10"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RefreshCw
-                    size={16}
+                    size={15}
                     className={pageIsRefreshing ? "animate-spin" : ""}
                   />
                 </button>
@@ -164,9 +165,9 @@ export default function TalentPoolPage() {
                 <button
                   type="button"
                   onClick={openPublicForm}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sibs-tertiary-9 bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm outline-none transition hover:border-sibs-primary-2/40 hover:bg-sibs-primary-3 hover:text-sibs-primary-2 focus-visible:ring-2 focus-visible:ring-sibs-primary-2/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 w-full sm:w-auto"
+                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 w-full sm:w-auto whitespace-nowrap"
                 >
-                  <ExternalLink size={16} />
+                  <ExternalLink size={14} />
                   Public Form
                 </button>
 
@@ -174,20 +175,19 @@ export default function TalentPoolPage() {
                   type="button"
                   onClick={downloadLeadTemplate}
                   disabled={isLoading}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sibs-tertiary-9 bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm outline-none transition hover:border-sibs-primary-2/40 hover:bg-sibs-primary-3 hover:text-sibs-primary-2 focus-visible:ring-2 focus-visible:ring-sibs-primary-2/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 w-full sm:w-auto"
+                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 w-full sm:w-auto whitespace-nowrap"
                 >
-                  <Download size={16} />
+                  <Download size={14} />
                   CSV Template
                 </button>
-
 
                 <button
                   type="button"
                   onClick={() => uploadInputRef.current?.click()}
                   disabled={isSaving}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sibs-tertiary-9 bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm outline-none transition hover:border-sibs-primary-2/40 hover:bg-sibs-primary-3 hover:text-sibs-primary-2 focus-visible:ring-2 focus-visible:ring-sibs-primary-2/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 w-full sm:w-auto"
+                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 w-full sm:w-auto whitespace-nowrap"
                 >
-                  <Upload size={16} />
+                  <Upload size={14} />
                   {isSaving ? "Uploading" : "Upload Leads"}
                 </button>
 
@@ -203,9 +203,9 @@ export default function TalentPoolPage() {
                   type="button"
                   onClick={openAddCandidateModal}
                   disabled={isSaving}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
+                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-3 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 active:scale-[0.98] w-full sm:w-auto whitespace-nowrap"
                 >
-                  <Plus size={16} />
+                  <Plus size={15} />
                   Add Candidate
                 </button>
               </div>
@@ -224,14 +224,15 @@ export default function TalentPoolPage() {
           <TalentPoolStats />
 
           <section
-            className="sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs font-jakarta"
+            className="sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+            style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
-            <div className="border-b border-[#E6ECF2] px-4 py-3.5 sm:px-5 2xl:py-4">
+            <div className="border-b border-sibs-border px-4 py-3 sm:px-5 2xl:py-3.5">
               <div className="flex flex-col gap-0.5">
-                <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                <h3 className="font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
                   Candidate Directory
                 </h3>
-                <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+                <p className="sibs-text-xs font-semibold text-sibs-text-muted">
                   Search and narrow the reusable candidate database
                 </p>
               </div>

@@ -1508,10 +1508,10 @@ function CandidateProfileHorizontalNavigation({
 
   return (
     <nav
-      className="rounded-2xl border border-[#E6ECF2] bg-white p-2.5 shadow-sm"
+      className="rounded-xl border border-sibs-border bg-white p-1.5 2xl:p-2 shadow-2xs"
       aria-label="Candidate profile navigation"
     >
-      <div className="sibs-scrollbar flex min-w-0 gap-1 overflow-x-auto pb-2">
+      <div className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon || FileText;
           const active = tab.key === activePrimaryKey;
@@ -1522,15 +1522,15 @@ function CandidateProfileHorizontalNavigation({
               type="button"
               onClick={() => handlePrimaryClick(tab)}
               aria-current={active ? "page" : undefined}
-              className={`inline-flex h-9 min-w-max shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3.5 text-xs font-bold transition-all ${
+              className={`inline-flex h-7 2xl:h-7.5 min-w-max shrink-0 items-center justify-center gap-1 rounded-md border px-2.5 2xl:px-3 text-[10.5px] 2xl:text-[11.5px] font-extrabold transition-all duration-150 ${
                 active
-                  ? "border-[#BFD3F2] bg-[#E9F0FC] text-[#042C51] shadow-sm"
-                  : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  ? "border-sibs-orange/40 bg-sibs-cream text-sibs-orange shadow-2xs"
+                  : "border-transparent text-sibs-text-muted hover:bg-sibs-cream-subtle hover:text-sibs-navy"
               }`}
             >
               <Icon
-                size={14}
-                className={active ? "text-[#FF5C28]" : "text-slate-400"}
+                size={13}
+                className={active ? "text-sibs-orange" : "text-sibs-text-muted"}
               />
               {tab.label}
             </button>
@@ -1539,8 +1539,8 @@ function CandidateProfileHorizontalNavigation({
       </div>
 
       {secondaryTabs.length > 0 && (
-        <div className="sibs-scrollbar mt-2 flex items-center gap-1.5 overflow-x-auto border-t border-[#F1F5F9] pt-2 pb-1">
-          <span className="shrink-0 px-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+        <div className="no-scrollbar mt-1 flex items-center gap-1 overflow-x-auto border-t border-sibs-border pt-1">
+          <span className="shrink-0 px-1.5 text-[8.5px] font-black uppercase tracking-widest text-sibs-text-muted">
             Subsections:
           </span>
 
@@ -1553,10 +1553,10 @@ function CandidateProfileHorizontalNavigation({
                 type="button"
                 onClick={() => onTabChange?.(child.key)}
                 aria-selected={active}
-                className={`h-7 min-w-max shrink-0 rounded-full px-3 text-[10px] font-bold transition-all ${
+                className={`h-5.5 2xl:h-6 min-w-max shrink-0 rounded-full px-2 2xl:px-2.5 text-[9px] 2xl:text-[9.5px] font-extrabold transition-all ${
                   active
-                    ? "bg-[#042C51] text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    ? "bg-sibs-navy text-white shadow-2xs"
+                    : "bg-slate-100 text-sibs-text-muted hover:bg-slate-200 hover:text-sibs-navy"
                 }`}
               >
                 {child.label}
@@ -3205,22 +3205,22 @@ function buildOnboardingNavigationUrl(candidate = {}, pipelineId = "") {
 
 function SectionTitle({ icon: Icon, title, description }) {
   return (
-    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-3.5 flex flex-col gap-2 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {Icon && (
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-[#042C51]">
-              <Icon size={16} />
+            <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-sibs-navy shadow-2xs">
+              <Icon size={15} />
             </span>
           )}
 
-          <h3 className="break-words text-sm font-black text-[#042C51]">
+          <h3 className="break-words text-xs 2xl:text-sm font-black uppercase tracking-wider text-sibs-navy">
             {title}
           </h3>
         </div>
 
         {description && (
-          <p className="mt-1 text-[10px] font-semibold leading-4 text-slate-400">
+          <p className="mt-0.5 text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted">
             {description}
           </p>
         )}
@@ -3232,7 +3232,7 @@ function SectionTitle({ icon: Icon, title, description }) {
 function ProfileGrid({ children, cols = "md:grid-cols-2", className = "" }) {
   return (
     <div
-      className={`grid min-w-0 grid-cols-1 gap-x-4 gap-y-4 ${cols} ${className}`}
+      className={`grid min-w-0 grid-cols-1 gap-x-2.5 gap-y-2 sm:grid-cols-2 lg:grid-cols-3 ${cols} ${className}`}
     >
       {children}
     </div>
@@ -3244,16 +3244,16 @@ function ProfileDetail({ label, value, mono = false, className = "" }) {
   const displayValue = hasValue ? value : "—";
 
   return (
-    <div className={`flex min-w-0 flex-col gap-1.5 text-left ${className}`}>
-      <span className="block text-[10px] font-bold uppercase tracking-wide text-[#8EA3BF]">
+    <div className={`flex min-w-0 flex-col gap-0.5 text-left ${className}`}>
+      <span className="block text-[9px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-sibs-text-muted">
         {label}
       </span>
 
-      <div className="flex min-h-[40px] items-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 transition-colors duration-150">
+      <div className="flex min-h-[30px] 2xl:min-h-[34px] items-center rounded-lg border border-sibs-border bg-[#F8FAFC] px-2.5 py-1 transition-colors duration-150">
         <span
           title={String(displayValue)}
-          className={`block min-w-0 break-words text-xs font-semibold leading-normal ${
-            hasValue ? "text-[#101828]" : "text-[#98A2B3]"
+          className={`block min-w-0 break-words text-[11px] 2xl:text-xs font-bold leading-tight ${
+            hasValue ? "text-sibs-navy" : "text-sibs-text-muted"
           } ${mono ? "font-mono" : ""}`}
         >
           {displayValue}
@@ -3274,10 +3274,10 @@ function NhoRequirementCard({
 
   return (
     <div
-      className={`rounded-xl border p-4 transition ${
+      className={`rounded-xl border p-3.5 2xl:p-4 transition ${
         hasFiles
           ? "border-emerald-200 bg-emerald-50/50"
-          : "border-[#D9E2EC] bg-[#F8FAFC]"
+          : "border-sibs-border bg-[#F8FAFC]"
       }`}
     >
       <div className="flex min-w-0 items-start gap-3">
@@ -3295,49 +3295,49 @@ function NhoRequirementCard({
           <div className="flex min-w-0 items-start justify-between gap-2">
             <p
               title={requirement}
-              className="truncate text-sm font-extrabold text-[#101828]"
+              className="truncate text-xs 2xl:text-sm font-extrabold text-sibs-navy"
             >
               {requirement}
             </p>
 
             {isMajor && (
-              <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                 Major
               </span>
             )}
           </div>
 
           {!hasFiles && (
-            <div className="mt-3 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-3 py-3 text-xs font-bold text-sibs-tertiary-5">
+            <div className="mt-2.5 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-3 py-2.5 text-xs font-bold text-sibs-text-muted">
               No uploaded file yet.
             </div>
           )}
 
           {hasFiles && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-2.5 space-y-1.5 2xl:space-y-2">
               {files.map((file) => {
                 const isSelected = selectedFileId && selectedFileId === file.id;
 
                 return (
                   <div
                     key={`${file.id}-${file.fileName}-${file.fileUrl}`}
-                    className="space-y-2"
+                    className="space-y-1.5"
                   >
                     <button
                       type="button"
                       onClick={() => onSelect?.(file)}
                       className={`flex w-full min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${
                         isSelected
-                          ? "border-sibs-primary-1 bg-blue-50"
-                          : "border-emerald-100 bg-white hover:bg-emerald-50"
+                          ? "border-sibs-orange bg-sibs-cream text-sibs-orange"
+                          : "border-emerald-100 bg-white hover:bg-emerald-50 text-sibs-navy"
                       }`}
                     >
                       <FileTypeIcon
                         fileName={file.fileName}
-                        size={17}
+                        size={16}
                         className={`shrink-0 ${
                           isSelected
-                            ? "text-sibs-primary-1"
+                            ? "text-sibs-orange"
                             : "text-emerald-700"
                         }`}
                       />
@@ -3347,17 +3347,17 @@ function NhoRequirementCard({
                           title={file.fileName || file.savedFileName}
                           className={`block truncate text-xs font-extrabold ${
                             isSelected
-                              ? "text-sibs-primary-1"
-                              : "text-emerald-800"
+                              ? "text-sibs-orange"
+                              : "text-emerald-900"
                           }`}
                         >
                           {file.fileName || file.savedFileName || "Uploaded file"}
                         </span>
 
                         <span
-                          className={`mt-0.5 block truncate text-[11px] font-bold ${
+                          className={`mt-0.5 block truncate text-[10px] 2xl:text-[11px] font-bold ${
                             isSelected
-                              ? "text-sibs-primary-1/80"
+                              ? "text-sibs-orange/80"
                               : "text-emerald-700/80"
                           }`}
                         >
@@ -3365,7 +3365,6 @@ function NhoRequirementCard({
                         </span>
                       </span>
                     </button>
-
                   </div>
                 );
               })}
@@ -3382,15 +3381,15 @@ function ProfileTextarea({ label, value, className = "" }) {
   const displayValue = hasValue ? value : "—";
 
   return (
-    <div className={`flex min-w-0 flex-col gap-1.5 text-left ${className}`}>
-      <span className="block text-[10px] font-bold uppercase tracking-wide text-[#8EA3BF]">
+    <div className={`flex min-w-0 flex-col gap-0.5 text-left ${className}`}>
+      <span className="block text-[9px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-sibs-text-muted">
         {label}
       </span>
 
-      <div className="min-h-[80px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 transition-colors duration-150">
+      <div className="min-h-[55px] 2xl:min-h-[65px] rounded-lg border border-sibs-border bg-[#F8FAFC] px-2.5 py-1.5 transition-colors duration-150">
         <p
-          className={`whitespace-pre-wrap break-words text-xs font-semibold leading-6 ${
-            hasValue ? "text-[#101828]" : "text-[#98A2B3]"
+          className={`whitespace-pre-wrap break-words text-[11px] 2xl:text-xs font-bold leading-5 ${
+            hasValue ? "text-sibs-navy" : "text-sibs-text-muted"
           }`}
         >
           {displayValue}
@@ -3874,7 +3873,7 @@ function TalentPoolStatusDropdown({
   return (
     <div
       ref={dropdownRef}
-      className={`relative min-w-0 ${open ? "z-[100050]" : "z-[1]"}`}
+      className={`relative min-w-0 font-jakarta ${open ? "z-[100050]" : "z-[1]"}`}
     >
       <button
         type="button"
@@ -3882,35 +3881,35 @@ function TalentPoolStatusDropdown({
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+        className={`flex h-10 2xl:h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-[#F8FAFC] px-3.5 text-left text-xs font-semibold shadow-xs outline-none transition ${
           open
-            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
-            : "border-[#D0D5DD] hover:border-[var(--sibs-primary-1)]"
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
         } ${
           disabled
             ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-[#344054]"
+            : "text-[#042C51]"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-[#344054]" : "text-gray-400"
+            selectedOption ? "text-[#042C51] font-bold" : "text-gray-400 font-normal"
           }`}
         >
           {selectedOption?.label || placeholder}
         </span>
 
         <ChevronDown
-          size={18}
-          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+          size={16}
+          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[100060] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-72 overflow-y-auto" role="listbox">
+        <div className="sibs-animated-dropdown-box absolute left-0 right-0 top-[calc(100%+6px)] z-[100060] overflow-hidden rounded-xl border border-[#DCE6F1] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="max-h-64 overflow-y-auto" role="listbox">
             {options.length > 0 ? (
               options.map((option) => {
                 const active =
@@ -3923,10 +3922,10 @@ function TalentPoolStatusDropdown({
                     role="option"
                     aria-selected={active}
                     onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                    className={`block w-full px-3.5 py-2.5 text-left text-xs font-semibold transition ${
                       active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                        ? "bg-[#FFF0EB] text-[#FF5C28] font-extrabold"
+                        : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                     }`}
                   >
                     <span className="block min-w-0 truncate">
@@ -3936,7 +3935,7 @@ function TalentPoolStatusDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-3.5 text-sm font-semibold text-gray-400">
+              <div className="px-3.5 py-2.5 text-xs font-semibold text-gray-400">
                 No status options found.
               </div>
             )}
@@ -7351,24 +7350,24 @@ export default function CandidateProfileModal() {
   return (
     <>
       <div
-        className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-3 py-3 font-jakarta sm:px-4"
+        className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-3 2xl:p-4"
         onClick={handleCloseCandidateProfile}
       >
         <div
-          className="flex h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] shadow-2xl sm:h-[86dvh] sm:max-h-[92dvh]"
+          className="sibs-modal-pop-in flex h-[88dvh] 2xl:h-[92dvh] max-h-[88dvh] 2xl:max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-sibs-border bg-[#F8FAFC] shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[#174A7C] bg-sibs-primary-1 px-5 py-3.5 text-white sm:px-6">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
-                <UserRound size={17} />
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#174A7C] bg-sibs-navy px-3.5 py-2 text-white sm:px-5 2xl:py-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-xs">
+                <UserRound size={15} />
               </span>
 
               <div className="min-w-0">
-                <h2 className="truncate text-sm font-extrabold uppercase tracking-wide text-white">
+                <h2 className="truncate text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-white">
                   Talent Pool Candidate Profile
                 </h2>
-                <p className="truncate text-[11px] font-semibold text-blue-100">
+                <p className="truncate text-[9.5px] 2xl:text-[10.5px] font-semibold text-blue-100">
                   Comprehensive candidate filing and talent screening profile record
                 </p>
               </div>
@@ -7378,70 +7377,60 @@ export default function CandidateProfileModal() {
               type="button"
               onClick={handleCloseCandidateProfile}
               aria-label="Close candidate profile"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white"
+              className="inline-flex h-7 w-7 2xl:h-7.5 2xl:w-7.5 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <X size={19} />
+              <X size={15} />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 pb-6 sm:p-6 sm:pb-6">
-            <div className="space-y-5">
-              <section className="relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+          <div className="thin-scroll flex-1 overflow-y-auto bg-[#F8FAFC] p-2.5 sm:p-3.5 2xl:p-5">
+            <div className="space-y-2.5 2xl:space-y-3.5">
+              <section className="relative overflow-hidden rounded-xl border border-sibs-border bg-white px-3 py-2 2xl:px-4 2xl:py-2.5 shadow-2xs">
                 <span
-                  className="pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 overflow-hidden rounded-t-[15px]"
+                  className="pointer-events-none absolute left-0 right-0 top-0 h-0.5 overflow-hidden"
                   aria-hidden="true"
                 >
                   <span className="block h-full w-full bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
                 </span>
 
-                <div className="mt-1 flex flex-col items-center justify-between gap-5 lg:flex-row lg:items-start">
-                  <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#042C51] to-[#084782] text-xl font-extrabold text-white shadow-md">
+                <div className="flex flex-col items-center justify-between gap-2.5 lg:flex-row lg:items-center">
+                  <div className="flex min-w-0 flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
+                    <div className="relative flex h-10 w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#042C51] to-[#084782] text-sm 2xl:text-base font-black text-white shadow-xs">
                       {candidateInitials}
-                      <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" />
+                      <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
                     </div>
 
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                        <h3 className="break-words text-lg font-black leading-tight tracking-tight text-[#042C51]">
+                      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
+                        <h3 className="truncate text-sm 2xl:text-base font-black leading-tight tracking-tight text-sibs-navy">
                           {activeCandidate.name || "Unnamed Candidate"}
                         </h3>
 
                         <span
-                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase ${getStatusClass(
+                          className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase ${getStatusClass(
                             candidateDisplayStatus,
                           )}`}
                         >
                           {candidateDisplayStatus || "—"}
                         </span>
 
-                        <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 font-mono text-[9px] font-extrabold uppercase text-[#042C51]">
+                        <span className="rounded-md border border-blue-100 bg-[#E9F0FC] px-1.5 py-0.2 font-mono text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-sibs-navy">
                           {activeCandidate.candidateId || "—"}
                         </span>
                       </div>
 
-                      <p className="mt-0.5 text-xs font-semibold text-[#FF5C28]">
-                        {activeCandidate.openPosition ||
-                          activeCandidate.roleCapability ||
-                          "No position provided"}
-                      </p>
-
-                      <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] font-semibold text-[#667085] sm:justify-start">
-                        <span className="inline-flex items-center gap-1">
-                          <BriefcaseBusiness size={13} className="text-sibs-primary-1" />
-                          {firstCandidateValue(
-                            activeCandidate.positionDepartment,
-                            activeCandidate.department,
-                            activeCandidate.departmentName,
-                            "—",
-                          )}
+                      <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[9.5px] 2xl:text-[10.5px] font-semibold text-sibs-text-muted sm:justify-start">
+                        <span className="font-bold text-sibs-orange">
+                          {activeCandidate.openPosition ||
+                            activeCandidate.roleCapability ||
+                            "No position"}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <Mail size={13} className="text-sibs-primary-1" />
-                          {activeCandidate.email || "No email provided"}
+                          <Mail size={11.5} className="text-sibs-orange" />
+                          {activeCandidate.email || "No email"}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <CalendarDays size={13} className="text-sibs-primary-1" />
+                          <CalendarDays size={11.5} className="text-sibs-orange" />
                           Applied: {formatDate(
                             firstCandidateValue(
                               activeCandidate.applicationDate,
@@ -7452,37 +7441,28 @@ export default function CandidateProfileModal() {
                           )}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <Network size={13} className="text-sibs-primary-1" />
-                          Fit: {firstCandidateValue(
-                            activeCandidate.currentAppliedAccount,
-                            activeCandidate.accountName,
-                            activeCandidate.account,
-                            "No account fit",
-                          )}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin size={13} className="text-sibs-primary-1" />
+                          <MapPin size={11.5} className="text-sibs-orange" />
                           {activeCandidate.applyingLocation || "—"}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                  <div className="flex w-full shrink-0 flex-row items-center justify-end gap-1.5 sm:w-auto">
                     <button
                       type="button"
                       onClick={handleGenerateResume}
                       disabled={!talentPoolApplicationId || isGeneratingResume}
-                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 text-xs font-black text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/50 hover:bg-[#FFF9F6] hover:text-[#C9360A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-7 2xl:h-7.5 items-center justify-center gap-1 rounded-md border border-sibs-border bg-white px-2.5 text-[11px] 2xl:text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isGeneratingResume ? (
                         <>
-                          <Loader2 size={15} className="animate-spin text-[#FF5C28]" />
+                          <Loader2 size={13} className="animate-spin text-sibs-orange" />
                           <span>Generating...</span>
                         </>
                       ) : (
                         <>
-                          <FileDown size={15} className="text-[#FF5C28]" />
+                          <FileDown size={13} className="text-sibs-orange" />
                           <span>Generate Resume</span>
                         </>
                       )}
@@ -7491,16 +7471,16 @@ export default function CandidateProfileModal() {
                     <button
                       type="button"
                       onClick={handleUpdateCandidateStatus}
-                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-3 text-xs font-black text-white shadow-sm transition hover:bg-[#063560]"
+                      className="inline-flex h-7 2xl:h-7.5 items-center justify-center gap-1 rounded-md bg-sibs-navy px-2.5 text-[11px] 2xl:text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-navy/90"
                     >
-                      <RefreshCcw size={15} className="text-[#FF5C28]" />
+                      <RefreshCcw size={13} className="text-sibs-orange" />
                       Status
                     </button>
                   </div>
                 </div>
 
                 {isDoNotReprocess && (
-                  <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
+                  <div className="mt-2 rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700">
                     This candidate is marked as Do Not Reprocess and cannot be
                     moved to the pipeline unless the status is updated.
                   </div>
@@ -7513,27 +7493,24 @@ export default function CandidateProfileModal() {
                 onTabChange={handleProfileTabChange}
               />
 
-              <div className="sibs-page-card-in grid grid-cols-1 items-start gap-6">
+              <div className="sibs-page-card-in grid grid-cols-1 items-start">
                 <section
                   key={activeTab}
-                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                  className="sibs-profile-tab-panel min-w-0 rounded-xl border border-sibs-border bg-white p-3 sm:p-3.5 2xl:p-4.5 shadow-2xs"
                 >
-                  <div className="mb-5 flex flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mb-2.5 flex items-center justify-between border-b border-sibs-border pb-1.5">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-black uppercase tracking-wider text-[#042C51]">
+                      <h3 className="text-xs 2xl:text-sm font-black uppercase tracking-wider text-sibs-navy">
                         {activeProfileParent?.label || "Profile"}
                         {activeProfileChild?.label
                           ? ` - ${activeProfileChild.label}`
                           : ""}
                       </h3>
-                      <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
-                        Official candidate values are shown from the existing Talent Pool data source.
-                      </p>
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#042C51]" />
-                      <span className="text-[10px] font-bold uppercase text-slate-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-sibs-navy" />
+                      <span className="text-[9px] 2xl:text-[9.5px] font-extrabold uppercase text-sibs-text-muted">
                         Official Profile Record
                       </span>
                     </div>
@@ -7547,8 +7524,8 @@ export default function CandidateProfileModal() {
             </div>
           </div>
 
-          <div className="relative z-[40] flex flex-col-reverse gap-4 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-            <p className="inline-flex w-fit max-w-full items-center rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-1.5 text-xs font-extrabold leading-5 text-[#344054]">
+          <div className="relative z-[40] flex flex-col-reverse gap-2 border-t border-sibs-border bg-white px-3.5 py-2 sm:flex-row sm:items-center sm:justify-between 2xl:px-5 2xl:py-2.5">
+            <p className="inline-flex w-fit max-w-full items-center rounded-full border border-sibs-border bg-sibs-canvas px-2.5 py-0.5 text-[10px] 2xl:text-[10.5px] font-extrabold leading-tight text-sibs-navy">
               {isDropOffCandidate ? (
                 <span className="font-extrabold text-amber-700">
                   Candidate is marked as Drop-off. Use Move to Pipeline to
@@ -7581,15 +7558,14 @@ export default function CandidateProfileModal() {
               )}
             </p>
 
-            <div className="relative z-[50] flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative z-[50] flex flex-col gap-1.5 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={handleCloseCandidateProfile}
-                className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/10"
+                className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30"
               >
                 Close
               </button>
-
 
               {!isAlreadyInPipeline &&
                 !isDoNotReprocess &&
@@ -7598,9 +7574,9 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleOpenDropOff}
                   disabled={dropOffSaving}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <UserX size={17} />
+                  <UserX size={14} />
                   {dropOffSaving ? "Saving..." : "Mark as Drop Off"}
                 </button>
               )}
@@ -7610,12 +7586,12 @@ export default function CandidateProfileModal() {
                   type="button"
                   disabled={isMovingToOnboarding}
                   onClick={handleMoveToOnboarding}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isMovingToOnboarding ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={14} className="animate-spin" />
                   ) : (
-                    <ArrowRight size={16} />
+                    <ArrowRight size={14} />
                   )}
                   {isMovingToOnboarding ? "Moving..." : "Move to Onboarding"}
                 </button>
@@ -7625,9 +7601,9 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleOpenLinkedCandidateDestination}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/20"
+                  className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20"
                 >
-                  <ArrowRight size={16} />
+                  <ArrowRight size={14} />
                   Already Linked
                 </button>
               )}
@@ -7636,9 +7612,9 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}
-                  className="relative z-[60] inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/20 active:scale-[0.98]"
+                  className="relative z-[60] inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 active:scale-[0.98]"
                 >
-                  <ArrowRight size={16} />
+                  <ArrowRight size={14} />
                   {isDropOffCandidate
                     ? "Resume in Pipeline"
                     : "Move to Pipeline"}
@@ -7651,78 +7627,118 @@ export default function CandidateProfileModal() {
 
       {statusUpdateOpen && (
         <div
-          className="sibs-modal-blur fixed inset-0 z-[10025] flex h-dvh items-center justify-center px-4 py-4"
+          className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10025] flex h-dvh items-center justify-center px-3 py-3 font-jakarta sm:px-4 sm:py-4"
           onClick={(event) => {
             event.stopPropagation();
             handleCloseStatusUpdate();
           }}
         >
           <div
-            className="w-full max-w-lg overflow-visible rounded-2xl bg-white shadow-2xl"
+            className="sibs-modal-pop-in relative flex w-full max-w-lg flex-col overflow-visible rounded-2xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4">
-              <div className="min-w-0">
-                <h3 className="text-lg font-extrabold text-sibs-primary-1">
-                  Update Candidate Status
-                </h3>
-                <p className="mt-1 truncate text-sm font-medium text-sibs-tertiary-5">
-                  {candidateDisplayName}
-                </p>
-              </div>
+            {/* SiBS Standard Dark Navy Modal Header */}
+            <header className="shrink-0 rounded-t-2xl bg-[#042C51] px-5 py-4 text-white sm:px-6">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+                    <RefreshCcw size={17} />
+                  </span>
 
-              <button
-                type="button"
-                onClick={handleCloseStatusUpdate}
-                disabled={statusUpdateSaving}
-                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-                aria-label="Close update candidate status modal"
-              >
-                <X size={20} />
-              </button>
-            </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="truncate text-sm font-extrabold text-white sm:text-base">
+                        Update Candidate Status
+                      </h2>
 
-            <form onSubmit={handleSaveCandidateStatus} className="space-y-4 p-5">
-              <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-4">
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-                  Current Status
-                </p>
-                <p className="mt-1 text-sm font-extrabold text-[#101828]">
-                  {candidateDisplayStatus || "—"}
-                </p>
-              </div>
+                      <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white/90 sm:text-[9px]">
+                        Talent Pool Status
+                      </span>
+                    </div>
 
-              <div className="relative z-[100040]">
-                <FieldLabel>New Status</FieldLabel>
-                <TalentPoolStatusDropdown
-                  value={statusUpdateValue}
-                  options={TALENT_POOL_STATUS_OPTIONS}
-                  disabled={statusUpdateSaving}
-                  placeholder="Select status"
-                  onChange={(nextValue) => {
-                    setStatusUpdateValue(nextValue);
+                    <p className="mt-0.5 truncate text-[10px] font-semibold text-white/65 sm:text-xs">
+                      Update classification and recruitment stage for this candidate.
+                    </p>
+                  </div>
+                </div>
 
-                    if (statusUpdateValidation) {
-                      setStatusUpdateValidation("");
-                    }
-                  }}
-                />
-
-                {statusUpdateValidation && (
-                  <p className="mt-2 text-xs font-bold text-red-600">
-                    {statusUpdateValidation}
-                  </p>
-                )}
-              </div>
-            </form>
-
-            <div className="border-t border-[#E6ECF2] px-5 py-4">
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={handleCloseStatusUpdate}
                   disabled={statusUpdateSaving}
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-[#FF5C28]/60 hover:bg-[#FF5C28] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  aria-label="Close update candidate status modal"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </header>
+
+            {/* Modal Body with Section Cards */}
+            <div className="overflow-visible bg-[#F7F9FC] p-4 sm:p-5 space-y-3.5">
+              {/* Candidate Summary Card */}
+              <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
+                      Candidate
+                    </p>
+                    <h3 className="mt-0.5 truncate text-sm font-extrabold text-[#042C51]">
+                      {candidateDisplayName}
+                    </h3>
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
+                      Current Status
+                    </p>
+                    <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+                      {candidateDisplayStatus || "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Update Details Card */}
+              <div className="relative z-[50] overflow-visible rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+                <form onSubmit={handleSaveCandidateStatus} className="space-y-4">
+                  <div className="relative z-[100]">
+                    <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wider text-[#042C51]">
+                      New Status <span className="text-red-500">*</span>
+                    </label>
+                    <TalentPoolStatusDropdown
+                      value={statusUpdateValue}
+                      options={TALENT_POOL_STATUS_OPTIONS}
+                      disabled={statusUpdateSaving}
+                      placeholder="Select status"
+                      onChange={(nextValue) => {
+                        setStatusUpdateValue(nextValue);
+
+                        if (statusUpdateValidation) {
+                          setStatusUpdateValidation("");
+                        }
+                      }}
+                    />
+
+                    {statusUpdateValidation && (
+                      <p className="mt-2 text-[10px] font-extrabold text-red-600">
+                        {statusUpdateValidation}
+                      </p>
+                    )}
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            {/* Standard SiBS Modal Footer */}
+            <footer className="relative z-[10] shrink-0 rounded-b-2xl border-t border-[#E6ECF2] bg-white px-5 py-3.5 sm:px-6">
+              <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleCloseStatusUpdate}
+                  disabled={statusUpdateSaving}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -7731,17 +7747,17 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleSaveCandidateStatus}
                   disabled={statusUpdateSaving || !cleanText(statusUpdateValue)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-5 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {statusUpdateSaving ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={15} className="animate-spin" />
                   ) : (
-                    <RefreshCcw size={16} />
+                    <RefreshCcw size={15} />
                   )}
                   {statusUpdateSaving ? "Saving..." : "Save Status"}
                 </button>
               </div>
-            </div>
+            </footer>
           </div>
         </div>
       )}

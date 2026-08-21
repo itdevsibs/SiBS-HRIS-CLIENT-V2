@@ -17,19 +17,19 @@ export default function SuperAdminDashboardHeader({
       <div className="mt-0.5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1 lg:pr-4 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-[#042C51]">
-              <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+            <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+              <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
               Super Admin Operations View
             </span>
           </div>
 
-          <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-[#042C51]">
+          <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
             Whole-System HRIS Operations &amp; Governance
           </h1>
 
           <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
             Welcome back,{" "}
-            <span className="font-extrabold text-[#042C51]">{displayName}</span>.
+            <span className="font-extrabold text-sibs-navy">{displayName}</span>.
             You have whole-system administrative permissions across all HRIS modules.
           </p>
         </div>
@@ -41,11 +41,11 @@ export default function SuperAdminDashboardHeader({
               onClick={onRefresh}
               disabled={isManualRefreshing}
               title="Refresh Dashboard Data"
-              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF4ED] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                  isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                  isManualRefreshing ? "animate-spin text-sibs-orange" : ""
                 }`}
               />
             </button>
@@ -54,16 +54,16 @@ export default function SuperAdminDashboardHeader({
           <button
             type="button"
             onClick={onAddUser}
-            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-[#E6ECF2] bg-white px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#042C51] shadow-xs transition hover:border-[#FF5C28]/40 hover:bg-[#FFEDD2] hover:text-[#042C51]"
+            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream hover:text-sibs-navy"
           >
-            <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#FF5C28]" />
+            <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-orange" />
             Add Admin / User
           </button>
 
           <button
             type="button"
             onClick={onOpenEmployees}
-            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-[#FF5C28] px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-[#EB3800] active:bg-[#FF8450]"
+            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:bg-sibs-orange"
           >
             <Users className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
             Launch Employee Directory
