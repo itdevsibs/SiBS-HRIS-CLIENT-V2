@@ -50,65 +50,6 @@ function getVersionTone(status = "") {
   return "border-blue-100 bg-blue-50 text-sibs-primary-1";
 }
 
-function ProcessingOverlay({ action = "" }) {
-  const isRevision = action === "Revision";
-  const isApproving = action === "Approved";
-  const title = isRevision
-    ? "Submitting Revised Offer"
-    : isApproving
-      ? "Approving Offer"
-      : "Declining Offer";
-  const description = isRevision
-    ? "Please wait while the new compensation is saved, versioned, and sent for approval."
-    : isApproving
-      ? "Please wait while the approval is saved and the offer records are refreshed."
-      : "Please wait while the decline decision is saved and the offer records are refreshed.";
-
-  return (
-    <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-[2px]">
-      <div
-        role="status"
-        aria-live="polite"
-        aria-label={title}
-        className="w-full max-w-md rounded-2xl border border-[#D6DEE8] bg-white p-5 shadow-2xl sm:p-6"
-      >
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FB] text-sibs-primary-1">
-            <Loader2 size={22} className="animate-spin" />
-          </div>
-
-          <div className="min-w-0">
-            <h3 className="text-base font-extrabold text-sibs-primary-1">
-              {title}
-            </h3>
-            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
-              {description}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 space-y-3 animate-pulse">
-          <div className="h-3 w-2/5 rounded-full bg-slate-200" />
-          <div className="h-11 rounded-xl bg-slate-100" />
-          <div className="grid grid-cols-2 gap-3">
-            <div className="h-16 rounded-xl bg-slate-100" />
-            <div className="h-16 rounded-xl bg-slate-100" />
-          </div>
-          <div className="h-3 w-3/5 rounded-full bg-slate-200" />
-        </div>
-
-        <p className="mt-5 text-center text-sm font-extrabold text-sibs-primary-1">
-          {isRevision
-            ? "Submitting revised offer..."
-            : isApproving
-              ? "Approving offer..."
-              : "Declining offer..."}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function EvaluationResultItem({ label, value, detail = "" }) {
   return (
     <div className="rounded-xl border border-[#E6ECF2] bg-white p-3">
@@ -340,9 +281,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
   const isProcessingApproval = Boolean(isSubmittingApproval);
   const isBusy = savingRevision || isProcessingApproval;
-  const processingAction = savingRevision
-    ? "Revision"
-    : approvalAction || "Approved";
 
   function handleClose() {
     if (isBusy) return;
@@ -513,8 +451,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
         className="relative flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white font-jakarta shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
-        {isBusy ? <ProcessingOverlay action={processingAction} /> : null}
-
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-4 text-white sm:px-6">
           <div>
             <h2 className="text-lg font-extrabold tracking-normal sm:text-xl">

@@ -229,6 +229,89 @@ function ProfileAvatar({ employee, size = "md" }) {
   );
 }
 
+function HoverProfileAvatar({ employee, size = "sm" }) {
+  const anchorRef = useRef(null);
+  const imageUrl = getProfileImageUrl(employee);
+  const [preview, setPreview] = useState({
+    open: false,
+    top: 0,
+    left: 0,
+  });
+
+  function showPreview() {
+    const anchor = anchorRef.current;
+
+    if (!anchor || !imageUrl || typeof window === "undefined") return;
+
+    const rect = anchor.getBoundingClientRect();
+    const previewSize = 176;
+    const gap = 10;
+    const viewportPadding = 8;
+
+    let left = rect.right + gap;
+
+    if (left + previewSize > window.innerWidth - viewportPadding) {
+      left = rect.left - previewSize - gap;
+    }
+
+    left = Math.max(
+      viewportPadding,
+      Math.min(left, window.innerWidth - previewSize - viewportPadding),
+    );
+
+    const top = Math.max(
+      viewportPadding,
+      Math.min(
+        rect.top + rect.height / 2 - previewSize / 2,
+        window.innerHeight - previewSize - viewportPadding,
+      ),
+    );
+
+    setPreview({ open: true, top, left });
+  }
+
+  function hidePreview() {
+    setPreview((current) => ({ ...current, open: false }));
+  }
+
+  return (
+    <>
+      <div
+        ref={anchorRef}
+        onMouseEnter={showPreview}
+        onMouseLeave={hidePreview}
+      >
+        <ProfileAvatar employee={employee} size={size} />
+      </div>
+
+      {preview.open && imageUrl && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              data-account-profile-hover-preview="true"
+              className="pointer-events-none fixed z-[999999] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white p-2 shadow-2xl"
+              style={{
+                top: `${preview.top}px`,
+                left: `${preview.left}px`,
+                width: "176px",
+                height: "176px",
+              }}
+              aria-hidden="true"
+            >
+              <img
+                src={imageUrl}
+                alt=""
+                draggable={false}
+                className="h-full w-full rounded-xl object-cover"
+                onError={hidePreview}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
+  );
+}
+
 function getRoleOptionByAccess(adminAccess) {
   return (
     ROLE_OPTIONS.find(
@@ -914,7 +997,7 @@ function AccountChips({ accounts = [] }) {
   }
 
   return (
-    <div className="flex max-w-[190px] flex-wrap gap-1">
+    <div className="flex w-full min-w-0 flex-wrap gap-1 overflow-hidden">
       {accounts.map((account, index) => {
         const accountId = getAccountId(account);
         const accountName =
@@ -924,7 +1007,7 @@ function AccountChips({ accounts = [] }) {
           <span
             key={`${account.id || accountId}-${accountName}-${index}`}
             title={`${accountName}${accountId ? ` (${accountId})` : ""}`}
-            className="inline-flex max-w-[190px] items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-sibs-primary-1"
+            className="inline-flex min-w-0 max-w-full items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-sibs-primary-1"
           >
             <span className="truncate">{accountName}</span>
           </span>
@@ -946,11 +1029,11 @@ function DepartmentChips({ accounts = [], limit = 2 }) {
   }
 
   return (
-    <div className="flex max-w-[190px] flex-wrap gap-1">
+    <div className="flex w-full min-w-0 flex-wrap gap-1 overflow-hidden">
       {visible.map((department) => (
         <span
           key={department}
-          className="inline-flex max-w-[170px] rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-700"
+          className="inline-flex min-w-0 max-w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-700"
         >
           <span className="truncate">{department}</span>
         </span>
@@ -968,10 +1051,9 @@ function DepartmentChips({ accounts = [], limit = 2 }) {
 function DraggableTableScroll({ children }) {
   const scrollRef = useRef(null);
   const dragStateRef = useRef({
-    active: false,
-    pointerId: null,
+    isDown: false,
     startX: 0,
-    startScrollLeft: 0,
+    scrollLeft: 0,
     moved: false,
   });
   const [isDragging, setIsDragging] = useState(false);
@@ -979,106 +1061,72 @@ function DraggableTableScroll({ children }) {
   function isInteractiveTarget(target) {
     return Boolean(
       target?.closest?.(
-        "button, a, input, select, textarea, [role='button'], [data-no-table-drag]",
+        "button, a, input, select, textarea, [role='button'], [data-no-table-drag='true']",
       ),
     );
   }
 
-  function stopDragging(pointerId) {
-    const container = scrollRef.current;
-    const dragState = dragStateRef.current;
+  function handleDragStart(event) {
+    if (event.button !== 0) return;
+    if (isInteractiveTarget(event.target)) return;
 
-    if (
-      container &&
-      pointerId !== null &&
-      container.hasPointerCapture?.(pointerId)
-    ) {
-      container.releasePointerCapture(pointerId);
-    }
-
-    dragStateRef.current = {
-      active: false,
-      pointerId: null,
-      startX: 0,
-      startScrollLeft: 0,
-      moved: dragState.moved,
-    };
-
-    setIsDragging(false);
-  }
-
-  function handlePointerDown(event) {
     const container = scrollRef.current;
 
     if (!container) return;
-    if (event.pointerType === "touch") return;
-    if (event.button !== 0) return;
-    if (isInteractiveTarget(event.target)) return;
     if (container.scrollWidth <= container.clientWidth) return;
 
     dragStateRef.current = {
-      active: true,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startScrollLeft: container.scrollLeft,
+      isDown: true,
+      startX: event.pageX - container.offsetLeft,
+      scrollLeft: container.scrollLeft,
       moved: false,
     };
 
-    container.setPointerCapture?.(event.pointerId);
     setIsDragging(true);
-    event.preventDefault();
   }
 
-  function handlePointerMove(event) {
+  function handleDragMove(event) {
     const container = scrollRef.current;
     const dragState = dragStateRef.current;
 
-    if (!container || !dragState.active) return;
-    if (dragState.pointerId !== event.pointerId) return;
+    if (!dragState.isDown || !container) return;
 
-    const distance = event.clientX - dragState.startX;
+    event.preventDefault();
 
-    if (Math.abs(distance) > 3) {
-      dragState.moved = true;
+    const x = event.pageX - container.offsetLeft;
+    const walk = (x - dragState.startX) * 1.4;
+
+    if (Math.abs(walk) > 4) {
+      dragStateRef.current.moved = true;
     }
 
-    container.scrollLeft = dragState.startScrollLeft - distance;
-    event.preventDefault();
+    container.scrollLeft = dragState.scrollLeft - walk;
   }
 
-  function handlePointerUp(event) {
-    const dragState = dragStateRef.current;
+  function handleDragEnd() {
+    dragStateRef.current.isDown = false;
 
-    if (!dragState.active) return;
-    if (dragState.pointerId !== event.pointerId) return;
-
-    stopDragging(event.pointerId);
-  }
-
-  function handlePointerCancel(event) {
-    const dragState = dragStateRef.current;
-
-    if (!dragState.active) return;
-    if (dragState.pointerId !== event.pointerId) return;
-
-    stopDragging(event.pointerId);
+    window.setTimeout(() => {
+      setIsDragging(false);
+      dragStateRef.current.moved = false;
+    }, 0);
   }
 
   return (
-    <div
-      ref={scrollRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
-      className={`mt-5 hidden overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white lg:block sibs-scrollbar ${
-        isDragging
-          ? "cursor-grabbing select-none"
-          : "cursor-grab"
-      }`}
-      aria-label="Assigned users table. Drag left or right to view more columns."
-    >
-      {children}
+    <div className="mt-5 sibs-data-table-shell">
+      <div
+        ref={scrollRef}
+        onMouseDown={handleDragStart}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        className={`max-h-[650px] select-none overflow-auto sibs-scrollbar ${
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        }`}
+        aria-label="Assigned users table. Drag left or right to view more columns."
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -1111,7 +1159,15 @@ function EmptyState() {
   );
 }
 
-function ModalShell({ open, title, description, onClose, children, footer }) {
+function ModalShell({
+  open,
+  title,
+  description,
+  onClose,
+  children,
+  footer,
+  variant = "default",
+}) {
   useEffect(() => {
     if (!open) return undefined;
 
@@ -1138,6 +1194,64 @@ function ModalShell({ open, title, description, onClose, children, footer }) {
 
   if (!open || typeof document === "undefined") {
     return null;
+  }
+
+  if (variant === "talentPool") {
+    return createPortal(
+      <div
+        className="sibs-modal-blur fixed inset-0 z-[99999] flex h-dvh items-center justify-center px-3 py-3 font-jakarta sm:px-4"
+        role="presentation"
+      >
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="account-settings-modal-title"
+          className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F8FAFC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+        >
+          <header className="flex shrink-0 items-center justify-between gap-4 border-b border-[#174A7C] bg-sibs-primary-1 px-5 py-3.5 text-white sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+                <UserCog size={17} />
+              </span>
+
+              <div className="min-w-0">
+                <h2
+                  id="account-settings-modal-title"
+                  className="truncate text-sm font-extrabold uppercase tracking-wide text-white"
+                >
+                  {title}
+                </h2>
+                {description ? (
+                  <p className="truncate text-[11px] font-semibold text-blue-100">
+                    {description}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close account access modal"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white"
+            >
+              <X size={19} />
+            </button>
+          </header>
+
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 pb-6 sm:p-6 sm:pb-6 sibs-scrollbar">
+            {children}
+          </div>
+
+          {footer ? (
+            <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-3 sm:px-6 sm:py-4">
+              {footer}
+            </footer>
+          ) : null}
+        </section>
+      </div>,
+      document.body,
+    );
   }
 
   return createPortal(
@@ -1770,6 +1884,7 @@ function AccessModal({
   return (
     <ModalShell
       open={open}
+      variant="talentPool"
       title={isEdit ? "Edit User Account Access" : "Add User Access"}
       description={
         isEdit
@@ -1785,7 +1900,7 @@ function AccessModal({
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -1794,7 +1909,7 @@ function AccessModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#042C51] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#042C51]/15 transition hover:bg-[#063D6F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#042C51]/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? (
               <Loader2 size={17} className="animate-spin" />
@@ -1809,7 +1924,7 @@ function AccessModal({
       }
     >
       <div className="space-y-4">
-        <section className="sibs-card rounded-2xl p-4 sm:p-5">
+        <section className="relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#E6ECF2] pb-3">
             <div>
               <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
@@ -1839,6 +1954,9 @@ function AccessModal({
                 <p className="mt-1 text-sm font-semibold text-[#667085]">
                   SIBS ID: {selectedEmployee?.sibsId || "—"}
                 </p>
+                <p className="mt-1 truncate text-xs font-semibold text-[#667085]">
+                  {selectedEmployee?.email || "No email available"}
+                </p>
                 <p className="mt-1 text-xs font-semibold text-[#8A98B8]">
                   Access settings can be updated below without changing the employee record.
                 </p>
@@ -1856,7 +1974,7 @@ function AccessModal({
           )}
         </section>
 
-        <section className="sibs-card rounded-2xl p-4 sm:p-5">
+        <section className="relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-4 border-b border-[#E6ECF2] pb-3">
             <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
               Access Configuration
@@ -1872,7 +1990,10 @@ function AccessModal({
               value={adminAccess}
               onChange={setAdminAccess}
               disabled={!selectedEmployee}
-              options={ROLE_OPTIONS.filter((option) => option.value !== "All").map(
+              options={ROLE_OPTIONS.filter(
+                (option) =>
+                  option.value !== "All" && option.value !== "employee",
+              ).map(
                 (option) => ({
                   value: String(option.access),
                   label: option.label,
@@ -2088,6 +2209,7 @@ export default function AccountSettingsPage() {
   const navigate = useNavigate();
   const { user, loading: userLoading } = useUser();
   const searchInputRef = useRef(null);
+  const skipInitialUsersReloadRef = useRef(true);
 
   const [users, setUsers] = useState([]);
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
@@ -2161,6 +2283,7 @@ export default function AccountSettingsPage() {
     ? (currentPage - 1) * PAGE_LIMIT + 1
     : 0;
   const showingTo = Math.min(currentPage * PAGE_LIMIT, pagination.total);
+  const isDataLoading = pageLoading || tableLoading;
 
   const openStatus = useCallback((type, title, message) => {
     setStatusModal({ open: true, type, title, message });
@@ -2358,6 +2481,11 @@ export default function AccountSettingsPage() {
       return;
     }
 
+    if (skipInitialUsersReloadRef.current) {
+      skipInitialUsersReloadRef.current = false;
+      return;
+    }
+
     loadUsers();
   }, [
     accountFilter,
@@ -2413,7 +2541,6 @@ export default function AccountSettingsPage() {
 
   if (
     userLoading ||
-    pageLoading ||
     !hasAuthenticatedUser ||
     !authorized
   ) {
@@ -2493,43 +2620,54 @@ export default function AccountSettingsPage() {
           </section>
 
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            <SummaryCard
-              icon={UsersRound}
-              label="Assigned Users"
-              value={summary.totalUsers}
-              description="Distinct HRIS users"
-            />
-            <SummaryCard
-              icon={KeyRound}
-              label="Assignments"
-              value={summary.totalAssignments}
-              description="Total access records"
-              tone="violet"
-            />
-            <SummaryCard
-              icon={Building2}
-              label="Assigned Accounts"
-              value={summary.assignedAccounts}
-              description={`${summary.activeKronosAccounts} available accounts`}
-              tone="cyan"
-            />
-            <SummaryCard
-              icon={UserCog}
-              label="Departments"
-              value={summary.assignedDepartments}
-              description={`${summary.kronosDepartments} available departments`}
-              tone="amber"
-            />
-            <SummaryCard
-              icon={ShieldCheck}
-              label="Super Admins"
-              value={summary.superAdmins}
-              description="Access level 7"
-              tone="emerald"
-            />
+            {pageLoading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  key={`summary-loading-${index}`}
+                  className="sibs-card h-28 animate-sibs-pulse rounded-2xl bg-gray-100"
+                />
+              ))
+            ) : (
+              <>
+                <SummaryCard
+                  icon={UsersRound}
+                  label="Assigned Users"
+                  value={summary.totalUsers}
+                  description="Distinct HRIS users"
+                />
+                <SummaryCard
+                  icon={KeyRound}
+                  label="Assignments"
+                  value={summary.totalAssignments}
+                  description="Total access records"
+                  tone="violet"
+                />
+                <SummaryCard
+                  icon={Building2}
+                  label="Assigned Accounts"
+                  value={summary.assignedAccounts}
+                  description={`${summary.activeKronosAccounts} available accounts`}
+                  tone="cyan"
+                />
+                <SummaryCard
+                  icon={UserCog}
+                  label="Departments"
+                  value={summary.assignedDepartments}
+                  description={`${summary.kronosDepartments} available departments`}
+                  tone="amber"
+                />
+                <SummaryCard
+                  icon={ShieldCheck}
+                  label="Super Admins"
+                  value={summary.superAdmins}
+                  description="Access level 7"
+                  tone="emerald"
+                />
+              </>
+            )}
           </section>
 
-          <section className="sibs-card overflow-visible">
+          <section className="sibs-card overflow-hidden rounded-2xl">
             <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div className="min-w-0">
@@ -2541,7 +2679,7 @@ export default function AccountSettingsPage() {
 
                 <div className="flex items-center gap-2">
                   <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
-                    {pagination.total} Users
+                    {pageLoading ? "Loading..." : `${pagination.total} Users`}
                   </span>
 
                   <button
@@ -2620,7 +2758,7 @@ export default function AccountSettingsPage() {
               </div>
 
               <div className="mt-5 space-y-3 lg:hidden">
-                {tableLoading ? (
+                {isDataLoading ? (
                   Array.from({ length: 4 }).map((_, index) => (
                     <div
                       key={index}
@@ -2644,48 +2782,61 @@ export default function AccountSettingsPage() {
               </div>
 
               <DraggableTableScroll>
-                <table className="w-full min-w-[1380px] border-collapse text-left">
-                  <thead>
-                    <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
-                      <th className="px-3 py-3">SIBS ID</th>
-                      <th className="px-3 py-3 text-center">Profile</th>
-                      <th className="px-3 py-3">Employee</th>
-                      <th className="px-3 py-3">Status</th>
-                      <th className="px-3 py-3">Access</th>
-                      <th className="px-3 py-3">Assigned Accounts</th>
-                      <th className="px-3 py-3">Departments</th>
-                      <th className="px-3 py-3">Creator</th>
-                      <th className="px-3 py-3">Updater</th>
-                      <th className="px-3 py-3">Created / Updated</th>
-                      <th className="px-3 py-3 text-right">Actions</th>
+                <table className="w-full table-fixed border-collapse bg-white text-left">
+                  <colgroup>
+                    <col className="w-[5%]" />
+                    <col className="w-[4%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[6%]" />
+                    <col className="w-[7%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[9%]" />
+                    <col className="w-[8%]" />
+                    <col className="w-[9%]" />
+                    <col className="w-[11%]" />
+                  </colgroup>
+                  <thead className="sibs-data-table-head">
+                    <tr className="sibs-data-table-head-row">
+                      <th className="sibs-data-table-th">SIBS ID</th>
+                      <th className="sibs-data-table-th text-center">Profile</th>
+                      <th className="sibs-data-table-th">Employee</th>
+                      <th className="sibs-data-table-th">Status</th>
+                      <th className="sibs-data-table-th">Access</th>
+                      <th className="sibs-data-table-th">Assigned Accounts</th>
+                      <th className="sibs-data-table-th">Departments</th>
+                      <th className="sibs-data-table-th">Creator</th>
+                      <th className="sibs-data-table-th">Updater</th>
+                      <th className="sibs-data-table-th">Created / Updated</th>
+                      <th className="sibs-data-table-th text-right">Actions</th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {tableLoading ? (
+                    {isDataLoading ? (
                       <LoadingRows />
                     ) : users.length ? (
                       users.map((assignedUser, index) => (
                         <tr
                           key={assignedUser.id}
-                          className="sibs-account-settings-row-reveal transition-colors hover:bg-[#FFF9F6]"
+                          className="sibs-data-table-row sibs-account-settings-row-reveal border-b border-[#E6ECF2]"
                           style={{
                             animationDelay: `${Math.min(index, 10) * 36}ms`,
                           }}
                         >
-                          <td className="whitespace-nowrap border-b border-[#E6ECF2] px-3 py-3">
+                          <td className="sibs-data-table-td whitespace-nowrap">
                             <p className="text-xs font-extrabold text-[#FF5C28]">
                               {assignedUser.sibsId || "—"}
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3">
+                          <td className="sibs-data-table-td">
                             <div className="flex justify-center">
-                              <ProfileAvatar employee={assignedUser} size="sm" />
+                              <HoverProfileAvatar employee={assignedUser} size="sm" />
                             </div>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3">
+                          <td className="sibs-data-table-td">
                             <div className="min-w-0">
                               <p className="max-w-[220px] truncate text-xs font-extrabold text-[#101828]">
                                 {formatEmployeeName(assignedUser)}
@@ -2696,31 +2847,31 @@ export default function AccountSettingsPage() {
                             </div>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3">
+                          <td className="sibs-data-table-td">
                             <StatusPill status={assignedUser.status} />
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3">
+                          <td className="sibs-data-table-td">
                             <RolePill
                               role={assignedUser.role}
                               adminAccess={assignedUser.adminAccess}
                             />
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3">
+                          <td className="sibs-data-table-td min-w-0 overflow-hidden align-top">
                             <AccountChips
                               accounts={assignedUser.assignedAccounts}
                             />
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3">
+                          <td className="sibs-data-table-td min-w-0 overflow-hidden align-top">
                             <DepartmentChips
                               accounts={assignedUser.assignedAccounts}
                             />
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3">
-                            <p className="max-w-[150px] truncate text-[10px] font-bold leading-4 text-[#344054]">
+                          <td className="sibs-data-table-td min-w-0 overflow-hidden align-top">
+                            <p className="block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-bold leading-4 text-[#344054]">
                               {getAuditDisplayValue(
                                 assignedUser,
                                 "creator",
@@ -2728,8 +2879,8 @@ export default function AccountSettingsPage() {
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3">
-                            <p className="max-w-[150px] truncate text-[10px] font-bold leading-4 text-[#344054]">
+                          <td className="sibs-data-table-td min-w-0 overflow-hidden align-top">
+                            <p className="block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-bold leading-4 text-[#344054]">
                               {getAuditDisplayValue(
                                 assignedUser,
                                 "updater",
@@ -2737,8 +2888,8 @@ export default function AccountSettingsPage() {
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3">
-                            <p className="whitespace-nowrap text-[10px] font-semibold text-[#344054]">
+                          <td className="sibs-data-table-td">
+                            <p className="text-[10px] font-semibold leading-4 text-[#344054]">
                               {formatDateTime(
                                 getAuditDateValue(
                                   assignedUser,
@@ -2746,7 +2897,7 @@ export default function AccountSettingsPage() {
                                 ),
                               )}
                             </p>
-                            <p className="mt-0.5 whitespace-nowrap text-[10px] font-semibold text-sibs-tertiary-5">
+                            <p className="mt-0.5 text-[10px] font-semibold leading-4 text-sibs-tertiary-5">
                               {formatDateTime(
                                 getAuditDateValue(
                                   assignedUser,
@@ -2756,12 +2907,12 @@ export default function AccountSettingsPage() {
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-3 py-3 text-right">
-                            <div className="inline-flex items-center gap-2">
+                          <td className="sibs-data-table-td text-right">
+                            <div className="inline-flex flex-nowrap items-center justify-end gap-1">
                               <button
                                 type="button"
                                 onClick={() => openEditModal(assignedUser)}
-                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2.5 text-[10px] font-bold text-sibs-primary-1 transition hover:bg-blue-100"
+                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2 text-[10px] font-bold text-sibs-primary-1 transition hover:bg-blue-100"
                               >
                                 <Edit3 size={13} />
                                 Edit
@@ -2770,7 +2921,7 @@ export default function AccountSettingsPage() {
                               <button
                                 type="button"
                                 onClick={() => setDeleteTarget(assignedUser)}
-                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-2.5 text-[10px] font-bold text-red-700 transition hover:bg-red-100"
+                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-2 text-[10px] font-bold text-red-700 transition hover:bg-red-100"
                               >
                                 <Trash2 size={13} />
                                 Delete
@@ -2799,7 +2950,7 @@ export default function AccountSettingsPage() {
                   <button
                     type="button"
                     onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage <= 1 || tableLoading}
+                    disabled={currentPage <= 1 || isDataLoading}
                     className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-[#667085] transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ChevronLeft size={15} />
@@ -2817,7 +2968,7 @@ export default function AccountSettingsPage() {
                     type="button"
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={
-                      currentPage >= pagination.totalPages || tableLoading
+                      currentPage >= pagination.totalPages || isDataLoading
                     }
                     className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-[#667085] transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >

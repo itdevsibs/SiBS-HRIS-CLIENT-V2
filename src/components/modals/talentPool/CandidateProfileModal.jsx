@@ -33,7 +33,8 @@ import {
 } from "lucide-react";
 
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
-
+import { useUser } from "../../../services/context/UserContext";
+import { getVisibleCandidateTimeline } from "../../../lib/utils/candidatePipeline/candidatePipelineStageVisibility";
 import {
   formatCurrency,
   formatDate,
@@ -140,6 +141,671 @@ function safeObject(value) {
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function normalizeAuditRole(value = "") {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function getAuditAccessValues(user = {}) {
+  const directValues = [
+    user?.adminAccess,
+    user?.admin_access,
+    user?.gy_user_access,
+    user?.access,
+    user?.adminLevel,
+    user?.admin_level,
+  ];
+
+  const assignedValues = Array.isArray(user?.assignedAccounts)
+    ? user.assignedAccounts.flatMap((account) => [
+        account?.adminAccess,
+        account?.admin_access,
+        account?.gy_user_access,
+        account?.access,
+      ])
+    : [];
+
+  return [...directValues, ...assignedValues]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+}
+
+function formatCurrentAuditActorLabel(user = {}) {
+  const accessLabels = {
+    1: "TA",
+    2: "HR",
+    3: "HR Admin",
+    7: "Super Admin",
+  };
+
+  const accessValues = getAuditAccessValues(user);
+  const highestAccess = accessValues.length
+    ? Math.max(...accessValues)
+    : Number(user?.adminAccess || user?.admin_access || 0);
+
+  const roleLabels = {
+    ta: "TA",
+    talent_acquisition: "TA",
+    hr: "HR",
+    human_resource: "HR",
+    human_resources: "HR",
+    hr_admin: "HR Admin",
+    hradmin: "HR Admin",
+    super_admin: "Super Admin",
+    superadmin: "Super Admin",
+  };
+
+  const normalizedRole = normalizeAuditRole(
+    user?.resolvedRole ||
+      user?.resolved_role ||
+      user?.role ||
+      user?.userRole ||
+      user?.user_role ||
+      user?.adminRole ||
+      user?.admin_role ||
+      user?.roleName ||
+      user?.role_name ||
+      "",
+  );
+
+  const accessLabel =
+    accessLabels[highestAccess] || roleLabels[normalizedRole] || "User";
+
+  const displayName = cleanText(
+    user?.fullName ||
+      user?.full_name ||
+      user?.name ||
+      [user?.firstName, user?.middleName, user?.lastName]
+        .map(cleanText)
+        .filter(Boolean)
+        .join(" ") ||
+      [user?.first_name, user?.middle_name, user?.last_name]
+        .map(cleanText)
+        .filter(Boolean)
+        .join(" ") ||
+      user?.sibs_id ||
+      user?.sibsId ||
+      user?.username ||
+      "",
+  );
+
+  return `${accessLabel} - ${displayName || "Unknown User"}`;
+}
+
+function getCandidateStage(candidate = {}) {
+  return cleanText(
+    candidate.currentStage ||
+      candidate.currentPipelineStage ||
+      candidate.pipelineStage ||
+      candidate.stage ||
+      "Initial Screening",
+  );
+}
+
+function getRawTimeline(candidate = {}) {
+  const safeCandidate =
+    candidate && typeof candidate === "object" ? candidate : {};
+
+  const rawTimeline =
+    safeCandidate.timeline ||
+    safeCandidate.movementHistory ||
+    safeCandidate.movement_history ||
+    safeCandidate.movementTimeline ||
+    safeCandidate.movement_timeline ||
+    safeCandidate.pipelineTimeline ||
+    safeCandidate.pipeline_timeline ||
+    safeCandidate.history ||
+    safeCandidate.pipelineHistory ||
+    safeCandidate.pipeline_history ||
+    [];
+
+  if (Array.isArray(rawTimeline)) return rawTimeline;
+  if (typeof rawTimeline === "string") {
+    try {
+      const parsed = JSON.parse(rawTimeline);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function getTimelineDate(item = {}) {
+  return (
+    item.date ||
+    item.createdAt ||
+    item.created_at ||
+    item.updatedAt ||
+    item.updated_at ||
+    item.timestamp ||
+    ""
+  );
+}
+
+function getTimelineStage(item = {}, fallbackStage = "") {
+  return cleanText(
+    item.stage ||
+      item.currentStage ||
+      item.current_stage ||
+      item.pipelineStage ||
+      item.pipeline_stage ||
+      item.status ||
+      fallbackStage ||
+      "Pipeline Update",
+  );
+}
+
+function getTimelineReason(item = {}) {
+  return cleanText(
+    item.reason ||
+      item.description ||
+      item.message ||
+      item.action ||
+      item.remarks ||
+      item.note ||
+      "Candidate pipeline record updated.",
+  );
+}
+
+function getUpdatedBy(item = {}, currentAuditActorLabel = "", candidateName = "") {
+  const savedActor = cleanText(
+    item.updatedBy ||
+      item.updated_by ||
+      item.owner ||
+      item.taOwner ||
+      item.ta_owner ||
+      item.createdBy ||
+      item.created_by ||
+      item.user ||
+      item.actor ||
+      item.extra?.updatedBy ||
+      item.extra?.updated_by ||
+      item.extra?.owner ||
+      item.extra?.taOwner ||
+      item.extra?.ta_owner ||
+      item.extra?.createdBy ||
+      item.extra?.created_by ||
+      item.extra?.user ||
+      item.extra?.actor ||
+      "",
+  );
+
+  const savedActorLower = savedActor.toLowerCase();
+
+  if (savedActorLower === "current user") {
+    return cleanText(currentAuditActorLabel) || "System";
+  }
+
+  if (savedActorLower === "candidate" || savedActorLower === "applicant") {
+    return `Applicant - ${cleanText(candidateName) || "Candidate"}`;
+  }
+
+  const applicantActorMatch = savedActor.match(
+    /^(?:Applicant|Candidate)\s*-\s*(.+)$/i,
+  );
+
+  if (applicantActorMatch) {
+    return `Applicant - ${cleanText(applicantActorMatch[1]) || cleanText(candidateName) || "Candidate"}`;
+  }
+
+  return savedActor || "System";
+}
+
+function getSortableTime(item = {}) {
+  const value = getTimelineDate(item);
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getTimelineSources(item = {}) {
+  return [item, item.extra].filter(
+    (source) => source && typeof source === "object",
+  );
+}
+
+function getFirstValue(item, keys) {
+  for (const source of getTimelineSources(item)) {
+    for (const key of keys) {
+      if (source[key] !== null && source[key] !== undefined && cleanText(source[key])) {
+        return source[key];
+      }
+    }
+  }
+
+  return "";
+}
+
+function getTimelineFiles(item = {}) {
+  const files = getFirstValue(item, [
+    "files",
+    "attachments",
+    "assessmentFiles",
+    "assessment_files",
+  ]);
+
+  if (Array.isArray(files)) return files;
+
+  const fileName = getFirstValue(item, [
+    "assessmentAttachmentName",
+    "assessment_attachment_name",
+    "assessmentFileName",
+    "assessment_file_name",
+    "fileName",
+    "filename",
+  ]);
+
+  const fileUrl = getFirstValue(item, [
+    "assessmentAttachmentUrl",
+    "assessment_attachment_url",
+    "assessmentFileUrl",
+    "assessment_file_url",
+    "fileUrl",
+    "file_url",
+    "url",
+  ]);
+
+  if (fileName || fileUrl) {
+    return [
+      {
+        name: fileName || "Assessment Attachment",
+        url: fileUrl,
+        size: getFirstValue(item, [
+          "assessmentAttachmentSize",
+          "assessment_attachment_size",
+          "fileSize",
+          "file_size",
+          "size",
+        ]),
+        type: getFirstValue(item, [
+          "assessmentAttachmentType",
+          "assessment_attachment_type",
+          "fileType",
+          "file_type",
+          "type",
+        ]),
+      },
+    ];
+  }
+
+  return [];
+}
+
+function getTimelineLinks(item = {}) {
+  const links = [];
+  const directLink = getFirstValue(item, [
+    "assessmentLink",
+    "assessment_link",
+    "link",
+    "assessmentUrl",
+    "assessment_url",
+  ]);
+
+  if (directLink) {
+    links.push({
+      label: "Assessment",
+      url: directLink,
+    });
+  }
+
+  const interviewLink = getFirstValue(item, [
+    "interviewLink",
+    "interview_link",
+    "meetingLink",
+    "meeting_link",
+  ]);
+
+  if (interviewLink) {
+    links.push({
+      label: "Interview",
+      url: interviewLink,
+    });
+  }
+
+  return links;
+}
+
+function normalizeNhoFileTrackingEntry(file = {}, defaultAction = "") {
+  if (!file || typeof file !== "object" || Array.isArray(file)) return null;
+
+  const requirement = cleanText(
+    file.requirement ||
+      file.label ||
+      file.title ||
+      file.category ||
+      "",
+  );
+
+  const fileName = cleanText(
+    file.savedFileName ||
+      file.saved_file_name ||
+      file.filename ||
+      file.storedFileName ||
+      file.stored_file_name ||
+      file.fileName ||
+      file.file_name ||
+      file.name ||
+      file.originalName ||
+      file.original_name ||
+      file.originalname ||
+      "",
+  );
+
+  const action = cleanText(file.action || defaultAction);
+
+  if (!requirement && !fileName) return null;
+
+  return {
+    requirement: requirement || "Pre-Employment Requirement",
+    fileName: fileName || "Uploaded file",
+    action: action || "Updated",
+  };
+}
+
+function getNhoFileTracking(item = {}) {
+  const tracking = [];
+
+  getTimelineSources(item).forEach((source) => {
+    const uploadedFiles =
+      source.uploadedNhoFiles ||
+      source.uploaded_nho_files ||
+      [];
+
+    if (Array.isArray(uploadedFiles)) {
+      uploadedFiles.forEach((file) => {
+        const normalized = normalizeNhoFileTrackingEntry(file, "Uploaded");
+
+        if (normalized) tracking.push(normalized);
+      });
+    }
+
+    const deletedFile =
+      source.deletedNhoFile ||
+      source.deleted_nho_file ||
+      null;
+
+    if (deletedFile && typeof deletedFile === "object") {
+      const normalized = normalizeNhoFileTrackingEntry(deletedFile, "Deleted");
+
+      if (normalized) tracking.push(normalized);
+    }
+  });
+
+  const unique = new Map();
+
+  tracking.forEach((file) => {
+    const key = [
+      cleanText(file.action).toLowerCase(),
+      cleanText(file.requirement).toLowerCase(),
+      cleanText(file.fileName).toLowerCase(),
+    ].join("|");
+
+    if (!unique.has(key)) {
+      unique.set(key, file);
+    }
+  });
+
+  return Array.from(unique.values());
+}
+
+function getNhoMovementDisplayStage(stage = "", nhoFileTracking = []) {
+  if (!Array.isArray(nhoFileTracking) || nhoFileTracking.length === 0) {
+    return stage;
+  }
+
+  const actions = new Set(
+    nhoFileTracking
+      .map((file) => cleanText(file.action).toLowerCase())
+      .filter(Boolean),
+  );
+
+  if (actions.size === 1 && actions.has("uploaded")) {
+    return "Pre-Employment File Uploaded";
+  }
+
+  if (actions.size === 1 && actions.has("deleted")) {
+    return "Pre-Employment File Deleted";
+  }
+
+  return "Pre-Employment Files Updated";
+}
+
+
+
+function formatMovementCurrency(value) {
+  const text = cleanText(value);
+
+  if (!text) return "";
+
+  if (/^₱/.test(text)) return text;
+  if (/^PHP\s*/i.test(text)) {
+    return `₱${text.replace(/^PHP\s*/i, "")}`;
+  }
+
+  const numericValue = Number(text.replace(/,/g, ""));
+
+  if (!Number.isFinite(numericValue)) return text;
+
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numericValue);
+}
+
+function getOfferMovementSummary(item = {}, stage = "", remarks = "") {
+  if (cleanText(stage).toLowerCase() !== "offered") return null;
+
+  const offerDetails =
+    (item.offerDetails && typeof item.offerDetails === "object"
+      ? item.offerDetails
+      : null) ||
+    (item.offer_details && typeof item.offer_details === "object"
+      ? item.offer_details
+      : null) ||
+    (item.extra?.offerDetails && typeof item.extra.offerDetails === "object"
+      ? item.extra.offerDetails
+      : null) ||
+    (item.extra?.offer_details && typeof item.extra.offer_details === "object"
+      ? item.extra.offer_details
+      : null) ||
+    {};
+
+  const remarksText = cleanText(remarks);
+
+  function getRemarkValue(pattern) {
+    const match = remarksText.match(pattern);
+    return cleanText(match?.[1] || "");
+  }
+
+  const account = cleanText(
+    item.offerAccount ||
+      item.offer_account ||
+      item.finalAccount ||
+      item.final_account ||
+      offerDetails.account ||
+      offerDetails.accountName ||
+      offerDetails.account_name ||
+      offerDetails.finalAccount ||
+      offerDetails.final_account ||
+      getRemarkValue(/(?:Final Account|Account):\s*([^,]+)/i),
+  );
+
+  const basicPay = cleanText(
+    item.basicPay ||
+      item.basic_pay ||
+      offerDetails.basicPay ||
+      offerDetails.basic_pay ||
+      getRemarkValue(/Basic Pay:\s*([^,]+)/i),
+  );
+
+  const deMinimisDailyRate = cleanText(
+    item.deminimisDailyRate ||
+      item.deminimis_daily_rate ||
+      item.deMinimisDailyRate ||
+      item.de_minimis_daily_rate ||
+      offerDetails.deminimisDailyRate ||
+      offerDetails.deminimis_daily_rate ||
+      offerDetails.deMinimisDailyRate ||
+      offerDetails.de_minimis_daily_rate ||
+      getRemarkValue(/(?:Deminimis|De Minimis) \/ Daily Rate:\s*([^,]+)/i),
+  );
+
+  if (!account && !basicPay && !deMinimisDailyRate) return null;
+
+  return {
+    account: account || "—",
+    basicPay: formatMovementCurrency(basicPay) || "—",
+    deMinimisDailyRate: formatMovementCurrency(deMinimisDailyRate) || "—",
+  };
+}
+
+function isGeneratedOfferDetailRemarks(stage = "", remarks = "", offerSummary = null) {
+  if (cleanText(stage).toLowerCase() !== "offered" || !offerSummary) {
+    return false;
+  }
+
+  const text = cleanText(remarks);
+
+  return Boolean(
+    text &&
+      /Final Account:/i.test(text) &&
+      /Basic Pay:/i.test(text) &&
+      /(?:Deminimis|De Minimis) \/ Daily Rate:/i.test(text),
+  );
+}
+
+function normalizeTimelineItem(
+  rawItem = {},
+  index = 0,
+  fallbackStage = "",
+  currentAuditActorLabel = "",
+  candidateName = "",
+) {
+  const item =
+    rawItem && typeof rawItem === "object"
+      ? rawItem
+      : { reason: cleanText(rawItem) };
+
+  const stage = getTimelineStage(item, fallbackStage);
+  const reason = getTimelineReason(item);
+  const rawDate = getTimelineDate(item);
+  const updatedBy = getUpdatedBy(item, currentAuditActorLabel, candidateName);
+
+  const remarks = getFirstValue(item, [
+    "remarks",
+    "notes",
+    "comment",
+    "comments",
+  ]);
+
+  const score = getFirstValue(item, [
+    "score",
+    "assessmentScore",
+    "assessment_score",
+    "finalScore",
+    "final_score",
+    "interviewScore",
+    "interview_score",
+  ]);
+
+  const result = getFirstValue(item, [
+    "result",
+    "assessmentResult",
+    "assessment_result",
+    "finalResult",
+    "final_result",
+    "interviewResult",
+    "interview_result",
+  ]);
+
+  const links = getTimelineLinks(item);
+  const files = getTimelineFiles(item);
+  const nhoFileTracking = getNhoFileTracking(item);
+  const displayStage = getNhoMovementDisplayStage(stage, nhoFileTracking);
+  const offerSummary = getOfferMovementSummary(item, stage, remarks);
+  const visibleRemarks =
+    remarks &&
+    remarks !== reason &&
+    !isGeneratedOfferDetailRemarks(stage, remarks, offerSummary)
+      ? remarks
+      : "";
+
+  return {
+    id: `${stage}-${rawDate || index}-${index}`,
+    stage,
+    displayStage,
+    reason,
+    rawDate,
+    updatedBy,
+    remarks: visibleRemarks,
+    details: {
+      score,
+      result,
+      links,
+      files,
+      nhoFileTracking,
+      offerSummary,
+    },
+  };
+}
+
+function getMovementHistoryItems(candidate = {}, currentAuditActorLabel = "") {
+  const stage = getCandidateStage(candidate);
+  const candidateName = cleanText(
+    candidate.name ||
+      candidate.candidateName ||
+      candidate.candidate_name ||
+      candidate.fullName ||
+      candidate.full_name ||
+      "",
+  );
+  const rawTimeline = getRawTimeline(candidate);
+  const timeline = getVisibleCandidateTimeline(rawTimeline, stage);
+
+  return timeline
+    .slice()
+    .sort((a, b) => getSortableTime(b) - getSortableTime(a))
+    .map((item, index) =>
+      normalizeTimelineItem(
+        item,
+        index,
+        stage,
+        currentAuditActorLabel,
+        candidateName,
+      ),
+    );
+}
+
+function normalizeTalentPoolMovementActor(
+  savedActor = "",
+  currentAuditActorLabel = "",
+  candidateName = "",
+) {
+  return getUpdatedBy(
+    { owner: savedActor },
+    currentAuditActorLabel,
+    candidateName,
+  );
+}
+
+function getTalentPoolPersonalMovementHistory(
+  candidate = {},
+  currentAuditActorLabel = "",
+) {
+  return getMovementHistoryItems(candidate, currentAuditActorLabel).map((item) => ({
+    ...item,
+    updatedBy: normalizeTalentPoolMovementActor(
+      item.updatedBy,
+      currentAuditActorLabel,
+      candidate.name || candidate.candidateName || candidate.candidate_name || "",
+    ),
+  }));
 }
 
 function getTalentPoolApplicationId(candidate = {}) {
@@ -3281,6 +3947,11 @@ function TalentPoolStatusDropdown({
 
 export default function CandidateProfileModal() {
   const navigate = useNavigate();
+  const { user } = useUser();
+  const currentAuditActorLabel = useMemo(
+    () => formatCurrentAuditActorLabel(user),
+    [user],
+  );
 
   const {
     selectedCandidate,
@@ -3726,6 +4397,99 @@ export default function CandidateProfileModal() {
     pipelineCandidateDetails,
   ]);
 
+  const movementHistoryCandidate = useMemo(() => {
+    const baseCandidate = safeObject(profileCandidate || selectedCandidate);
+    const embeddedPipelineCandidate = safeObject(
+      baseCandidate.pipelineCandidate || baseCandidate.pipelineDetails,
+    );
+    const directPipelineCandidate = safeObject(pipelineCandidateDetails);
+    const authoritativePipelineCandidate = Object.keys(directPipelineCandidate).length
+      ? directPipelineCandidate
+      : embeddedPipelineCandidate;
+    const usePipelineTimeline = Boolean(
+      shouldLoadCandidatePipelineData &&
+        Object.keys(authoritativePipelineCandidate).length,
+    );
+    const sourceCandidate = usePipelineTimeline
+      ? authoritativePipelineCandidate
+      : baseCandidate;
+    const sourceMetadata = safeObject(sourceCandidate.metadata);
+    const timelineSources = usePipelineTimeline
+      ? [
+          sourceCandidate.timeline,
+          sourceCandidate.movementHistory,
+          sourceCandidate.movement_history,
+          sourceCandidate.movementTimeline,
+          sourceCandidate.movement_timeline,
+          sourceCandidate.pipelineTimeline,
+          sourceCandidate.pipeline_timeline,
+          sourceCandidate.history,
+          sourceCandidate.pipelineHistory,
+          sourceCandidate.pipeline_history,
+          sourceMetadata.timeline,
+          sourceMetadata.movementTimeline,
+          sourceMetadata.movement_timeline,
+          sourceMetadata.movementHistory,
+          sourceMetadata.movement_history,
+          sourceMetadata.pipelineTimeline,
+          sourceMetadata.pipeline_timeline,
+        ]
+      : [
+          sourceCandidate.applicationHistory,
+          sourceCandidate.application_history,
+          sourceCandidate.timeline,
+          sourceCandidate.movementTimeline,
+          sourceCandidate.movement_timeline,
+          sourceCandidate.movementHistory,
+          sourceCandidate.movement_history,
+          sourceCandidate.history,
+          sourceMetadata.applicationHistory,
+          sourceMetadata.application_history,
+          sourceMetadata.timeline,
+          sourceMetadata.movementTimeline,
+          sourceMetadata.movement_timeline,
+          sourceMetadata.movementHistory,
+          sourceMetadata.movement_history,
+        ];
+    const personalTimeline =
+      timelineSources
+        .map((source) => normalizeCandidateRecordList(source))
+        .find((records) => records.length > 0) || [];
+    const candidateName = firstCandidateValue(
+      baseCandidate.name,
+      baseCandidate.candidateName,
+      baseCandidate.candidate_name,
+      sourceCandidate.name,
+      sourceCandidate.candidateName,
+      sourceCandidate.candidate_name,
+    );
+
+    return {
+      ...baseCandidate,
+      ...sourceCandidate,
+      name: candidateName,
+      candidateName,
+      candidate_name: candidateName,
+      timeline: personalTimeline,
+      movementTimeline: personalTimeline,
+      movement_timeline: personalTimeline,
+    };
+  }, [
+    profileCandidate,
+    selectedCandidate,
+    pipelineCandidateDetails,
+    shouldLoadCandidatePipelineData,
+  ]);
+
+  const personalMovementHistory = useMemo(
+    () =>
+      getTalentPoolPersonalMovementHistory(
+        movementHistoryCandidate,
+        currentAuditActorLabel,
+      ),
+    [movementHistoryCandidate, currentAuditActorLabel],
+  );
+
   /*
    * candidatePipelineFiles is the authoritative file list after the NHO files
    * endpoint loads or mutates it. Do not merge the embedded profileCandidate
@@ -3978,6 +4742,11 @@ export default function CandidateProfileModal() {
       key: "answers",
       label: "Application Response",
       icon: MessageSquareText,
+    },
+    {
+      key: "movement-history",
+      label: "Movement History",
+      icon: RefreshCcw,
     },
     {
       key: "notes",
@@ -5934,14 +6703,19 @@ export default function CandidateProfileModal() {
     );
   }
 
-  function renderApplicationHistory() {
+  function renderApplicationHistory({
+    title = "Application History",
+    description =
+      "Candidate movement and application timeline, including Candidate Pipeline process.",
+    icon = Network,
+  } = {}) {
     return (
       <section className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <SectionTitle
-            icon={Network}
-            title="Application History"
-            description="Candidate movement and application timeline, including Candidate Pipeline process."
+            icon={icon}
+            title={title}
+            description={description}
           />
 
           {applicationHistory.length > 0 && (
@@ -6090,6 +6864,264 @@ export default function CandidateProfileModal() {
             <EmptyState title="No application history yet." />
           )}
         </div>
+      </section>
+    );
+  }
+
+  function renderMovementHistory() {
+    return (
+      <section className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <SectionTitle
+            icon={RefreshCcw}
+            title="Movement History"
+            description="Personal candidate movement and audit trail using the same Candidate Pipeline history rules."
+          />
+
+          {personalMovementHistory.length > 0 && (
+            <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+              {personalMovementHistory.length} record
+              {personalMovementHistory.length > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+
+        {personalMovementHistory.length === 0 ? (
+          <EmptyState title="No movement history recorded yet." />
+        ) : (
+          <div className="relative pl-6">
+            <div className="absolute bottom-2 left-2 top-2 w-[2px] bg-[#E6ECF2]" />
+
+            <div className="space-y-4">
+              {personalMovementHistory.map((item, index) => {
+                const isLatest = index === 0;
+                const details = safeObject(item.details);
+                const offerSummary = safeObject(details.offerSummary);
+                const links = safeArray(details.links);
+                const files = safeArray(details.files);
+                const nhoFileTracking = safeArray(details.nhoFileTracking);
+
+                return (
+                  <article key={item.id || `${item.stage}-${item.rawDate}-${index}`} className="relative">
+                    <span
+                      className={`absolute -left-[25px] top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-white ${
+                        isLatest
+                          ? "border-[#FF5C28] ring-4 ring-[#FFF0EB]"
+                          : "border-[#98A2B3]"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          isLatest ? "bg-[#FF5C28]" : "bg-[#98A2B3]"
+                        }`}
+                      />
+                    </span>
+
+                    <div
+                      className={`rounded-2xl border p-4 ${
+                        isLatest
+                          ? "border-[#FFD7C8] bg-[#FFFBF9]"
+                          : "border-[#D9E2EC] bg-white"
+                      }`}
+                    >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h5 className="text-sm font-extrabold text-[#042C51]">
+                              {item.displayStage || item.stage || "Application Update"}
+                            </h5>
+
+                            {isLatest && (
+                              <span className="rounded bg-[#FF5C28] px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white">
+                                Latest
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold text-[#667085]">
+                            <span className="inline-flex items-center gap-1.5">
+                              <UserRound size={12} className="text-[#98A2B3]" />
+                              {item.updatedBy || "System"}
+                            </span>
+
+                            {item.rawDate && (
+                              <span className="inline-flex items-center gap-1.5">
+                                <CalendarDays size={12} className="text-[#98A2B3]" />
+                                {formatUploadedDate(item.rawDate)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#475467]">
+                        {item.reason || "Candidate pipeline record updated."}
+                      </div>
+
+                      {nhoFileTracking.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {nhoFileTracking.map((file, fileIndex) => (
+                            <div
+                              key={`${file.action}-${file.requirement}-${file.fileName}-${fileIndex}`}
+                              className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-[#F8FAFC]"
+                            >
+                              {[
+                                ["Requirement:", file.requirement],
+                                ["File:", file.fileName],
+                                ["Action:", file.action],
+                              ].map(([label, value], detailIndex) => (
+                                <div
+                                  key={label}
+                                  className={`flex items-start justify-between gap-3 px-4 py-2.5 ${
+                                    detailIndex < 2 ? "border-b border-[#E6ECF2]" : ""
+                                  }`}
+                                >
+                                  <span className="text-[10px] font-extrabold text-[#667085]">
+                                    {label}
+                                  </span>
+                                  <span className="min-w-0 break-all text-right text-[10px] font-extrabold text-[#042C51]">
+                                    {value || "—"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {Object.keys(offerSummary).length > 0 && (
+                        <div className="mt-3 overflow-hidden rounded-xl border border-[#E6ECF2] bg-[#F8FAFC]">
+                          {[
+                            ["Account", offerSummary.account],
+                            ["Basic Pay", offerSummary.basicPay],
+                            [
+                              "De Minimis / Daily Rate",
+                              offerSummary.deMinimisDailyRate,
+                            ],
+                          ].map(([label, value], detailIndex) => (
+                            <div
+                              key={label}
+                              className={`flex items-start justify-between gap-3 px-4 py-2.5 ${
+                                detailIndex < 2
+                                  ? "border-b border-[#E6ECF2]"
+                                  : ""
+                              }`}
+                            >
+                              <span className="text-[10px] font-extrabold text-[#667085]">
+                                {label}:
+                              </span>
+                              <span className="text-right text-[10px] font-extrabold text-[#042C51]">
+                                {value || "—"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {item.remarks && item.remarks !== item.reason && (
+                        <p className="mt-3 whitespace-pre-line break-words text-[11px] font-semibold leading-5 text-[#667085]">
+                          {item.remarks}
+                        </p>
+                      )}
+
+                      {(details.score || details.result) && (
+                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {details.score && (
+                            <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5">
+                              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#174A78]">
+                                Score
+                              </p>
+                              <p className="mt-0.5 text-sm font-extrabold text-[#042C51]">
+                                {details.score}
+                              </p>
+                            </div>
+                          )}
+
+                          {details.result && (
+                            <div className="rounded-xl border border-blue-100 bg-white px-3 py-2.5">
+                              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#174A78]">
+                                Result
+                              </p>
+                              <p className="mt-0.5 text-sm font-extrabold text-[#042C51]">
+                                {details.result}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {links.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {links.map((link) => (
+                            <a
+                              key={`${link.label}-${link.url}`}
+                              href={getResolvedFileUrl(link.url)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex w-full items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-left text-xs font-extrabold text-blue-700 underline"
+                            >
+                              <span className="truncate">Open {link.label}</span>
+                              <ArrowRight size={14} className="shrink-0" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+
+                      {files.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {files.map((file, fileIndex) => {
+                            const fileName = cleanText(
+                              file.name ||
+                                file.fileName ||
+                                file.filename ||
+                                file.title ||
+                                "Attachment",
+                            );
+                            const fileUrl = getResolvedFileUrl(
+                              file.url ||
+                                file.fileUrl ||
+                                file.file_url ||
+                                file.path ||
+                                "",
+                            );
+
+                            return (
+                              <div
+                                key={`${fileName}-${fileIndex}`}
+                                className="flex items-center justify-between gap-3 rounded-xl border border-blue-100 bg-[#F8FAFC] px-3 py-2.5"
+                              >
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <FileText
+                                    size={17}
+                                    className="shrink-0 text-[#FF5C28]"
+                                  />
+                                  <p className="truncate text-xs font-extrabold text-[#042C51]">
+                                    {fileName}
+                                  </p>
+                                </div>
+
+                                {fileUrl && (
+                                  <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-[10px] font-extrabold text-blue-700"
+                                  >
+                                    Open File
+                                  </a>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
     );
   }
@@ -6248,6 +7280,8 @@ export default function CandidateProfileModal() {
     if (activeTab === "documents.vault") return renderDocumentVault();
 
     if (activeTab === "answers") return renderApplicationAnswers();
+
+    if (activeTab === "movement-history") return renderMovementHistory();
 
     if (activeTab === "notes") return renderRemarks();
 

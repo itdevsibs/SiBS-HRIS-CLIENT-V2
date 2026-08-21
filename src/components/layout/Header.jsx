@@ -2,7 +2,6 @@ import {
   Activity,
   ArrowRight,
   BarChart3,
-  Bell,
   BookOpen,
   BriefcaseBusiness,
   Building2,
@@ -42,6 +41,7 @@ import { getEmployee } from "../../lib/axios/getEmployee";
 import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
 import UserDropdown from "./dropdown/UserDropdown";
 import HeaderCalendarModal from "./HeaderCalendarModal";
+import AuditNotificationBell from "./AuditNotificationBell";
 
 const ADMIN_ROLES = [
   "admin",
@@ -61,6 +61,7 @@ const ADMIN_ROLES = [
 const ALL_ADMIN_ACCESS = [1, 2, 3, 4, 5, 6, 7, 10];
 
 const HEADER_PROFILE_PICTURE_UPDATED_EVENT = "sibs:profile-picture-updated";
+
 
 const SEARCHABLE_MODULES = [
   {
@@ -1411,15 +1412,7 @@ export default function Header() {
           </button>
 
           <div className="hidden h-5 2xl:h-6 w-px bg-[#E0E6ED] xl:block" />
-
-          <button
-            type="button"
-            className="relative flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#F1F5F9] hover:text-sibs-primary-1"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4 2xl:h-[18px] 2xl:w-[18px]" strokeWidth={1.8} />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-sibs-primary-2 ring-2 ring-white" />
-          </button>
+          <AuditNotificationBell user={user} />
 
           <div className="hidden h-5 2xl:h-6 w-px bg-[#E0E6ED] sm:block" />
 

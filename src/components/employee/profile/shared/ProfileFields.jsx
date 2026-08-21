@@ -31,12 +31,13 @@ export function ProfileFieldControl({
   type = "text",
   options = [],
   required = false,
+  disabled = false,
   rows = 3,
   placeholder = "",
   className = "",
 }) {
   const common =
-    "w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-semibold text-[#101828] outline-none transition-all duration-150 placeholder:text-[#98A2B3] hover:border-[#C9D6E4] focus:border-[#042C51] focus:bg-white focus:ring-2 focus:ring-[#042C51]/10";
+    "w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-semibold text-[#101828] outline-none transition-all duration-150 placeholder:text-[#98A2B3] hover:border-[#C9D6E4] focus:border-[#042C51] focus:bg-white focus:ring-2 focus:ring-[#042C51]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#EEF2F6] disabled:text-[#98A2B3] disabled:hover:border-[#E6ECF2] disabled:focus:border-[#E6ECF2] disabled:focus:bg-[#EEF2F6] disabled:focus:ring-0";
 
   return (
     <label className={`block min-w-0 ${className}`}>
@@ -47,15 +48,17 @@ export function ProfileFieldControl({
       {type === "textarea" ? (
         <textarea
           rows={rows}
+          disabled={disabled}
           value={value || ""}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => onChange?.(event.target.value)}
           placeholder={placeholder}
           className={`${common} min-h-[70px] 2xl:min-h-[80px] resize-y px-2.5 py-2 2xl:px-3 2xl:py-2.5`}
         />
       ) : type === "select" ? (
         <select
+          disabled={disabled}
           value={value || ""}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => onChange?.(event.target.value)}
           className={`${common} h-8 2xl:h-9 cursor-pointer`}
         >
           <option value="">Choose option</option>
@@ -68,8 +71,9 @@ export function ProfileFieldControl({
       ) : (
         <input
           type={type}
+          disabled={disabled}
           value={value || ""}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => onChange?.(event.target.value)}
           placeholder={placeholder}
           className={`${common} h-8 2xl:h-9`}
         />

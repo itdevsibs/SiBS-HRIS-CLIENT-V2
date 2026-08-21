@@ -1,6 +1,13 @@
 
-import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, CheckCircle2, Loader2, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  RotateCcw,
+} from "lucide-react";
 import { useParams } from "react-router-dom";
 
 function getPublicApiBaseUrl() {
@@ -54,19 +61,303 @@ function formatFriday(value = "") {
   });
 }
 
-function buildFridayOptions(earliestFriday = "", count = 16) {
-  const first = parseDateOnly(earliestFriday);
-  if (!first) return [];
+function isSameCalendarDate(firstDate, secondDate) {
+  if (!firstDate || !secondDate) return false;
 
-  return Array.from({ length: count }, (_, index) => {
-    const date = new Date(first);
-    date.setDate(date.getDate() + index * 7);
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function formatDatePickerValue(value = "") {
+  const date = parseDateOnly(value);
+  if (!date) return "Select date";
+
+  return date.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function isSelectableNhoFriday(value = "", earliestFriday = "") {
+  const date = parseDateOnly(value);
+  const earliest = parseDateOnly(earliestFriday);
+
+  if (!date || date.getDay() !== 5) return false;
+  if (!earliest) return true;
+
+  const selectedDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+
+  const earliestDate = new Date(
+    earliest.getFullYear(),
+    earliest.getMonth(),
+    earliest.getDate(),
+  );
+
+  return selectedDate >= earliestDate;
+}
+
+function buildCalendarDays(displayDate) {
+  const year = displayDate.getFullYear();
+  const month = displayDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const calendarStart = new Date(year, month, 1 - firstDay.getDay());
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
 
     return {
+      date,
       value: toDateOnly(date),
-      label: formatFriday(toDateOnly(date)),
+      dayNumber: date.getDate(),
+      isCurrentMonth: date.getMonth() === month,
     };
   });
+}
+
+function NhoFridayDatePicker({
+  value = "",
+  earliestFriday = "",
+  disabled = false,
+  onChange,
+}) {
+  const pickerRef = useRef(null);
+  const selectedDate = parseDateOnly(value);
+  const earliestDate = parseDateOnly(earliestFriday);
+  const today = new Date();
+
+  const [open, setOpen] = useState(false);
+  const [displayDate, setDisplayDate] = useState(() => {
+    const initialDate = selectedDate || earliestDate || today;
+    return new Date(initialDate.getFullYear(), initialDate.getMonth(), 1);
+  });
+
+  useEffect(() => {
+    const nextDate = selectedDate || earliestDate;
+    if (!nextDate) return;
+
+    setDisplayDate(
+      new Date(nextDate.getFullYear(), nextDate.getMonth(), 1),
+    );
+  }, [value, earliestFriday]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!pickerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  const calendarDays = buildCalendarDays(displayDate);
+  const displayMonthStart = new Date(
+    displayDate.getFullYear(),
+    displayDate.getMonth(),
+    1,
+  );
+  const earliestMonthStart = earliestDate
+    ? new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1)
+    : null;
+  const previousMonthDisabled = Boolean(
+    earliestMonthStart && displayMonthStart <= earliestMonthStart,
+  );
+  const todayValue = toDateOnly(today);
+  const todaySelectable = isSelectableNhoFriday(
+    todayValue,
+    earliestFriday,
+  );
+
+  function goPreviousMonth() {
+    if (previousMonthDisabled) return;
+
+    setDisplayDate(
+      (current) =>
+        new Date(current.getFullYear(), current.getMonth() - 1, 1),
+    );
+  }
+
+  function goNextMonth() {
+    setDisplayDate(
+      (current) =>
+        new Date(current.getFullYear(), current.getMonth() + 1, 1),
+    );
+  }
+
+  function selectDate(day) {
+    if (
+      !day.isCurrentMonth ||
+      !isSelectableNhoFriday(day.value, earliestFriday)
+    ) {
+      return;
+    }
+
+    onChange?.(day.value);
+    setOpen(false);
+  }
+
+  function clearDate() {
+    onChange?.("");
+    setOpen(false);
+  }
+
+  function selectToday() {
+    if (!todaySelectable) return;
+
+    onChange?.(todayValue);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={pickerRef} className="relative mt-2">
+      <button
+        type="button"
+        disabled={disabled}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold text-[#0D4676] outline-none transition duration-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${
+          open
+            ? "border-[#FF5A2A] ring-4 ring-[#FF5A2A]/10"
+            : "border-[#D0D5DD] hover:border-[#0D4676]/30 hover:bg-[#F8FAFC]"
+        }`}
+      >
+        <span className={value ? "text-[#0D4676]" : "text-slate-400"}>
+          {formatDatePickerValue(value)}
+        </span>
+        <CalendarDays size={18} className="shrink-0 text-[#FF5A2A]" />
+      </button>
+
+      {open && !disabled && (
+        <div
+          role="dialog"
+          aria-label="Select another Friday"
+          className="absolute left-0 top-[calc(100%+8px)] z-[100] w-[320px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]"
+        >
+          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+            <button
+              type="button"
+              disabled={previousMonthDisabled}
+              onClick={goPreviousMonth}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[#0D4676] transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-30"
+              aria-label="Previous month"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <p className="text-sm font-extrabold text-[#0D4676]">
+              {displayDate.toLocaleDateString("en-PH", {
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+
+            <button
+              type="button"
+              onClick={goNextMonth}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[#0D4676] transition hover:bg-[#EAF2FB]"
+              aria-label="Next month"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div className="px-4 pb-3 pt-4">
+            <div className="grid grid-cols-7 text-center">
+              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(
+                (weekday) => (
+                  <span
+                    key={weekday}
+                    className="pb-2 text-[11px] font-extrabold text-[#174A7C]"
+                  >
+                    {weekday}
+                  </span>
+                ),
+              )}
+            </div>
+
+            <div className="grid grid-cols-7 place-items-center gap-y-1">
+              {calendarDays.map((day) => {
+                const selectable =
+                  day.isCurrentMonth &&
+                  isSelectableNhoFriday(day.value, earliestFriday);
+                const isSelected = Boolean(
+                  selectedDate && isSameCalendarDate(day.date, selectedDate),
+                );
+                const isToday = isSameCalendarDate(day.date, today);
+
+                return (
+                  <button
+                    key={day.value}
+                    type="button"
+                    disabled={!selectable}
+                    onClick={() => selectDate(day)}
+                    aria-label={formatFriday(day.value)}
+                    aria-selected={isSelected}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                      !day.isCurrentMonth
+                        ? "cursor-default text-[#C5CED8]"
+                        : isSelected
+                          ? "bg-[#FFF0EA] text-[#FF5A2A]"
+                          : selectable
+                            ? "text-[#0D4676] hover:bg-[#EAF2FB]"
+                            : "cursor-not-allowed text-[#B5C0CC]"
+                    } ${
+                      isToday && !isSelected
+                        ? "ring-1 ring-inset ring-[#D0D5DD]"
+                        : ""
+                    }`}
+                  >
+                    {day.dayNumber}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-[#E6ECF2] px-4 py-3">
+            <button
+              type="button"
+              onClick={clearDate}
+              className="rounded-lg px-2 py-1.5 text-xs font-extrabold text-[#0D4676] transition hover:bg-[#F2F6FA]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              disabled={!todaySelectable}
+              onClick={selectToday}
+              className="rounded-lg px-2 py-1.5 text-xs font-extrabold text-[#0D4676] transition hover:bg-[#F2F6FA] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function PublicNhoScheduleResponsePage() {
@@ -119,11 +410,6 @@ export default function PublicNhoScheduleResponsePage() {
     };
   }, [token]);
 
-  const fridayOptions = useMemo(
-    () => buildFridayOptions(state.data?.earliestFriday, 20),
-    [state.data?.earliestFriday],
-  );
-
   async function submitResponse() {
     if (submitting) return;
 
@@ -131,6 +417,20 @@ export default function PublicNhoScheduleResponsePage() {
       setState((current) => ({
         ...current,
         error: "Please select another Friday.",
+      }));
+      return;
+    }
+
+    if (
+      action === "reschedule" &&
+      !isSelectableNhoFriday(
+        rescheduleDate,
+        state.data?.earliestFriday || "",
+      )
+    ) {
+      setState((current) => ({
+        ...current,
+        error: "Please select an available Friday from the calendar.",
       }));
       return;
     }
@@ -175,8 +475,8 @@ export default function PublicNhoScheduleResponsePage() {
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10 font-jakarta">
-      <section className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <header className="bg-[#042C51] px-6 py-6 text-white">
+      <section className="mx-auto max-w-3xl overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xl">
+        <header className="rounded-t-2xl bg-[#042C51] px-6 py-6 text-white">
           <img
             src="/SiBSLogoNavy.png"
             alt="SiBS"
@@ -274,26 +574,25 @@ export default function PublicNhoScheduleResponsePage() {
               </div>
 
               {action === "reschedule" && (
-                <label className="block">
+                <div className="block">
                   <span className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
                     Select another Friday
                   </span>
-                  <select
+
+                  <NhoFridayDatePicker
                     value={rescheduleDate}
+                    earliestFriday={state.data?.earliestFriday || ""}
                     disabled={submitting}
-                    onChange={(event) => setRescheduleDate(event.target.value)}
-                    className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-[#042C51] outline-none focus:border-[#042C51]"
-                  >
-                    {fridayOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => {
+                      setRescheduleDate(value);
+                      setState((current) => ({ ...current, error: "" }));
+                    }}
+                  />
+
                   <p className="mt-2 text-xs font-semibold text-slate-500">
                     NHO scheduling is available on Fridays only.
                   </p>
-                </label>
+                </div>
               )}
 
               <button

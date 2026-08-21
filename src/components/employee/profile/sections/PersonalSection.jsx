@@ -95,23 +95,27 @@ export function PersonalSection({
           <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
             <ProfileFieldControl
               label="First Name"
+              disabled
               value={employee?.firstName}
               onChange={(value) => onChange("firstName", value)}
               required
             />
             <ProfileFieldControl
               label="Middle Name"
+              disabled
               value={employee?.middleName}
               onChange={(value) => onChange("middleName", value)}
             />
             <ProfileFieldControl
               label="Last Name"
+              disabled
               value={employee?.lastName}
               onChange={(value) => onChange("lastName", value)}
               required
             />
             <ProfileFieldControl
               label="Name Extension (Jr/III)"
+              disabled
               value={employee?.nameExtension}
               onChange={(value) => onChange("nameExtension", value)}
               placeholder="Jr., III"

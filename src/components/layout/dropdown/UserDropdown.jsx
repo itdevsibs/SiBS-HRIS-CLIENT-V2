@@ -64,6 +64,8 @@ export default function UserDropdown({
   const navigate = useNavigate();
   const ref = useRef(null);
   const avatarPreviewAnchorRef = useRef(null);
+  const avatarHoveredRef = useRef(false);
+  const avatarPreviewLockedRef = useRef(false);
 
   const { user, setUser, refetchUser } = useUser();
   const { setAdminLogin } = useHeader();
@@ -72,7 +74,14 @@ export default function UserDropdown({
   useEffect(() => {
     setProfileImageFailed(false);
     setAvatarPreviewOpen(false);
+    avatarPreviewLockedRef.current = false;
   }, [profilePictureUrl]);
+
+  useEffect(() => {
+    if (open) {
+      setAvatarPreviewOpen(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!avatarPreviewOpen) return undefined;
@@ -225,12 +234,30 @@ export default function UserDropdown({
     ADMIN_ACCESS_LABELS[adminAccess] || "Talent Acquisition";
 
   const showAvatarPreview = () => {
-    if (open || !avatarPreviewAnchorRef.current) return;
+    if (
+      open ||
+      avatarPreviewLockedRef.current ||
+      !avatarPreviewAnchorRef.current
+    ) {
+      return;
+    }
+
     setAvatarPreviewOpen(true);
   };
 
   const hideAvatarPreview = () => {
     setAvatarPreviewOpen(false);
+  };
+
+  const handleAvatarMouseEnter = () => {
+    avatarHoveredRef.current = true;
+    showAvatarPreview();
+  };
+
+  const handleAvatarMouseLeave = () => {
+    avatarHoveredRef.current = false;
+    avatarPreviewLockedRef.current = false;
+    hideAvatarPreview();
   };
 
   return (
@@ -240,10 +267,17 @@ export default function UserDropdown({
         onClick={(event) => {
           event.stopPropagation();
           hideAvatarPreview();
-          setOpen((previous) => !previous);
+
+          setOpen((previous) => {
+            const nextOpen = !previous;
+
+            if (nextOpen && avatarHoveredRef.current) {
+              avatarPreviewLockedRef.current = true;
+            }
+
+            return nextOpen;
+          });
         }}
-        onFocus={showAvatarPreview}
-        onBlur={hideAvatarPreview}
         aria-expanded={open}
         aria-haspopup="menu"
         className={[
@@ -256,8 +290,8 @@ export default function UserDropdown({
       >
         <div
           ref={avatarPreviewAnchorRef}
-          onMouseEnter={showAvatarPreview}
-          onMouseLeave={hideAvatarPreview}
+          onMouseEnter={handleAvatarMouseEnter}
+          onMouseLeave={handleAvatarMouseLeave}
           className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-[11px] 2xl:text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-7.5 max-[360px]:w-7.5"
         >
           {profilePictureUrl && !profileImageFailed ? (
