@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -44,6 +45,121 @@ const MONTH_NAMES = [
   "November",
   "December",
 ];
+
+const PUBLIC_INTERVIEW_MIN_HOUR = 10;
+const PUBLIC_INTERVIEW_MAX_HOUR = 17;
+
+const PUBLIC_INTERVIEW_MINUTE_OPTIONS = [
+  "00",
+  "05",
+  "10",
+  "15",
+  "20",
+  "25",
+  "30",
+  "35",
+  "40",
+  "45",
+  "50",
+  "55",
+].map((minute) => ({
+  value: minute,
+  label: minute,
+}));
+
+const PUBLIC_INTERVIEW_HOUR_OPTIONS = Array.from(
+  { length: 12 },
+  (_, index) => {
+    const hour = index + 1;
+
+    return {
+      value: hour,
+      label: String(hour).padStart(2, "0"),
+    };
+  },
+);
+
+function toPublicInterviewHour24(hour12, period) {
+  let hour = Number(hour12);
+
+  if (period === "AM" && hour === 12) hour = 0;
+  if (period === "PM" && hour !== 12) hour += 12;
+
+  return hour;
+}
+
+function isPublicInterviewTimeWithinWindow(hour12, minute, period) {
+  const hour24 = toPublicInterviewHour24(hour12, period);
+  const minuteNumber = Number(minute);
+  const totalMinutes = hour24 * 60 + minuteNumber;
+
+  return (
+    Number.isFinite(totalMinutes) &&
+    totalMinutes >= PUBLIC_INTERVIEW_MIN_HOUR * 60 &&
+    totalMinutes <= PUBLIC_INTERVIEW_MAX_HOUR * 60
+  );
+}
+
+function getPublicInterviewTimeParts(value = "") {
+  const match = String(value || "")
+    .trim()
+    .match(/^(\d{1,2}):(\d{2})/);
+
+  if (!match) {
+    return {
+      hour12: 10,
+      minute: "00",
+      period: "AM",
+    };
+  }
+
+  const hour24 = Number(match[1]);
+  const minute = String(match[2]).padStart(2, "0");
+  const period = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 || 12;
+
+  return {
+    hour12,
+    minute,
+    period,
+  };
+}
+
+function buildPublicInterviewTimeValue(hour12, minute, period) {
+  const hour24 = toPublicInterviewHour24(hour12, period);
+
+  return `${String(hour24).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function normalizePublicInterviewPickerTime(value = "") {
+  const { hour12, minute, period } = getPublicInterviewTimeParts(value);
+  const minuteNumber = Number(minute);
+  const normalizedMinute = Number.isFinite(minuteNumber)
+    ? String(Math.round(minuteNumber / 5) * 5).padStart(2, "0")
+    : "00";
+
+  let nextHour = hour12;
+  let nextPeriod = period;
+  let nextMinute = normalizedMinute === "60" ? "55" : normalizedMinute;
+
+  if (!isPublicInterviewTimeWithinWindow(nextHour, nextMinute, nextPeriod)) {
+    if (toPublicInterviewHour24(nextHour, nextPeriod) < PUBLIC_INTERVIEW_MIN_HOUR) {
+      nextHour = 10;
+      nextPeriod = "AM";
+      nextMinute = "00";
+    } else {
+      nextHour = 5;
+      nextPeriod = "PM";
+      nextMinute = "00";
+    }
+  }
+
+  if (nextPeriod === "PM" && nextHour === 5) {
+    nextMinute = "00";
+  }
+
+  return buildPublicInterviewTimeValue(nextHour, nextMinute, nextPeriod);
+}
 
 function getErrorMessage(error, fallback) {
   return error?.response?.data?.message || error?.message || fallback;
@@ -106,6 +222,241 @@ function getFirstSelectableDate(todayDateValue, holidayDates) {
   }
 
   return candidate;
+}
+
+function PublicTimeDropdown({
+  dropdownId,
+  openDropdown,
+  setOpenDropdown,
+  value,
+  options = [],
+  onChange,
+  disabled = false,
+}) {
+  const dropdownRef = useRef(null);
+  const open = openDropdown === dropdownId;
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value),
+  );
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current?.contains(event.target)) {
+        setOpenDropdown((current) =>
+          current === dropdownId ? "" : current,
+        );
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpenDropdown("");
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [dropdownId, setOpenDropdown]);
+
+  function handleSelect(option) {
+    if (disabled || option.disabled) return;
+
+    onChange?.(option.value);
+    setOpenDropdown("");
+  }
+
+  return (
+    <div ref={dropdownRef} className="relative min-w-0">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpenDropdown(open ? "" : dropdownId)}
+        className={`flex h-11 w-full items-center justify-between gap-2 rounded-xl border bg-white px-3 text-left text-sm font-extrabold outline-none transition ${
+          open
+            ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
+            : "border-[#D0D5DD] hover:border-[#FF5C28]/50"
+        } disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3]`}
+      >
+        <span className="truncate text-sibs-primary-1">
+          {selectedOption?.label || "—"}
+        </span>
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-[#315B7E] transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 top-[calc(100%+6px)] z-[100] max-h-60 w-full overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_16px_36px_rgba(15,23,42,0.18)]">
+          <div className="max-h-60 overflow-y-auto py-1">
+            {options.map((option) => {
+              const active = String(option.value) === String(value);
+
+              return (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  disabled={option.disabled}
+                  onClick={() => handleSelect(option)}
+                  className={`flex min-h-10 w-full items-center justify-between gap-2 px-3 text-left text-sm font-bold transition ${
+                    option.disabled
+                      ? "cursor-not-allowed bg-white text-[#C8D2DE]"
+                      : active
+                        ? "bg-[#FFF4EF] text-[#FF5C28]"
+                        : "bg-white text-[#344054] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  {active && !option.disabled && <Check size={14} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PublicInterviewTimePicker({
+  value,
+  onChange,
+  disabled = false,
+}) {
+  const [openDropdown, setOpenDropdown] = useState("");
+  const { hour12, minute, period } = getPublicInterviewTimeParts(value);
+
+  function commit(nextHour, nextMinute, nextPeriod) {
+    if (
+      !isPublicInterviewTimeWithinWindow(
+        nextHour,
+        nextMinute,
+        nextPeriod,
+      )
+    ) {
+      return;
+    }
+
+    onChange?.(
+      buildPublicInterviewTimeValue(
+        nextHour,
+        nextMinute,
+        nextPeriod,
+      ),
+    );
+  }
+
+  function handleHourChange(nextHourValue) {
+    const nextHour = Number(nextHourValue);
+    const nextMinute =
+      period === "PM" && nextHour === 5 ? "00" : minute;
+
+    commit(nextHour, nextMinute, period);
+  }
+
+  function handleMinuteChange(nextMinute) {
+    commit(hour12, nextMinute, period);
+  }
+
+  function handlePeriodChange(nextPeriod) {
+    setOpenDropdown("");
+
+    const nextHour =
+      nextPeriod === "AM"
+        ? hour12 >= 10 && hour12 <= 11
+          ? hour12
+          : 10
+        : hour12 === 12 || hour12 <= 5
+          ? hour12
+          : 12;
+
+    const nextMinute =
+      nextPeriod === "PM" && nextHour === 5 ? "00" : minute;
+
+    commit(nextHour, nextMinute, nextPeriod);
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
+        <div className="min-w-0">
+          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-[#7D8FA5]">
+            Hour
+          </p>
+          <PublicTimeDropdown
+            dropdownId="public-interview-hour"
+            openDropdown={openDropdown}
+            setOpenDropdown={setOpenDropdown}
+            value={hour12}
+            disabled={disabled}
+            options={PUBLIC_INTERVIEW_HOUR_OPTIONS.map((option) => ({
+              ...option,
+              disabled: !isPublicInterviewTimeWithinWindow(
+                option.value,
+                period === "PM" && Number(option.value) === 5
+                  ? "00"
+                  : minute,
+                period,
+              ),
+            }))}
+            onChange={handleHourChange}
+          />
+        </div>
+
+        <div className="min-w-0">
+          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-[#7D8FA5]">
+            Minute
+          </p>
+          <PublicTimeDropdown
+            dropdownId="public-interview-minute"
+            openDropdown={openDropdown}
+            setOpenDropdown={setOpenDropdown}
+            value={minute}
+            disabled={disabled}
+            options={PUBLIC_INTERVIEW_MINUTE_OPTIONS.map((option) => ({
+              ...option,
+              disabled: !isPublicInterviewTimeWithinWindow(
+                hour12,
+                option.value,
+                period,
+              ),
+            }))}
+            onChange={handleMinuteChange}
+          />
+        </div>
+
+        <div>
+          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-[#7D8FA5]">
+            AM/PM
+          </p>
+          <div className="flex h-11 overflow-hidden rounded-xl border border-[#D0D5DD] bg-white">
+            {["AM", "PM"].map((item) => (
+              <button
+                key={item}
+                type="button"
+                disabled={disabled}
+                onClick={() => handlePeriodChange(item)}
+                className={`min-w-14 px-3 text-xs font-extrabold transition ${
+                  period === item
+                    ? "bg-sibs-primary-1 text-white"
+                    : "bg-white text-sibs-primary-1 hover:bg-blue-50 hover:text-sibs-primary-1"
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function PublicStateCard({ icon, title, message, tone = "blue", children }) {
@@ -237,9 +588,11 @@ export default function PublicInterviewDateSelectionPage() {
         setSchedule(data);
         setSelectedDate(toCandidateInterviewDateValue(initialDate));
         setSelectedTime(
-          proposedTimeValidation.valid
-            ? proposedTimeValidation.time
-            : CANDIDATE_INTERVIEW_MIN_TIME,
+          normalizePublicInterviewPickerTime(
+            proposedTimeValidation.valid
+              ? proposedTimeValidation.time
+              : CANDIDATE_INTERVIEW_MIN_TIME,
+          ),
         );
         setViewDate(
           new Date(initialDate.getFullYear(), initialDate.getMonth(), 1),
@@ -664,16 +1017,10 @@ export default function PublicInterviewDateSelectionPage() {
                     <Clock3 size={17} />
                     Interview Time
                   </label>
-                  <input
-                    type="time"
-                    min="10:00"
-                    max="17:00"
-                    step="60"
-                    required
-                    disabled={isSubmitting}
+                  <PublicInterviewTimePicker
                     value={selectedTime}
-                    onChange={(event) => setSelectedTime(event.target.value)}
-                    className="mt-3 h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:opacity-60"
+                    disabled={isSubmitting}
+                    onChange={setSelectedTime}
                   />
                   <p className="mt-2 text-xs font-semibold text-[#667085]">
                     Available from 10:00 AM through 5:00 PM.

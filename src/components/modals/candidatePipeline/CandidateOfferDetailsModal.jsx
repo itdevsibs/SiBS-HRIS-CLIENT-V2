@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -23,7 +22,6 @@ import CandidatePipelineModalShell, {
   CandidateModalSection,
 } from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
 import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
-
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -189,11 +187,9 @@ function HrisDropdown({
 }) {
   const wrapperRef = useRef(null);
   const searchInputRef = useRef(null);
-  const dropdownRef = useRef(null);
 
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
-  const [dropdownRect, setDropdownRect] = useState(null);
 
   const selectedOption = useMemo(() => {
     return options.find((option) => String(option.value) === String(value));
@@ -232,10 +228,7 @@ function HrisDropdown({
     function handleClickOutside(event) {
       if (!wrapperRef.current) return;
 
-      if (
-        !wrapperRef.current.contains(event.target) &&
-        !dropdownRef.current?.contains(event.target)
-      ) {
+      if (!wrapperRef.current.contains(event.target)) {
         setOpen(false);
         setKeyword("");
       }
@@ -256,28 +249,6 @@ function HrisDropdown({
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
-
-  useEffect(() => {
-    if (!open || !wrapperRef.current) return undefined;
-
-    const updateDropdownPosition = () => {
-      const rect = wrapperRef.current.getBoundingClientRect();
-      setDropdownRect({
-        left: rect.left,
-        top: rect.bottom + 6,
-        width: rect.width,
-      });
-    };
-
-    updateDropdownPosition();
-    window.addEventListener("resize", updateDropdownPosition);
-    window.addEventListener("scroll", updateDropdownPosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updateDropdownPosition);
-      window.removeEventListener("scroll", updateDropdownPosition, true);
-    };
-  }, [open]);
 
   useEffect(() => {
     if (open && searchable) {
@@ -346,28 +317,28 @@ function HrisDropdown({
   return (
     <div ref={wrapperRef} className="relative min-w-0">
       {label && (
-        <label className="sibs-modal-field-label mb-1.5 block">
-          {label} {required && <span className="text-[#FF5C28]">*</span>}
+        <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
 
       {searchable ? (
         <div
           onClick={openDropdown}
-          className={`flex h-10 w-full min-w-0 items-center gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
+          className={`flex h-12 w-full min-w-0 items-center gap-3 rounded-xl border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
             open
-              ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
-              : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+              : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
           } ${
             disabled
-              ? "cursor-not-allowed bg-[#EEF2F6] opacity-70"
-              : "cursor-text bg-white text-[#042C51]"
+              ? "cursor-not-allowed bg-[#F8FAFC] text-sibs-tertiary-5"
+              : "cursor-text bg-white text-sibs-primary-1"
           }`}
         >
           <Search
-            size={15}
+            size={17}
             className={`shrink-0 ${
-              open ? "text-[#FF5C28]" : disabled ? "text-[#98A2B3]" : "text-[#042C51]"
+              disabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
             }`}
           />
 
@@ -379,13 +350,13 @@ function HrisDropdown({
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
             placeholder={inputPlaceholder}
-            className="h-full min-w-0 flex-1 bg-transparent font-jakarta text-xs font-bold text-[#042C51] outline-none placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:text-[#98A2B3]"
+            className="h-full min-w-0 flex-1 bg-transparent text-sm font-extrabold text-sibs-primary-1 outline-none placeholder:text-sibs-tertiary-5 disabled:cursor-not-allowed disabled:text-sibs-tertiary-5"
           />
 
           {loading ? (
             <Loader2
-              size={15}
-              className="shrink-0 animate-spin text-[#FF5C28]"
+              size={18}
+              className="shrink-0 animate-spin text-sibs-primary-1"
             />
           ) : (
             <button
@@ -394,11 +365,11 @@ function HrisDropdown({
               disabled={disabled}
               onMouseDown={(event) => event.preventDefault()}
               onClick={toggleDropdown}
-              className="shrink-0 rounded-md p-1 text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+              className="shrink-0 rounded-lg p-1 text-sibs-primary-1 transition hover:bg-[#EAF4FF] disabled:cursor-not-allowed disabled:text-sibs-tertiary-5 disabled:hover:bg-transparent"
             >
               <ChevronDown
-                size={15}
-                className={`transition-transform duration-200 ${open ? "rotate-180 text-[#FF5C28]" : ""}`}
+                size={18}
+                className={`transition-transform ${open ? "rotate-180" : ""}`}
               />
             </button>
           )}
@@ -408,19 +379,19 @@ function HrisDropdown({
           type="button"
           disabled={disabled}
           onClick={toggleDropdown}
-          className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
+          className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
             open
-              ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
-              : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+              : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
           } ${
             disabled
-              ? "cursor-not-allowed bg-[#EEF2F6] opacity-70"
-              : "bg-white text-[#042C51]"
+              ? "cursor-not-allowed bg-[#F8FAFC] text-sibs-tertiary-5"
+              : "bg-white text-sibs-primary-1"
           }`}
         >
           <span
             className={`min-w-0 flex-1 truncate ${
-              selectedOption ? "text-[#042C51]" : "text-[#98A2B3]"
+              selectedOption ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
             }`}
           >
             {loading
@@ -430,31 +401,23 @@ function HrisDropdown({
 
           {loading ? (
             <Loader2
-              size={15}
-              className="shrink-0 animate-spin text-[#FF5C28]"
+              size={18}
+              className="shrink-0 animate-spin text-sibs-primary-1"
             />
           ) : (
             <ChevronDown
-              size={15}
-              className={`shrink-0 transition-transform duration-200 ${
-                disabled ? "text-[#98A2B3]" : "text-[#042C51]"
-              } ${open ? "rotate-180 text-[#FF5C28]" : ""}`}
+              size={18}
+              className={`shrink-0 transition-transform ${
+                disabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
+              } ${open ? "rotate-180" : ""}`}
             />
           )}
         </button>
       )}
 
-      {open && !disabled && dropdownRect && createPortal(
-        <div
-          ref={dropdownRef}
-          style={{
-            left: dropdownRect.left,
-            top: dropdownRect.top,
-            width: dropdownRect.width,
-          }}
-          className="sibs-dropdown-pop-in fixed z-[11000] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
-        >
-          <div className="sibs-scrollbar max-h-64 overflow-y-auto py-1">
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[10080] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="max-h-72 overflow-y-auto py-2">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
                 const active = String(option.value) === String(value);
@@ -464,19 +427,19 @@ function HrisDropdown({
                     key={`${option.value}-${option.label}`}
                     type="button"
                     onClick={() => handleSelect(option)}
-                    className={`flex w-full items-start justify-between gap-2.5 px-3.5 py-2.5 text-left font-jakarta transition ${
+                    className={`flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition ${
                       active
-                        ? "bg-[#FFF0EB] text-[#FF5C28]"
-                        : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                        ? "bg-[#EAF4FF] text-sibs-primary-1"
+                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
                     }`}
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-extrabold">
+                      <span className="block truncate text-sm font-extrabold">
                         {option.label}
                       </span>
 
                       {option.subLabel && (
-                        <span className="mt-0.5 block truncate text-[10px] font-semibold text-[#667085]">
+                        <span className="mt-0.5 block truncate text-xs font-semibold text-sibs-tertiary-5">
                           {option.subLabel}
                         </span>
                       )}
@@ -484,28 +447,31 @@ function HrisDropdown({
 
                     {active && (
                       <Check
-                        size={15}
-                        className="mt-0.5 shrink-0 text-[#FF5C28]"
+                        size={17}
+                        className="mt-0.5 shrink-0 text-sibs-primary-1"
                       />
                     )}
                   </button>
                 );
               })
             ) : (
-              <div className="px-4 py-4 text-center font-jakarta text-xs font-bold text-[#98A2B3]">
+              <div className="px-4 py-5 text-center text-sm font-bold text-sibs-tertiary-5">
                 {emptyText}
               </div>
             )}
           </div>
-        </div>,
-        document.body,
+        </div>
       )}
     </div>
   );
 }
 
-function inputClass() {
-  return "h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-sibs-tertiary-5 disabled:opacity-80";
+function inputClass(hasError = false) {
+  return `h-12 w-full rounded-xl border bg-white px-4 text-sm font-extrabold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-sibs-tertiary-5 disabled:opacity-80 ${
+    hasError
+      ? "border-red-400 ring-4 ring-red-100 focus:border-red-500 focus:ring-red-100"
+      : "border-[#D0D5DD]"
+  }`;
 }
 
 function handleNumberInputWheel(event) {
@@ -531,359 +497,86 @@ function parseDateValue(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function isSameDate(firstDate, secondDate) {
-  if (!firstDate || !secondDate) return false;
-
-  return (
-    firstDate.getFullYear() === secondDate.getFullYear() &&
-    firstDate.getMonth() === secondDate.getMonth() &&
-    firstDate.getDate() === secondDate.getDate()
-  );
-}
-
 function isWeekendDateValue(value) {
   const date = parseDateValue(value);
   return !!date && (date.getDay() === 0 || date.getDay() === 6);
 }
 
-const monthNamesShort = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
-const weekdayLabelsShort = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
-function CalendarHeaderDropdown({
-  value,
-  options = [],
-  onChange,
-  className = "",
-  menuClassName = "",
-}) {
-  const dropdownRef = useRef(null);
+function StartDatePicker({ value, onChange, hasError = false, inputRef = null }) {
+  const wrapperRef = useRef(null);
+  const selectedDate = parseDateValue(value);
   const [open, setOpen] = useState(false);
-
-  const selectedOption = options.find(
-    (option) => String(option.value) === String(value),
-  );
-
-  const displayText = selectedOption?.label || "Select";
+  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpen(false);
-      }
+    if (selectedDate) setViewDate(selectedDate);
+  }, [value]);
+
+  useEffect(() => {
+    function close(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) setOpen(false);
     }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") setOpen(false);
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
   }, []);
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = Array.from({ length: firstDay + daysInMonth }, (_, index) =>
+    index < firstDay ? null : new Date(year, month, index - firstDay + 1),
+  );
+
   return (
-    <div ref={dropdownRef} className={`relative min-w-0 ${className}`}>
+    <div ref={wrapperRef} className="relative">
       <button
+        ref={inputRef}
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-8 w-full min-w-0 items-center justify-between gap-1.5 rounded-lg border px-2.5 text-left text-xs font-extrabold outline-none transition ${
-          open
-            ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
-        }`}
+        className={`${inputClass(hasError)} flex items-center justify-between text-left`}
       >
-        <span className="min-w-0 flex-1 truncate">{displayText}</span>
-        <ChevronDown
-          size={13}
-          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
+        <span className={value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"}>
+          {selectedDate
+            ? selectedDate.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "2-digit" })
+            : "Select start date"}
+        </span>
+        <CalendarDays size={18} className="shrink-0" />
       </button>
 
       {open && (
-        <div
-          className={`absolute left-0 top-[calc(100%+6px)] z-[100000] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl ${menuClassName}`}
-        >
-          <div className="max-h-60 overflow-y-auto py-1 sibs-scrollbar">
-            {options.map((option) => {
-              const active = String(option.value) === String(value);
-
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="mb-3 flex items-center justify-between">
+            <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-lg p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
+            <span className="text-sm font-extrabold text-sibs-primary-1">{viewDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</span>
+            <button type="button" onClick={() => setViewDate(new Date(year, month + 1, 1))} className="rounded-lg p-2 hover:bg-gray-100"><ChevronRight size={18} /></button>
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold text-sibs-tertiary-5">
+            {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day) => <span key={day} className="py-1">{day}</span>)}
+          </div>
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {cells.map((date, index) => {
+              if (!date) return <span key={`blank-${index}`} />;
+              const dateValue = toDateValue(date);
+              const disabled = date < today || date.getDay() === 0 || date.getDay() === 6;
+              const active = dateValue === value;
               return (
                 <button
-                  key={option.value}
+                  key={dateValue}
                   type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setOpen(false);
-                  }}
-                  className={`block w-full px-3 py-2 text-left text-xs font-bold transition ${
-                    active
-                      ? "bg-[#FFF0EB] text-[#FF5C28]"
-                      : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-                  }`}
+                  disabled={disabled}
+                  onClick={() => { onChange(dateValue); setOpen(false); }}
+                  className={`h-9 rounded-lg text-sm font-bold transition ${active ? "bg-sibs-primary-1 text-white" : disabled ? "cursor-not-allowed bg-gray-50 text-gray-300" : "text-sibs-primary-1 hover:bg-[#EAF4FF]"}`}
+                  title={date.getDay() === 0 || date.getDay() === 6 ? "Saturday and Sunday are unavailable" : undefined}
                 >
-                  <span className="block min-w-0 truncate">{option.label}</span>
+                  {date.getDate()}
                 </button>
               );
             })}
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function buildRichCalendarDays(displayDate) {
-  const year = displayDate.getFullYear();
-  const month = displayDate.getMonth();
-
-  const firstDayOfMonth = new Date(year, month, 1);
-  const startDay = firstDayOfMonth.getDay();
-
-  const calendarStart = new Date(year, month, 1 - startDay);
-  const days = [];
-
-  for (let index = 0; index < 42; index += 1) {
-    const date = new Date(calendarStart);
-    date.setDate(calendarStart.getDate() + index);
-
-    days.push({
-      date,
-      dateValue: toDateValue(date),
-      dayNumber: date.getDate(),
-      isCurrentMonth: date.getMonth() === month,
-    });
-  }
-
-  return days;
-}
-
-function StartDatePicker({ value, onChange }) {
-  const calendarRef = useRef(null);
-  const selectedDate = parseDateValue(value);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const currentYear = today.getFullYear();
-  const minimumYear = currentYear - 5;
-  const maximumYear = currentYear + 10;
-
-  const monthOptions = monthNamesShort.map((month, index) => ({
-    value: index,
-    label: month,
-  }));
-
-  const yearOptions = [];
-  for (let year = currentYear; year <= maximumYear; year += 1) {
-    yearOptions.push({ value: year, label: String(year) });
-  }
-
-  const [open, setOpen] = useState(false);
-  const [displayDate, setDisplayDate] = useState(
-    () => selectedDate || new Date(),
-  );
-
-  const calendarDays = useMemo(
-    () => buildRichCalendarDays(displayDate),
-    [displayDate],
-  );
-
-  useEffect(() => {
-    if (selectedDate) setDisplayDate(selectedDate);
-  }, [value]);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") setOpen(false);
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  function goPreviousMonth() {
-    setDisplayDate(
-      (previous) =>
-        new Date(previous.getFullYear(), previous.getMonth() - 1, 1),
-    );
-  }
-
-  function goNextMonth() {
-    setDisplayDate(
-      (previous) =>
-        new Date(previous.getFullYear(), previous.getMonth() + 1, 1),
-    );
-  }
-
-  function handleMonthChange(monthIndex) {
-    setDisplayDate(
-      (previous) => new Date(previous.getFullYear(), Number(monthIndex), 1),
-    );
-  }
-
-  function handleYearChange(year) {
-    setDisplayDate(
-      (previous) => new Date(Number(year), previous.getMonth(), 1),
-    );
-  }
-
-  function handleSelectDate(date) {
-    onChange(toDateValue(date));
-    setOpen(false);
-  }
-
-  function handleClear() {
-    onChange("");
-    setOpen(false);
-  }
-
-  function handleToday() {
-    onChange(toDateValue(today));
-    setDisplayDate(new Date(today.getFullYear(), today.getMonth(), 1));
-    setOpen(false);
-  }
-
-  return (
-    <div ref={calendarRef} className="relative z-[220] min-w-0 font-jakarta">
-      <button
-        type="button"
-        onClick={() => setOpen((previous) => !previous)}
-        className="sibs-modal-input flex items-center justify-between text-left cursor-pointer"
-      >
-        <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
-          <CalendarDays size={16} className="shrink-0 text-[#215789]" />
-
-          <span className={`min-w-0 truncate ${value ? "text-[#042C51] font-bold" : "text-[#98A2B3]"}`}>
-            {selectedDate
-              ? selectedDate.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "2-digit" })
-              : "Select date"}
-          </span>
-        </span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {open && (
-        <div className="sibs-dropdown-pop-in mt-2 w-full max-w-[320px] overflow-visible rounded-2xl border border-[#D7DEE8] bg-white shadow-2xl">
-          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-3.5 py-2.5">
-            <button
-              type="button"
-              onClick={goPreviousMonth}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
-            >
-              <ChevronLeft size={16} />
-            </button>
-
-            <div className="grid min-w-0 flex-1 grid-cols-[1fr_84px] gap-1.5 px-2">
-              <CalendarHeaderDropdown
-                value={displayDate.getMonth()}
-                options={monthOptions}
-                onChange={handleMonthChange}
-                className="z-[100002]"
-                menuClassName="w-[150px]"
-              />
-
-              <CalendarHeaderDropdown
-                value={displayDate.getFullYear()}
-                options={yearOptions}
-                onChange={handleYearChange}
-                className="z-[100001]"
-                menuClassName="w-[110px]"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={goNextMonth}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-
-          <div className="px-3.5 py-3">
-            <div className="grid grid-cols-7 gap-1">
-              {weekdayLabelsShort.map((dayLabel) => (
-                <div
-                  key={dayLabel}
-                  className="flex h-7 items-center justify-center text-xs font-extrabold text-[#042C51]"
-                >
-                  {dayLabel}
-                </div>
-              ))}
-
-              {calendarDays.map((day) => {
-                const active = selectedDate && isSameDate(day.date, selectedDate);
-                const currentDay = isSameDate(day.date, today);
-                const disabled = day.date < today || day.date.getDay() === 0 || day.date.getDay() === 6;
-
-                return (
-                  <button
-                    key={day.dateValue}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => handleSelectDate(day.date)}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-extrabold transition-all duration-200 ${
-                      active
-                        ? "bg-[#FF5C28] text-white shadow-sm"
-                        : currentDay
-                          ? "border border-[#FF5C28]/40 bg-[#FFF0EB] text-[#FF5C28]"
-                          : disabled
-                            ? "cursor-not-allowed bg-white text-[#C7D2E0]"
-                            : day.isCurrentMonth
-                              ? "border border-transparent bg-white text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
-                              : "border border-transparent bg-white text-[#C7D2E0] hover:bg-[#F8FAFC]"
-                    }`}
-                  >
-                    {day.dayNumber}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-[#E6ECF2] px-4 py-2.5">
-            <button
-              type="button"
-              onClick={handleClear}
-              className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-extrabold text-[#042C51] transition-all duration-200 hover:border-[#FF5C28]/35 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
-            >
-              Clear
-            </button>
-
-            <button
-              type="button"
-              onClick={handleToday}
-              className="inline-flex h-8 items-center justify-center rounded-lg bg-[#042C51] px-3 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:bg-[#063C69]"
-            >
-              Today
-            </button>
-          </div>
+          <p className="mt-3 text-xs font-semibold text-sibs-tertiary-5">Saturdays and Sundays are unavailable.</p>
         </div>
       )}
     </div>
@@ -907,6 +600,13 @@ export default function CandidateOfferDetailsModal({
   const [selectedReprofileId, setSelectedReprofileId] = useState("");
   const [isSavingReprofile, setIsSavingReprofile] = useState(false);
   const [startDateInitiated, setStartDateInitiated] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const finalAssignmentRef = useRef(null);
+  const reprofileButtonRef = useRef(null);
+  const basicPayRef = useRef(null);
+  const deminimisRef = useRef(null);
+  const startDateRef = useRef(null);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -937,9 +637,63 @@ export default function CandidateOfferDetailsModal({
     });
   }
 
+  function clearValidationError(field) {
+    setValidationErrors((previous) => {
+      if (!previous[field]) return previous;
+
+      const next = { ...previous };
+      delete next[field];
+      return next;
+    });
+  }
+
+  function focusFirstInvalidField(errors = {}) {
+    const firstInvalidField = [
+      "roleTitle",
+      "account",
+      "basicPay",
+      "deminimisDailyRate",
+      "startDate",
+    ].find((field) => errors[field]);
+
+    if (!firstInvalidField) return;
+
+    if (firstInvalidField === "roleTitle" || firstInvalidField === "account") {
+      finalAssignmentRef.current?.scrollIntoView?.({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      window.setTimeout(() => {
+        reprofileButtonRef.current?.focus?.({ preventScroll: true });
+      }, 350);
+      return;
+    }
+
+    if (firstInvalidField === "startDate") {
+      setStartDateInitiated(true);
+    }
+
+    const targetRef =
+      firstInvalidField === "basicPay"
+        ? basicPayRef
+        : firstInvalidField === "deminimisDailyRate"
+          ? deminimisRef
+          : startDateRef;
+
+    window.setTimeout(() => {
+      targetRef.current?.scrollIntoView?.({
+        behavior: "smooth",
+        block: "center",
+      });
+      targetRef.current?.focus?.({ preventScroll: true });
+    }, firstInvalidField === "startDate" ? 50 : 0);
+  }
+
   useEffect(() => {
     if (!open) {
       setStartDateInitiated(false);
+      setValidationErrors({});
       return;
     }
 
@@ -958,6 +712,7 @@ export default function CandidateOfferDetailsModal({
     }));
 
     setStartDateInitiated(false);
+    setValidationErrors({});
   }, [open, setForm]);
 
   useEffect(() => {
@@ -1073,6 +828,8 @@ export default function CandidateOfferDetailsModal({
         finalAccount: selected.account,
         hiringNeed: selected.raw || null,
       });
+      clearValidationError("roleTitle");
+      clearValidationError("account");
       setSelectedReprofileId("");
       setReprofileOpen(false);
     } catch (error) {
@@ -1093,39 +850,24 @@ export default function CandidateOfferDetailsModal({
     event.preventDefault();
     event.stopPropagation();
 
-    const missingFields = [];
+    const nextValidationErrors = {
+      roleTitle: !cleanText(form?.roleTitle),
+      account: !cleanText(form?.account),
+      basicPay: isInvalidMoney(form?.basicPay),
+      deminimisDailyRate: isInvalidMoney(form?.deminimisDailyRate),
+      startDate:
+        cleanText(form?.startDate) && isWeekendDateValue(form.startDate),
+    };
 
-    if (!cleanText(form?.roleTitle)) {
-      missingFields.push("Final Role Title");
-    }
+    const hasValidationError = Object.values(nextValidationErrors).some(Boolean);
 
-    if (!cleanText(form?.account)) {
-      missingFields.push("Final Account");
-    }
-
-    if (isInvalidMoney(form?.basicPay)) {
-      missingFields.push("Valid Basic Daily Rate");
-    }
-
-    if (isInvalidMoney(form?.deminimisDailyRate)) {
-      missingFields.push("Valid Daily De Minimis");
-    }
-
-    if (cleanText(form?.startDate) && isWeekendDateValue(form.startDate)) {
-      missingFields.push("Weekday Start Date");
-    }
-
-    if (missingFields.length > 0) {
-      showStatusModal({
-        type: "error",
-        title: "Complete Required Fields",
-        message: `Please complete the following before proceeding: ${missingFields.join(
-          ", ",
-        )}.`,
-      });
-
+    if (hasValidationError) {
+      setValidationErrors(nextValidationErrors);
+      focusFirstInvalidField(nextValidationErrors);
       return;
     }
+
+    setValidationErrors({});
 
     try {
       const result = onSubmit?.(event);
@@ -1184,89 +926,126 @@ export default function CandidateOfferDetailsModal({
         <form id="candidate-offer-details-form" onSubmit={handleProceedClick} className="space-y-4">
           <CandidateModalSummary candidate={candidate} stage={candidate?.currentStage || "Offered"} />
 
-          <CandidateModalSection
-            title="Final Assignment"
-            subtitle="Role title remains fixed. Reprofile only when another approved Hiring Need account is required for the same role."
-          >
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="sibs-modal-field-label">
-                  Final Role Title <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
+          <div ref={finalAssignmentRef}>
+            <CandidateModalSection
+              title="Final Assignment"
+              subtitle="Role title remains fixed. Reprofile only when another approved Hiring Need account is required for the same role."
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
+                    Final Role Title <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={form.roleTitle || ""}
+                      disabled
+                      readOnly
+                      placeholder="Final role title"
+                      className={`${inputClass(validationErrors.roleTitle)} pr-28`}
+                      title="Role Title remains the same during account reprofile."
+                    />
+                    <button
+                      ref={reprofileButtonRef}
+                      type="button"
+                      onClick={() => setReprofileOpen(true)}
+                      className="absolute right-1.5 top-1/2 inline-flex h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-2.5 text-[10px] font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100"
+                    >
+                      <RefreshCw size={13} /> Reprofile
+                    </button>
+                  </div>
+                  {validationErrors.roleTitle && (
+                    <p className="mt-1.5 text-[10px] font-bold text-red-600">
+                      Final Role Title is required.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
+                    Final Account <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
-                    value={form.roleTitle || ""}
+                    value={form.account || ""}
                     disabled
                     readOnly
-                    placeholder="Final role title"
-                    className="sibs-modal-input pr-28"
-                    title="Role Title remains the same during account reprofile."
+                    placeholder="Final account"
+                    className={inputClass(validationErrors.account)}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setReprofileOpen(true)}
-                    className="absolute right-1.5 top-1/2 inline-flex h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-lg border border-[#FF5C28]/35 bg-white px-2.5 text-[10px] font-extrabold text-[#FF5C28] transition hover:bg-[#FFF0EB]"
-                  >
-                    <RefreshCw size={13} className="text-[#FF5C28]" /> Reprofile
-                  </button>
+                  {validationErrors.account && (
+                    <p className="mt-1.5 text-[10px] font-bold text-red-600">
+                      Select an approved account using Reprofile.
+                    </p>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <label className="sibs-modal-field-label">
-                  Final Account <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.account || ""}
-                  disabled
-                  readOnly
-                  placeholder="Final account"
-                  className="sibs-modal-input"
-                />
-              </div>
-            </div>
-
-            {!cleanText(form?.hiringRequirementId) && (
-              <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-[10px] font-bold leading-5 text-amber-800">
-                No approved Hiring Requirement matches this Role Title and Account. Use Reprofile to select an approved account before proceeding.
-              </div>
-            )}
-          </CandidateModalSection>
+              {!cleanText(form?.hiringRequirementId) && (
+                <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-[10px] font-bold leading-5 text-amber-800">
+                  No approved Hiring Requirement matches this Role Title and Account. Use Reprofile to select an approved account before proceeding.
+                </div>
+              )}
+            </CandidateModalSection>
+          </div>
 
           <CandidateModalSection title="Compensation">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="sibs-modal-field-label">
+                <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
                   Basic Daily Rate <span className="text-red-500">*</span>
                 </label>
                 <input
+                  ref={basicPayRef}
                   type="number"
                   min="0"
                   step="0.01"
                   value={form.basicPay || ""}
-                  onChange={(event) => updateForm({ basicPay: event.target.value })}
+                  onChange={(event) => {
+                    updateForm({ basicPay: event.target.value });
+                    if (!isInvalidMoney(event.target.value)) {
+                      clearValidationError("basicPay");
+                    }
+                  }}
                   onWheel={handleNumberInputWheel}
                   placeholder="0.00"
-                  className="sibs-modal-input tabular-nums"
+                  aria-invalid={Boolean(validationErrors.basicPay)}
+                  className={`${inputClass(validationErrors.basicPay)} tabular-nums`}
                 />
+                {validationErrors.basicPay && (
+                  <p className="mt-1.5 text-[10px] font-bold text-red-600">
+                    Enter a valid Basic Daily Rate greater than 0.
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="sibs-modal-field-label">
+                <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
                   Daily De Minimis <span className="text-red-500">*</span>
                 </label>
                 <input
+                  ref={deminimisRef}
                   type="number"
                   min="0"
                   step="0.01"
                   value={form.deminimisDailyRate || ""}
-                  onChange={(event) => updateForm({ deminimisDailyRate: event.target.value })}
+                  onChange={(event) => {
+                    updateForm({ deminimisDailyRate: event.target.value });
+                    if (!isInvalidMoney(event.target.value)) {
+                      clearValidationError("deminimisDailyRate");
+                    }
+                  }}
                   onWheel={handleNumberInputWheel}
                   placeholder="0.00"
-                  className="sibs-modal-input tabular-nums"
+                  aria-invalid={Boolean(validationErrors.deminimisDailyRate)}
+                  className={`${inputClass(validationErrors.deminimisDailyRate)} tabular-nums`}
                 />
+                {validationErrors.deminimisDailyRate && (
+                  <p className="mt-1.5 text-[10px] font-bold text-red-600">
+                    Enter a valid Daily De Minimis greater than 0.
+                  </p>
+                )}
               </div>
             </div>
           </CandidateModalSection>
@@ -1278,31 +1057,47 @@ export default function CandidateOfferDetailsModal({
                 onClick={() => {
                   if (startDateInitiated) {
                     updateForm({ startDate: "" });
+                    clearValidationError("startDate");
                     setStartDateInitiated(false);
                     return;
                   }
                   setStartDateInitiated(true);
                 }}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#FF5C28]/35 bg-white px-4 text-xs font-extrabold text-[#FF5C28] transition hover:bg-[#FFF0EB]"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
               >
-                <CalendarDays size={14} className="text-[#FF5C28]" />
+                <CalendarDays size={14} />
                 {startDateInitiated ? "Hide Start Date" : "Add Start Date"}
               </button>
 
               {startDateInitiated && (
                 <div className="max-w-md">
-                  <label className="sibs-modal-field-label">Start Date</label>
-                  <StartDatePicker value={form.startDate || ""} onChange={(startDate) => updateForm({ startDate })} />
+                  <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">Start Date</label>
+                  <StartDatePicker
+                    inputRef={startDateRef}
+                    value={form.startDate || ""}
+                    hasError={validationErrors.startDate}
+                    onChange={(startDate) => {
+                      updateForm({ startDate });
+                      if (!isWeekendDateValue(startDate)) {
+                        clearValidationError("startDate");
+                      }
+                    }}
+                  />
+                  {validationErrors.startDate && (
+                    <p className="mt-1.5 text-[10px] font-bold text-red-600">
+                      Select a weekday start date.
+                    </p>
+                  )}
                 </div>
               )}
 
               <div>
-                <label className="sibs-modal-field-label">Remarks</label>
+                <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">Remarks</label>
                 <textarea
                   value={form.remarks || ""}
                   onChange={(event) => updateForm({ remarks: event.target.value })}
                   placeholder="Example: Offer prepared after passed interview."
-                  className="sibs-modal-textarea"
+                  className={textareaClass()}
                 />
               </div>
             </div>
@@ -1338,7 +1133,7 @@ export default function CandidateOfferDetailsModal({
         >
           <div className="space-y-4">
             <CandidateModalSection title="Current Role">
-              <input value={candidateRoleTitle} disabled readOnly className="sibs-modal-input" />
+              <input value={candidateRoleTitle} disabled readOnly className={inputClass()} />
             </CandidateModalSection>
             <CandidateModalSection title="Approved Hiring Requirement">
               <HrisDropdown

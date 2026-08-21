@@ -147,6 +147,10 @@ function isTimeWithinInterviewWindow(hour12, minute, period) {
   );
 }
 
+function isInterviewHourAvailable(hour12, period) {
+  return isTimeWithinInterviewWindow(hour12, "00", period);
+}
+
 function parseDateTimeValue(value) {
   if (!value) return null;
 
@@ -626,10 +630,19 @@ function DateTimePicker({ value, onChange }) {
   function handleHourChange(nextHourValue) {
     const nextHour = Number(nextHourValue);
 
-    if (!isTimeWithinInterviewWindow(nextHour, minute, period)) return;
+    if (!isInterviewHourAvailable(nextHour, period)) return;
+
+    const nextMinute = isTimeWithinInterviewWindow(
+      nextHour,
+      minute,
+      period,
+    )
+      ? minute
+      : "00";
 
     setHour12(nextHour);
-    commitValue(activeDate, nextHour, minute, period);
+    setMinute(nextMinute);
+    commitValue(activeDate, nextHour, nextMinute, period);
   }
 
   function handleMinuteChange(nextMinute) {
@@ -847,9 +860,8 @@ function DateTimePicker({ value, onChange }) {
                     value={hour12}
                     options={HOUR_OPTIONS.map((option) => ({
                       ...option,
-                      disabled: !isTimeWithinInterviewWindow(
+                      disabled: !isInterviewHourAvailable(
                         option.value,
-                        minute,
                         period,
                       ),
                     }))}

@@ -79,6 +79,7 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
+import { useUser } from "../../../services/context/UserContext";
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
 import RevisedOfferModal from "./RevisedOfferModal";
@@ -1334,6 +1335,139 @@ function getTimelineAssessmentScore(item = {}) {
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function formatCurrentAuditActorLabel(user = {}) {
+  const accessLabels = {
+    1: "TA",
+    2: "HR",
+    3: "HR Admin",
+    7: "Super Admin",
+  };
+
+  const accessValues = getInternalNhoAdminAccessValues(user);
+  const highestAccess = accessValues.length
+    ? Math.max(...accessValues)
+    : Number(user?.adminAccess || user?.admin_access || 0);
+
+  const normalizedRole = normalizeInternalNhoRole(
+    user?.resolvedRole ||
+      user?.resolved_role ||
+      user?.role ||
+      user?.userRole ||
+      user?.user_role ||
+      user?.adminRole ||
+      user?.admin_role ||
+      user?.roleName ||
+      user?.role_name ||
+      "",
+  );
+
+  const roleLabels = {
+    ta: "TA",
+    talent_acquisition: "TA",
+    hr: "HR",
+    human_resource: "HR",
+    human_resources: "HR",
+    hr_admin: "HR Admin",
+    hradmin: "HR Admin",
+    super_admin: "Super Admin",
+    superadmin: "Super Admin",
+  };
+
+  const accessLabel =
+    accessLabels[highestAccess] || roleLabels[normalizedRole] || "User";
+
+  const displayName = cleanText(
+    user?.fullName ||
+      user?.full_name ||
+      user?.name ||
+      [user?.firstName, user?.middleName, user?.lastName]
+        .map(cleanText)
+        .filter(Boolean)
+        .join(" ") ||
+      [user?.first_name, user?.middle_name, user?.last_name]
+        .map(cleanText)
+        .filter(Boolean)
+        .join(" ") ||
+      user?.sibs_id ||
+      user?.sibsId ||
+      user?.username ||
+      "",
+  );
+
+  return `${accessLabel} - ${displayName || "Unknown User"}`;
+}
+
+
+function normalizeInternalNhoRole(value = "") {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function getInternalNhoAdminAccessValues(user = {}) {
+  const directValues = [
+    user?.adminAccess,
+    user?.admin_access,
+    user?.gy_user_access,
+    user?.access,
+    user?.adminLevel,
+    user?.admin_level,
+  ];
+
+  const assignedValues = Array.isArray(user?.assignedAccounts)
+    ? user.assignedAccounts.flatMap((account) => [
+        account?.adminAccess,
+        account?.admin_access,
+        account?.gy_user_access,
+        account?.access,
+      ])
+    : [];
+
+  return [...directValues, ...assignedValues]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+}
+
+function canInternalRescheduleNho(user = {}) {
+  const allowedAccessValues = new Set([1, 2, 3, 7]);
+
+  if (
+    getInternalNhoAdminAccessValues(user).some((value) =>
+      allowedAccessValues.has(value),
+    )
+  ) {
+    return true;
+  }
+
+  const roleCandidates = [
+    user?.resolvedRole,
+    user?.resolved_role,
+    user?.role,
+    user?.userRole,
+    user?.user_role,
+    user?.adminRole,
+    user?.admin_role,
+    user?.roleName,
+    user?.role_name,
+  ]
+    .map(normalizeInternalNhoRole)
+    .filter(Boolean);
+
+  const allowedRoles = new Set([
+    "ta",
+    "talent_acquisition",
+    "hr",
+    "human_resource",
+    "human_resources",
+    "hr_admin",
+    "hradmin",
+    "super_admin",
+    "superadmin",
+  ]);
+
+  return roleCandidates.some((role) => allowedRoles.has(role));
 }
 
 function getCandidatePipelineDeleteFileDisplay(file = {}) {
@@ -2726,6 +2860,7 @@ function mergeCandidateRealtimeUpdate(
 function RequirementCard({
   requirement,
   uploadedFiles = [],
+  uploadedBy = "",
   disabled = false,
   onUpload,
   onSelect,
@@ -2747,7 +2882,7 @@ function RequirementCard({
       fileType: file.type || "application/octet-stream",
       fileUrl: URL.createObjectURL(file),
       uploadedAt: new Date().toISOString(),
-      uploadedBy: "Current User",
+      uploadedBy: cleanText(uploadedBy) || "System",
       rawFile: file,
     }));
 
@@ -3011,6 +3146,7 @@ function FilePreviewPanel({ file }) {
 function PreEmploymentRequirementsPanel({
   candidateName = "",
   candidateEmail = "",
+  uploadedBy = "",
   files = [],
   selectedFile = null,
   disabled = false,
@@ -3198,6 +3334,7 @@ function PreEmploymentRequirementsPanel({
                             key={requirement}
                             requirement={requirement}
                             uploadedFiles={uploadedFiles}
+                            uploadedBy={uploadedBy}
                             disabled={disabled}
                             onUpload={onUpload}
                             onRemove={onRemove}
@@ -4161,6 +4298,339 @@ function getCandidateNhoStartDateInput(
 
   return toDateInputValue(
     getFirstSelectableNhoFriday(),
+  );
+}
+
+
+function getManilaCalendarDate(referenceDate = new Date()) {
+  const sourceDate =
+    referenceDate instanceof Date
+      ? referenceDate
+      : new Date(referenceDate);
+
+  const safeDate = Number.isNaN(sourceDate.getTime())
+    ? new Date()
+    : sourceDate;
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(safeDate);
+
+  const get = (type) =>
+    Number(parts.find((part) => part.type === type)?.value || 0);
+
+  return new Date(get("year"), get("month") - 1, get("day"));
+}
+
+function getFirstSelectableInternalNhoDate(referenceDate = new Date()) {
+  const result = getManilaCalendarDate(referenceDate);
+
+  while (result.getDay() === 0 || result.getDay() === 6) {
+    result.setDate(result.getDate() + 1);
+  }
+
+  return result;
+}
+
+function isSelectableInternalNhoDate(date, referenceDate = new Date()) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const dateOnly = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+
+  const today = getManilaCalendarDate(referenceDate);
+  const dayOfWeek = dateOnly.getDay();
+
+  return (
+    dateOnly.getTime() >= today.getTime() &&
+    dayOfWeek !== 0 &&
+    dayOfWeek !== 6
+  );
+}
+
+function getCandidateNhoRescheduleDateInput(candidate = {}) {
+  const schedule =
+    candidate.nhoSchedule ||
+    candidate.nho_schedule ||
+    {};
+
+  const existingValue =
+    schedule.startDate ||
+    schedule.start_date ||
+    schedule.date ||
+    candidate.nhoStartDate ||
+    candidate.nho_start_date ||
+    candidate.nhoDate ||
+    candidate.nho_date ||
+    "";
+
+  const existingDate = parseDateInputValue(existingValue);
+
+  if (existingDate && isSelectableInternalNhoDate(existingDate)) {
+    return toDateInputValue(existingDate);
+  }
+
+  return toDateInputValue(getFirstSelectableInternalNhoDate());
+}
+
+function NhoInternalRescheduleModal({
+  open,
+  candidate,
+  currentValue,
+  value,
+  isSaving = false,
+  onChange,
+  onClose,
+  onSubmit,
+}) {
+  const selectedDate = parseDateInputValue(value);
+  const earliestDate = getFirstSelectableInternalNhoDate();
+
+  const [displayDate, setDisplayDate] = useState(() => {
+    const source = selectedDate || earliestDate;
+
+    return new Date(source.getFullYear(), source.getMonth(), 1);
+  });
+
+  useEffect(() => {
+    if (!open) return;
+
+    const source = parseDateInputValue(value) || earliestDate;
+
+    setDisplayDate(
+      new Date(source.getFullYear(), source.getMonth(), 1),
+    );
+  }, [open, value]);
+
+  const calendarDays = useMemo(
+    () => buildAssessmentCalendarDays(displayDate),
+    [displayDate],
+  );
+
+  const earliestMonth = new Date(
+    earliestDate.getFullYear(),
+    earliestDate.getMonth(),
+    1,
+  );
+
+  const displayedMonth = new Date(
+    displayDate.getFullYear(),
+    displayDate.getMonth(),
+    1,
+  );
+
+  const disablePreviousMonth =
+    displayedMonth.getTime() <= earliestMonth.getTime();
+
+  if (!open) return null;
+
+  function handleClose() {
+    if (isSaving) return;
+    onClose?.();
+  }
+
+  function handleSelectDate(date) {
+    if (!isSelectableInternalNhoDate(date)) return;
+
+    onChange?.(toDateInputValue(date));
+  }
+
+  const footer = (
+    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <CandidateModalSecondaryButton
+        type="button"
+        onClick={handleClose}
+        disabled={isSaving}
+      >
+        Cancel
+      </CandidateModalSecondaryButton>
+
+      <CandidateModalPrimaryButton
+        type="button"
+        onClick={onSubmit}
+        disabled={
+          isSaving ||
+          !selectedDate ||
+          !isSelectableInternalNhoDate(selectedDate)
+        }
+        className="min-w-[190px]"
+      >
+        {isSaving ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <CalendarDays size={16} />
+        )}
+        {isSaving ? "Rescheduling..." : "Reschedule & Send Email"}
+      </CandidateModalPrimaryButton>
+    </div>
+  );
+
+  return (
+    <CandidatePipelineModalShell
+      open={open}
+      icon={CalendarDays}
+      title="Reschedule NHO"
+      subtitle="Choose a new NHO date. Today and future weekdays are available; Saturdays and Sundays are disabled."
+      badge="For NHO"
+      onClose={handleClose}
+      closeDisabled={isSaving}
+      maxWidth="max-w-xl"
+      zIndex="z-[11600]"
+      footer={footer}
+    >
+      <div
+        className={
+          isSaving
+            ? "pointer-events-none space-y-4 opacity-70"
+            : "space-y-4"
+        }
+      >
+        <CandidateModalSummary
+          candidate={candidate || {}}
+          stage="For NHO"
+        />
+
+        <CandidateModalSection
+          title="New NHO Schedule"
+          subtitle="HR, TA, HR Admin, and Super Admin may select any weekday from today onward. Holidays remain selectable."
+        >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+              <p className="sibs-kicker text-[#667085]">Current NHO Date</p>
+              <p className="mt-1 sibs-text-sm font-extrabold text-sibs-primary-1">
+                {formatNhoScheduleDateDisplay(currentValue)}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+              <p className="sibs-kicker text-emerald-700">New NHO Date</p>
+              <p className="mt-1 sibs-text-sm font-extrabold text-emerald-800">
+                {formatNhoScheduleDateDisplay(value)}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+              <button
+                type="button"
+                disabled={disablePreviousMonth || isSaving}
+                onClick={() =>
+                  setDisplayDate(
+                    (previous) =>
+                      new Date(
+                        previous.getFullYear(),
+                        previous.getMonth() - 1,
+                        1,
+                      ),
+                  )
+                }
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-30"
+                aria-label="Previous month"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              <p className="sibs-text-xs font-extrabold text-sibs-primary-1">
+                {assessmentEmailMonthNames[displayDate.getMonth()]}{" "}
+                {displayDate.getFullYear()}
+              </p>
+
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() =>
+                  setDisplayDate(
+                    (previous) =>
+                      new Date(
+                        previous.getFullYear(),
+                        previous.getMonth() + 1,
+                        1,
+                      ),
+                  )
+                }
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Next month"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="grid grid-cols-7 gap-1">
+                {assessmentEmailWeekdayLabels.map((dayLabel) => (
+                  <div
+                    key={dayLabel}
+                    className="flex h-8 items-center justify-center sibs-text-micro font-extrabold text-[#174A7C]"
+                  >
+                    {dayLabel}
+                  </div>
+                ))}
+
+                {calendarDays.map((day) => {
+                  const isWeekend =
+                    day.date.getDay() === 0 || day.date.getDay() === 6;
+                  const selectable = isSelectableInternalNhoDate(day.date);
+                  const active =
+                    selectedDate &&
+                    isSameAssessmentDate(day.date, selectedDate);
+                  const isToday = isSameAssessmentDate(
+                    day.date,
+                    getManilaCalendarDate(),
+                  );
+
+                  return (
+                    <button
+                      key={day.dateValue}
+                      type="button"
+                      disabled={!selectable || isSaving}
+                      onClick={() => handleSelectDate(day.date)}
+                      className={`flex h-10 w-10 items-center justify-center rounded-full sibs-text-xs font-extrabold transition ${
+                        active
+                          ? "bg-sibs-primary-1 text-white shadow-sm"
+                          : selectable
+                            ? isToday
+                              ? "bg-[#EAF2FB] text-sibs-primary-1 hover:bg-[#DDEBFA]"
+                              : "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                            : isWeekend
+                              ? "cursor-not-allowed bg-red-50 text-red-200"
+                              : day.isCurrentMonth
+                                ? "cursor-not-allowed text-[#CBD5E1]"
+                                : "cursor-not-allowed text-[#E2E8F0]"
+                      }`}
+                      title={
+                        selectable
+                          ? "Select this NHO date"
+                          : isWeekend
+                            ? "Saturday and Sunday are unavailable"
+                            : "Past dates are unavailable"
+                      }
+                    >
+                      {day.dayNumber}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+            <p className="sibs-text-xs font-bold leading-5 text-sibs-primary-1">
+              Available dates start today. Saturdays and Sundays are disabled.
+              Philippine holidays are still selectable for HR/TA rescheduling.
+            </p>
+          </div>
+        </CandidateModalSection>
+      </div>
+    </CandidatePipelineModalShell>
   );
 }
 
@@ -5234,7 +5704,6 @@ const CandidatePipelineModal = ({
   onOpenMoveModal,
   onOpenAssessmentModal,
   onOpenDropOffModal,
-  onCompleteInterview,
   onSendAssessmentEmail,
   onCancelInterview,
   onSendOfferEmail,
@@ -5342,9 +5811,17 @@ const CandidatePipelineModal = ({
   const [nhoScheduleDate, setNhoScheduleDate] = useState(() =>
     toDateInputValue(getFirstSelectableNhoFriday()),
   );
+  const [showNhoRescheduleModal, setShowNhoRescheduleModal] = useState(false);
+  const [nhoRescheduleDate, setNhoRescheduleDate] = useState(() =>
+    toDateInputValue(getFirstSelectableInternalNhoDate()),
+  );
   const [isSchedulingNho, setIsSchedulingNho] = useState(false);
+  const [isReschedulingNho, setIsReschedulingNho] = useState(false);
   const [isResendingNhoEmail, setIsResendingNhoEmail] = useState(false);
   const [isCreatingFinalInterviewRetake, setIsCreatingFinalInterviewRetake] = useState(false);
+  const [isStartingInterview, setIsStartingInterview] = useState(false);
+  const [isApprovingInterviewReschedule, setIsApprovingInterviewReschedule] =
+    useState(false);
 
   const isCandidateProcessRunning =
     isSavingNhoFiles ||
@@ -5354,8 +5831,11 @@ const CandidatePipelineModal = ({
     isResendingDropOffEmail ||
     isSubmittingRevisedOffer ||
     isSchedulingNho ||
+    isReschedulingNho ||
     isResendingNhoEmail ||
-    isCreatingFinalInterviewRetake;
+    isCreatingFinalInterviewRetake ||
+    isStartingInterview ||
+    isApprovingInterviewReschedule;
   const [nhoFilesError, setNhoFilesError] = useState("");
   const [nhoFilesSuccess, setNhoFilesSuccess] = useState("");
   const [deleteFileConfirmation, setDeleteFileConfirmation] = useState({
@@ -5373,11 +5853,15 @@ const CandidatePipelineModal = ({
   });
 
   const {
-    handleStartInterview,
     handleResendDropOffEmail,
     setCandidateList,
     syncSelectedCandidate,
   } = useCandidatePipeline();
+  const { user } = useUser();
+  const currentAuditActorLabel = useMemo(
+    () => formatCurrentAuditActorLabel(user),
+    [user],
+  );
 
   const navigate = useNavigate();
 
@@ -5548,6 +6032,10 @@ const CandidatePipelineModal = ({
         interviewStatus:
           candidate?.interviewStatus ||
           candidate?.interview_status ||
+          "",
+        interviewResponseStatus:
+          candidate?.interviewResponseStatus ||
+          candidate?.interview_response_status ||
           "",
         onlineInterviewLink:
           candidate?.onlineInterviewLink ||
@@ -5928,6 +6416,7 @@ const CandidatePipelineModal = ({
     currentStage === "Accepted" ||
     currentStage === "Accepted (For NHO)";
   const forNHO = currentStage === "For NHO";
+  const canInternalRescheduleNhoAccess = canInternalRescheduleNho(user);
   const isIncompleteOnboarding =
     currentStage === INCOMPLETE_ONBOARDING_STAGE;
   const isOnboarding = currentStage === ONBOARDING_STAGE;
@@ -6309,8 +6798,254 @@ const CandidatePipelineModal = ({
 
   const candidateHasSchedule = hasInterviewSchedule(activeCandidate);
   const modalStatus = getDisplayInterviewStatus(activeCandidate);
+  const isInterviewReadyToStart =
+    isInterviewScheduled &&
+    cleanText(modalStatus).toLowerCase() === "scheduled";
   const isInterviewInProgress =
-    isInterviewScheduled && modalStatus === "Interview in Progress";
+    isInterviewScheduled &&
+    cleanText(modalStatus).toLowerCase() === "interview in progress";
+  const isInterviewRescheduled =
+    isInterviewScheduled &&
+    cleanText(modalStatus).toLowerCase() === "rescheduled";
+  const canApproveInterviewRescheduleAccess =
+    canInternalRescheduleNhoAccess;
+  const interviewResponseStatus = cleanText(
+    activeCandidate?.interviewResponseStatus ||
+      activeCandidate?.interview_response_status,
+  ).toLowerCase();
+  const candidateConfirmedInterview = [
+    "accepted",
+    "rescheduled",
+  ].includes(interviewResponseStatus);
+  const canStartOrContinueInterview =
+    isInterviewInProgress ||
+    (isInterviewReadyToStart && candidateConfirmedInterview);
+
+  async function refreshInterviewCandidateFromServer({
+    showError = false,
+  } = {}) {
+    const recordId = cleanText(candidateNhoUploadId);
+
+    if (!recordId) {
+      if (showError) {
+        showStatusModal({
+          type: "error",
+          title: "Unable to Refresh Interview",
+          message: "Candidate Pipeline ID is missing.",
+        });
+      }
+
+      return null;
+    }
+
+    try {
+      const response = await api.get(
+        `/api/candidate-pipeline/${encodeURIComponent(recordId)}`,
+        {
+          params: { _t: Date.now() },
+          withCredentials: true,
+        },
+      );
+
+      const payload = response?.data || {};
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            "Unable to load the latest candidate interview status.",
+        );
+      }
+
+      const incomingCandidate =
+        payload?.candidate ||
+        payload?.data?.candidate ||
+        payload?.data ||
+        null;
+
+      if (
+        !incomingCandidate ||
+        typeof incomingCandidate !== "object"
+      ) {
+        throw new Error(
+          "The latest candidate interview status could not be loaded.",
+        );
+      }
+
+      const currentCandidate =
+        activeCandidateRef.current ||
+        activeCandidate ||
+        {};
+
+      const mergedCandidate =
+        mergeCandidateRealtimeUpdate(
+          currentCandidate,
+          incomingCandidate,
+        );
+
+      activeCandidateRef.current = mergedCandidate;
+
+      setLocalCandidate((previousCandidate) =>
+        mergeCandidateRealtimeUpdate(
+          previousCandidate || currentCandidate,
+          incomingCandidate,
+        ),
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("ta-pipeline-candidates-updated", {
+          detail: {
+            candidate: mergedCandidate,
+            source: "candidate-interview-response-refresh",
+          },
+        }),
+      );
+
+      return mergedCandidate;
+    } catch (error) {
+      if (showError) {
+        showStatusModal({
+          type: "error",
+          title: "Unable to Refresh Interview",
+          message: getApiErrorMessage(
+            error,
+            "Unable to load the latest candidate interview status.",
+          ),
+        });
+      }
+
+      return null;
+    }
+  }
+
+  async function handleRefreshMovementHistory() {
+    const currentCandidate =
+      activeCandidateRef.current ||
+      activeCandidate ||
+      {};
+
+    const recordId = cleanText(
+      getCandidatePipelineRecordId(currentCandidate) ||
+        candidateNhoUploadId,
+    );
+
+    if (!recordId) {
+      return currentCandidate;
+    }
+
+    try {
+      const response = await api.get(
+        `/api/candidate-pipeline/${encodeURIComponent(recordId)}`,
+        {
+          params: { _t: Date.now() },
+          withCredentials: true,
+        },
+      );
+
+      const payload = response?.data || {};
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            "Unable to load the latest movement history.",
+        );
+      }
+
+      const incomingCandidate =
+        getCandidateFromApiPayload(payload);
+
+      if (
+        !incomingCandidate ||
+        typeof incomingCandidate !== "object"
+      ) {
+        throw new Error(
+          "The latest movement history could not be loaded.",
+        );
+      }
+
+      const mergedCandidate =
+        mergeCandidateRealtimeUpdate(
+          currentCandidate,
+          incomingCandidate,
+        );
+
+      activeCandidateRef.current = mergedCandidate;
+
+      return mergedCandidate;
+    } catch (error) {
+      console.error(
+        "Refresh Movement History candidate error:",
+        error,
+      );
+
+      return currentCandidate;
+    }
+  }
+
+  useEffect(() => {
+    if (
+      !open ||
+      !isInterviewScheduled ||
+      !candidateNhoUploadId ||
+      isInterviewInProgress ||
+      candidateConfirmedInterview
+    ) {
+      return undefined;
+    }
+
+    let isActive = true;
+    let requestInFlight = false;
+
+    async function refreshPendingInterviewResponse() {
+      if (!isActive || requestInFlight) return;
+
+      requestInFlight = true;
+
+      try {
+        await refreshInterviewCandidateFromServer();
+      } finally {
+        requestInFlight = false;
+      }
+    }
+
+    function handleWindowFocus() {
+      refreshPendingInterviewResponse();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        refreshPendingInterviewResponse();
+      }
+    }
+
+    refreshPendingInterviewResponse();
+
+    const intervalId = window.setInterval(
+      refreshPendingInterviewResponse,
+      4000,
+    );
+
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange,
+    );
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+    };
+  }, [
+    open,
+    isInterviewScheduled,
+    candidateNhoUploadId,
+    isInterviewInProgress,
+    candidateConfirmedInterview,
+  ]);
 
   function syncCandidateAfterAction(nextCandidate = {}, detail = {}) {
     const mergedCandidate = {
@@ -6761,7 +7496,7 @@ const CandidatePipelineModal = ({
         ...currentTimeline,
         {
           stage: "Initial Screening",
-          owner: "Current User",
+          owner: currentAuditActorLabel,
           source: "PRF Review",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
@@ -6817,6 +7552,97 @@ const CandidatePipelineModal = ({
   function handleOpenInterviewSchedule() {
     activeCandidateRef.current = activeCandidate;
     onOpenScheduleModal?.(activeCandidate);
+  }
+
+  async function handleApproveInterviewReschedule() {
+    if (
+      isApprovingInterviewReschedule ||
+      !canApproveInterviewRescheduleAccess
+    ) {
+      return;
+    }
+
+    const recordId = cleanText(
+      getCandidateRecordId(activeCandidate) ||
+        candidateNhoUploadId,
+    );
+
+    if (!recordId) {
+      showStatusModal({
+        type: "error",
+        title: "Unable to Approve Reschedule",
+        message: "Candidate Pipeline ID is missing.",
+      });
+      return;
+    }
+
+    setIsApprovingInterviewReschedule(true);
+
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          recordId,
+        )}/interview/approve-reschedule`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload =
+        unwrapCandidatePipelineResponse(response) ||
+        response?.data ||
+        {};
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            "Unable to approve the candidate's interview reschedule.",
+        );
+      }
+
+      const apiCandidate =
+        getCandidateFromApiPayload(payload) || {};
+
+      syncCandidateAfterAction({
+        ...apiCandidate,
+        interviewStatus:
+          apiCandidate.interviewStatus ||
+          apiCandidate.interview_status ||
+          "Scheduled",
+        interview_status:
+          apiCandidate.interview_status ||
+          apiCandidate.interviewStatus ||
+          "Scheduled",
+        interviewResponseStatus:
+          apiCandidate.interviewResponseStatus ||
+          apiCandidate.interview_response_status ||
+          "Rescheduled",
+        interview_response_status:
+          apiCandidate.interview_response_status ||
+          apiCandidate.interviewResponseStatus ||
+          "Rescheduled",
+      });
+
+      showStatusModal({
+        type: "success",
+        title: "Reschedule Approved",
+        message:
+          payload?.message ||
+          "The candidate's rescheduled interview was approved and the confirmation email was sent.",
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Approval Failed",
+        message: getApiErrorMessage(
+          error,
+          "Unable to approve the candidate's interview reschedule.",
+        ),
+      });
+    } finally {
+      setIsApprovingInterviewReschedule(false);
+    }
   }
 
   async function handleSubmitRevisedOffer(revisedOffer) {
@@ -8078,6 +8904,121 @@ const CandidatePipelineModal = ({
     setShowNhoScheduleModal(true);
   }
 
+  function handleNhoRescheduleClick() {
+    if (!canInternalRescheduleNhoAccess || isReschedulingNho) {
+      return;
+    }
+
+    setNhoRescheduleDate(
+      getCandidateNhoRescheduleDateInput(activeCandidate),
+    );
+    setShowNhoRescheduleModal(true);
+  }
+
+  async function handleConfirmNhoReschedule() {
+    const candidateId = cleanText(candidateNhoUploadId);
+    const selectedDate = parseDateInputValue(nhoRescheduleDate);
+
+    if (!candidateId) {
+      setShowNhoRescheduleModal(false);
+      showStatusModal({
+        type: "error",
+        title: "NHO Reschedule Failed",
+        message: "Candidate Pipeline ID is missing.",
+      });
+      return;
+    }
+
+    if (!canInternalRescheduleNhoAccess) {
+      setShowNhoRescheduleModal(false);
+      showStatusModal({
+        type: "error",
+        title: "Access Denied",
+        message:
+          "Only HR, TA, HR Admin, and Super Admin can reschedule NHO.",
+      });
+      return;
+    }
+
+    if (!selectedDate || !isSelectableInternalNhoDate(selectedDate)) {
+      showStatusModal({
+        type: "error",
+        title: "Invalid NHO Date",
+        message:
+          "Select today or a future weekday. Saturdays, Sundays, and past dates are unavailable.",
+      });
+      return;
+    }
+
+    setIsReschedulingNho(true);
+
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateId,
+        )}/nho/reschedule`,
+        {
+          startDate: nhoRescheduleDate,
+          date: nhoRescheduleDate,
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload = unwrapCandidatePipelineResponse(response);
+
+      if (payload?.success === false) {
+        throw new Error(payload?.message || "Failed to reschedule NHO.");
+      }
+
+      const apiCandidate = lockCandidatePipelinePrimaryKey(
+        getCandidateFromApiPayload(payload) || {},
+        candidateNhoUploadIdentity.recordId,
+      );
+
+      const nextCandidate = lockCandidatePipelinePrimaryKey(
+        {
+          ...activeCandidate,
+          ...apiCandidate,
+          nhoSchedule:
+            apiCandidate.nhoSchedule ||
+            payload.nhoSchedule ||
+            activeCandidate.nhoSchedule ||
+            {},
+        },
+        candidateNhoUploadIdentity.recordId,
+      );
+
+      setLocalCandidate(nextCandidate);
+      applyScheduledCandidateToPipelineState(nextCandidate);
+      setShowNhoRescheduleModal(false);
+
+      const emailWarning = cleanText(
+        payload.emailWarning || payload.email_warning,
+      );
+
+      showStatusModal({
+        type: "success",
+        title: emailWarning ? "NHO Rescheduled" : "NHO Rescheduled & Email Sent",
+        message: emailWarning
+          ? `${payload?.message || "NHO schedule rescheduled."} ${emailWarning}`
+          : payload?.message ||
+            `NHO rescheduled to ${formatNhoScheduleDateDisplay(
+              nhoRescheduleDate,
+            )} and emailed to the candidate.`,
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "NHO Reschedule Failed",
+        message: getApiErrorMessage(error, "Failed to reschedule NHO."),
+      });
+    } finally {
+      setIsReschedulingNho(false);
+    }
+  }
+
   async function handleResendNhoScheduleEmail() {
     const candidateId = cleanText(candidateNhoUploadId);
 
@@ -8545,32 +9486,69 @@ async function handleConfirmScheduleNho() {
   }
 
   async function handleStartOrContinueInterview() {
+    if (isStartingInterview) return;
+
     if (isInterviewInProgress) {
       openFinalInterviewForm();
       return;
     }
 
-    const candidatePositionId =
-      getCandidateAppliedPositionId(activeCandidate);
+    setIsStartingInterview(true);
 
-    const candidatePositionTitle =
-      getCandidateAppliedPositionTitle(activeCandidate);
+    try {
+      /*
+       * The candidate can accept/reschedule from the public email page while
+       * this Candidate Pipeline modal is already open. Always reload the
+       * authoritative database row before resolving the Final Interview form.
+       * This prevents a stale React closure from opening the wrong/empty form.
+       */
+      const latestCandidate =
+        await refreshInterviewCandidateFromServer({
+          showError: true,
+        });
 
-    const preferredFinalInterviewFormId =
-      activeCandidate.finalInterviewFormId ||
-      activeCandidate.final_interview_form_id ||
-      "";
+      if (!latestCandidate) return;
 
-    const matchedFinalInterviewForm =
-      findMatchingFinalInterviewForm({
-        preferredFormId: preferredFinalInterviewFormId,
-        positionId: candidatePositionId,
-        positionTitle: candidatePositionTitle,
-      });
+      const latestResponseStatus = cleanText(
+        latestCandidate.interviewResponseStatus ||
+          latestCandidate.interview_response_status,
+      ).toLowerCase();
 
-    const response = await handleStartInterview({
-      ...activeCandidate,
-      finalInterviewTemplateFormId:
+      if (
+        !["accepted", "rescheduled"].includes(
+          latestResponseStatus,
+        )
+      ) {
+        showStatusModal({
+          type: "error",
+          title: "Candidate Response Required",
+          message:
+            "The interview cannot be started until the candidate accepts or confirms the interview schedule.",
+        });
+        return;
+      }
+
+      const candidatePositionId =
+        getCandidateAppliedPositionId(latestCandidate);
+
+      const candidatePositionTitle =
+        getCandidateAppliedPositionTitle(latestCandidate);
+
+      const preferredFinalInterviewFormId =
+        latestCandidate.finalInterviewTemplateFormId ||
+        latestCandidate.final_interview_template_form_id ||
+        latestCandidate.finalInterviewFormId ||
+        latestCandidate.final_interview_form_id ||
+        "";
+
+      const matchedFinalInterviewForm =
+        findMatchingFinalInterviewForm({
+          preferredFormId: preferredFinalInterviewFormId,
+          positionId: candidatePositionId,
+          positionTitle: candidatePositionTitle,
+        });
+
+      const resolvedTemplateFormId =
         getFinalInterviewFormId(
           matchedFinalInterviewForm,
         ) ||
@@ -8579,139 +9557,266 @@ async function handleConfirmScheduleNho() {
           candidatePositionId
             ? `final-interview-${candidatePositionId}`
             : "default-job-evaluation"
-        ),
-    });
+        );
 
-    if (!response?.success) {
-      /*
-       * handleStartInterview keeps the existing failure handling.
-       * Do not navigate when the API request fails.
-       */
-      return;
-    }
+      const candidateRecordId = cleanText(
+        getCandidateRecordId(latestCandidate) ||
+          candidateNhoUploadId,
+      );
 
-    const responsePayload =
-      response?.data && typeof response.data === "object"
-        ? response.data
-        : response;
+      if (!candidateRecordId) {
+        showStatusModal({
+          type: "error",
+          title: "Unable to Start Final Interview",
+          message: "Candidate Pipeline ID is missing.",
+        });
+        return;
+      }
 
-    const newSubmission =
-      responsePayload?.submission ||
-      response?.submission ||
-      {};
-
-    const newSubmissionId =
-      responsePayload?.submissionId ||
-      response?.submissionId ||
-      newSubmission?.id ||
-      newSubmission?.submissionId ||
-      newSubmission?.submission_id ||
-      "";
-
-    const newAttemptNo =
-      responsePayload?.attemptNo ||
-      response?.attemptNo ||
-      newSubmission?.attemptNo ||
-      newSubmission?.attempt_no ||
-      newSubmission?.attempt ||
-      "";
-
-    const newSavedFormLink =
-      responsePayload?.savedFormLink ||
-      response?.savedFormLink ||
-      newSubmission?.savedFormLink ||
-      newSubmission?.saved_form_link ||
-      "";
-
-    /*
-     * Always open the submission returned by Start Interview. Do not call the
-     * generic latest-submission resolver here because activeCandidate may
-     * still contain the previous completed Job Evaluation until refresh.
-     */
-    if (newSavedFormLink) {
-      navigate(newSavedFormLink, {
-        state: {
-          candidate:
-            responsePayload?.candidate ||
-            response?.candidate ||
-            responsePayload?.data ||
-            activeCandidate,
-          allowEditSubmitted: false,
-          finalInterviewRetake:
-            Boolean(
-              newSubmission?.isRetake ||
-                newSubmission?.is_retake ||
-                Number(newAttemptNo) > 1,
-            ),
-          submissionId: newSubmissionId,
-          attemptNo: newAttemptNo,
+      const startResponse = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateRecordId,
+        )}/interview/start`,
+        {
+          candidateId:
+            latestCandidate.candidateId ||
+            latestCandidate.candidate_id ||
+            "",
+          candidateApplicationId:
+            latestCandidate.candidateApplicationId ||
+            latestCandidate.candidate_application_id ||
+            latestCandidate.applicationId ||
+            latestCandidate.application_id ||
+            "",
+          positionId: candidatePositionId || "",
+          positionTitle: candidatePositionTitle || "",
+          templateFormId: resolvedTemplateFormId,
+          formId:
+            preferredFinalInterviewFormId ||
+            resolvedTemplateFormId,
+          formName:
+            matchedFinalInterviewForm?.formName ||
+            matchedFinalInterviewForm?.form_name ||
+            matchedFinalInterviewForm?.name ||
+            "Job Evaluation Form",
         },
-      });
-      return;
-    }
+        {
+          withCredentials: true,
+        },
+      );
 
-    /*
-     * Fallback for older API responses: construct the new URL using only the
-     * newly returned submission ID. Never reuse the previous submission ID.
-     */
-    if (newSubmissionId) {
-      const positionId =
+      const response = startResponse?.data || {};
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message ||
+            "Unable to start the Final Interview.",
+        );
+      }
+
+      const responsePayload =
+        response?.data && typeof response.data === "object"
+          ? response.data
+          : response;
+
+      const newSubmission =
+        response?.submission ||
+        responsePayload?.submission ||
+        {};
+
+      const newSubmissionId =
+        response?.submissionId ||
+        responsePayload?.submissionId ||
+        newSubmission?.id ||
+        newSubmission?.submissionId ||
+        newSubmission?.submission_id ||
+        "";
+
+      const newAttemptNo =
+        response?.attemptNo ||
+        responsePayload?.attemptNo ||
+        newSubmission?.attemptNo ||
+        newSubmission?.attempt_no ||
+        newSubmission?.attempt ||
+        "";
+
+      const newSavedFormLink =
+        response?.savedFormLink ||
+        responsePayload?.savedFormLink ||
+        newSubmission?.savedFormLink ||
+        newSubmission?.saved_form_link ||
+        "";
+
+      const startedPositionId =
+        getFinalInterviewFormPositionId(
+          matchedFinalInterviewForm,
+        ) ||
         newSubmission?.positionId ||
         newSubmission?.position_id ||
-        getCandidateAppliedPositionId(activeCandidate);
+        candidatePositionId ||
+        "";
 
-      const formId =
+      const startedPositionTitle =
+        getFinalInterviewFormPositionTitle(
+          matchedFinalInterviewForm,
+        ) ||
+        candidatePositionTitle ||
+        "";
+
+      const startedTemplateFormId =
+        response?.templateFormId ||
+        responsePayload?.templateFormId ||
+        getFinalInterviewFormId(
+          matchedFinalInterviewForm,
+        ) ||
+        newSubmission?.templateFormId ||
+        newSubmission?.template_form_id ||
+        resolvedTemplateFormId;
+
+      const startedFormId =
+        response?.formInstanceId ||
+        responsePayload?.formInstanceId ||
+        response?.formId ||
+        responsePayload?.formId ||
+        newSubmission?.formInstanceId ||
+        newSubmission?.form_instance_id ||
         newSubmission?.formId ||
         newSubmission?.form_id ||
-        activeCandidate.finalInterviewFormId ||
-        activeCandidate.final_interview_form_id ||
-        "default-job-evaluation";
+        startedTemplateFormId;
 
-      const params = new URLSearchParams();
+      const responseCandidate =
+        response?.candidate ||
+        responsePayload?.candidate ||
+        response?.data ||
+        latestCandidate;
 
-      params.set(
-        "candidateId",
-        activeCandidate.candidateId || "",
+      const startedCandidate = {
+        ...latestCandidate,
+        ...(responseCandidate &&
+        typeof responseCandidate === "object"
+          ? responseCandidate
+          : {}),
+        positionId: startedPositionId,
+        openPosition:
+          startedPositionTitle ||
+          latestCandidate.openPosition,
+        finalInterviewPositionId:
+          startedPositionId,
+        finalInterviewPositionTitle:
+          startedPositionTitle,
+        finalInterviewTemplateFormId:
+          startedTemplateFormId,
+        finalInterviewFormId:
+          startedFormId,
+      };
+
+      activeCandidateRef.current = startedCandidate;
+      setLocalCandidate(startedCandidate);
+
+      window.dispatchEvent(
+        new CustomEvent("ta-pipeline-candidates-updated", {
+          detail: {
+            candidate: startedCandidate,
+            submission: newSubmission,
+            source: "final-interview-start",
+          },
+        }),
       );
-      params.set(
-        "candidateApplicationId",
-        activeCandidate.candidateApplicationId ||
-          activeCandidate.id ||
-          "",
-      );
-      params.set("submissionId", newSubmissionId);
-      params.set("formId", formId);
-      params.set("mode", "edit");
-      params.set("continue", "1");
 
-      if (positionId) {
-        params.set("positionId", positionId);
-      }
-
-      if (newAttemptNo) {
-        params.set("attempt", String(newAttemptNo));
-      }
-
-      navigate(
-        `/recruitment/final-interview-form?${params.toString()}`,
-        {
+      /*
+       * Always open the exact submission returned by Start Interview. The
+       * matched template is passed through route state immediately, so the
+       * Final Interview page does not wait for a page-level refresh before it
+       * can render its questions.
+       */
+      if (newSavedFormLink) {
+        navigate(newSavedFormLink, {
           state: {
-            candidate: activeCandidate,
+            candidate: startedCandidate,
+            matchedFinalInterviewForm:
+              matchedFinalInterviewForm,
             allowEditSubmitted: false,
+            finalInterviewRetake:
+              Boolean(
+                newSubmission?.isRetake ||
+                  newSubmission?.is_retake ||
+                  Number(newAttemptNo) > 1,
+              ),
             submissionId: newSubmissionId,
             attemptNo: newAttemptNo,
           },
-        },
-      );
-      return;
-    }
+        });
+        return;
+      }
 
-    showStatusModal({
-      type: "error",
-      title: "Unable to start Final Interview",
-      message:
-        "A new Job Evaluation could not be created. Please try again.",
-    });
+      if (newSubmissionId) {
+        const params = new URLSearchParams();
+
+        params.set(
+          "candidateId",
+          startedCandidate.candidateId ||
+            startedCandidate.candidate_id ||
+            "",
+        );
+        params.set(
+          "candidateApplicationId",
+          startedCandidate.candidateApplicationId ||
+            startedCandidate.candidate_application_id ||
+            startedCandidate.applicationId ||
+            "",
+        );
+        params.set("submissionId", newSubmissionId);
+        params.set("templateFormId", startedTemplateFormId);
+        params.set("formId", startedFormId);
+        params.set("mode", "edit");
+        params.set("continue", "1");
+
+        if (startedPositionId) {
+          params.set("positionId", startedPositionId);
+        }
+
+        if (startedPositionTitle) {
+          params.set("positionTitle", startedPositionTitle);
+        }
+
+        if (newAttemptNo) {
+          params.set("attempt", String(newAttemptNo));
+        }
+
+        navigate(
+          `/recruitment/final-interview-form?${params.toString()}`,
+          {
+            state: {
+              candidate: startedCandidate,
+              matchedFinalInterviewForm:
+                matchedFinalInterviewForm,
+              allowEditSubmitted: false,
+              submissionId: newSubmissionId,
+              attemptNo: newAttemptNo,
+            },
+          },
+        );
+        return;
+      }
+
+      showStatusModal({
+        type: "error",
+        title: "Unable to Start Final Interview",
+        message:
+          "A new Final Interview attempt could not be created. Please try again.",
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Unable to Start Final Interview",
+        message: getApiErrorMessage(
+          error,
+          "Unable to start the Final Interview.",
+        ),
+      });
+    } finally {
+      setIsStartingInterview(false);
+    }
   }
 
   async function handleRetakeFinalInterview() {
@@ -8972,6 +10077,21 @@ async function handleConfirmScheduleNho() {
         </CandidateModalSecondaryButton>
       )}
 
+      {forNHO && canInternalRescheduleNhoAccess && (
+        <CandidateModalSecondaryButton
+          type="button"
+          disabled={isReschedulingNho}
+          onClick={handleNhoRescheduleClick}
+        >
+          {isReschedulingNho ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <CalendarDays size={15} />
+          )}
+          {isReschedulingNho ? "Rescheduling..." : "Reschedule NHO"}
+        </CandidateModalSecondaryButton>
+      )}
+
       {forNHO && (
         <CandidateModalSecondaryButton
           type="button"
@@ -9031,12 +10151,26 @@ async function handleConfirmScheduleNho() {
         </CandidateModalPrimaryButton>
       )}
 
-      {isInterviewScheduled && candidateHasSchedule && (
-        <CandidateModalPrimaryButton type="button" onClick={handleStartOrContinueInterview}>
-          <CirclePlay size={15} />
-          {isInterviewInProgress ? "Continue Interview" : "Start Interview"}
-        </CandidateModalPrimaryButton>
-      )}
+      {isInterviewScheduled &&
+        candidateHasSchedule &&
+        canStartOrContinueInterview && (
+          <CandidateModalPrimaryButton
+            type="button"
+            disabled={isStartingInterview}
+            onClick={handleStartOrContinueInterview}
+          >
+            {isStartingInterview ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <CirclePlay size={15} />
+            )}
+            {isStartingInterview
+              ? "Starting..."
+              : isInterviewInProgress
+                ? "Continue Interview"
+                : "Start Interview"}
+          </CandidateModalPrimaryButton>
+        )}
 
       {isInterviewed && nextStage && (
         <CandidateModalPrimaryButton type="button" onClick={handleMoveToNextStage}>
@@ -9099,6 +10233,7 @@ async function handleConfirmScheduleNho() {
         maxWidth="max-w-4xl"
         zIndex="z-[9999]"
         movementHistoryCandidate={activeCandidate}
+        onBeforeOpenMovementHistory={handleRefreshMovementHistory}
         footer={recordFooter}
         headerContent={
           <div className="flex min-w-0 items-start gap-3">
@@ -9352,16 +10487,24 @@ async function handleConfirmScheduleNho() {
 
               {isInterviewScheduled && candidateHasSchedule && (
                 <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  {isInterviewRescheduled &&
+                    canApproveInterviewRescheduleAccess && (
+                      <CandidateModalPrimaryButton
+                        type="button"
+                        disabled={isApprovingInterviewReschedule}
+                        onClick={handleApproveInterviewReschedule}
+                      >
+                        {isApprovingInterviewReschedule ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Check size={14} />
+                        )}
+                        <span>Approve Reschedule</span>
+                      </CandidateModalPrimaryButton>
+                    )}
                   <CandidateModalSecondaryButton type="button" onClick={handleOpenInterviewSchedule}>
                     <CalendarDays size={14} />
                     Update Schedule
-                  </CandidateModalSecondaryButton>
-                  <CandidateModalSecondaryButton
-                    type="button"
-                    onClick={() => onCompleteInterview?.(activeCandidate)}
-                  >
-                    <ClipboardCheck size={14} />
-                    Mark Completed
                   </CandidateModalSecondaryButton>
                   <button
                     type="button"
@@ -9716,6 +10859,21 @@ async function handleConfirmScheduleNho() {
           }
         }}
         onSubmit={handleConfirmScheduleNho}
+      />
+
+      <NhoInternalRescheduleModal
+        open={showNhoRescheduleModal}
+        candidate={activeCandidate}
+        currentValue={nhoScheduleDetails.startDate}
+        value={nhoRescheduleDate}
+        isSaving={isReschedulingNho}
+        onChange={setNhoRescheduleDate}
+        onClose={() => {
+          if (!isReschedulingNho) {
+            setShowNhoRescheduleModal(false);
+          }
+        }}
+        onSubmit={handleConfirmNhoReschedule}
       />
 
       <UpdateAssessmentModal

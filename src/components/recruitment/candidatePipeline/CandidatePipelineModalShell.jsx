@@ -118,6 +118,7 @@ export default function CandidatePipelineModalShell({
   headerContent = null,
   movementHistoryCandidate = null,
   showMovementHistory = undefined,
+  onBeforeOpenMovementHistory = null,
 }) {
   const dialogRef = useRef(null);
   const openerRef = useRef(null);
@@ -126,6 +127,7 @@ export default function CandidatePipelineModalShell({
   const closeDisabledRef = useRef(closeDisabled);
   const movementHistoryOpenRef = useRef(false);
   const [movementHistoryOpen, setMovementHistoryOpen] = useState(false);
+  const [movementHistoryRefreshing, setMovementHistoryRefreshing] = useState(false);
   const [realtimeCandidate, setRealtimeCandidate] = useState(null);
 
   const pipeline = useCandidatePipeline();
@@ -274,6 +276,47 @@ export default function CandidatePipelineModalShell({
     };
   }, []);
 
+  async function handleMovementHistoryToggle() {
+    if (movementHistoryOpen) {
+      setMovementHistoryOpen(false);
+      return;
+    }
+
+    if (movementHistoryRefreshing) return;
+
+    let refreshedCandidate = null;
+
+    if (typeof onBeforeOpenMovementHistory === "function") {
+      setMovementHistoryRefreshing(true);
+
+      try {
+        refreshedCandidate =
+          await onBeforeOpenMovementHistory(
+            candidateForMovementHistory,
+          );
+      } catch (error) {
+        console.error(
+          "Refresh Movement History candidate error:",
+          error,
+        );
+      } finally {
+        setMovementHistoryRefreshing(false);
+      }
+    }
+
+    if (
+      refreshedCandidate &&
+      typeof refreshedCandidate === "object"
+    ) {
+      setRealtimeCandidate((current) => ({
+        ...(current || candidateForMovementHistory),
+        ...refreshedCandidate,
+      }));
+    }
+
+    setMovementHistoryOpen(true);
+  }
+
   function handleBackdrop(event) {
     if (!closeOnBackdrop || closeDisabled) return;
     if (event.target === event.currentTarget) onClose?.();
@@ -342,7 +385,9 @@ export default function CandidatePipelineModalShell({
                 <button
                   ref={movementTriggerRef}
                   type="button"
-                  onClick={() => setMovementHistoryOpen((previous) => !previous)}
+                  onClick={handleMovementHistoryToggle}
+                  disabled={movementHistoryRefreshing}
+                  aria-busy={movementHistoryRefreshing || undefined}
                   aria-expanded={movementHistoryOpen}
                   aria-label={
                     movementHistoryOpen

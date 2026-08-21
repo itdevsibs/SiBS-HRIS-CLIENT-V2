@@ -11,9 +11,102 @@ import {
 import { formatDateTime } from "../../../lib/utils/candidatePipeline/candidatePipelineFormatters";
 import { getStageClass } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import { getVisibleCandidateTimeline } from "../../../lib/utils/candidatePipeline/candidatePipelineStageVisibility";
+import { useUser } from "../../../services/context/UserContext";
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function normalizeAuditRole(value = "") {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function getAuditAccessValues(user = {}) {
+  const directValues = [
+    user?.adminAccess,
+    user?.admin_access,
+    user?.gy_user_access,
+    user?.access,
+    user?.adminLevel,
+    user?.admin_level,
+  ];
+
+  const assignedValues = Array.isArray(user?.assignedAccounts)
+    ? user.assignedAccounts.flatMap((account) => [
+        account?.adminAccess,
+        account?.admin_access,
+        account?.gy_user_access,
+        account?.access,
+      ])
+    : [];
+
+  return [...directValues, ...assignedValues]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+}
+
+export function formatCurrentAuditActorLabel(user = {}) {
+  const accessLabels = {
+    1: "TA",
+    2: "HR",
+    3: "HR Admin",
+    7: "Super Admin",
+  };
+
+  const accessValues = getAuditAccessValues(user);
+  const highestAccess = accessValues.length
+    ? Math.max(...accessValues)
+    : Number(user?.adminAccess || user?.admin_access || 0);
+
+  const roleLabels = {
+    ta: "TA",
+    talent_acquisition: "TA",
+    hr: "HR",
+    human_resource: "HR",
+    human_resources: "HR",
+    hr_admin: "HR Admin",
+    hradmin: "HR Admin",
+    super_admin: "Super Admin",
+    superadmin: "Super Admin",
+  };
+
+  const normalizedRole = normalizeAuditRole(
+    user?.resolvedRole ||
+      user?.resolved_role ||
+      user?.role ||
+      user?.userRole ||
+      user?.user_role ||
+      user?.adminRole ||
+      user?.admin_role ||
+      user?.roleName ||
+      user?.role_name ||
+      "",
+  );
+
+  const accessLabel =
+    accessLabels[highestAccess] || roleLabels[normalizedRole] || "User";
+
+  const displayName = cleanText(
+    user?.fullName ||
+      user?.full_name ||
+      user?.name ||
+      [user?.firstName, user?.middleName, user?.lastName]
+        .map(cleanText)
+        .filter(Boolean)
+        .join(" ") ||
+      [user?.first_name, user?.middle_name, user?.last_name]
+        .map(cleanText)
+        .filter(Boolean)
+        .join(" ") ||
+      user?.sibs_id ||
+      user?.sibsId ||
+      user?.username ||
+      "",
+  );
+
+  return `${accessLabel} - ${displayName || "Unknown User"}`;
 }
 
 function getCandidateStage(candidate = {}) {
@@ -93,16 +186,52 @@ function getTimelineReason(item = {}) {
   );
 }
 
-function getUpdatedBy(item = {}) {
-  return cleanText(
+function getUpdatedBy(item = {}, currentAuditActorLabel = "", candidateName = "") {
+  const savedActor = cleanText(
     item.updatedBy ||
       item.updated_by ||
+      item.owner ||
+      item.taOwner ||
+      item.ta_owner ||
       item.createdBy ||
       item.created_by ||
       item.user ||
       item.actor ||
-      "System",
+      item.extra?.updatedBy ||
+      item.extra?.updated_by ||
+      item.extra?.owner ||
+      item.extra?.taOwner ||
+      item.extra?.ta_owner ||
+      item.extra?.createdBy ||
+      item.extra?.created_by ||
+      item.extra?.user ||
+      item.extra?.actor ||
+      "",
   );
+
+  const savedActorLower = savedActor.toLowerCase();
+
+  if (savedActorLower === "current user") {
+    return cleanText(currentAuditActorLabel) || "System";
+  }
+
+  if (savedActorLower === "candidate" || savedActorLower === "applicant") {
+    return `Applicant - ${cleanText(candidateName) || "Candidate"}`;
+  }
+
+  if (savedActorLower === "system") {
+    return "System";
+  }
+
+  const applicantActorMatch = savedActor.match(
+    /^(?:Applicant|Candidate)\s*-\s*(.+)$/i,
+  );
+
+  if (applicantActorMatch) {
+    return `Applicant - ${cleanText(applicantActorMatch[1]) || cleanText(candidateName) || "Candidate"}`;
+  }
+
+  return savedActor || "System";
 }
 
 function getSortableTime(item = {}) {
@@ -218,6 +347,112 @@ function getTimelineLinks(item = {}) {
   return links;
 }
 
+function normalizeNhoFileTrackingEntry(file = {}, defaultAction = "") {
+  if (!file || typeof file !== "object" || Array.isArray(file)) return null;
+
+  const requirement = cleanText(
+    file.requirement ||
+      file.label ||
+      file.title ||
+      file.category ||
+      "",
+  );
+
+  const fileName = cleanText(
+    file.savedFileName ||
+      file.saved_file_name ||
+      file.filename ||
+      file.storedFileName ||
+      file.stored_file_name ||
+      file.fileName ||
+      file.file_name ||
+      file.name ||
+      file.originalName ||
+      file.original_name ||
+      file.originalname ||
+      "",
+  );
+
+  const action = cleanText(file.action || defaultAction);
+
+  if (!requirement && !fileName) return null;
+
+  return {
+    requirement: requirement || "Pre-Employment Requirement",
+    fileName: fileName || "Uploaded file",
+    action: action || "Updated",
+  };
+}
+
+function getNhoFileTracking(item = {}) {
+  const tracking = [];
+
+  getTimelineSources(item).forEach((source) => {
+    const uploadedFiles =
+      source.uploadedNhoFiles ||
+      source.uploaded_nho_files ||
+      [];
+
+    if (Array.isArray(uploadedFiles)) {
+      uploadedFiles.forEach((file) => {
+        const normalized = normalizeNhoFileTrackingEntry(file, "Uploaded");
+
+        if (normalized) tracking.push(normalized);
+      });
+    }
+
+    const deletedFile =
+      source.deletedNhoFile ||
+      source.deleted_nho_file ||
+      null;
+
+    if (deletedFile && typeof deletedFile === "object") {
+      const normalized = normalizeNhoFileTrackingEntry(deletedFile, "Deleted");
+
+      if (normalized) tracking.push(normalized);
+    }
+  });
+
+  const unique = new Map();
+
+  tracking.forEach((file) => {
+    const key = [
+      cleanText(file.action).toLowerCase(),
+      cleanText(file.requirement).toLowerCase(),
+      cleanText(file.fileName).toLowerCase(),
+    ].join("|");
+
+    if (!unique.has(key)) {
+      unique.set(key, file);
+    }
+  });
+
+  return Array.from(unique.values());
+}
+
+function getNhoMovementDisplayStage(stage = "", nhoFileTracking = []) {
+  if (!Array.isArray(nhoFileTracking) || nhoFileTracking.length === 0) {
+    return stage;
+  }
+
+  const actions = new Set(
+    nhoFileTracking
+      .map((file) => cleanText(file.action).toLowerCase())
+      .filter(Boolean),
+  );
+
+  if (actions.size === 1 && actions.has("uploaded")) {
+    return "Pre-Employment File Uploaded";
+  }
+
+  if (actions.size === 1 && actions.has("deleted")) {
+    return "Pre-Employment File Deleted";
+  }
+
+  return "Pre-Employment Files Updated";
+}
+
+
 function formatFileSize(bytes) {
   const size = Number(bytes);
   if (!Number.isFinite(size) || size <= 0) return "";
@@ -226,7 +461,118 @@ function formatFileSize(bytes) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function normalizeTimelineItem(rawItem = {}, index = 0, fallbackStage = "") {
+
+function formatMovementCurrency(value) {
+  const text = cleanText(value);
+
+  if (!text) return "";
+
+  if (/^₱/.test(text)) return text;
+  if (/^PHP\s*/i.test(text)) {
+    return `₱${text.replace(/^PHP\s*/i, "")}`;
+  }
+
+  const numericValue = Number(text.replace(/,/g, ""));
+
+  if (!Number.isFinite(numericValue)) return text;
+
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numericValue);
+}
+
+function getOfferMovementSummary(item = {}, stage = "", remarks = "") {
+  if (cleanText(stage).toLowerCase() !== "offered") return null;
+
+  const offerDetails =
+    (item.offerDetails && typeof item.offerDetails === "object"
+      ? item.offerDetails
+      : null) ||
+    (item.offer_details && typeof item.offer_details === "object"
+      ? item.offer_details
+      : null) ||
+    (item.extra?.offerDetails && typeof item.extra.offerDetails === "object"
+      ? item.extra.offerDetails
+      : null) ||
+    (item.extra?.offer_details && typeof item.extra.offer_details === "object"
+      ? item.extra.offer_details
+      : null) ||
+    {};
+
+  const remarksText = cleanText(remarks);
+
+  function getRemarkValue(pattern) {
+    const match = remarksText.match(pattern);
+    return cleanText(match?.[1] || "");
+  }
+
+  const account = cleanText(
+    item.offerAccount ||
+      item.offer_account ||
+      item.finalAccount ||
+      item.final_account ||
+      offerDetails.account ||
+      offerDetails.accountName ||
+      offerDetails.account_name ||
+      offerDetails.finalAccount ||
+      offerDetails.final_account ||
+      getRemarkValue(/(?:Final Account|Account):\s*([^,]+)/i),
+  );
+
+  const basicPay = cleanText(
+    item.basicPay ||
+      item.basic_pay ||
+      offerDetails.basicPay ||
+      offerDetails.basic_pay ||
+      getRemarkValue(/Basic Pay:\s*([^,]+)/i),
+  );
+
+  const deMinimisDailyRate = cleanText(
+    item.deminimisDailyRate ||
+      item.deminimis_daily_rate ||
+      item.deMinimisDailyRate ||
+      item.de_minimis_daily_rate ||
+      offerDetails.deminimisDailyRate ||
+      offerDetails.deminimis_daily_rate ||
+      offerDetails.deMinimisDailyRate ||
+      offerDetails.de_minimis_daily_rate ||
+      getRemarkValue(/(?:Deminimis|De Minimis) \/ Daily Rate:\s*([^,]+)/i),
+  );
+
+  if (!account && !basicPay && !deMinimisDailyRate) return null;
+
+  return {
+    account: account || "—",
+    basicPay: formatMovementCurrency(basicPay) || "—",
+    deMinimisDailyRate: formatMovementCurrency(deMinimisDailyRate) || "—",
+  };
+}
+
+function isGeneratedOfferDetailRemarks(stage = "", remarks = "", offerSummary = null) {
+  if (cleanText(stage).toLowerCase() !== "offered" || !offerSummary) {
+    return false;
+  }
+
+  const text = cleanText(remarks);
+
+  return Boolean(
+    text &&
+      /Final Account:/i.test(text) &&
+      /Basic Pay:/i.test(text) &&
+      /(?:Deminimis|De Minimis) \/ Daily Rate:/i.test(text),
+  );
+}
+
+function normalizeTimelineItem(
+  rawItem = {},
+  index = 0,
+  fallbackStage = "",
+  currentAuditActorLabel = "",
+  candidateName = "",
+) {
   const item =
     rawItem && typeof rawItem === "object"
       ? rawItem
@@ -235,7 +581,7 @@ function normalizeTimelineItem(rawItem = {}, index = 0, fallbackStage = "") {
   const stage = getTimelineStage(item, fallbackStage);
   const reason = getTimelineReason(item);
   const rawDate = getTimelineDate(item);
-  const updatedBy = getUpdatedBy(item);
+  const updatedBy = getUpdatedBy(item, currentAuditActorLabel, candidateName);
 
   const remarks = getFirstValue(item, [
     "remarks",
@@ -266,32 +612,60 @@ function normalizeTimelineItem(rawItem = {}, index = 0, fallbackStage = "") {
 
   const links = getTimelineLinks(item);
   const files = getTimelineFiles(item);
+  const nhoFileTracking = getNhoFileTracking(item);
+  const displayStage = getNhoMovementDisplayStage(stage, nhoFileTracking);
+  const offerSummary = getOfferMovementSummary(item, stage, remarks);
+  const visibleRemarks =
+    remarks &&
+    remarks !== reason &&
+    !isGeneratedOfferDetailRemarks(stage, remarks, offerSummary)
+      ? remarks
+      : "";
 
   return {
     id: `${stage}-${rawDate || index}-${index}`,
     stage,
+    displayStage,
     reason,
     rawDate,
     updatedBy,
-    remarks: remarks && remarks !== reason ? remarks : "",
+    remarks: visibleRemarks,
     details: {
       score,
       result,
       links,
       files,
+      nhoFileTracking,
+      offerSummary,
     },
   };
 }
 
-export function getMovementHistoryItems(candidate = {}) {
+export function getMovementHistoryItems(candidate = {}, currentAuditActorLabel = "") {
   const stage = getCandidateStage(candidate);
+  const candidateName = cleanText(
+    candidate.name ||
+      candidate.candidateName ||
+      candidate.candidate_name ||
+      candidate.fullName ||
+      candidate.full_name ||
+      "",
+  );
   const rawTimeline = getRawTimeline(candidate);
   const timeline = getVisibleCandidateTimeline(rawTimeline, stage);
 
   return timeline
     .slice()
     .sort((a, b) => getSortableTime(b) - getSortableTime(a))
-    .map((item, index) => normalizeTimelineItem(item, index, stage));
+    .map((item, index) =>
+      normalizeTimelineItem(
+        item,
+        index,
+        stage,
+        currentAuditActorLabel,
+        candidateName,
+      ),
+    );
 }
 
 export default function CandidateMovementHistoryDrawer({
@@ -300,8 +674,16 @@ export default function CandidateMovementHistoryDrawer({
   onClose,
   triggerRef,
 }) {
+  const { user } = useUser();
+  const currentAuditActorLabel = useMemo(
+    () => formatCurrentAuditActorLabel(user),
+    [user],
+  );
   const currentStage = getCandidateStage(candidate);
-  const timeline = useMemo(() => getMovementHistoryItems(candidate), [candidate]);
+  const timeline = useMemo(
+    () => getMovementHistoryItems(candidate, currentAuditActorLabel),
+    [candidate, currentAuditActorLabel],
+  );
 
   if (!open) return null;
 
@@ -435,7 +817,7 @@ export default function CandidateMovementHistoryDrawer({
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className="text-xs font-extrabold text-[#042C51]">
-                                {stage}
+                                {item.displayStage || stage}
                               </span>
 
                               {isLatest ? (
@@ -464,6 +846,64 @@ export default function CandidateMovementHistoryDrawer({
                         <div className="mt-3 rounded-lg border border-[#E6ECF2] bg-white px-3 py-2.5 text-[10px] font-semibold leading-4 text-[#475467] sm:text-[11px] sm:leading-5">
                           {reason}
                         </div>
+
+                        {details.nhoFileTracking.length > 0 ? (
+                          <div className="mt-3 space-y-2">
+                            {details.nhoFileTracking.map((file, fileIndex) => (
+                              <div
+                                key={`${file.action}-${file.requirement}-${file.fileName}-${fileIndex}`}
+                                className="overflow-hidden rounded-lg border border-[#E6ECF2] bg-[#F8FAFC]"
+                              >
+                                {[
+                                  ["Requirement:", file.requirement],
+                                  ["File:", file.fileName],
+                                  ["Action:", file.action],
+                                ].map(([label, value], detailIndex) => (
+                                  <div
+                                    key={label}
+                                    className={`flex items-start justify-between gap-3 px-3 py-2 ${
+                                      detailIndex < 2 ? "border-b border-[#E6ECF2]" : ""
+                                    }`}
+                                  >
+                                    <span className="text-[9px] font-extrabold text-[#667085] sm:text-[10px]">
+                                      {label}
+                                    </span>
+                                    <span className="min-w-0 break-all text-right text-[9px] font-extrabold text-[#042C51] sm:text-[10px]">
+                                      {value || "—"}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        {details.offerSummary ? (
+                          <div className="mt-3 overflow-hidden rounded-lg border border-[#E6ECF2] bg-[#F8FAFC]">
+                            {[
+                              ["Account", details.offerSummary.account],
+                              ["Basic Pay", details.offerSummary.basicPay],
+                              [
+                                "De Minimis / Daily Rate",
+                                details.offerSummary.deMinimisDailyRate,
+                              ],
+                            ].map(([label, value], detailIndex) => (
+                              <div
+                                key={label}
+                                className={`flex items-start justify-between gap-3 px-3 py-2 ${
+                                  detailIndex < 2 ? "border-b border-[#E6ECF2]" : ""
+                                }`}
+                              >
+                                <span className="text-[9px] font-extrabold text-[#667085] sm:text-[10px]">
+                                  {label}:
+                                </span>
+                                <span className="text-right text-[9px] font-extrabold text-[#042C51] sm:text-[10px]">
+                                  {value || "—"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
 
                         {remarks && remarks !== reason ? (
                           <p className="mt-2 text-[9px] font-semibold leading-4 text-[#667085] sm:text-[10px]">
