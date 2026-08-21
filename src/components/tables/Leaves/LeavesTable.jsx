@@ -16,6 +16,30 @@ import { PaginationDateRangeFilter } from "@/services/context/PaginationContext"
 
 const PAGE_LIMIT = 15;
 
+const LEAVES_STATE_KEY = "leavesPageState";
+
+function clearPersistedLeavesSearch() {
+  if (typeof window === "undefined") return;
+
+  try {
+    const savedState = window.sessionStorage.getItem(LEAVES_STATE_KEY);
+
+    if (!savedState) return;
+
+    const parsed = JSON.parse(savedState);
+
+    window.sessionStorage.setItem(
+      LEAVES_STATE_KEY,
+      JSON.stringify({
+        ...(parsed && typeof parsed === "object" ? parsed : {}),
+        search: "",
+      }),
+    );
+  } catch {
+    // Ignore malformed or unavailable session storage.
+  }
+}
+
 function formatNumber(value) {
   if (value === "..." || value === null || value === undefined) return "...";
 
@@ -257,22 +281,217 @@ function getPaidLeaveLabel(value) {
   return normalized ? String(value) : "—";
 }
 
-function getEmployeeInitials(item) {
-  const source = String(
-    item?.gy_full_name || item?.gy_username || "User",
-  ).trim();
+const AVATAR_TONES = [
+  "border-orange-100 bg-orange-50 text-[#FF5C28]",
+  "border-emerald-100 bg-emerald-50 text-emerald-700",
+  "border-blue-100 bg-blue-50 text-[#042C51]",
+  "border-pink-100 bg-pink-50 text-pink-700",
+  "border-violet-100 bg-violet-50 text-violet-700",
+];
 
-  const parts = source
-    .replace(/,/g, " ")
+function getCleanValue(...values) {
+  const match = values.find((value) => {
+    return value !== undefined && value !== null && String(value).trim() !== "";
+  });
+
+  return match === undefined || match === null ? "" : String(match).trim();
+}
+
+function getNameParts(employee = {}) {
+  return {
+    firstName: getCleanValue(
+      employee.firstName,
+      employee.first_name,
+      employee.gy_emp_fname,
+    ),
+    middleName: getCleanValue(
+      employee.middleName,
+      employee.middle_name,
+      employee.gy_emp_mname,
+    ),
+    lastName: getCleanValue(
+      employee.lastName,
+      employee.last_name,
+      employee.gy_emp_lname,
+    ),
+  };
+}
+
+function getEmployeeName(employee = {}) {
+  const { firstName, middleName, lastName } = getNameParts(employee);
+
+  if (firstName || middleName || lastName) {
+    const givenNames = [firstName, middleName].filter(Boolean).join(" ");
+
+    return [lastName ? lastName.toUpperCase() : "", givenNames]
+      .filter(Boolean)
+      .join(lastName && givenNames ? ", " : "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  return (
+    getCleanValue(
+      employee.fullName,
+      employee.full_name,
+      employee.gy_emp_fullname,
+      employee.name,
+    ) || "Unnamed Employee"
+  );
+}
+
+function getInitials(employee = {}) {
+  const { firstName, lastName } = getNameParts(employee);
+
+  if (firstName || lastName) {
+    return `${firstName.slice(0, 1)}${lastName.slice(0, 1)}`.toUpperCase();
+  }
+
+  const tokens = getEmployeeName(employee)
+    .replace(",", " ")
     .split(/\s+/)
     .filter(Boolean);
 
-  if (parts.length === 0) return "U";
+  return `${tokens[0]?.[0] || "E"}${tokens[1]?.[0] || ""}`.toUpperCase();
+}
 
-  const first = parts[0]?.[0] || "";
-  const second = parts[1]?.[0] || parts[0]?.[1] || "";
+function getAvatarTone(employee = {}) {
+  const seed = getEmployeeName(employee)
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
 
-  return `${first}${second}`.toUpperCase();
+  return AVATAR_TONES[seed % AVATAR_TONES.length];
+}
+
+function getEmployeeProfilePictureUrl(employee = {}) {
+  return getCleanValue(
+    employee.profilePictureUrl,
+    employee.profile_picture_url,
+  );
+}
+
+function getEmployeeAvatarPreviewPosition(element) {
+  if (!element || typeof window === "undefined") return null;
+
+  const rect = element.getBoundingClientRect();
+  const previewHeight = 176;
+  const gap = 12;
+  const placeBelow = rect.top < previewHeight + gap;
+
+  return {
+    left: rect.left + rect.width / 2,
+    top: placeBelow ? rect.bottom + gap : rect.top - gap,
+    placeBelow,
+  };
+}
+
+function EmployeeAvatar({ employee, size = "md" }) {
+  const sizeClass = size === "lg" ? "h-11 w-11" : "h-9 w-9";
+  const profilePictureUrl = getEmployeeProfilePictureUrl(employee);
+  const [failedImageUrl, setFailedImageUrl] = useState("");
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState(null);
+  const avatarRef = useRef(null);
+  const canShowProfilePicture =
+    Boolean(profilePictureUrl) && failedImageUrl !== profilePictureUrl;
+  const employeeName = getEmployeeName(employee);
+  const initials = getInitials(employee);
+
+  const showPreview = () => {
+    setPreviewPosition(getEmployeeAvatarPreviewPosition(avatarRef.current));
+    setPreviewVisible(true);
+  };
+
+  const hidePreview = () => {
+    setPreviewVisible(false);
+  };
+
+  useEffect(() => {
+    if (!previewVisible) return undefined;
+
+    const updatePreviewPosition = () => {
+      setPreviewPosition(getEmployeeAvatarPreviewPosition(avatarRef.current));
+    };
+
+    window.addEventListener("resize", updatePreviewPosition);
+    window.addEventListener("scroll", updatePreviewPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePreviewPosition);
+      window.removeEventListener("scroll", updatePreviewPosition, true);
+    };
+  }, [previewVisible]);
+
+  const preview =
+    previewVisible && previewPosition && typeof document !== "undefined"
+      ? createPortal(
+          <span
+            className="employee-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            style={{
+              left: previewPosition.left,
+              top: previewPosition.top,
+              transform: previewPosition.placeBelow
+                ? "translate(-50%, 0)"
+                : "translate(-50%, -100%)",
+            }}
+            aria-hidden="true"
+          >
+            <span
+              className={`relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border text-[24px] font-extrabold ${getAvatarTone(
+                employee,
+              )}`}
+            >
+              <span>{initials}</span>
+
+              {canShowProfilePicture ? (
+                <img
+                  src={profilePictureUrl}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                  onError={() => setFailedImageUrl(profilePictureUrl)}
+                />
+              ) : null}
+            </span>
+          </span>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <>
+      <span
+        ref={avatarRef}
+        className="relative inline-flex shrink-0 outline-none"
+        tabIndex={0}
+        aria-label={`${employeeName || "Employee"} profile picture`}
+        onMouseEnter={showPreview}
+        onMouseLeave={hidePreview}
+        onFocus={showPreview}
+        onBlur={hidePreview}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <span
+          className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs font-extrabold shadow-inner ${getAvatarTone(
+            employee,
+          )}`}
+        >
+          <span aria-hidden="true">{initials}</span>
+
+          {canShowProfilePicture ? (
+            <img
+              src={profilePictureUrl}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={() => setFailedImageUrl(profilePictureUrl)}
+            />
+          ) : null}
+        </span>
+      </span>
+      {preview}
+    </>
+  );
 }
 
 function getApprovalResultFailed(result) {
@@ -455,7 +674,7 @@ function LeaveDetailsModal({
             <section className="flex flex-col gap-3 rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] p-3 2xl:p-3.5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
                 <div className="flex h-9 w-9 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-full bg-[#042C51] sibs-text-micro font-extrabold text-white">
-                  {getEmployeeInitials(item)}
+                  {getInitials(item)}
                 </div>
 
                 <div className="min-w-0">
@@ -776,6 +995,20 @@ export default function LeavesTable({
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [searchSubmitVersion, setSearchSubmitVersion] = useState(0);
 
+  useEffect(() => {
+    clearPersistedLeavesSearch();
+    setSearchInput("");
+    setSearchKeyword("");
+
+    return () => {
+      clearPersistedLeavesSearch();
+      setSearchInput("");
+      setSearchKeyword("");
+    };
+    // Run only when the Leaves table enters/leaves the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const dateFrom = filterValues?.dateFrom || "";
   const dateTo = filterValues?.dateTo || "";
 
@@ -969,9 +1202,12 @@ export default function LeavesTable({
               ref={tableScrollRef}
               className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar"
             >
-              <table className="w-full min-w-[1340px] border-collapse bg-white">
+              <table className="w-full min-w-[1420px] border-collapse bg-white">
                 <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
                   <tr className="sibs-data-table-head-row">
+                    <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left">
+                      SIBS ID
+                    </th>
                     <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left">
                       Employee
                     </th>
@@ -1015,7 +1251,7 @@ export default function LeavesTable({
                   {loading ? (
                     Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                       <tr key={index}>
-                        <td colSpan={11} className="px-3 2xl:px-4 py-2 2xl:py-2.5">
+                        <td colSpan={12} className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                           <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E6ECF2]" />
                         </td>
                       </tr>
@@ -1026,7 +1262,6 @@ export default function LeavesTable({
                         key={`${item.gy_leave_id}-${item.gy_user_id}`}
                         role="button"
                         tabIndex={0}
-                        title="Open leave details"
                         onClick={() => setSelectedLeave(item)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
@@ -1041,12 +1276,25 @@ export default function LeavesTable({
                         }}
                       >
                         <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs">
-                          <p className="m-0 font-extrabold text-[#042C51]">
-                            {item.gy_full_name || item.gy_username || "—"}
-                          </p>
-                          <p className="mt-0.5 text-[10px] font-bold text-[#FF5C28]">
-                            {item.gy_user_code || "No user code"}
-                          </p>
+                          <span className="font-extrabold text-[#FF5C28]">
+                            {item.gy_user_code || "—"}
+                          </span>
+                        </td>
+
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className="shrink-0"
+                              onClick={(event) => event.stopPropagation()}
+                              onKeyDown={(event) => event.stopPropagation()}
+                            >
+                              <EmployeeAvatar employee={item} />
+                            </div>
+
+                            <p className="m-0 max-w-[240px] truncate font-extrabold text-[#042C51]">
+                              {item.gy_full_name || item.gy_username || "—"}
+                            </p>
+                          </div>
                         </td>
 
                         <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs font-bold text-[#344054]">
@@ -1094,7 +1342,7 @@ export default function LeavesTable({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={11} className="p-12 text-center">
+                      <td colSpan={12} className="p-12 text-center">
                         <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-[#667085]">
                           <CalendarDays size={34} className="text-[#C8D3DF]" />
                           <p className="text-sm font-extrabold text-[#042C51]">

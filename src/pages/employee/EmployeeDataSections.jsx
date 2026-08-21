@@ -683,11 +683,9 @@ export function PersonalSection({
               label="Last Name (Kronos - Read Only)"
               value={employee?.lastName}
             />
-            <FieldControl
-              label="Name Extension (Jr/III)"
+            <ReadField
+              label="Name Extension (Jr/III) (Kronos - Read Only)"
               value={employee?.nameExtension}
-              onChange={(value) => onChange("nameExtension", value)}
-              placeholder="Jr., III"
             />
             <FieldControl
               label="Preferred Name"
