@@ -40,6 +40,6 @@ export const emptyForm = {
   description: "",
   preferredSkills: "",
   locationSite: "",
-  status: "",
+  status: "Inactive",
   remarks: "",
 };

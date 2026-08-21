@@ -16,7 +16,13 @@ function getApiErrorMessage(err, fallback) {
 function normalizeJdStatus(status) {
   const value = cleanText(status);
 
-  if (value === "New JD") return "New Job Description";
+  if (value === "New JD") {
+    return "New Job Description";
+  }
+
+  if (value === "Archived JD") {
+    return "Archived";
+  }
 
   return value || "New Job Description";
 }
@@ -1436,7 +1442,8 @@ export async function getApprovedJobDescriptions({
         : [],
       pagination: responseData.pagination || null,
       message:
-        responseData.message || "Approved job descriptions loaded successfully.",
+        responseData.message ||
+        "Approved job descriptions loaded successfully.",
     };
   } catch (err) {
     return {
@@ -1448,6 +1455,155 @@ export async function getApprovedJobDescriptions({
         err?.response?.data?.error ||
         err?.message ||
         "Failed to load approved job descriptions.",
+      status: err?.response?.status || 500,
+    };
+  }
+}
+
+/* ================================
+   ARCHIVE job description
+================================ */
+export async function archiveJobDescription(id) {
+  try {
+    const res = await api.patch(
+      `/api/job-description/${id}/archive`,
+      {},
+      { withCredentials: true },
+    );
+
+    const responseData = res.data;
+
+    if (!responseData?.success) {
+      return {
+        success: false,
+        message: responseData?.message || "Failed to archive job description.",
+      };
+    }
+
+    return {
+      success: true,
+      data: responseData.data || null,
+      message: responseData.message || "Job description archived successfully.",
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: getApiErrorMessage(err, "Failed to archive job description."),
+      status: err?.response?.status || 500,
+    };
+  }
+}
+
+/* ================================
+RESTORE archived job description
+================================ */
+export async function restoreJobDescription(id) {
+  try {
+    const res = await api.patch(
+      `/api/job-description/${id}/restore`,
+      {},
+      {
+        withCredentials: true,
+      },
+    );
+
+    const responseData = res.data;
+
+    if (!responseData?.success) {
+      return {
+        success: false,
+        data: null,
+        restoredStatus: null,
+        message: responseData?.message || "Failed to restore job description.",
+      };
+    }
+
+    return {
+      success: true,
+      data: responseData.data
+        ? normalizeJobDescriptionResponseItem(responseData.data)
+        : null,
+      restoredStatus:
+        responseData.restoredStatus ||
+        responseData.restored_status ||
+        responseData.data?.jdStatus ||
+        responseData.data?.jd_status ||
+        null,
+      message: responseData.message || "Job description restored successfully.",
+    };
+  } catch (err) {
+    return {
+      success: false,
+      data: null,
+      restoredStatus: null,
+      message: getApiErrorMessage(err, "Failed to restore job description."),
+      status: err?.response?.status || 500,
+    };
+  }
+}
+
+export async function getJobDescriptionDeletionImpact(id) {
+  try {
+    const res = await api.get(`/api/job-description/${id}/deletion-impact`, {
+      withCredentials: true,
+    });
+
+    if (!res.data?.success) {
+      return {
+        success: false,
+        data: null,
+        message: res.data?.message || "Failed to load deletion impact.",
+      };
+    }
+
+    return {
+      success: true,
+      data: res.data.data || null,
+      message: res.data.message || "",
+    };
+  } catch (err) {
+    return {
+      success: false,
+      data: null,
+      message:
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to load deletion impact.",
+      status: err?.response?.status || 500,
+    };
+  }
+}
+
+export async function permanentlyDeleteJobDescription(id, payload = {}) {
+  try {
+    const res = await api.delete(`/api/job-description/${id}/permanent`, {
+      data: payload,
+      withCredentials: true,
+    });
+
+    if (!res.data?.success) {
+      return {
+        success: false,
+        data: null,
+        message:
+          res.data?.message || "Failed to permanently delete job description.",
+      };
+    }
+
+    return {
+      success: true,
+      data: res.data.data || null,
+      message:
+        res.data.message || "Job description permanently deleted successfully.",
+    };
+  } catch (err) {
+    return {
+      success: false,
+      data: null,
+      message:
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to permanently delete job description.",
       status: err?.response?.status || 500,
     };
   }

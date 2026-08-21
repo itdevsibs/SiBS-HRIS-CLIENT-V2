@@ -950,6 +950,9 @@ function normalizePosition(row = {}) {
   const jobDescriptionCode = getJobDescriptionCode(row);
   const jobDescriptionTitle = getJobDescriptionTitle(row);
   const previousRequiredHeadcount = getPositionRequiredHeadcount(row);
+  const jdLinkStatus = cleanText(
+    row.jdLinkStatus || row.jd_link_status || "Linked",
+  );
 
   return {
     raw: row,
@@ -973,6 +976,9 @@ function normalizePosition(row = {}) {
     jobDescriptionId: jobDescriptionDbId,
     jobDescriptionCode,
     jobDescriptionTitle,
+
+    jdLinkStatus,
+    jd_link_status: jdLinkStatus,
 
     status: row.status || "Active",
     departmentAccount,
@@ -1861,7 +1867,12 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
         const rows = unwrapOpenPositionsPayload(response)
           .map(normalizePosition)
-          .filter((item) => item.positionTitle);
+          .filter(
+            (item) =>
+              item.positionTitle &&
+              item.jobDescriptionDbId &&
+              item.jdLinkStatus.toLowerCase() !== "unlinked from jd",
+          );
 
         const visibleRows = filterHiringNeedPositionsForUser(
           rows,

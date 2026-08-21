@@ -1,4 +1,9 @@
 import React from "react";
+import { AlertTriangle, CheckCircle2, MinusCircle } from "lucide-react";
+import {
+  getHiringNeedsJdLinkStatus,
+  isHiringNeedUnlinkedFromJd,
+} from "../../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 
 function getStatusClass(status) {
   switch (status) {
@@ -10,11 +15,19 @@ function getStatusClass(status) {
 }
 
 export default function HiringNeedsMobileCard({ item, onView }) {
+  const unlinked = isHiringNeedUnlinkedFromJd(item);
+  const jdLinkStatus = getHiringNeedsJdLinkStatus(item);
+  const linkNotApplicable = jdLinkStatus === "Not Applicable";
+
   return (
     <button
       type="button"
       onClick={() => onView(item)}
-      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+      className={`w-full rounded-2xl border p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 ${
+        unlinked
+          ? "border-[#FFD1C4] bg-[#FFF4EF] hover:bg-[#FFE9E0]"
+          : "border-[#E6ECF2] bg-white hover:bg-[#F8FAFC]"
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -46,6 +59,25 @@ export default function HiringNeedsMobileCard({ item, onView }) {
          <p className="text-[11px] font-bold text-sibs-tertiary-5 italic">
            Reason: {item.reasonForHiring}
          </p>
+
+        <span
+          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-extrabold ${
+            unlinked
+              ? "border-[#FFB39F] bg-[#FFE1D8] text-[#D92D20]"
+              : linkNotApplicable
+                ? "border-slate-200 bg-slate-50 text-slate-500"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+          }`}
+        >
+          {unlinked ? (
+            <AlertTriangle size={10} />
+          ) : linkNotApplicable ? (
+            <MinusCircle size={10} />
+          ) : (
+            <CheckCircle2 size={10} />
+          )}
+          {jdLinkStatus}
+        </span>
       </div>
     </button>
   );

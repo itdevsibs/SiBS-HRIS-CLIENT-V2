@@ -1,15 +1,19 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   Check,
   CheckCircle2,
   Clock,
   FileText,
+  Link2,
   Loader2,
   X,
   XCircle,
 } from "lucide-react";
 import { buildHiringNeedsAuditTrail } from "../../../lib/utils/hiringNeeds/hiringNeedsAuditTrail.js";
 import { useUser } from "../../../services/context/UserContext";
+import DropdownField from "../../recruitment/availablePositions/DropdownField";
+import { isHiringNeedUnlinkedFromJd } from "../../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 
 const API_BASE_URL = String(
   import.meta.env.VITE_API_URL || "http://localhost:5000",
@@ -529,13 +533,19 @@ export default function ViewHiringNeedsModal({
   approvalAccessLoading = false,
   approvalUsers = [],
   onDecision,
+  jobDescriptions = [],
+  jobDescriptionLoading = false,
+  onRelink,
 }) {
   const { user } = useUser();
   const [remarks, setRemarks] = useState("");
   const [decisionLoading, setDecisionLoading] = useState(false);
   const [decisionAction, setDecisionAction] = useState("");
+  const [selectedJobDescriptionId, setSelectedJobDescriptionId] = useState("");
+  const [relinkLoading, setRelinkLoading] = useState(false);
+  const modalBodyRef = useRef(null);
 
-  const safeItem = item || {};
+  const safeItem = useMemo(() => item || {}, [item]);
 
   useEffect(() => {
     if (!open) return;
@@ -543,6 +553,8 @@ export default function ViewHiringNeedsModal({
     setRemarks("");
     setDecisionLoading(false);
     setDecisionAction("");
+    setSelectedJobDescriptionId("");
+    setRelinkLoading(false);
   }, [item?.id, open]);
 
   useEffect(() => {
@@ -550,7 +562,9 @@ export default function ViewHiringNeedsModal({
 
     const previousOverflow = document.body.style.overflow;
     const handleEscape = (event) => {
-      if (event.key === "Escape" && !decisionLoading) onClose?.();
+      if (event.key === "Escape" && !decisionLoading && !relinkLoading) {
+        onClose?.();
+      }
     };
 
     document.body.style.overflow = "hidden";
@@ -560,19 +574,101 @@ export default function ViewHiringNeedsModal({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [open, onClose, decisionLoading]);
+  }, [open, onClose, decisionLoading, relinkLoading]);
 
   const status = normalizeStatus(
     safeItem.approvalStatus || safeItem.approval_status,
   );
   const requestType = getRequestType(safeItem);
   const isDownsize = requestType === "Downsize";
+  const isRelinkMode = !isDownsize && isHiringNeedUnlinkedFromJd(safeItem);
   const finalStatus = isFinalStatus(status);
   const weekRange = getWeekRange(safeItem);
   const supportingFileUrl = getSupportingFileUrl(safeItem);
   const supportingFileName = getSupportingFileName(safeItem);
   const canShowDecisionControls =
-    canApprove && !approvalAccessLoading && !finalStatus;
+    canApprove && !approvalAccessLoading && !finalStatus && !isRelinkMode;
+
+  const approvedJobDescriptionOptions = useMemo(() => {
+    const clearOption = {
+      id: "__clear_jd__",
+      value: "__clear_jd__",
+      label: "—",
+      description: "",
+      searchText: "clear empty none remove selection",
+      raw: { clearSelection: true },
+    };
+
+    const options = (Array.isArray(jobDescriptions) ? jobDescriptions : [])
+        .filter((jobDescription) => {
+          const jdStatus = firstText(
+            jobDescription.jdStatus,
+            jobDescription.jd_status,
+            jobDescription.status,
+          ).toLowerCase();
+
+          return !jdStatus || jdStatus === "approved";
+        })
+        .map((jobDescription) => {
+          const id = firstText(
+            jobDescription.id,
+            jobDescription.rawId,
+            jobDescription.raw_id,
+          );
+          const code = firstText(
+            jobDescription.jdCode,
+            jobDescription.jd_code,
+          );
+          const roleTitle = firstText(
+            jobDescription.roleTitle,
+            jobDescription.role_title,
+            jobDescription.title,
+            jobDescription.documentTitle,
+            jobDescription.document_title,
+          );
+          const documentTitle = firstText(
+            jobDescription.documentTitle,
+            jobDescription.document_title,
+          );
+          const department = firstText(
+            jobDescription.department,
+            jobDescription.departmentName,
+            jobDescription.department_name,
+          );
+          const account = firstText(
+            jobDescription.account,
+            jobDescription.accountName,
+            jobDescription.account_name,
+            jobDescription.preparedFor,
+            jobDescription.prepared_for,
+          );
+
+          if (!id || !roleTitle) return null;
+
+          return {
+            id,
+            value: String(id),
+            label: `${roleTitle}${code ? ` (${code})` : ""}`,
+            description: [documentTitle, department, account]
+              .filter(Boolean)
+              .join(" • "),
+            searchText: [
+              id,
+              code,
+              roleTitle,
+              documentTitle,
+              department,
+              account,
+            ]
+              .filter(Boolean)
+              .join(" "),
+            raw: jobDescription,
+          };
+        })
+        .filter(Boolean);
+
+    return [clearOption, ...options];
+  }, [jobDescriptions]);
 
   const positionTitle = firstText(
     safeItem.positionTitle,
@@ -730,11 +826,39 @@ export default function ViewHiringNeedsModal({
     }
   }
 
+  async function handleRelink() {
+    if (!isRelinkMode || relinkLoading || !selectedJobDescriptionId) return;
+
+    if (typeof onRelink !== "function") {
+      onStatus?.({
+        type: "error",
+        title: "Relink Unavailable",
+        message: "The Job Description relink action is not connected.",
+      });
+      return;
+    }
+
+    const selectedJobDescription = approvedJobDescriptionOptions.find(
+      (option) => String(option.value) === String(selectedJobDescriptionId),
+    )?.raw;
+
+    try {
+      setRelinkLoading(true);
+      await onRelink({
+        item,
+        jobDescriptionId: selectedJobDescriptionId,
+        jobDescription: selectedJobDescription,
+      });
+    } finally {
+      setRelinkLoading(false);
+    }
+  }
+
   return (
     <div
       className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onMouseDown={() => {
-        if (!decisionLoading) onClose();
+        if (!decisionLoading && !relinkLoading) onClose();
       }}
       role="presentation"
     >
@@ -765,6 +889,12 @@ export default function ViewHiringNeedsModal({
                     {requestIdDisplay}
                   </span>
 
+                  {isRelinkMode ? (
+                    <span className="inline-flex rounded-full border border-amber-300/50 bg-amber-400/15 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-amber-100">
+                      Relink Required
+                    </span>
+                  ) : null}
+
                   <span
                     className={`inline-flex rounded-full border px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide ${getRequestTypeClass(
                       requestType,
@@ -779,8 +909,8 @@ export default function ViewHiringNeedsModal({
             <button
               type="button"
               onClick={onClose}
-              disabled={decisionLoading}
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={decisionLoading || relinkLoading}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Close Personnel Requisition details"
             >
               <X className="h-4 w-4" />
@@ -788,8 +918,61 @@ export default function ViewHiringNeedsModal({
           </div>
         </header>
 
-        <main className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-white px-4 py-3.5 sm:px-5 sm:py-4">
+        <main
+          ref={modalBodyRef}
+          data-dropdown-boundary="true"
+          className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6 sm:py-6"
+        >
           <div className="space-y-5">
+            {isRelinkMode ? (
+              <section className="rounded-xl border border-[#F5B942] bg-[#FFF9EE] p-4 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#FFF0C7] text-[#D97706]">
+                    <AlertTriangle size={17} strokeWidth={2.2} />
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-xs font-extrabold text-[#7A3B12]">
+                      New Job Description Required
+                    </h3>
+                    <p className="mt-1 text-[11px] font-semibold leading-5 text-[#A15C24]">
+                      This requisition was preserved when its Job Description
+                      was removed. Select a new approved Job Description to
+                      restore the link without changing its approval status or
+                      intake details.
+                    </p>
+
+                  </div>
+                </div>
+
+                <div className="mt-4 w-full rounded-[12px] border border-[#FF8A5B] bg-white p-3 shadow-[0_0_0_3px_rgba(255,92,40,0.08)]">
+                  <DropdownField
+                    label="Select Job Description"
+                    required
+                    value={selectedJobDescriptionId}
+                    onChange={(value, option) => {
+                      setSelectedJobDescriptionId(
+                        option?.raw?.clearSelection ? "" : value,
+                      );
+                    }}
+                    options={approvedJobDescriptionOptions}
+                    placeholder={
+                      jobDescriptionLoading
+                        ? "Loading approved Job Descriptions..."
+                        : "Select a new approved Job Description"
+                    }
+                    searchPlaceholder="Search approved Job Descriptions..."
+                    emptyMessage="No approved Job Descriptions found."
+                    disabled={jobDescriptionLoading || relinkLoading}
+                    searchable
+                    boundaryRef={modalBodyRef}
+                    maxMenuHeight={260}
+                    className="w-full [&>div]:!border-[#FF8A5B]"
+                  />
+                </div>
+              </section>
+            ) : null}
+
             <section className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
               <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <CompactDetail
@@ -816,7 +999,9 @@ export default function ViewHiringNeedsModal({
                   value={
                     isDownsize
                       ? getPreviousRequiredHeadcount(safeItem)
-                      : jobDescriptionDisplay || "Not selected"
+                      : isRelinkMode
+                        ? "Unlinked from JD"
+                        : jobDescriptionDisplay || "Not selected"
                   }
                   valueClassName={
                     isDownsize ? "text-[#042C51]" : "text-[#FF5C28]"
@@ -933,7 +1118,7 @@ export default function ViewHiringNeedsModal({
 
             <AuditTrailSection entries={auditTrail} />
 
-            {!finalStatus ? (
+            {!finalStatus && !isRelinkMode ? (
               <section className="border-t border-[#E6ECF2] pt-4 font-jakarta">
                 <div className="flex items-start gap-2.5">
                   <Clock size={15} className="mt-0.5 shrink-0 text-[#042C51]" />
@@ -980,13 +1165,27 @@ export default function ViewHiringNeedsModal({
             <button
               type="button"
               onClick={onClose}
-              disabled={decisionLoading}
+              disabled={decisionLoading || relinkLoading}
               className="inline-flex h-9 w-full items-center justify-center rounded-[9px] bg-[#EEF3F8] px-4 text-xs font-extrabold text-[#475467] transition hover:bg-[#E4EBF3] hover:text-[#07365F] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               Close Panel
             </button>
 
-            {canShowDecisionControls ? (
+            {isRelinkMode ? (
+              <button
+                type="button"
+                onClick={handleRelink}
+                disabled={relinkLoading || !selectedJobDescriptionId}
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:bg-[#98A2B3] disabled:text-white/70 sm:w-auto"
+              >
+                {relinkLoading ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Link2 size={14} />
+                )}
+                {relinkLoading ? "Relinking..." : "Relink Job Description"}
+              </button>
+            ) : canShowDecisionControls ? (
               <>
                 <button
                   type="button"
