@@ -1,9 +1,11 @@
-import { FilterX, Gift } from "lucide-react";
+import { FilterX, Gift, RefreshCw } from "lucide-react";
 
 export default function OfferHeader({
   routeFilterActive = false,
   routeCandidateLabel = "",
   onClearRouteFilter,
+  onRefresh,
+  isManualRefreshing = false,
 }) {
   return (
     <section
@@ -12,7 +14,7 @@ export default function OfferHeader({
     >
       <span className="sibs-top-accent" aria-hidden="true" />
 
-      <div className="mt-0.5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mt-0.5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 space-y-1">
           <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
             <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
@@ -28,6 +30,24 @@ export default function OfferHeader({
             progress, and keep offer decisions synchronized with Candidate
             Pipeline.
           </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {typeof onRefresh === "function" ? (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isManualRefreshing}
+              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Refresh offers data"
+              title="Refresh offers"
+            >
+              <RefreshCw
+                size={15}
+                className={isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""}
+              />
+            </button>
+          ) : null}
         </div>
       </div>
 

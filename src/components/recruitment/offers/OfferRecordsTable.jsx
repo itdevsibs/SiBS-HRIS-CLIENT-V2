@@ -135,19 +135,19 @@ export default function OfferRecordsTable({
   }
 
   return (
-    <div className="p-4 font-jakarta sm:p-5">
+    <div className="p-3.5 font-jakarta sm:p-4 2xl:p-5">
       <div className="hidden lg:block">
         <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white">
           <table className="w-full min-w-[1180px] table-fixed border-separate border-spacing-0 text-left">
             <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="sibs-data-table-head-row">
-                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[18%] text-left">Candidate</th>
-                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[15%] text-left">Final Role / Account</th>
-                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[14%] text-left">Evaluation Scores</th>
-                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[17%] text-left">Negotiation</th>
-                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[10%] text-center">Status</th>
-                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[9%] text-left">Owner</th>
-                <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 w-[17%] text-right">Actions</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[18%] text-left">Candidate</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[15%] text-left">Final Role / Account</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[14%] text-left">Evaluation Scores</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[17%] text-left">Negotiation</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[10%] text-center">Status</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[9%] text-left">Owner</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[17%] text-right">Actions</th>
               </tr>
             </thead>
 
@@ -171,9 +171,9 @@ export default function OfferRecordsTable({
                         }
                       }}
                       className="sibs-page-card-in cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25"
-                      style={{ animationDelay: `${index * 30}ms`, animationFillMode: "both" }}
+                      style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                     >
-                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2.5 2xl:py-3 align-middle">
+                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <div className="min-w-0">
                           <p
                             title={offer.candidateName}
@@ -190,7 +190,7 @@ export default function OfferRecordsTable({
                         </div>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
+                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <p
                           title={offer.roleTitle}
                           className="truncate text-xs font-bold text-[#344054]"
@@ -205,11 +205,11 @@ export default function OfferRecordsTable({
                         </p>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
+                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <EvaluationScoreLines offer={offer} />
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
+                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <NegotiationSummary
                           offer={offer}
                           onViewHistory={(event) => {
@@ -219,7 +219,7 @@ export default function OfferRecordsTable({
                         />
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-4 py-3.5 text-center align-middle">
+                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
                         <span
                           title={approvalStatus}
                           className={`mx-auto inline-flex h-7 max-w-[195px] items-center justify-center rounded-lg border px-2.5 text-center text-[10px] font-extrabold leading-none ${getStatusClass(
@@ -232,7 +232,7 @@ export default function OfferRecordsTable({
                         </span>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
+                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <p
                           title={offer.owner}
                           className="truncate text-xs font-semibold text-[#344054]"
@@ -241,7 +241,7 @@ export default function OfferRecordsTable({
                         </p>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-4 py-3.5 text-right align-middle">
+                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 text-right align-middle">
                         <div
                           className="flex min-w-0 items-center justify-end gap-1.5"
                           onClick={(event) => event.stopPropagation()}
@@ -249,7 +249,7 @@ export default function OfferRecordsTable({
                           <button
                             type="button"
                             onClick={() => openOffer(offer)}
-                            className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                            className="inline-flex h-8 2xl:h-8.5 w-8 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
                             title="View offer details"
                           >
                             <Eye size={15} />

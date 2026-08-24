@@ -411,13 +411,13 @@ function CompactDetail({
 
   return (
     <div className="min-w-0 font-jakarta">
-      <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
+      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </p>
 
       {children || (
         <p
-          className={`mt-0.5 break-words text-xs font-extrabold leading-5 ${valueClassName}`}
+          className={`mt-0.5 break-words text-[11px] 2xl:text-xs font-extrabold leading-tight ${valueClassName}`}
         >
           {hasValue ? value : "—"}
         </p>
@@ -866,10 +866,10 @@ export default function ViewHiringNeedsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="view-hiring-needs-title"
-        className="sibs-modal-pop-in flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-2.5 text-white sm:px-6 2xl:py-3.5">
+        <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
               <FileText
@@ -879,24 +879,24 @@ export default function ViewHiringNeedsModal({
               <div className="min-w-0">
                 <h2
                   id="view-hiring-needs-title"
-                  className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-white"
+                  className="text-sm sm:text-base 2xl:text-lg font-extrabold text-white"
                 >
                   Personnel Requisition Form Details
                 </h2>
 
                 <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                  <span className="sibs-text-micro font-extrabold text-blue-100">
+                  <span className="text-[10px] 2xl:text-[11px] font-extrabold text-blue-100 font-mono">
                     {requestIdDisplay}
                   </span>
 
                   {isRelinkMode ? (
-                    <span className="inline-flex rounded-full border border-amber-300/50 bg-amber-400/15 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-amber-100">
+                    <span className="inline-flex rounded-full border border-amber-300/50 bg-amber-400/15 px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-amber-100">
                       Relink Required
                     </span>
                   ) : null}
 
                   <span
-                    className={`inline-flex rounded-full border px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide ${getRequestTypeClass(
+                    className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide ${getRequestTypeClass(
                       requestType,
                     )}`}
                   >
@@ -910,10 +910,10 @@ export default function ViewHiringNeedsModal({
               type="button"
               onClick={onClose}
               disabled={decisionLoading || relinkLoading}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="sibs-modal-close-btn"
               aria-label="Close Personnel Requisition details"
             >
-              <X className="h-4 w-4" />
+              <X size={17} />
             </button>
           </div>
         </header>

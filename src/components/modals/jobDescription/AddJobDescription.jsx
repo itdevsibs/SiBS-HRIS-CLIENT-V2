@@ -905,32 +905,32 @@ export default function AddJobDescription({
         aria-modal="true"
         aria-labelledby="add-job-description-modal-title"
         aria-describedby="add-job-description-modal-description"
-        className="sibs-modal-pop-in relative flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[980px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] font-jakarta shadow-2xl"
+        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-[#F7F9FC] font-jakarta shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-2.5 sm:px-6 2xl:py-3 text-white">
+        <header className="shrink-0 bg-[#042C51] px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5 text-white">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
-                <FileText className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
+                <FileText className="h-4 w-4 text-[#FF5C28]" />
               </span>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2
                     id="add-job-description-modal-title"
-                    className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-white"
+                    className="text-sm sm:text-base 2xl:text-lg font-extrabold text-white"
                   >
                     Add Job Description
                   </h2>
-                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-white">
+                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] font-extrabold uppercase text-white">
                     Specification
                   </span>
                 </div>
 
                 <p
                   id="add-job-description-modal-description"
-                  className="mt-0.5 sibs-text-micro font-medium leading-relaxed text-blue-100"
+                  className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-4 text-slate-300"
                 >
                   Create or update job description specifications for hiring
                   requirements.
@@ -942,7 +942,7 @@ export default function AddJobDescription({
               <button
                 type="button"
                 onClick={handleResetForm}
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-3 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 active:scale-[0.98]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 active:scale-[0.98]"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Reset
@@ -951,7 +951,7 @@ export default function AddJobDescription({
               <button
                 type="submit"
                 form="add-job-description-form"
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] active:scale-[0.98]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] active:scale-[0.98]"
               >
                 <Save className="h-3.5 w-3.5" />
                 Save Job Description
@@ -960,11 +960,11 @@ export default function AddJobDescription({
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg text-blue-100 transition hover:bg-white/10 hover:text-white active:scale-[0.96]"
+                className="sibs-modal-close-btn"
                 aria-label="Close Add Job Description modal"
                 title="Close"
               >
-                <X className="h-4 w-4" />
+                <X size={17} />
               </button>
             </div>
           </div>

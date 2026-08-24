@@ -105,7 +105,7 @@ export default function OnboardingStats() {
   return (
     <section
       aria-label="Onboarding Summary"
-      className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6"
+      className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
     >
       {cards.map((card, index) => (
         <StatCard

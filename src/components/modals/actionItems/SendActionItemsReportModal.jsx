@@ -192,7 +192,7 @@ export default function SendActionItemsReportModal() {
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/50 p-3 sm:p-5"
+      className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/50 p-2 sm:p-4"
       onMouseDown={() => !sending && !downloading && closeEmailModal()}
       role="presentation"
     >
@@ -201,14 +201,14 @@ export default function SendActionItemsReportModal() {
         aria-modal="true"
         aria-labelledby="send-action-report-title"
         onMouseDown={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[94dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
       >
-        <header className="flex shrink-0 items-start justify-between gap-4 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+        <header className="flex shrink-0 items-start justify-between gap-4 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-4">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#FF5C28]/30 bg-[#FF5C28]/15 text-[#FF5C28]"><Mail size={20} /></div>
+            <div className="flex h-9 w-9 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-xl border border-[#FF5C28]/30 bg-[#FF5C28]/15 text-[#FF5C28]"><Mail size={18} /></div>
             <div className="min-w-0">
-              <h2 id="send-action-report-title" className="text-base font-black">Send Recruitment Report by Email &amp; PDF</h2>
-              <p className="mt-1 text-xs font-semibold text-slate-300">
+              <h2 id="send-action-report-title" className="text-sm sm:text-base font-black">Send Recruitment Report by Email &amp; PDF</h2>
+              <p className="mt-0.5 sibs-text-xs font-semibold text-slate-300">
                 System sender: {SYSTEM_SENDER}. The email includes an HTML summary and the complete PDF report.
               </p>
             </div>
@@ -217,15 +217,15 @@ export default function SendActionItemsReportModal() {
             type="button"
             onClick={closeEmailModal}
             disabled={sending || downloading}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white disabled:opacity-50 active:scale-[0.98]"
+            className="sibs-modal-close-btn disabled:opacity-50"
             aria-label="Close email report modal"
           >
-            <X size={18} />
+            <X size={17} />
           </button>
         </header>
 
-        <div className="sibs-scrollbar grid min-h-0 flex-1 grid-cols-1 gap-5 overflow-y-auto bg-[#F8FAFC] p-4 lg:grid-cols-12 lg:p-5">
-          <div className="space-y-4 lg:col-span-5">
+        <div className="sibs-scrollbar grid min-h-0 flex-1 grid-cols-1 gap-4 2xl:gap-5 overflow-y-auto bg-[#F8FAFC] p-3.5 sm:p-4 2xl:p-5 lg:grid-cols-12">
+          <div className="space-y-3.5 2xl:space-y-4 lg:col-span-5">
             <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between border-b border-[#E6ECF2] pb-3">
                 <h3 className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#042C51]"><Send size={14} className="text-[#FF5C28]" /> Email Dispatch Details</h3>

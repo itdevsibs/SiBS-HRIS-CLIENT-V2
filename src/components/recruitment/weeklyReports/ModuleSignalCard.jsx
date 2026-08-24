@@ -48,14 +48,11 @@ const TONE_MAP = {
 
 export default function ModuleSignalCard({ item, delay = 0, tone = "navy" }) {
   const Icon = item.icon;
-  const risk = Boolean(item.hasRisk);
-  const selectedTone = risk ? TONE_MAP.red : TONE_MAP[tone] || TONE_MAP.navy;
+  const selectedTone = TONE_MAP[tone] || TONE_MAP.navy;
 
   return (
     <article
-      className={`sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 ${
-        risk ? "!border-red-200" : ""
-      }`}
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
@@ -77,7 +74,7 @@ export default function ModuleSignalCard({ item, delay = 0, tone = "navy" }) {
             </p>
           </div>
 
-          <p className={`line-clamp-1 truncate sibs-text-micro font-bold ${risk ? "text-red-600" : "text-[#667085]"}`}>
+          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
             {item.description}
           </p>
         </div>

@@ -394,7 +394,7 @@ export default function DropdownField({
                       aria-selected={isSelected}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => handleSelect(option)}
-                      className={`block w-full px-3 py-2.5 text-left text-xs transition ${
+                      className={`block w-full px-3 py-1.5 2xl:py-2 text-left sibs-text-xs transition ${
                         isSelected
                           ? "bg-[#FFF7F3] font-extrabold text-[#FF5C28]"
                           : "bg-white font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
@@ -405,7 +405,7 @@ export default function DropdownField({
                       </span>
 
                       {option.description ? (
-                        <span className="mt-0.5 block min-w-0 truncate text-[10px] font-bold text-[#98A2B3]">
+                        <span className="mt-0.5 block min-w-0 truncate text-[9px] font-bold text-[#98A2B3]">
                           {option.description}
                         </span>
                       ) : null}
@@ -413,7 +413,7 @@ export default function DropdownField({
                   );
                 })
               ) : (
-                <div className="px-3 py-3 text-xs font-semibold text-[#98A2B3]">
+                <div className="px-3 py-2.5 text-xs font-semibold text-[#98A2B3]">
                   {emptyMessage}
                 </div>
               )}
@@ -425,11 +425,11 @@ export default function DropdownField({
 
   const isSecondaryAction = controlVariant === "secondaryAction";
 
-  const sharedControlClass = `flex h-10 w-full min-w-0 items-center ${
-    isSecondaryAction ? "rounded-lg px-4" : "rounded-[10px] px-3"
-  } border text-left text-xs outline-none transition ${
+  const sharedControlClass = `flex h-8.5 2xl:h-10 w-full min-w-0 items-center ${
+    isSecondaryAction ? "rounded-lg px-3.5" : "rounded-lg 2xl:rounded-xl px-3"
+  } border text-left sibs-text-xs outline-none transition ${
     open
-      ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+      ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
       : isSecondaryAction
         ? "border-[#D6E0EA] bg-white hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
         : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
@@ -438,7 +438,7 @@ export default function DropdownField({
       ? "cursor-not-allowed bg-[#F2F4F7] text-[#98A2B3] opacity-70"
       : isSecondaryAction
         ? "font-extrabold text-[#042C51]"
-        : "font-semibold text-[#344054]"
+        : "font-semibold text-[#042C51]"
   }`;
 
   return (
@@ -501,18 +501,17 @@ export default function DropdownField({
               WebkitAppearance: "none",
               appearance: "none",
             }}
-            className={`h-full min-w-0 flex-1 !appearance-none !border-0 !border-transparent !bg-transparent !p-0 text-xs font-semibold !outline-none !ring-0 !shadow-none focus:!border-0 focus:!border-transparent focus:!outline-none focus:!ring-0 focus:!shadow-none focus-visible:!border-0 focus-visible:!border-transparent focus-visible:!outline-none focus-visible:!ring-0 focus-visible:!shadow-none active:!border-0 active:!outline-none active:!ring-0 active:!shadow-none placeholder:text-[#98A2B3] ${
+            className={`h-full min-w-0 flex-1 !appearance-none !border-0 !border-transparent !bg-transparent !p-0 sibs-text-xs font-semibold !outline-none !ring-0 !shadow-none focus:!border-0 focus:!border-transparent focus:!outline-none focus:!ring-0 focus:!shadow-none focus-visible:!border-0 focus-visible:!border-transparent focus-visible:!outline-none focus-visible:!ring-0 focus-visible:!shadow-none active:!border-0 active:!outline-none active:!ring-0 active:!shadow-none placeholder:text-[#98A2B3] ${
               hasDisplayValue || open
                 ? isSecondaryAction
                   ? "font-extrabold text-[#042C51]"
-                  : "text-[#344054]"
+                  : "text-[#042C51]"
                 : "text-[#98A2B3]"
             } disabled:cursor-not-allowed disabled:text-[#98A2B3]`}
           />
 
           <ChevronDown
-            size={16}
-            className={`shrink-0 text-[#042C51] transition-transform ${
+            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#042C51] transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -531,7 +530,7 @@ export default function DropdownField({
               hasDisplayValue
                 ? isSecondaryAction
                   ? "text-[#042C51]"
-                  : "text-[#344054]"
+                  : "text-[#042C51]"
                 : "text-[#98A2B3]"
             }`}
           >
@@ -539,8 +538,7 @@ export default function DropdownField({
           </span>
 
           <ChevronDown
-            size={16}
-            className={`shrink-0 text-[#042C51] transition-transform ${
+            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#042C51] transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />

@@ -194,14 +194,14 @@ export default function WeeklyReportEmailPreview({
           </article>
         </main>
 
-        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3 sm:px-6">
+        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-2.5 sm:px-5 2xl:px-6 2xl:py-3 font-jakarta">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-[#FF5C28] hover:shadow-md active:scale-[0.98]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl bg-[#042C51] px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28] active:scale-[0.98]"
             >
-              {copied ? <Check size={15} /> : <Copy size={15} />}
+              {copied ? <Check size={14} /> : <Copy size={14} />}
               {copied ? "Copied to Clipboard" : "Copy Email Content"}
             </button>
 
@@ -209,7 +209,7 @@ export default function WeeklyReportEmailPreview({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-xs font-extrabold text-[#667085] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg 2xl:rounded-xl border border-[#D6DEE8] bg-white px-4 2xl:px-5 sibs-text-xs font-extrabold text-[#667085] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
               >
                 Close Preview
               </button>
@@ -218,9 +218,9 @@ export default function WeeklyReportEmailPreview({
                 <button
                   type="button"
                   onClick={onExport}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
                 >
-                  <Download size={15} />
+                  <Download size={14} />
                   Export TXT
                 </button>
               ) : null}

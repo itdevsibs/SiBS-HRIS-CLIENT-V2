@@ -2,7 +2,7 @@ import { Filter, Search, X } from "lucide-react";
 import ThemedDropdown from "@/components/layout/dropdown/ThemedDropdown.jsx";
 import { getResponseSourceLabel, getSurveyStatusLabel, SURVEY_STATUS_OPTIONS } from "@/lib/utils/candidateExperience/index.js";
 
-const labelClass = "mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]";
+const labelClass = "mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]";
 
 const OUTCOME_OPTIONS = [
   { label: "All Outcomes", value: "All" },
@@ -37,13 +37,13 @@ export default function CandidateExperienceFilters({ filters, onChange, onClear 
 
   return (
     <div className="bg-white font-jakarta">
-      <div className="flex flex-col gap-3 overflow-visible sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="flex flex-col gap-2.5 overflow-visible sm:flex-row sm:flex-wrap sm:items-end">
         {/* Search Field */}
-        <div className="relative w-full min-w-0 sm:min-w-[240px] sm:flex-1">
+        <div className="relative w-full min-w-0 sm:min-w-[220px] sm:flex-1">
           <label className={labelClass}>Search</label>
           <div className="group relative">
             <Search
-              size={17}
+              size={15}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
             />
             <input
@@ -51,7 +51,7 @@ export default function CandidateExperienceFilters({ filters, onChange, onClear 
               value={filters.search}
               onChange={(e) => onChange("search", e.target.value)}
               placeholder="Search candidate, email, role, account, owner..."
-              className="h-10 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3.5 pl-9 pr-8 text-xs font-semibold text-[#101828] outline-none transition focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
+              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3 pl-8.5 pr-8 sibs-text-xs font-semibold text-[#101828] outline-none transition focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
             />
             {filters.search ? (
               <button
@@ -59,14 +59,14 @@ export default function CandidateExperienceFilters({ filters, onChange, onClear 
                 onClick={() => onChange("search", "")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#98A2B3] hover:text-[#101828]"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             ) : null}
           </div>
         </div>
 
         {/* Outcome Filter */}
-        <div className="w-full min-w-0 sm:w-[150px]">
+        <div className="w-full min-w-0 sm:w-[140px]">
           <label className={labelClass}>Outcome</label>
           <ThemedDropdown
             value={filters.outcome}
@@ -79,7 +79,7 @@ export default function CandidateExperienceFilters({ filters, onChange, onClear 
         </div>
 
         {/* Survey Status Filter */}
-        <div className="w-full min-w-0 sm:w-[165px]">
+        <div className="w-full min-w-0 sm:w-[155px]">
           <label className={labelClass}>Survey Status</label>
           <ThemedDropdown
             value={filters.surveyStatus}
@@ -92,7 +92,7 @@ export default function CandidateExperienceFilters({ filters, onChange, onClear 
         </div>
 
         {/* Response Source Filter */}
-        <div className="w-full min-w-0 sm:w-[175px]">
+        <div className="w-full min-w-0 sm:w-[165px]">
           <label className={labelClass}>Response Source</label>
           <ThemedDropdown
             value={filters.responseSource}
@@ -105,7 +105,7 @@ export default function CandidateExperienceFilters({ filters, onChange, onClear 
         </div>
 
         {/* Rating Filter */}
-        <div className="w-full min-w-0 sm:w-[130px]">
+        <div className="w-full min-w-0 sm:w-[125px]">
           <label className={labelClass}>Rating</label>
           <ThemedDropdown
             value={filters.rating}
@@ -123,9 +123,9 @@ export default function CandidateExperienceFilters({ filters, onChange, onClear 
             type="button"
             onClick={onClear}
             disabled={!hasActiveFilters}
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D0D5DD] bg-white px-4 text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
-            <Filter size={15} />
+            <Filter size={14} />
             Clear
           </button>
         </div>

@@ -222,7 +222,7 @@ export default function OnboardingPage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+        <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
           <section
             className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
@@ -247,7 +247,7 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+              <div className="flex shrink-0 flex-wrap items-center gap-2 2xl:gap-2.5">
                 <button
                   type="button"
                   onClick={handleManualRefresh}
@@ -276,18 +276,18 @@ export default function OnboardingPage() {
 
           <section
             className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm"
-            style={{ animationDelay: "240ms" }}
+            style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
-            <header className="border-b border-[#E6ECF2] bg-white px-5 py-4">
-              <h2 className="text-base font-extrabold text-[#042C51]">
+            <header className="border-b border-[#E6ECF2] bg-white px-4 py-3.5 sm:px-5 2xl:px-6 2xl:py-4">
+              <h2 className="text-base 2xl:text-lg font-extrabold text-[#042C51]">
                 Onboarding Records
               </h2>
-              <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+              <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
                 Select a row or mobile card to review and resolve candidate start outcomes.
               </p>
             </header>
 
-            <div className="space-y-4 p-4 font-jakarta sm:p-5">
+            <div className="space-y-3.5 p-3.5 font-jakarta sm:p-4 2xl:p-5">
               <OnboardingFilters />
               <OnboardingTable onView={setSelectedRecord} />
             </div>

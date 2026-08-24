@@ -12,12 +12,12 @@ export default function WeeklyReportsStats({ stats }) {
   const current = stats?.current || null;
 
   return (
-    <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+    <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
       <SummaryCard
         title="Total Reports"
         value={stats?.totalReports || 0}
         icon={FileText}
-        description="Weekly logs compiled"
+        description="Total logged"
         tone="navy"
         delay={0}
       />
@@ -26,45 +26,45 @@ export default function WeeklyReportsStats({ stats }) {
         title="Generated"
         value={stats?.generated || 0}
         icon={Clock3}
-        description="Awaiting distribution"
+        description="Pending send"
         tone="amber"
-        delay={45}
+        delay={60}
       />
 
       <SummaryCard
         title="Sent"
         value={stats?.sent || 0}
         icon={CheckCircle2}
-        description="Distributed reports"
+        description="Distributed"
         tone="green"
-        delay={90}
+        delay={120}
       />
 
       <SummaryCard
         title="Archived"
         value={stats?.archived || 0}
         icon={Archive}
-        description="Historical reports"
+        description="Past logs"
         tone="indigo"
-        delay={135}
+        delay={180}
       />
 
       <SummaryCard
         title="Action Items"
         value={current?.actionItemsCount || 0}
         icon={ListChecks}
-        description="Active week follow-ups"
+        description="Active tasks"
         tone="orange"
-        delay={180}
+        delay={240}
       />
 
       <SummaryCard
         title="Missing Data"
         value={current?.missingDataCount || 0}
         icon={AlertTriangle}
-        description="Requires explanation"
+        description="Data alerts"
         tone="red"
-        delay={225}
+        delay={300}
       />
     </section>
   );

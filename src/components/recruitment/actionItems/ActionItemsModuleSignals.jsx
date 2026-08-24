@@ -10,7 +10,10 @@ function ModuleSignalRow({ item, delay = 0 }) {
   const hasRisk = Number(item.riskValue || 0) > 0;
 
   return (
-    <div className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/30 hover:bg-white hover:shadow-sm" style={{ animationDelay: `${delay}ms` }}>
+    <div
+      className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/30 hover:bg-white hover:shadow-sm"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
+    >
       <div className="flex items-start gap-3">
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${hasRisk ? "bg-rose-50 text-rose-600" : "bg-[#E9F0FC] text-[#042C51]"}`}>
           <Icon size={17} />
@@ -34,7 +37,10 @@ export default function ActionItemsModuleSignals() {
   const { moduleInsightCards } = useActionItems();
 
   return (
-    <section className="sibs-profile-tab-panel flex h-full max-h-[450px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5 lg:max-h-[465px]" style={{ animationDelay: "240ms" }}>
+    <section
+      className="sibs-profile-tab-panel flex h-full max-h-[450px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5 lg:max-h-[465px]"
+      style={{ animationDelay: "240ms", animationFillMode: "both" }}
+    >
       <div className="shrink-0">
         <h2 className="text-xs font-black uppercase tracking-wider text-[#042C51]">Data-Driven Module Signals</h2>
         <p className="mt-1 text-[11px] font-medium leading-5 text-slate-500">Auto-detected recruitment indicators from current module records.</p>

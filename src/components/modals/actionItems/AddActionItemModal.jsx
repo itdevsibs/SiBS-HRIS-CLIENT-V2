@@ -628,19 +628,19 @@ export default function AddActionItemModal() {
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-slate-950/65 p-3 font-jakarta backdrop-blur-sm sm:p-5"
+      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-slate-950/65 p-2 font-jakarta backdrop-blur-sm sm:p-4"
       onMouseDown={closeAddModal}
       role="presentation"
     >
       <form
         onSubmit={addActionItem}
         onMouseDown={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[94dvh] w-full max-w-[1020px] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-action-item-title"
       >
-        <header className="shrink-0 bg-[#042C51] px-5 py-3.5 text-white sm:px-6">
+        <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-2.5">
               <ClipboardList
@@ -651,7 +651,7 @@ export default function AddActionItemModal() {
               <div className="min-w-0">
                 <h2
                   id="add-action-item-title"
-                  className="text-sm font-black tracking-tight sm:text-base"
+                  className="text-sm font-black tracking-tight sm:text-base 2xl:text-lg"
                 >
                   Add Recruitment Action Item
                 </h2>

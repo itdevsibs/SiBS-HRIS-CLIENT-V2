@@ -1508,7 +1508,7 @@ function CandidateProfileHorizontalNavigation({
 
   return (
     <nav
-      className="rounded-xl border border-sibs-border bg-white p-1.5 2xl:p-2 shadow-2xs"
+      className="rounded-xl border border-sibs-border bg-white p-1.5 xl:p-2 shadow-2xs"
       aria-label="Candidate profile navigation"
     >
       <div className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto">
@@ -1522,14 +1522,14 @@ function CandidateProfileHorizontalNavigation({
               type="button"
               onClick={() => handlePrimaryClick(tab)}
               aria-current={active ? "page" : undefined}
-              className={`inline-flex h-7 2xl:h-7.5 min-w-max shrink-0 items-center justify-center gap-1 rounded-md border px-2.5 2xl:px-3 text-[10.5px] 2xl:text-[11.5px] font-extrabold transition-all duration-150 ${
+              className={`inline-flex h-7 xl:h-8.5 min-w-max shrink-0 items-center justify-center gap-1.5 rounded-md xl:rounded-lg border px-2.5 xl:px-3.5 text-[10.5px] xl:text-xs font-extrabold transition-all duration-150 ${
                 active
                   ? "border-sibs-orange/40 bg-sibs-cream text-sibs-orange shadow-2xs"
                   : "border-transparent text-sibs-text-muted hover:bg-sibs-cream-subtle hover:text-sibs-navy"
               }`}
             >
               <Icon
-                size={13}
+                size={14}
                 className={active ? "text-sibs-orange" : "text-sibs-text-muted"}
               />
               {tab.label}
@@ -1539,8 +1539,8 @@ function CandidateProfileHorizontalNavigation({
       </div>
 
       {secondaryTabs.length > 0 && (
-        <div className="no-scrollbar mt-1 flex items-center gap-1 overflow-x-auto border-t border-sibs-border pt-1">
-          <span className="shrink-0 px-1.5 text-[8.5px] font-black uppercase tracking-widest text-sibs-text-muted">
+        <div className="no-scrollbar mt-1 xl:mt-1.5 flex items-center gap-1.5 overflow-x-auto border-t border-sibs-border pt-1 xl:pt-1.5">
+          <span className="shrink-0 px-1.5 text-[8.5px] xl:text-[9.5px] font-black uppercase tracking-widest text-sibs-text-muted">
             Subsections:
           </span>
 
@@ -1553,7 +1553,7 @@ function CandidateProfileHorizontalNavigation({
                 type="button"
                 onClick={() => onTabChange?.(child.key)}
                 aria-selected={active}
-                className={`h-5.5 2xl:h-6 min-w-max shrink-0 rounded-full px-2 2xl:px-2.5 text-[9px] 2xl:text-[9.5px] font-extrabold transition-all ${
+                className={`h-5.5 xl:h-6.5 min-w-max shrink-0 rounded-full px-2.5 xl:px-3 text-[9px] xl:text-[10px] font-extrabold transition-all ${
                   active
                     ? "bg-sibs-navy text-white shadow-2xs"
                     : "bg-slate-100 text-sibs-text-muted hover:bg-slate-200 hover:text-sibs-navy"
@@ -4785,8 +4785,8 @@ export default function CandidateProfileModal() {
     const previewWindow = window.open("", "_blank");
     if (previewWindow) {
       previewWindow.opener = null;
-      previewWindow.document.title = "Generating SiBS Candidate Resume";
-      previewWindow.document.body.textContent = "Generating candidate resume...";
+      previewWindow.document.title = "Generating SiBS Candidate PDS";
+      previewWindow.document.body.textContent = "Generating candidate Personal Data Sheet (PDS)...";
     }
 
     setIsGeneratingResume(true);
@@ -4794,7 +4794,7 @@ export default function CandidateProfileModal() {
       const result = await getTalentPoolResumePdf(talentPoolApplicationId);
       if (!result.success || !result.data) {
         throw new Error(
-          result.message || "Unable to generate the candidate resume.",
+          result.message || "Unable to generate the candidate PDS.",
         );
       }
 
@@ -4811,9 +4811,9 @@ export default function CandidateProfileModal() {
         setStatusModal({
           open: true,
           type: "success",
-          title: "Resume generated",
+          title: "PDS generated",
           message:
-            "The PDF preview was blocked, so the candidate resume was downloaded instead.",
+            "The PDF preview was blocked, so the candidate PDS was downloaded instead.",
           closeProfileOnClose: false,
         });
       }
@@ -4823,11 +4823,11 @@ export default function CandidateProfileModal() {
       setStatusModal({
         open: true,
         type: "error",
-        title: "Resume generation failed",
+        title: "PDS generation failed",
         message:
           error?.response?.data?.message ||
           error?.message ||
-          "Unable to generate the candidate resume.",
+          "Unable to generate the candidate PDS.",
         closeProfileOnClose: false,
       });
     } finally {
@@ -7354,20 +7354,20 @@ export default function CandidateProfileModal() {
         onClick={handleCloseCandidateProfile}
       >
         <div
-          className="sibs-modal-pop-in flex h-[88dvh] 2xl:h-[92dvh] max-h-[88dvh] 2xl:max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-sibs-border bg-[#F8FAFC] shadow-2xl"
+          className="sibs-modal-pop-in flex h-[88dvh] xl:h-[92dvh] max-h-[88dvh] xl:max-h-[92dvh] w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-sibs-border bg-[#F8FAFC] shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#174A7C] bg-sibs-navy px-3.5 py-2 text-white sm:px-5 2xl:py-2.5">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#174A7C] bg-sibs-navy px-3.5 py-2 text-white sm:px-5 xl:px-6 xl:py-3.5">
             <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-xs">
-                <UserRound size={15} />
+              <span className="flex h-7.5 w-7.5 xl:h-9 xl:w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-xs">
+                <UserRound size={16} />
               </span>
 
               <div className="min-w-0">
-                <h2 className="truncate text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-white">
+                <h2 className="truncate text-xs sm:text-sm xl:text-base font-extrabold uppercase tracking-wide text-white">
                   Talent Pool Candidate Profile
                 </h2>
-                <p className="truncate text-[9.5px] 2xl:text-[10.5px] font-semibold text-blue-100">
+                <p className="truncate text-[9.5px] sm:text-[10.5px] xl:text-xs font-semibold text-blue-100">
                   Comprehensive candidate filing and talent screening profile record
                 </p>
               </div>
@@ -7377,15 +7377,15 @@ export default function CandidateProfileModal() {
               type="button"
               onClick={handleCloseCandidateProfile}
               aria-label="Close candidate profile"
-              className="inline-flex h-7 w-7 2xl:h-7.5 2xl:w-7.5 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-7 w-7 xl:h-8.5 xl:w-8.5 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <X size={15} />
+              <X size={16} />
             </button>
           </div>
 
-          <div className="thin-scroll flex-1 overflow-y-auto bg-[#F8FAFC] p-2.5 sm:p-3.5 2xl:p-5">
-            <div className="space-y-2.5 2xl:space-y-3.5">
-              <section className="relative overflow-hidden rounded-xl border border-sibs-border bg-white px-3 py-2 2xl:px-4 2xl:py-2.5 shadow-2xs">
+          <div className="thin-scroll flex-1 overflow-y-auto bg-[#F8FAFC] p-2.5 sm:p-3.5 xl:p-5 2xl:p-6">
+            <div className="space-y-2.5 xl:space-y-4">
+              <section className="relative overflow-hidden rounded-xl border border-sibs-border bg-white px-3 py-2 xl:px-5 xl:py-3.5 shadow-2xs">
                 <span
                   className="pointer-events-none absolute left-0 right-0 top-0 h-0.5 overflow-hidden"
                   aria-hidden="true"
@@ -7395,42 +7395,42 @@ export default function CandidateProfileModal() {
 
                 <div className="flex flex-col items-center justify-between gap-2.5 lg:flex-row lg:items-center">
                   <div className="flex min-w-0 flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-                    <div className="relative flex h-10 w-10 2xl:h-12 2xl:w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#042C51] to-[#084782] text-sm 2xl:text-base font-black text-white shadow-xs">
+                    <div className="relative flex h-10 w-10 xl:h-12 xl:w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#042C51] to-[#084782] text-sm xl:text-base font-black text-white shadow-xs">
                       {candidateInitials}
                       <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
                     </div>
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
-                        <h3 className="truncate text-sm 2xl:text-base font-black leading-tight tracking-tight text-sibs-navy">
+                        <h3 className="truncate text-sm sm:text-base xl:text-lg font-black leading-tight tracking-tight text-sibs-navy">
                           {activeCandidate.name || "Unnamed Candidate"}
                         </h3>
 
                         <span
-                          className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase ${getStatusClass(
+                          className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.2 text-[8.5px] sm:text-[9px] xl:text-[9.5px] font-extrabold uppercase ${getStatusClass(
                             candidateDisplayStatus,
                           )}`}
                         >
                           {candidateDisplayStatus || "—"}
                         </span>
 
-                        <span className="rounded-md border border-blue-100 bg-[#E9F0FC] px-1.5 py-0.2 font-mono text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-sibs-navy">
+                        <span className="rounded-md border border-blue-100 bg-[#E9F0FC] px-1.5 py-0.2 font-mono text-[8.5px] sm:text-[9px] xl:text-[9.5px] font-extrabold uppercase text-sibs-navy">
                           {activeCandidate.candidateId || "—"}
                         </span>
                       </div>
 
-                      <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[9.5px] 2xl:text-[10.5px] font-semibold text-sibs-text-muted sm:justify-start">
+                      <div className="mt-0.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[9.5px] sm:text-[10.5px] xl:text-xs font-semibold text-sibs-text-muted sm:justify-start">
                         <span className="font-bold text-sibs-orange">
                           {activeCandidate.openPosition ||
                             activeCandidate.roleCapability ||
                             "No position"}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <Mail size={11.5} className="text-sibs-orange" />
+                          <Mail size={12} className="text-sibs-orange" />
                           {activeCandidate.email || "No email"}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <CalendarDays size={11.5} className="text-sibs-orange" />
+                          <CalendarDays size={12} className="text-sibs-orange" />
                           Applied: {formatDate(
                             firstCandidateValue(
                               activeCandidate.applicationDate,
@@ -7441,7 +7441,7 @@ export default function CandidateProfileModal() {
                           )}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <MapPin size={11.5} className="text-sibs-orange" />
+                          <MapPin size={12} className="text-sibs-orange" />
                           {activeCandidate.applyingLocation || "—"}
                         </span>
                       </div>
@@ -7453,7 +7453,7 @@ export default function CandidateProfileModal() {
                       type="button"
                       onClick={handleGenerateResume}
                       disabled={!talentPoolApplicationId || isGeneratingResume}
-                      className="inline-flex h-7 2xl:h-7.5 items-center justify-center gap-1 rounded-md border border-sibs-border bg-white px-2.5 text-[11px] 2xl:text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-7.5 xl:h-9 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 xl:px-4 text-[11px] xl:text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isGeneratingResume ? (
                         <>
@@ -7463,7 +7463,7 @@ export default function CandidateProfileModal() {
                       ) : (
                         <>
                           <FileDown size={13} className="text-sibs-orange" />
-                          <span>Generate Resume</span>
+                          <span>Generate PDS</span>
                         </>
                       )}
                     </button>
@@ -7471,7 +7471,7 @@ export default function CandidateProfileModal() {
                     <button
                       type="button"
                       onClick={handleUpdateCandidateStatus}
-                      className="inline-flex h-7 2xl:h-7.5 items-center justify-center gap-1 rounded-md bg-sibs-navy px-2.5 text-[11px] 2xl:text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-navy/90"
+                      className="inline-flex h-7.5 xl:h-9 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-3 xl:px-4 text-[11px] xl:text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-navy/90"
                     >
                       <RefreshCcw size={13} className="text-sibs-orange" />
                       Status
@@ -7496,11 +7496,11 @@ export default function CandidateProfileModal() {
               <div className="sibs-page-card-in grid grid-cols-1 items-start">
                 <section
                   key={activeTab}
-                  className="sibs-profile-tab-panel min-w-0 rounded-xl border border-sibs-border bg-white p-3 sm:p-3.5 2xl:p-4.5 shadow-2xs"
+                  className="sibs-profile-tab-panel min-w-0 rounded-xl border border-sibs-border bg-white p-3 sm:p-4 xl:p-5 2xl:p-6 shadow-2xs"
                 >
-                  <div className="mb-2.5 flex items-center justify-between border-b border-sibs-border pb-1.5">
+                  <div className="mb-2.5 flex items-center justify-between border-b border-sibs-border pb-1.5 xl:pb-2.5">
                     <div className="min-w-0">
-                      <h3 className="text-xs 2xl:text-sm font-black uppercase tracking-wider text-sibs-navy">
+                      <h3 className="text-xs sm:text-sm xl:text-base font-black uppercase tracking-wider text-sibs-navy">
                         {activeProfileParent?.label || "Profile"}
                         {activeProfileChild?.label
                           ? ` - ${activeProfileChild.label}`
@@ -7510,7 +7510,7 @@ export default function CandidateProfileModal() {
 
                     <div className="flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-sibs-navy" />
-                      <span className="text-[9px] 2xl:text-[9.5px] font-extrabold uppercase text-sibs-text-muted">
+                      <span className="text-[9px] sm:text-[9.5px] xl:text-[10px] font-extrabold uppercase text-sibs-text-muted">
                         Official Profile Record
                       </span>
                     </div>
@@ -7524,8 +7524,8 @@ export default function CandidateProfileModal() {
             </div>
           </div>
 
-          <div className="relative z-[40] flex flex-col-reverse gap-2 border-t border-sibs-border bg-white px-3.5 py-2 sm:flex-row sm:items-center sm:justify-between 2xl:px-5 2xl:py-2.5">
-            <p className="inline-flex w-fit max-w-full items-center rounded-full border border-sibs-border bg-sibs-canvas px-2.5 py-0.5 text-[10px] 2xl:text-[10.5px] font-extrabold leading-tight text-sibs-navy">
+          <div className="relative z-[40] flex flex-col-reverse gap-2 border-t border-sibs-border bg-white px-3.5 py-2 sm:px-5 xl:px-6 xl:py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="inline-flex w-fit max-w-full items-center rounded-full border border-sibs-border bg-sibs-canvas px-2.5 py-1 xl:px-3.5 xl:py-1.5 text-[10px] sm:text-[10.5px] xl:text-xs font-extrabold leading-tight text-sibs-navy">
               {isDropOffCandidate ? (
                 <span className="font-extrabold text-amber-700">
                   Candidate is marked as Drop-off. Use Move to Pipeline to
@@ -7562,7 +7562,7 @@ export default function CandidateProfileModal() {
               <button
                 type="button"
                 onClick={handleCloseCandidateProfile}
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30"
+                className="inline-flex h-8 xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 xl:px-5 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30"
               >
                 Close
               </button>
@@ -7574,7 +7574,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleOpenDropOff}
                   disabled={dropOffSaving}
-                  className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8 xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 xl:px-5 text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <UserX size={14} />
                   {dropOffSaving ? "Saving..." : "Mark as Drop Off"}
@@ -7586,7 +7586,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   disabled={isMovingToOnboarding}
                   onClick={handleMoveToOnboarding}
-                  className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8 xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 xl:px-5 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isMovingToOnboarding ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -7601,7 +7601,7 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleOpenLinkedCandidateDestination}
-                  className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20"
+                  className="inline-flex h-8 xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 xl:px-5 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20"
                 >
                   <ArrowRight size={14} />
                   Already Linked
@@ -7612,7 +7612,7 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}
-                  className="relative z-[60] inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 active:scale-[0.98]"
+                  className="relative z-[60] inline-flex h-8 xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 xl:px-5 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 active:scale-[0.98]"
                 >
                   <ArrowRight size={14} />
                   {isDropOffCandidate

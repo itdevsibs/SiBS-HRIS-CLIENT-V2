@@ -51,7 +51,7 @@ export default function OfferSummaryCards() {
 
   return (
     <section aria-labelledby="offer-summary-title">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard
           title="Total Offers"
           value={stats.total}
@@ -65,7 +65,7 @@ export default function OfferSummaryCards() {
           icon={Clock3}
           description="Needs approval"
           tone="amber"
-          delay={45}
+          delay={60}
         />
         <StatCard
           title="Approved"
@@ -73,7 +73,7 @@ export default function OfferSummaryCards() {
           icon={ShieldCheck}
           description="Ready to send"
           tone="green"
-          delay={90}
+          delay={120}
         />
         <StatCard
           title="Contract Sent"
@@ -81,7 +81,7 @@ export default function OfferSummaryCards() {
           icon={Send}
           description="Awaiting response"
           tone="indigo"
-          delay={135}
+          delay={180}
         />
         <StatCard
           title="Accepted"
@@ -89,7 +89,7 @@ export default function OfferSummaryCards() {
           icon={UserCheck}
           description={`${stats.acceptanceRate ?? 0}% rate`}
           tone="green"
-          delay={180}
+          delay={240}
         />
         <StatCard
           title="Declined"
@@ -97,7 +97,7 @@ export default function OfferSummaryCards() {
           icon={UserX}
           description="With reasons"
           tone="red"
-          delay={225}
+          delay={300}
         />
       </div>
     </section>

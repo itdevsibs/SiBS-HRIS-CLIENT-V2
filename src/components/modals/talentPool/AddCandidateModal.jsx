@@ -2745,7 +2745,7 @@ function TextField({
 function createEmptyExperience(baseExperience = {}) {
   return {
     ...baseExperience,
-    id: Date.now(),
+    id: `exp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     industry: "",
     industryRelevantExperience: "",
     lengthOfWorkExperience: "",
@@ -2806,7 +2806,7 @@ function ExperienceFields({
   }
 
   return (
-    <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
+    <div className="sibs-page-card-in rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 shadow-2xs transition-all duration-200 hover:border-[#C9D7E6] sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h4 className="text-sm font-extrabold text-sibs-primary-1">{title}</h4>
 
@@ -5039,30 +5039,14 @@ export default function AddCandidateModal() {
                       lengthOptions={safeFormOptions.lengthOfExperience}
                     />
 
-                    <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px] md:items-end">
-                        <div>
-                          <FieldLabel>Do you have other experience?</FieldLabel>
-                          <YesNoSelect
-                            required={false}
-                            value={hasOtherExperience ? "Yes" : "No"}
-                            options={safeFormOptions.yesNo}
-                            onChange={handleOtherExperienceAnswer}
-                          />
-                        </div>
-
-                        {hasOtherExperience && (
-                          <button
-                            type="button"
-                            onClick={addOtherExperience}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-4 text-sm font-bold text-white transition hover:opacity-90"
-                          >
-                            <Plus size={16} />
-                            Add Other Experience
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    <WorkReadinessQuestion
+                      question="Do you have other experience?"
+                      name="has-other-experience-modal"
+                      required={false}
+                      value={hasOtherExperience ? "Yes" : "No"}
+                      options={safeFormOptions.yesNo}
+                      onChange={handleOtherExperienceAnswer}
+                    />
 
                     {hasOtherExperience &&
                       workExperiences.slice(1).map((experience, itemIndex) => {
@@ -5081,6 +5065,19 @@ export default function AddCandidateModal() {
                           />
                         );
                       })}
+
+                    {hasOtherExperience && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={addOtherExperience}
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[var(--sibs-primary-1)] px-4 text-xs font-extrabold text-white shadow-sm transition hover:opacity-90"
+                        >
+                          <Plus size={14} />
+                          Add Other Experience
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

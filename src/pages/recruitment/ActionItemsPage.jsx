@@ -98,7 +98,7 @@ export default function ActionItemsPage() {
     <div className="sibs-dashboard-shell">
       <div className="shrink-0"><Header /></div>
       <main ref={mainRef} className="sibs-dashboard-main">
-        <div className="mx-auto w-full max-w-[1600px] space-y-5">
+        <div className="mx-auto w-full max-w-[1600px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
           <ActionItemsReportProvider>
             <ActionItemsContent />
           </ActionItemsReportProvider>

@@ -3,8 +3,8 @@ import { Target } from "lucide-react";
 export default function OfferProcessRule() {
   return (
     <section
-      className="sibs-profile-tab-panel sibs-page-card-in flex items-start gap-3 rounded-xl border border-blue-100 bg-[#F7FAFE] px-4 py-3.5 font-jakarta"
-      style={{ animationDelay: "240ms" }}
+      className="sibs-profile-tab-panel sibs-page-card-in flex items-start gap-3 rounded-xl border border-blue-100 bg-[#F7FAFE] px-3.5 py-3 font-jakarta"
+      style={{ animationDelay: "240ms", animationFillMode: "both" }}
     >
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-tertiary-10 text-sibs-primary-1">
         <Target size={15} />

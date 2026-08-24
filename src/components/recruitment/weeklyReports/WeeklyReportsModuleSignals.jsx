@@ -49,17 +49,17 @@ export default function WeeklyReportsModuleSignals({ items }) {
 
       return {
         ...item,
-        description: `${item.description} · ${publicTalentPool.value || 0} public applicants`,
+        description: `${publicTalentPool.value || 0} public applicants`,
         hasRisk: item.hasRisk || publicTalentPool.hasRisk,
       };
     });
 
   return (
     <section
-      className="font-jakarta"
-      style={{ animationDelay: "240ms" }}
+      className="sibs-page-card-in font-jakarta"
+      style={{ animationDelay: "180ms", animationFillMode: "both" }}
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
         {visibleItems.map((item, index) => (
           <ModuleSignalCard
             key={`${item.iconKey}-${item.title}`}

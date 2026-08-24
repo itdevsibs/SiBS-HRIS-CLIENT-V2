@@ -15,7 +15,7 @@ export default function WeeklyReportSnapshot({ report, onViewReport }) {
 
   return (
     <section
-      className="sibs-page-card-in relative overflow-hidden rounded-2xl border border-[#083A69] bg-[#042C51] text-white shadow-md font-jakarta"
+      className="sibs-page-card-in relative overflow-hidden rounded-xl 2xl:rounded-2xl border border-[#083A69] bg-[#042C51] text-white shadow-md font-jakarta"
       style={{ animationDelay: "120ms", animationFillMode: "both" }}
     >
       <div
@@ -23,7 +23,7 @@ export default function WeeklyReportSnapshot({ report, onViewReport }) {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 border-b border-white/10 px-4 py-3.5 sm:px-5">
+      <div className="relative z-10 border-b border-white/10 px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-md bg-[#FF5C28] px-2.5 py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm">
@@ -40,7 +40,7 @@ export default function WeeklyReportSnapshot({ report, onViewReport }) {
         </div>
       </div>
 
-      <div className="relative z-10 grid grid-cols-1 gap-4 p-4 sm:p-5 xl:grid-cols-[1.05fr_1.25fr_0.9fr]">
+      <div className="relative z-10 grid grid-cols-1 gap-3.5 p-3.5 sm:gap-4 sm:p-4 2xl:gap-5 2xl:p-5 xl:grid-cols-[1.05fr_1.25fr_0.9fr]">
         <div className="rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
           <div className="grid grid-cols-3 divide-x divide-white/10">
             <div className="px-2 text-center">

@@ -429,35 +429,47 @@ export default function ViewJobDescriptionDetailsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="view-job-description-modal-title"
-        className="flex max-h-[84vh] 2xl:max-h-[88vh] h-full w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] h-full w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="shrink-0 border-b border-[#D9E2EC] bg-white px-4 py-3 sm:px-6 2xl:py-3.5">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-primary-1/80">
+              <div className="inline-flex items-center gap-2 text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-[#042C51]/80">
                 Job Description Overview
               </div>
 
               <h2
                 id="view-job-description-modal-title"
-                className="mt-0.5 min-w-0 break-words text-base 2xl:text-xl font-extrabold leading-tight text-sibs-primary-1"
+                className="mt-0.5 min-w-0 break-words text-base 2xl:text-xl font-extrabold leading-tight text-[#042C51]"
               >
                 {jdTitle}
               </h2>
 
-              <p className="mt-0.5 sibs-text-xs font-semibold text-[#475467]">
+              <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
                 {item.department || "—"} • {item.account || "—"}
               </p>
             </div>
 
-            <span
-              className={`inline-flex w-fit min-w-[92px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-center sibs-text-micro font-extrabold leading-none ${getJdStatusClass(
-                displayJdStatus,
-              )}`}
-            >
-              {getJdStatusLabel(displayJdStatus)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-flex w-fit min-w-[92px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-center text-[8.5px] font-extrabold leading-none ${getJdStatusClass(
+                  displayJdStatus,
+                )}`}
+              >
+                {getJdStatusLabel(displayJdStatus)}
+              </span>
+
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#D6DEE8] text-[#042C51] hover:bg-[#F8FAFC] transition active:scale-[0.98]"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
           {!approvalPage && (

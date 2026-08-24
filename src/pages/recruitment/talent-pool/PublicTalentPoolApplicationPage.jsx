@@ -131,6 +131,7 @@ const weekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 function createEmptyExperience() {
   return {
+    id: `exp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     industryRelevantExperience: "",
     lengthOfWorkExperience: "",
     years: "",
@@ -3086,7 +3087,7 @@ function ExperienceFields({
   onRemove,
 }) {
   return (
-    <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
+    <div className="sibs-page-card-in rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 shadow-2xs transition-all duration-200 hover:border-[#C9D7E6] sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h4 className="text-sm font-extrabold text-[#042C51]">{title}</h4>
 
@@ -4111,7 +4112,7 @@ export default function PublicTalentPoolApplicationPage() {
         type: "error",
         title: "Invalid supporting file",
         message:
-          "Please upload a valid supporting file. Accepted formats: PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, PNG, or GIF.",
+          "Please upload a valid supporting file/Resume. Accepted formats: PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, PNG, or GIF.",
       });
 
       return false;
@@ -5666,29 +5667,14 @@ export default function PublicTalentPoolApplicationPage() {
                     onChange={updatePrimaryExperience}
                   />
 
-                  <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px] md:items-end">
-                      <div>
-                        <FieldLabel>Do you have other experience?</FieldLabel>
-                        <YesNoSelect
-                          required={false}
-                          value={form.hasOtherExperience}
-                          options={formOptions.yesNo}
-                          onChange={handleOtherExperienceAnswer}
-                        />
-                      </div>
-
-                      {form.hasOtherExperience === "Yes" && (
-                        <button
-                          type="button"
-                          onClick={addOtherExperience}
-                          className="inline-flex h-11 items-center justify-center rounded-lg bg-[#FF5C28] px-4 text-sm font-extrabold text-[#042C51] transition-colors hover:bg-[#F04B18] focus-visible:ring-2 focus-visible:ring-[#042C51] focus-visible:ring-offset-2"
-                        >
-                          Add Other Experience
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  <WorkReadinessQuestion
+                    question="Do you have other experience?"
+                    name="has-other-experience"
+                    required={false}
+                    value={form.hasOtherExperience}
+                    options={formOptions.yesNo}
+                    onChange={handleOtherExperienceAnswer}
+                  />
 
                   {form.hasOtherExperience === "Yes" &&
                     form.otherExperiences.map((experience, index) => (
@@ -5704,6 +5690,19 @@ export default function PublicTalentPoolApplicationPage() {
                         onRemove={() => removeOtherExperience(index)}
                       />
                     ))}
+
+                  {form.hasOtherExperience === "Yes" && (
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={addOtherExperience}
+                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-[#F04B18] focus-visible:ring-2 focus-visible:ring-[#042C51] focus-visible:ring-offset-2"
+                      >
+                        <Plus size={14} />
+                        Add Other Experience
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -6170,15 +6169,15 @@ export default function PublicTalentPoolApplicationPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2 font-jakarta">
-                  <div>
+                <div className="grid grid-cols-1 items-stretch gap-3 sm:gap-4 lg:grid-cols-2 font-jakarta">
+                  <div className="flex flex-col">
                     <FieldLabel>
                       Upload single audio file <RequiredMark />
                     </FieldLabel>
                     <button
                       type="button"
                       onClick={() => audioInputRef.current?.click()}
-                      className={`group flex min-h-[140px] 2xl:min-h-[170px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-7 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
+                      className={`group flex w-full flex-1 min-h-[160px] 2xl:min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-6 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAudio && !selectedAudioFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAudioFile
@@ -6186,8 +6185,8 @@ export default function PublicTalentPoolApplicationPage() {
                             : "border-[#D6E0EA] bg-[#F8FAFC]"
                       }`}
                     >
-                      <div className="flex h-10 w-10 2xl:h-12 2xl:w-12 items-center justify-center rounded-xl bg-white border border-[#E6ECF2] shadow-sm text-[#FF5C28] group-hover:scale-105 transition-transform">
-                        <Mic size={20} className="2xl:h-6 2xl:w-6" />
+                      <div className="flex h-11 w-11 2xl:h-12 2xl:w-12 items-center justify-center rounded-xl bg-white border border-[#E6ECF2] shadow-sm text-[#FF5C28] group-hover:scale-105 transition-transform">
+                        <Mic size={22} className="2xl:h-6 2xl:w-6" />
                       </div>
                       <p className="mt-2.5 max-w-full truncate text-xs sm:text-sm font-extrabold text-[#042C51] group-hover:text-[#FF5C28] transition-colors">
                         {selectedAudioFile?.name || "Choose audio file"}
@@ -6229,14 +6228,14 @@ export default function PublicTalentPoolApplicationPage() {
                     )}
                   </div>
 
-                  <div>
+                  <div className="flex flex-col">
                     <FieldLabel>
-                      Upload supporting file <RequiredMark />
+                      Upload supporting file/Resume <RequiredMark />
                     </FieldLabel>
                     <button
                       type="button"
                       onClick={() => attachmentInputRef.current?.click()}
-                      className={`group flex min-h-[140px] 2xl:min-h-[170px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-7 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
+                      className={`group flex w-full flex-1 min-h-[160px] 2xl:min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-6 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAttachment && !selectedAttachmentFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAttachmentFile
@@ -6244,11 +6243,11 @@ export default function PublicTalentPoolApplicationPage() {
                             : "border-[#D6E0EA] bg-[#F8FAFC]"
                       }`}
                     >
-                      <div className="flex h-10 w-10 2xl:h-12 2xl:w-12 items-center justify-center rounded-xl bg-white border border-[#E6ECF2] shadow-sm text-[#FF5C28] group-hover:scale-105 transition-transform">
-                        <UploadCloud size={20} className="2xl:h-6 2xl:w-6" />
+                      <div className="flex h-11 w-11 2xl:h-12 2xl:w-12 items-center justify-center rounded-xl bg-white border border-[#E6ECF2] shadow-sm text-[#FF5C28] group-hover:scale-105 transition-transform">
+                        <UploadCloud size={22} className="2xl:h-6 2xl:w-6" />
                       </div>
                       <p className="mt-2.5 max-w-full truncate text-xs sm:text-sm font-extrabold text-[#042C51] group-hover:text-[#FF5C28] transition-colors">
-                        {selectedAttachmentFile?.name || "Choose file"}
+                        {selectedAttachmentFile?.name || "Choose file / Resume"}
                       </p>
                       {selectedAttachmentFile && (
                         <p className="mt-0.5 text-[11px] sm:text-xs font-bold text-emerald-700">
@@ -6257,7 +6256,7 @@ export default function PublicTalentPoolApplicationPage() {
                         </p>
                       )}
                       <p className="mt-1 text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
-                        PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
+                        Accepted: PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
                       </p>
                     </button>
                     <input
