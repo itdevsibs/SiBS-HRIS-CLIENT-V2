@@ -180,6 +180,8 @@ function normalizeJobDescriptionItem(item) {
 
     accountId: item.accountId || item.account_id || "",
     departmentId: item.departmentId || item.department_id || "",
+    locationWorkSetup:
+      item.locationWorkSetup || item.location_work_setup || "",
 
     jdStatus: normalizeJdStatus(item.jdStatus || item.jd_status || item.status),
 
@@ -199,6 +201,12 @@ function normalizeJobDescriptionItem(item) {
     description: item.description || "",
     responsibilities: item.responsibilities || "",
     qualifications: item.qualifications || "",
+    education: item.education || "",
+    experience: item.experience || "",
+    certificationsAffiliations:
+      item.certificationsAffiliations ||
+      item.certifications_affiliations ||
+      "",
 
     personalityType:
       item.personalityType || item.personality_type || item.remarks || "",
@@ -667,6 +675,14 @@ export default function AddJobDescription({
         "",
     );
 
+    const education = normalizeRichTextHtml(form.education || "");
+    const experience = normalizeRichTextHtml(form.experience || "");
+    const certificationsAffiliations = normalizeRichTextHtml(
+      form.certificationsAffiliations ||
+        form.certifications_affiliations ||
+        "",
+    );
+
     const personalityType = normalizeText(
       form.personalityType ||
       form.personality_type ||
@@ -707,6 +723,15 @@ export default function AddJobDescription({
         type: "error",
         title: "Missing Department",
         message: "Department is required.",
+      });
+      return;
+    }
+
+    if (!normalizeText(form.locationWorkSetup || form.location_work_setup)) {
+      onStatus?.({
+        type: "error",
+        title: "Missing Location / Work Setup",
+        message: "Location / Work Setup is required.",
       });
       return;
     }
@@ -756,6 +781,24 @@ export default function AddJobDescription({
       return;
     }
 
+    if (!hasRichTextContent(education)) {
+      onStatus?.({
+        type: "error",
+        title: "Missing Education",
+        message: "Education is required.",
+      });
+      return;
+    }
+
+    if (!hasRichTextContent(experience)) {
+      onStatus?.({
+        type: "error",
+        title: "Missing Experience",
+        message: "Experience is required.",
+      });
+      return;
+    }
+
     const cleanCompetencies = Array.isArray(competencies)
       ? competencies
         .map(normalizeCompetencyItem)
@@ -772,6 +815,9 @@ export default function AddJobDescription({
 
       accountId: form.accountId,
       departmentId: form.departmentId,
+      locationWorkSetup: normalizeText(
+        form.locationWorkSetup || form.location_work_setup,
+      ),
 
       jdStatus: JD_FOR_APPROVAL_STATUS,
       jd_status: JD_FOR_APPROVAL_STATUS,
@@ -790,10 +836,18 @@ export default function AddJobDescription({
       description,
       responsibilities,
       qualifications,
+      education,
+      experience,
+      certificationsAffiliations,
 
       descriptionPlainText: richTextToPlainText(description),
       responsibilitiesPlainText: richTextToPlainText(responsibilities),
       qualificationsPlainText: richTextToPlainText(qualifications),
+      educationPlainText: richTextToPlainText(education),
+      experiencePlainText: richTextToPlainText(experience),
+      certificationsAffiliationsPlainText: richTextToPlainText(
+        certificationsAffiliations,
+      ),
 
       personalityType,
 

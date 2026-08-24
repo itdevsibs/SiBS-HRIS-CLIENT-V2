@@ -582,6 +582,76 @@ export default function JobDescriptionContentSection() {
           />
         </div>
 
+        <div className="relative z-[1]">
+          <div className="mb-1.5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <label className="block text-xs font-extrabold text-sibs-primary-1">
+              Education <span className="text-red-500">*</span>
+            </label>
+            <span className="text-[10px] font-medium text-sibs-tertiary-5">
+              Specify minimum required or accepted educational attainment levels (IQ Factor 1)
+            </span>
+          </div>
+
+          <RichTextEditor
+            id="job-description-education"
+            value={form.education || ""}
+            onFocus={closeDropdowns}
+            onChange={(html, plainText) =>
+              updateRichTextField("education", html, plainText)
+            }
+            placeholder="Enter the minimum education requirements."
+            minHeight={120}
+          />
+        </div>
+
+        <div className="relative z-[1]">
+          <div className="mb-1.5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <label className="block text-xs font-extrabold text-sibs-primary-1">
+              Experience <span className="text-red-500">*</span>
+            </label>
+            <span className="text-[10px] font-medium text-sibs-tertiary-5">
+              Specify required years of operational experience, domain background, or prior expertise (IQ Factor 2)
+            </span>
+          </div>
+
+          <RichTextEditor
+            id="job-description-experience"
+            value={form.experience || ""}
+            onFocus={closeDropdowns}
+            onChange={(html, plainText) =>
+              updateRichTextField("experience", html, plainText)
+            }
+            placeholder="Enter the required experience."
+            minHeight={120}
+          />
+        </div>
+
+        <div className="relative z-[1]">
+          <div className="mb-1.5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <label className="block text-xs font-extrabold text-sibs-primary-1">
+              Certifications and Affiliations
+            </label>
+            <span className="text-[10px] font-medium text-sibs-tertiary-5">
+              Specify required or preferred industry certifications, credentials, licenses, or affiliations
+            </span>
+          </div>
+
+          <RichTextEditor
+            id="job-description-certifications-affiliations"
+            value={
+              form.certificationsAffiliations ||
+              form.certifications_affiliations ||
+              ""
+            }
+            onFocus={closeDropdowns}
+            onChange={(html, plainText) =>
+              updateRichTextField("certificationsAffiliations", html, plainText)
+            }
+            placeholder="Enter certifications, credentials, licenses, or affiliations."
+            minHeight={120}
+          />
+        </div>
+
         <div className="relative z-[30] overflow-visible">
           <CompactMultiSelect
             refBox={personalityTypeRef}

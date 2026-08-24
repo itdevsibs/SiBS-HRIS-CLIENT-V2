@@ -16,6 +16,7 @@ export default function useJobDescriptionDetailsController({
   setEditedChangeDetails,
   onRevisionDraftChange,
   approvalPage = false,
+  interactivePage = approvalPage,
 }) {
   const { user } = useUser();
 
@@ -266,6 +267,10 @@ export default function useJobDescriptionDetailsController({
       departmentId,
       department_id: departmentId,
       department: nextRecordInfoDraft.department || item.department || "",
+      locationWorkSetup:
+        item.locationWorkSetup || item.location_work_setup || "",
+      location_work_setup:
+        item.location_work_setup || item.locationWorkSetup || "",
 
       effectiveDate,
       effective_date: effectiveDate,
@@ -276,6 +281,12 @@ export default function useJobDescriptionDetailsController({
       description: nextEditableContent.description || "",
       responsibilities: nextEditableContent.responsibilities || "",
       qualifications: nextEditableContent.qualifications || "",
+      education: nextEditableContent.education || "",
+      experience: nextEditableContent.experience || "",
+      certificationsAffiliations:
+        nextEditableContent.certificationsAffiliations || "",
+      certifications_affiliations:
+        nextEditableContent.certificationsAffiliations || "",
       personalityType: nextEditableContent.personalityType || "",
       personality_type: nextEditableContent.personalityType || "",
       remarks: nextEditableContent.remarks || item.remarks || "",
@@ -301,6 +312,7 @@ export default function useJobDescriptionDetailsController({
     sectionKey: "",
     sectionTitle: "",
     competencyId: null,
+    competencies: [],
     selectedText: "",
     comment: "",
   });
@@ -309,6 +321,10 @@ export default function useJobDescriptionDetailsController({
     description: item.description || "",
     responsibilities: item.responsibilities || "",
     qualifications: item.qualifications || "",
+    education: item.education || "",
+    experience: item.experience || "",
+    certificationsAffiliations:
+      item.certificationsAffiliations || item.certifications_affiliations || "",
     personalityType: getPersonalityTypeValue(item),
     remarks: item.remarks || "",
   });
@@ -372,7 +388,7 @@ export default function useJobDescriptionDetailsController({
     pagedPreviewViewportRef,
     pagedSourceRef,
   } = usePagedJobDescriptionPreview({
-    approvalPage,
+    approvalPage: interactivePage,
     item,
     editableContent,
     recordInfoDraft,
@@ -428,6 +444,12 @@ export default function useJobDescriptionDetailsController({
       description: item.description || "",
       responsibilities: item.responsibilities || "",
       qualifications: item.qualifications || "",
+      education: item.education || "",
+      experience: item.experience || "",
+      certificationsAffiliations:
+        item.certificationsAffiliations ||
+        item.certifications_affiliations ||
+        "",
       personalityType: getPersonalityTypeValue(item),
       remarks: item.remarks || "",
     });
@@ -632,6 +654,9 @@ export default function useJobDescriptionDetailsController({
       sectionKey,
       sectionTitle,
       competencyId: options.competencyId || null,
+      competencies: Array.isArray(options.competencies)
+        ? options.competencies
+        : [],
       selectedText,
       comment: "",
     });
@@ -643,6 +668,7 @@ export default function useJobDescriptionDetailsController({
       sectionKey: "",
       sectionTitle: "",
       competencyId: null,
+      competencies: [],
       selectedText: "",
       comment: "",
     });
@@ -655,20 +681,38 @@ export default function useJobDescriptionDetailsController({
 
     if (!commentText) return;
 
-    setRevisionComments?.((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        jdId: item.id,
-        sectionKey: commentModal.sectionKey,
-        sectionTitle: commentModal.sectionTitle,
-        competencyId: commentModal.competencyId || null,
-        selectedText: commentModal.selectedText,
-        comment: commentText,
-        status: "Open",
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    const selectedCompetencies = Array.isArray(commentModal.competencies)
+      ? commentModal.competencies
+      : [];
+    const createdAt = new Date().toISOString();
+    const commentId = Date.now();
+    const nextComments = selectedCompetencies.length
+      ? selectedCompetencies.map((competency, index) => ({
+          id: commentId + index,
+          jdId: item.id,
+          sectionKey: commentModal.sectionKey,
+          sectionTitle: commentModal.sectionTitle,
+          competencyId: competency.competencyId || null,
+          selectedText: competency.selectedText || "",
+          comment: commentText,
+          status: "Open",
+          createdAt,
+        }))
+      : [
+          {
+            id: commentId,
+            jdId: item.id,
+            sectionKey: commentModal.sectionKey,
+            sectionTitle: commentModal.sectionTitle,
+            competencyId: commentModal.competencyId || null,
+            selectedText: commentModal.selectedText,
+            comment: commentText,
+            status: "Open",
+            createdAt,
+          },
+        ];
+
+    setRevisionComments?.((prev) => [...prev, ...nextComments]);
 
     closeCommentModal();
   }
@@ -709,6 +753,9 @@ export default function useJobDescriptionDetailsController({
     description: "Position Overview",
     responsibilities: "Duties & Responsibilities",
     qualifications: "Qualifications & Characteristics",
+    education: "Education",
+    experience: "Experience",
+    certificationsAffiliations: "Certifications and Affiliations",
     personalityType: "Preferred Personality Type",
     remarks: "Remarks",
     competencies: "Desired Competencies",
@@ -725,6 +772,9 @@ export default function useJobDescriptionDetailsController({
     "description",
     "responsibilities",
     "qualifications",
+    "education",
+    "experience",
+    "certificationsAffiliations",
   ].includes(sectionKey);
 
   const savedValue = shouldNormalizeDocumentText

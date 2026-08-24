@@ -50,6 +50,9 @@ function DetailArticleSection({
     description: "1",
     responsibilities: "2",
     qualifications: "3",
+    education: "4",
+    experience: "5",
+    certificationsAffiliations: "6",
   }[sectionKey];
 
   return (

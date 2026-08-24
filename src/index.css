@@ -157,6 +157,14 @@
     outline-offset: 2px !important;
   }
 
+  .jd-rich-text-editor [contenteditable="true"]:focus,
+  .jd-rich-text-editor [contenteditable="true"]:focus-visible {
+    border-color: transparent !important;
+    outline: 0 !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+  }
+
   body.public-talent-pool-form-page input.public-referral-code-input {
     outline-offset: 2px !important;
   }
