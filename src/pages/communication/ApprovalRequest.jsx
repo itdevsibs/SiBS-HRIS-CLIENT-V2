@@ -37,6 +37,7 @@ import { useUser } from "../../services/context/UserContext";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
+import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 
 import {
   getApprovalRequestsByModule,
@@ -1452,6 +1453,11 @@ export default function ApprovalRequest() {
   const currentUserSibsId = useMemo(() => {
     return getCurrentUserSibsId(user);
   }, [user]);
+  const jdApprovalRuleRevision = useApprovalRuleRevision("jobDescription");
+  const hiringNeedsApprovalRuleRevision =
+    useApprovalRuleRevision("hiringNeeds");
+  const availablePositionApprovalRuleRevision =
+    useApprovalRuleRevision("availablePositions");
 
   const approvalAccessLoading =
     jdApprovalAccessLoading ||
@@ -1532,7 +1538,7 @@ export default function ApprovalRequest() {
     return () => {
       cancelled = true;
     };
-  }, [currentUserSibsId]);
+  }, [currentUserSibsId, jdApprovalRuleRevision]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1583,7 +1589,7 @@ export default function ApprovalRequest() {
     return () => {
       cancelled = true;
     };
-  }, [currentUserSibsId]);
+  }, [currentUserSibsId, hiringNeedsApprovalRuleRevision]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1634,7 +1640,7 @@ export default function ApprovalRequest() {
     return () => {
       cancelled = true;
     };
-  }, [currentUserSibsId]);
+  }, [availablePositionApprovalRuleRevision, currentUserSibsId]);
 
   useEffect(() => {
     const stateModule = location.state?.activeModule;

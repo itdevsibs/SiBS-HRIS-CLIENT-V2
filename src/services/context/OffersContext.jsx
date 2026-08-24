@@ -9,6 +9,7 @@ import React, {
 
 import { useUser } from "./UserContext";
 import useConfirmDialog from "../../hooks/offers/useConfirmDialog";
+import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 
 import {
   OFFER_ELIGIBLE_STORAGE_KEY,
@@ -916,6 +917,7 @@ function updateCandidateStorageFromOffer(updatedOffer) {
 
 export function OffersProvider({ children }) {
   const { user } = useUser();
+  const approvalRuleRevision = useApprovalRuleRevision("offers");
 
   const { candidateList = [], updateCandidateFromOffer } =
     useCandidatePipeline() || {};
@@ -1041,7 +1043,7 @@ export function OffersProvider({ children }) {
   useEffect(() => {
     loadApprovalUsers();
     refreshOffers();
-  }, [refreshOffers]);
+  }, [approvalRuleRevision, refreshOffers]);
 
   useEffect(() => {
     function handleSyncEvent() {

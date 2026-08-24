@@ -19,6 +19,7 @@ import {
   updateAvailablePositionStatus,
 } from "../../lib/axios/getAvailablePosition";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
+import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 import {
   approveAvailablePositionRequest,
   getAvailablePositionApprovalRequests,
@@ -430,6 +431,7 @@ export default function AvailablePositionsPage() {
 
   const [canApproveAvailablePositions, setCanApproveAvailablePositions] =
     useState(false);
+  const approvalRuleRevision = useApprovalRuleRevision("availablePositions");
 
   const [loadError, setLoadError] = useState("");
 
@@ -752,7 +754,7 @@ export default function AvailablePositionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [currentUserSibsId]);
+  }, [approvalRuleRevision, currentUserSibsId]);
 
   useLayoutEffect(() => {
     if (

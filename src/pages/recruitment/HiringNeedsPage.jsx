@@ -23,6 +23,7 @@ import {
   rejectRequestByModule,
 } from "../../lib/axios/getApprovalRequest";
 import { relinkHiringNeedJobDescription } from "../../lib/axios/getHiringNeeds";
+import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -109,6 +110,7 @@ export default function HiringNeedsPage() {
     useState(true);
   const [canApproveHiringNeeds, setCanApproveHiringNeeds] =
     useState(false);
+  const approvalRuleRevision = useApprovalRuleRevision("hiringNeeds");
   const [approvalUsers, setApprovalUsers] = useState([]);
 
   const [statusModal, setStatusModal] = useState({
@@ -201,7 +203,7 @@ export default function HiringNeedsPage() {
     return () => {
       cancelled = true;
     };
-  }, [currentUserSibsId, showStatusModal]);
+  }, [approvalRuleRevision, currentUserSibsId, showStatusModal]);
 
   const handleApprovalDecision = useCallback(
     async ({ action, item, remarks }) => {

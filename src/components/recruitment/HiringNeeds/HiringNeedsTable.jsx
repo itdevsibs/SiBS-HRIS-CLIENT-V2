@@ -246,16 +246,16 @@ export default function HiringNeedsTable({
           <table className="w-full min-w-[1180px] table-fixed border-collapse bg-white text-left text-xs">
             <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="sibs-data-table-head-row">
-                <th className="sibs-data-table-th w-[13%] text-left">
-                  ID / Request Type
-                </th>
-
                 <th className="sibs-data-table-th w-[16%] text-left">
                   Department / Account
                 </th>
 
                 <th className="sibs-data-table-th w-[19%] text-left">
                   Job Description / Request
+                </th>
+
+                <th className="sibs-data-table-th w-[13%] text-left">
+                  Request Type
                 </th>
 
                 <th className="sibs-data-table-th w-[7%] text-center">
@@ -331,22 +331,6 @@ export default function HiringNeedsTable({
                       aria-label={`View Hiring Needs request ${item.id || ""}`}
                     >
                       <td className="px-4 py-2.5 align-middle">
-                        <div className="flex items-center gap-2 whitespace-nowrap">
-                          <p className="text-xs font-extrabold leading-none text-[#042C51]">
-                            {item.id || "--"}
-                          </p>
-
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-extrabold leading-none ${getHiringNeedsRequestTypeClass(
-                              requestType,
-                            )}`}
-                          >
-                            {requestType}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-2.5 align-middle">
                         <p
                           className="max-w-[260px] truncate text-xs font-extrabold leading-5 text-[#042C51]"
                           title={getHiringNeedsDepartmentAccount(item)}
@@ -363,6 +347,16 @@ export default function HiringNeedsTable({
                         <p className="mt-0.5 max-w-[320px] truncate text-[10px] font-semibold leading-4 text-[#98A2B3]">
                           {getHiringNeedsSubtitle(item)}
                         </p>
+                      </td>
+
+                      <td className="px-4 py-2.5 align-middle">
+                        <span
+                          className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[9px] font-extrabold leading-none ${getHiringNeedsRequestTypeClass(
+                            requestType,
+                          )}`}
+                        >
+                          {requestType}
+                        </span>
                       </td>
 
                       <td className="px-4 py-2.5 text-center align-middle">

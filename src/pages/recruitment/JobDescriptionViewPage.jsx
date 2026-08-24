@@ -17,6 +17,7 @@ import RevisionHistory from "../../components/layout/tabs/JobDescriptionView/Rev
 import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
 
 import useJobDescriptionDeletion from "../../hooks/jobDescription/useJobDescriptionDeletion";
+import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 
 import { normalizeJdStatus } from "../../lib/utils/NormalizeJDStatus";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
@@ -850,6 +851,7 @@ export default function JobDescriptionViewPage() {
 
   const [canApproveJobDescription, setCanApproveJobDescription] =
     useState(false);
+  const approvalRuleRevision = useApprovalRuleRevision("jobDescription");
 
   const [pageReady, setPageReady] = useState(false);
 
@@ -984,7 +986,7 @@ export default function JobDescriptionViewPage() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [approvalRuleRevision, user]);
 
   /* =====================================================
   LOAD COMPLETE JD
@@ -2223,8 +2225,7 @@ export default function JobDescriptionViewPage() {
     canApproveJobDescription && normalizedDisplayStatus === "For Approval";
 
   const canReviewJobDescription =
-    normalizedDisplayStatus === "For Approval" &&
-    (approvalPage || canApproveJobDescription);
+    normalizedDisplayStatus === "For Approval" && canApproveJobDescription;
 
   const footerVersion =
     item?.currentVersion ||

@@ -1,4 +1,5 @@
 import api from "./api-template";
+import { notifyApprovalRulesChanged } from "../utils/approvalRuleEvents";
 
 const BASE_PATH = "/api/available-position-approval-settings";
 
@@ -60,6 +61,7 @@ export async function addAvailablePositionApprovalUser(payload = {}) {
       withCredentials: true,
     });
 
+    notifyApprovalRulesChanged("availablePositions");
     return getResponseData(response);
   } catch (error) {
     throw getApiError(
@@ -84,6 +86,7 @@ export async function removeAvailablePositionApprovalUser(sibsId) {
       },
     );
 
+    notifyApprovalRulesChanged("availablePositions");
     return getResponseData(response);
   } catch (error) {
     throw getApiError(
