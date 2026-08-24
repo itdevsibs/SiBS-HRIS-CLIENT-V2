@@ -13,6 +13,12 @@ const fieldLabelClass =
 const inputClass =
   "h-10 w-full rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] px-3 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#EEF2F6] disabled:text-sibs-primary-1";
 
+const locationWorkSetupOptions = [
+  { value: "Davao Site (On-Site)", label: "Davao Site (On-Site)" },
+  { value: "Tagum Site (On-Site)", label: "Tagum Site (On-Site)" },
+  { value: "Mabini Site (On-Site)", label: "Mabini Site (On-Site)" },
+];
+
 function getCalendarDays(viewDate) {
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -350,6 +356,17 @@ export default function HiringRequirementSection({
           placeholder="Search department"
           searchable
           onChange={handleDepartmentChange}
+        />
+
+        <ThemedDropdown
+          label="Location / Work Setup"
+          required
+          value={form.locationWorkSetup || form.location_work_setup || ""}
+          options={locationWorkSetupOptions}
+          placeholder="Select location / work setup"
+          onChange={(value) =>
+            updateField("locationWorkSetup", value, ["location_work_setup"])
+          }
         />
 
         <DateDropdown

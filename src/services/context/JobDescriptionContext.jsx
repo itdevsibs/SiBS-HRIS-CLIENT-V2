@@ -38,6 +38,7 @@ const initialJobDescriptionForm = {
 
   departmentId: "",
   department: "",
+  locationWorkSetup: "",
 
   jdStatus: "For Approval",
 
@@ -59,6 +60,9 @@ const initialJobDescriptionForm = {
   description: "",
   responsibilities: "",
   qualifications: "",
+  education: "",
+  experience: "",
+  certificationsAffiliations: "",
   remarks: "",
 };
 
@@ -604,6 +608,34 @@ export function normalizeJobDescriptionViewItem(source = {}) {
 
     qualifications: source?.qualifications || raw?.qualifications || "",
 
+    locationWorkSetup:
+      source?.locationWorkSetup ||
+      source?.location_work_setup ||
+      raw?.locationWorkSetup ||
+      raw?.location_work_setup ||
+      "",
+    location_work_setup:
+      source?.location_work_setup ||
+      source?.locationWorkSetup ||
+      raw?.location_work_setup ||
+      raw?.locationWorkSetup ||
+      "",
+
+    education: source?.education || raw?.education || "",
+    experience: source?.experience || raw?.experience || "",
+    certificationsAffiliations:
+      source?.certificationsAffiliations ||
+      source?.certifications_affiliations ||
+      raw?.certificationsAffiliations ||
+      raw?.certifications_affiliations ||
+      "",
+    certifications_affiliations:
+      source?.certifications_affiliations ||
+      source?.certificationsAffiliations ||
+      raw?.certifications_affiliations ||
+      raw?.certificationsAffiliations ||
+      "",
+
     personalityType,
     personality_type: personalityType,
     preferredPersonalityType: personalityType,
@@ -813,6 +845,12 @@ function normalizeRevisionSubmitPayload(form = {}, comments = []) {
     department: cleanText(
       form.department || form.departmentName || form.department_name,
     ),
+    locationWorkSetup: cleanText(
+      form.locationWorkSetup || form.location_work_setup,
+    ),
+    location_work_setup: cleanText(
+      form.location_work_setup || form.locationWorkSetup,
+    ),
 
     jdStatus: "For Approval",
     jd_status: "For Approval",
@@ -829,6 +867,14 @@ function normalizeRevisionSubmitPayload(form = {}, comments = []) {
     description: cleanText(form.description),
     responsibilities: cleanText(form.responsibilities),
     qualifications: cleanText(form.qualifications),
+    education: cleanText(form.education),
+    experience: cleanText(form.experience),
+    certificationsAffiliations: cleanText(
+      form.certificationsAffiliations || form.certifications_affiliations,
+    ),
+    certifications_affiliations: cleanText(
+      form.certifications_affiliations || form.certificationsAffiliations,
+    ),
 
     personalityType,
     personality_type: personalityType,
@@ -959,6 +1005,7 @@ export default function JobDescriptionProvider({ children }) {
 
       departmentId: "",
       department: "",
+      locationWorkSetup: "",
 
       jdStatus: "For Approval",
 
@@ -968,6 +1015,9 @@ export default function JobDescriptionProvider({ children }) {
       description: "",
       responsibilities: "",
       qualifications: "",
+      education: "",
+      experience: "",
+      certificationsAffiliations: "",
       remarks: "",
 
       personalityType: "",

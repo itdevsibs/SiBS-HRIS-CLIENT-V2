@@ -511,7 +511,7 @@ export default function PreferredPersonalityTypeSection({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#101828] sm:text-[15px]">
-              4. Preferred Personality Type
+              7. Preferred Personality Type
             </h4>
 
             {comments.length > 0 && (

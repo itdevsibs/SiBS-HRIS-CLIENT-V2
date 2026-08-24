@@ -18,6 +18,7 @@ const Details = ({
   setEditedChangeDetails,
   onRevisionDraftChange,
   approvalPage = false,
+  interactivePage = approvalPage,
 }) => {
   const {
     canManageJdDetails,
@@ -63,34 +64,35 @@ const Details = ({
     setEditedChangeDetails,
     onRevisionDraftChange,
     approvalPage,
+    interactivePage,
   });
 
   return (
     <article
-      ref={approvalPage ? undefined : pagedPreviewViewportRef}
+      ref={interactivePage ? undefined : pagedPreviewViewportRef}
       style={
-        approvalPage
+        interactivePage
           ? undefined
           : {
               "--jd-page-scale": pagedPreviewScale,
             }
       }
       className={
-        approvalPage
+        interactivePage
           ? "jd-details-document mx-auto w-full max-w-[1100px] space-y-6 overflow-visible bg-white py-5 text-[#1D2939] shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm sm sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:min-h-[1056px] lg print"
           : "jd-details-document jd-details-paged-preview mx-auto w-full text-[#1D2939]"
       }
     >
       <style>{detailsResponsiveAuditStyles}</style>
 
-      {!approvalPage && isPagedPreviewLoading && (
+      {!interactivePage && isPagedPreviewLoading && (
         <div className="jd-paged-loading">Preparing document pages...</div>
       )}
 
       <div
         ref={pagedSourceRef}
-        className={approvalPage ? "" : "jd-paged-source space-y-8 bg-white"}
-        aria-hidden={!approvalPage}
+        className={interactivePage ? "" : "jd-paged-source space-y-8 bg-white"}
+        aria-hidden={!interactivePage}
       >
         {normalizeJdStatus(item.jdStatus) === "For Revision" && (
           <section
@@ -212,7 +214,7 @@ const Details = ({
             </div>
           ) : null}
 
-          <div className={approvalPage ? "" : "jd-paged-running-header"}>
+          <div className={interactivePage ? "" : "jd-paged-running-header"}>
             <DocumentRecordInfoTable
               item={item}
               recordInfoDraft={recordInfoDraft}
@@ -220,6 +222,7 @@ const Details = ({
               getRecordFieldComments={getRecordFieldComments}
               onChange={handleRecordInfoChange}
               accountOptions={recordDropdownOptions.accounts}
+              approvalPage={approvalPage}
             />
           </div>
         </section>
@@ -282,6 +285,63 @@ const Details = ({
             approvalPage={approvalPage}
           />
 
+          <DetailArticleSection
+            sectionKey="education"
+            title="Education"
+            value={editableContent.education}
+            emptyText="No education requirements provided."
+            comments={getSectionComments("education")}
+            onAddComment={openSectionComment}
+            isEditing={editingSection === "education"}
+            editingDraft={editingDraft}
+            setEditingDraft={setEditingDraft}
+            onStartEdit={startEditSection}
+            onCancelEdit={cancelEditSection}
+            onSaveEdit={saveEditSection}
+            disableEdit={disableEditBecauseCommented}
+            disableComment={disableCommentBecauseEdited}
+            canManageJdDetails={canManageJdDetails}
+            approvalPage={approvalPage}
+          />
+
+          <DetailArticleSection
+            sectionKey="experience"
+            title="Experience"
+            value={editableContent.experience}
+            emptyText="No experience requirements provided."
+            comments={getSectionComments("experience")}
+            onAddComment={openSectionComment}
+            isEditing={editingSection === "experience"}
+            editingDraft={editingDraft}
+            setEditingDraft={setEditingDraft}
+            onStartEdit={startEditSection}
+            onCancelEdit={cancelEditSection}
+            onSaveEdit={saveEditSection}
+            disableEdit={disableEditBecauseCommented}
+            disableComment={disableCommentBecauseEdited}
+            canManageJdDetails={canManageJdDetails}
+            approvalPage={approvalPage}
+          />
+
+          <DetailArticleSection
+            sectionKey="certificationsAffiliations"
+            title="Certifications and Affiliations"
+            value={editableContent.certificationsAffiliations}
+            emptyText="No certifications or affiliations provided."
+            comments={getSectionComments("certificationsAffiliations")}
+            onAddComment={openSectionComment}
+            isEditing={editingSection === "certificationsAffiliations"}
+            editingDraft={editingDraft}
+            setEditingDraft={setEditingDraft}
+            onStartEdit={startEditSection}
+            onCancelEdit={cancelEditSection}
+            onSaveEdit={saveEditSection}
+            disableEdit={disableEditBecauseCommented}
+            disableComment={disableCommentBecauseEdited}
+            canManageJdDetails={canManageJdDetails}
+            approvalPage={approvalPage}
+          />
+
           <PreferredPersonalityTypeSection
             value={editableContent.personalityType}
             comments={getSectionComments("personalityType")}
@@ -319,7 +379,7 @@ const Details = ({
         </section>
       </div>
 
-      {!approvalPage && (
+      {!interactivePage && (
         <>
           <div
             ref={pagedOutputRef}

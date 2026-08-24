@@ -36,6 +36,7 @@ function DocumentRecordInfoTable({
   getRecordFieldComments,
   onChange,
   accountOptions = [],
+  approvalPage = false,
 }) {
   const manualTitle =
     getFirstManualValue(item, [
@@ -98,6 +99,25 @@ function DocumentRecordInfoTable({
     ]) ||
     "—";
 
+  const location = getFirstManualValue(item, [
+    "location",
+    "site",
+    "siteName",
+    "site_name",
+  ]);
+
+  const workSetup = getFirstManualValue(item, [
+    "locationWorkSetup",
+    "location_work_setup",
+    "workSetup",
+    "work_setup",
+  ]);
+
+  const locationWorkSetup =
+    location && workSetup && !workSetup.toLowerCase().includes(location.toLowerCase())
+      ? `${location} (${workSetup})`
+      : workSetup || location || "—";
+
   const preparedBy =
     recordInfoDraft.createdBy ||
     getFirstManualValue(item, [
@@ -132,7 +152,13 @@ function DocumentRecordInfoTable({
     ]) || "—";
 
   return (
-    <div className="jd-manual-header-wrapper w-full pb-1">
+    <div
+      className={`jd-manual-header-wrapper w-full pb-1 ${
+        approvalPage
+          ? "selection:bg-[#FFF3B8] selection:text-[#101828]"
+          : ""
+      }`}
+    >
       {/* Dedicated mobile/tablet layout */}
       <div className="jd-manual-header-mobile overflow-hidden border-2 border-black bg-white text-black">
         <div className="jd-manual-mobile-logo-section flex flex-col items-center justify-center border-b-2 border-black px-4 py-5 text-center">
@@ -218,6 +244,15 @@ function DocumentRecordInfoTable({
 
         <div className="jd-manual-mobile-signatories grid grid-cols-2">
           <RecordInfoDocumentCell
+            label="LOCATION / WORK SETUP:"
+            value={locationWorkSetup}
+            editable={false}
+            comments={getRecordFieldComments?.(locationWorkSetup)}
+            variant="manualFooter"
+            className="border-b-2 border-r-2 border-black"
+          />
+
+          <RecordInfoDocumentCell
             label="PREPARED FOR:"
             value={
               recordInfoDraft.accountId ||
@@ -233,7 +268,7 @@ function DocumentRecordInfoTable({
               onChange?.("accountId", value)
             }
             variant="manualFooter"
-            className="border-b-2 border-r-2 border-black"
+            className="border-b-2 border-black"
           />
 
           <RecordInfoDocumentCell
@@ -242,7 +277,7 @@ function DocumentRecordInfoTable({
             editable={false}
             comments={getRecordFieldComments?.(preparedBy)}
             variant="manualFooter"
-            className="border-b-2 border-black"
+            className="border-r-2 border-black"
           />
 
           <RecordInfoDocumentCell
@@ -251,7 +286,6 @@ function DocumentRecordInfoTable({
             editable={false}
             comments={getRecordFieldComments?.(reviewedBy)}
             variant="manualFooter"
-            className="border-r-2 border-black"
           />
 
           <RecordInfoDocumentCell
@@ -260,21 +294,23 @@ function DocumentRecordInfoTable({
             editable={false}
             comments={getRecordFieldComments?.(approvedBy)}
             variant="manualFooter"
+            className="col-span-2 border-t-2 border-black"
           />
+
         </div>
       </div>
 
       {/* Original desktop/Paged.js/print layout */}
       <div className="jd-manual-header-desktop overflow-x-auto">
         <div className="jd-manual-header-grid grid min-w-[920px] grid-cols-[210px_minmax(0,1fr)] overflow-hidden border-2 border-black bg-white text-black print:min-w-0">
-          <div className="jd-manual-header-logo-column flex min-h-[256px] flex-col items-center justify-center border-r-2 border-black px-4 py-4 text-center">
+          <div className="jd-manual-header-logo-column flex min-h-[320px] flex-col items-center justify-center border-r-2 border-black px-4 py-4 text-center">
             <img
               src={SibsLogo}
               alt="SiBS Logo"
               className="jd-manual-header-logo h-auto w-full max-w-[180px] object-contain"
             />
 
-            <p className="jd-manual-issuance mt-12 text-base font-medium text-black">
+            <p className="jd-manual-issuance mt-12 w-full text-center text-base font-medium text-black">
               Manual Issuance #1
             </p>
           </div>
@@ -357,6 +393,15 @@ function DocumentRecordInfoTable({
 
             <div className="jd-manual-header-footer-row grid grid-cols-4">
               <RecordInfoDocumentCell
+                label="LOCATION / WORK SETUP:"
+                value={locationWorkSetup}
+                editable={false}
+                comments={getRecordFieldComments?.(locationWorkSetup)}
+                variant="manualFooter"
+                className="border-r-2 border-black"
+              />
+
+              <RecordInfoDocumentCell
                 label="PREPARED FOR:"
                 value={
                   recordInfoDraft.accountId ||
@@ -390,7 +435,6 @@ function DocumentRecordInfoTable({
                 editable={false}
                 comments={getRecordFieldComments?.(reviewedBy)}
                 variant="manualFooter"
-                className="border-r-2 border-black"
               />
 
               <RecordInfoDocumentCell
@@ -399,7 +443,9 @@ function DocumentRecordInfoTable({
                 editable={false}
                 comments={getRecordFieldComments?.(approvedBy)}
                 variant="manualFooter"
+                className="col-span-4 border-t-2 border-black"
               />
+
             </div>
           </div>
         </div>
@@ -479,7 +525,7 @@ function RecordInfoDocumentCell({
   return (
     <div
       tabIndex={hasComments ? 0 : undefined}
-      className={`record-info-${variant} jd-touch-comment-target group relative text-left transition selection:bg-[#FFF3B8] selection:text-[#101828] ${cellBgClass} ${cellSizeClass} ${className}`}
+      className={`record-info-${variant} jd-touch-comment-target group relative text-left transition ${cellBgClass} ${cellSizeClass} ${className}`}
     >
       <div className="flex w-full items-start justify-between gap-2 text-left">
         <p

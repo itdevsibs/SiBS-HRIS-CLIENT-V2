@@ -926,9 +926,20 @@ export const detailsResponsiveAuditStyles = `
   }
 
   .jd-manual-header-grid .jd-manual-header-logo-column {
-    min-height: 256px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 320px !important;
     padding-top: 16px !important;
     padding-bottom: 16px !important;
+    text-align: center !important;
+  }
+
+  .jd-manual-header-grid .jd-manual-header-logo,
+  .jd-manual-header-grid .jd-manual-issuance {
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   /*
@@ -1264,7 +1275,7 @@ export const pagedJobDescriptionStyles = String.raw`
      * - right: 0.5 inch / 48px
      */
     size: 1100px 1556px;
-    margin-top: 315px;
+    margin-top: 379px;
     margin-right: 48px;
     margin-bottom: 56px;
     margin-left: 96px;
@@ -1353,8 +1364,13 @@ export const pagedJobDescriptionStyles = String.raw`
   }
 
   .jd-paged-running-header .jd-manual-header-logo-column {
-    min-height: 256px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 320px !important;
     padding: 16px !important;
+    text-align: center !important;
   }
 
   .jd-paged-running-header .jd-manual-header-logo {
@@ -1811,9 +1827,20 @@ export const pagedJobDescriptionStyles = String.raw`
 
   /* Keep these last: Paged.js clones the source and generic header rules can win otherwise. */
   .jd-paged-running-header .jd-manual-header-logo-column {
-    min-height: 256px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 320px !important;
     padding-top: 16px !important;
     padding-bottom: 16px !important;
+    text-align: center !important;
+  }
+
+  .jd-paged-running-header .jd-manual-header-logo,
+  .jd-paged-running-header .jd-manual-issuance {
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   .jd-paged-running-header .jd-manual-title-row > .record-info-manualHero {
