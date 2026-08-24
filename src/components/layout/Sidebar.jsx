@@ -43,6 +43,7 @@ import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
 import { getAvailablePositions } from "../../lib/axios/getAvailablePosition";
 import { isHiringNeedUnlinkedFromJd } from "../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 import { buildSidebarBadgeText } from "../../lib/utils/sidebarNotifications";
+import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 import {
   DASHBOARD_ACCESS,
   getDefaultDashboardPath,
@@ -457,6 +458,11 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const [, setApprovalRequestNotificationCount] = useState(0);
+  const jdApprovalRuleRevision = useApprovalRuleRevision("jobDescription");
+  const hiringNeedsApprovalRuleRevision =
+    useApprovalRuleRevision("hiringNeeds");
+  const availablePositionApprovalRuleRevision =
+    useApprovalRuleRevision("availablePositions");
 
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
@@ -770,6 +776,9 @@ export default function Sidebar() {
     loadApprovalRequestNotifications,
     loadUnlinkedJdNotifications,
     setSidebarNotification,
+    jdApprovalRuleRevision,
+    hiringNeedsApprovalRuleRevision,
+    availablePositionApprovalRuleRevision,
   ]);
 
   const employeeCoreMenu = [

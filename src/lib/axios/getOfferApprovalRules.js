@@ -1,4 +1,5 @@
 import api from "./api-template";
+import { notifyApprovalRulesChanged } from "../utils/approvalRuleEvents";
 
 function unwrapResponse(response) {
   return response?.data ?? response;
@@ -39,6 +40,7 @@ export async function saveOfferApprovalUsers(users = []) {
       },
     );
 
+    notifyApprovalRulesChanged("offers");
     return unwrapResponse(response);
   } catch (error) {
     throw new Error(
@@ -53,6 +55,7 @@ export async function addOfferApprovalUser(user) {
       withCredentials: true,
     });
 
+    notifyApprovalRulesChanged("offers");
     return unwrapResponse(response);
   } catch (error) {
     throw new Error(
@@ -70,6 +73,7 @@ export async function removeOfferApprovalUser(sibsId) {
       },
     );
 
+    notifyApprovalRulesChanged("offers");
     return unwrapResponse(response);
   } catch (error) {
     throw new Error(

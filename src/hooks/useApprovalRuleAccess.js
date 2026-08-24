@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getAvailablePositionApprovalUsers } from "../lib/axios/getAvailablePositionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../lib/axios/getHiringNeedsApprovalSettings";
 import { getJobDescriptionApprovalUsers } from "../lib/axios/getJobDescriptionApprovalSettings";
+import useApprovalRuleRevision from "./useApprovalRuleRevision";
 
 const APPROVAL_RULE_API_BY_MODULE = {
   availablePositions: getAvailablePositionApprovalUsers,
@@ -67,6 +68,7 @@ export default function useApprovalRuleAccess(moduleKey, user) {
   const [loading, setLoading] = useState(true);
 
   const currentUserSibsId = useMemo(() => getCurrentUserSibsId(user), [user]);
+  const approvalRuleRevision = useApprovalRuleRevision(moduleKey);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,7 +120,7 @@ export default function useApprovalRuleAccess(moduleKey, user) {
     return () => {
       cancelled = true;
     };
-  }, [currentUserSibsId, moduleKey]);
+  }, [approvalRuleRevision, currentUserSibsId, moduleKey]);
 
   return {
     approvalUsers,

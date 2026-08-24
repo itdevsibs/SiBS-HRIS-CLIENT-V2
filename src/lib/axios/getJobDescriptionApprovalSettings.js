@@ -1,8 +1,5 @@
 import api from "./api-template";
-
-function unwrapResponse(response) {
-  return response?.data ?? response;
-}
+import { notifyApprovalRulesChanged } from "../utils/approvalRuleEvents";
 
 function getApiErrorMessage(error, fallback = "Request failed.") {
   return (
@@ -40,6 +37,7 @@ export async function saveJobDescriptionApprovalUsers(users = []) {
       },
     );
 
+    notifyApprovalRulesChanged("jobDescription");
     return data;
   } catch (error) {
     throw new Error(
@@ -61,6 +59,7 @@ export async function addJobDescriptionApprovalUser(user) {
       },
     );
 
+    notifyApprovalRulesChanged("jobDescription");
     return data;
   } catch (error) {
     throw new Error(
@@ -81,6 +80,7 @@ export async function removeJobDescriptionApprovalUser(sibsId) {
       },
     );
 
+    notifyApprovalRulesChanged("jobDescription");
     return data;
   } catch (error) {
     throw new Error(
