@@ -4381,6 +4381,81 @@ function getCandidateNhoRescheduleDateInput(candidate = {}) {
   return toDateInputValue(getFirstSelectableInternalNhoDate());
 }
 
+function hasCandidateRespondedToNhoSchedule(candidate = {}) {
+  const schedule =
+    candidate.nhoSchedule ||
+    candidate.nho_schedule ||
+    {};
+
+  const responseStatus = String(
+    schedule.responseStatus ||
+      schedule.response_status ||
+      candidate.nhoResponseStatus ||
+      candidate.nho_response_status ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  const rescheduleApprovalStatus = String(
+    schedule.rescheduleApprovalStatus ||
+      schedule.reschedule_approval_status ||
+      candidate.nhoRescheduleApprovalStatus ||
+      candidate.nho_reschedule_approval_status ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (responseStatus === "accepted") {
+    return true;
+  }
+
+  if (responseStatus === "rescheduled") {
+    return rescheduleApprovalStatus === "accepted";
+  }
+
+  if (["pending", "pending response"].includes(responseStatus)) {
+    return false;
+  }
+
+  return Boolean(
+    String(
+      schedule.respondedAt ||
+        schedule.responded_at ||
+        candidate.nhoRespondedAt ||
+        candidate.nho_responded_at ||
+        "",
+    ).trim(),
+  );
+}
+
+function isCandidateNhoRescheduleAwaitingApproval(candidate = {}) {
+  const schedule =
+    candidate.nhoSchedule ||
+    candidate.nho_schedule ||
+    {};
+
+  const responseStatus = cleanText(
+    schedule.responseStatus ||
+      schedule.response_status ||
+      candidate.nhoResponseStatus ||
+      candidate.nho_response_status,
+  ).toLowerCase();
+
+  const rescheduleApprovalStatus = cleanText(
+    schedule.rescheduleApprovalStatus ||
+      schedule.reschedule_approval_status ||
+      candidate.nhoRescheduleApprovalStatus ||
+      candidate.nho_reschedule_approval_status,
+  ).toLowerCase();
+
+  return (
+    responseStatus === "rescheduled" &&
+    rescheduleApprovalStatus !== "accepted"
+  );
+}
+
 function NhoInternalRescheduleModal({
   open,
   candidate,
@@ -5817,6 +5892,7 @@ const CandidatePipelineModal = ({
   );
   const [isSchedulingNho, setIsSchedulingNho] = useState(false);
   const [isReschedulingNho, setIsReschedulingNho] = useState(false);
+  const [isAcceptingNhoReschedule, setIsAcceptingNhoReschedule] = useState(false);
   const [isResendingNhoEmail, setIsResendingNhoEmail] = useState(false);
   const [isCreatingFinalInterviewRetake, setIsCreatingFinalInterviewRetake] = useState(false);
   const [isStartingInterview, setIsStartingInterview] = useState(false);
@@ -5832,6 +5908,7 @@ const CandidatePipelineModal = ({
     isSubmittingRevisedOffer ||
     isSchedulingNho ||
     isReschedulingNho ||
+    isAcceptingNhoReschedule ||
     isResendingNhoEmail ||
     isCreatingFinalInterviewRetake ||
     isStartingInterview ||
@@ -5968,6 +6045,7 @@ const CandidatePipelineModal = ({
     });
     setShowNhoScheduleModal(false);
     setIsSchedulingNho(false);
+    setIsAcceptingNhoReschedule(false);
     setIsResendingNhoEmail(false);
     setNhoScheduleDate(
       getCandidateNhoStartDateInput(
@@ -6741,14 +6819,20 @@ const CandidatePipelineModal = ({
   ]);
 
   const nhoScheduleDetails = useMemo(() => {
-    const schedule = activeCandidate?.nhoSchedule || {};
+    const schedule =
+      activeCandidate?.nhoSchedule ||
+      activeCandidate?.nho_schedule ||
+      {};
 
     return {
       startDate:
         schedule.startDate ||
+        schedule.start_date ||
         schedule.date ||
         activeCandidate?.nhoStartDate ||
+        activeCandidate?.nho_start_date ||
         activeCandidate?.nhoDate ||
+        activeCandidate?.nho_date ||
         "",
       account:
         schedule.account ||
@@ -6781,10 +6865,14 @@ const CandidatePipelineModal = ({
       status:
         schedule.status ||
         activeCandidate?.nhoStatus ||
+        activeCandidate?.nho_status ||
         (schedule.startDate ||
+        schedule.start_date ||
         schedule.date ||
         activeCandidate?.nhoStartDate ||
-        activeCandidate?.nhoDate
+        activeCandidate?.nho_start_date ||
+        activeCandidate?.nhoDate ||
+        activeCandidate?.nho_date
           ? "Scheduled"
           : "Not Scheduled"),
     };
@@ -6795,6 +6883,16 @@ const CandidatePipelineModal = ({
       nhoScheduleDetails.startDate && nhoScheduleDetails.startDate !== "—",
     );
   }, [nhoScheduleDetails]);
+
+  const candidateHasRespondedToNhoSchedule = useMemo(
+    () => hasCandidateRespondedToNhoSchedule(activeCandidate),
+    [activeCandidate],
+  );
+
+  const candidateNhoRescheduleAwaitingApproval = useMemo(
+    () => isCandidateNhoRescheduleAwaitingApproval(activeCandidate),
+    [activeCandidate],
+  );
 
   const candidateHasSchedule = hasInterviewSchedule(activeCandidate);
   const modalStatus = getDisplayInterviewStatus(activeCandidate);
@@ -8904,6 +9002,116 @@ const CandidatePipelineModal = ({
     setShowNhoScheduleModal(true);
   }
 
+  async function handleAcceptNhoReschedule() {
+    const candidateId = cleanText(candidateNhoUploadId);
+
+    if (!candidateId) {
+      showStatusModal({
+        type: "error",
+        title: "Accept NHO Failed",
+        message: "Candidate Pipeline ID is missing.",
+      });
+      return;
+    }
+
+    if (!canInternalRescheduleNhoAccess) {
+      showStatusModal({
+        type: "error",
+        title: "Access Denied",
+        message:
+          "Only HR, TA, HR Admin, and Super Admin can accept an applicant-rescheduled NHO date.",
+      });
+      return;
+    }
+
+    if (!candidateNhoRescheduleAwaitingApproval) {
+      return;
+    }
+
+    setIsAcceptingNhoReschedule(true);
+
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateId,
+        )}/nho/accept-reschedule`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload = unwrapCandidatePipelineResponse(response);
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            "Failed to accept the applicant-rescheduled NHO date.",
+        );
+      }
+
+      const apiCandidate = lockCandidatePipelinePrimaryKey(
+        getCandidateFromApiPayload(payload) || {},
+        candidateNhoUploadIdentity.recordId,
+      );
+
+      const responseSchedule =
+        apiCandidate.nhoSchedule ||
+        apiCandidate.nho_schedule ||
+        payload.nhoSchedule ||
+        payload.nho_schedule ||
+        activeCandidate.nhoSchedule ||
+        activeCandidate.nho_schedule ||
+        {};
+
+      const nextCandidate = lockCandidatePipelinePrimaryKey(
+        {
+          ...activeCandidate,
+          ...apiCandidate,
+          nhoSchedule: responseSchedule,
+          nho_schedule: responseSchedule,
+          nhoStartDate:
+            responseSchedule.startDate ||
+            responseSchedule.start_date ||
+            responseSchedule.date ||
+            activeCandidate.nhoStartDate ||
+            activeCandidate.nho_start_date ||
+            "",
+          nho_start_date:
+            responseSchedule.startDate ||
+            responseSchedule.start_date ||
+            responseSchedule.date ||
+            activeCandidate.nhoStartDate ||
+            activeCandidate.nho_start_date ||
+            "",
+        },
+        candidateNhoUploadIdentity.recordId,
+      );
+
+      setLocalCandidate(nextCandidate);
+      applyScheduledCandidateToPipelineState(nextCandidate);
+
+      showStatusModal({
+        type: "success",
+        title: "NHO Date Accepted",
+        message:
+          payload?.message ||
+          "The applicant-rescheduled NHO date was accepted successfully.",
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Accept NHO Failed",
+        message: getApiErrorMessage(
+          error,
+          "Failed to accept the applicant-rescheduled NHO date.",
+        ),
+      });
+    } finally {
+      setIsAcceptingNhoReschedule(false);
+    }
+  }
+
   function handleNhoRescheduleClick() {
     if (!canInternalRescheduleNhoAccess || isReschedulingNho) {
       return;
@@ -8983,8 +9191,19 @@ const CandidatePipelineModal = ({
           ...apiCandidate,
           nhoSchedule:
             apiCandidate.nhoSchedule ||
+            apiCandidate.nho_schedule ||
             payload.nhoSchedule ||
+            payload.nho_schedule ||
             activeCandidate.nhoSchedule ||
+            activeCandidate.nho_schedule ||
+            {},
+          nho_schedule:
+            apiCandidate.nhoSchedule ||
+            apiCandidate.nho_schedule ||
+            payload.nhoSchedule ||
+            payload.nho_schedule ||
+            activeCandidate.nhoSchedule ||
+            activeCandidate.nho_schedule ||
             {},
         },
         candidateNhoUploadIdentity.recordId,
@@ -10107,6 +10326,23 @@ async function handleConfirmScheduleNho() {
         </CandidateModalSecondaryButton>
       )}
 
+      {forNHO &&
+        candidateNhoRescheduleAwaitingApproval &&
+        canInternalRescheduleNhoAccess && (
+          <CandidateModalPrimaryButton
+            type="button"
+            disabled={isAcceptingNhoReschedule}
+            onClick={handleAcceptNhoReschedule}
+          >
+            {isAcceptingNhoReschedule ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <Check size={15} />
+            )}
+            {isAcceptingNhoReschedule ? "Accepting..." : "Accept NHO"}
+          </CandidateModalPrimaryButton>
+        )}
+
       {isIncompleteOnboarding && majorNhoProgress.isComplete && (
         <CandidateModalSecondaryButton
           type="button"
@@ -10201,7 +10437,8 @@ async function handleConfirmScheduleNho() {
         </CandidateModalPrimaryButton>
       )}
 
-      {(forNHO || (isIncompleteOnboarding && !majorNhoProgress.isComplete)) && (
+      {((forNHO && candidateHasRespondedToNhoSchedule) ||
+        (isIncompleteOnboarding && !majorNhoProgress.isComplete)) && (
         <CandidateModalPrimaryButton type="button" onClick={() => setShowNhoUploadModal(true)}>
           <UploadCloud size={15} />
           Manage Requirements
