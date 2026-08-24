@@ -46,6 +46,64 @@ const SEEDED_SIDEBAR_NOTIFICATIONS = [
   },
 ];
 
+const DEFAULT_SYSTEM_NOTIFICATIONS = [
+  {
+    id: "notif-leaves-pending",
+    category: "approvals",
+    type: "action",
+    title: "Pending Leave Requests",
+    message: "580 leave requests require administrative review and signoff.",
+    time: "10 mins ago",
+    timestamp: Date.now() - 10 * 60 * 1000,
+    actionLabel: "Review Leaves",
+    actionPath: "/leaves",
+  },
+  {
+    id: "notif-interview-response",
+    category: "system",
+    type: "info",
+    title: "Candidate Interview Confirmed",
+    message: "POOCHII YENA LABUS responded and confirmed their Full Stack Developer interview.",
+    time: "25 mins ago",
+    timestamp: Date.now() - 25 * 60 * 1000,
+    actionLabel: "Open Pipeline",
+    actionPath: "/recruitment/candidate-pipeline",
+  },
+  {
+    id: "notif-onboarding-reqs",
+    category: "system",
+    type: "warning",
+    title: "Incomplete Onboarding Requirements",
+    message: "TOTODILE CROCONAW FERALIGATR has 2 missing onboarding requirements for Software Management.",
+    time: "1 hour ago",
+    timestamp: Date.now() - 60 * 60 * 1000,
+    actionLabel: "Review Profile",
+    actionPath: "/recruitment/onboarding",
+  },
+  {
+    id: "notif-requisition-approved",
+    category: "approvals",
+    type: "action",
+    title: "New Requisition Submitted",
+    message: "A new requisition request for Full Stack Developer was submitted for review.",
+    time: "3 hours ago",
+    timestamp: Date.now() - 3 * 60 * 60 * 1000,
+    actionLabel: "View Requisition",
+    actionPath: "/recruitment/hiring-needs",
+  },
+  {
+    id: "notif-attendance-sync",
+    category: "system",
+    type: "info",
+    title: "Biometric Attendance Synced",
+    message: "Daily biometric attendance synchronized successfully with 14 exceptions flagged.",
+    time: "5 hours ago",
+    timestamp: Date.now() - 5 * 60 * 60 * 1000,
+    actionLabel: "View Attendance",
+    actionPath: "/attendance",
+  },
+];
+
 function getUserNotificationId(user) {
   return (
     user?.sibs_id ||
@@ -61,40 +119,52 @@ function getUserNotificationId(user) {
   );
 }
 
-function readLastSeen(storageKey) {
+function readStorage(storageKey) {
   try {
     const raw = window.localStorage.getItem(storageKey);
-    const parsed = raw ? JSON.parse(raw) : {};
-
+    const parsed = raw ? JSON.parse(raw) : null;
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     return {};
   }
 }
 
-function writeLastSeen(storageKey, nextLastSeen) {
+function writeStorage(storageKey, data) {
   try {
-    window.localStorage.setItem(storageKey, JSON.stringify(nextLastSeen));
+    window.localStorage.setItem(storageKey, JSON.stringify(data));
   } catch {
-    // Local notification read-state is a convenience layer; failed storage
-    // should not block navigation or sidebar rendering.
+    // Graceful fallback
   }
 }
 
 export function SidebarNotificationProvider({ children }) {
   const { user } = useUser() || {};
   const userNotificationId = useMemo(() => getUserNotificationId(user), [user]);
-  const storageKey = useMemo(
+  
+  const sidebarStorageKey = useMemo(
     () => getSidebarNotificationStorageKey(userNotificationId),
+    [userNotificationId],
+  );
+  const readNotifsStorageKey = useMemo(
+    () => `sibs.notifications.read.${userNotificationId}`,
+    [userNotificationId],
+  );
+  const dismissedNotifsStorageKey = useMemo(
+    () => `sibs.notifications.dismissed.${userNotificationId}`,
     [userNotificationId],
   );
 
   const [lastSeen, setLastSeen] = useState({});
   const [liveNotifications, setLiveNotifications] = useState({});
+  const [readNotifIds, setReadNotifIds] = useState({});
+  const [dismissedNotifIds, setDismissedNotifIds] = useState({});
+  const [dynamicNotifications, setDynamicNotifications] = useState([]);
 
   useEffect(() => {
-    setLastSeen(readLastSeen(storageKey));
-  }, [storageKey]);
+    setLastSeen(readStorage(sidebarStorageKey));
+    setReadNotifIds(readStorage(readNotifsStorageKey));
+    setDismissedNotifIds(readStorage(dismissedNotifsStorageKey));
+  }, [sidebarStorageKey, readNotifsStorageKey, dismissedNotifsStorageKey]);
 
   const setSidebarNotification = useCallback((key, notification) => {
     if (!key) return;
@@ -134,12 +204,72 @@ export function SidebarNotificationProvider({ children }) {
     (key, seenAt) => {
       setLastSeen((previous) => {
         const next = markSidebarNotificationSeen(previous, key, seenAt);
-        writeLastSeen(storageKey, next);
+        writeStorage(sidebarStorageKey, next);
 
         return next;
       });
     },
-    [storageKey],
+    [sidebarStorageKey],
+  );
+
+  // Mark single system notification as read
+  const markAsRead = useCallback(
+    (id) => {
+      if (!id) return;
+      setReadNotifIds((previous) => {
+        const next = { ...previous, [id]: true };
+        writeStorage(readNotifsStorageKey, next);
+        return next;
+      });
+    },
+    [readNotifsStorageKey],
+  );
+
+  // Mark all system notifications as read
+  const markAllAsRead = useCallback(() => {
+    const all = [...DEFAULT_SYSTEM_NOTIFICATIONS, ...dynamicNotifications];
+    const next = {};
+    all.forEach((item) => {
+      if (item.id) next[item.id] = true;
+    });
+    setReadNotifIds(next);
+    writeStorage(readNotifsStorageKey, next);
+  }, [dynamicNotifications, readNotifsStorageKey]);
+
+  // Dismiss a system notification
+  const dismissNotification = useCallback(
+    (id) => {
+      if (!id) return;
+      setDismissedNotifIds((previous) => {
+        const next = { ...previous, [id]: true };
+        writeStorage(dismissedNotifsStorageKey, next);
+        return next;
+      });
+    },
+    [dismissedNotifsStorageKey],
+  );
+
+  // Add a dynamic notification
+  const addNotification = useCallback((notification) => {
+    if (!notification?.id) return;
+    setDynamicNotifications((prev) => [notification, ...prev]);
+  }, []);
+
+  // Compute merged system notifications list
+  const notificationsList = useMemo(() => {
+    const combined = [...dynamicNotifications, ...DEFAULT_SYSTEM_NOTIFICATIONS];
+    return combined
+      .filter((n) => !dismissedNotifIds[n.id])
+      .map((n) => ({
+        ...n,
+        isRead: Boolean(readNotifIds[n.id]),
+      }));
+  }, [dynamicNotifications, dismissedNotifIds, readNotifIds]);
+
+  // Total unread count
+  const unreadCount = useMemo(
+    () => notificationsList.filter((n) => !n.isRead).length,
+    [notificationsList],
   );
 
   const notifications = useMemo(
@@ -160,8 +290,25 @@ export function SidebarNotificationProvider({ children }) {
       getNotification: (key) => getSidebarNotification(notifications, key),
       markNotificationSeen,
       setSidebarNotification,
+      // System Notification System
+      notificationsList,
+      unreadCount,
+      markAsRead,
+      markAllAsRead,
+      dismissNotification,
+      addNotification,
     }),
-    [markNotificationSeen, notifications, setSidebarNotification],
+    [
+      markNotificationSeen,
+      notifications,
+      setSidebarNotification,
+      notificationsList,
+      unreadCount,
+      markAsRead,
+      markAllAsRead,
+      dismissNotification,
+      addNotification,
+    ],
   );
 
   return (

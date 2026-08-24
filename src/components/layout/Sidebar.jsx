@@ -1125,14 +1125,14 @@ export default function Sidebar() {
                   "pointer-events-none h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 transition",
                   isActive
                     ? "text-white"
-                    : "text-slate-400 group-hover:text-white",
+                    : "text-slate-400 group-hover:text-[#FF5C28]",
                 ].join(" ")}
               />
 
               {/* Folded Badge */}
               {badgeText && isCollapsedMode && (
                 <span
-                  className={`absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[7.5px] font-black uppercase leading-none ring-2 ring-sibs-primary-1 shadow-sm ${
+                  className={`absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-heading text-[8px] font-bold uppercase leading-none ring-2 ring-sibs-primary-1 shadow-sm ${
                     isActive ? "bg-white !text-sibs-primary-2" : badgeClass
                   }`}
                 >
@@ -1384,7 +1384,7 @@ function Section({ title, collapsed, children }) {
             <div className="h-[1px] w-6 rounded-full bg-[#083A69]/80" />
           </div>
         ) : (
-          <p className="mb-1.5 2xl:mb-2 px-2.5 2xl:px-3 sibs-text-micro font-black uppercase leading-none tracking-widest text-slate-400 truncate">
+          <p className="mb-1.5 2xl:mb-2 px-2.5 2xl:px-3 font-heading font-bold text-xs uppercase leading-none tracking-wider text-slate-400 truncate">
             {title}
           </p>
         )}

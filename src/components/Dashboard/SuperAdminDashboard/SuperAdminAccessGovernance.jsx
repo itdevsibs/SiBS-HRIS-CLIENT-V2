@@ -74,7 +74,7 @@ export default function SuperAdminAccessGovernance({
 
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
+          <h2 className="font-heading text-base 2xl:text-lg font-bold text-[#042C51] tracking-tight">
             Admin Users &amp; Access Levels ({totalItems})
           </h2>
           <p className="sibs-text-xs font-semibold text-[#667085]">
@@ -84,9 +84,9 @@ export default function SuperAdminAccessGovernance({
         <button
           type="button"
           onClick={onAddUser}
-          className="inline-flex h-8.5 2xl:h-9 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+          className="inline-flex h-8.5 2xl:h-9 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-[#EB3800] active:bg-[#FF8450]"
         >
-          <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#FF5C28]" />
+          <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
           New Admin Account
         </button>
       </div>

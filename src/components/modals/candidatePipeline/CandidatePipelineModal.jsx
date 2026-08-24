@@ -10259,7 +10259,7 @@ async function handleConfirmScheduleNho() {
         <button
           type="button"
           onClick={() => onOpenDropOffModal?.(activeCandidate)}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100"
+          className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 active:scale-[0.98]"
         >
           <UserX size={15} />
           Mark Drop-off
@@ -10467,14 +10467,14 @@ async function handleConfirmScheduleNho() {
         title="Candidate Pipeline Record"
         onClose={onClose}
         closeDisabled={isCandidateProcessRunning}
-        maxWidth="max-w-4xl"
+        maxWidth="max-w-3xl 2xl:max-w-4xl"
         zIndex="z-[9999]"
         movementHistoryCandidate={activeCandidate}
         onBeforeOpenMovementHistory={handleRefreshMovementHistory}
         footer={recordFooter}
         headerContent={
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-10 w-10 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-xs 2xl:text-sm font-extrabold text-white shadow-sm">
+          <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
+            <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-black text-white shadow-sm">
               {String(activeCandidate.name || "?")
                 .split(/\s+/)
                 .filter(Boolean)
@@ -10485,26 +10485,26 @@ async function handleConfirmScheduleNho() {
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/60">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[8.5px] font-extrabold uppercase tracking-wider text-white/60">
                   Candidate Pipeline Record
                 </span>
-                <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white/90">
+                <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-white/90">
                   {currentStage}
                 </span>
-                <span className="rounded-full border border-emerald-300/25 bg-emerald-400/15 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-emerald-100">
+                <span className="rounded-full border border-emerald-300/25 bg-emerald-400/15 px-2 py-0.5 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-emerald-100">
                   PRF: {activePrfStatus}
                 </span>
               </div>
 
-              <h3 className="mt-0.5 break-words text-base font-extrabold text-white sm:text-lg">
+              <h3 className="mt-0.5 truncate text-sm sm:text-base 2xl:text-lg font-extrabold text-white">
                 {activeCandidate.name || "Unnamed Candidate"}
               </h3>
             </div>
           </div>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-2.5 2xl:space-y-3.5">
           <CandidateModalSection
             title="Candidate Master Requisition & Profile Details"
             subtitle="Headcount requisition alignment, PRF status, and complete candidate profile summary."
@@ -10515,7 +10515,7 @@ async function handleConfirmScheduleNho() {
                     Lead PRF Action:
                   </span>
                   <div
-                    className="flex flex-wrap items-center gap-2"
+                    className="flex flex-wrap items-center gap-1.5"
                     role="radiogroup"
                     aria-label="Lead PRF Action"
                   >
@@ -10527,9 +10527,9 @@ async function handleConfirmScheduleNho() {
                       return (
                         <label
                           key={option.value}
-                          className={`group inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition ${
+                          className={`group inline-flex h-7 2xl:h-7.5 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold transition ${
                             isChecked
-                              ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm font-bold"
+                              ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-2xs font-bold"
                               : "border-[#DCE6F1] bg-white text-[#52637A] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
                           }`}
                         >
@@ -10539,7 +10539,7 @@ async function handleConfirmScheduleNho() {
                             value={option.value}
                             checked={isChecked}
                             onChange={() => handleLocalPrfStatusUpdate(option.value)}
-                            className="h-3.5 w-3.5 shrink-0 cursor-pointer border-[#98A2B3] accent-[#FF5C28]"
+                            className="h-3 w-3 shrink-0 cursor-pointer border-[#98A2B3] accent-[#FF5C28]"
                           />
                           <span className="whitespace-nowrap">{option.label}</span>
                         </label>
@@ -10557,7 +10557,7 @@ async function handleConfirmScheduleNho() {
               )
             }
           >
-            <div className="grid grid-cols-1 gap-x-6 gap-y-3.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 ["Applied Role", activeCandidate.roleTitle || activeCandidate.roleAccount || "—"],
                 ["Target Account", activeCandidate.account || "—"],
@@ -10573,11 +10573,12 @@ async function handleConfirmScheduleNho() {
                 ],
               ].map(([label, value]) => (
                 <div key={label} className="min-w-0">
-                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     {label}
                   </p>
                   <p
-                    className={`mt-0.5 break-words text-xs font-extrabold leading-5 ${
+                    title={value}
+                    className={`mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight ${
                       label === "PRF Status" ? "text-[#FF5C28]" : "text-[#042C51]"
                     }`}
                   >
@@ -10587,11 +10588,11 @@ async function handleConfirmScheduleNho() {
               ))}
             </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-2.5 flex justify-end">
               <CandidateModalSecondaryButton
                 type="button"
                 onClick={() => setShowTalentPoolDetails((previous) => !previous)}
-                className="w-full !justify-between !border-[#FF5C28]/35 !text-[#FF5C28] hover:!bg-[#FFF0EB] sm:w-72"
+                className="w-full !h-7 2xl:!h-7.5 !text-[11px] !justify-between !border-[#FF5C28]/35 !text-[#FF5C28] hover:!bg-[#FFF0EB] sm:w-64"
               >
                 <span className="min-w-0 flex-1 truncate text-left font-extrabold text-[#FF5C28]">
                   {showTalentPoolDetails
@@ -10599,7 +10600,7 @@ async function handleConfirmScheduleNho() {
                     : "View Full Submitted Profile"}
                 </span>
                 <ChevronDown
-                  size={14}
+                  size={13}
                   className={`text-[#FF5C28] transition-transform ${showTalentPoolDetails ? "rotate-180" : ""}`}
                 />
               </CandidateModalSecondaryButton>
@@ -10614,7 +10615,7 @@ async function handleConfirmScheduleNho() {
 
           {hasAssessmentDetailAccess && (
             <CandidateModalSection title="Assessment Summary">
-              <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   [
                     "Status",
@@ -10639,21 +10640,21 @@ async function handleConfirmScheduleNho() {
                   ],
                 ].map(([label, value]) => (
                   <div key={label} className="min-w-0">
-                    <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       {label}
                     </p>
-                    <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+                    <p title={value} className="mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
                       {value}
                     </p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3">
-                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <div className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2">
+                <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                   Remarks
                 </p>
-                <p className="mt-1 text-xs font-semibold leading-5 text-[#475467]">
+                <p className="mt-0.5 text-xs font-semibold leading-relaxed text-[#475467]">
                   {activeCandidate.assessmentRemarks || activeCandidate.assessment_remarks || "—"}
                 </p>
               </div>
@@ -10662,7 +10663,7 @@ async function handleConfirmScheduleNho() {
 
           {hasInterviewDetailAccess && (
             <CandidateModalSection title="Interview Summary">
-              <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                   ["Date / Time", formatDateTime(activeCandidate.interviewDate) || "—"],
                   ["Interview Type", getDisplayInterviewType(activeCandidate) || "—"],
@@ -10689,7 +10690,7 @@ async function handleConfirmScheduleNho() {
                   ],
                 ].map(([label, value]) => (
                   <div key={label} className="min-w-0">
-                    <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       {label}
                     </p>
                     {label === "Interview Link" && value !== "—" ? (
@@ -10697,12 +10698,12 @@ async function handleConfirmScheduleNho() {
                         type="button"
                         title={value}
                         onClick={() => window.open(value, "_blank", "noopener,noreferrer")}
-                        className="mt-0.5 block max-w-full truncate text-left text-xs font-extrabold text-blue-600 underline"
+                        className="mt-0.5 block max-w-full truncate text-left text-[11px] 2xl:text-xs font-extrabold text-blue-600 underline"
                       >
                         {value}
                       </button>
                     ) : (
-                      <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+                      <p title={value} className="mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
                         {value}
                       </p>
                     )}
@@ -10710,11 +10711,11 @@ async function handleConfirmScheduleNho() {
                 ))}
               </div>
 
-              <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3">
-                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <div className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2">
+                <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                   Interview Remarks
                 </p>
-                <p className="mt-1 text-xs font-semibold leading-5 text-[#475467]">
+                <p className="mt-0.5 text-xs font-semibold leading-relaxed text-[#475467]">
                   {activeCandidate.interviewNotes ||
                     activeCandidate.interviewerNotes ||
                     activeCandidate.interview_notes ||
@@ -10746,7 +10747,7 @@ async function handleConfirmScheduleNho() {
                   <button
                     type="button"
                     onClick={() => onCancelInterview?.(activeCandidate)}
-                    className="inline-flex h-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100"
+                    className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 active:scale-[0.98]"
                   >
                     Cancel Interview
                   </button>
@@ -10757,7 +10758,7 @@ async function handleConfirmScheduleNho() {
 
           {hasOfferDetailAccess && (
             <CandidateModalSection title="Offer Summary">
-              <div className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                   ["Final Role", activeCandidate.offerDetails?.roleTitle || activeCandidate.roleTitle || "—"],
                   ["Final Account", activeCandidate.offerDetails?.account || activeCandidate.account || "—"],
@@ -10789,10 +10790,10 @@ async function handleConfirmScheduleNho() {
                   ],
                 ].map(([label, value]) => (
                   <div key={label} className="min-w-0">
-                    <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       {label}
                     </p>
-                    <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#344054]">
+                    <p title={value} className="mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
                       {value || "—"}
                     </p>
                   </div>
@@ -10800,14 +10801,14 @@ async function handleConfirmScheduleNho() {
               </div>
 
               {candidateOfferVersions.length > 0 && (
-                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white p-4">
+                <div className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-white p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <p className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
                       Offer Versions
                     </p>
-                    {isLoadingOfferVersions && <Loader2 size={14} className="animate-spin text-[#667085]" />}
+                    {isLoadingOfferVersions && <Loader2 size={13} className="animate-spin text-[#667085]" />}
                   </div>
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-2 space-y-1.5">
                     {candidateOfferVersions.slice(0, 3).map((version) => {
                       const versionNumber = getOfferVersionNumber(version);
                       const filename =
@@ -10819,11 +10820,11 @@ async function handleConfirmScheduleNho() {
                       return (
                         <div
                           key={version.id || version.offerVersionId || versionNumber || filename}
-                          className="flex flex-col gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+                          className="flex flex-col gap-1.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-extrabold text-[#344054]">{filename}</p>
-                            <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3]">
+                            <p className="truncate text-[11px] 2xl:text-xs font-extrabold text-[#344054]">{filename}</p>
+                            <p className="mt-0.5 text-[9.5px] font-semibold text-[#98A2B3]">
                               Version {versionNumber || "—"}
                             </p>
                           </div>
@@ -10839,9 +10840,9 @@ async function handleConfirmScheduleNho() {
                                   )}/offer-versions/${encodeURIComponent(versionNumber)}/pdf`,
                                 })
                               }
-                              className="shrink-0 !border-[#FF5C28]/35 !text-[#FF5C28] hover:!bg-[#FFF0EB]"
+                              className="shrink-0 !h-7 2xl:!h-7.5 !text-[11px] !border-[#FF5C28]/35 !text-[#FF5C28] hover:!bg-[#FFF0EB]"
                             >
-                              <Eye size={14} className="text-[#FF5C28]" />
+                              <Eye size={13} className="text-[#FF5C28]" />
                               Open PDF
                             </CandidateModalSecondaryButton>
                           )}
@@ -10853,7 +10854,7 @@ async function handleConfirmScheduleNho() {
               )}
 
               {isOffered && (
-                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                <div className="mt-2.5 flex flex-wrap justify-end gap-2">
                   {isOfferApproved(activeCandidate) && !activeCandidate.offerEmailSent && (
                     <CandidateModalSecondaryButton
                       type="button"
@@ -10893,20 +10894,20 @@ async function handleConfirmScheduleNho() {
               )}
 
               {activeCandidate.offerEmailSent && !hasFinalOfferDecision && !isOfferNegotiationRequested && (
-                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                <div className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-white p-3">
+                  <p className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
                     Manual Candidate Response
                   </p>
-                  <p className="mt-1 text-[10px] font-semibold leading-5 text-[#667085]">
+                  <p className="mt-0.5 text-[10px] font-semibold leading-relaxed text-[#667085]">
                     Use only when the candidate cannot access the email response link.
                   </p>
-                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
                     {offerDecisionOptions.map((decision) => (
                       <button
                         key={decision}
                         type="button"
                         onClick={() => onOfferDecision?.(activeCandidate, decision)}
-                        className={`inline-flex h-9 items-center justify-center rounded-lg border px-3 text-xs font-bold transition ${getOfferDecisionClass(
+                        className={`inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-bold transition ${getOfferDecisionClass(
                           decision,
                         )}`}
                       >
@@ -10921,45 +10922,45 @@ async function handleConfirmScheduleNho() {
 
           {hasNhoDetailAccess && (
             <CandidateModalSection title="Pre-Employment Requirements">
-              <div className="grid grid-cols-1 gap-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Major Requirements
                   </p>
-                  <p className="mt-1 text-xs font-extrabold text-[#344054]">
+                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
                     {majorNhoProgress.completed} / {majorNhoProgress.total} ({majorNhoProgress.percent}%)
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Overall Requirements
                   </p>
-                  <p className="mt-1 text-xs font-extrabold text-[#344054]">
+                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
                     {totalNhoProgress.completed} / {totalNhoProgress.total} ({totalNhoProgress.percent}%)
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     NHO Schedule
                   </p>
-                  <p className="mt-1 text-xs font-extrabold text-[#344054]">
+                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
                     {hasNhoSchedule ? formatDateTime(nhoScheduleDetails.startDate) : "Not Scheduled"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Routing
                   </p>
-                  <p className="mt-1 text-xs font-extrabold text-[#344054]">{currentStage}</p>
+                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">{currentStage}</p>
                 </div>
               </div>
 
-              <div className="mt-4">
-                <div className="mb-1.5 flex items-center justify-between text-[10px] font-extrabold text-[#667085]">
+              <div className="mt-2.5">
+                <div className="mb-1 flex items-center justify-between text-[9.5px] font-extrabold text-[#667085]">
                   <span>Major completion</span>
                   <span>{majorNhoProgress.percent}%</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[#EEF4FA]">
+                <div className="h-1.5 overflow-hidden rounded-full bg-[#EEF4FA]">
                   <div
                     className="h-full rounded-full bg-[#042C51] transition-all"
                     style={{ width: `${majorNhoProgress.percent}%` }}

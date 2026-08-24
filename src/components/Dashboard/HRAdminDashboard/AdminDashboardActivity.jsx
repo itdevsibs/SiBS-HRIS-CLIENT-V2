@@ -24,9 +24,9 @@ export default function AdminDashboardActivity({
         animationFillMode: "both",
       }}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] pb-3 2xl:pb-4">
+      <div className="flex items-start justify-between gap-4 border-b border-sibs-border pb-3 2xl:pb-4">
         <div className="min-w-0 space-y-0.5">
-          <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
+          <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             Recent Activity
           </h2>
           <p className="sibs-text-xs font-semibold text-[#667085]">
@@ -38,10 +38,10 @@ export default function AdminDashboardActivity({
           type="button"
           onClick={onSync}
           disabled={isSyncing}
-          className="inline-flex h-7.5 2xl:h-8 items-center gap-1.5 rounded-lg bg-[#F1F5F9] px-2.5 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-wait disabled:opacity-60"
+          className="inline-flex h-8 2xl:h-8.5 items-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-2.5 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-wait disabled:opacity-60"
         >
           <RefreshCw
-            className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`}
+            className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin text-sibs-orange" : ""}`}
           />
           {isSyncing ? "Refreshing" : "Refresh"}
         </button>
@@ -72,19 +72,19 @@ export default function AdminDashboardActivity({
               />
 
               <div className="min-w-0 flex-1">
-                <p className="sibs-text-xs leading-relaxed text-[#344054]">
-                  <span className="font-extrabold text-[#042C51]">
+                <p className="sibs-text-xs leading-relaxed text-sibs-text-secondary font-medium">
+                  <span className="font-extrabold text-sibs-navy">
                     {activity.user}
                   </span>{" "}
                   {activity.action}
                 </p>
 
-                <p className="mt-0.5 sibs-text-micro leading-relaxed text-[#667085]">
+                <p className="mt-0.5 sibs-text-micro leading-relaxed text-sibs-text-secondary">
                   {activity.details}
                 </p>
               </div>
 
-              <time className="shrink-0 sibs-text-micro font-bold text-[#667085]">
+              <time className="shrink-0 sibs-text-micro font-semibold text-sibs-text-muted">
                 {activity.time}
               </time>
             </article>
@@ -96,7 +96,7 @@ export default function AdminDashboardActivity({
         <button
           type="button"
           onClick={onViewAll}
-          className="inline-flex items-center gap-1 sibs-text-xs font-extrabold text-[#FF5C28] transition hover:text-[#042C51]"
+          className="inline-flex items-center gap-1 sibs-text-xs font-extrabold text-sibs-orange transition hover:text-sibs-navy"
         >
           View all activity
           <ChevronRight className="h-3.5 w-3.5" />

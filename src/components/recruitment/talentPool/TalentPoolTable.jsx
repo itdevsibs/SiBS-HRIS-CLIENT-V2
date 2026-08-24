@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
-  ChevronLeft,
-  ChevronRight,
   LoaderCircle,
   UsersRound,
 } from "lucide-react";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
   formatDate,
   getStatusClass,
@@ -165,10 +164,11 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
         <>
           <div className="space-y-3 pt-3 lg:hidden">
             {paginatedCandidates.length > 0 ? (
-              paginatedCandidates.map((candidate) => (
+              paginatedCandidates.map((candidate, index) => (
                 <TalentPoolMobileCard
                   key={candidate.id || candidate.candidateId}
                   candidate={candidate}
+                  index={index}
                 />
               ))
             ) : (
@@ -181,17 +181,17 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
           </div>
 
           <div className="hidden lg:block">
-            <div className="overflow-x-auto rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white">
-              <table className="w-full min-w-[1060px] table-fixed border-separate border-spacing-0 text-left">
+            <div className="overflow-x-auto rounded-b-xl border border-t-0 border-sibs-border bg-white">
+              <table className="w-full min-w-[980px] 2xl:min-w-[1060px] table-fixed border-separate border-spacing-0 text-left">
                 <thead className="sibs-data-table-head">
                   <tr className="sibs-data-table-head-row">
-                    <th className="sibs-data-table-th w-[23%] text-left">Candidate</th>
-                    <th className="sibs-data-table-th w-[23%] text-left">Applied Position</th>
-                    <th className="sibs-data-table-th w-[26%] text-left">
+                    <th className="sibs-data-table-th w-[23%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">Candidate</th>
+                    <th className="sibs-data-table-th w-[22%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">Applied Position</th>
+                    <th className="sibs-data-table-th w-[25%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
                       Preferred Location / Final Account
                     </th>
-                    <th className="sibs-data-table-th w-[14%] text-center">Status</th>
-                    <th className="sibs-data-table-th w-[14%] text-center">Last Activity</th>
+                    <th className="sibs-data-table-th w-[15%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">Status</th>
+                    <th className="sibs-data-table-th w-[15%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">Last Activity</th>
                   </tr>
                 </thead>
 
@@ -230,15 +230,15 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                           tabIndex={0}
                           onClick={() => openCandidate(candidate)}
                           onKeyDown={(event) => handleRowKeyDown(event, candidate)}
-                          className="sibs-page-card-in cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25"
-                          style={{ animationDelay: `${index * 30}ms` }}
+                          className="sibs-page-card-in cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
+                          style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                         >
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
+                          <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 align-middle">
                             <div className="min-w-0">
-                              <div className="flex min-w-0 items-center gap-2">
+                              <div className="flex min-w-0 items-center gap-1.5 2xl:gap-2">
                                 <p
                                   title={candidate.name}
-                                  className="min-w-0 truncate text-xs font-extrabold text-[#042C51]"
+                                  className="min-w-0 truncate sibs-text-xs font-extrabold tracking-tight text-sibs-navy"
                                 >
                                   {candidate.name || "—"}
                                 </p>
@@ -246,7 +246,7 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                                 {candidate.isPublicSubmission ? (
                                   <span
                                     title="Public Submission"
-                                    className="shrink-0 rounded-md border border-purple-200 bg-purple-50 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-normal text-purple-700"
+                                    className="shrink-0 rounded border border-purple-200 bg-purple-50 px-1.5 py-0.2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-purple-700"
                                   >
                                     Public
                                   </span>
@@ -255,47 +255,47 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
 
                               <p
                                 title={candidate.candidateId}
-                                className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]"
+                                className="mt-0.5 truncate font-mono text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted tracking-tight"
                               >
                                 {candidate.candidateId || "—"}
                               </p>
                             </div>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
+                          <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 align-middle">
                             <p
                               title={appliedPosition}
-                              className="truncate text-xs font-bold text-[#344054]"
+                              className="truncate sibs-text-xs font-bold text-sibs-navy"
                             >
                               {appliedPosition}
                             </p>
                             <p
                               title={candidate.skillsLanguage || "—"}
-                              className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]"
+                              className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-medium text-sibs-text-muted"
                             >
                               Skills: {candidate.skillsLanguage || "—"}
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
+                          <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 align-middle">
                             <p
                               title={preferredLocation}
-                              className="truncate text-xs font-semibold text-[#344054]"
+                              className="truncate sibs-text-xs font-bold text-sibs-navy"
                             >
                               {preferredLocation}
                             </p>
                             <p
                               title={finalAccount}
-                              className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]"
+                              className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-medium text-sibs-text-muted"
                             >
                               Final Account: {finalAccount}
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 text-center align-middle">
+                          <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
                             <span
                               title={displayStatus}
-                              className={`mx-auto inline-flex max-w-[195px] items-center justify-center rounded-lg border px-2.5 py-1 text-center text-[10px] font-extrabold leading-4 ${getStatusClass(
+                              className={`mx-auto inline-flex max-w-[195px] items-center justify-center rounded-lg border px-2.5 py-1 text-center text-[10px] 2xl:text-[10.5px] font-extrabold leading-tight shadow-2xs ${getStatusClass(
                                 displayStatus,
                               )}`}
                             >
@@ -305,10 +305,10 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                             </span>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 text-center align-middle">
+                          <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
                             <p
                               title={lastActivity}
-                              className="truncate text-[12px] font-semibold text-[#344054]"
+                              className="truncate sibs-text-xs font-semibold text-sibs-text-secondary whitespace-nowrap"
                             >
                               {lastActivity}
                             </p>
@@ -337,48 +337,20 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
             </div>
           </div>
 
-          <div className="sibs-pagination sibs-pagination--compact mt-4">
-            <p className="sibs-pagination__summary">
-              Showing <span>{paginatedCandidates.length}</span> loaded candidate profiles
-              {totalCandidates > 0 ? (
-                <>
-                  {" "}
-                  out of <span>{totalCandidates}</span>
-                </>
-              ) : null}
-            </p>
-
-            {totalCandidates > 0 ? (
-              <div className="sibs-pagination__controls">
-                <button
-                  type="button"
-                  onClick={goToPreviousPage}
-                  disabled={currentPage === 1}
-                  aria-label="Go to previous page"
-                  className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
-                >
-                  <ChevronLeft size={15} />
-                  <span>Previous</span>
-                </button>
-
-                <span className="sibs-pagination__page is-active h-10 px-3 sm:px-4">
-                  Page {currentPage}
-                  {totalPages > 1 ? ` of ${totalPages}` : ""}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages}
-                  aria-label="Go to next page"
-                  className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
-                >
-                  <span>Next</span>
-                  <ChevronRight size={15} />
-                </button>
-              </div>
-            ) : null}
-          </div>
+          <PaginationTable
+            showSearch={false}
+            showPagination
+            showCount
+            loading={isLoading}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            loadedCount={paginatedCandidates.length}
+            totalRecords={totalCandidates}
+            recordLabel="candidate profiles"
+            onPrevious={goToPreviousPage}
+            onNext={goToNextPage}
+            className="border-0 bg-transparent p-0 shadow-none"
+          />
         </>
       ) : null}
     </div>

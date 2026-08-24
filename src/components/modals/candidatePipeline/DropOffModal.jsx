@@ -92,7 +92,7 @@ function DropOffCategoryDropdown({
         onClick={handleToggle}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left sibs-text-xs font-bold shadow-sm outline-none transition ${
           hasError
             ? "border-red-400 ring-4 ring-red-100"
             : open

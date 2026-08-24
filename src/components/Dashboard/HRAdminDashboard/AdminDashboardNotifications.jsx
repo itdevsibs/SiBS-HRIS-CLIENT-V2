@@ -5,11 +5,13 @@ import {
   X,
 } from "lucide-react";
 
+import { useSidebarNotifications } from "../../../services/context/SidebarNotificationContext";
+
 const notificationTone = {
   action: {
     wrapper: "border-blue-200/70 bg-blue-50/70",
     icon: "bg-blue-100 text-blue-600",
-    button: "bg-[#FF5C28] text-white hover:bg-[#E64F21]",
+    button: "bg-sibs-orange text-white hover:bg-sibs-orange/90",
   },
   warning: {
     wrapper: "border-amber-200/70 bg-amber-50/70",
@@ -30,6 +32,23 @@ export default function AdminDashboardNotifications({
   onViewAll,
   delay = 0,
 }) {
+  const { notificationsList = [], dismissNotification } =
+    useSidebarNotifications() || {};
+
+  // Use props if provided, otherwise fallback to context notifications list
+  const activeNotifications =
+    Array.isArray(notifications) && notifications.length > 0
+      ? notifications
+      : notificationsList;
+
+  const handleDismiss = (id) => {
+    if (onDismiss) {
+      onDismiss(id);
+    } else {
+      dismissNotification?.(id);
+    }
+  };
+
   return (
     <section
       className="sibs-page-card-in sibs-card p-4 2xl:p-6"
@@ -38,9 +57,9 @@ export default function AdminDashboardNotifications({
         animationFillMode: "both",
       }}
     >
-      <div className="border-b border-[#E6ECF2] pb-3 2xl:pb-4">
+      <div className="border-b border-sibs-border pb-3 2xl:pb-4">
         <div className="min-w-0 space-y-0.5">
-          <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
+          <h2 className="font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
             Notifications
           </h2>
           <p className="sibs-text-xs font-semibold text-[#667085]">
@@ -50,10 +69,10 @@ export default function AdminDashboardNotifications({
       </div>
 
       <div className="mt-3 2xl:mt-4 space-y-2.5 2xl:space-y-3">
-        {notifications.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-6 2xl:py-8 text-center">
+        {activeNotifications.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-sibs-border-subtle bg-sibs-surface px-5 py-6 2xl:py-8 text-center">
             <CheckCircle2 className="mx-auto h-7 w-7 2xl:h-8 2xl:w-8 text-emerald-500" />
-            <p className="mt-2 sibs-text-xs font-extrabold text-[#042C51]">
+            <p className="mt-2 sibs-text-xs font-extrabold text-sibs-navy">
               All caught up!
             </p>
             <p className="mt-0.5 sibs-text-micro text-[#667085]">
@@ -61,7 +80,7 @@ export default function AdminDashboardNotifications({
             </p>
           </div>
         ) : (
-          notifications.slice(0, 4).map((notification, index) => {
+          activeNotifications.slice(0, 4).map((notification, index) => {
             const tone =
               notificationTone[notification.type] || notificationTone.info;
             const Icon = notification.icon || Bell;
@@ -85,7 +104,7 @@ export default function AdminDashboardNotifications({
                   <span className="sibs-text-micro font-bold text-[#667085]">
                     {notification.time}
                   </span>
-                  <h3 className="sibs-text-xs font-extrabold text-[#042C51]">
+                  <h3 className="sibs-text-xs font-extrabold text-sibs-navy">
                     {notification.title}
                   </h3>
                   <p className="sibs-text-xs leading-snug text-[#344054]">
@@ -103,28 +122,26 @@ export default function AdminDashboardNotifications({
                   ) : null}
                 </div>
 
-                {onDismiss ? (
-                  <button
-                    type="button"
-                    onClick={() => onDismiss(notification.id)}
-                    className="flex h-5.5 w-5.5 2xl:h-7 2xl:w-7 shrink-0 items-center justify-center rounded-md text-[#667085] transition hover:bg-white/70 hover:text-[#FF5C28]"
-                    aria-label={`Dismiss ${notification.title}`}
-                  >
-                    <X className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" />
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => handleDismiss(notification.id)}
+                  className="flex h-5.5 w-5.5 2xl:h-7 2xl:w-7 shrink-0 items-center justify-center rounded-md text-[#667085] transition hover:bg-white/70 hover:text-sibs-orange"
+                  aria-label={`Dismiss ${notification.title}`}
+                >
+                  <X className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" />
+                </button>
               </article>
             );
           })
         )}
       </div>
 
-      {notifications.length > 0 ? (
+      {activeNotifications.length > 0 ? (
         <div className="mt-3 2xl:mt-4 flex justify-end border-t border-[#F1F5F9] pt-2.5 2xl:pt-3">
           <button
             type="button"
             onClick={onViewAll}
-            className="inline-flex items-center gap-1 sibs-text-xs font-extrabold text-[#FF5C28] transition hover:text-[#042C51]"
+            className="inline-flex items-center gap-1 sibs-text-xs font-extrabold text-sibs-orange transition hover:text-sibs-navy"
           >
             View all notifications
             <ChevronRight className="h-3.5 w-3.5" />

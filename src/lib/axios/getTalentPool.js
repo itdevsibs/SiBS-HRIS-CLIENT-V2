@@ -1,4 +1,5 @@
 import api from "./api-template";
+import { parseTalentPoolResumeFilename } from "../utils/talentPool/talentPoolResume";
 
 /* =========================================
    TALENT POOL API
@@ -776,6 +777,65 @@ export function getTalentPoolFileUrl(applicationId, type = "attachment") {
   return `${base}/api/talent-pool/file/${applicationId}/${type}`;
 }
 
+export async function getTalentPoolResumePdf(applicationId) {
+  const safeId = String(applicationId || "").trim();
+  if (!/^\d+$/.test(safeId)) {
+    return {
+      success: false,
+      data: null,
+      filename: "",
+      status: 400,
+      message: "A valid Talent Pool application ID is required.",
+    };
+  }
+
+  try {
+    const response = await api.get(
+      `/api/talent-pool/applications/${encodeURIComponent(safeId)}/resume.pdf`,
+      { withCredentials: true, responseType: "blob" },
+    );
+    const contentType = String(response.headers?.["content-type"] || "");
+    if (
+      !contentType.toLowerCase().includes("application/pdf") ||
+      !response.data?.size
+    ) {
+      throw new Error("The server did not return a valid PDF.");
+    }
+    return {
+      success: true,
+      data: response.data,
+      filename: parseTalentPoolResumeFilename(
+        response.headers?.["content-disposition"],
+        "Candidate_SiBS_Profile.pdf",
+      ),
+      status: response.status,
+      message: "Candidate resume generated.",
+    };
+  } catch (error) {
+    let responseMessage = "";
+    const errorBlob = error?.response?.data;
+    if (errorBlob instanceof Blob) {
+      try {
+        const parsed = JSON.parse(await errorBlob.text());
+        responseMessage = parsed?.message || parsed?.error || "";
+      } catch {
+        responseMessage = "";
+      }
+    }
+    return {
+      success: false,
+      data: null,
+      filename: "",
+      status: error?.response?.status || 500,
+      message:
+        responseMessage ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Unable to generate the candidate resume.",
+    };
+  }
+}
+
 export default {
   getTalentPoolFormOptions,
   getTalentPoolOpenPositions,
@@ -792,4 +852,5 @@ export default {
   markTalentPoolCandidateAsDropOff,
   moveTalentPoolCandidateToPipeline,
   getTalentPoolFileUrl,
+  getTalentPoolResumePdf,
 };
