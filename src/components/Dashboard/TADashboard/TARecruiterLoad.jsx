@@ -24,7 +24,7 @@ export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div>
-        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+        <h3 className="font-heading text-sm 2xl:text-base font-bold tracking-tight text-[#042C51]">
           Recruiter Load
         </h3>
         <p className="mt-1 text-xs font-semibold text-[#667085]">
@@ -99,7 +99,7 @@ export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
         </div>
 
         <div className="text-right">
-          <span className="block text-base font-black leading-none text-[#042C51]">
+          <span className="font-heading block text-base 2xl:text-lg font-bold leading-none tabular-nums text-[#042C51]">
             {recruiters.length} Recruiters
           </span>
           <span className="mt-1 block sibs-text-micro font-bold text-indigo-700">

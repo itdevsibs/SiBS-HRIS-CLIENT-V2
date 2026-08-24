@@ -55,22 +55,22 @@ export default function CandidateModalSummary({
     .join(" • ");
 
   return (
-    <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
-      <div className="flex items-start gap-3">
+    <section className="rounded-xl border border-[#E6ECF2] bg-white p-3 sm:p-3.5 2xl:p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+      <div className="flex items-start gap-2.5">
         <CandidateAvatar candidate={candidate} />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <h3 className="break-words sibs-text-sm font-extrabold text-[#101828]">
+              <h3 className="truncate sibs-text-xs sm:sibs-text-sm font-extrabold text-[#101828]">
                 {candidateName}
               </h3>
-              <p className="mt-0.5 break-all sibs-text-xs font-semibold text-[#667085]">
+              <p className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
                 {email}
               </p>
             </div>
             {currentStage && (
               <span
-                className={`w-fit shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide ${statusClass}`}
+                className={`w-fit shrink-0 rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide ${statusClass}`}
               >
                 {currentStage}
               </span>
@@ -80,14 +80,14 @@ export default function CandidateModalSummary({
           {!compact && (
             <>
               {showAssignment && (
-                <p className="mt-2 sibs-text-xs font-bold text-sibs-primary-1">
+                <p className="mt-1.5 sibs-text-xs font-bold text-sibs-primary-1">
                   {roleAccount}
                 </p>
               )}
-              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-semibold text-[#98A2B3]">
-                {candidateId && <span>Candidate ID: {candidateId}</span>}
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[9px] 2xl:text-[10px] font-semibold text-[#98A2B3]">
+                {candidateId && <span>ID: {candidateId}</span>}
                 {candidateApplicationId && (
-                  <span>Application: {candidateApplicationId}</span>
+                  <span>App: {candidateApplicationId}</span>
                 )}
               </div>
             </>

@@ -284,8 +284,8 @@ export default function UserDropdown({
           "group flex max-w-[360px] cursor-pointer items-center gap-2 2xl:gap-2.5 rounded-xl border px-2 py-1 2xl:py-1.5 text-left transition-all duration-150",
           mobileCompact ? "max-[430px]:gap-0 max-[430px]:px-0 max-[430px]:py-0" : "",
           open
-            ? "border-sibs-primary-1/25 bg-white shadow-sm ring-2 ring-sibs-primary-1/10"
-            : "border-transparent bg-transparent hover:border-sibs-tertiary-9 hover:bg-white",
+            ? "border-sibs-orange/40 bg-sibs-cream shadow-sm ring-2 ring-sibs-orange/15"
+            : "border-transparent bg-transparent hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle hover:shadow-xs",
         ].join(" ")}
       >
         <div

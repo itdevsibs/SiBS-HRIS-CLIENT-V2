@@ -21,19 +21,19 @@ export default function SuperAdminActivity({
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
+          <h2 className="font-heading text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
             System &amp; Module Activity Audit Log ({totalItems})
           </h2>
-          <p className="sibs-text-xs font-semibold text-[#667085]">
+          <p className="sibs-text-xs font-semibold text-sibs-text-muted">
             Recorded user actions, request updates, and access-level modifications.
           </p>
         </div>
         <button
           type="button"
           onClick={onExport}
-          className="inline-flex h-8.5 2xl:h-9 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+          className="inline-flex h-8.5 2xl:h-9 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
         >
-          <Download className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#FF5C28]" />
+          <Download className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-orange" />
           Export Activity Log
         </button>
       </div>
@@ -137,10 +137,10 @@ export default function SuperAdminActivity({
                       animationFillMode: "both",
                     }}
                   >
-                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] font-semibold text-[#98A2B3]">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] font-semibold text-sibs-text-muted">
                       {item.timestamp}
                     </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-extrabold text-[#042C51]">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-extrabold text-sibs-navy">
                       {item.actor}
                     </td>
                     <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
@@ -148,13 +148,13 @@ export default function SuperAdminActivity({
                         {item.accessLevel}
                       </span>
                     </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-semibold text-[#344054]">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-semibold text-sibs-text-secondary">
                       {item.module}
                     </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] font-extrabold text-[#FF5C28]">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] font-extrabold text-sibs-orange">
                       {item.action}
                     </td>
-                    <td className="max-w-[360px] px-3 2xl:px-4 py-2 2xl:py-2.5 text-[#667085]">
+                    <td className="max-w-[360px] px-3 2xl:px-4 py-2 2xl:py-2.5 text-sibs-text-secondary font-medium">
                       {item.details}
                     </td>
                     <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">

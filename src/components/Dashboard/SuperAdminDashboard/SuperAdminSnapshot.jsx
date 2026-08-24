@@ -21,7 +21,7 @@ export default function SuperAdminSnapshot({ cards, onNavigate }) {
           }}
         >
           <div className="flex items-center justify-between border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
-            <h3 className="text-sm 2xl:text-base font-extrabold text-[#042C51] flex items-center gap-1.5 2xl:gap-2">
+            <h3 className="font-heading text-base 2xl:text-lg font-bold text-[#042C51] tracking-tight flex items-center gap-1.5 2xl:gap-2">
               {createElement(ICONS[card.iconKey] || Users, {
                 size: 15,
                 className: "text-[#FF5C28]",

@@ -22,21 +22,21 @@ export default function AdminDashboardWorkforceKpi({
         <span className="rounded bg-white/10 px-2 py-0.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wider text-slate-200">
           Live Workforce KPI
         </span>
-        <Sparkles className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#FF5C28]" />
+        <Sparkles className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-orange" />
       </div>
 
       <div className="mt-2.5 2xl:mt-5">
         <span className="sibs-text-xs font-medium text-slate-300">
           Workforce Utilization
         </span>
-        <p className="mt-0.5 2xl:mt-1 text-xl 2xl:text-3xl font-extrabold tabular-nums tracking-tight text-[#FF5C28]">
+        <p className="font-heading mt-0.5 2xl:mt-1 text-xl 2xl:text-3xl font-bold tabular-nums tracking-tight text-sibs-orange">
           {safeUtilization.toFixed(1)}%
         </p>
       </div>
 
       <div className="mt-2 2xl:mt-4 h-1.5 2xl:h-2 w-full overflow-hidden rounded-full bg-white/10">
         <div
-          className="h-full rounded-full bg-[#FF5C28] transition-all duration-300"
+          className="h-full rounded-full bg-sibs-orange transition-all duration-300"
           style={{ width: `${safeUtilization}%` }}
         />
       </div>
@@ -44,7 +44,7 @@ export default function AdminDashboardWorkforceKpi({
       <p className="mt-2 2xl:mt-4 sibs-text-xs leading-snug text-slate-300/90">
         Active manpower allocation is calculated from today&apos;s schedule and
         attendance records. Absenteeism buffer is currently{" "}
-        <span className="font-extrabold text-[#FF5C28]">
+        <span className="font-extrabold text-sibs-orange">
           {absenteeismBuffer}%
         </span>
         .

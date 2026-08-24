@@ -361,7 +361,7 @@ const PipelineListView = ({
             {/* Desktop Table View */}
             <div className="sibs-data-table-shell hidden lg:block overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
               <div className="overflow-x-auto sibs-scrollbar">
-                <table className="w-full min-w-[1180px] border-collapse">
+                <table className="w-full min-w-[1080px] 2xl:min-w-[1180px] border-collapse">
                   <thead className="sibs-data-table-head bg-[#F8FAFC]">
                     <tr className="sibs-data-table-head-row">
                       {[
@@ -375,12 +375,12 @@ const PipelineListView = ({
                       ].map((heading) => (
                         <th
                           key={heading}
-                          className="sibs-data-table-th whitespace-nowrap px-3.5 2xl:px-4 py-2.5 2xl:py-3 text-left"
+                          className="sibs-data-table-th whitespace-nowrap px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy"
                         >
                           {heading}
                         </th>
                       ))}
-                      <th className="sibs-data-table-th whitespace-nowrap px-3.5 2xl:px-4 py-2.5 2xl:py-3 text-right">
+                      <th className="sibs-data-table-th whitespace-nowrap px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 text-right sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
                         Actions
                       </th>
                     </tr>
@@ -410,17 +410,17 @@ const PipelineListView = ({
                             animationFillMode: "both",
                           }}
                         >
-                          <td className="sibs-data-table-td px-3.5 2xl:px-4 py-2.5 2xl:py-3">
-                            <div className="flex items-center gap-3">
+                          <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5">
+                            <div className="flex items-center gap-2.5">
                               <CandidateAvatar candidate={candidate} />
                               <div className="min-w-0">
-                                <p className="max-w-[220px] truncate font-extrabold text-[#042C51]">
+                                <p className="max-w-[220px] truncate sibs-text-xs font-extrabold tracking-tight text-sibs-navy">
                                   {candidate.name}
                                 </p>
                                 <p className="mt-0.5 max-w-[220px] truncate text-[10px] font-semibold text-[#667085]">
                                   {candidate.email || "No email saved"}
                                 </p>
-                                <p className="mt-0.5 font-mono text-[9px] font-bold text-[#98A2B3]">
+                                <p className="mt-0.5 font-mono text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted">
                                   {candidate.candidateId ||
                                     candidate.candidateApplicationId ||
                                     "—"}
@@ -429,9 +429,9 @@ const PipelineListView = ({
                             </div>
                           </td>
 
-                          <td className="sibs-data-table-td px-3.5 2xl:px-4 py-2.5 2xl:py-3 whitespace-nowrap">
+                          <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">
                             <span
-                              className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getStageClass(
+                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${getStageClass(
                                 currentStage,
                               )}`}
                             >
@@ -439,8 +439,8 @@ const PipelineListView = ({
                             </span>
                           </td>
 
-                          <td className="sibs-data-table-td px-3.5 2xl:px-4 py-2.5 2xl:py-3">
-                            <p className="max-w-[210px] truncate font-extrabold text-[#344054]">
+                          <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5">
+                            <p className="max-w-[210px] truncate sibs-text-xs font-bold text-sibs-navy">
                               {getRoleTitle(candidate.roleAccount) ||
                                 "Not assigned yet"}
                             </p>
@@ -450,9 +450,9 @@ const PipelineListView = ({
                             </p>
                           </td>
 
-                          <td className="sibs-data-table-td px-3.5 2xl:px-4 py-2.5 2xl:py-3 whitespace-nowrap">
+                          <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">
                             <span
-                              className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getPrfStatusClass(
+                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${getPrfStatusClass(
                                 candidate.prfStatus || "Review",
                               )}`}
                             >
@@ -460,9 +460,9 @@ const PipelineListView = ({
                             </span>
                           </td>
 
-                          <td className="sibs-data-table-td px-3.5 2xl:px-4 py-2.5 2xl:py-3 whitespace-nowrap">
+                          <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">
                             <span
-                              className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${
+                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${
                                 candidate.assessmentResult
                                   ? getAssessmentResultClass(
                                       candidate.assessmentResult,
@@ -478,12 +478,12 @@ const PipelineListView = ({
                             </span>
                           </td>
 
-                          <td className="sibs-data-table-td px-3.5 2xl:px-4 py-2.5 2xl:py-3 whitespace-nowrap">
-                            <p className="font-extrabold text-[#344054]">
+                          <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">
+                            <p className="sibs-text-xs font-bold text-sibs-navy">
                               {formatDateTime(candidate.interviewDate)}
                             </p>
                             <span
-                              className={`mt-1 inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getInterviewStatusClass(
+                              className={`mt-0.5 inline-flex rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold ${getInterviewStatusClass(
                                 interviewStatus,
                               )}`}
                             >
@@ -491,8 +491,8 @@ const PipelineListView = ({
                             </span>
                           </td>
 
-                          <td className="sibs-data-table-td px-3.5 2xl:px-4 py-2.5 2xl:py-3 whitespace-nowrap">
-                            <p className="max-w-[150px] truncate font-extrabold text-[#344054]">
+                          <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">
+                            <p className="max-w-[150px] truncate sibs-text-xs font-bold text-sibs-navy">
                               {candidate.taOwner || candidate.owner || "—"}
                             </p>
                             <p className="mt-0.5 text-[9px] font-semibold text-[#98A2B3]">
@@ -502,7 +502,7 @@ const PipelineListView = ({
                             </p>
                           </td>
 
-                          <td className="sibs-data-table-td px-3.5 2xl:px-4 py-2.5 2xl:py-3 text-right whitespace-nowrap">
+                          <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 text-right whitespace-nowrap">
                             <PipelineActionButtons
                               candidate={candidate}
                               onOpenMoveModal={onOpenMoveModal}

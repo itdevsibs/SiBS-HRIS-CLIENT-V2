@@ -1,3 +1,4 @@
+
 import React, {
   useCallback,
   useEffect,
@@ -968,19 +969,19 @@ function buildCalendarDays(displayDate) {
 function inputClass(extra = "", options = {}) {
   const shouldUppercase = options.uppercase !== false;
 
-  return `h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold ${
+  return `h-9 2xl:h-11 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-2.5 2xl:px-3 text-xs font-semibold ${
     shouldUppercase ? "uppercase" : "normal-case"
-  } text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
+  } text-[#042C51] outline-none transition placeholder:normal-case placeholder:text-[#667085] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function textareaClass(extra = "") {
-  return `w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold uppercase text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
+  return `w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-2.5 py-2 2xl:px-3 2xl:py-2.5 text-xs font-semibold uppercase text-[#042C51] outline-none transition placeholder:normal-case placeholder:text-[#667085] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function AutoResizeTextarea({
   value,
   onChange,
-  minHeight = 44,
+  minHeight = 36,
   className = "",
   ...props
 }) {
@@ -1339,31 +1340,104 @@ function RequiredMark() {
   return <span className="text-[#E5484D]">*</span>;
 }
 
-function PublicSibsLogo() {
+function SiBSBrandLogo({ className = "h-6 sm:h-7 w-auto" }) {
   return (
-    <div className="flex min-w-0 select-none items-center gap-3">
-      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-[#FF5C28] shadow-[0_10px_24px_rgba(255,92,40,0.22)]">
-        <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#042C51] bg-white" />
-        <span className="relative text-[20px] font-semibold leading-none tracking-[-0.04em] text-white">
-          S
-        </span>
-      </div>
+    <svg
+      viewBox="0 0 408 135"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-label="SiBS"
+    >
+      {/* S */}
+      <path
+        d="M58.9314 133.756C19.108 133.756 0.17858 115.363 0 91.6115H12.5006C13.9292 113.934 31.6086 123.934 59.2885 123.934C89.2899 123.934 103.933 114.291 103.933 96.4331C103.933 74.4678 86.0755 72.3248 58.217 69.6461C21.4296 65.896 4.82166 58.0385 4.82166 35.8946C4.82166 12.322 27.3227 0 58.3956 0C92.3258 0 112.684 15.1793 113.934 37.6804H101.076C100.183 20.3581 82.6825 9.8219 58.7528 9.8219C31.2515 9.8219 18.0366 19.108 18.0366 35.0017C18.0366 51.7882 32.323 55.3598 62.5029 58.7528C88.397 61.4315 117.327 63.2173 117.327 95.7188C117.327 119.291 96.9689 133.756 58.9314 133.756Z"
+        fill="#042C51"
+      />
+      {/* i dot & stem */}
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M130.912 1.78577V22.1439H142.519V1.78577H130.912Z"
+        fill="#042C51"
+      />
+      <path
+        d="M130.912 131.97V39.2875H142.519V131.97H130.912Z"
+        fill="#042C51"
+      />
+      {/* B */}
+      <path
+        d="M165.943 131.97V1.78577H238.267C263.804 1.78577 278.984 11.7862 278.984 34.1087C278.984 49.1094 270.412 61.0743 253.982 64.4673V65.5388C272.019 67.8603 282.912 79.468 282.912 96.7903C282.912 119.113 267.376 131.97 237.732 131.97H165.943ZM238.625 11.4291H177.907V60.8957H238.089C257.554 60.8957 265.769 51.7881 265.769 39.2875V32.3229C265.769 18.0365 255.59 11.4291 238.625 11.4291ZM238.625 70.1819H177.907V122.327H237.732C258.983 122.327 269.34 113.398 269.34 98.576V92.3258C269.34 78.2179 257.911 70.1819 238.625 70.1819Z"
+        fill="#042C51"
+      />
+      {/* S */}
+      <path
+        d="M349.242 133.756C309.419 133.756 290.489 115.363 290.311 91.6115H302.811C304.24 113.934 321.92 123.934 349.599 123.934C379.601 123.934 394.244 114.291 394.244 96.4331C394.244 74.4678 376.386 72.3248 348.528 69.6461C311.74 65.896 295.133 58.0385 295.133 35.8946C295.133 12.322 317.634 0 348.706 0C382.637 0 402.995 15.1793 404.245 37.6804H391.387C390.494 20.3581 372.993 9.8219 349.064 9.8219C321.562 9.8219 308.347 19.108 308.347 35.0017C308.347 51.7882 322.634 55.3598 352.814 58.7528C378.708 61.4315 407.638 63.2173 407.638 95.7188C407.638 119.291 387.28 133.756 349.242 133.756Z"
+        fill="#042C51"
+      />
+    </svg>
+  );
+}
 
-      <div className="min-w-0 leading-none">
-        <div className="flex min-w-0 items-baseline whitespace-nowrap">
-          <span className="text-[22px] font-semibold tracking-[-0.035em] text-white">
-            SiBS&nbsp;
-          </span>
-          <span className="text-[22px] font-semibold tracking-[-0.035em] text-[#FF5C28]">
-            HRIS
-          </span>
+function PublicWebsiteNavbar({ completionPercentage }) {
+  return (
+    <header className="sticky top-0 z-[500] border-b border-[#DCE6F1] bg-white text-[#042C51]">
+      <div className="mx-auto flex min-h-16 w-full max-w-[1120px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <a
+            href="https://sibscontactcenter.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-11 items-center rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#042C51] focus-visible:ring-offset-2"
+            title="SiBS Contact Center"
+          >
+            <SiBSBrandLogo className="h-6 w-auto sm:h-7" />
+          </a>
+
+          <div className="min-w-0 border-l border-slate-200 pl-3">
+            <p className="font-heading text-sm font-bold leading-none text-[#042C51] sm:text-base">
+              Careers
+            </p>
+            <p className="mt-1 hidden truncate text-xs font-semibold text-[#667085] sm:block">
+              Candidate application
+            </p>
+          </div>
         </div>
 
-        <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-300/80">
-          Human Resource System
-        </p>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <a
+            href="https://sibscontactcenter.com/#faq"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden min-h-11 items-center rounded-md px-2 text-xs font-bold text-[#344054] transition-colors hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#042C51] focus-visible:ring-offset-2 sm:inline-flex"
+          >
+            Help &amp; FAQ
+          </a>
+          <span className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md border border-[#F2D6CC] bg-[#FFF7F3] px-2.5 text-[10px] font-extrabold text-[#042C51] sm:px-3 sm:text-xs">
+            <span
+              aria-hidden="true"
+              className="h-2 w-2 shrink-0 rounded-full bg-[#FF5C28]"
+            />
+            <span className="sm:hidden">In progress</span>
+            <span className="hidden sm:inline">Application in progress</span>
+          </span>
+        </div>
       </div>
-    </div>
+
+      <div
+        className="h-0.5 bg-[#EDF1F6]"
+        role="progressbar"
+        aria-label="Form completion"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={completionPercentage}
+      >
+        <div
+          className="h-full w-full origin-left bg-[#FF5C28] transition-transform duration-500 ease-out"
+          style={{ transform: `scaleX(${completionPercentage / 100})` }}
+        />
+      </div>
+    </header>
   );
 }
 
@@ -1381,14 +1455,14 @@ function ApplicationPageTabs({
   const pageTwoActive = currentPage === 2;
 
   const tabClass = (active) =>
-    `flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-left text-xs font-extrabold transition sm:text-sm ${
+    `flex min-h-[38px] 2xl:min-h-[48px] w-full items-center justify-center gap-2 rounded-xl px-3 py-2 2xl:px-4 2xl:py-3 text-left text-xs font-extrabold transition 2xl:text-sm ${
       active
         ? "bg-[#042C51] text-white shadow-[0_8px_20px_rgba(4,44,81,0.18)]"
         : "bg-white text-[#344054] hover:bg-[#F8FAFC]"
     }`;
 
   const numberClass = (active) =>
-    `inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${
+    `inline-flex h-5 w-5 2xl:h-6 2xl:w-6 shrink-0 items-center justify-center rounded-full text-[10px] 2xl:text-[11px] font-black ${
       active
         ? "bg-[#FF5C28] text-white"
         : "bg-[#E9EEF5] text-[#667085]"
@@ -1398,7 +1472,7 @@ function ApplicationPageTabs({
     <nav
       data-testid="public-application-page-tabs"
       aria-label="Public Talent Pool application pages"
-      className="grid grid-cols-1 gap-2 rounded-2xl border border-[#DCE6F1] bg-white p-2 shadow-[0_8px_24px_rgba(4,44,81,0.06)] sm:grid-cols-2"
+      className="grid grid-cols-1 gap-2 rounded-2xl border border-[#DCE6F1] bg-white p-1.5 shadow-[0_8px_24px_rgba(4,44,81,0.06)] sm:grid-cols-2 2xl:p-2"
     >
       <button
         type="button"
@@ -1410,7 +1484,7 @@ function ApplicationPageTabs({
         <span className="min-w-0 truncate">Page 1: Master Candidate Profile</span>
         {isPageOneComplete ? (
           <CircleCheckBig
-            size={16}
+            size={15}
             className={pageOneActive ? "text-emerald-300" : "text-emerald-500"}
           />
         ) : null}
@@ -1426,7 +1500,7 @@ function ApplicationPageTabs({
         <span className={numberClass(pageTwoActive)}>2</span>
         <span className="min-w-0 truncate">Page 2: Position Screening Questions</span>
         <span
-          className={`shrink-0 rounded-md px-2 py-1 text-[9px] font-black uppercase tracking-wide ${
+          className={`shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide 2xl:px-2 2xl:py-1 ${
             pageTwoActive
               ? "bg-[#FF5C28]/20 text-[#FF8B66]"
               : "bg-[#FFF0EB] text-[#E6531B]"
@@ -1448,21 +1522,24 @@ function SectionCard({
   children,
 }) {
   return (
-    <section className="sibs-page-card-in relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white shadow-[0_8px_24px_rgba(4,44,81,0.05)]">
-      <div className="flex flex-col gap-3 border-b border-[#F1F5F9] px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-        <div className="flex min-w-0 items-start gap-3">
+    <section
+      data-testid="public-application-section-card"
+      className="sibs-page-card-in relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white shadow-[0_8px_24px_rgba(4,44,81,0.05)]"
+    >
+      <div className="flex flex-col gap-2.5 border-b border-[#F1F5F9] px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5 sm:py-3.5 2xl:gap-3 2xl:px-6 2xl:py-4">
+        <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
           {Icon && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EB] text-[#FF5C28]">
-              <Icon size={18} />
+            <div className="flex h-8 w-8 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl bg-[#FFF0EB] text-[#FF5C28]">
+              <Icon size={16} className="2xl:h-[18px] 2xl:w-[18px]" />
             </div>
           )}
 
           <div className="min-w-0">
-            <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51] sm:text-sm">
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51] 2xl:text-sm">
               {title}
             </h3>
             {description && (
-              <p className="mt-1 text-xs font-semibold leading-5 text-[#667085] sm:text-sm">
+              <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#667085] sm:text-xs 2xl:mt-1 2xl:leading-5">
                 {description}
               </p>
             )}
@@ -1470,13 +1547,13 @@ function SectionCard({
         </div>
 
         {step ? (
-          <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+          <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#667085] 2xl:px-3 2xl:py-1 2xl:text-[10px]">
             Step {step} of {totalSteps}
           </span>
         ) : null}
       </div>
 
-      <div className="p-5 sm:p-6">{children}</div>
+      <div className="p-4 sm:p-5 2xl:p-6">{children}</div>
     </section>
   );
 }
@@ -1582,7 +1659,7 @@ function HiringNeedsDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-[#F8FAFC] px-3 text-left text-xs font-semibold outline-none transition ${
+        className={`flex h-9 2xl:h-10 w-full min-w-0 items-center justify-between gap-2.5 2xl:gap-3 rounded-[10px] border bg-[#F8FAFC] px-2.5 2xl:px-3 text-left text-xs font-semibold outline-none transition ${
           open
             ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
             : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
@@ -1777,7 +1854,7 @@ function PositionJobDescriptionDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-[#F8FAFC] px-3 text-left text-xs font-semibold outline-none transition ${
+        className={`flex h-9 2xl:h-10 w-full min-w-0 items-center justify-between gap-2.5 2xl:gap-3 rounded-[10px] border bg-[#F8FAFC] px-2.5 2xl:px-3 text-left text-xs font-semibold outline-none transition ${
           open
             ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
             : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
@@ -1815,7 +1892,7 @@ function PositionJobDescriptionDropdown({
         ? createPortal(
             <div
               ref={dropdownPanelRef}
-              className="fixed z-[100000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+              className="sibs-profile-dropdown-panel fixed z-[100000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
@@ -1913,7 +1990,6 @@ function CalendarHeaderDropdown({
   const selectedOption = options.find(
     (option) => String(option.value) === String(value),
   );
-
   const displayText = selectedOption?.label || "Select";
 
   useEffect(() => {
@@ -1950,16 +2026,16 @@ function CalendarHeaderDropdown({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border bg-white px-3 text-left text-xs font-extrabold outline-none transition ${
+        className={`flex h-8 w-full min-w-0 items-center justify-between gap-1.5 rounded-lg border bg-[#F8FAFC] px-2.5 text-left text-xs font-semibold outline-none transition ${
           open
-            ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
-            : "border-[#DCE6F1] hover:border-[#FF5C28]/40"
-        } text-sibs-primary-1`}
+            ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+        } text-[#042C51]`}
       >
         <span className="min-w-0 flex-1 truncate">{displayText}</span>
 
         <ChevronDown
-          size={14}
+          size={13}
           className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
@@ -1968,9 +2044,9 @@ function CalendarHeaderDropdown({
 
       {open && (
         <div
-          className={`absolute left-0 top-[calc(100%+8px)] z-[100000] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
+          className={`sibs-profile-dropdown-panel absolute left-0 top-[calc(100%+6px)] z-[100000] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
         >
-          <div className="max-h-72 overflow-y-auto">
+          <div className="max-h-60 overflow-y-auto">
             {options.map((option) => {
               const active = String(option.value) === String(value);
 
@@ -1979,9 +2055,9 @@ function CalendarHeaderDropdown({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                  className={`block w-full px-3 py-2 text-left text-xs font-semibold transition ${
                     active
-                      ? "bg-[#FFF0EB] text-[#FF5C28]"
+                      ? "bg-[#FFF0EB] text-[#FF5C28] font-bold"
                       : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                   }`}
                 >
@@ -2031,7 +2107,7 @@ function CalendarDatePicker({
   const [panelPosition, setPanelPosition] = useState({
     top: 0,
     left: 0,
-    width: 340,
+    width: 330,
   });
   const [displayDate, setDisplayDate] = useState(
     selectedDate || new Date(currentYear - 18, today.getMonth(), 1),
@@ -2075,7 +2151,7 @@ function CalendarDatePicker({
     if (!calendarRef.current) return;
 
     const rect = calendarRef.current.getBoundingClientRect();
-    const panelWidth = 340;
+    const panelWidth = 330;
     const gutter = 12;
     const maxLeft = window.innerWidth - panelWidth - gutter;
 
@@ -2191,12 +2267,12 @@ function CalendarDatePicker({
         type="button"
         disabled={disabled}
         onClick={handleToggleOpen}
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-[#F8FAFC] px-3 text-left text-xs font-semibold outline-none transition ${
+        className={`flex h-9 2xl:h-11 w-full min-w-0 items-center justify-between gap-2.5 2xl:gap-3 rounded-[10px] border bg-[#F8FAFC] px-2.5 2xl:px-3 text-left text-xs font-semibold outline-none transition ${
           open
-            ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
             : hasError
               ? "border-red-300 hover:border-red-500"
-              : "border-[#DCE6F1] hover:border-[#FF5C28]/40"
+              : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
         } ${
           disabled
             ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
@@ -2205,13 +2281,13 @@ function CalendarDatePicker({
       >
         <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
           <CalendarDays
-            size={16}
-            className="shrink-0 text-[var(--sibs-primary-1)]"
+            size={15}
+            className="shrink-0 text-[#042C51] 2xl:h-4 2xl:w-4"
           />
 
           <span
             className={`min-w-0 truncate ${
-              value ? "text-[#042C51]" : "text-[#98A2B3]"
+              value ? "text-[#042C51]" : "text-[#667085]"
             }`}
           >
             {displayText}
@@ -2219,7 +2295,7 @@ function CalendarDatePicker({
         </span>
 
         <ChevronDown
-          size={18}
+          size={15}
           className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
@@ -2230,29 +2306,29 @@ function CalendarDatePicker({
         ? createPortal(
             <div
               ref={calendarPanelRef}
-              className="fixed z-[100000] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+              className="sibs-profile-dropdown-panel fixed z-[100000] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
                 width: `${panelPosition.width}px`,
               }}
             >
-              <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+              <div className="flex items-center justify-between border-b border-[#E6ECF2] px-3.5 py-2.5">
                 <button
                   type="button"
                   onClick={goPreviousMonth}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={16} />
                 </button>
 
-                <div className="grid min-w-0 flex-1 grid-cols-[1fr_96px] gap-2 px-3">
+                <div className="grid min-w-0 flex-1 grid-cols-[1fr_90px] gap-2 px-2">
                   <CalendarHeaderDropdown
                     value={displayDate.getMonth()}
                     options={monthOptions}
                     onChange={handleMonthChange}
                     className="z-[100002]"
-                    menuClassName="w-[180px]"
+                    menuClassName="w-[160px]"
                   />
 
                   <CalendarHeaderDropdown
@@ -2260,25 +2336,25 @@ function CalendarDatePicker({
                     options={yearOptions}
                     onChange={handleYearChange}
                     className="z-[100001]"
-                    menuClassName="w-[120px]"
+                    menuClassName="w-[110px]"
                   />
                 </div>
 
                 <button
                   type="button"
                   onClick={goNextMonth}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
                 >
-                  <ChevronRight size={18} />
+                  <ChevronRight size={16} />
                 </button>
               </div>
 
-              <div className="px-4 py-4">
+              <div className="px-3.5 py-3">
                 <div className="grid grid-cols-7 gap-1">
                   {weekdayLabels.map((dayLabel) => (
                     <div
                       key={dayLabel}
-                      className="flex h-8 items-center justify-center text-xs font-extrabold text-[#174A7C]"
+                      className="flex h-7 items-center justify-center text-[10px] 2xl:text-[11px] font-extrabold uppercase text-[#667085]"
                     >
                       {dayLabel}
                     </div>
@@ -2294,14 +2370,14 @@ function CalendarDatePicker({
                         key={day.dateValue}
                         type="button"
                         onClick={() => handleSelectDate(day.date)}
-                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-extrabold transition ${
                           active
-                            ? "bg-[#E7F0FA] text-sibs-primary-1 ring-2 ring-sibs-primary-1/20"
+                            ? "bg-[#FF5C28] text-white shadow-sm ring-2 ring-[#FF5C28]/20"
                             : currentDay
-                              ? "bg-[#F2F6FA] text-sibs-primary-1"
+                              ? "border border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28]"
                               : day.isCurrentMonth
-                                ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
-                                : "text-[#98A7BA] hover:bg-[#F7FAFC]"
+                                ? "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                                : "text-[#98A2B3] hover:bg-[#F8FAFC]"
                         }`}
                       >
                         {day.dayNumber}
@@ -2311,11 +2387,11 @@ function CalendarDatePicker({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-[#E6ECF2] px-5 py-3">
+              <div className="flex items-center justify-between border-t border-[#E6ECF2] px-4 py-2.5">
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+                  className="rounded-lg px-2.5 py-1 text-xs font-extrabold text-[#667085] transition hover:bg-red-50 hover:text-[#E74C3C]"
                 >
                   Clear
                 </button>
@@ -2323,7 +2399,7 @@ function CalendarDatePicker({
                 <button
                   type="button"
                   onClick={handleToday}
-                  className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+                  className="rounded-lg border border-[#FFD6C7] bg-[#FFF0EB] px-3 py-1 text-xs font-extrabold text-[#FF5C28] transition hover:bg-[#FF5C28] hover:text-white"
                 >
                   Today
                 </button>
@@ -2488,13 +2564,13 @@ function SchoolYearSearchableDropdown({
       className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
     >
       <div
-        className={`flex h-10 w-full min-w-0 items-center gap-3 rounded-[10px] border bg-[#F8FAFC] px-3 text-xs font-semibold outline-none transition ${
+        className={`flex h-9 2xl:h-11 w-full min-w-0 items-center gap-2.5 2xl:gap-3 rounded-[10px] border bg-[#F8FAFC] px-2.5 2xl:px-3 text-xs font-semibold outline-none transition ${
           open
-            ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
-            : "border-[#DCE6F1] hover:border-[#FF5C28]/40"
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
         }`}
       >
-        <Search size={17} className="shrink-0 text-[var(--sibs-primary-1)]" />
+        <Search size={15} className="shrink-0 text-[#042C51] 2xl:h-4 2xl:w-4" />
 
         <input
           ref={searchInputRef}
@@ -2507,7 +2583,7 @@ function SchoolYearSearchableDropdown({
           placeholder={open ? "Search school year" : placeholder}
           aria-expanded={open}
           aria-haspopup="listbox"
-          className={`h-full min-w-0 flex-1 border-0 bg-transparent text-xs font-semibold outline-none placeholder:text-[#98A2B3] ${
+          className={`h-full min-w-0 flex-1 border-0 bg-transparent text-xs font-semibold outline-none placeholder:normal-case placeholder:text-[#667085] ${
             selectedOption && !open ? "text-[#042C51]" : "text-[#344054]"
           }`}
         />
@@ -2518,11 +2594,11 @@ function SchoolYearSearchableDropdown({
           aria-label={
             open ? "Close school year options" : "Open school year options"
           }
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-[#F2F6FA]"
+          className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
         >
           <ChevronDown
-            size={18}
-            className={`text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+            size={15}
+            className={`text-[#FF5C28] transition-transform duration-200 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -2591,30 +2667,30 @@ function EducationSchoolFields({ section, value, onChange }) {
   }
 
   return (
-    <div className="rounded-[12px] border border-[#DCE6F1] bg-white p-4 sm:p-5">
-      <div className="flex flex-col gap-1">
-        <h4 className="text-sm font-extrabold text-sibs-primary-1">
+    <div className="rounded-xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_2px_8px_rgba(4,44,81,0.03)] font-jakarta">
+      <div className="flex flex-col">
+        <h4 className="text-xs sm:text-sm font-extrabold text-[#042C51]">
           {section.title}
         </h4>
-        <p className="text-xs font-semibold leading-5 text-[#667085]">
+        <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-[#667085] 2xl:leading-5">
           Complete all required information for this school level.
         </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="mt-3.5 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
         <div>
           <FieldLabel>
             {section.schoolNameLabel || `${section.title} Name`}{" "}
             <RequiredMark />
           </FieldLabel>
-          <AutoResizeTextarea
+          <input
             required
             value={school.schoolName}
             onChange={(event) => updateField("schoolName", event.target.value)}
             placeholder={`Enter ${String(
               section.schoolNameLabel || `${section.title} name`,
             ).toLowerCase()}`}
-            className={textareaClass("min-h-11 leading-6")}
+            className={inputClass()}
           />
         </div>
 
@@ -2622,12 +2698,12 @@ function EducationSchoolFields({ section, value, onChange }) {
           <FieldLabel>
             {section.title} Address <RequiredMark />
           </FieldLabel>
-          <AutoResizeTextarea
+          <input
             required
             value={school.address}
             onChange={(event) => updateField("address", event.target.value)}
             placeholder="Complete school address"
-            className={textareaClass("min-h-11 leading-6")}
+            className={inputClass()}
           />
         </div>
 
@@ -2661,7 +2737,7 @@ function EducationSchoolFields({ section, value, onChange }) {
               }
               placeholder="Search and select school year"
             />
-            <p className="mt-2 text-xs font-semibold text-[#667085]">
+            <p className="mt-1.5 text-[11px] sm:text-xs font-semibold leading-4 text-[#667085]">
               Search using either the starting or ending year.
             </p>
           </div>
@@ -2702,18 +2778,18 @@ function EducationDetailsFields({ attainment, details, onChange }) {
   };
 
   return (
-    <div className="space-y-4 rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
+    <div className="space-y-3.5 rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-3.5 sm:p-4.5 2xl:p-5 font-jakarta">
       <div>
-        <h4 className="text-sm font-extrabold text-[#042C51]">
+        <p className="text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide text-[#E6531B]">
           Required Education Details
-        </h4>
-        <p className="mt-1 text-sm font-semibold leading-6 text-[#667085]">
+        </p>
+        <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-[#667085] 2xl:leading-5">
           The school fields below are based on the selected highest educational
           attainment. Every displayed school name and address is required.
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         {config.sections.map((section) => (
           <React.Fragment key={section.key}>
             <EducationSchoolFields
@@ -2727,20 +2803,20 @@ function EducationDetailsFields({ attainment, details, onChange }) {
             {config.seniorHighMode === "optional" &&
               section.key === "highSchool" && (
                 <>
-                  <label className="group flex cursor-pointer items-start gap-3 rounded-[10px] border border-[#DCE6F1] bg-white p-3.5 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]">
+                  <label className="group flex cursor-pointer items-start gap-2.5 rounded-xl border border-[#DCE6F1] bg-white p-3 sm:p-3.5 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]">
                     <input
                       type="checkbox"
                       checked={educationDetails.attendedSeniorHighSchool}
                       onChange={(event) =>
                         handleSeniorHighAttendanceChange(event.target.checked)
                       }
-                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
+                      className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
                     />
                     <span>
-                      <span className="block text-[13px] font-extrabold text-[#042C51] transition group-hover:text-[#FF5C28]">
+                      <span className="block text-xs sm:text-sm font-extrabold text-[#042C51] transition group-hover:text-[#FF5C28]">
                         I attended Senior High School
                       </span>
-                      <span className="mt-1 block text-xs font-semibold leading-5 text-[#667085]">
+                      <span className="mt-0.5 block text-[11px] sm:text-xs font-semibold leading-4 text-[#667085]">
                         Check this box to add the required Senior High School
                         name, address, and school year graduated.
                       </span>
@@ -2788,18 +2864,7 @@ function MultiSelectCheckboxGroup({
   }
 
   return (
-    <div className="relative grid grid-cols-1 gap-2 rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-3 sm:grid-cols-2 lg:grid-cols-3">
-      {required ? (
-        <input
-          tabIndex={-1}
-          value={values.length ? "selected" : ""}
-          onChange={() => {}}
-          required
-          aria-label="Application source"
-          className="pointer-events-none absolute bottom-0 left-0 h-px w-px opacity-0"
-        />
-      ) : null}
-
+    <div className="grid grid-cols-1 gap-1.5 rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:gap-2 2xl:p-3">
       {options.map((option) => {
         const optionValue = getOptionValue(option);
         const optionLabel = getOptionLabel(option);
@@ -2808,7 +2873,7 @@ function MultiSelectCheckboxGroup({
         return (
           <label
             key={option?.id || optionValue}
-            className={`group flex items-start gap-2.5 rounded-[10px] border px-3 py-2.5 text-xs transition ${
+            className={`group flex items-start gap-2 rounded-[10px] border px-2.5 py-1.5 text-xs transition 2xl:gap-2.5 2xl:px-3 2xl:py-2.5 ${
               disabled
                 ? checked
                   ? "cursor-not-allowed border-emerald-200 bg-emerald-50 font-extrabold text-emerald-800 shadow-sm"
@@ -2823,13 +2888,13 @@ function MultiSelectCheckboxGroup({
               checked={checked}
               disabled={disabled}
               onChange={() => toggleValue(optionValue)}
-              className={`mt-0.5 h-4 w-4 shrink-0 rounded border-[#98A2B3] ${
+              className={`mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 rounded border-[#98A2B3] ${
                 disabled
                   ? "cursor-not-allowed accent-emerald-600"
                   : "cursor-pointer accent-[#FF5C28]"
               }`}
             />
-            <span className="leading-5">{optionLabel}</span>
+            <span className="leading-tight 2xl:leading-5">{optionLabel}</span>
           </label>
         );
       })}
@@ -2851,7 +2916,7 @@ function ChoiceCardGroup({
   }
 
   return (
-    <div className={`relative grid gap-2 ${columns}`}>
+    <div className={`relative grid gap-1.5 2xl:gap-2 ${columns}`}>
       {normalizedOptions.map((option) => {
         const active = String(option.value) === String(value || "");
 
@@ -2860,7 +2925,7 @@ function ChoiceCardGroup({
             key={option.id || option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`min-h-10 rounded-[10px] border px-3 py-2 text-xs font-extrabold transition ${
+            className={`min-h-9 2xl:min-h-10 rounded-[10px] border px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-xs font-extrabold transition ${
               active
                 ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
                 : "border-[#DCE6F1] bg-[#F8FAFC] text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
@@ -5007,125 +5072,99 @@ export default function PublicTalentPoolApplicationPage() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#F4F7FB] font-jakarta text-[#101828]">
-      <header className="sticky top-0 z-[500] border-b border-[#083A69] bg-[#042C51] text-white shadow-md">
-        <div className="mx-auto flex w-full max-w-[1060px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <PublicSibsLogo />
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-sibs-primary-3 font-jakarta text-[#101828]">
+      <a
+        href="#main-content"
+        className="fixed left-4 top-3 z-[1000] -translate-y-20 rounded-md bg-[#042C51] px-4 py-2 text-sm font-bold text-white transition-transform focus:translate-y-0 focus-visible:ring-2 focus-visible:ring-[#FF5C28] focus-visible:ring-offset-2"
+      >
+        Skip to application
+      </a>
+      <PublicWebsiteNavbar completionPercentage={completionPercentage} />
 
-            <div className="min-w-0 border-l border-white/10 pl-3">
-              <span className="rounded-full border border-[#FF5C28]/40 bg-[#FF5C28]/15 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#FF8A63] sm:text-[10px]">
-                Public Portal
-              </span>
-              <p className="mt-1.5 truncate text-[10px] font-semibold text-slate-300 sm:text-[11px]">
-                Talent Pool Master Registration Form
-              </p>
-            </div>
-          </div>
-
-          <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#021B33] px-3 py-2 sm:flex">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-sibs-pulse" />
-            <span className="text-[10px] font-bold text-slate-300 sm:text-[11px]">
-              Live Submissions Active
-            </span>
-          </div>
-        </div>
-
-        <div
-          className="h-1.5 bg-[#02172C]"
-          role="progressbar"
-          aria-label="Form completion"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={completionPercentage}
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1"
+      >
+        <section
+          data-testid="public-application-hero"
+          className="relative border-b border-[#E5EAEF] bg-white px-4 sm:px-6"
         >
-          <div
-            className="h-full bg-[#FF5C28] transition-[width] duration-500 ease-out"
-            style={{ width: `${completionPercentage}%` }}
-          />
-        </div>
-      </header>
+          <div className="mx-auto flex min-h-0 w-full max-w-[980px] items-center py-4 sm:py-5 lg:py-6 2xl:min-h-[240px] 2xl:py-10">
+            <div className="max-w-[820px]">
+              <h1 className="font-heading text-2xl font-black leading-tight tracking-tight text-[#042C51] sm:text-3xl lg:text-4xl 2xl:text-[3.25rem] 2xl:leading-[1.02]">
+                <span className="relative inline-block">
+                  <span
+                    aria-hidden="true"
+                    className="absolute bottom-[0.14em] -left-1 -right-1 h-[0.35em] bg-[#FFD400]"
+                  />
+                  <span className="relative">Apply</span>
+                </span>{" "}
+                to join SiBS
+              </h1>
 
-      <main className="mx-auto w-full max-w-[1060px] px-4 py-6 sm:px-6 sm:py-8">
-        <section className="relative mb-6 overflow-hidden h-auto rounded-2xl border border-[#0A467E] bg-gradient-to-r from-[#042C51] via-[#073A6B] to-[#042C51] p-5 text-white shadow-lg sm:p-6">
-          <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#FF5C28]/15 blur-3xl" />
-
-          <div className="relative z-10 h-full">
-            <div className="min-w-0 h-full text-left">
-              <img
-                alt="SiBS Logo"
-                className="mx-auto mb-5 block h-16 w-auto select-none md:h-20"
-                src="/SiBS_Logo%20w%20Tagline-white.png"
-                style={{
-                  animation:
-                    "2.8s ease-in-out 0s infinite normal none running sibsLogoGlow",
-                }}
-              />
-
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#FF5C28]/40 bg-[#FF5C28]/15 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#FF8A63]">
-                <UserPlus size={13} />
-                No Login Required • Direct Candidate Entry
-              </span>
-
-              <h2 className="mt-3 text-xl font-extrabold tracking-tight sm:text-2xl">
-                Talent Pool Master Application
-              </h2>
-
-              <p className="mt-2 max-w-3xl text-xs font-semibold leading-6 text-slate-200 sm:max-w-[720px] sm:text-sm">
-                Complete this form to submit your candidate profile directly to
-                the SiBS HRIS Talent Pool for active and future recruitment
-                opportunities. Fields marked with * are required.
+              <p className="mt-2 max-w-[760px] text-xs font-medium leading-5 text-[#243B55] sm:mt-2.5 sm:text-sm sm:leading-6 2xl:mt-4 2xl:text-base 2xl:leading-7">
+                Complete your application and take the next step toward joining
+                the SiBS team. Tell us about your experience, qualifications,
+                and the position that fits you best.
               </p>
-            </div>
 
-            <div className="mt-4 w-full shrink-0 rounded-xl border border-white/10 bg-[#021930]/80 px-5 py-4 text-left backdrop-blur-sm sm:absolute sm:bottom-0 sm:right-0 sm:mt-0 sm:w-auto sm:min-w-[160px] sm:text-center">
-              <p className="text-[9px] font-extrabold uppercase tracking-wide text-slate-300">
-                Form Completion
-              </p>
-              <p className="mt-1 text-2xl font-extrabold text-[#FF5C28]">
-                {completionPercentage}%
-              </p>
+              <div className="mt-2.5 flex flex-wrap gap-2 2xl:mt-4 2xl:gap-2.5">
+                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 text-[10px] font-bold text-[#042C51] 2xl:min-h-8 2xl:gap-2 2xl:px-3 2xl:text-[11px]">
+                  <ShieldCheck size={13} className="2xl:h-3.5 2xl:w-3.5" aria-hidden="true" />
+                  No account required
+                </span>
+                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 text-[10px] font-bold text-[#042C51] 2xl:min-h-8 2xl:gap-2 2xl:px-3 2xl:text-[11px]">
+                  <BriefcaseBusiness size={13} className="2xl:h-3.5 2xl:w-3.5" aria-hidden="true" />
+                  Two-part application
+                </span>
+                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 text-[10px] font-bold text-[#042C51] 2xl:min-h-8 2xl:gap-2 2xl:px-3 2xl:text-[11px]">
+                  <CircleCheckBig size={13} className="2xl:h-3.5 2xl:w-3.5" aria-hidden="true" />
+                  Progress shown as you complete the form
+                </span>
+              </div>
             </div>
           </div>
         </section>
 
-        {loadError && (
-          <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700 shadow-sm">
-            {loadError}
-          </section>
-        )}
+        <div className="mx-auto w-full max-w-[1120px] px-4 pt-4 pb-8 sm:px-6 2xl:pt-6 2xl:pb-12">
+          {loadError && (
+            <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700 shadow-sm">
+              {loadError}
+            </section>
+          )}
 
-        {submittedRecord && (
-          <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-700">
-                <CheckCircle2 size={22} />
+          {submittedRecord && (
+            <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-700">
+                  <CheckCircle2 size={22} />
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-extrabold text-emerald-700">
+                    Application Success
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-emerald-700/80">
+                    We will review your application and we will send an update
+                    through email.
+                    {submittedRecord?.candidateId && (
+                      <>
+                        {" "}
+                        Your Candidate ID is{" "}
+                        <span className="font-extrabold">
+                          {submittedRecord.candidateId}
+                        </span>
+                        .
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
+            </section>
+          )}
 
-              <div>
-                <h2 className="text-lg font-extrabold text-emerald-700">
-                  Application Success
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-emerald-700/80">
-                  We will review your application and we will send an update
-                  through email.
-                  {submittedRecord?.candidateId && (
-                    <>
-                      {" "}
-                      Your Candidate ID is{" "}
-                      <span className="font-extrabold">
-                        {submittedRecord.candidateId}
-                      </span>
-                      .
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-          </section>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="mx-auto max-w-[980px] space-y-4 2xl:space-y-6 pt-0">
           {isLoadingData ? (
             <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-[#174A7C] shadow-sm">
               Loading form options and approved open positions from the
@@ -5140,6 +5179,7 @@ export default function PublicTalentPoolApplicationPage() {
             isLoadingPageTwo={
               isLoadingApplicationQuestions || isApplicantNameGateLocked
             }
+            completionPercentage={completionPercentage}
             onPageOneClick={handlePreviousPage}
             onPageTwoClick={handlePageTwoTabClick}
           />
@@ -5151,27 +5191,27 @@ export default function PublicTalentPoolApplicationPage() {
             title="Application Source and Position"
             description="Tell us where you learned about SiBS and what position you are applying for."
           >
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 shadow-sm">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-3.5 2xl:space-y-4">
+              <div className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-3.5 sm:p-4 2xl:p-5 shadow-sm">
+                <div className="flex flex-col gap-3.5 md:flex-row md:items-center md:justify-between 2xl:gap-4">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-wide text-[#E6531B]">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#E6531B]">
                       Referral
                     </p>
-                    <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+                    <p className="mt-0.5 text-xs 2xl:text-sm font-extrabold text-[#042C51] 2xl:mt-1">
                       Do you have a referral code? <RequiredMark />
                     </p>
-                    <p className="mt-1 text-xs font-semibold text-[#667085]">
+                    <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#667085] 2xl:text-xs 2xl:leading-5">
                       Select Yes if a referral code was shared with you. Select
                       No to continue with the regular application form.
                     </p>
                   </div>
 
-                  <div className="grid w-full grid-cols-2 gap-2 md:w-[260px]">
+                  <div className="grid w-full grid-cols-2 gap-2 md:w-[220px] 2xl:w-[260px]">
                     <button
                       type="button"
                       onClick={() => handleReferralChoiceChange("Yes")}
-                      className={`h-10 rounded-[10px] border px-4 text-xs font-extrabold transition ${
+                      className={`h-8.5 2xl:h-10 rounded-[10px] border px-3 2xl:px-4 text-xs font-extrabold transition ${
                         hasReferralCode === "Yes"
                           ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
                           : "border-[#DCE6F1] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
@@ -5182,7 +5222,7 @@ export default function PublicTalentPoolApplicationPage() {
                     <button
                       type="button"
                       onClick={() => handleReferralChoiceChange("No")}
-                      className={`h-10 rounded-[10px] border px-4 text-xs font-extrabold transition ${
+                      className={`h-8.5 2xl:h-10 rounded-[10px] border px-3 2xl:px-4 text-xs font-extrabold transition ${
                         hasReferralCode === "No"
                           ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
                           : "border-[#DCE6F1] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
@@ -5194,11 +5234,21 @@ export default function PublicTalentPoolApplicationPage() {
                 </div>
               </div>
 
+              {!hasReferralCode ? (
+                <div
+                  data-testid="referral-gate-status"
+                  aria-live="polite"
+                  className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-[#667085]"
+                >
+                  Select Yes or No above to continue with the application.
+                </div>
+              ) : null}
+
               {hasReferralCode === "Yes" ? (
                 <div className="rounded-2xl border border-[#FFB27A] bg-[#FFF7F1] p-4 shadow-sm">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-wide text-[#E6531B]">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#E6531B]">
                         Referral Code
                       </p>
                       <p className="mt-1 text-sm font-extrabold text-[#042C51]">
@@ -5372,15 +5422,7 @@ export default function PublicTalentPoolApplicationPage() {
                 )}
                   </div>
                 </>
-              ) : (
-                <div className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-[#667085]">
-                  {!hasReferralCode
-                    ? "Select Yes or No above to continue with the application."
-                    : referralLookupStatus === "checking"
-                      ? "Checking your referral code. The application will open after the code is matched."
-                      : "Enter a valid referral code and wait for the matched confirmation to continue."}
-                </div>
-              )}
+              ) : null}
             </div>
           </SectionCard>
           ) : null}
@@ -5565,7 +5607,7 @@ export default function PublicTalentPoolApplicationPage() {
                 <FieldLabel>
                   Physical Address <RequiredMark />
                 </FieldLabel>
-                <AutoResizeTextarea
+                <input
                   required
                   disabled={isApplicantNameGateLocked}
                   value={form.physicalAddress}
@@ -5573,7 +5615,7 @@ export default function PublicTalentPoolApplicationPage() {
                     updateFormField("physicalAddress", e.target.value)
                   }
                   placeholder="Complete physical address"
-                  className={textareaClass("min-h-11 leading-6")}
+                  className={inputClass()}
                 />
               </div>
               </fieldset>
@@ -5639,7 +5681,7 @@ export default function PublicTalentPoolApplicationPage() {
                         <button
                           type="button"
                           onClick={addOtherExperience}
-                          className="inline-flex h-10 items-center justify-center rounded-[10px] bg-[#FF5C28] px-4 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F]"
+                          className="inline-flex h-11 items-center justify-center rounded-lg bg-[#FF5C28] px-4 text-sm font-extrabold text-[#042C51] transition-colors hover:bg-[#F04B18] focus-visible:ring-2 focus-visible:ring-[#042C51] focus-visible:ring-offset-2"
                         >
                           Add Other Experience
                         </button>
@@ -5927,39 +5969,39 @@ export default function PublicTalentPoolApplicationPage() {
             </div>
           </SectionCard>
 
-          <section className="flex flex-col gap-4 rounded-[12px] border border-[#DCE6F1] bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <section className="flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 2xl:p-6 shadow-[0_8px_24px_rgba(4,44,81,0.05)]">
             <div className="min-w-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#E6531B]">
                 Page 1 complete
               </p>
-              <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+              <p className="mt-0.5 text-xs sm:text-sm font-extrabold text-[#042C51] 2xl:mt-1">
                 Continue to the questions for {form.openPosition || "your selected position"}.
               </p>
-              <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+              <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#667085] sm:text-xs 2xl:mt-1 2xl:leading-5">
                 Your answers, uploads, consent, and final submission are on the next page.
               </p>
             </div>
 
-            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={handleReset}
                 disabled={isSubmitting || isLoadingApplicationQuestions}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl border border-[#D6DEE8] bg-white px-3.5 sm:px-4 2xl:px-5 text-xs 2xl:text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <RotateCcw size={16} />
+                <RotateCcw size={15} className="shrink-0" />
                 Reset Form
               </button>
 
               <button
                 type="submit"
                 disabled={!canSubmit || isLoadingApplicationQuestions}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-md shadow-[#FF5C28]/15 transition hover:-translate-y-0.5 hover:bg-[#E94F1F] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl bg-[#FF5C28] px-4 sm:px-5 2xl:px-6 text-xs 2xl:text-sm font-extrabold text-white transition-colors hover:bg-[#EB3800] focus-visible:ring-2 focus-visible:ring-[#FF5C28] focus-visible:ring-offset-2 active:bg-[#D94514] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoadingApplicationQuestions ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 size={15} className="animate-spin shrink-0" />
                 ) : (
-                  <ChevronRight size={16} />
+                  <ChevronRight size={15} className="shrink-0" />
                 )}
                 {isLoadingApplicationQuestions ? "Loading Questions..." : "Next"}
               </button>
@@ -5984,18 +6026,18 @@ export default function PublicTalentPoolApplicationPage() {
                 ) : null}
 
                 {applicationForm?.formName ? (
-                  <div className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <div className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3 sm:px-5 sm:py-3.5 2xl:py-4 font-jakarta">
+                    <p className="text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide text-[#E6531B]">
                       Application Form
                     </p>
-                    <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+                    <p className="mt-0.5 text-xs sm:text-sm font-extrabold text-[#042C51] 2xl:mt-1">
                       {applicationForm.formName}
                     </p>
                   </div>
                 ) : null}
 
                 {applicationQuestions.length ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3.5 font-jakarta">
                     {applicationQuestions.map((question, index) => {
                       const answer =
                         applicationQuestionAnswers?.[String(question.id)] || {
@@ -6008,7 +6050,7 @@ export default function PublicTalentPoolApplicationPage() {
                       return (
                         <div
                           key={question.id}
-                          className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5"
+                          className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-3.5 sm:p-4.5 2xl:p-5"
                         >
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
@@ -6016,26 +6058,26 @@ export default function PublicTalentPoolApplicationPage() {
                                 {index + 1}
                               </span>
                               {question.isRequired ? (
-                                <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-red-600">
+                                <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-red-600">
                                   Required
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                <span className="rounded-full bg-white px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
                                   Optional
                                 </span>
                               )}
                             </div>
-                            <p className="mt-3 text-sm font-extrabold leading-6 text-[#042C51]">
+                            <p className="mt-2.5 text-xs sm:text-sm font-extrabold leading-5 text-[#042C51] 2xl:leading-6">
                               {question.questionText}
                             </p>
                             {question.helperText ? (
-                              <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                              <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-[#667085] 2xl:leading-5">
                                 {question.helperText}
                               </p>
                             ) : null}
                           </div>
 
-                          <div className="mt-4">
+                          <div className="mt-3.5">
                             <FieldLabel>
                               Text Answer {question.isRequired ? <RequiredMark /> : null}
                             </FieldLabel>
@@ -6067,7 +6109,7 @@ export default function PublicTalentPoolApplicationPage() {
                                   question.placeholderText ||
                                   "Type your answer here"
                                 }
-                                className={textareaClass("min-h-[110px] leading-6")}
+                                className={textareaClass("min-h-9 2xl:min-h-11 leading-5 2xl:leading-6")}
                               />
                             )}
                           </div>
@@ -6076,7 +6118,7 @@ export default function PublicTalentPoolApplicationPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-semibold leading-6 text-emerald-800">
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-xs sm:text-sm font-semibold leading-5 text-emerald-800 2xl:leading-6">
                     No additional application questions are configured for this position. You can continue with the uploads and consent below.
                   </div>
                 )}
@@ -6094,27 +6136,36 @@ export default function PublicTalentPoolApplicationPage() {
               description="Upload a single audio file answering the listed questions and one supporting document/file."
             >
               <div className="space-y-5">
-                <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-4 text-xs font-bold leading-6 text-amber-800 sm:text-sm">
-                  <p className="font-extrabold">
-                    Your audio file must answer these questions:
-                  </p>
+                <div className="rounded-2xl border border-[#FFD9C7] bg-[#FFFBF9] p-3.5 sm:p-4.5 2xl:p-5 font-jakarta">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#FFF0EB] text-[#FF5C28]">
+                      <Mic size={14} />
+                    </span>
+                    <p className="text-xs sm:text-sm font-extrabold text-[#042C51]">
+                      Your audio file must answer these questions:
+                    </p>
+                  </div>
 
                   {formOptions.audioQuestions.length ? (
-                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                    <ul className="mt-2.5 space-y-1.5 pl-1">
                       {formOptions.audioQuestions.map((question) => (
-                        <li key={question.id || getOptionValue(question)}>
-                          {getOptionLabel(question)}
+                        <li
+                          key={question.id || getOptionValue(question)}
+                          className="flex items-start gap-2 text-xs sm:text-[13px] font-bold text-[#042C51]"
+                        >
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF5C28]" />
+                          <span>{getOptionLabel(question)}</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-2">
+                    <p className="mt-2 text-xs font-semibold text-[#667085]">
                       No audio questions configured in the database.
                     </p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2 font-jakarta">
                   <div>
                     <FieldLabel>
                       Upload single audio file <RequiredMark />
@@ -6122,31 +6173,26 @@ export default function PublicTalentPoolApplicationPage() {
                     <button
                       type="button"
                       onClick={() => audioInputRef.current?.click()}
-                      className={`flex min-h-[190px] w-full cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
+                      className={`group flex min-h-[140px] 2xl:min-h-[170px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-7 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAudio && !selectedAudioFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAudioFile
                             ? "border-emerald-300 bg-emerald-50"
-                            : "border-[#DCE6F1] bg-[#F8FAFC]"
+                            : "border-[#D6E0EA] bg-[#F8FAFC]"
                       }`}
                     >
-                      <Mic
-                        size={26}
-                        className={
-                          selectedAudioFile
-                            ? "text-emerald-700"
-                            : "text-sibs-primary-1"
-                        }
-                      />
-                      <p className="mt-2 max-w-full truncate text-sm font-extrabold text-[#042C51]">
+                      <div className="flex h-10 w-10 2xl:h-12 2xl:w-12 items-center justify-center rounded-xl bg-white border border-[#E6ECF2] shadow-sm text-[#FF5C28] group-hover:scale-105 transition-transform">
+                        <Mic size={20} className="2xl:h-6 2xl:w-6" />
+                      </div>
+                      <p className="mt-2.5 max-w-full truncate text-xs sm:text-sm font-extrabold text-[#042C51] group-hover:text-[#FF5C28] transition-colors">
                         {selectedAudioFile?.name || "Choose audio file"}
                       </p>
                       {selectedAudioFile && (
-                        <p className="mt-1 text-xs font-bold text-emerald-700">
+                        <p className="mt-0.5 text-[11px] sm:text-xs font-bold text-emerald-700">
                           Audio selected • {formatFileSize(selectedAudioFile)}
                         </p>
                       )}
-                      <p className="mt-1 text-xs font-semibold text-[#667085]">
+                      <p className="mt-1 text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
                         Accepted: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC, AMR,
                         3GP, OPUS, AIFF, CAF, WMA
                       </p>
@@ -6172,7 +6218,7 @@ export default function PublicTalentPoolApplicationPage() {
                     />
 
                     {highlightAudio && !selectedAudioFile && (
-                      <p className="mt-2 text-sm font-bold text-red-600">
+                      <p className="mt-1.5 text-xs font-bold text-red-600">
                         Please upload your audio file before submitting.
                       </p>
                     )}
@@ -6185,32 +6231,27 @@ export default function PublicTalentPoolApplicationPage() {
                     <button
                       type="button"
                       onClick={() => attachmentInputRef.current?.click()}
-                      className={`flex min-h-[190px] w-full cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
+                      className={`group flex min-h-[140px] 2xl:min-h-[170px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-7 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAttachment && !selectedAttachmentFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAttachmentFile
                             ? "border-emerald-300 bg-emerald-50"
-                            : "border-[#DCE6F1] bg-[#F8FAFC]"
+                            : "border-[#D6E0EA] bg-[#F8FAFC]"
                       }`}
                     >
-                      <UploadCloud
-                        size={26}
-                        className={
-                          selectedAttachmentFile
-                            ? "text-emerald-700"
-                            : "text-sibs-primary-1"
-                        }
-                      />
-                      <p className="mt-2 max-w-full truncate text-sm font-extrabold text-[#042C51]">
+                      <div className="flex h-10 w-10 2xl:h-12 2xl:w-12 items-center justify-center rounded-xl bg-white border border-[#E6ECF2] shadow-sm text-[#FF5C28] group-hover:scale-105 transition-transform">
+                        <UploadCloud size={20} className="2xl:h-6 2xl:w-6" />
+                      </div>
+                      <p className="mt-2.5 max-w-full truncate text-xs sm:text-sm font-extrabold text-[#042C51] group-hover:text-[#FF5C28] transition-colors">
                         {selectedAttachmentFile?.name || "Choose file"}
                       </p>
                       {selectedAttachmentFile && (
-                        <p className="mt-1 text-xs font-bold text-emerald-700">
+                        <p className="mt-0.5 text-[11px] sm:text-xs font-bold text-emerald-700">
                           File selected •{" "}
                           {formatFileSize(selectedAttachmentFile)}
                         </p>
                       )}
-                      <p className="mt-1 text-xs font-semibold text-[#667085]">
+                      <p className="mt-1 text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
                         PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
                       </p>
                     </button>
@@ -6235,7 +6276,7 @@ export default function PublicTalentPoolApplicationPage() {
                     />
 
                     {highlightAttachment && !selectedAttachmentFile && (
-                      <p className="mt-2 text-sm font-bold text-red-600">
+                      <p className="mt-1.5 text-xs font-bold text-red-600">
                         Please upload your supporting file before submitting.
                       </p>
                     )}
@@ -6253,7 +6294,7 @@ export default function PublicTalentPoolApplicationPage() {
               description="Review the consent statement before submitting your candidate profile."
             >
               <label
-                className={`group flex cursor-pointer items-start gap-3 rounded-[10px] border p-3.5 transition ${
+                className={`group flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 sm:p-3.5 transition font-jakarta ${
                   highlightConsent && !form.consent
                     ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                     : form.consent
@@ -6268,11 +6309,11 @@ export default function PublicTalentPoolApplicationPage() {
                     updateFormField("consent", event.target.checked);
                     setHighlightConsent(false);
                   }}
-                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
+                  className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
                 />
 
                 <span
-                  className={`text-[13px] font-bold leading-6 transition ${
+                  className={`text-xs sm:text-[13px] font-bold leading-5 2xl:leading-6 transition ${
                     highlightConsent && !form.consent
                       ? "text-red-700"
                       : form.consent
@@ -6287,35 +6328,35 @@ export default function PublicTalentPoolApplicationPage() {
               </label>
 
               {highlightConsent && !form.consent ? (
-                <p className="mt-3 text-sm font-bold text-red-600">
+                <p className="mt-2 text-xs font-bold text-red-600">
                   Please check this consent box before submitting.
                 </p>
               ) : null}
             </SectionCard>
           </div>
 
-          <section className="flex flex-col gap-4 rounded-[12px] border border-[#DCE6F1] bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <section className="flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 2xl:p-6 shadow-[0_8px_24px_rgba(4,44,81,0.05)]">
             <div className="min-w-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#E6531B]">
                 Ready to submit
               </p>
-              <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+              <p className="mt-0.5 text-xs sm:text-sm font-extrabold text-[#042C51] 2xl:mt-1">
                 Your form is {completionPercentage}% complete.
               </p>
-              <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+              <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#667085] sm:text-xs 2xl:mt-1 2xl:leading-5">
                 Review your information and uploaded files before sending the
                 application to Talent Acquisition.
               </p>
             </div>
 
-            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={handlePreviousPage}
                 disabled={isSubmitting}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#174A7C]/50 hover:bg-blue-50 hover:text-[#174A7C] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl border border-[#D6DEE8] bg-white px-3 sm:px-3.5 2xl:px-4 text-xs 2xl:text-sm font-extrabold text-[#042C51] transition hover:border-[#174A7C]/50 hover:bg-blue-50 hover:text-[#174A7C] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={15} className="shrink-0" />
                 Back
               </button>
 
@@ -6323,18 +6364,18 @@ export default function PublicTalentPoolApplicationPage() {
                 type="button"
                 onClick={handleReset}
                 disabled={isSubmitting}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl border border-[#D6DEE8] bg-white px-3 sm:px-3.5 2xl:px-4 text-xs 2xl:text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <RotateCcw size={16} />
+                <RotateCcw size={15} className="shrink-0" />
                 Reset Form
               </button>
 
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-md shadow-[#FF5C28]/15 transition hover:-translate-y-0.5 hover:bg-[#E94F1F] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl bg-[#FF5C28] px-3.5 sm:px-4.5 2xl:px-6 text-xs 2xl:text-sm font-extrabold text-white transition-colors hover:bg-[#EB3800] focus-visible:ring-2 focus-visible:ring-[#FF5C28] focus-visible:ring-offset-2 active:bg-[#D94514] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Send size={16} />
+                <Send size={15} className="shrink-0" />
                 {isSubmitting ? "Submitting..." : "Submit Application"}
               </button>
             </div>
@@ -6344,7 +6385,52 @@ export default function PublicTalentPoolApplicationPage() {
             </>
           ) : null}
         </form>
+        </div>
       </main>
+
+      <footer className="mt-10 border-t border-[#E6ECF2] bg-white py-6 text-[#042C51] font-jakarta sm:py-7">
+        <div className="mx-auto flex w-full max-w-[1120px] flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
+          <div className="flex flex-col items-center gap-1 sm:items-start">
+            <div className="flex items-center gap-2.5">
+              <SiBSBrandLogo className="h-5.5 w-auto" />
+              <span className="text-xs text-slate-400">•</span>
+              <span className="text-xs font-semibold text-[#667085]">
+                Practice. Purpose. Philosophy.
+              </span>
+            </div>
+            <p className="text-xs text-[#667085]">
+              © {new Date().getFullYear()} SiBS Outsourcing Solutions. All rights reserved.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-5 text-xs font-bold text-[#042C51]">
+            <a
+              href="https://sibscontactcenter.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-[#FF5C28]"
+            >
+              About Us
+            </a>
+            <a
+              href="https://sibscontactcenter.com/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-[#FF5C28]"
+            >
+              Applicant Privacy
+            </a>
+            <a
+              href="https://sibscontactcenter.com/#faq"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-[#FF5C28]"
+            >
+              FAQ &amp; Support
+            </a>
+          </div>
+        </div>
+      </footer>
 
       <StatusModal
         open={statusModal.open}

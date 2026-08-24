@@ -1423,43 +1423,45 @@ export function UpdateStatusModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-[#DCE6F1] bg-white shadow-2xl font-jakarta"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-4.5 sm:px-6">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
+            <h2 className="text-lg font-extrabold text-[#042C51]">
               Update Candidate Status
             </h2>
 
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Change candidate classification after TA review.
+            <p className="mt-0.5 truncate text-xs font-bold uppercase tracking-wider text-[#FF5C28]">
+              {candidate.candidateId} — {candidate.name}
             </p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="rounded-lg border border-[#E6ECF2] p-2 text-[#64748B] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
             aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-            <p className="text-sm font-bold text-sibs-primary-1">
-              {candidate.candidateId} — {candidate.name}
+        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
+          <div className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] p-4">
+            <p className="text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide text-[#475569]">
+              Current Status
             </p>
-
-            <p className="mt-1 text-xs font-semibold text-sibs-primary-1/70">
-              Current Status: {candidate.status}
-            </p>
+            <div className="mt-1.5 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#DCE6F1] bg-white px-3 py-1 text-xs font-extrabold text-[#042C51] shadow-xs">
+                <span className="h-2 w-2 rounded-full bg-[#FF5C28]" />
+                {candidate.status || "—"}
+              </span>
+            </div>
           </div>
 
-          <div className="mt-5">
-            <FieldLabel>Status</FieldLabel>
+          <div>
+            <FieldLabel>New Status</FieldLabel>
 
             <select
               required
@@ -1467,6 +1469,7 @@ export function UpdateStatusModal({
               onChange={(e) => setForm({ ...form, status: e.target.value })}
               className={inputClass()}
             >
+              <option value="">Select status</option>
               {statusOptions
                 .filter((status) => status !== "All")
                 .map((status) => (
@@ -1477,11 +1480,11 @@ export function UpdateStatusModal({
             </select>
           </div>
 
-          <div className="mt-5">
+          <div>
             <FieldLabel>Status Remarks</FieldLabel>
 
             <textarea
-              rows={4}
+              rows={3}
               value={form.remarks}
               onChange={(e) => setForm({ ...form, remarks: e.target.value })}
               placeholder="Explain why this status was changed."
@@ -1489,20 +1492,21 @@ export function UpdateStatusModal({
             />
           </div>
 
-          <div className="mt-6 flex flex-col justify-end gap-2 sm:flex-row">
+          <div className="mt-6 flex flex-col-reverse justify-end gap-2 border-t border-[#E6ECF2] pt-4 sm:flex-row">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+              className="inline-flex h-10 2xl:h-11 items-center justify-center rounded-xl border border-[#DCE6F1] bg-white px-5 text-xs font-extrabold text-[#475569] shadow-xs transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] hover:text-[#042C51] active:translate-y-px"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+              disabled={!form.status}
+              className="inline-flex h-10 2xl:h-11 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5.5 text-xs font-extrabold text-white shadow-sm shadow-[#FF5C28]/25 transition hover:bg-[#E6531B] hover:shadow-md hover:shadow-[#FF5C28]/35 active:translate-y-px disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#D7DEE8] disabled:text-[#98A2B3] disabled:shadow-none"
             >
-              <Pencil size={16} />
+              <RefreshCcw size={15} />
               Save Status
             </button>
           </div>
@@ -1511,4 +1515,3 @@ export function UpdateStatusModal({
     </div>
   );
 }
-

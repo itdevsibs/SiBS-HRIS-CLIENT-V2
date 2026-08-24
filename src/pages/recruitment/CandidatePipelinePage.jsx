@@ -256,7 +256,7 @@ function FilterDropdown({
           placeholder={`Search ${label ? label.toLowerCase() : "options"}...`}
           autoComplete="off"
           disabled={disabled}
-          className={`h-9 w-full rounded-xl border px-3 pr-9 font-jakarta sibs-text-xs font-bold outline-none transition placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-10 ${
+          className={`h-8.5 w-full rounded-xl border px-3 pr-8 font-jakarta sibs-text-xs font-bold outline-none transition placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-10 ${
             open
               ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10 text-[#042C51]"
               : "border-[#E6ECF2] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
@@ -270,11 +270,11 @@ function FilterDropdown({
             setOpen((prev) => !prev);
             setFilterSearch("");
           }}
-          className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+          className="absolute right-1 top-1/2 flex h-6.5 w-6.5 -translate-y-1/2 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
           aria-label={`Toggle ${label || "dropdown"}`}
         >
           <ChevronDown
-            size={16}
+            size={15}
             className={`transition-transform duration-300 ${
               open ? "rotate-180 text-[#FF5C28]" : ""
             }`}
@@ -424,7 +424,7 @@ const METRIC_TONES = {
 function PipelineMetricCard({ label, value, description, icon: Icon, tone = "navy", delay = 0 }) {
   return (
     <article
-      className="sibs-page-card-in sibs-metric-card flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-page-card-in sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md group"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
@@ -433,7 +433,7 @@ function PipelineMetricCard({ label, value, description, icon: Icon, tone = "nav
             <p className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${tone}-label`}>
               {label}
             </p>
-            <p className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}>
+            <p className={`mt-0.5 font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums sibs-tone-${tone}-label`}>
               {Number(value || 0).toLocaleString("en-US")}
             </p>
           </div>
@@ -443,7 +443,7 @@ function PipelineMetricCard({ label, value, description, icon: Icon, tone = "nav
           </p>
         </div>
 
-        <span className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}>
+        <span className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 sibs-tone-${tone}-icon`}>
           <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
       </div>
@@ -797,7 +797,7 @@ export default function CandidatePipelinePage() {
             </section>
           ) : null}
 
-          <section aria-label="Pipeline Summary" className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
+          <section aria-label="Pipeline Summary" className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6">
             <PipelineMetricCard
               label="Initial Screening"
               value={safeMetrics.initialScreening}
@@ -812,7 +812,7 @@ export default function CandidatePipelinePage() {
               icon={ClipboardCheck}
               description="Matched candidates"
               tone="indigo"
-              delay={45}
+              delay={60}
             />
             <PipelineMetricCard
               label="Interview Scheduled"
@@ -820,7 +820,7 @@ export default function CandidatePipelinePage() {
               icon={CalendarDays}
               description="Booked sessions"
               tone="blue"
-              delay={90}
+              delay={120}
             />
             <PipelineMetricCard
               label="Interviewed"
@@ -828,7 +828,7 @@ export default function CandidatePipelinePage() {
               icon={ShieldCheck}
               description="Evaluations complete"
               tone="green"
-              delay={135}
+              delay={180}
             />
             <PipelineMetricCard
               label="Offered"
@@ -836,7 +836,7 @@ export default function CandidatePipelinePage() {
               icon={BriefcaseBusiness}
               description="Offers processing"
               tone="amber"
-              delay={180}
+              delay={240}
             />
             <PipelineMetricCard
               label="Accepted"
@@ -844,12 +844,12 @@ export default function CandidatePipelinePage() {
               icon={UserCheck}
               description="Ready for NHO"
               tone="orange"
-              delay={225}
+              delay={300}
             />
           </section>
 
           <section
-            className="sibs-page-card-in sibs-card relative z-[100] overflow-visible p-4 sm:p-5"
+            className="sibs-page-card-in sibs-card relative z-[100] overflow-visible p-3 sm:p-4 2xl:p-5"
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
@@ -858,26 +858,26 @@ export default function CandidatePipelinePage() {
                   <button
                     type="button"
                     onClick={() => setPageView("pipeline")}
-                    className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3.5 sibs-text-xs font-extrabold transition ${
+                    className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
                       pageView === "pipeline"
                         ? "bg-[#FF5C28] text-white shadow-sm"
                         : "text-[#667085] hover:text-[#042C51]"
                     }`}
                   >
-                    <LayoutGrid size={14} />
+                    <LayoutGrid size={13} />
                     Pipeline View
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setPageView("calendar")}
-                    className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3.5 sibs-text-xs font-extrabold transition ${
+                    className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
                       pageView === "calendar"
                         ? "bg-[#FF5C28] text-white shadow-sm"
                         : "text-[#667085] hover:text-[#042C51]"
                     }`}
                   >
-                    <CalendarDays size={14} />
+                    <CalendarDays size={13} />
                     Calendar View
                   </button>
                 </div>
@@ -886,9 +886,9 @@ export default function CandidatePipelinePage() {
                   <button
                     type="button"
                     onClick={handleClearAllFilters}
-                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#FF5C28]/30 bg-[#FFF9F6] px-3 sibs-text-xs font-extrabold text-[#FF5C28] transition hover:bg-[#FF5C28] hover:text-white active:scale-[0.98]"
+                    className="inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border border-[#FF5C28]/30 bg-[#FFF9F6] px-2.5 text-[11px] 2xl:text-xs font-extrabold text-[#FF5C28] transition hover:bg-[#FF5C28] hover:text-white active:scale-[0.98]"
                   >
-                    <RotateCcw size={13} />
+                    <RotateCcw size={12} />
                     Reset Filters
                   </button>
                 ) : null}
@@ -896,7 +896,7 @@ export default function CandidatePipelinePage() {
 
               {pageView === "pipeline" ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <span className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
                     Sub-View:
                   </span>
 
@@ -904,26 +904,26 @@ export default function CandidatePipelinePage() {
                     <button
                       type="button"
                       onClick={() => setBoardSubView("board")}
-                      className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 sibs-text-xs font-extrabold transition ${
+                      className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
                         boardSubView === "board"
                           ? "bg-[#FF5C28] text-white shadow-sm"
                           : "text-[#667085] hover:text-[#042C51]"
                       }`}
                     >
-                      <LayoutGrid size={14} />
+                      <LayoutGrid size={13} />
                       Kanban Board
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setBoardSubView("list")}
-                      className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 sibs-text-xs font-extrabold transition ${
+                      className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
                         boardSubView === "list"
                           ? "bg-[#FF5C28] text-white shadow-sm"
                           : "text-[#667085] hover:text-[#042C51]"
                       }`}
                     >
-                      <List size={14} />
+                      <List size={13} />
                       List View
                     </button>
                   </div>
@@ -931,26 +931,26 @@ export default function CandidatePipelinePage() {
               ) : null}
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 border-t border-[#E6ECF2] pt-3.5 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="mt-3 grid grid-cols-1 gap-2.5 border-t border-[#E6ECF2] pt-3 sm:grid-cols-2 lg:grid-cols-5">
               <div className="relative min-w-0">
                 <Search
-                  size={16}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3]"
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
                 />
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search candidate name, ID, or email..."
-                  className="h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] pl-9.5 pr-9 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#042C51]/45 hover:bg-white focus:border-[#042C51] focus:bg-white focus:ring-4 focus:ring-[#042C51]/10 2xl:h-11"
+                  className="h-8.5 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] pl-8.5 pr-8 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#042C51]/45 hover:bg-white focus:border-[#042C51] focus:bg-white focus:ring-4 focus:ring-[#042C51]/10 2xl:h-10"
                 />
                 {cleanText(search) ? (
                   <button
                     type="button"
                     onClick={() => setSearch("")}
                     aria-label="Clear search"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#98A2B3] transition hover:bg-white hover:text-[#042C51]"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#98A2B3] transition hover:bg-white hover:text-[#042C51]"
                   >
-                    <X size={14} />
+                    <X size={13} />
                   </button>
                 ) : null}
               </div>

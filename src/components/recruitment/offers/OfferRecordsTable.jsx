@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Eye, Check, X, History, FileText } from "lucide-react";
+import { Eye, Check, X, History, FileText } from "lucide-react";
 import { useOffers } from "../../../services/context/OffersContext";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import {
   getLatestNegotiationSummary,
@@ -305,44 +306,17 @@ export default function OfferRecordsTable({
         </div>
       </div>
 
-      <div className="sibs-pagination sibs-pagination--compact mt-4">
-        <p className="sibs-pagination__summary">
-          Showing <span>{displayedOffers.length}</span> loaded offered candidates
-          {totalOffers > 0 ? (
-            <>
-              {" "}out of <span>{totalOffers}</span>
-            </>
-          ) : null}
-        </p>
-
-        {totalOffers > 0 ? (
-          <div className="sibs-pagination__controls">
-            <button
-              type="button"
-              disabled
-              aria-label="Go to previous page"
-              className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
-            >
-              <ChevronLeft size={15} />
-              <span>Previous</span>
-            </button>
-
-            <span className="sibs-pagination__page is-active h-10 px-3 sm:px-4">
-              Page 1
-            </span>
-
-            <button
-              type="button"
-              disabled
-              aria-label="Go to next page"
-              className="sibs-pagination__button h-10 gap-1.5 px-3 sm:px-4"
-            >
-              <span>Next</span>
-              <ChevronRight size={15} />
-            </button>
-          </div>
-        ) : null}
-      </div>
+      <PaginationTable
+        showSearch={false}
+        showPagination
+        showCount
+        currentPage={1}
+        totalPages={1}
+        loadedCount={displayedOffers.length}
+        totalRecords={totalOffers}
+        recordLabel="offered candidates"
+        className="border-0 bg-transparent p-0 shadow-none"
+      />
     </div>
   );
 }

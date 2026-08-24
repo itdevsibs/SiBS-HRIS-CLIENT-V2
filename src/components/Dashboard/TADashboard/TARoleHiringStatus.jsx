@@ -151,7 +151,7 @@ export default function TARoleHiringStatus({
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
-        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+        <h3 className="font-heading text-sm 2xl:text-base font-bold tracking-tight text-[#042C51]">
           Role Hiring Status
         </h3>
         <p className="mt-1 text-xs font-semibold text-[#667085]">

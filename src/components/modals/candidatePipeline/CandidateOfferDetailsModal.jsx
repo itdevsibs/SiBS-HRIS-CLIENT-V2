@@ -915,7 +915,7 @@ export default function CandidateOfferDetailsModal({
         badge="Offer Preparation"
         onClose={onClose}
         closeDisabled={busy}
-        maxWidth="max-w-4xl"
+        maxWidth="max-w-3xl 2xl:max-w-4xl"
         zIndex="z-[10020]"
         footer={footer}
       >
