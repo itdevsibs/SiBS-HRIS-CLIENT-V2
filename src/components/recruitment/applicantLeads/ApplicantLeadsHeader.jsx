@@ -1,11 +1,20 @@
 import React from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { Download, Plus, RefreshCw, Upload } from "lucide-react";
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
+import { useTalentPool } from "../../../services/context/TalentPoolContext";
 
 export default function ApplicantLeadsHeader() {
   const { openAddModal, refreshApplicantLeads, isManualRefreshing } =
     useApplicantLeadsPage();
+
+  const {
+    uploadInputRef,
+    downloadLeadTemplate,
+    uploadLeadsFile,
+    isLoading: isTalentPoolLoading,
+    isSaving: isTalentPoolSaving,
+  } = useTalentPool();
 
   return (
     <section className="sibs-page-header-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6 font-jakarta">
@@ -30,7 +39,7 @@ export default function ApplicantLeadsHeader() {
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 self-end md:self-auto">
           <button
             type="button"
             disabled={isManualRefreshing}
@@ -44,6 +53,34 @@ export default function ApplicantLeadsHeader() {
               className={isManualRefreshing ? "animate-spin" : ""}
             />
           </button>
+
+          <button
+            type="button"
+            onClick={downloadLeadTemplate}
+            disabled={isTalentPoolLoading}
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-[#D6E0EA] bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
+          >
+            <Download size={14} />
+            CSV Template
+          </button>
+
+          <button
+            type="button"
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={isTalentPoolSaving}
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-[#D6E0EA] bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
+          >
+            <Upload size={14} />
+            {isTalentPoolSaving ? "Uploading" : "Upload Leads"}
+          </button>
+
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={uploadLeadsFile}
+            className="hidden"
+          />
 
           <button
             type="button"

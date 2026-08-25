@@ -101,12 +101,22 @@ const ACCEPTED_FILE_TYPES =
   ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.txt";
 
 const SIBS_ASSESSMENT_LOGO_PREVIEW_URL = "/SiBSLogoNavy.png";
+const EMPTY_DISPLAY_VALUE = "N/A";
+
+function displayValueOrNA(value) {
+  if (value === null || value === undefined) return EMPTY_DISPLAY_VALUE;
+
+  const text = String(value).trim();
+  if (!text || text === "—" || text === "-") return EMPTY_DISPLAY_VALUE;
+
+  return value;
+}
 
 function formatCandidateDateOnly(value) {
   const text = String(value || "").trim();
   const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
-  if (!match) return formatDateTime(value) || "—";
+  if (!match) return displayValueOrNA(formatDateTime(value));
 
   const date = new Date(
     Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
@@ -276,7 +286,7 @@ function displayCandidateProfileValue(value) {
     return value ? "Yes" : "No";
   }
 
-  return cleanText(value) || "—";
+  return displayValueOrNA(value);
 }
 
 function splitCandidateProfileFullName(fullName = "") {
@@ -1285,6 +1295,53 @@ function getJobEvaluationScoreDisplay(scoreSummary = {}) {
   }`;
 }
 
+function getJobEvaluationSummaryLink(candidate = {}, submission = {}) {
+  const rawLink = cleanText(
+    submission.savedFormLink ||
+      submission.saved_form_link ||
+      submission.jobEvaluationLink ||
+      submission.job_evaluation_link ||
+      candidate.jobEvaluationLink ||
+      candidate.job_evaluation_link ||
+      candidate.savedFormLink ||
+      candidate.saved_form_link ||
+      "",
+  );
+
+  return rawLink ? resolveFinalInterviewFormLink(rawLink) : "";
+}
+
+function getJobEvaluationRemarksDisplay(submission = {}) {
+  const directRemarks = cleanText(
+    submission.jobEvaluationRemarks ||
+      submission.job_evaluation_remarks ||
+      submission.evaluationRemarks ||
+      submission.evaluation_remarks ||
+      submission.remarks ||
+      submission.interviewNotes ||
+      submission.interview_notes ||
+      "",
+  );
+
+  if (directRemarks) return directRemarks;
+
+  const answers =
+    safeJsonParseValue(submission.answers, submission.answers) || {};
+
+  if (!answers || typeof answers !== "object" || Array.isArray(answers)) {
+    return "";
+  }
+
+  const savedRemarks = Object.entries(answers)
+    .filter(([key]) =>
+      String(key || "").startsWith("__final_interview_remark__"),
+    )
+    .map(([, value]) => cleanText(value))
+    .filter(Boolean);
+
+  return [...new Set(savedRemarks)].join("\n");
+}
+
 function getFinalInterviewResultClass(result = "") {
   const value = cleanText(result).toLowerCase();
 
@@ -1321,6 +1378,80 @@ function formatAssessmentScoreDisplay(value) {
   return `${numberValue.toLocaleString("en-PH", {
     maximumFractionDigits: 2,
   })} / 100`;
+}
+
+function getAssessmentSummaryTestType(candidate = {}) {
+  return (
+    cleanText(
+      candidate.assessmentType ||
+        candidate.assessment_type ||
+        candidate.assessmentTestType ||
+        candidate.assessment_test_type ||
+        candidate.testType ||
+        candidate.test_type,
+    ) || "Online Assessment"
+  );
+}
+
+function getAssessmentSummaryOutcome(candidate = {}) {
+  const rawScore =
+    candidate.assessmentScore ??
+    candidate.assessment_score ??
+    "";
+  const scoreText = cleanText(rawScore);
+
+  if (scoreText) {
+    const numericScore = Number(scoreText);
+
+    if (Number.isFinite(numericScore)) {
+      return numericScore < ASSESSMENT_FAILURE_THRESHOLD ? "Failed" : "Passed";
+    }
+  }
+
+  const result = cleanText(getAssessmentResult(candidate));
+  const normalizedResult = result.toLowerCase();
+
+  if (
+    normalizedResult.includes("not fit") ||
+    normalizedResult.includes("fail") ||
+    normalizedResult.includes("reject")
+  ) {
+    return "Failed";
+  }
+
+  if (
+    normalizedResult.includes("fit") ||
+    normalizedResult.includes("pass") ||
+    normalizedResult.includes("recommend")
+  ) {
+    return "Passed";
+  }
+
+  return displayValueOrNA(result);
+}
+
+function getSummaryOutcomeTextClass(value = "") {
+  const normalizedValue = cleanText(value).toLowerCase();
+
+  if (
+    normalizedValue.includes("pass") ||
+    normalizedValue.includes("fit") ||
+    normalizedValue.includes("recommend") ||
+    normalizedValue.includes("hire")
+  ) {
+    return "text-emerald-600";
+  }
+
+  if (
+    normalizedValue.includes("fail") ||
+    normalizedValue.includes("not") ||
+    normalizedValue.includes("reject") ||
+    normalizedValue.includes("decline")
+  ) {
+    return "text-red-600";
+  }
+
+  return "text-[#344054]";
 }
 
 function getTimelineAssessmentScore(item = {}) {
@@ -1660,7 +1791,7 @@ function isMajorRequirement(requirement = "") {
 function formatFileSize(size = 0) {
   const numberSize = Number(size || 0);
 
-  if (!numberSize) return "—";
+  if (!numberSize) return EMPTY_DISPLAY_VALUE;
 
   const kb = numberSize / 1024;
 
@@ -10208,19 +10339,19 @@ async function handleConfirmScheduleNho() {
           <div className="mt-4 rounded-xl bg-white p-4">
             <DetailRow
               label="Start Date"
-              value={formatDateTime(nhoScheduleDetails.startDate) || "—"}
+              value={displayValueOrNA(formatDateTime(nhoScheduleDetails.startDate))}
             />
-            <DetailRow label="Account" value={nhoScheduleDetails.account} />
-            <DetailRow label="Trainer" value={nhoScheduleDetails.trainer} />
+            <DetailRow label="Account" value={displayValueOrNA(nhoScheduleDetails.account)} />
+            <DetailRow label="Trainer" value={displayValueOrNA(nhoScheduleDetails.trainer)} />
             <DetailRow
               label="Updated Shift Schedule"
-              value={nhoScheduleDetails.updatedShiftSchedule}
+              value={displayValueOrNA(nhoScheduleDetails.updatedShiftSchedule)}
             />
             <DetailRow
               label="Endorsement Status"
-              value={nhoScheduleDetails.endorsementStatus}
+              value={displayValueOrNA(nhoScheduleDetails.endorsementStatus)}
             />
-            <DetailRow label="Location" value={nhoScheduleDetails.location} />
+            <DetailRow label="Location" value={displayValueOrNA(nhoScheduleDetails.location)} />
           </div>
 
           {nhoScheduleDetails.remarks && (
@@ -10252,6 +10383,41 @@ async function handleConfirmScheduleNho() {
       )}
     </div>
   );
+
+  const assessmentSummaryScore =
+    formatAssessmentScoreDisplay(
+      activeCandidate.assessmentScore || activeCandidate.assessment_score,
+    ) || EMPTY_DISPLAY_VALUE;
+  const assessmentSummaryOutcome = getAssessmentSummaryOutcome(activeCandidate);
+  const interviewSummaryScore =
+    activeCandidate.finalInterviewScore !== null &&
+    activeCandidate.finalInterviewScore !== undefined &&
+    activeCandidate.finalInterviewScore !== ""
+      ? `${activeCandidate.finalInterviewScore}%`
+      : activeCandidate.final_interview_score !== null &&
+          activeCandidate.final_interview_score !== undefined &&
+          activeCandidate.final_interview_score !== ""
+        ? `${activeCandidate.final_interview_score}%`
+        : EMPTY_DISPLAY_VALUE;
+  const interviewSummaryResult =
+    cleanText(
+      activeCandidate.finalInterviewResult ||
+        activeCandidate.final_interview_result,
+    ) || EMPTY_DISPLAY_VALUE;
+  const latestInterviewSubmission =
+    getLatestFinalInterviewSubmission(activeCandidate) || {};
+  const jobEvaluationScoreSummary = getTimelineFinalInterviewScoreSummary(
+    {},
+    activeCandidate,
+  );
+  const jobEvaluationSummaryScore =
+    getJobEvaluationScoreDisplay(jobEvaluationScoreSummary) || EMPTY_DISPLAY_VALUE;
+  const jobEvaluationSummaryLink = getJobEvaluationSummaryLink(
+    activeCandidate,
+    latestInterviewSubmission,
+  );
+  const jobEvaluationSummaryRemarks =
+    getJobEvaluationRemarksDisplay(latestInterviewSubmission) || EMPTY_DISPLAY_VALUE;
 
   const recordFooter = (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
@@ -10557,19 +10723,19 @@ async function handleConfirmScheduleNho() {
               )
             }
           >
-            <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-0.5 py-1 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                ["Applied Role", activeCandidate.roleTitle || activeCandidate.roleAccount || "—"],
-                ["Target Account", activeCandidate.account || "—"],
-                ["Email Address", activeCandidate.email || "—"],
-                ["Candidate ID", activeCandidate.candidateId || "—"],
-                ["Contact Number", activeCandidate.phone || activeCandidate.contactNumber || "—"],
-                ["Current Location", compactProfileSummary.currentLocation || activeCandidate.applyingLocation || "—"],
-                ["Source", activeCandidate.source || activeCandidate.metadata?.source || "—"],
+                ["Applied Role", displayValueOrNA(activeCandidate.roleTitle || activeCandidate.roleAccount)],
+                ["Target Account", displayValueOrNA(activeCandidate.account)],
+                ["Email Address", displayValueOrNA(activeCandidate.email)],
+                ["Candidate ID", displayValueOrNA(activeCandidate.candidateId)],
+                ["Contact Number", displayValueOrNA(activeCandidate.phone || activeCandidate.contactNumber)],
+                ["Current Location", displayValueOrNA(compactProfileSummary.currentLocation || activeCandidate.applyingLocation)],
+                ["Source", displayValueOrNA(activeCandidate.source || activeCandidate.metadata?.source)],
                 ["PRF Status", activePrfStatus || "Review"],
                 [
                   "Created Date",
-                  compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : "—",
+                  compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : EMPTY_DISPLAY_VALUE,
                 ],
               ].map(([label, value]) => (
                 <div key={label} className="min-w-0">
@@ -10614,8 +10780,23 @@ async function handleConfirmScheduleNho() {
           )}
 
           {hasAssessmentDetailAccess && (
-            <CandidateModalSection title="Assessment Summary">
-              <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-4">
+            <CandidateModalSection
+              title="Assessment Summary"
+              headerAction={
+                <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-[10px] font-extrabold sm:text-xs">
+                  <span className="text-[#667085]">
+                    {getAssessmentSummaryTestType(activeCandidate)}
+                  </span>
+                  <span className="text-[#98A2B3]">·</span>
+                  <span className="text-[#042C51]">{assessmentSummaryScore}</span>
+                  <span className="text-[#98A2B3]">·</span>
+                  <span className={getSummaryOutcomeTextClass(assessmentSummaryOutcome)}>
+                    {assessmentSummaryOutcome}
+                  </span>
+                </div>
+              }
+            >
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-0.5 py-1 sm:grid-cols-2">
                 {[
                   [
                     "Status",
@@ -10623,20 +10804,13 @@ async function handleConfirmScheduleNho() {
                       activeCandidate.assessment_status ||
                       (getAssessmentResult(activeCandidate) ? "Taken" : "Not Take"),
                   ],
-                  ["Result", getAssessmentResult(activeCandidate) || "—"],
-                  [
-                    "Score",
-                    formatAssessmentScoreDisplay(
-                      activeCandidate.assessmentScore || activeCandidate.assessment_score,
-                    ) || "—",
-                  ],
                   [
                     "Attachment",
                     activeCandidate.assessmentFileName ||
                       activeCandidate.assessment_file_name ||
                       activeCandidate.assessmentAttachmentName ||
                       activeCandidate.assessment_attachment_name ||
-                      "—",
+                      EMPTY_DISPLAY_VALUE,
                   ],
                 ].map(([label, value]) => (
                   <div key={label} className="min-w-0">
@@ -10650,77 +10824,123 @@ async function handleConfirmScheduleNho() {
                 ))}
               </div>
 
-              <div className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2">
+              <div className="mt-2.5 px-0.5 py-1">
                 <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                   Remarks
                 </p>
                 <p className="mt-0.5 text-xs font-semibold leading-relaxed text-[#475467]">
-                  {activeCandidate.assessmentRemarks || activeCandidate.assessment_remarks || "—"}
+                  {displayValueOrNA(activeCandidate.assessmentRemarks || activeCandidate.assessment_remarks)}
                 </p>
               </div>
             </CandidateModalSection>
           )}
 
           {hasInterviewDetailAccess && (
-            <CandidateModalSection title="Interview Summary">
-              <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-3">
+            <CandidateModalSection
+              title="Interview Summary"
+              headerAction={
+                <div className="flex flex-col items-end gap-1 text-[10px] font-extrabold sm:text-xs">
+                  <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+                    <span className="text-[#667085]">Final Interview</span>
+                    <span className="text-[#98A2B3]">·</span>
+                    <span className="text-[#042C51]">{interviewSummaryScore}</span>
+                    <span className="text-[#98A2B3]">·</span>
+                    <span className={getSummaryOutcomeTextClass(interviewSummaryResult)}>
+                      {interviewSummaryResult}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+                    <span className="text-[#667085]">Job Evaluation</span>
+                    <span className="text-[#98A2B3]">·</span>
+                    <span className="text-[#042C51]">{jobEvaluationSummaryScore}</span>
+                  </div>
+                </div>
+              }
+            >
+              <div className="grid grid-cols-1 gap-x-6 gap-y-2 px-0.5 py-1 sm:grid-cols-3">
                 {[
-                  ["Date / Time", formatDateTime(activeCandidate.interviewDate) || "—"],
-                  ["Interview Type", getDisplayInterviewType(activeCandidate) || "—"],
-                  ["Interview Status", getDisplayInterviewStatus(activeCandidate) || "—"],
-                  [
-                    "Final Interview Result",
-                    activeCandidate.finalInterviewResult || activeCandidate.final_interview_result || "—",
-                  ],
-                  [
-                    "Final Interview Score",
-                    activeCandidate.finalInterviewScore !== null &&
-                    activeCandidate.finalInterviewScore !== undefined &&
-                    activeCandidate.finalInterviewScore !== ""
-                      ? `${activeCandidate.finalInterviewScore}%`
-                      : activeCandidate.final_interview_score !== null &&
-                          activeCandidate.final_interview_score !== undefined &&
-                          activeCandidate.final_interview_score !== ""
-                        ? `${activeCandidate.final_interview_score}%`
-                        : "—",
-                  ],
-                  [
-                    "Interview Link",
-                    activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link || "—",
-                  ],
+                  ["Date / Time", displayValueOrNA(formatDateTime(activeCandidate.interviewDate))],
+                  ["Interview Type", displayValueOrNA(getDisplayInterviewType(activeCandidate))],
+                  ["Interview Status", displayValueOrNA(getDisplayInterviewStatus(activeCandidate))],
                 ].map(([label, value]) => (
                   <div key={label} className="min-w-0">
                     <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       {label}
                     </p>
-                    {label === "Interview Link" && value !== "—" ? (
-                      <button
-                        type="button"
-                        title={value}
-                        onClick={() => window.open(value, "_blank", "noopener,noreferrer")}
-                        className="mt-0.5 block max-w-full truncate text-left text-[11px] 2xl:text-xs font-extrabold text-blue-600 underline"
-                      >
-                        {value}
-                      </button>
-                    ) : (
-                      <p title={value} className="mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
-                        {value}
-                      </p>
-                    )}
+                    <p title={value} className="mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
+                      {value}
+                    </p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2">
-                <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                  Interview Remarks
-                </p>
-                <p className="mt-0.5 text-xs font-semibold leading-relaxed text-[#475467]">
-                  {activeCandidate.interviewNotes ||
-                    activeCandidate.interviewerNotes ||
-                    activeCandidate.interview_notes ||
-                    "—"}
-                </p>
+              <div className="mt-2.5 grid grid-cols-1 gap-x-6 gap-y-3 px-0.5 py-1 sm:grid-cols-4">
+                <div className="min-w-0">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Interview Link
+                  </p>
+                  {displayValueOrNA(activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link) !== EMPTY_DISPLAY_VALUE ? (
+                    <button
+                      type="button"
+                      title={activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link}
+                      onClick={() =>
+                        window.open(
+                          activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link,
+                          "_blank",
+                          "noopener,noreferrer",
+                        )
+                      }
+                      className="mt-0.5 block max-w-full truncate text-left text-[11px] 2xl:text-xs font-extrabold text-blue-600 underline"
+                    >
+                      {activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link}
+                    </button>
+                  ) : (
+                    <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
+                      {EMPTY_DISPLAY_VALUE}
+                    </p>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Job Evaluation Link
+                  </p>
+                  {displayValueOrNA(jobEvaluationSummaryLink) !== EMPTY_DISPLAY_VALUE ? (
+                    <button
+                      type="button"
+                      title={jobEvaluationSummaryLink}
+                      onClick={() => window.open(jobEvaluationSummaryLink, "_blank", "noopener,noreferrer")}
+                      className="mt-0.5 block max-w-full truncate text-left text-[11px] 2xl:text-xs font-extrabold text-blue-600 underline"
+                    >
+                      View Job Evaluation
+                    </button>
+                  ) : (
+                    <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
+                      {EMPTY_DISPLAY_VALUE}
+                    </p>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Interview Remarks
+                  </p>
+                  <p className="mt-0.5 whitespace-pre-line text-xs font-semibold leading-relaxed text-[#475467]">
+                    {activeCandidate.interviewNotes ||
+                      activeCandidate.interviewerNotes ||
+                      activeCandidate.interview_notes ||
+                      EMPTY_DISPLAY_VALUE}
+                  </p>
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Job Evaluation Remarks
+                  </p>
+                  <p className="mt-0.5 whitespace-pre-line text-xs font-semibold leading-relaxed text-[#475467]">
+                    {jobEvaluationSummaryRemarks}
+                  </p>
+                </div>
               </div>
 
               {isInterviewScheduled && candidateHasSchedule && (
@@ -10758,13 +10978,13 @@ async function handleConfirmScheduleNho() {
 
           {hasOfferDetailAccess && (
             <CandidateModalSection title="Offer Summary">
-              <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-0.5 py-1 sm:grid-cols-2 lg:grid-cols-3">
                 {[
-                  ["Final Role", activeCandidate.offerDetails?.roleTitle || activeCandidate.roleTitle || "—"],
-                  ["Final Account", activeCandidate.offerDetails?.account || activeCandidate.account || "—"],
+                  ["Final Role", displayValueOrNA(activeCandidate.offerDetails?.roleTitle || activeCandidate.roleTitle)],
+                  ["Final Account", displayValueOrNA(activeCandidate.offerDetails?.account || activeCandidate.account)],
                   [
                     "Hiring Requirement / PRF",
-                    activeCandidate.offerDetails?.hiringRequirementId || activeCandidate.hiringRequirementId || "—",
+                    displayValueOrNA(activeCandidate.offerDetails?.hiringRequirementId || activeCandidate.hiringRequirementId),
                   ],
                   ["Basic Daily Rate", formatCurrency(currentOfferBasicDailyRate)],
                   ["Daily De Minimis", formatCurrency(currentOfferDailyDeMinimis)],
@@ -10794,7 +11014,7 @@ async function handleConfirmScheduleNho() {
                       {label}
                     </p>
                     <p title={value} className="mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
-                      {value || "—"}
+                      {displayValueOrNA(value)}
                     </p>
                   </div>
                 ))}
@@ -10820,12 +11040,12 @@ async function handleConfirmScheduleNho() {
                       return (
                         <div
                           key={version.id || version.offerVersionId || versionNumber || filename}
-                          className="flex flex-col gap-1.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between"
+                          className="flex flex-col gap-1.5 rounded-lg border border-[#E6ECF2] px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="min-w-0">
                             <p className="truncate text-[11px] 2xl:text-xs font-extrabold text-[#344054]">{filename}</p>
                             <p className="mt-0.5 text-[9.5px] font-semibold text-[#98A2B3]">
-                              Version {versionNumber || "—"}
+                              Version {versionNumber || EMPTY_DISPLAY_VALUE}
                             </p>
                           </div>
                           {canOpen && (
@@ -10922,7 +11142,7 @@ async function handleConfirmScheduleNho() {
 
           {hasNhoDetailAccess && (
             <CandidateModalSection title="Pre-Employment Requirements">
-              <div className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 sm:p-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-0.5 py-1 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Major Requirements

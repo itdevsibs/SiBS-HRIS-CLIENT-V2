@@ -2840,7 +2840,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
   ]);
 
   function handleAnswerChange(fieldId, value) {
-    if (isSubmittedView) return;
+    if (requestedViewMode || isSubmittedView) return;
 
     setHasUserChangedAnswers(true);
 
@@ -2851,7 +2851,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
   }
 
   function handleInterviewerScoringChange(fieldId, value) {
-    if (publicMode) return;
+    if (requestedViewMode || publicMode) return;
 
     setHasUserChangedAnswers(true);
 
@@ -2862,7 +2862,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
   }
 
   function handleJobEvaluationChange(fieldId, value) {
-    if (isSubmittedView) return;
+    if (requestedViewMode || isSubmittedView) return;
 
     setHasUserChangedAnswers(true);
 
@@ -2873,7 +2873,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
   }
 
   function handleJobEvaluationToggle(fieldId, optionLabel) {
-    if (isSubmittedView) return;
+    if (requestedViewMode || isSubmittedView) return;
 
     setHasUserChangedAnswers(true);
 
@@ -2922,7 +2922,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
 
   async function handleSaveScoringChanges() {
-    if (publicMode || isSubmitting) return;
+    if (requestedViewMode || publicMode || isSubmitting) return;
     if (!validateQuestionRatings()) return;
 
     const candidateRecordId = cleanText(
@@ -3267,8 +3267,8 @@ export default function FinalInterviewForms({ publicMode = false }) {
               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
                 <p className="text-sm font-extrabold text-amber-800">
                   No saved Final Interview submission was found for this link.
-                  The candidate's active interview form is opened below so the
-                  interview can continue.
+                  The candidate's active interview form is displayed below in
+                  read-only mode.
                 </p>
               </div>
             )}
@@ -3357,7 +3357,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                     options={educationOptions}
                     value={answers[JOB_EVALUATION_FIELDS.education]}
                     onChange={handleJobEvaluationChange}
-                    readOnly={isSubmittedView}
+                    readOnly={requestedViewMode || isSubmittedView}
                   />
 
                   <JobEvaluationSelect
@@ -3366,7 +3366,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                     options={experienceOptions}
                     value={answers[JOB_EVALUATION_FIELDS.experience]}
                     onChange={handleJobEvaluationChange}
-                    readOnly={isSubmittedView}
+                    readOnly={requestedViewMode || isSubmittedView}
                   />
 
                   <JobEvaluationSelect
@@ -3375,7 +3375,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                     options={locationOptions}
                     value={answers[JOB_EVALUATION_FIELDS.location]}
                     onChange={handleJobEvaluationChange}
-                    readOnly={isSubmittedView}
+                    readOnly={requestedViewMode || isSubmittedView}
                   />
                 </div>
 
@@ -3385,7 +3385,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                   options={dutiesOptions}
                   values={answers[JOB_EVALUATION_FIELDS.duties]}
                   onToggle={handleJobEvaluationToggle}
-                  readOnly={isSubmittedView}
+                  readOnly={requestedViewMode || isSubmittedView}
                 />
 
                 <JobEvaluationCheckboxGroup
@@ -3394,7 +3394,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                   options={competenciesOptions}
                   values={answers[JOB_EVALUATION_FIELDS.competencies]}
                   onToggle={handleJobEvaluationToggle}
-                  readOnly={isSubmittedView}
+                  readOnly={requestedViewMode || isSubmittedView}
                 />
 
                 <JobEvaluationSelectedAnswers answers={answers} />
@@ -3550,7 +3550,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                                         <FieldInput
                                           field={field}
                                           value={answers[field.id]}
-                                          readOnly={isSubmittedView}
+                                          readOnly={requestedViewMode || isSubmittedView}
                                           onChange={(value) =>
                                             handleAnswerChange(field.id, value)
                                           }
@@ -3565,7 +3565,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                                           questionNumber - 1,
                                         )}
                                         answers={answers}
-                                        readOnly={publicMode || isSubmitting}
+                                        readOnly={requestedViewMode || publicMode || isSubmitting}
                                         onChange={handleInterviewerScoringChange}
                                       />
                                     )}
@@ -3597,12 +3597,8 @@ export default function FinalInterviewForms({ publicMode = false }) {
             </section>
 
             {isSubmittedView ? (
-              !publicMode && (
+              !publicMode && !requestedViewMode && (
                 <div className="mt-8 flex flex-col items-stretch justify-end gap-3 border-t border-[#E6ECF2] pt-6 sm:flex-row sm:items-center">
-                  <p className="mr-auto text-sm font-semibold text-sibs-tertiary-5">
-                    Candidate answers remain read-only. Ratings and interviewer remarks can still be updated.
-                  </p>
-
                   <button
                     type="button"
                     disabled={isSubmitting}

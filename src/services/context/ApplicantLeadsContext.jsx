@@ -14,10 +14,13 @@ import {
   EMPTY_APPLICANT_LEAD_FORM,
 } from "../../lib/utils/applicantLeads/applicantLeadsConstants";
 import {
+  addApplicantLeadComment,
   buildApplicantLeadPayload,
   createApplicantLead,
+  getApplicantLeadHistory,
   getApplicantLeadOptions,
   getApplicantLeads,
+  recordApplicantLeadView,
   sendApplicantLeadApplicationLink,
   updateApplicantLead,
 } from "../../lib/axios/getApplicantLeads";
@@ -33,6 +36,13 @@ import {
 
 const ApplicantLeadsContext = createContext(null);
 const MOVED_TO_TALENT_POOL_STATUS = "Moved to Talent Pool Archive";
+const EMPTY_STATUS_MODAL = {
+  open: false,
+  type: "success",
+  title: "",
+  message: "",
+  closeLeadOnDismiss: false,
+};
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -132,6 +142,7 @@ export function ApplicantLeadsProvider({ children }) {
   const [editingLead, setEditingLead] = useState(null);
   const [formData, setFormData] = useState(EMPTY_APPLICANT_LEAD_FORM);
   const [toastMessage, setToastMessage] = useState("");
+  const [statusModal, setStatusModal] = useState(EMPTY_STATUS_MODAL);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [sendingApplicationLinkLead, setSendingApplicationLinkLead] = useState(null);
@@ -141,6 +152,11 @@ export function ApplicantLeadsProvider({ children }) {
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [leadHistory, setLeadHistory] = useState([]);
+  const [isLeadHistoryLoading, setIsLeadHistoryLoading] = useState(false);
+  const [leadHistoryError, setLeadHistoryError] = useState("");
+  const [leadComment, setLeadComment] = useState("");
+  const [isAddingLeadComment, setIsAddingLeadComment] = useState(false);
 
   const activeLeads = useMemo(
     () => leads.filter((lead) => !isMovedToTalentPoolLead(lead)),
@@ -251,8 +267,35 @@ export function ApplicantLeadsProvider({ children }) {
     }
   }
 
+  function showStatusModal({
+    type = "success",
+    title = "",
+    message = "",
+    closeLeadOnDismiss = false,
+  }) {
+    setStatusModal({
+      open: true,
+      type,
+      title,
+      message,
+      closeLeadOnDismiss,
+    });
+  }
+
+  function closeStatusModal() {
+    const shouldCloseLeadModal = statusModal.closeLeadOnDismiss;
+    setStatusModal(EMPTY_STATUS_MODAL);
+
+    if (shouldCloseLeadModal) {
+      closeLeadModal();
+    }
+  }
+
   async function openAddModal() {
     setEditingLead(null);
+    setLeadHistory([]);
+    setLeadHistoryError("");
+    setLeadComment("");
     const result = await loadApplicantLeadOptions();
     const nextOptions = result.success
       ? mergeLookupOptions(lookupOptions, result.data || {})
@@ -262,14 +305,45 @@ export function ApplicantLeadsProvider({ children }) {
     setShowLeadModal(true);
   }
 
-  function openEditModal(lead) {
+  async function openEditModal(lead) {
+    const leadIdentifier = lead?.leadId || lead?.id;
+
     setEditingLead(lead);
     setFormData(getApplicantLeadEditSnapshot(lead));
+    setLeadHistory([]);
+    setLeadHistoryError("");
+    setLeadComment("");
     setShowLeadModal(true);
+
+    if (!leadIdentifier) return;
+
+    setIsLeadHistoryLoading(true);
+
+    try {
+      const viewResult = await recordApplicantLeadView(leadIdentifier);
+
+      if (viewResult.success) {
+        setLeadHistory(viewResult.data || []);
+        return;
+      }
+
+      const historyResult = await getApplicantLeadHistory(leadIdentifier);
+
+      if (historyResult.success) {
+        setLeadHistory(historyResult.data || []);
+      } else {
+        setLeadHistoryError(
+          historyResult.message || viewResult.message || "Failed to load lead history.",
+        );
+      }
+    } finally {
+      setIsLeadHistoryLoading(false);
+    }
   }
 
   function closeLeadModal() {
     setShowLeadModal(false);
+    setLeadComment("");
   }
 
   async function handleSaveLead(event) {
@@ -298,7 +372,11 @@ export function ApplicantLeadsProvider({ children }) {
 
       if (!result.success) {
         setIsSaving(false);
-        showToast(result.message || "Failed to update applicant lead.");
+        showStatusModal({
+          type: "error",
+          title: "Update Applicant Lead Failed",
+          message: result.message || "Failed to update applicant lead.",
+        });
         return;
       }
 
@@ -312,22 +390,69 @@ export function ApplicantLeadsProvider({ children }) {
             : lead,
         ),
       );
-      showToast(result.message || `Updated applicant lead for ${formData.firstName}.`);
+
+      if (Array.isArray(result.history)) {
+        setLeadHistory(result.history);
+      }
+
+      showStatusModal({
+        type: "success",
+        title: "Applicant Lead Updated",
+        message: result.message || `Updated applicant lead for ${formData.firstName}.`,
+        closeLeadOnDismiss: true,
+      });
     } else {
       const result = await createApplicantLead(payload);
 
       if (!result.success) {
         setIsSaving(false);
-        showToast(result.message || "Failed to save applicant lead.");
+        showStatusModal({
+          type: "error",
+          title: "Save Applicant Lead Failed",
+          message: result.message || "Failed to save applicant lead.",
+        });
         return;
       }
 
       setLeads((current) => [result.data, ...current]);
-      showToast(result.message || `New applicant lead logged for ${formData.firstName}.`);
+      showStatusModal({
+        type: "success",
+        title: "Applicant Lead Saved",
+        message: result.message || `New applicant lead logged for ${formData.firstName}.`,
+        closeLeadOnDismiss: true,
+      });
     }
 
     setIsSaving(false);
-    setShowLeadModal(false);
+  }
+
+  async function handleAddLeadComment() {
+    const leadIdentifier = editingLead?.leadId || editingLead?.id;
+    const comment = cleanText(leadComment);
+
+    if (!leadIdentifier || !comment || isAddingLeadComment) return;
+
+    setIsAddingLeadComment(true);
+    const result = await addApplicantLeadComment(leadIdentifier, comment);
+    setIsAddingLeadComment(false);
+
+    if (!result.success) {
+      showStatusModal({
+        type: "error",
+        title: "Add Comment Failed",
+        message: result.message || "Failed to add comment.",
+      });
+      return;
+    }
+
+    setLeadHistory(result.data || []);
+    setLeadComment("");
+    setLeadHistoryError("");
+    showStatusModal({
+      type: "success",
+      title: "Comment Added",
+      message: result.message || "Comment added.",
+    });
   }
 
   async function markApplicationLinkSent(lead) {
@@ -338,7 +463,11 @@ export function ApplicantLeadsProvider({ children }) {
     if (!result.success) {
       setSendingApplicationLinkLead(null);
       setApplicationLinkSendStatus("");
-      showToast(result.message || "Failed to send application link email.");
+      showStatusModal({
+        type: "error",
+        title: "Send Application Link Failed",
+        message: result.message || "Failed to send application link email.",
+      });
       return;
     }
 
@@ -352,17 +481,35 @@ export function ApplicantLeadsProvider({ children }) {
           : item,
       ),
     );
+
+    if (
+      Array.isArray(result.history) &&
+      editingLead &&
+      String(editingLead.id) === String(lead.id)
+    ) {
+      setLeadHistory(result.history);
+    }
+
     setApplicationLinkSendStatus("sent");
 
     if (typeof window !== "undefined") {
       window.setTimeout(() => {
         setSendingApplicationLinkLead(null);
         setApplicationLinkSendStatus("");
-        showToast(result.message || `Application link email sent to ${lead.fullName}.`);
+        showStatusModal({
+          type: "success",
+          title: "Application Link Sent",
+          message: result.message || `Application link email sent to ${lead.fullName}.`,
+        });
       }, 1400);
     } else {
       setSendingApplicationLinkLead(null);
       setApplicationLinkSendStatus("");
+      showStatusModal({
+        type: "success",
+        title: "Application Link Sent",
+        message: result.message || `Application link email sent to ${lead.fullName}.`,
+      });
     }
   }
 
@@ -419,6 +566,13 @@ export function ApplicantLeadsProvider({ children }) {
       sourceOptions: lookupOptions.sources,
       siteOptions: lookupOptions.sites,
       statusOptions: lookupOptions.statuses,
+      leadHistory,
+      isLeadHistoryLoading,
+      leadHistoryError,
+      leadComment,
+      setLeadComment,
+      isAddingLeadComment,
+      handleAddLeadComment,
       leadView,
       setLeadView,
       activeLeadCount: activeLeads.length,
@@ -450,6 +604,8 @@ export function ApplicantLeadsProvider({ children }) {
       showTalentPoolHandoffMessage,
 
       toastMessage,
+      statusModal,
+      closeStatusModal,
     }),
     [
       currentAccountName,
@@ -472,6 +628,11 @@ export function ApplicantLeadsProvider({ children }) {
       leadView,
       sendingApplicationLinkLead,
       applicationLinkSendStatus,
+      leadHistory,
+      isLeadHistoryLoading,
+      leadHistoryError,
+      leadComment,
+      isAddingLeadComment,
       leads,
       lookupOptions,
       metrics,
@@ -481,6 +642,8 @@ export function ApplicantLeadsProvider({ children }) {
       sourceFilter,
       statusFilter,
       toastMessage,
+      statusModal,
+      closeStatusModal,
       loadApplicantLeadOptions,
     ],
   );

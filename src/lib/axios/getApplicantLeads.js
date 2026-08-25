@@ -75,6 +75,9 @@ export function normalizeApplicantLead(row = {}) {
     fullName: getFullName(row),
     cpNum: row.cp_number || row.cpNum || row.cellphone || "",
     email: row.email_address || row.email || row.emailAddress || "",
+    facebookName: row.facebook_name || row.facebookName || "",
+    facebookLink: row.facebook_link || row.facebookLink || "",
+    school: row.school || "",
     department:
       row.department_name ||
       row.department ||
@@ -137,6 +140,35 @@ export function normalizeApplicantLeads(rows = []) {
   return rows.map(normalizeApplicantLead);
 }
 
+export function normalizeApplicantLeadHistory(rows = []) {
+  return (Array.isArray(rows) ? rows : []).map((row = {}) => {
+    let changedFields = row.changed_fields_json || row.changedFields || [];
+
+    if (typeof changedFields === "string") {
+      try {
+        changedFields = JSON.parse(changedFields);
+      } catch {
+        changedFields = [];
+      }
+    }
+
+    return {
+      id: row.id ?? "",
+      applicantLeadId: row.applicant_lead_id ?? row.applicantLeadId ?? "",
+      leadId: row.lead_id || row.leadId || "",
+      activityType: row.activity_type || row.activityType || "",
+      activityLabel: row.activity_label || row.activityLabel || "Activity",
+      description: row.description || "",
+      comment: row.comment_text || row.comment || "",
+      changedFields: Array.isArray(changedFields) ? changedFields : [],
+      actorSibsId: row.actor_sibs_id || row.actorSibsId || "",
+      actorName: row.actor_name || row.actorName || "System",
+      createdAt: row.created_at || row.createdAt || "",
+      raw: row,
+    };
+  });
+}
+
 export function buildApplicantLeadPayload(formData = {}, user = {}) {
   const loggedBySibsId =
     user?.sibsId ||
@@ -147,18 +179,21 @@ export function buildApplicantLeadPayload(formData = {}, user = {}) {
     "";
 
   return {
-    first_name: cleanText(formData.firstName),
-    last_name: cleanText(formData.lastName),
-    middle_name: cleanText(formData.middleName),
-    suffix: cleanText(formData.suffix),
+    first_name: cleanText(formData.firstName).toUpperCase(),
+    last_name: cleanText(formData.lastName).toUpperCase(),
+    middle_name: cleanText(formData.middleName).toUpperCase(),
+    suffix: cleanText(formData.suffix).toUpperCase(),
     cp_number: cleanText(formData.cpNum),
     email_address: cleanText(formData.email),
+    facebook_name: cleanText(formData.facebookName).toUpperCase(),
+    facebook_link: cleanText(formData.facebookLink),
+    school: cleanText(formData.school).toUpperCase(),
     department_id: formData.departmentId || formData.department_id || null,
     account_id: formData.accountId || formData.account_id || null,
     sourcing_id: formData.sourcingId || formData.sourcing_id || null,
     preferred_location: cleanText(formData.preferredSite),
     status: cleanText(formData.status) || "New Lead",
-    remarks: cleanText(formData.notes),
+    remarks: cleanText(formData.notes).toUpperCase(),
     logged_by_sibs_id: cleanText(loggedBySibsId),
 
     department_name: cleanText(formData.department),
@@ -249,6 +284,7 @@ export async function createApplicantLead(payload) {
     return {
       success: res.data?.success !== false,
       data: normalizeApplicantLead(res.data?.data || res.data?.lead || res.data),
+      history: normalizeApplicantLeadHistory(res.data?.history || []),
       message: res.data?.message || "Applicant lead saved.",
       status: res.status,
     };
@@ -273,6 +309,7 @@ export async function updateApplicantLead(id, payload) {
     return {
       success: res.data?.success !== false,
       data: normalizeApplicantLead(res.data?.data || res.data?.lead || res.data),
+      history: normalizeApplicantLeadHistory(res.data?.history || []),
       message: res.data?.message || "Applicant lead updated.",
       status: res.status,
     };
@@ -301,6 +338,7 @@ export async function updateApplicantLeadStatus(id, payload) {
     return {
       success: res.data?.success !== false,
       data: normalizeApplicantLead(res.data?.data || res.data?.lead || res.data),
+      history: normalizeApplicantLeadHistory(res.data?.history || []),
       message: res.data?.message || "Applicant lead status updated.",
       status: res.status,
     };
@@ -312,6 +350,98 @@ export async function updateApplicantLeadStatus(id, payload) {
     );
 
     return normalizeApiError(err, "Failed to update applicant lead status.");
+  }
+}
+
+export async function getApplicantLeadHistory(id) {
+  try {
+    const res = await api.get(
+      `${BASE_PATH}/${encodeURIComponent(id)}/history`,
+      {
+        withCredentials: true,
+        timeout: REQUEST_TIMEOUT,
+      },
+    );
+
+    return {
+      success: res.data?.success !== false,
+      data: normalizeApplicantLeadHistory(res.data?.data || []),
+      message: res.data?.message || "Applicant lead history loaded.",
+      status: res.status,
+    };
+  } catch (err) {
+    console.error(
+      "Axios getApplicantLeadHistory API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return {
+      ...normalizeApiError(err, "Failed to load applicant lead history."),
+      data: [],
+    };
+  }
+}
+
+export async function recordApplicantLeadView(id) {
+  try {
+    const res = await api.post(
+      `${BASE_PATH}/${encodeURIComponent(id)}/view`,
+      {},
+      {
+        withCredentials: true,
+        timeout: REQUEST_TIMEOUT,
+      },
+    );
+
+    return {
+      success: res.data?.success !== false,
+      data: normalizeApplicantLeadHistory(res.data?.data || []),
+      message: res.data?.message || "Applicant lead view recorded.",
+      status: res.status,
+    };
+  } catch (err) {
+    console.error(
+      "Axios recordApplicantLeadView API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return {
+      ...normalizeApiError(err, "Failed to record applicant lead view."),
+      data: [],
+    };
+  }
+}
+
+export async function addApplicantLeadComment(id, comment) {
+  try {
+    const res = await api.post(
+      `${BASE_PATH}/${encodeURIComponent(id)}/comments`,
+      { comment: cleanText(comment) },
+      {
+        withCredentials: true,
+        timeout: REQUEST_TIMEOUT,
+      },
+    );
+
+    return {
+      success: res.data?.success !== false,
+      data: normalizeApplicantLeadHistory(res.data?.data || []),
+      message: res.data?.message || "Comment added.",
+      status: res.status,
+    };
+  } catch (err) {
+    console.error(
+      "Axios addApplicantLeadComment API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return {
+      ...normalizeApiError(err, "Failed to add applicant lead comment."),
+      data: [],
+    };
   }
 }
 
@@ -329,6 +459,7 @@ export async function sendApplicantLeadApplicationLink(id) {
     return {
       success: res.data?.success !== false,
       data: normalizeApplicantLead(res.data?.data || res.data?.lead || res.data),
+      history: normalizeApplicantLeadHistory(res.data?.history || []),
       message: res.data?.message || "Application link email sent.",
       status: res.status,
       email: res.data?.email || null,
@@ -347,8 +478,11 @@ export async function sendApplicantLeadApplicationLink(id) {
 export default {
   getApplicantLeads,
   getApplicantLeadOptions,
+  getApplicantLeadHistory,
   createApplicantLead,
   updateApplicantLead,
   updateApplicantLeadStatus,
+  recordApplicantLeadView,
+  addApplicantLeadComment,
   sendApplicantLeadApplicationLink,
 };

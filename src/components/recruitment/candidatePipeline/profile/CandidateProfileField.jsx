@@ -9,7 +9,7 @@ function isEmptyValue(value) {
   if (value === null || value === undefined) return true;
   if (Array.isArray(value)) return value.length === 0;
   if (typeof value === "object") return Object.keys(value).length === 0;
-  return cleanText(value) === "" || cleanText(value) === "—";
+  return ["", "—", "-", "n/a", "na"].includes(cleanText(value).toLowerCase());
 }
 
 export function CandidateProfileField({
@@ -34,13 +34,14 @@ export function CandidateProfileField({
       <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </p>
-      <div className="group mt-0.5 flex items-center gap-1.5">
+      <div className="group mt-0.5 flex min-w-0 items-center gap-1.5">
         <p
-          className={`break-words text-xs font-extrabold leading-5 ${
+          title={isFilled ? String(value) : undefined}
+          className={`min-w-0 flex-1 truncate text-xs font-extrabold leading-5 ${
             highlight ? "text-[#FF5C28]" : isFilled ? "text-[#344054]" : "text-[#98A2B3]"
           }`}
         >
-          {isFilled ? String(value) : "—"}
+          {isFilled ? String(value) : "N/A"}
         </p>
 
         {copyable && isFilled && (
@@ -70,7 +71,7 @@ export function CandidateProfilePanel({
 }) {
   return (
     <section
-      className={`rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 transition hover:border-[#D7DEE8] ${className}`}
+      className={`p-4 ${className}`}
     >
       <div className="mb-3 flex items-center justify-between gap-2 border-b border-[#E6ECF2]/60 pb-2">
         <h4 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">

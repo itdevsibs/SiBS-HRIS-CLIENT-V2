@@ -171,26 +171,26 @@ export default function CandidateProfileAttachments({ data }) {
                   </div>
 
                   <p className="mt-2 truncate text-xs font-extrabold text-[#042C51]">
-                    {ref.name || "—"}
+                    {ref.name || "N/A"}
                   </p>
 
                   <div className="mt-2 space-y-1 border-t border-[#EEF2F6] pt-2 text-[10px] font-semibold text-[#667085]">
                     <p className="truncate">
                       <span className="text-[#98A2B3]">Phone:</span>{" "}
                       <span className="text-[#344054] font-bold">
-                        {ref.phone || "—"}
+                        {ref.phone || "N/A"}
                       </span>
                     </p>
                     <p className="truncate">
                       <span className="text-[#98A2B3]">Relationship:</span>{" "}
                       <span className="text-[#344054]">
-                        {ref.relationship || "—"}
+                        {ref.relationship || "N/A"}
                       </span>
                     </p>
                     <p className="truncate">
                       <span className="text-[#98A2B3]">Company:</span>{" "}
                       <span className="text-[#344054]">
-                        {ref.company || "—"}
+                        {ref.company || "N/A"}
                       </span>
                     </p>
                   </div>
