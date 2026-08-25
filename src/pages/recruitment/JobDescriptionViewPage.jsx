@@ -17,6 +17,7 @@ import RevisionHistory from "../../components/layout/tabs/JobDescriptionView/Rev
 import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
 
 import useJobDescriptionDeletion from "../../hooks/jobDescription/useJobDescriptionDeletion";
+import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 
 import { normalizeJdStatus } from "../../lib/utils/NormalizeJDStatus";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
@@ -388,6 +389,13 @@ function mapJobDescriptionApprovalToViewItem(request = {}) {
       raw?.departmentId ||
       "—",
 
+    locationWorkSetup:
+      request?.locationWorkSetup ||
+      request?.location_work_setup ||
+      raw?.locationWorkSetup ||
+      raw?.location_work_setup ||
+      "",
+
     account:
       request?.accountName ||
       request?.account ||
@@ -479,6 +487,17 @@ function mapJobDescriptionApprovalToViewItem(request = {}) {
     responsibilities: request?.responsibilities || raw?.responsibilities || "",
 
     qualifications: request?.qualifications || raw?.qualifications || "",
+
+    education: request?.education || raw?.education || "",
+
+    experience: request?.experience || raw?.experience || "",
+
+    certificationsAffiliations:
+      request?.certificationsAffiliations ||
+      request?.certifications_affiliations ||
+      raw?.certificationsAffiliations ||
+      raw?.certifications_affiliations ||
+      "",
 
     personalityType:
       request?.personalityType ||
@@ -832,6 +851,7 @@ export default function JobDescriptionViewPage() {
 
   const [canApproveJobDescription, setCanApproveJobDescription] =
     useState(false);
+  const approvalRuleRevision = useApprovalRuleRevision("jobDescription");
 
   const [pageReady, setPageReady] = useState(false);
 
@@ -966,7 +986,7 @@ export default function JobDescriptionViewPage() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [approvalRuleRevision, user]);
 
   /* =====================================================
   LOAD COMPLETE JD
@@ -1556,11 +1576,20 @@ export default function JobDescriptionViewPage() {
   ===================================================== */
 
   function handleContentScroll(e) {
-    const nextScrollTop = Number(e.currentTarget?.scrollTop || 0);
+    const scrollPanel = e.currentTarget;
+
+    const nextScrollTop = Number(scrollPanel?.scrollTop || 0);
 
     const previousScrollTop = Number(lastScrollTopRef.current || 0);
 
     const scrollDelta = nextScrollTop - previousScrollTop;
+
+    const distanceFromBottom = Math.max(
+      0,
+      Number(scrollPanel?.scrollHeight || 0) -
+        Number(scrollPanel?.clientHeight || 0) -
+        nextScrollTop,
+    );
 
     if (nextScrollTop <= 16) {
       setHeaderHidden(false);
@@ -1570,7 +1599,19 @@ export default function JobDescriptionViewPage() {
       return;
     }
 
+    // Keep the chrome hidden at the end of the document. Showing it changes
+    // the panel height and can otherwise create a scroll-clamping feedback loop.
+    if (distanceFromBottom <= 24) {
+      setHeaderHidden(true);
+
+      lastScrollTopRef.current = nextScrollTop;
+
+      return;
+    }
+
     if (Math.abs(scrollDelta) < 8) {
+      lastScrollTopRef.current = nextScrollTop;
+
       return;
     }
 
@@ -2183,6 +2224,9 @@ export default function JobDescriptionViewPage() {
   const canShowApprovalAction =
     canApproveJobDescription && normalizedDisplayStatus === "For Approval";
 
+  const canReviewJobDescription =
+    normalizedDisplayStatus === "For Approval" && canApproveJobDescription;
+
   const footerVersion =
     item?.currentVersion ||
     item?.current_version ||
@@ -2207,16 +2251,6 @@ export default function JobDescriptionViewPage() {
         aria-hidden="true"
         onMouseEnter={() => setHeaderHidden(false)}
         className="fixed inset-x-0 top-0 z-[10010] h-5"
-      />
-
-      {/* =================================================
-          BOTTOM EDGE HOVER AREA
-      ================================================= */}
-
-      <div
-        aria-hidden="true"
-        onMouseEnter={() => setHeaderHidden(false)}
-        className="fixed inset-x-0 bottom-0 z-[10010] h-5"
       />
 
       {/* =================================================
@@ -2313,7 +2347,7 @@ export default function JobDescriptionViewPage() {
           ref={contentScrollRef}
           data-jd-scroll-panel
           onScroll={handleContentScroll}
-          className="thin-scroll h-full overflow-y-auto px-2.5 py-4 pb-24 sm:px-5 sm:py-7 sm:pb-28 lg:px-8"
+          className="thin-scroll h-full overscroll-contain overflow-y-auto px-2.5 py-4 sm:px-5 sm:py-7 lg:px-8"
         >
           <div key={activeDetailTab} className="jd-view-content-panel">
             {shouldShowDetails && (
@@ -2324,7 +2358,11 @@ export default function JobDescriptionViewPage() {
                 editedChangeDetails={editedChangeDetails}
                 setEditedChangeDetails={setEditedChangeDetails}
                 onRevisionDraftChange={handleRevisionDraftChange}
-                approvalPage={approvalPage}
+                approvalPage={canReviewJobDescription}
+                interactivePage={
+                  canReviewJobDescription ||
+                  normalizedDisplayStatus === "For Revision"
+                }
               />
             )}
 

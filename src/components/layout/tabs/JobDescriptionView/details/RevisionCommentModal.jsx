@@ -58,7 +58,9 @@ export default function RevisionCommentModal({
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-amber-700">
                 {commentModal.sectionKey === "personalityType"
                   ? "Selected Personality Type"
-                  : "Highlighted Text"}
+                  : commentModal.sectionKey === "competencies"
+                    ? "Selected Competencies"
+                    : "Highlighted Text"}
               </p>
 
               <div className="mt-3 selection:bg-[#FFF3B8] selection:text-[#101828]">

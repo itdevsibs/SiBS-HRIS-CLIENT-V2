@@ -280,9 +280,9 @@ export default function DesiredCompetenciesViewTable({
   );
 
   const [
-    selectedCompetencyKey,
-    setSelectedCompetencyKey,
-  ] = useState("");
+    selectedCompetencyKeys,
+    setSelectedCompetencyKeys,
+  ] = useState([]);
 
   const [validationMessage, setValidationMessage] =
     useState("");
@@ -292,17 +292,6 @@ export default function DesiredCompetenciesViewTable({
 
     setDrafts(normalizedCompetencies);
   }, [isEditing, normalizedCompetencies]);
-
-  useEffect(() => {
-    setSelectedCompetencyKey((currentKey) =>
-      normalizedCompetencies.some(
-        (competency) =>
-          competency._key === currentKey,
-      )
-        ? currentKey
-        : "",
-    );
-  }, [normalizedCompetencies]);
 
   function startEditing() {
     if (disableEdit) return;
@@ -453,46 +442,40 @@ export default function DesiredCompetenciesViewTable({
       return;
     }
 
-    setSelectedCompetencyKey(
-      (currentKey) =>
-        currentKey === competency._key
-          ? ""
-          : competency._key,
+    setSelectedCompetencyKeys((currentKeys) =>
+      currentKeys.includes(competency._key)
+        ? currentKeys.filter((key) => key !== competency._key)
+        : [...currentKeys, competency._key],
     );
   }
 
   function handleAddComment() {
-    const selectedCompetency =
-      normalizedCompetencies.find(
-        (competency) =>
-          competency._key ===
-          selectedCompetencyKey,
-      );
+    const selectedCompetencies = normalizedCompetencies.filter(
+      (competency) => selectedCompetencyKeys.includes(competency._key),
+    );
 
-    if (!selectedCompetency) return;
+    if (!selectedCompetencies.length) return;
 
     onAddComment?.(
       "competencies",
       "Desired Competencies",
       {
-        competencyId:
-          selectedCompetency.id || null,
-        selectedText:
-          getCompetencyText(
-            selectedCompetency,
-          ),
+        competencies: selectedCompetencies.map((competency) => ({
+          competencyId: competency.id || null,
+          selectedText: getCompetencyText(competency),
+        })),
+        selectedText: selectedCompetencies
+          .map(getCompetencyText)
+          .join("\n"),
       },
     );
 
-    setSelectedCompetencyKey("");
+    setSelectedCompetencyKeys([]);
   }
 
-  const selectedCompetency =
-    normalizedCompetencies.find(
-      (competency) =>
-        competency._key ===
-        selectedCompetencyKey,
-    );
+  const selectedCompetencies = normalizedCompetencies.filter(
+    (competency) => selectedCompetencyKeys.includes(competency._key),
+  );
 
   return (
     <section className="space-y-3">
@@ -510,9 +493,9 @@ export default function DesiredCompetenciesViewTable({
               </span>
             )}
 
-            {selectedCompetency && !isEditing && (
+            {selectedCompetencies.length > 0 && !isEditing && (
               <span className="rounded-full border border-amber-300 bg-[#FFF3B8] px-2.5 py-1 text-[11px] font-extrabold text-[#101828]">
-                1 selected
+                {selectedCompetencies.length} selected
               </span>
             )}
           </div>
@@ -526,8 +509,7 @@ export default function DesiredCompetenciesViewTable({
             !isEditing &&
             normalizedCompetencies.length > 0 && (
               <p className="mt-1 text-xs font-semibold text-sibs-primary-1/80">
-                Select a competency row before
-                adding a comment.
+                Select one or more competency rows before adding a comment.
               </p>
             )}
         </div>
@@ -553,11 +535,11 @@ export default function DesiredCompetenciesViewTable({
               onClick={handleAddComment}
               disabled={
                 disableComment ||
-                !selectedCompetency
+                !selectedCompetencies.length
               }
               className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                 disableComment ||
-                !selectedCompetency
+                !selectedCompetencies.length
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
               }`}
@@ -751,9 +733,9 @@ export default function DesiredCompetenciesViewTable({
                 0 ? (
                   normalizedCompetencies.map(
                     (competency) => {
-                      const selected =
-                        competency._key ===
-                        selectedCompetencyKey;
+                      const selected = selectedCompetencyKeys.includes(
+                        competency._key,
+                      );
 
                       const competencyComments =
                         getCommentsForCompetency(
@@ -865,9 +847,9 @@ export default function DesiredCompetenciesViewTable({
             0 ? (
               normalizedCompetencies.map(
                 (competency) => {
-                  const selected =
-                    competency._key ===
-                    selectedCompetencyKey;
+                  const selected = selectedCompetencyKeys.includes(
+                    competency._key,
+                  );
 
                   const competencyComments =
                     getCommentsForCompetency(

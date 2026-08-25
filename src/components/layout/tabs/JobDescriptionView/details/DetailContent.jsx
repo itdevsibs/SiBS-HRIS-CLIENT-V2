@@ -214,18 +214,24 @@ function DetailContentRenderer({
     isHtmlContent(value) &&
     (!approvalPage || !hasSelectedTextComments)
   ) {
+    const richTextSelectionClass = approvalPage
+      ? "selection:bg-[#FFF3B8] selection:text-[#101828]"
+      : "";
+
     return (
-      <RichTextViewer
-        value={value}
-        className="jd-single-spaced-justified text-justify text-[#344054]"
-        emptyText={emptyText}
-      />
+      <div className={richTextSelectionClass}>
+        <RichTextViewer
+          value={value}
+          className="jd-single-spaced-justified text-justify text-[#344054]"
+          emptyText={emptyText}
+        />
+      </div>
     );
   }
 
   const selectionClass = approvalPage
     ? "selection:bg-[#FFF3B8] selection:text-[#101828]"
-    : "selection:bg-transparent selection:text-inherit";
+    : "";
 
   return (
     <div className={`jd-single-spaced-justified min-w-0 space-y-2 text-justify ${selectionClass}`}>

@@ -608,6 +608,14 @@ export default function RichTextEditor({
           word-break: normal;
         }
 
+        .jd-rich-text-editor .ProseMirror:focus,
+        .jd-rich-text-editor .ProseMirror:focus-visible {
+          border: 0 !important;
+          outline: none !important;
+          outline-offset: 0 !important;
+          box-shadow: none !important;
+        }
+
         .jd-rich-text-editor .ProseMirror > * + * {
           margin-top: 0.55rem;
         }

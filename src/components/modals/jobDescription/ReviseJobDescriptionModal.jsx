@@ -65,6 +65,18 @@ const RECORD_FIELDS = [
     aliases: ["department", "departmentName", "department_name"],
   },
   {
+    key: "locationWorkSetup",
+    label: "Location / Work Setup",
+    inputType: "select",
+    aliases: [
+      "locationWorkSetup",
+      "location_work_setup",
+      "workSetup",
+      "work_setup",
+      "location",
+    ],
+  },
+  {
     key: "dateRequested",
     label: "Date Requested",
     inputType: "date",
@@ -179,6 +191,27 @@ const REVISION_SECTIONS = [
     type: "text",
   },
   {
+    key: "education",
+    formKey: "education",
+    label: "Education",
+    helper: "Revise the minimum education requirements for this position.",
+    type: "text",
+  },
+  {
+    key: "experience",
+    formKey: "experience",
+    label: "Experience",
+    helper: "Revise the required operational or industry experience.",
+    type: "text",
+  },
+  {
+    key: "certificationsAffiliations",
+    formKey: "certificationsAffiliations",
+    label: "Certifications and Affiliations",
+    helper: "Revise required or preferred certifications and affiliations.",
+    type: "text",
+  },
+  {
     key: "personalityType",
     formKey: "personalityType",
     label: "Preferred Personality Type",
@@ -224,6 +257,7 @@ const RECORD_DRAFT_FIELD_ORDER = [
   "roleTitle",
   "preparedFor",
   "department",
+  "locationWorkSetup",
   "effectiveDate",
   "linkedHiringRequirement",
   "jdCode",
@@ -243,6 +277,18 @@ const REPORTS_TO_OPTIONS = [
   "Senior Operations Manager",
   "Department Head",
   "HR Manager",
+];
+
+const REVISION_TEXT_FORM_KEYS = new Set(
+  REVISION_SECTIONS.filter((section) => section.type === "text").map(
+    (section) => section.formKey,
+  ),
+);
+
+const LOCATION_WORK_SETUP_OPTIONS = [
+  "Davao Site (On-Site)",
+  "Tagum Site (On-Site)",
+  "Mabini Site (On-Site)",
 ];
 
 function getOrderedRecordFields() {
@@ -272,6 +318,36 @@ function createCompetencyRow() {
 
 function cleanText(value = "") {
   return String(value ?? "").trim();
+}
+
+function richTextToPlainText(value = "") {
+  const source = String(value || "");
+
+  if (!/<\/?[a-z][\s\S]*>/i.test(source)) {
+    return source;
+  }
+
+  const sourceWithLineBreaks = source
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/\s*(p|div|li|h[1-6]|blockquote|tr)\s*>/gi, "\n")
+    .replace(/<li\b[^>]*>/gi, "- ");
+
+  let plainText = sourceWithLineBreaks.replace(/<[^>]*>/g, "");
+
+  if (typeof DOMParser !== "undefined") {
+    const parsedDocument = new DOMParser().parseFromString(
+      sourceWithLineBreaks,
+      "text/html",
+    );
+
+    plainText = parsedDocument.body.textContent || plainText;
+  }
+
+  return plainText
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function normalizeCompareText(value = "") {
@@ -921,7 +997,9 @@ function getCurrentValueForSection(item = {}, section = {}) {
     return serializeCompetencies(item);
   }
 
-  return String(item?.[section.key] || item?.raw?.[section.key] || "");
+  return richTextToPlainText(
+    item?.[section.key] || item?.raw?.[section.key] || "",
+  );
 }
 
 function getDraftValueForSection(form = {}, section = {}, item = {}) {
@@ -945,7 +1023,7 @@ function getDraftValueForSection(form = {}, section = {}, item = {}) {
   }
 
   if (section.formKey) {
-    return String(
+    return richTextToPlainText(
       form?.[section.formKey] ?? getCurrentValueForSection(item, section) ?? "",
     );
   }
@@ -1039,14 +1117,27 @@ function getRevisionFormDefaults(activeItem = {}) {
 
   return {
     ...recordDefaults,
-    description: String(
+    description: richTextToPlainText(
       activeItem.description || activeItem.raw?.description || "",
     ),
-    responsibilities: String(
+    responsibilities: richTextToPlainText(
       activeItem.responsibilities || activeItem.raw?.responsibilities || "",
     ),
-    qualifications: String(
+    qualifications: richTextToPlainText(
       activeItem.qualifications || activeItem.raw?.qualifications || "",
+    ),
+    education: richTextToPlainText(
+      activeItem.education || activeItem.raw?.education || "",
+    ),
+    experience: richTextToPlainText(
+      activeItem.experience || activeItem.raw?.experience || "",
+    ),
+    certificationsAffiliations: richTextToPlainText(
+      activeItem.certificationsAffiliations ||
+        activeItem.certifications_affiliations ||
+        activeItem.raw?.certificationsAffiliations ||
+        activeItem.raw?.certifications_affiliations ||
+        "",
     ),
     personalityType: getPersonalityTypeValue(activeItem),
     competencies,
@@ -1782,6 +1873,35 @@ function RecordDraftEditor({ form = {}, setForm }) {
                   setLinkedRequirementOpen(false);
                 }}
               />
+            </div>
+          );
+        }
+
+        if (field.key === "locationWorkSetup") {
+          return (
+            <div
+              key={field.key}
+              className={getRecordDraftFieldStackClass(field.key)}
+            >
+              <label className={REVISION_FIELD_LABEL_CLASS}>
+                {field.label}
+              </label>
+
+              <select
+                value={form.locationWorkSetup || ""}
+                onFocus={closeAllDropdowns}
+                onChange={(event) =>
+                  updateField("locationWorkSetup", event.target.value)
+                }
+                className={`${REVISION_INPUT_CLASS} cursor-pointer`}
+              >
+                <option value="">Select location / work setup</option>
+                {LOCATION_WORK_SETUP_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
           );
         }
@@ -2847,7 +2967,7 @@ function SectionMergeEditor({
               <PersonalityDraftPicker form={form} setForm={setForm} />
             ) : (
               <textarea
-                value={String(form?.[section.formKey] ?? currentValue ?? "")}
+                value={draftValue}
                 onChange={(event) => updateDraft(event.target.value)}
                 className={REVISION_TEXTAREA_CLASS}
                 placeholder={`Write the revised ${section.label.toLowerCase()} here...`}
@@ -2976,20 +3096,21 @@ export default function ReviseJobDescriptionModal({
     const containerHeight = containerRect.height;
 
     const upperRevealArea = 110;
-    const lowerRevealArea = 110;
 
-    if (
-      mouseY <= upperRevealArea ||
-      mouseY >= containerHeight - lowerRevealArea
-    ) {
+    if (mouseY <= Math.min(upperRevealArea, containerHeight)) {
       setChromeVisible(true);
     }
   }
 
   function handleRevisionEditorScroll(event) {
-    const currentScrollTop = event.currentTarget.scrollTop;
+    const scrollPanel = event.currentTarget;
+    const currentScrollTop = scrollPanel.scrollTop;
     const lastScrollTop = lastScrollTopRef.current;
     const scrollDifference = currentScrollTop - lastScrollTop;
+    const distanceFromBottom = Math.max(
+      0,
+      scrollPanel.scrollHeight - scrollPanel.clientHeight - currentScrollTop,
+    );
 
     if (currentScrollTop <= 20) {
       navHideActivatedRef.current = false;
@@ -2998,7 +3119,19 @@ export default function ReviseJobDescriptionModal({
       return;
     }
 
-    if (Math.abs(scrollDifference) < 8) return;
+    // Keep the chrome hidden at the end of the editor. Revealing it changes
+    // the scroll viewport and can otherwise create a show/hide feedback loop.
+    if (distanceFromBottom <= 24) {
+      navHideActivatedRef.current = true;
+      setChromeVisible(false);
+      lastScrollTopRef.current = currentScrollTop;
+      return;
+    }
+
+    if (Math.abs(scrollDifference) < 8) {
+      lastScrollTopRef.current = currentScrollTop;
+      return;
+    }
 
     const scrollingDown = scrollDifference > 0;
     const scrollingUp = scrollDifference < 0;
@@ -3057,7 +3190,14 @@ export default function ReviseJobDescriptionModal({
             ? previousValue.length > 0
             : previousValue !== undefined && previousValue !== "";
 
-          return [key, shouldKeepPrevious ? previousValue : value];
+          const nextValue = shouldKeepPrevious ? previousValue : value;
+
+          return [
+            key,
+            REVISION_TEXT_FORM_KEYS.has(key)
+              ? richTextToPlainText(nextValue)
+              : nextValue,
+          ];
         }),
       ),
     }));
@@ -3131,10 +3271,10 @@ export default function ReviseJobDescriptionModal({
 
             <nav
               ref={sectionNavRef}
-              className="mt-4 border-t border-[#E6ECF2] pt-1"
+              className="mt-4 border-t border-[#E6ECF2]"
               aria-label="Revision sections"
             >
-              <div className="flex min-w-0 flex-wrap items-center gap-6 overflow-x-auto">
+              <div className="sibs-scrollbar flex min-w-0 flex-nowrap items-center overflow-x-auto overscroll-x-contain bg-[#F8FAFC] px-2.5 pt-2 sm:px-3 sm:pt-2.5">
                 {REVISION_SECTIONS.map((section) => {
                   const sectionComments = getSectionComments(
                     section.key,
@@ -3148,23 +3288,29 @@ export default function ReviseJobDescriptionModal({
                       key={section.key}
                       type="button"
                       onClick={() => scrollToRevisionSection(section.key)}
-                      className={`inline-flex h-12 shrink-0 items-center gap-2 border-b-2 px-1 text-sm font-extrabold transition ${
+                      className={`inline-flex h-9 shrink-0 items-center gap-1.5 border-b-2 px-3 sibs-text-micro font-extrabold uppercase tracking-wide transition-all sm:px-3.5 ${
                         isActive
-                          ? "border-[#2563EB] text-[#2563EB]"
-                          : "border-transparent text-[#344054] hover:border-[#BFD6F6] hover:text-sibs-primary-1"
+                          ? "rounded-t-lg border-[#FF5C28] bg-white text-[#042C51]"
+                          : "border-transparent text-[#667085] hover:text-[#042C51]"
                       }`}
                     >
                       <FileText
-                        size={16}
+                        size={13}
                         className={
-                          isActive ? "text-[#2563EB]" : "text-sibs-primary-1"
+                          isActive ? "text-[#FF5C28]" : "text-[#98A2B3]"
                         }
                       />
 
                       {section.label}
 
                       {sectionComments.length > 0 && (
-                        <span className="rounded-full border border-amber-300 bg-[#FFF3B8] px-2 py-0.5 text-[10px] font-extrabold leading-none text-[#101828]">
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 sibs-text-micro font-extrabold tabular-nums ${
+                            isActive
+                              ? "bg-[#042C51] text-white"
+                              : "bg-slate-200 text-slate-600"
+                          }`}
+                        >
                           {sectionComments.length}
                         </span>
                       )}

@@ -1,4 +1,5 @@
 import api from "./api-template";
+import { notifyApprovalRulesChanged } from "../utils/approvalRuleEvents";
 
 const HIRING_NEEDS_APPROVAL_RULES_URL = "/api/hiring-needs-approval-rules";
 
@@ -60,6 +61,7 @@ export async function addHiringNeedsApprovalUser(payload = {}) {
       withCredentials: true,
     });
 
+    notifyApprovalRulesChanged("hiringNeeds");
     return res.data;
   } catch (error) {
     console.error(
@@ -86,6 +88,7 @@ export async function removeHiringNeedsApprovalUser(sibsId) {
       },
     );
 
+    notifyApprovalRulesChanged("hiringNeeds");
     return res.data;
   } catch (error) {
     console.error(
