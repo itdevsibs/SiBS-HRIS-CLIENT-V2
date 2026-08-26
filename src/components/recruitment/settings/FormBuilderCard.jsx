@@ -8,8 +8,6 @@ import {
   ChevronUp,
   Eye,
   Filter,
-  Layers,
-  Lightbulb,
   ListChecks,
   Loader2,
   PenLine,
@@ -24,62 +22,29 @@ import {
 
 import { useRecruitmentSettings } from "../../../services/context/RecruitmentSettingsContext";
 import StatusModal from "../../modals/StatusModal";
+import RichTextEditor from "../../modals/jobDescription/RichTextEditor";
 import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
 
 const FORM_STATUS_OPTIONS = ["Active", "Inactive", "Draft"];
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
 const FORMS_PAGE_LIMIT = 15;
 
-const SECTION_PRESETS = [
-  {
-    title: "Communication",
-    subtitle: "Grammar, tone & active listening",
-    questions: [
-      {
-        label:
-          "Demonstrates clear vocal articulation, accent neutralization, and active listening skills during scenario simulation.",
-        type: "Rating",
-        required: true,
-      },
-    ],
-  },
-  {
-    title: "Problem Solving",
-    subtitle: "Scenario handling & reasoning",
-    questions: [
-      {
-        label:
-          "Explains a structured approach to diagnosing customer issues and choosing the best resolution path.",
-        type: "Rating",
-        required: true,
-      },
-    ],
-  },
-  {
-    title: "Technical / Tools",
-    subtitle: "CRM knowledge & Pass/Fail rules",
-    questions: [
-      {
-        label:
-          "Demonstrates familiarity with required systems, documentation standards, and workflow navigation.",
-        type: "Rating",
-        required: true,
-      },
-    ],
-  },
-  {
-    title: "Culture & Attendance",
-    subtitle: "Shift flexibility & values fit",
-    questions: [
-      {
-        label:
-          "SIBS core values alignment: Commitment to team collaboration, schedule flexibility, and continuous learning.",
-        type: "Rating",
-        required: true,
-      },
-    ],
-  },
-];
+function DraftRichTextEditor({ value = "", onCommit, ...props }) {
+  const [draft, setDraft] = useState(value);
+
+  return (
+    <RichTextEditor
+      {...props}
+      value={draft}
+      syncValue={false}
+      onChange={(html) => setDraft(html)}
+      onBlur={(html) => {
+        setDraft(html);
+        onCommit?.(html);
+      }}
+    />
+  );
+}
 
 function asText(value, fallback = "-") {
   const text = String(value ?? "").trim();
@@ -200,94 +165,6 @@ function getFieldTypeOptions(fieldTypes = []) {
   return normalized.length ? normalized : ["Rating", "Text", "Pass/Fail"];
 }
 
-function StepButton({ number, label, active, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold transition ${
-        active
-          ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
-          : "border-transparent bg-white text-[#475467] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
-      }`}
-    >
-      <span
-        className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-extrabold ${
-          active ? "bg-[#FF5C28] text-white" : "bg-[#E8EEF5] text-[#667085]"
-        }`}
-      >
-        {number}
-      </span>
-      <span className="truncate">{label}</span>
-    </button>
-  );
-}
-
-function BeginnerGuide({ hidden, onToggle }) {
-  if (hidden) {
-    return (
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="text-xs font-extrabold text-[#C75A00] underline"
-        >
-          Show Guide
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-amber-200 bg-[#FFFCF2] p-3">
-      <div className="mb-2.5 flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 text-xs font-extrabold uppercase text-[#9A4A00]">
-          <Sparkles size={15} className="text-[#FF5C28]" />
-          <Lightbulb size={14} className="text-amber-500" />
-          Beginner's Guide: How to Create an Interview Form
-        </p>
-
-        <button
-          type="button"
-          onClick={onToggle}
-          className="text-xs font-extrabold text-[#C75A00] underline"
-        >
-          Hide Guide
-        </button>
-      </div>
-
-      <div className="grid gap-2.5 lg:grid-cols-3">
-        {[
-          [
-            "Step 1: Basic Info",
-            "Give your form a name, set the status, and define the passing score required to recommend a candidate.",
-          ],
-          [
-            "Step 2: Add Sections",
-            "Group evaluation topics and use presets when you want standard pre-written sections.",
-          ],
-          [
-            "Step 3: Define Questions",
-            "Add criteria questions and select whether interviewers rate on a scale or leave feedback.",
-          ],
-        ].map(([title, copy]) => (
-          <div
-            key={title}
-            className="rounded-[10px] border border-amber-100 bg-white px-3 py-2.5"
-          >
-            <p className="text-xs font-extrabold text-sibs-primary-1">
-              {title}
-            </p>
-            <p className="mt-1 text-[11px] font-medium leading-4 text-[#667085]">
-              {copy}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function FormBuilderCard() {
   const {
     availablePositions,
@@ -318,17 +195,15 @@ export default function FormBuilderCard() {
     handleAddFieldGroup,
     handleUpdateFieldFromModal,
     handleRenameFieldGroup,
+    handleMoveFieldGroup,
     handleDeleteField,
     handleDeleteFieldGroup,
   } = useRecruitmentSettings();
 
   const [mode, setMode] = useState("table");
-  const [step, setStep] = useState(1);
-  const [showAllSteps, setShowAllSteps] = useState(false);
   const [formsSearch, setFormsSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [formsPage, setFormsPage] = useState(1);
-  const [guideHidden, setGuideHidden] = useState(false);
   const [manualSaveFeedback, setManualSaveFeedback] = useState({
     type: "idle",
     message: "",
@@ -448,9 +323,6 @@ export default function FormBuilderCard() {
     setActivePositionId?.(getPositionId(position));
     setManualSaveFeedback({ type: "idle", message: "" });
     setMode("editor");
-    setStep(1);
-    setShowAllSteps(false);
-    setGuideHidden(false);
   }
 
   async function saveForm() {
@@ -508,13 +380,6 @@ export default function FormBuilderCard() {
     });
   }
 
-  function resizeCriteriaTextarea(element) {
-    if (!element) return;
-
-    element.style.height = "auto";
-    element.style.height = `${element.scrollHeight}px`;
-  }
-
   const saveBusy =
     manualSaveFeedback.type === "saving" ||
     Boolean(questionsSaving) ||
@@ -544,7 +409,9 @@ export default function FormBuilderCard() {
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <SettingsHeaderCapsules
-              items={[{ label: "Create & Edit Final Interview Forms", icon: PenLine }]}
+              items={[
+                { label: "Create & Edit Final Interview Forms", icon: PenLine },
+              ]}
             />
 
             <h3 className="mt-3 text-base font-extrabold text-sibs-primary-1">
@@ -813,10 +680,6 @@ export default function FormBuilderCard() {
     );
   }
 
-  const showStepOne = showAllSteps || step === 1;
-  const showStepTwo = showAllSteps || step === 2;
-  const showStepThree = showAllSteps || step === 3;
-
   return (
     <div className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
       <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
@@ -1026,529 +889,347 @@ export default function FormBuilderCard() {
           </div>
         )}
 
-        <div className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white p-1.5 shadow-sm sibs-scrollbar">
-          <StepButton
-            number={1}
-            label="Form Info & Score"
-            active={!showAllSteps && step === 1}
-            onClick={() => {
-              setStep(1);
-              setShowAllSteps(false);
-            }}
-          />
-          <StepButton
-            number={2}
-            label="Sections & Presets"
-            active={!showAllSteps && step === 2}
-            onClick={() => {
-              setStep(2);
-              setShowAllSteps(false);
-            }}
-          />
-          <StepButton
-            number={3}
-            label="Questions & Rating Types"
-            active={!showAllSteps && step === 3}
-            onClick={() => {
-              setStep(3);
-              setShowAllSteps(false);
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowAllSteps((value) => !value)}
-            className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold transition ${
-              showAllSteps
-                ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
-                : "border-transparent bg-white text-[#344054] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
-            }`}
-          >
-            <Layers
-              size={15}
-              className={showAllSteps ? "text-[#FF5C28]" : "text-[#98A2B3]"}
-            />
-            {"Show All Steps"}
-          </button>
-        </div>
-
-        <BeginnerGuide
-          hidden={guideHidden}
-          onToggle={() => setGuideHidden((value) => !value)}
-        />
-
-        <div className="mt-4 space-y-4">
-          {showStepOne && (
-            <section className="rounded-xl border border-[#D9E2EC] bg-white p-4">
-              <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-3">
-                <div>
-                  <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
-                    Step 1 of 3
-                  </span>
-                  <h4 className="mt-2 text-[15px] font-extrabold text-sibs-primary-1">
-                    Form Basic Information & Passing Threshold
-                  </h4>
-                </div>
-                <p className="text-[13px] font-medium leading-5 text-sibs-tertiary-5">
-                  Position Code: {getPositionCode(selectedPosition)}
-                  {getPositionJdCode(selectedForm) ||
-                  getPositionJdCode(selectedPosition)
-                    ? ` • JD: ${
-                        getPositionJdCode(selectedForm) ||
-                        getPositionJdCode(selectedPosition)
-                      }`
-                    : ""}
+        <div className="space-y-4">
+          <section className="rounded-xl border border-[#D9E2EC] bg-white p-4">
+            <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-3">
+              <div>
+                <h4 className="text-[15px] font-extrabold text-sibs-primary-1">
+                  Form Basic Information & Passing Threshold
+                </h4>
+                <p className="text-xs font-medium text-[#475467]">
+                  Configure primary form details and candidate passing score.
                 </p>
               </div>
+              <p className="text-[13px] font-medium leading-5 text-sibs-tertiary-5">
+                Position Code: {getPositionCode(selectedPosition)}
+                {getPositionJdCode(selectedForm) ||
+                getPositionJdCode(selectedPosition)
+                  ? ` • JD: ${
+                      getPositionJdCode(selectedForm) ||
+                      getPositionJdCode(selectedPosition)
+                    }`
+                  : ""}
+              </p>
+            </div>
 
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(220px,0.75fr)_minmax(220px,0.55fr)]">
-                <label className="block">
-                  <span className="text-xs font-extrabold text-sibs-primary-1">
-                    Form Name <span className="text-red-500">*</span>
-                  </span>
-                  <input
-                    value={formName || ""}
-                    onChange={(event) => setFormName?.(event.target.value)}
-                    className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                  />
-                  <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
-                    Name displayed to interviewers during live evaluation.
-                  </span>
-                </label>
-
-                <label className="block">
-                  <span className="text-xs font-extrabold text-sibs-primary-1">
-                    Form Status
-                  </span>
-                  <select
-                    value={formStatus || "Active"}
-                    onChange={(event) => setFormStatus?.(event.target.value)}
-                    className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                  >
-                    {FORM_STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>
-                        {status === "Active"
-                          ? "Active (Ready for Hiring)"
-                          : status}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
-                    Only Active forms appear to interviewers.
-                  </span>
-                </label>
-
-                <label className="block">
-                  <span className="text-xs font-extrabold text-sibs-primary-1">
-                    Passing Score (%) <span className="text-red-500">*</span>
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={passingScore ?? 80}
-                    onChange={(event) => setPassingScore?.(event.target.value)}
-                    className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                  />
-                  <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
-                    Minimum score candidate needs to pass.
-                  </span>
-                </label>
-              </div>
-
-              <label className="mt-4 block">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(220px,0.75fr)_minmax(220px,0.55fr)]">
+              <label className="block">
                 <span className="text-xs font-extrabold text-sibs-primary-1">
-                  Description / Evaluation Directive
+                  Form Name <span className="text-red-500">*</span>
                 </span>
-                <textarea
-                  rows={2}
-                  value={formDescription || ""}
-                  onChange={(event) => setFormDescription?.(event.target.value)}
-                  className="mt-1.5 w-full resize-none rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                <input
+                  value={formName || ""}
+                  onChange={(event) => setFormName?.(event.target.value)}
+                  placeholder={`${getPositionTitle(selectedPosition)} - Final Interview Form`}
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
                 />
                 <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
-                  Instructions visible at the top of the interview form.
+                  Name displayed to interviewers during live evaluation.
                 </span>
               </label>
 
-              {!showAllSteps && (
-                <div className="mt-5 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90"
-                  >
-                    Next Step: Add & Organize Sections
-                    <Plus size={15} className="text-[#FF5C28]" />
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
+              <label className="block">
+                <span className="text-xs font-extrabold text-sibs-primary-1">
+                  Form Status
+                </span>
+                <select
+                  value={formStatus || "Active"}
+                  onChange={(event) => setFormStatus?.(event.target.value)}
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                >
+                  {FORM_STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status === "Active"
+                        ? "Active (Ready for Hiring)"
+                        : status}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                  Only Active forms appear to interviewers.
+                </span>
+              </label>
 
-          {showStepTwo && (
-            <section className="rounded-xl border border-[#D9E2EC] bg-white p-4">
-              <div className="mb-3 flex flex-col gap-3 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <span className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold text-blue-700">
-                    Step 2 of 3
-                  </span>
-                  <h4 className="mt-2 text-[15px] font-extrabold text-sibs-primary-1">
-                    Form Sections & 1-Click Presets
-                  </h4>
-                  <p className="text-[13px] font-medium leading-5 text-[#475467]">
-                    Sections organize evaluation criteria into categories.
-                  </p>
-                </div>
+              <label className="block">
+                <span className="text-xs font-extrabold text-sibs-primary-1">
+                  Passing Score (%) <span className="text-red-500">*</span>
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={passingScore ?? 80}
+                  onChange={(event) => setPassingScore?.(event.target.value)}
+                  className="mt-1.5 h-9 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                />
+                <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                  Minimum score candidate needs to pass.
+                </span>
+              </label>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-xs font-extrabold text-sibs-primary-1">
+                Description / Evaluation Directive
+              </p>
+              <div className="mt-1.5">
+                <DraftRichTextEditor
+                  key={`directive-${getPositionId(selectedPosition)}`}
+                  id="final-interview-evaluation-directive"
+                  value={formDescription || ""}
+                  onCommit={(html) => setFormDescription?.(html)}
+                  placeholder="Describe the interview focus and evaluation instructions."
+                  minHeight={96}
+                />
+              </div>
+              <span className="mt-1 block text-xs font-medium text-sibs-tertiary-5">
+                Instructions visible at the top of the interview form.
+              </span>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+            <div className="mb-4 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h4 className="text-sm font-extrabold uppercase text-sibs-primary-1">
+                  Configure Criteria Fields & Rating Scales
+                </h4>
+                <p className="text-xs font-medium text-[#475467]">
+                  {groupedSections.length} Sections • {totalCriteria} Criteria
+                  Fields
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={addBlankSection}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E64E1D]"
+                  className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
                 >
-                  <Plus size={15} />
-                  Add Blank Section
+                  Expand All
+                </button>
+                <button
+                  type="button"
+                  className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+                >
+                  Collapse All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openPreview()}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white"
+                >
+                  <Eye size={15} className="text-[#FF5C28]" />
+                  Test Live Form
                 </button>
               </div>
+            </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-                <p className="mb-3 flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
-                  <Sparkles size={15} className="text-[#FF5C28]" />
-                  Need help structuring your form? Click a 1-Click Standard
-                  Section Preset:
-                </p>
-                <div className="grid gap-2.5 lg:grid-cols-4">
-                  {SECTION_PRESETS.map((preset) => (
-                    <button
-                      key={preset.title}
-                      type="button"
-                      onClick={() =>
-                        handleAddFieldGroup?.(preset.title, preset.questions)
-                      }
-                      className="rounded-[10px] border border-[#D6DEE8] bg-white px-3 py-2.5 text-left transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
-                    >
-                      <p className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
-                        <Plus size={14} className="text-[#FF5C28]" />
-                        {preset.title}
-                      </p>
-                      <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-                        {preset.subtitle}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-xs font-extrabold uppercase text-sibs-primary-1">
-                    Current Form Sections ({groupedSections.length})
-                  </p>
-                  <div className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
-                    <button type="button" className="hover:text-[#FF5C28]">
-                      Expand All
-                    </button>
-                    <span className="text-sibs-tertiary-5">-</span>
-                    <button type="button" className="hover:text-[#FF5C28]">
-                      Collapse All
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {groupedSections.map((group, index) => (
-                    <div
-                      key={group.section}
-                      className="flex items-center gap-2.5 rounded-[10px] border border-[#D9E2EC] bg-[#F8FAFC] px-3 py-2.5"
-                    >
-                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
-                        S{index + 1}
+            <div className="space-y-5">
+              {groupedSections.map((group, groupIndex) => (
+                <div
+                  key={group.questions[0]?.id || `section-${groupIndex}`}
+                  className="overflow-hidden rounded-xl border border-[#D9E2EC] bg-white"
+                >
+                  <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
+                        S{groupIndex + 1}
                       </span>
-                      <div className="min-w-0 flex-1 rounded-lg border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-extrabold uppercase text-sibs-primary-1">
-                        {index + 1}. {group.section}
+                      <label className="flex min-w-0 flex-1 items-center gap-1 text-[13px] font-extrabold text-sibs-primary-1">
+                        <span className="shrink-0">{groupIndex + 1}.</span>
+                        <input
+                          defaultValue={group.section}
+                          onBlur={(event) => {
+                            const renamed = handleRenameFieldGroup?.(
+                              group.section,
+                              event.target.value,
+                            );
+
+                            if (renamed === false) {
+                              event.target.value = group.section;
+                            }
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              event.currentTarget.blur();
+                            }
+                          }}
+                          aria-label={`Section ${groupIndex + 1} title`}
+                          className="h-9 min-w-0 flex-1 rounded-lg border border-[#D6DEE8] bg-white px-3 text-[13px] font-extrabold uppercase text-sibs-primary-1 outline-none transition hover:border-[#B8C7D9] focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                        />
+                      </label>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex items-center rounded-[9px] border border-[#D6DEE8] bg-white">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleMoveFieldGroup?.(group.section, -1)
+                          }
+                          disabled={groupIndex === 0}
+                          className="inline-flex h-8 w-7 items-center justify-center text-[#667085] disabled:cursor-not-allowed disabled:opacity-30"
+                          title="Move section up"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleMoveFieldGroup?.(group.section, 1)
+                          }
+                          disabled={groupIndex === groupedSections.length - 1}
+                          className="inline-flex h-8 w-7 items-center justify-center text-[#667085] disabled:cursor-not-allowed disabled:opacity-30"
+                          title="Move section down"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
                       </div>
-                      <span className="hidden rounded-lg border border-[#D6DEE8] bg-white px-3 py-2 text-xs font-extrabold text-[#475467] sm:inline-flex">
-                        {group.questions.length} Questions
-                      </span>
                       <button
                         type="button"
-                        className="inline-flex h-9 w-12 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1"
-                        title="Move section"
+                        onClick={() => addFieldToSection(group.section)}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#FF5C28] px-3 text-[10px] font-extrabold text-white"
                       >
-                        <ChevronUp size={14} />
-                        <ChevronDown size={14} />
+                        <Plus size={15} />
+                        Add Field
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteFieldGroup?.(group.section)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] text-red-500 transition hover:bg-red-50"
                         title="Delete section"
                       >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-
-                  {!groupedSections.length && (
-                    <div className="rounded-xl border border-dashed border-[#C8D7E8] bg-white px-4 py-10 text-center text-sm font-extrabold text-sibs-tertiary-5">
-                      No sections yet. Add a preset or blank section to start.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {!showAllSteps && (
-                <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-5">
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
-                  >
-                    <ArrowLeft size={15} />
-                    Previous Step
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStep(3)}
-                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90"
-                  >
-                    Next Step: Edit Criteria Questions
-                    <Plus size={15} className="text-[#FF5C28]" />
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
-
-          {showStepThree && (
-            <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-              <div className="mb-4 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <span className="inline-flex rounded-md bg-[#F1F5F9] px-2 py-1 text-xs font-extrabold uppercase text-sibs-primary-1">
-                    Step 3 of 3
-                  </span>
-                  <h4 className="mt-2 text-sm font-extrabold uppercase text-sibs-primary-1">
-                    Configure Criteria Fields & Rating Scales
-                  </h4>
-                  <p className="text-xs font-medium text-[#475467]">
-                    {groupedSections.length} Sections • {totalCriteria} Criteria
-                    Fields
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
-                  >
-                    Expand All
-                  </button>
-                  <button
-                    type="button"
-                    className="h-9 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
-                  >
-                    Collapse All
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openPreview()}
-                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white"
-                  >
-                    <Eye size={15} className="text-[#FF5C28]" />
-                    Test Live Form
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-5">
-                {groupedSections.map((group, groupIndex) => (
-                  <div
-                    key={group.questions[0]?.id || `section-${groupIndex}`}
-                    className="overflow-hidden rounded-xl border border-[#D9E2EC] bg-white"
-                  >
-                    <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
-                          S{groupIndex + 1}
-                        </span>
-                        <label className="flex min-w-0 flex-1 items-center gap-1 text-[13px] font-extrabold text-sibs-primary-1">
-                          <span className="shrink-0">{groupIndex + 1}.</span>
-                          <input
-                            defaultValue={group.section}
-                            onBlur={(event) => {
-                              const renamed = handleRenameFieldGroup?.(
-                                group.section,
-                                event.target.value,
-                              );
-
-                              if (renamed === false) {
-                                event.target.value = group.section;
-                              }
-                            }}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") {
-                                event.preventDefault();
-                                event.currentTarget.blur();
-                              }
-                            }}
-                            aria-label={`Section ${groupIndex + 1} title`}
-                            className="h-8 min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 text-[13px] font-extrabold uppercase text-sibs-primary-1 outline-none transition hover:border-[#D6DEE8] hover:bg-white focus:border-[#BFD8F1] focus:bg-white focus:ring-4 focus:ring-[#EFF6FF]"
-                          />
-                        </label>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <button
-                          type="button"
-                          className="inline-flex h-8 w-10 items-center justify-center rounded-[9px] border border-[#D6DEE8] bg-white text-[#667085]"
-                        >
-                          <ChevronUp size={15} />
-                          <ChevronDown size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => addFieldToSection(group.section)}
-                          className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-[#FF5C28] px-3 text-[10px] font-extrabold text-white"
-                        >
-                          <Plus size={15} />
-                          Add Field
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 p-5">
-                      {group.questions.map((field, fieldIndex) => (
-                        <div
-                          key={field.id}
-                          className="rounded-2xl border border-[#D9E2EC] bg-white p-4"
-                        >
-                          <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center">
-                            <div className="flex min-w-[260px] items-center gap-3">
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold text-white">
-                                {fieldIndex + 1}
-                              </span>
-                              <span className="text-xs font-extrabold text-sibs-primary-1">
-                                Criteria Field #{fieldIndex + 1}
-                              </span>
-                              <button
-                                type="button"
-                                className="inline-flex h-7 w-11 items-center justify-center rounded-lg border border-[#D6DEE8] bg-[#F1F5F9] text-sibs-tertiary-5"
-                              >
-                                <ChevronUp size={13} />
-                                <ChevronDown size={13} />
-                              </button>
-                            </div>
-
-                            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                              <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
-                                Type:
-                                <select
-                                  defaultValue={field.type || "Rating"}
-                                  onBlur={(event) =>
-                                    updateFieldOnBlur(field, {
-                                      type: event.target.value,
-                                    })
-                                  }
-                                  className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none"
-                                >
-                                  {typeOptions.map((option) => (
-                                    <option key={option} value={option}>
-                                      {option}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                              <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
-                                Scale:
-                                <select className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none">
-                                  <option>1 to 5 Scale</option>
-                                  <option>Pass / Fail</option>
-                                </select>
-                              </label>
-                              <button
-                                type="button"
-                                onClick={() => openPreview()}
-                                className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#F1F5F9] px-3 text-xs font-extrabold text-sibs-primary-1"
-                              >
-                                <Sparkles
-                                  size={14}
-                                  className="text-[#FF5C28]"
-                                />
-                                Quick Preview
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteField?.(field.id)}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-sibs-tertiary-5 hover:bg-red-50 hover:text-red-600"
-                                title="Delete field"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </div>
-                          </div>
-
-                          <textarea
-                            rows={5}
-                            defaultValue={field.label || ""}
-                            ref={resizeCriteriaTextarea}
-                            onInput={(event) =>
-                              resizeCriteriaTextarea(event.currentTarget)
-                            }
-                            onBlur={(event) =>
-                              updateFieldOnBlur(field, {
-                                label: event.target.value,
-                              })
-                            }
-                            className="min-h-10 w-full resize-none overflow-hidden rounded-[10px] border border-[#D6DEE8] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                          />
-                        </div>
-                      ))}
-
-                      <button
-                        type="button"
-                        onClick={() => addFieldToSection(group.section)}
-                        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
-                      >
-                        <Plus size={15} className="text-[#FF5C28]" />
-                        Add Field to "{group.section}"
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
-                ))}
 
+                  <div className="space-y-3 p-5">
+                    {group.questions.map((field, fieldIndex) => (
+                      <div
+                        key={field.id}
+                        className="rounded-2xl border border-[#D9E2EC] bg-white p-4"
+                      >
+                        <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center">
+                          <div className="flex min-w-[260px] items-center gap-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold text-white">
+                              {fieldIndex + 1}
+                            </span>
+                            <span className="text-xs font-extrabold text-sibs-primary-1">
+                              Criteria Field #{fieldIndex + 1}
+                            </span>
+                            <button
+                              type="button"
+                              className="inline-flex h-7 w-11 items-center justify-center rounded-lg border border-[#D6DEE8] bg-[#F1F5F9] text-sibs-tertiary-5"
+                            >
+                              <ChevronUp size={13} />
+                              <ChevronDown size={13} />
+                            </button>
+                          </div>
+
+                          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                            <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
+                              Type:
+                              <select
+                                defaultValue={field.type || "Rating"}
+                                onBlur={(event) =>
+                                  updateFieldOnBlur(field, {
+                                    type: event.target.value,
+                                  })
+                                }
+                                className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none"
+                              >
+                                {typeOptions.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="flex items-center gap-2 text-xs font-bold text-sibs-tertiary-5">
+                              Scale:
+                              <select className="h-9 min-w-[170px] rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none">
+                                <option>1 to 5 Scale</option>
+                                <option>Pass / Fail</option>
+                              </select>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => openPreview()}
+                              className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#F1F5F9] px-3 text-xs font-extrabold text-sibs-primary-1"
+                            >
+                              <Sparkles size={14} className="text-[#FF5C28]" />
+                              Quick Preview
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteField?.(field.id)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-sibs-tertiary-5 hover:bg-red-50 hover:text-red-600"
+                              title="Delete field"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <DraftRichTextEditor
+                          id={`final-interview-criterion-${field.id}`}
+                          value={field.label || ""}
+                          onCommit={(html) =>
+                            updateFieldOnBlur(field, { label: html })
+                          }
+                          placeholder="Enter the evaluation criterion or interview question."
+                          minHeight={96}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addBlankSection}
+                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+              >
+                <Plus size={15} className="text-[#FF5C28]" />
+                Add New Evaluation Section
+              </button>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2 border-t border-[#E6ECF2] pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={() => setMode("table")}
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1"
+              >
+                <ArrowLeft size={15} />
+                Done & Back to Table
+              </button>
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={addBlankSection}
-                  className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#BFD1E5] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
+                  onClick={() => openPreview()}
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
                 >
-                  <Plus size={15} className="text-[#FF5C28]" />
-                  Add New Evaluation Section
+                  <Eye size={15} className="text-[#FF5C28]" />
+                  Preview Live Form
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void saveForm()}
+                  disabled={saveBusy}
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {saveBusy ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Save size={15} className="text-[#FF5C28]" />
+                  )}
+                  Save Position Form
                 </button>
               </div>
-
-              {!showAllSteps && (
-                <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-5">
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
-                  >
-                    <ArrowLeft size={15} />
-                    Previous Step
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void saveForm()}
-                    disabled={saveBusy}
-                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {saveBusy ? (
-                      <Loader2 size={15} className="animate-spin" />
-                    ) : (
-                      <Save size={15} className="text-[#FF5C28]" />
-                    )}
-                    Save Position Form
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
+            </div>
+          </section>
         </div>
 
         {questionsSaveError && (

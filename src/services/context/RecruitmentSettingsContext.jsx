@@ -65,7 +65,7 @@ const emptyFieldForm = {
 const EMPTY_ACTIVE_FORM = {
   id: "",
   positionId: "",
-  name: "Final Interview Form",
+  name: "",
   status: "Inactive",
   passingScore: 80,
   description: "",
@@ -192,7 +192,7 @@ function getFormDetailsPayload(
       form.name ||
       form.formName ||
       form.form_name ||
-      "Final Interview Form",
+      "",
     status:
       form.status || "Active",
     passingScore:
@@ -1326,6 +1326,39 @@ export function RecruitmentSettingsProvider({
     return true;
   }
 
+  function handleMoveFieldGroup(section, direction) {
+    const cleanSection = String(section || "").trim();
+    const offset = Number(direction);
+
+    if (!cleanSection || ![-1, 1].includes(offset)) {
+      return false;
+    }
+
+    const sectionOrder = [...new Set(fields.map((field) => field.section))];
+    const currentIndex = sectionOrder.indexOf(cleanSection);
+    const targetIndex = currentIndex + offset;
+
+    if (
+      currentIndex < 0 ||
+      targetIndex < 0 ||
+      targetIndex >= sectionOrder.length
+    ) {
+      return false;
+    }
+
+    [sectionOrder[currentIndex], sectionOrder[targetIndex]] = [
+      sectionOrder[targetIndex],
+      sectionOrder[currentIndex],
+    ];
+
+    setFieldsLocally(
+      sectionOrder.flatMap((sectionTitle) =>
+        fields.filter((field) => field.section === sectionTitle),
+      ),
+    );
+    return true;
+  }
+
   function handleDeleteFieldGroup(
     section,
   ) {
@@ -1428,6 +1461,7 @@ export function RecruitmentSettingsProvider({
         handleAddFieldGroup,
         handleUpdateFieldFromModal,
         handleRenameFieldGroup,
+        handleMoveFieldGroup,
         handleToggleFieldGroup,
         handleDeleteFieldGroup,
       }}

@@ -40,7 +40,7 @@ export function createDefaultFormForPosition(position) {
     positionCode: position.code,
     positionTitle: position.position,
     department: position.department,
-    name: `${position.position} - Final Interview Form`,
+    name: "",
     status: position.status === "Active" ? "Active" : "Draft",
     passingScore: "80",
     description: `Final interview assessment form for ${position.position}.`,

@@ -31,6 +31,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import StatusModal from "@/components/modals/StatusModal";
+import RichTextViewer from "@/components/modals/jobDescription/RichTextViewer";
 import {
   checkTalentPoolApplicantNameAvailability,
   getTalentPoolApplicationForm,
@@ -6067,9 +6068,13 @@ export default function PublicTalentPoolApplicationPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="mt-2.5 text-xs sm:text-sm font-extrabold leading-5 text-[#042C51] 2xl:leading-6">
-                              {question.questionText}
-                            </p>
+                            <div className="mt-2.5 text-xs sm:text-sm font-extrabold leading-5 text-[#042C51] 2xl:leading-6">
+                              <RichTextViewer
+                                value={question.questionText}
+                                emptyText="Untitled question"
+                                className="text-[#042C51]"
+                              />
+                            </div>
                             {question.helperText ? (
                               <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-[#667085] 2xl:leading-5">
                                 {question.helperText}
