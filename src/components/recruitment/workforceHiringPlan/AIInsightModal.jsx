@@ -117,17 +117,17 @@ export default function AIInsightModal({
   return (
     <div
       data-layout="ai-workforce-intelligence-advisor-v2"
-      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-2.5 font-jakarta backdrop-blur-md sm:p-4"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex items-center justify-center p-2.5 font-jakarta sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose?.();
       }}
     >
       <section className="sibs-modal-pop-in flex max-h-[88vh] 2xl:max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <header className="shrink-0 border-b border-[#19496F] bg-[#042C51] px-4 py-3 2xl:px-5 2xl:py-3.5 text-white">
+        <header className="shrink-0 border-b border-[#19496F] bg-[#042C51] px-5 py-3 2xl:py-3.5 text-white">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-              <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl bg-gradient-to-tr from-[#FF5C28] to-amber-500 text-white shadow-sm">
-                <Bot size={17} />
+              <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-[#FF5C28] to-amber-500 text-white shadow-sm">
+                <Bot size={16} />
               </div>
 
               <div className="min-w-0">
@@ -141,7 +141,7 @@ export default function AIInsightModal({
                   </span>
                 </div>
 
-                <p className="mt-0.5 text-[10px] 2xl:text-xs font-semibold text-blue-100">
+                <p className="mt-0.5 text-[9.5px] sm:text-[11px] font-semibold text-white/75">
                   Automated capacity deficit modeling and batch scheduling recommendations.
                 </p>
               </div>
@@ -152,34 +152,34 @@ export default function AIInsightModal({
               onClick={onClose}
               aria-label="Close AI advisor"
               title="Close"
-              className="inline-flex h-7.5 w-7.5 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-blue-100 transition hover:bg-white/10 hover:text-white"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             >
-              <X size={16} />
+              <X size={18} />
             </button>
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-3.5 py-3.5 2xl:px-5 2xl:py-4 sibs-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5 2xl:px-5 2xl:py-4 sibs-scrollbar">
           {loading ? (
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-6 2xl:py-8 text-center">
               <div className="mx-auto mb-3 flex h-9 w-9 2xl:h-10 2xl:w-10 items-center justify-center rounded-full bg-white text-[#042C51] shadow-sm">
                 <Sparkles className="animate-pulse" size={18} />
               </div>
 
-              <p className="text-xs 2xl:text-sm font-extrabold text-[#042C51]">
+              <p className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">
                 Analyzing workforce hiring plan...
               </p>
 
-              <p className="mt-1.5 text-[11px] 2xl:text-xs font-semibold text-[#667085]">
+              <p className="mt-1 text-[11px] 2xl:text-xs font-semibold text-[#667085]">
                 Please wait while n8n reads the database and generates the AI insight.
               </p>
             </div>
           ) : error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 p-3 2xl:p-4">
-              <p className="text-xs 2xl:text-sm font-extrabold text-red-700">
+              <p className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-red-700">
                 Failed to generate AI insight
               </p>
-              <p className="mt-1.5 text-[11px] 2xl:text-xs font-semibold leading-relaxed text-red-600">
+              <p className="mt-1 text-[11px] 2xl:text-xs font-semibold leading-relaxed text-red-600">
                 {error}
               </p>
             </div>
@@ -187,7 +187,7 @@ export default function AIInsightModal({
             <div className="space-y-3 2xl:space-y-3.5 text-xs">
               <section className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-2.5 2xl:p-3">
                 <AlertTriangle
-                  size={17}
+                  size={16}
                   className="mt-0.5 shrink-0 text-amber-600"
                 />
 
@@ -231,7 +231,7 @@ export default function AIInsightModal({
               </section>
 
               <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 2xl:p-3">
-                <h3 className="text-[10px] 2xl:text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                <h3 className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                   AI Executive Summary
                 </h3>
 
@@ -246,7 +246,7 @@ export default function AIInsightModal({
 
               {cleanHighlights.length > 0 ? (
                 <section className="rounded-xl border border-indigo-100 bg-indigo-50 p-2.5 2xl:p-3">
-                  <h3 className="text-[10px] 2xl:text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <h3 className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Operational Highlights
                   </h3>
 
@@ -266,11 +266,11 @@ export default function AIInsightModal({
               {conversation.length > 0 ? (
                 <section className="space-y-2.5 border-t border-[#E6ECF2] pt-3">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-[10px] 2xl:text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <h3 className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       Advisor Conversation
                     </h3>
 
-                    <span className="rounded-full border border-[#DDE7F2] bg-white px-2 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold text-slate-500">
+                    <span className="rounded-full border border-[#DDE7F2] bg-white px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold text-slate-500">
                       {conversation.length} message
                       {conversation.length === 1 ? "" : "s"}
                     </span>
@@ -314,13 +314,13 @@ export default function AIInsightModal({
                 onChange={(event) => setQuestion(event.target.value)}
                 disabled={loading}
                 placeholder="Ask AI Advisor a follow-up question..."
-                className="h-8.5 2xl:h-9.5 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-[#042C51] focus:ring-4 focus:ring-[#042C51]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-8.5 2xl:h-10 min-w-0 flex-1 rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
               />
 
               <button
                 type="submit"
                 disabled={loading || !String(question || "").trim()}
-                className="inline-flex h-8.5 2xl:h-9.5 items-center justify-center gap-1.5 rounded-xl bg-[#042C51] px-3.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#063B6B] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Send size={13} />
                 Ask
@@ -331,7 +331,7 @@ export default function AIInsightModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8 2xl:h-8.5 rounded-lg border border-slate-300 bg-white px-3.5 text-xs font-extrabold text-[#344054] transition hover:bg-slate-100"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
               >
                 Minimize
               </button>
@@ -340,7 +340,7 @@ export default function AIInsightModal({
                 type="button"
                 onClick={onRegenerate}
                 disabled={loading}
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-3.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#063B6B] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw
                   size={13}

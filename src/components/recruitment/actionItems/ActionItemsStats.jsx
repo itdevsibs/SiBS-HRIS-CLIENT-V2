@@ -13,7 +13,7 @@ import { useActionItemsReport } from "../../../services/context/ActionItemsRepor
 function SummaryCard({ title, value, icon: Icon, description, tone = "navy", delay = 0, featured = false }) {
   return (
     <article
-      className={`sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-2.5 2xl:p-3.5 ${
+      className={`sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-2.5 2xl:p-3.5 font-jakarta ${
         featured ? "!border-transparent !bg-gradient-to-br !from-[#042C51] !to-[#0A467E] text-white" : ""
       }`}
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}

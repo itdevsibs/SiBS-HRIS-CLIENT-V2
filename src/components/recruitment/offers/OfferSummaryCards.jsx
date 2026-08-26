@@ -13,7 +13,7 @@ function StatCard({ title, value, icon, description, tone = "navy", delay = 0 })
 
   return (
     <article
-      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
@@ -51,7 +51,7 @@ export default function OfferSummaryCards() {
 
   return (
     <section aria-labelledby="offer-summary-title">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatCard
           title="Total Offers"
           value={stats.total}

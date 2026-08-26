@@ -43,8 +43,9 @@ export default function OfferHeader({
               title="Refresh offers"
             >
               <RefreshCw
-                size={15}
-                className={isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""}
+                className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                  isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                }`}
               />
             </button>
           ) : null}

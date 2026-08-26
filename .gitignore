@@ -41,6 +41,7 @@ Thumbs.db
 # Codex & Skills
 .codex/
 .agents/
+[Ss]kills/
 
 # Graphify output, cache, & venv
 graphify-out/

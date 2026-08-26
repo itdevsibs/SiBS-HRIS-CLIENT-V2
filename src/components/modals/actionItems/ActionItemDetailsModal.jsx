@@ -132,7 +132,7 @@ export default function ActionItemDetailsModal({
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-slate-950/65 p-2 font-jakarta backdrop-blur-sm sm:p-4"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onMouseDown={onClose}
       role="presentation"
     >
@@ -144,33 +144,32 @@ export default function ActionItemDetailsModal({
         onMouseDown={(event) => event.stopPropagation()}
         className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl"
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
+        <header className="shrink-0 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-2.5">
-              <ClipboardCheck
-                size={18}
-                className="mt-0.5 shrink-0 text-[#FF5C28]"
-              />
+            <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+                <ClipboardCheck size={16} />
+              </span>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded bg-[#FF5C28] px-2 py-0.5 font-jakarta text-[8.5px] font-extrabold uppercase text-white">
+                  <span className="rounded bg-[#FF5C28] px-2 py-0.5 font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
                     {item.actionId || "ACTION"}
                   </span>
-                  <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-300">
+                  <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-slate-300">
                     {sourceType} Action Item
                   </span>
                 </div>
 
                 <h2
                   id="action-item-details-title"
-                  className="mt-1 line-clamp-2 text-sm sm:text-base 2xl:text-lg font-extrabold leading-tight"
+                  className="mt-1 line-clamp-2 text-base sm:text-lg 2xl:text-xl font-extrabold text-white leading-tight"
                   title={item.actionItem || "Action Item Details"}
                 >
                   {item.actionItem || "Action Item Details"}
                 </h2>
 
-                <p className="mt-0.5 text-[10px] font-semibold leading-4 text-slate-300 sm:text-xs">
+                <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
                   Review the linked hiring gap, accountability, progress, and
                   execution history.
                 </p>
@@ -180,14 +179,14 @@ export default function ActionItemDetailsModal({
             <div className="flex shrink-0 items-start gap-2">
               <div className="hidden flex-wrap justify-end gap-1.5 sm:flex">
                 <span
-                  className={`rounded-full border px-2.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide ${getStatusClass(
+                  className={`rounded-full border px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide ${getStatusClass(
                     item.status,
                   )}`}
                 >
                   {item.status || "Planned"}
                 </span>
                 <span
-                  className={`rounded-full border px-2.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide ${getRiskClass(
+                  className={`rounded-full border px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide ${getRiskClass(
                     item.riskLevel,
                   )}`}
                 >
@@ -198,10 +197,10 @@ export default function ActionItemDetailsModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="sibs-modal-close-btn"
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
                 aria-label="Close Action Item details"
               >
-                <X size={17} />
+                <X size={18} />
               </button>
             </div>
           </div>

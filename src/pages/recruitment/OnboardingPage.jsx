@@ -256,7 +256,7 @@ export default function OnboardingPage() {
                   aria-label="Refresh onboarding data"
                   className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <RefreshCw size={15} className={isManualRefreshing ? "animate-spin" : ""} />
+                  <RefreshCw className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""}`} />
                 </button>
 
                 <button

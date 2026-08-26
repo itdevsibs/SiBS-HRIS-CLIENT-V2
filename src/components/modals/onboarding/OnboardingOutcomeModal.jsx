@@ -75,18 +75,18 @@ function OnboardingDateDropdown({ value, onChange, disabled = false }) {
         type="button"
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
-        className={`flex h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${
           open
             ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
-            : "border-[#D6E0EA] bg-white hover:border-[#FF5C28]/45"
+            : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/45"
         }`}
       >
         <span className={`flex items-center gap-2 truncate ${value ? "text-[#042C51]" : "text-[#98A2B3]"}`}>
-          <CalendarDays size={15} className="text-[#FF5C28]" />
+          <CalendarDays size={14} className="text-[#FF5C28]" />
           {value || "Select date"}
         </span>
         <ChevronDown
-          size={15}
+          size={14}
           className={`text-[#FF5C28] transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
@@ -341,7 +341,7 @@ export default function OutcomeModal({
                 </div>
 
                 <div className="mt-4">
-                  <label className="sibs-modal-field-label">Internal Remarks</label>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Internal Remarks</label>
                   <textarea
                     rows={3}
                     value={form.remarks}
@@ -357,8 +357,8 @@ export default function OutcomeModal({
               <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="sibs-modal-field-label">
-                      Reason Category <span className="text-red-500">*</span>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      Reason Category <span className="text-[#FF5C28]"> *</span>
                     </label>
                     <select
                       required
@@ -378,7 +378,7 @@ export default function OutcomeModal({
                   </div>
 
                   <div>
-                    <label className="sibs-modal-field-label">Experience Rating</label>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Experience Rating</label>
                     <select
                       value={String(form.experienceRating ?? 3)}
                       onChange={(event) =>
@@ -395,9 +395,9 @@ export default function OutcomeModal({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="sibs-modal-field-label">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       {isNoShow ? "No Show Reason" : "Withdrawal Reason"}{" "}
-                      <span className="text-red-500">*</span>
+                      <span className="text-[#FF5C28]"> *</span>
                     </label>
                     <textarea
                       required
@@ -416,7 +416,7 @@ export default function OutcomeModal({
                   </div>
 
                   <div>
-                    <label className="sibs-modal-field-label">Feedback Tag</label>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Feedback Tag</label>
                     <input
                       value={form.feedbackTag}
                       onChange={(event) => setForm({ ...form, feedbackTag: event.target.value })}
@@ -426,7 +426,7 @@ export default function OutcomeModal({
                   </div>
 
                   <div>
-                    <label className="sibs-modal-field-label">Internal Remarks</label>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Internal Remarks</label>
                     <input
                       value={form.remarks}
                       onChange={(event) => setForm({ ...form, remarks: event.target.value })}
@@ -436,7 +436,7 @@ export default function OutcomeModal({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="sibs-modal-field-label">Candidate Feedback</label>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Candidate Feedback</label>
                     <textarea
                       rows={3}
                       value={form.candidateFeedback}
@@ -476,14 +476,14 @@ export default function OutcomeModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D6E0EA] bg-white px-5 sibs-text-xs font-extrabold text-[#667085] hover:bg-[#F8FAFC]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] hover:bg-[#F8FAFC]"
             >
               Cancel
             </button>
             <button
               type="submit"
               form="outcome-form"
-              className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-5 sibs-text-xs font-extrabold text-white shadow-sm transition active:scale-[0.98] ${theme.button}`}
+              className={`inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition active:scale-[0.98] ${theme.button}`}
             >
               {isShow ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
               Confirm Outcome

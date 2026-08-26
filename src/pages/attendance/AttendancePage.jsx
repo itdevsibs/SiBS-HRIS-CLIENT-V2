@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Clock } from "lucide-react";
+import { Clock, RefreshCw } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
@@ -18,6 +18,7 @@ export default function AttendancePage() {
   const mainRef = useRef(null);
   const didResetPageOnMountRef = useRef(false);
   const [tableReady, setTableReady] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { page, search, setPage, setCurrentPage, handlePageChange } =
     usePagination("attendance");
@@ -94,6 +95,16 @@ export default function AttendancePage() {
     scrollToTop("auto");
   }, [search]);
 
+  function handleRefresh() {
+    setIsRefreshing(true);
+    setTableReady(false);
+    setPage?.(1);
+    window.setTimeout(() => {
+      setTableReady(true);
+      setIsRefreshing(false);
+    }, 400);
+  }
+
   return (
     <div className="sibs-dashboard-shell">
       <div className="shrink-0">
@@ -128,10 +139,26 @@ export default function AttendancePage() {
                 </p>
               </div>
 
-              <span className="inline-flex h-8.5 2xl:h-10 w-max shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-[#042C51]">
-                <Clock className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#FF5C28]" />
-                Attendance Records
-              </span>
+              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  title="Refresh Attendance Data"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                    }`}
+                  />
+                </button>
+
+                <span className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs">
+                  <Clock className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
+                  Attendance Records
+                </span>
+              </div>
             </div>
           </section>
 

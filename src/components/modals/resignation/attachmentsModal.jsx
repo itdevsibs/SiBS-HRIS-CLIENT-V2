@@ -128,18 +128,18 @@ function AttachmentCard({ attachment, onOpen, onDownload }) {
             <button
               type="button"
               onClick={() => onOpen(attachment)}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
             >
-              <ExternalLink size={14} />
+              <ExternalLink size={13} />
               Open
             </button>
 
             <button
               type="button"
               onClick={() => onDownload(attachment)}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28] active:scale-[0.98]"
             >
-              <Download size={14} />
+              <Download size={13} />
               Download
             </button>
           </div>
@@ -239,21 +239,21 @@ export default function AttachmentsModal({
         }`}
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#042C51] px-4 py-3.5 text-white sm:px-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28]">
-              <Paperclip size={18} />
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <Paperclip size={16} />
             </span>
 
             <div className="min-w-0">
               <h2
                 id="resignation-attachments-title"
-                className="truncate text-base font-extrabold"
+                className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
               >
                 Resignation Attachments
               </h2>
 
-              <p className="mt-0.5 truncate text-xs text-slate-300">
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
                 {employeeName} · {sibsId || "No SIBS ID"}
               </p>
             </div>
@@ -262,10 +262,10 @@ export default function AttachmentsModal({
           <button
             type="button"
             onClick={requestClose}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             aria-label="Close attachments modal"
           >
-            <X size={19} />
+            <X size={18} />
           </button>
         </header>
 
@@ -314,11 +314,11 @@ export default function AttachmentsModal({
           )}
         </div>
 
-        <footer className="flex shrink-0 justify-end border-t border-[#E6ECF2] bg-white px-4 py-3.5 sm:px-5">
+        <footer className="flex shrink-0 justify-end border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
           <button
             type="button"
             onClick={requestClose}
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
           >
             Close
           </button>

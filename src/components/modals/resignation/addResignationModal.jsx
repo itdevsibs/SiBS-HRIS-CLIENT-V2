@@ -504,33 +504,36 @@ export default function AddResignationModal({
 
   return (
     <>
-      <div className="sibs-modal-blur fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-4 py-8">
-        <div className="my-auto flex max-h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-6 py-5">
-            <div>
-              <h2 className="text-2xl font-bold text-sibs-primary-1">
+      <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-50 flex items-center justify-center p-2 font-jakarta sm:p-4">
+        <div className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta">
+          <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+            <div className="min-w-0">
+              <h2 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
                 {isEdit ? "Edit Resignation" : "Submit Resignation"}
               </h2>
 
-              <p className="mt-1 text-sm text-sibs-tertiary-5">
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
                 {isEdit ? "Edit" : "Submit"} your resignation request details
               </p>
             </div>
 
-            <button
-              type="button"
-              // onClick={handleRetract}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition-all duration-200 hover:border-green-300 hover:bg-green-100 hover:text-green-800 active:scale-[0.98]"
-            >
-              <Undo2 size={16} strokeWidth={2.2} />
-              Retract
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <form
             onSubmit={isEdit ? handleSubmitUpdate : handleSubmit}
-            className="flex-1 overflow-y-auto px-6 py-6"
+            className="flex min-h-0 flex-1 flex-col"
           >
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar space-y-4">
             {!isEdit && (
               <div className="mb-5">
                 <Field label="Type of Resignation *">
@@ -882,13 +885,13 @@ export default function AddResignationModal({
                   </div>
                 </Field>
               </div>
-            )}
+            </div>
 
-            <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#E6ECF2] pt-5">
+            <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
               <button
                 type="button"
                 onClick={handleClose}
-                className="rounded-xl border border-[#D7DEE8] px-4 py-2.5 text-sm font-medium text-sibs-tertiary-5 transition hover:bg-[var(--sibs-tertiary-9)]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
               >
                 Cancel
               </button>
@@ -897,7 +900,7 @@ export default function AddResignationModal({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? "Submitting..." : "Submit Resignation"}
                 </button>
@@ -905,7 +908,7 @@ export default function AddResignationModal({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? "Updating..." : "Update Resignation"}
                 </button>

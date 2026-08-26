@@ -688,29 +688,29 @@ export default function AttritionModal({
 
   const content = (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[99999] flex h-dvh w-screen items-center justify-center px-4 py-6"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex h-dvh w-screen items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={() => {
         if (!submitting) onClose?.();
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ${
-          isView ? "max-w-2xl" : "max-w-3xl"
+        className={`sibs-modal-pop-in flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta ${
+          isView ? "max-w-2xl" : "max-w-3xl 2xl:max-w-4xl"
         }`}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#E6ECF2] px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-sibs-tertiary-9 p-2">
-              <FileText size={20} className="text-sibs-primary-1" />
-            </div>
+        <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <div className="flex items-center gap-2.5 2xl:gap-3 min-w-0">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <FileText size={16} />
+            </span>
 
-            <div>
-              <h2 className="text-lg font-semibold text-sibs-primary-1">
+            <div className="min-w-0">
+              <h2 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
                 {title}
               </h2>
 
-              <p className="text-sm text-sibs-tertiary-5">{subtitle}</p>
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">{subtitle}</p>
             </div>
           </div>
 
@@ -718,15 +718,15 @@ export default function AttritionModal({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded-full p-2 text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10 hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             aria-label="Close attrition modal"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-          <form onSubmit={safeOnSubmit} className="space-y-5">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
+          <form onSubmit={safeOnSubmit} className="space-y-4">
             <div ref={dropdownRef} className="relative z-30">
               <label className="mb-2 block text-sm font-medium text-sibs-primary-1">
                 Employee
@@ -1109,11 +1109,11 @@ export default function AttritionModal({
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-[#E6ECF2] pt-5">
+            <div className="flex justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 -mx-4 sm:-mx-5 2xl:-mx-6 -mb-4 sm:-mb-5 2xl:-mb-6 mt-6">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-xl border border-[#D7DEE8] px-4 py-2.5 text-sm font-medium text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
                 disabled={submitting}
               >
                 {isView ? "Close" : "Cancel"}
@@ -1123,7 +1123,7 @@ export default function AttritionModal({
                 <button
                   type="submit"
                   disabled={submitting || (isEdit && !isApproverEditMode)}
-                  className="rounded-xl bg-sibs-primary-1 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting
                     ? isEdit

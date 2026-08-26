@@ -68,7 +68,7 @@ const HOUR_OPTIONS = Array.from({ length: 12 }, (_, index) => {
 });
 
 const SCHEDULE_FIELD_LABEL_CLASS =
-  "mb-1.5 block sibs-kicker text-[#042C51]";
+  "mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]";
 const SCHEDULE_INPUT_CLASS =
   "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:hover:border-[#E6ECF2] disabled:hover:bg-[#F2F4F7] disabled:focus:ring-0";
 const SCHEDULE_TEXTAREA_CLASS =
@@ -938,7 +938,7 @@ function DateTimePicker({ value, onChange }) {
                   setOpen(false);
                   setOpenDropdown("");
                 }}
-                className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E84B1A] disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-4 inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E84B1A] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <Check size={14} />
                 Apply Schedule
@@ -1057,7 +1057,7 @@ const ScheduleInterviewModal = ({
         >
           <div>
             <label className={SCHEDULE_FIELD_LABEL_CLASS}>
-              Interview Date and Time <span className="text-red-500">*</span>
+              Interview Date and Time <span className="text-[#FF5C28]"> *</span>
             </label>
             <DateTimePicker
               value={form.interviewDate}
@@ -1070,7 +1070,7 @@ const ScheduleInterviewModal = ({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className={SCHEDULE_FIELD_LABEL_CLASS}>
-                Interview Type <span className="text-red-500">*</span>
+                Interview Type <span className="text-[#FF5C28]"> *</span>
               </label>
               <InterviewTypeDropdown
                 value={form.interviewType}
@@ -1086,7 +1086,7 @@ const ScheduleInterviewModal = ({
 
             <div>
               <label className={SCHEDULE_FIELD_LABEL_CLASS}>
-                Online Interview Link {form.interviewType === "Online" && <span className="text-red-500">*</span>}
+                Online Interview Link {form.interviewType === "Online" && <span className="text-[#FF5C28]"> *</span>}
               </label>
               <input
                 type="text"

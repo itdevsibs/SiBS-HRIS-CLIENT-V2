@@ -430,37 +430,44 @@ export default function AddExperienceModal({
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-3 sm:p-5 font-jakarta"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Log Candidate Experience Record"
-        className="sibs-modal-pop-in my-auto flex max-h-[92dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-4 font-jakarta">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Sparkles size={18} className="shrink-0 text-[#FF5C28]" />
-              <h2 className="text-sm 2xl:text-base font-black uppercase tracking-wide text-white">
-                Log Candidate Experience Record
-              </h2>
-              <span className="hidden rounded-md border border-[#FF5C28]/35 bg-[#FF5C28]/15 px-2 py-0.5 text-[8.5px] 2xl:text-[9.5px] font-black uppercase tracking-wider text-[#FFB69E] sm:inline-flex">
-                TA Manual Entry
-              </span>
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <Sparkles size={16} />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+                  Log Candidate Experience Record
+                </h2>
+                <span className="hidden rounded-md border border-[#FF5C28]/35 bg-[#FF5C28]/15 px-2 py-0.5 text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wider text-[#FFB69E] sm:inline-flex">
+                  TA Manual Entry
+                </span>
+              </div>
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+                Capture direct candidate feedback, ratings, and drop-off timeline
+              </p>
             </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="sibs-modal-close-btn"
-              aria-label="Close modal"
-            >
-              <X size={18} />
-            </button>
           </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close modal"
+          >
+            <X size={18} />
+          </button>
         </header>
 
         <form
@@ -701,11 +708,11 @@ export default function AddExperienceModal({
           ) : null}
         </form>
 
-        <footer className="shrink-0 flex items-center justify-end gap-2 border-t border-[#E6ECF2] bg-white px-4 py-2.5 sm:px-5 2xl:px-6 2xl:py-3 font-jakarta">
+        <footer className="shrink-0 flex items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg 2xl:rounded-xl border border-[#D6DEE8] bg-white px-4 2xl:px-5 sibs-text-xs font-extrabold text-[#667085] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
           >
             Cancel
           </button>
@@ -714,7 +721,7 @@ export default function AddExperienceModal({
             type="button"
             disabled={saving}
             onClick={submit}
-            className="inline-flex h-8.5 2xl:h-10 min-w-[130px] items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8.5 2xl:h-10 min-w-[130px] items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Plus size={14} />
             {saving ? "Saving..." : "Save Record"}

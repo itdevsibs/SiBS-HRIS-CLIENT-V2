@@ -1,4 +1,9 @@
-export default function EmployeeDirectoryHeader() {
+import { RefreshCw } from "lucide-react";
+
+export default function EmployeeDirectoryHeader({
+  onRefresh,
+  isManualRefreshing = false,
+}) {
   return (
     <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6">
       <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
@@ -20,6 +25,24 @@ export default function EmployeeDirectoryHeader() {
             Manage employee records and CHWCP compliance information.
           </p>
         </div>
+
+        {typeof onRefresh === "function" ? (
+          <div className="flex shrink-0 items-center">
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isManualRefreshing}
+              title="Refresh Employee Directory"
+              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                  isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                }`}
+              />
+            </button>
+          </div>
+        ) : null}
       </div>
     </section>
   );

@@ -855,13 +855,13 @@ function getCandidateFileName(candidateForm = {}, type = "audio") {
 function inputClass(extra = "", options = {}) {
   const shouldUppercase = options.uppercase !== false;
 
-  return `h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold ${
+  return `h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold ${
     shouldUppercase ? "uppercase" : "normal-case"
   } text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function textareaInputClass(extra = "") {
-  return `w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold uppercase text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
+  return `w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold uppercase text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function AutoResizeTextarea({
@@ -902,14 +902,14 @@ function AutoResizeTextarea({
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       <span>{children}</span>
     </label>
   );
 }
 
 function RequiredMark() {
-  return <span className="text-red-500">*</span>;
+  return <span className="text-[#FF5C28]"> *</span>;
 }
 
 function ApplicationPageTabs({

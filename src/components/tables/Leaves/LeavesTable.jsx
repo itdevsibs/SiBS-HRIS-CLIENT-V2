@@ -643,29 +643,33 @@ function LeaveDetailsModal({
         }`}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#042C51] px-4 py-2.5 2xl:px-5 2xl:py-3.5 text-white">
-          <div className="flex min-w-0 items-center gap-2 2xl:gap-2.5">
-            <CalendarDays
-              size={16}
-              className="shrink-0 text-[#FF5C28]"
-            />
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <CalendarDays size={16} />
+            </span>
 
-            <h2
-              id="leave-details-title"
-              className="truncate text-xs 2xl:text-sm font-extrabold uppercase tracking-wide"
-            >
-              Leave Request &amp; Ledger Audit
-            </h2>
+            <div className="min-w-0">
+              <h2
+                id="leave-details-title"
+                className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+              >
+                Leave Request & Ledger Audit
+              </h2>
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+                Detailed ledger breakdown, leave balances, and approval sign-off
+              </p>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={handleAnimatedClose}
             disabled={busy}
-            className="inline-flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close leave details"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </header>
 
@@ -942,12 +946,12 @@ function LeaveDetailsModal({
           </div>
         </div>
 
-        <footer className="flex shrink-0 justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-2.5 2xl:py-3 sm:px-6">
+        <footer className="flex shrink-0 items-center justify-end border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
           <button
             type="button"
             onClick={handleAnimatedClose}
             disabled={busy}
-            className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg bg-[#042C51] px-4 sibs-text-micro font-extrabold uppercase tracking-wider text-white transition hover:bg-[#021F3A] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Close Panel
           </button>

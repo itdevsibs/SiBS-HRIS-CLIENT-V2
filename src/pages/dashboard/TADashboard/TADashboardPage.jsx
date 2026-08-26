@@ -387,6 +387,8 @@ export default function TADashboardPage() {
         <div className="mx-auto flex min-h-full w-full max-w-[1600px] flex-1 flex-col space-y-4 2xl:space-y-5">
           <TADashboardWelcome
             onOpenHiringPlan={() => navigate(HIRING_PLAN_ROUTE)}
+            onRefresh={() => loadDashboard({ forceRefresh: true, background: true })}
+            isManualRefreshing={refreshing}
           />
 
           {loadError ? (

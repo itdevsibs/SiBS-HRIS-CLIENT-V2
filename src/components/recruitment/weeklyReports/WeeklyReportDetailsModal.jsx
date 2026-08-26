@@ -236,18 +236,18 @@ export default function WeeklyReportDetailsModal({
   return (
     <>
       <div
-        className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-3 sm:p-5"
+        className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
         onMouseDown={onClose}
         role="presentation"
       >
         <div
-          className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+          className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
           onMouseDown={(event) => event.stopPropagation()}
           role="dialog"
           aria-modal="true"
           aria-labelledby="weekly-report-modal-title"
         >
-          <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-4 font-jakarta">
+          <header className="shrink-0 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
             <div className="flex items-start justify-between gap-3 sm:gap-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5 2xl:gap-2">
@@ -264,17 +264,22 @@ export default function WeeklyReportDetailsModal({
                   ) : null}
                 </div>
 
-                <h2 id="weekly-report-modal-title" className="mt-1.5 text-base font-extrabold 2xl:text-xl">
+                <h2 id="weekly-report-modal-title" className="mt-1.5 truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
                   {report.weekLabel}
                 </h2>
-                <p className="mt-0.5 text-[11px] font-medium text-blue-200 2xl:text-xs">
+                <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
                   Report ID: <strong className="font-mono text-white">{report.reportId}</strong>
-                  <span className="mx-2 text-blue-500">|</span>
+                  <span className="mx-2 text-white/40">|</span>
                   Date Range: {report.dateRange}
                 </p>
               </div>
 
-              <button type="button" onClick={onClose} className="sibs-modal-close-btn" aria-label="Close weekly report details">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+                aria-label="Close weekly report details"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -392,25 +397,25 @@ export default function WeeklyReportDetailsModal({
                   onClick={handleExport}
                   className="inline-flex h-8 2xl:h-9.5 items-center justify-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3 2xl:px-4 text-[11px] 2xl:text-xs font-extrabold text-[#042C51] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
                 >
-                  <Download size={13} />
+                  <Download size={14} />
                   Export Report (.txt)
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setEmailPreviewOpen(true)}
-                  className="inline-flex h-8 2xl:h-9.5 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-[#E9F0FC] px-3 2xl:px-4 text-[11px] 2xl:text-xs font-extrabold text-[#042C51] transition hover:bg-blue-100 active:scale-[0.98]"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-[#E9F0FC] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-blue-100 active:scale-[0.98]"
                 >
-                  <Mail size={13} className="text-[#FF5C28]" />
+                  <Mail size={14} className="text-[#FF5C28]" />
                   View Formatted Email Digest
                 </button>
               </div>
 
-              <div className="flex flex-col-reverse gap-1.5 sm:flex-row">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="inline-flex h-8 2xl:h-9.5 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-5 text-[11px] 2xl:text-xs font-extrabold text-[#667085] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98]"
                 >
                   Close
                 </button>
@@ -419,9 +424,9 @@ export default function WeeklyReportDetailsModal({
                   type="button"
                   onClick={() => typeof onMarkSent === "function" && onMarkSent(report)}
                   disabled={report.status === "Sent"}
-                  className="inline-flex h-8 2xl:h-9.5 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 2xl:px-5 text-[11px] 2xl:text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {report.status === "Sent" ? <CheckCircle2 size={13} /> : <Send size={13} />}
+                  {report.status === "Sent" ? <CheckCircle2 size={14} /> : <Send size={14} />}
                   {report.status === "Sent" ? "Report Status: SENT" : "Mark as Sent"}
                 </button>
               </div>

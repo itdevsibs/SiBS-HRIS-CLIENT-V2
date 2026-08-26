@@ -12,7 +12,7 @@ export default function WeeklyReportsStats({ stats }) {
   const current = stats?.current || null;
 
   return (
-    <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+    <section className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6">
       <SummaryCard
         title="Total Reports"
         value={stats?.totalReports || 0}

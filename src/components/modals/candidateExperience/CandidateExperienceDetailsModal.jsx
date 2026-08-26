@@ -164,17 +164,17 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto bg-[#042C51]/55 p-3 backdrop-blur-sm sm:p-5 font-jakarta"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Candidate Experience Details"
-        className="sibs-modal-pop-in my-auto flex max-h-[92dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-4 font-jakarta">
+        <header className="shrink-0 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5 2xl:gap-2">
@@ -194,11 +194,11 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
                 </span>
               </div>
 
-              <h2 className="mt-2 truncate text-base 2xl:text-xl font-extrabold tracking-tight text-white">
+              <h2 className="mt-1.5 truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
                 {record.candidateName || "Candidate Experience Details"}
               </h2>
 
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] 2xl:text-[11px] font-semibold text-slate-200">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 sibs-text-xs font-semibold text-white/75">
                 <span className="inline-flex items-center gap-1.5">
                   <Mail size={12} className="text-slate-300" />
                   {record.candidateEmail || "—"}
@@ -220,7 +220,7 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
               </div>
 
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <span className="text-[8.5px] 2xl:text-[9.5px] font-black uppercase tracking-wide text-blue-100">
+                <span className="text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-blue-100">
                   OVERALL RATING:
                 </span>
                 <RatingStars rating={record.experienceRating} size={13} />
@@ -233,7 +233,7 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="sibs-modal-close-btn"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
               aria-label="Close modal"
             >
               <X size={18} />
@@ -311,11 +311,11 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-2.5 sm:px-5 2xl:px-6 2xl:py-3 font-jakarta flex justify-end">
+        <footer className="flex shrink-0 items-center justify-end border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 2xl:h-9.5 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-4 2xl:px-5 text-[11px] 2xl:text-xs font-extrabold text-[#667085] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
           >
             Close Experience Record
           </button>

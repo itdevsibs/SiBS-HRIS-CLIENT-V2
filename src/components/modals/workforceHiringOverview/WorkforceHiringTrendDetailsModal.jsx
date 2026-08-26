@@ -31,7 +31,7 @@ import {
   sortWeekOptionsChronologically,
 } from "../../../lib/utils/workforceHiringOverview/workforceHiringTrendRangeHelpers";
 
-const EDGE = "rounded-[10px]";
+const EDGE = "rounded-xl";
 
 function getText(value) {
   return String(value || "").trim();
@@ -519,7 +519,7 @@ function DropdownPortal({
       onMouseDown={(event) => event.stopPropagation()}
       onTouchStartCapture={(event) => event.stopPropagation()}
       onTouchStart={(event) => event.stopPropagation()}
-      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
+      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -527,7 +527,7 @@ function DropdownPortal({
       }}
     >
       <div
-        className="sibs-scrollbar overflow-y-auto py-2"
+        className="sibs-scrollbar overflow-y-auto py-1.5"
         style={{ maxHeight: `${style.maxHeight}px` }}
       >
         {children}
@@ -560,7 +560,7 @@ function TrendDisplayDropdown({
 
   return (
     <div className="relative min-w-0 overflow-visible">
-      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </label>
 
@@ -569,13 +569,13 @@ function TrendDisplayDropdown({
         type="button"
         disabled={disabled}
         onClick={onToggle}
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between ${EDGE} border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
           }`}
       >
         <span className="min-w-0 truncate">{value || "—"}</span>
 
         <ChevronDown
-          size={18}
+          size={16}
           className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
             }`}
         />
@@ -600,21 +600,21 @@ function TrendDisplayDropdown({
                 key={optionId || option.title}
                 type="button"
                 onClick={() => handleSelect(option)}
-                className={`block w-full px-4 py-2.5 text-left text-xs transition ${isSelected
+                className={`block w-full px-3.5 py-2 text-left sibs-text-xs transition ${isSelected
                   ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
                   : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                   }`}
               >
                 <p className="truncate font-bold">{option.title}</p>
 
-                <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                <p className="mt-0.5 truncate sibs-text-micro font-semibold text-sibs-tertiary-5">
                   {option.range || "—"}
                 </p>
               </button>
             );
           })
         ) : (
-          <div className="px-4 py-3 text-xs font-semibold text-[#667085]">
+          <div className="px-3.5 py-2.5 sibs-text-xs font-semibold text-[#667085]">
             No weekly versions available.
           </div>
         )}
@@ -626,16 +626,16 @@ function TrendDisplayDropdown({
 function TrendDisplayField({ label, value }) {
   return (
     <div className="min-w-0">
-      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </label>
 
       <div
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] shadow-sm`}
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between ${EDGE} border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-[#042C51] shadow-sm`}
       >
         <span className="min-w-0 truncate">{value || "—"}</span>
 
-        <ChevronDown size={18} className="ml-2 shrink-0 text-sibs-tertiary-5" />
+        <ChevronDown size={16} className="ml-2 shrink-0 text-sibs-tertiary-5" />
       </div>
     </div>
   );
@@ -706,7 +706,7 @@ function TrendCheckboxDropdown({
 
   return (
     <div className="relative min-w-0 overflow-visible">
-      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </label>
 
@@ -735,13 +735,13 @@ function TrendCheckboxDropdown({
             disabled={loading}
             placeholder={searchPlaceholder}
             autoComplete="off"
-            className={`h-11 w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-11 font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10`}
+            className={`h-8.5 2xl:h-10 w-full ${EDGE} border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 pr-10 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10`}
           />
 
           <ChevronDown
-            size={18}
+            size={16}
             onClick={handleOpen}
-            className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+            className={`absolute right-3.5 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
               }`}
           />
         </div>
@@ -751,7 +751,7 @@ function TrendCheckboxDropdown({
           type="button"
           disabled={loading}
           onClick={handleOpen}
-          className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
+          className={`flex h-8.5 2xl:h-10 w-full items-center justify-between ${EDGE} border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
             }`}
         >
           <span className="min-w-0 truncate">
@@ -759,7 +759,7 @@ function TrendCheckboxDropdown({
           </span>
 
           <ChevronDown
-            size={18}
+            size={16}
             className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
               }`}
           />
@@ -2033,10 +2033,10 @@ function getInitialEndOption({ options = [], trendDetails = [], trendWeeks = [],
 function TrendRangeSelector({ value, onChange }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-bold text-[#101828]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         Trend Range
       </label>
-      <div className="grid grid-cols-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-1 shadow-sm">
+      <div className="grid grid-cols-4 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1 shadow-sm">
         {TREND_RANGE_OPTIONS.map((option) => {
           const active = value === option.key;
           return (
@@ -2044,7 +2044,7 @@ function TrendRangeSelector({ value, onChange }) {
               key={option.key}
               type="button"
               onClick={() => onChange(option.key)}
-              className={`min-w-0 rounded-lg px-2 py-2 text-[10px] font-extrabold transition sm:text-[11px] ${active
+              className={`min-w-0 rounded-lg py-1.5 2xl:py-2 text-[9px] 2xl:text-[10px] font-extrabold transition ${active
                 ? "bg-[#042C51] text-white shadow-sm"
                 : "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
                 }`}
@@ -2371,24 +2371,24 @@ export default function WorkforceHiringTrendDetailsModal({
   return createPortal(
     <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-3 sm:p-5">
       <div className="sibs-modal-pop-in flex max-h-[94vh] w-full max-w-[1480px] flex-col overflow-hidden rounded-2xl border border-[#315779] bg-[#F8FAFC] font-jakarta text-[#042C51] shadow-2xl">
-        <header className="shrink-0 border-b border-white/10 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+        <header className="shrink-0 border-b border-white/10 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
-                <BarChart3 className="h-5 w-5" strokeWidth={2.4} />
+            <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+                <BarChart3 size={16} />
               </span>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-sm font-black uppercase tracking-wide text-white sm:text-base">
+                  <h2 className="text-xs sm:text-sm 2xl:text-base font-extrabold text-white">
                     {rangeLabel} Trend Details
                   </h2>
-                  <span className="rounded-full bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider text-white">
+                  <span className="rounded-full bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wider text-white">
                     Executive Suite
                   </span>
                 </div>
 
-                <p className="mt-1 max-w-4xl text-[11px] font-semibold leading-relaxed text-slate-300 sm:text-xs">
+                <p className="mt-0.5 max-w-4xl text-[9.5px] sm:text-[11px] font-semibold text-white/75">
                   Inspect the selected trend range, operational filters, workforce trends, and detailed account performance.
                 </p>
               </div>
@@ -2397,10 +2397,10 @@ export default function WorkforceHiringTrendDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-slate-200 transition hover:bg-white/20 hover:text-white"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
               aria-label="Close trend details"
             >
-              <X className="h-5 w-5" strokeWidth={2.4} />
+              <X size={18} />
             </button>
           </div>
         </header>

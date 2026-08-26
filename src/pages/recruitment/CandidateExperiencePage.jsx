@@ -25,6 +25,7 @@ import {
   ThumbsDown,
   ListChecks,
   Plus,
+  RefreshCw,
   ClipboardList,
   Filter,
   Timer,
@@ -430,41 +431,71 @@ function SummaryCard({
   value,
   icon: Icon,
   description,
-  valueClassName = "text-sibs-primary-1",
-  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  tone = "navy",
+  valueClassName,
+  iconClassName,
   delay = 0,
 }) {
+  const toneClasses = {
+    navy: {
+      label: "text-[#042C51]",
+      value: "text-[#042C51]",
+      icon: "bg-[#EAF2FB] text-[#042C51]",
+    },
+    emerald: {
+      label: "text-[#047857]",
+      value: "text-[#047857]",
+      icon: "bg-[#ECFDF3] text-[#059669]",
+    },
+    amber: {
+      label: "text-[#B45309]",
+      value: "text-[#F59E0B]",
+      icon: "bg-[#FFFBEB] text-[#F59E0B]",
+    },
+    red: {
+      label: "text-[#BE123C]",
+      value: "text-[#E11D48]",
+      icon: "bg-[#FFF1F2] text-[#E11D48]",
+    },
+    orange: {
+      label: "text-[#C2410C]",
+      value: "text-[#FF5C28]",
+      icon: "bg-[#FFF3ED] text-[#FF5C28]",
+    },
+  };
+
+  const selectedTone = toneClasses[tone] || toneClasses.navy;
+
   return (
-    <div
-      className="sibs-page-card-in group rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+    <article
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-            {title}
-          </p>
-
-          <p
-            className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}
-          >
-            {value}
-          </p>
-
-          {description && (
-            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-              {description}
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
+          <div>
+            <p className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${selectedTone.label}`}>
+              {title}
             </p>
-          )}
+            <p className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${valueClassName || selectedTone.value}`}>
+              {value}
+            </p>
+          </div>
+
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
+            {description}
+          </p>
         </div>
 
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105 ${iconClassName}`}
+        <span
+          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${
+            iconClassName || selectedTone.icon
+          }`}
         >
-          <Icon size={22} />
-        </div>
+          <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
+        </span>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -922,6 +953,17 @@ export default function CandidateExperiencePage() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [experienceForm, setExperienceForm] = useState(emptyExperienceForm);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    try {
+      const records = getCandidateExperienceRecords();
+      setExperienceList(mergeExperienceRecords(records, initialCandidateExperienceRecords));
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 400);
+    }
+  };
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
@@ -1272,42 +1314,63 @@ export default function CandidateExperiencePage() {
     "—";
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell font-jakarta">
       <div className="shrink-0">
         <Header />
       </div>
 
       <main
         ref={mainRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
       >
         <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
-                <ClipboardList size={14} />
-                Recruitment Setup
+          <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6 mb-5">
+            <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
+            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    Recruitment Setup
+                  </span>
+                </div>
+
+                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                  Candidate Experience
+                </h1>
+
+                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                  Track drop-offs, offer declines, onboarding no-shows, withdrawals, candidate feedback, and experience ratings.
+                </p>
               </div>
 
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-                Candidate Experience
-              </h1>
+              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  title="Refresh Candidate Experience"
+                  aria-label="Refresh Candidate Experience"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                    }`}
+                  />
+                </button>
 
-              <p className="mt-1 max-w-5xl text-sm font-medium text-sibs-tertiary-5">
-                Track drop-offs, offer declines, onboarding no-shows,
-                withdrawals, candidate feedback, and experience ratings.
-              </p>
+                <button
+                  type="button"
+                  onClick={handleOpenAddModal}
+                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98]"
+                >
+                  <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
+                  Add Experience Record
+                </button>
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={handleOpenAddModal}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-            >
-              <Plus size={18} />
-              Add Experience Record
-            </button>
-          </div>
+          </section>
 
           <section
             className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
@@ -1317,7 +1380,7 @@ export default function CandidateExperiencePage() {
               Candidate Experience Summary
             </h2>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+            <div className="mt-4 grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6">
               <SummaryCard
                 title="Records"
                 value={stats.total}

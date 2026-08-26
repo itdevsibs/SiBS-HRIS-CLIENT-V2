@@ -200,6 +200,8 @@ export default function OMDashboardPage() {
             departmentBadge={departmentBadge}
             scopeText={scopeText}
             onOpenHiringPlan={() => navigate(HIRING_PLAN_ROUTE)}
+            onRefresh={() => loadDashboard({ forceRefresh: true, background: true })}
+            isManualRefreshing={refreshing}
           />
 
           {error ? (

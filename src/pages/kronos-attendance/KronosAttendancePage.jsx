@@ -297,28 +297,31 @@ function StatCard({
   iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
   delay = 0,
 }) {
+  const IconComponent = icon;
+
   return (
     <div
-      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-            {title}
-          </p>
-
-          <p
-            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName}`}
-          >
-            {value}
-          </p>
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
+          <div>
+            <p className="m-0 truncate sibs-text-micro font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              {title}
+            </p>
+            <p
+              className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${valueClassName}`}
+            >
+              {value}
+            </p>
+          </div>
         </div>
 
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
         >
-          {React.createElement(icon, { size: 22 })}
+          <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </div>
       </div>
     </div>
@@ -1327,63 +1330,29 @@ export default function KronosAttendancePage() {
         className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
       >
         <div className="mx-auto max-w-[1600px] space-y-5">
-          <section className="sibs-page-header-in">
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-3">
-                <Clock
-                  size={34}
-                  strokeWidth={2.2}
-                  className="shrink-0 text-sibs-primary-1"
-                />
-
-                <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
-                  {pageTitle}
-                </h1>
-              </div>
-
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                {isEmployee
-                  ? "View your Kronos attendance records from the production API."
-                  : "View Kronos attendance records from the production API."}
-              </p>
-            </div>
-          </section>
-
-          <section
-            className="sibs-profile-tab-panel"
-            style={{ animationDelay: "60ms" }}
-          >
-            <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-[#101828]">
-                    Current Page Summary
-                  </h2>
-
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    These totals are based only on the current Kronos attendance
-                    records loaded for this page.
-                  </p>
-                </div>
-
+          <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6">
+            <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
+            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    Kronos Live Records
+                  </span>
                   <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
                     Page {currentPage}
                   </Badge>
-
                   <Badge className="border-emerald-200 bg-emerald-50 text-emerald-600">
                     Live 5s
                   </Badge>
-
                   {liveSyncing ? (
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-sibs-tertiary-5">
-                      <RefreshCw size={13} className="animate-spin" />
+                      <RefreshCw size={13} className="animate-spin text-[#FF5C28]" />
                       Syncing
                     </span>
                   ) : null}
-
                   {lastUpdatedAt ? (
-                    <span className="text-xs font-bold text-sibs-tertiary-5">
+                    <span className="sibs-text-micro font-extrabold text-[#667085]">
                       Updated{" "}
                       {lastUpdatedAt.toLocaleTimeString("en-PH", {
                         hour: "2-digit",
@@ -1393,20 +1362,49 @@ export default function KronosAttendancePage() {
                       })}
                     </span>
                   ) : null}
-
-                  <button
-                    type="button"
-                    onClick={handleRefresh}
-                    disabled={loading || liveSyncing}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <RefreshCw
-                      size={14}
-                      className={loading ? "animate-spin" : ""}
-                    />
-                    Refresh
-                  </button>
                 </div>
+                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                  {pageTitle}
+                </h1>
+                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                  {isEmployee
+                    ? "View your Kronos attendance records from the production API."
+                    : "View Kronos attendance records from the production API."}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={loading || liveSyncing}
+                  title="Refresh Kronos Attendance"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      loading || liveSyncing ? "animate-spin text-[#FF5C28]" : ""
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section
+            className="sibs-page-card-in"
+            style={{ animationDelay: "60ms", animationFillMode: "both" }}
+          >
+            <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+              <div>
+                <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  Current Page Summary
+                </h2>
+
+                <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                  These totals are based only on the current Kronos attendance
+                  records loaded for this page.
+                </p>
               </div>
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">

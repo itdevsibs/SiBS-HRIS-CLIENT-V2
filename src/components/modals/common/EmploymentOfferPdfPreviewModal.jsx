@@ -189,20 +189,22 @@ export default function EmploymentOfferPdfPreviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-[13000] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[13000] flex items-center justify-center p-2 sm:p-4 font-jakarta"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between bg-[#042C51] px-5 py-4 text-white">
-          <div className="flex min-w-0 items-center gap-2">
-            <FileText size={17} className="shrink-0 text-[#FF5C28]" />
+        <div className="flex items-center justify-between bg-[#042C51] px-5 py-3 2xl:py-3.5 text-white">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <FileText size={16} />
+            </span>
 
             <h3
               title={displayFilename}
-              className="truncate text-xs font-extrabold uppercase tracking-wide"
+              className="truncate text-xs sm:text-sm 2xl:text-base font-extrabold text-white"
             >
               {displayFilename}
             </h3>
@@ -211,10 +213,10 @@ export default function EmploymentOfferPdfPreviewModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 transition hover:bg-white/10"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             aria-label="Close Employment Offer preview"
           >
-            <X size={17} />
+            <X size={18} />
           </button>
         </div>
 
@@ -265,7 +267,7 @@ export default function EmploymentOfferPdfPreviewModal({
               type="button"
               disabled={!previewUrl || loading}
               onClick={handleDownload}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download size={14} className="text-[#FF5C28]" />
               Download

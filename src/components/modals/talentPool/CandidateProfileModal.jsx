@@ -47,11 +47,19 @@ import {
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
 
 import {
-  FieldLabel,
   ReferenceCard,
   StatusTile,
   ViewableFileRow,
 } from "../../recruitment/talentPool/TalentPoolShared";
+
+function FieldLabel({ children, required = false }) {
+  return (
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      {children}
+      {required && <span className="text-[#FF5C28]"> *</span>}
+    </label>
+  );
+}
 
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
@@ -7453,7 +7461,7 @@ export default function CandidateProfileModal() {
                       type="button"
                       onClick={handleGenerateResume}
                       disabled={!talentPoolApplicationId || isGeneratingResume}
-                      className="inline-flex h-7.5 xl:h-9 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 xl:px-4 text-[11px] xl:text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isGeneratingResume ? (
                         <>
@@ -7471,7 +7479,7 @@ export default function CandidateProfileModal() {
                     <button
                       type="button"
                       onClick={handleUpdateCandidateStatus}
-                      className="inline-flex h-7.5 xl:h-9 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-3 xl:px-4 text-[11px] xl:text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-navy/90"
+                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-navy/90"
                     >
                       <RefreshCcw size={13} className="text-sibs-orange" />
                       Status
@@ -7562,7 +7570,7 @@ export default function CandidateProfileModal() {
               <button
                 type="button"
                 onClick={handleCloseCandidateProfile}
-                className="inline-flex h-8 xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 xl:px-5 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30"
               >
                 Close
               </button>
@@ -7574,7 +7582,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleOpenDropOff}
                   disabled={dropOffSaving}
-                  className="inline-flex h-8 xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 xl:px-5 text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <UserX size={14} />
                   {dropOffSaving ? "Saving..." : "Mark as Drop Off"}
@@ -7586,7 +7594,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   disabled={isMovingToOnboarding}
                   onClick={handleMoveToOnboarding}
-                  className="inline-flex h-8 xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 xl:px-5 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isMovingToOnboarding ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -7601,7 +7609,7 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleOpenLinkedCandidateDestination}
-                  className="inline-flex h-8 xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 xl:px-5 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20"
                 >
                   <ArrowRight size={14} />
                   Already Linked
@@ -7612,7 +7620,7 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}
-                  className="relative z-[60] inline-flex h-8 xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 xl:px-5 text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 active:scale-[0.98]"
+                  className="relative z-[60] inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 active:scale-[0.98]"
                 >
                   <ArrowRight size={14} />
                   {isDropOffCandidate
@@ -7831,13 +7839,13 @@ export default function CandidateProfileModal() {
               </div>
             </form>
 
-            <div className="border-t border-gray-100 px-5 py-4">
+            <div className="border-t border-gray-100 px-5 py-3.5">
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={handleCloseDropOff}
                   disabled={dropOffSaving}
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -7846,9 +7854,9 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleConfirmDropOff}
                   disabled={dropOffSaving || !cleanText(dropOffReason)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <UserX size={17} />
+                  <UserX size={15} />
                   {dropOffSaving ? "Saving..." : "Confirm Drop Off"}
                 </button>
               </div>

@@ -140,23 +140,23 @@ export default function StatusModal({
                 )}
               </div>
 
-              <h3 className="break-words font-jakarta text-lg font-extrabold tracking-tight text-[#042C51]">
+              <h3 className="break-words font-jakarta text-base 2xl:text-lg font-extrabold tracking-tight text-[#042C51]">
                 {finalTitle}
               </h3>
             </div>
           </div>
 
-          <p className="mt-2 whitespace-pre-line font-jakarta text-xs font-semibold leading-relaxed text-[#475467]">
+          <p className="mt-2 whitespace-pre-line font-jakarta sibs-text-xs font-semibold leading-relaxed text-[#475467]">
             {finalMessage}
           </p>
 
           {!isLoading && (
-          <div className="mt-6 flex justify-end gap-2.5">
+          <div className="mt-5 2xl:mt-6 flex justify-end gap-2.5">
             {isConfirm && (
               <button
                 type="button"
                 onClick={() => onCancel?.()}
-                className="h-10 rounded-[10px] border border-[#D7DEE8] bg-white px-4 font-jakarta text-xs font-bold text-[#042C51] transition hover:bg-slate-50 active:scale-[0.98]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98]"
               >
                 {cancelLabel}
               </button>
@@ -165,7 +165,7 @@ export default function StatusModal({
             <button
               type="button"
               onClick={isConfirm ? () => onConfirm?.() : handleClose}
-              className={`h-10 rounded-[10px] px-5 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
+              className={`inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
                   isConfirm
                     ? confirmTone === "brand"
                       ? "bg-[#042C51] hover:bg-[#073B6C]"
@@ -183,11 +183,11 @@ export default function StatusModal({
           role="dialog"
           aria-modal="true"
           onClick={(e) => e.stopPropagation()}
-          className="sibs-modal-pop-in relative w-full max-w-md overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white p-6 shadow-2xl font-jakarta"
+          className="sibs-modal-pop-in relative w-full max-w-md overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white p-5 2xl:p-6 shadow-2xl font-jakarta"
         >
           <div className="flex flex-col items-center text-center">
             <div
-              className={`mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+              className={`mb-3.5 2xl:mb-4 flex h-12 w-12 2xl:h-14 2xl:w-14 items-center justify-center rounded-full ${
                 isConfirm
                   ? "bg-amber-50 text-amber-500"
                   : isLoading
@@ -198,31 +198,31 @@ export default function StatusModal({
               }`}
             >
               {isConfirm ? (
-                <AlertTriangle size={28} />
+                <AlertTriangle size={26} />
               ) : isLoading ? (
-                <Loader2 size={28} className="animate-spin" />
+                <Loader2 size={26} className="animate-spin" />
               ) : isSuccess ? (
-                <CheckCircle2 size={28} />
+                <CheckCircle2 size={26} />
               ) : (
-                <XCircle size={28} />
+                <XCircle size={26} />
               )}
             </div>
 
-            <h2 className="font-jakarta text-xl font-extrabold tracking-tight text-[#042C51]">
+            <h2 className="font-jakarta text-lg 2xl:text-xl font-extrabold tracking-tight text-[#042C51]">
               {finalTitle}
             </h2>
 
-            <p className="mt-2.5 whitespace-pre-line font-jakarta text-xs font-medium leading-relaxed text-[#475467]">
+            <p className="mt-2 whitespace-pre-line font-jakarta sibs-text-xs font-medium leading-relaxed text-[#475467]">
               {finalMessage}
             </p>
 
             {!isLoading && (
-            <div className="mt-6 flex w-full gap-2.5">
+            <div className="mt-5 2xl:mt-6 flex w-full gap-2.5">
               {isConfirm && (
                 <button
                   type="button"
                   onClick={() => onCancel?.()}
-                  className="h-10 flex-1 rounded-[10px] border border-[#D7DEE8] bg-white px-4 font-jakarta text-xs font-bold text-[#042C51] transition hover:bg-slate-50 active:scale-[0.98]"
+                  className="inline-flex h-8.5 2xl:h-10 flex-1 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98]"
                 >
                   {cancelLabel}
                 </button>
@@ -231,7 +231,7 @@ export default function StatusModal({
               <button
                 type="button"
                 onClick={isConfirm ? () => onConfirm?.() : handleClose}
-                className={`h-10 flex-1 rounded-[10px] px-4 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
+                className={`inline-flex h-8.5 2xl:h-10 flex-1 items-center justify-center rounded-lg px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
                 isConfirm
                   ? confirmTone === "brand"
                     ? "bg-[#042C51] hover:bg-[#073B6C]"

@@ -22,6 +22,7 @@ import {
   Loader2,
   MessageSquareText,
   RefreshCcw,
+  RefreshCw,
   Search,
   UserRoundCheck,
   X,
@@ -2756,37 +2757,41 @@ export default function ApprovalRequest() {
       <Header />
 
       <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
-        <div className="sibs-page-header-in mb-6 flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <MessageSquareText size={14} />
-              Communication
+        <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6 mb-5 sm:mb-6">
+          <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
+          <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
+                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                  Communication &amp; Governance
+                </span>
+              </div>
+              <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                Approval Request
+              </h1>
+              <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                Review resignation approvals, job descriptions, hiring needs, and available position approvals.
+              </p>
             </div>
 
-            <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-              Approval Request
-            </h1>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Review resignation approvals, job descriptions, hiring needs,
-              and available position approvals.
-            </p>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={loading}
+                title="Refresh Approval Requests"
+                className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                    loading ? "animate-spin text-[#FF5C28]" : ""
+                  }`}
+                />
+              </button>
+            </div>
           </div>
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={loading}
-            className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? (
-              <Loader2 size={17} className="animate-spin" />
-            ) : (
-              <RefreshCcw size={17} />
-            )}
-            Refresh
-          </button>
-        </div>
+        </section>
 
         <div className="space-y-5">
           {/* <div className="relative z-[20] sibs-profile-tab-panel">

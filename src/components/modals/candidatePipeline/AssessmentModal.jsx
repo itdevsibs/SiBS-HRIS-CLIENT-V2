@@ -52,9 +52,9 @@ function getExistingAttachmentName(candidate = {}) {
 
 function ModalFieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block sibs-kicker text-[#042C51]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       {children}
-      {required ? <span className="ml-1 text-red-500">*</span> : null}
+      {required ? <span className="text-[#FF5C28]"> *</span> : null}
     </label>
   );
 }
@@ -356,7 +356,7 @@ export default function AssessmentModal({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={saving || !isTaken}
-                    className="inline-flex h-9 w-fit shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-micro font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/15 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-8.5 2xl:h-9 w-fit shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-micro font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/15 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <UploadCloud size={14} />
                     Choose File

@@ -416,7 +416,7 @@ function HrisDropdown({
       )}
 
       {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[10080] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+8px)] z-[10080] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-72 overflow-y-auto py-2">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
@@ -467,10 +467,10 @@ function HrisDropdown({
 }
 
 function inputClass(hasError = false) {
-  return `h-12 w-full rounded-xl border bg-white px-4 text-sm font-extrabold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-sibs-tertiary-5 disabled:opacity-80 ${
+  return `h-8.5 2xl:h-10 w-full rounded-xl border bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] shadow-sm outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:opacity-80 ${
     hasError
       ? "border-red-400 ring-4 ring-red-100 focus:border-red-500 focus:ring-red-100"
-      : "border-[#D0D5DD]"
+      : "border-[#D7DEE8]"
   }`;
 }
 
@@ -479,7 +479,7 @@ function handleNumberInputWheel(event) {
 }
 
 function textareaClass() {
-  return "min-h-[92px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-bold leading-6 text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10";
+  return "min-h-18 2xl:min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 sibs-text-xs font-semibold leading-5 text-[#042C51] shadow-sm outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
 }
 
 function padDatePart(value) {
@@ -547,7 +547,7 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-xl border border-[#D9E2EC] bg-white p-3.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="mb-3 flex items-center justify-between">
             <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-lg p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
             <span className="text-sm font-extrabold text-sibs-primary-1">{viewDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</span>
@@ -933,8 +933,8 @@ export default function CandidateOfferDetailsModal({
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
-                    Final Role Title <span className="text-red-500">*</span>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Final Role Title <span className="text-[#FF5C28]"> *</span>
                   </label>
                   <div className="relative">
                     <input
@@ -950,7 +950,7 @@ export default function CandidateOfferDetailsModal({
                       ref={reprofileButtonRef}
                       type="button"
                       onClick={() => setReprofileOpen(true)}
-                      className="absolute right-1.5 top-1/2 inline-flex h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-2.5 text-[10px] font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100"
+                      className="absolute right-1.5 top-1/2 inline-flex h-7.5 2xl:h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-2.5 2xl:px-3 text-[10px] font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100"
                     >
                       <RefreshCw size={13} /> Reprofile
                     </button>
@@ -963,8 +963,8 @@ export default function CandidateOfferDetailsModal({
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
-                    Final Account <span className="text-red-500">*</span>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Final Account <span className="text-[#FF5C28]"> *</span>
                   </label>
                   <input
                     type="text"
@@ -993,8 +993,8 @@ export default function CandidateOfferDetailsModal({
           <CandidateModalSection title="Compensation">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
-                  Basic Daily Rate <span className="text-red-500">*</span>
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  Basic Daily Rate <span className="text-[#FF5C28]"> *</span>
                 </label>
                 <input
                   ref={basicPayRef}
@@ -1021,8 +1021,8 @@ export default function CandidateOfferDetailsModal({
               </div>
 
               <div>
-                <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
-                  Daily De Minimis <span className="text-red-500">*</span>
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  Daily De Minimis <span className="text-[#FF5C28]"> *</span>
                 </label>
                 <input
                   ref={deminimisRef}
@@ -1063,7 +1063,7 @@ export default function CandidateOfferDetailsModal({
                   }
                   setStartDateInitiated(true);
                 }}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
               >
                 <CalendarDays size={14} />
                 {startDateInitiated ? "Hide Start Date" : "Add Start Date"}
@@ -1071,7 +1071,7 @@ export default function CandidateOfferDetailsModal({
 
               {startDateInitiated && (
                 <div className="max-w-md">
-                  <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">Start Date</label>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Start Date</label>
                   <StartDatePicker
                     inputRef={startDateRef}
                     value={form.startDate || ""}
@@ -1092,7 +1092,7 @@ export default function CandidateOfferDetailsModal({
               )}
 
               <div>
-                <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">Remarks</label>
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Remarks</label>
                 <textarea
                   value={form.remarks || ""}
                   onChange={(event) => updateForm({ remarks: event.target.value })}

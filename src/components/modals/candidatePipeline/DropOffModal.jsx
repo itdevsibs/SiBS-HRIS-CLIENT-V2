@@ -123,7 +123,7 @@ function DropOffCategoryDropdown({
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-full overflow-hidden rounded-xl border border-[#D6DEE8] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
+        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[99999] w-full overflow-hidden rounded-xl border border-[#D6DEE8] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
           <div
             role="listbox"
             aria-label="Drop-off reason category"
@@ -141,9 +141,9 @@ function DropOffCategoryDropdown({
                     role="option"
                     aria-selected={active}
                     onClick={() => handleSelect(option)}
-                    className={`flex min-h-[44px] w-full items-center px-4 text-left text-sm font-semibold transition ${
+                    className={`flex min-h-[38px] 2xl:min-h-[42px] w-full items-center px-3 py-1.5 2xl:py-2 text-left sibs-text-xs font-semibold transition ${
                       active
-                        ? "bg-[#EAF2FB] text-sibs-primary-1"
+                        ? "bg-[#EAF2FB] text-sibs-primary-1 font-extrabold"
                         : "bg-white text-[#475467] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
                     }`}
                   >
@@ -273,8 +273,8 @@ const DropOffModal = ({
         <CandidateModalSection title="Drop-off Details">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative z-[50]">
-              <label className="mb-1.5 block sibs-kicker text-sibs-primary-1">
-                Reason Category <span className="text-red-500">*</span>
+              <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                Reason Category <span className="text-[#FF5C28]"> *</span>
               </label>
               <DropOffCategoryDropdown
                 value={form?.category || ""}
@@ -292,8 +292,8 @@ const DropOffModal = ({
             </div>
 
             <label className="block">
-              <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">
-                Drop-off Reason <span className="text-red-500">*</span>
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                Drop-off Reason <span className="text-[#FF5C28]"> *</span>
               </span>
               <textarea
                 required
@@ -309,7 +309,7 @@ const DropOffModal = ({
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                 Internal Remarks
               </span>
               <textarea

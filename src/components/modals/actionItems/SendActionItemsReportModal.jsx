@@ -203,12 +203,16 @@ export default function SendActionItemsReportModal() {
         onMouseDown={(event) => event.stopPropagation()}
         className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
       >
-        <header className="flex shrink-0 items-start justify-between gap-4 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-4">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-9 w-9 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-xl border border-[#FF5C28]/30 bg-[#FF5C28]/15 text-[#FF5C28]"><Mail size={18} /></div>
+        <header className="flex shrink-0 items-start justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
+            <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <Mail size={16} />
+            </div>
             <div className="min-w-0">
-              <h2 id="send-action-report-title" className="text-sm sm:text-base font-black">Send Recruitment Report by Email &amp; PDF</h2>
-              <p className="mt-0.5 sibs-text-xs font-semibold text-slate-300">
+              <h2 id="send-action-report-title" className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+                Send Recruitment Report by Email &amp; PDF
+              </h2>
+              <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
                 System sender: {SYSTEM_SENDER}. The email includes an HTML summary and the complete PDF report.
               </p>
             </div>
@@ -217,56 +221,58 @@ export default function SendActionItemsReportModal() {
             type="button"
             onClick={closeEmailModal}
             disabled={sending || downloading}
-            className="sibs-modal-close-btn disabled:opacity-50"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
             aria-label="Close email report modal"
           >
-            <X size={17} />
+            <X size={18} />
           </button>
         </header>
 
-        <div className="sibs-scrollbar grid min-h-0 flex-1 grid-cols-1 gap-4 2xl:gap-5 overflow-y-auto bg-[#F8FAFC] p-3.5 sm:p-4 2xl:p-5 lg:grid-cols-12">
+        <div className="sibs-scrollbar grid min-h-0 flex-1 grid-cols-1 gap-4 2xl:gap-5 overflow-y-auto bg-[#F8FAFC] p-3.5 sm:p-4 2xl:p-5 lg:grid-cols-12 font-jakarta">
           <div className="space-y-3.5 2xl:space-y-4 lg:col-span-5">
-            <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center justify-between border-b border-[#E6ECF2] pb-3">
-                <h3 className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#042C51]"><Send size={14} className="text-[#FF5C28]" /> Email Dispatch Details</h3>
-                <span className="rounded border border-blue-100 bg-blue-50 px-2 py-1 text-[9px] font-black text-blue-700">{reportingScope.weekLabel}</span>
+            <section className="rounded-xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between border-b border-[#E6ECF2] pb-2.5">
+                <h3 className="flex items-center gap-1.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <Send size={13} className="text-[#FF5C28]" /> Email Dispatch Details
+                </h3>
+                <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold text-blue-700">{reportingScope.weekLabel}</span>
               </div>
               <div className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-[9px] font-black uppercase tracking-wider text-[#667085]">System sender</label>
-                  <input readOnly value={SYSTEM_SENDER} className="h-10 w-full rounded-lg border border-[#E6ECF2] bg-[#F2F4F7] px-3 text-xs font-bold text-[#475467]" />
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">System sender</label>
+                  <input readOnly value={SYSTEM_SENDER} className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#E6ECF2] bg-[#F2F4F7] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#475467] outline-none" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[9px] font-black uppercase tracking-wider text-[#667085]">To recipients *</label>
-                  <input value={toValue} onChange={(event) => setToValue(event.target.value)} placeholder="hr@company.com; operations@company.com" className="h-10 w-full rounded-lg border border-[#D0D5DD] bg-white px-3 text-xs font-semibold text-[#344054] outline-none focus:border-[#042C51]" />
-                  <p className="mt-1 text-[9px] font-semibold text-[#98A2B3]">Separate multiple recipients using commas or semicolons.</p>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">To recipients <span className="text-[#FF5C28]">*</span></label>
+                  <input value={toValue} onChange={(event) => setToValue(event.target.value)} placeholder="hr@company.com; operations@company.com" className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10" />
+                  <p className="mt-1 text-[8.5px] 2xl:text-[9px] font-semibold text-[#98A2B3]">Separate multiple recipients using commas or semicolons.</p>
                 </div>
                 <div>
-                  <label className="mb-1 block text-[9px] font-black uppercase tracking-wider text-[#667085]">CC</label>
-                  <input value={ccValue} onChange={(event) => setCcValue(event.target.value)} placeholder="manager@company.com" className="h-10 w-full rounded-lg border border-[#D0D5DD] bg-white px-3 text-xs font-semibold text-[#344054] outline-none focus:border-[#042C51]" />
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">CC</label>
+                  <input value={ccValue} onChange={(event) => setCcValue(event.target.value)} placeholder="manager@company.com" className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[9px] font-black uppercase tracking-wider text-[#667085]">Subject</label>
-                  <input value={subject} onChange={(event) => setSubject(event.target.value)} className="h-10 w-full rounded-lg border border-[#D0D5DD] bg-white px-3 text-xs font-bold text-[#042C51] outline-none focus:border-[#042C51]" />
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Subject</label>
+                  <input value={subject} onChange={(event) => setSubject(event.target.value)} className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[9px] font-black uppercase tracking-wider text-[#667085]">Intro message</label>
-                  <textarea rows={4} value={note} onChange={(event) => setNote(event.target.value)} className="w-full resize-none rounded-lg border border-[#D0D5DD] bg-white px-3 py-2 text-xs font-semibold leading-5 text-[#344054] outline-none focus:border-[#042C51]" />
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Intro message</label>
+                  <textarea rows={4} value={note} onChange={(event) => setNote(event.target.value)} className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 py-2.5 sibs-text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10" />
                 </div>
               </div>
             </section>
 
-            <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
-              <h3 className="mb-3 text-[11px] font-black uppercase tracking-wider text-[#042C51]">Report actions</h3>
-              <button type="button" onClick={handleSend} disabled={sending || downloading} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-black text-white transition hover:bg-[#E04B1D] disabled:cursor-not-allowed disabled:opacity-60">
-                {sending ? <><RefreshCw size={15} className="animate-spin" /> Sending HTML + PDF...</> : <><Send size={15} /> Send System Email</>}
+            <section className="rounded-xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 shadow-sm">
+              <h3 className="mb-2.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Report actions</h3>
+              <button type="button" onClick={handleSend} disabled={sending || downloading} className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60">
+                {sending ? <><RefreshCw size={14} className="animate-spin" /> Sending HTML + PDF...</> : <><Send size={14} /> Send System Email</>}
               </button>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <button type="button" onClick={handleDownload} disabled={sending || downloading} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[#D0D5DD] bg-[#F8FAFC] text-[10px] font-black text-[#042C51] hover:bg-[#F2F4F7] disabled:opacity-60">
-                  {downloading ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} className="text-[#FF5C28]" />} Download PDF
+                <button type="button" onClick={handleDownload} disabled={sending || downloading} className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:opacity-60">
+                  {downloading ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} className="text-[#FF5C28]" />} Download PDF
                 </button>
-                <button type="button" onClick={handleCopy} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[#D0D5DD] bg-[#F8FAFC] text-[10px] font-black text-[#042C51] hover:bg-[#F2F4F7]">
-                  {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />} {copied ? "Copied" : "Copy Text"}
+                <button type="button" onClick={handleCopy} className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]">
+                  {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />} {copied ? "Copied" : "Copy Text"}
                 </button>
               </div>
               {feedback ? (
@@ -365,9 +371,9 @@ export default function SendActionItemsReportModal() {
           </section>
         </div>
 
-        <footer className="flex shrink-0 flex-col gap-2 border-t border-[#E6ECF2] bg-white px-5 py-3 text-[10px] font-semibold text-[#667085] sm:flex-row sm:items-center sm:justify-between">
-          <span>{filteredWeeklyPerformanceRows.length} weekly rows · {filteredCurrentStatusRows.length} status rows · {filteredActionItems.length} action items</span>
-          <button type="button" onClick={closeEmailModal} disabled={sending || downloading} className="rounded-lg bg-[#E9EEF4] px-4 py-2 font-black text-[#344054] hover:bg-[#DCE4EC] disabled:opacity-50">Close</button>
+        <footer className="flex shrink-0 flex-col gap-2 border-t border-[#E6ECF2] bg-white px-5 py-3 2xl:py-3.5 text-[10px] font-semibold text-[#667085] sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">{filteredWeeklyPerformanceRows.length} weekly rows · {filteredCurrentStatusRows.length} status rows · {filteredActionItems.length} action items</span>
+          <button type="button" onClick={closeEmailModal} disabled={sending || downloading} className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:opacity-50">Close</button>
         </footer>
       </div>
     </div>

@@ -17,6 +17,7 @@ import {
   Plus,
   Paperclip,
   RefreshCcw,
+  RefreshCw,
   Send,
   TrendingDown,
   UserCheck,
@@ -1844,28 +1845,28 @@ export default function ResignationManagementPage() {
                 </p>
               </div>
 
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
                 <button
                   type="button"
                   onClick={handleRefresh}
                   disabled={resignationLoading}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Refresh Resignation Data"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                 >
-                  {resignationLoading ? (
-                    <Loader2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 animate-spin" />
-                  ) : (
-                    <RefreshCcw className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
-                  )}
-                  Refresh
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      resignationLoading ? "animate-spin text-[#FF5C28]" : ""
+                    }`}
+                  />
                 </button>
 
                 {canCreateResignation && (
                   <button
                     type="button"
                     onClick={handleOpenAddResignation}
-                    className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+                    className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98]"
                   >
-                    <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
+                    <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                     New Resignation
                   </button>
                 )}

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Clock,
   FileText,
+  RefreshCw,
   UserRound,
   XCircle,
 } from "lucide-react";
@@ -646,6 +647,23 @@ export default function LeavesPage() {
       .filter((option) => option.label && option.value);
   }, [accountOptions]);
 
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  async function handleManualRefresh() {
+    setIsManualRefreshing(true);
+    await fetchLeaves({
+      pageValue: 1,
+      searchValue: search,
+      statusValue: statusFilter,
+      departmentValue: departmentFilter,
+      accountValue: accountFilter,
+      dateFromValue: dateFrom,
+      dateToValue: dateTo,
+      shouldScrollTop: false,
+    });
+    setIsManualRefreshing(false);
+  }
+
   return (
     <div className="sibs-dashboard-shell">
       <div className="shrink-0">
@@ -680,15 +698,31 @@ export default function LeavesPage() {
                 </p>
               </div>
 
-              <span className="inline-flex h-8.5 2xl:h-10 w-max shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-[#042C51]">
-                <UserRound className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
-                {isPersonalView ? "Personal View" : "Administrative View"}
-              </span>
+              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleManualRefresh}
+                  disabled={isManualRefreshing || loading}
+                  title="Refresh Leaves Data"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                    }`}
+                  />
+                </button>
+
+                <span className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs">
+                  <UserRound className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
+                  {isPersonalView ? "Personal View" : "Administrative View"}
+                </span>
+              </div>
             </div>
           </section>
 
           <section
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
+            className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
           >
             <StatCard
               title="Loaded Leaves"
