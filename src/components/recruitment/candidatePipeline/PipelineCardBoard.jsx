@@ -183,6 +183,8 @@ export default function PipelineCardsBoard({
           const count = stageCounts[stage] ?? stageCandidates.length;
           const theme =
             REFERENCE_STAGE_THEMES[stage] || getPipelineStageTheme(stage);
+          const displayStage =
+            stage === "Interviewed" ? "Passed Interview" : stage;
 
           return (
             <div
@@ -198,7 +200,7 @@ export default function PipelineCardsBoard({
                     className={`h-2.5 w-2.5 shrink-0 rounded-full ${theme.dot}`}
                   />
                   <p className="truncate text-[10px] font-extrabold uppercase tracking-tight 2xl:text-[11px]">
-                    {stage}
+                    {displayStage}
                   </p>
                 </div>
 

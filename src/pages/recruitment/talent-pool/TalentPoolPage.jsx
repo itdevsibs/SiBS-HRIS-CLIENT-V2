@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  Download,
   ExternalLink,
   Plus,
   RefreshCw,
-  Upload,
   UsersRound,
 } from "lucide-react";
 
@@ -30,12 +28,9 @@ import {
 
 export default function TalentPoolPage() {
   const {
-    uploadInputRef,
     openPublicForm,
     openAddCandidateModal,
-    downloadLeadTemplate,
     refreshTalentPool,
-    uploadLeadsFile,
     setSelectedCandidate,
     candidateList,
     filteredCandidates,
@@ -171,33 +166,6 @@ export default function TalentPoolPage() {
                   Public Form
                 </button>
 
-                <button
-                  type="button"
-                  onClick={downloadLeadTemplate}
-                  disabled={isLoading}
-                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 w-full sm:w-auto whitespace-nowrap"
-                >
-                  <Download size={14} />
-                  CSV Template
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => uploadInputRef.current?.click()}
-                  disabled={isSaving}
-                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 w-full sm:w-auto whitespace-nowrap"
-                >
-                  <Upload size={14} />
-                  {isSaving ? "Uploading" : "Upload Leads"}
-                </button>
-
-                <input
-                  ref={uploadInputRef}
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={uploadLeadsFile}
-                  className="hidden"
-                />
 
                 <button
                   type="button"

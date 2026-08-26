@@ -24,7 +24,6 @@ export const PROFILE_DOCUMENT_TYPES = Object.freeze([
   "Medical Record",
   "Memo",
   "Performance Document",
-  "Pre-Employment Requirement",
   "Training Document",
   "Other",
 ]);

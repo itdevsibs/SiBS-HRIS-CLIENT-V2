@@ -1,20 +1,100 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Clock3,
   ExternalLink,
   FileText,
+  FolderLock,
   History,
   UserRound,
   X,
 } from "lucide-react";
 
+import api from "../../../lib/axios/api-template";
 import { formatDateTime } from "../../../lib/utils/candidatePipeline/candidatePipelineFormatters";
 import { getStageClass } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import { getVisibleCandidateTimeline } from "../../../lib/utils/candidatePipeline/candidatePipelineStageVisibility";
 import { useUser } from "../../../services/context/UserContext";
 
+const API_BASE_URL = String(
+  import.meta.env.VITE_API_URL || "http://localhost:5000",
+)
+  .replace(/\/api\/?$/, "")
+  .replace(/\/$/, "");
+
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function normalizeMovementFileUrl(url) {
+  const cleanUrl = cleanText(url);
+  if (!cleanUrl || cleanUrl === "#") return "";
+
+  if (
+    /^https?:\/\//i.test(cleanUrl) ||
+    cleanUrl.startsWith("blob:") ||
+    cleanUrl.startsWith("data:")
+  ) {
+    return cleanUrl;
+  }
+
+  const cleanPath = cleanUrl.replace(/^\/+/, "");
+  return `${API_BASE_URL}/${cleanPath}`;
+}
+
+function getMovementFileName(file = {}) {
+  return cleanText(
+    file.name ||
+      file.fileName ||
+      file.filename ||
+      file.title ||
+      "Attachment",
+  );
+}
+
+function getMovementFileUrl(file = {}) {
+  return normalizeMovementFileUrl(
+    file.url || file.fileUrl || file.file_url || file.path || "",
+  );
+}
+
+function getMovementPreviewMimeType(file = {}, responseContentType = "", blobType = "") {
+  const candidates = [
+    responseContentType,
+    blobType,
+    file.type,
+    file.mimeType,
+    file.mime_type,
+  ]
+    .map((value) => cleanText(value).split(";")[0].toLowerCase())
+    .filter(Boolean);
+
+  const explicit = candidates.find(
+    (value) => value.includes("/") && value !== "application/octet-stream",
+  );
+
+  if (explicit) return explicit;
+
+  const extension = getMovementFileName(file).split(".").pop()?.toLowerCase() || "";
+  const extensionTypes = {
+    bmp: "image/bmp",
+    gif: "image/gif",
+    jpeg: "image/jpeg",
+    jpg: "image/jpeg",
+    pdf: "application/pdf",
+    png: "image/png",
+    svg: "image/svg+xml",
+    webp: "image/webp",
+  };
+
+  return extensionTypes[extension] || candidates[0] || "application/octet-stream";
+}
+
+function isMovementImageMimeType(value = "") {
+  return cleanText(value).toLowerCase().startsWith("image/");
+}
+
+function isMovementPdfMimeType(value = "") {
+  return cleanText(value).toLowerCase() === "application/pdf";
 }
 
 function normalizeAuditRole(value = "") {
@@ -684,6 +764,98 @@ export default function CandidateMovementHistoryDrawer({
     () => getMovementHistoryItems(candidate, currentAuditActorLabel),
     [candidate, currentAuditActorLabel],
   );
+  const previewUrlRef = useRef("");
+  const [preview, setPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
+
+  function revokeMovementPreviewUrl() {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = "";
+    }
+  }
+
+  function closeMovementFilePreview() {
+    revokeMovementPreviewUrl();
+    setPreview(null);
+    setPreviewLoading(false);
+    setPreviewError("");
+  }
+
+  useEffect(() => {
+    return () => {
+      revokeMovementPreviewUrl();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      closeMovementFilePreview();
+    }
+  }, [open]);
+
+  async function openMovementFilePreview(file = {}) {
+    const fileUrl = getMovementFileUrl(file);
+    const fileName = getMovementFileName(file);
+
+    if (!fileUrl || previewLoading) return;
+
+    revokeMovementPreviewUrl();
+    setPreview({
+      file: { ...file, name: fileName },
+      url: "",
+      mimeType: "",
+      blob: null,
+    });
+    setPreviewError("");
+    setPreviewLoading(true);
+
+    try {
+      const response = await api.get(fileUrl, {
+        responseType: "blob",
+        withCredentials: true,
+      });
+      const responseBlob = response?.data;
+
+      if (!(responseBlob instanceof Blob)) {
+        throw new Error("The document response is not a valid file.");
+      }
+
+      const mimeType = getMovementPreviewMimeType(
+        file,
+        response?.headers?.["content-type"],
+        responseBlob.type,
+      );
+      const previewBlob =
+        responseBlob.type === mimeType
+          ? responseBlob
+          : responseBlob.slice(0, responseBlob.size, mimeType);
+      const objectUrl = URL.createObjectURL(previewBlob);
+
+      previewUrlRef.current = objectUrl;
+      setPreview({
+        file: {
+          ...file,
+          name: fileName,
+          size: file.size || file.fileSize || previewBlob.size,
+          type: mimeType,
+        },
+        url: objectUrl,
+        mimeType,
+        blob: previewBlob,
+      });
+    } catch (error) {
+      console.error("Failed to preview candidate movement file:", error);
+      setPreviewError(
+        cleanText(error?.response?.data?.message || error?.message) ||
+          "Failed to open this file preview.",
+      );
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
 
   if (!open) return null;
 
@@ -969,7 +1141,11 @@ export default function CandidateMovementHistoryDrawer({
                                     </div>
                                   </div>
                                   {url ? (
-                                    <button type="button" onClick={() => window.open(url, "_blank", "noopener,noreferrer")} className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-[9px] font-extrabold text-blue-700">
+                                    <button
+                                      type="button"
+                                      onClick={() => openMovementFilePreview(file)}
+                                      className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-[9px] font-extrabold text-blue-700"
+                                    >
                                       Open File
                                     </button>
                                   ) : null}
@@ -987,6 +1163,100 @@ export default function CandidateMovementHistoryDrawer({
           )}
         </div>
       </aside>
+
+      {preview ? (
+        <div
+          className="absolute inset-0 z-[130] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
+          onClick={closeMovementFilePreview}
+          role="dialog"
+          aria-modal="true"
+          aria-label={getMovementFileName(preview.file)}
+        >
+          <div
+            className="sibs-modal-pop-in flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 bg-[#042C51] px-5 py-4 text-white">
+              <div className="flex min-w-0 items-center gap-2">
+                <FolderLock size={17} className="shrink-0 text-[#FF5C28]" />
+                <h3
+                  className="truncate text-xs font-extrabold uppercase tracking-wide"
+                  title={getMovementFileName(preview.file)}
+                >
+                  {getMovementFileName(preview.file)}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeMovementFilePreview}
+                className="rounded-lg p-1.5 transition hover:bg-white/10"
+                aria-label="Close file preview"
+                title="Close"
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto p-5">
+              {previewLoading ? (
+                <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-[#F8FAFC] text-xs font-bold text-[#667085]">
+                  Loading secure preview...
+                </div>
+              ) : previewError ? (
+                <div className="flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] p-8 text-center">
+                  <FileText size={34} className="text-[#042C51]" />
+                  <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                    File preview could not be loaded.
+                  </p>
+                  <p className="mt-1 max-w-lg text-xs font-semibold text-[#667085]">
+                    {previewError}
+                  </p>
+                </div>
+              ) : preview?.url && isMovementImageMimeType(preview.mimeType) ? (
+                <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-[#F8FAFC] p-4">
+                  <img
+                    src={preview.url}
+                    alt={getMovementFileName(preview.file)}
+                    className="max-h-[70vh] max-w-full object-contain"
+                  />
+                </div>
+              ) : preview?.url && isMovementPdfMimeType(preview.mimeType) ? (
+                <iframe
+                  src={preview.url}
+                  title={getMovementFileName(preview.file)}
+                  className="h-[68vh] w-full rounded-xl border border-[#D6E0EA]"
+                />
+              ) : (
+                <div className="flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] p-8 text-center">
+                  <FileText size={34} className="text-[#042C51]" />
+                  <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                    This file type cannot be previewed in the browser.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p
+                    className="truncate text-xs font-extrabold text-[#344054]"
+                    title={getMovementFileName(preview.file)}
+                  >
+                    {getMovementFileName(preview.file)}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                    Candidate Pipeline
+                    {formatFileSize(preview.file?.size)
+                      ? ` · ${formatFileSize(preview.file?.size)}`
+                      : ""}
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

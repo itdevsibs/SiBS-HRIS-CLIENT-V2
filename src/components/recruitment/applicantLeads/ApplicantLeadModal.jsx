@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Building2,
   Check,
   CircleCheckBig,
   Copy,
   FileText,
+  History,
   KeyRound,
   Loader2,
+  MessageSquareText,
   UserCheck,
   UserPlus,
   UserRound,
@@ -16,12 +18,49 @@ import {
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 import { getApplicantLeadEditedFields } from "../../../lib/utils/applicantLeads/applicantLeadFormDirty";
 import DropdownField from "../availablePositions/DropdownField";
+import ApplicantLeadMovementHistoryDrawer from "./ApplicantLeadMovementHistoryDrawer";
 
 const INPUT_CLASS =
   "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
 
 const TEXTAREA_CLASS =
   "min-h-20 2xl:min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+
+const AUTO_GROW_TEXTAREA_CLASS =
+  "min-h-10 w-full resize-none overflow-hidden rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+
+const UPPERCASE_INPUT_CLASS = `${INPUT_CLASS} uppercase placeholder:normal-case`;
+const UPPERCASE_TEXTAREA_CLASS = `${TEXTAREA_CLASS} uppercase placeholder:normal-case`;
+const AUTO_GROW_UPPERCASE_TEXTAREA_CLASS = `${AUTO_GROW_TEXTAREA_CLASS} uppercase placeholder:normal-case`;
+
+function AutoResizeTextarea({ value, onChange, ...props }) {
+  const textareaRef = useRef(null);
+
+  React.useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [value]);
+
+  function handleChange(event) {
+    const textarea = event.currentTarget;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+    onChange?.(event);
+  }
+
+  return (
+    <textarea
+      {...props}
+      ref={textareaRef}
+      rows={1}
+      value={value}
+      onChange={handleChange}
+    />
+  );
+}
 
 function updateFormField(setFormData, field, value) {
   setFormData((current) => ({
@@ -111,6 +150,8 @@ function FormSection({ title, subtitle, icon: Icon, children }) {
 
 export default function ApplicantLeadModal() {
   const [copySuccessMessage, setCopySuccessMessage] = useState("");
+  const [movementHistoryOpen, setMovementHistoryOpen] = useState(false);
+  const movementHistoryTriggerRef = useRef(null);
   const {
     showLeadModal,
     editingLead,
@@ -124,6 +165,13 @@ export default function ApplicantLeadModal() {
     accountOptions,
     siteOptions,
     statusOptions,
+    leadHistory,
+    isLeadHistoryLoading,
+    leadHistoryError,
+    leadComment,
+    setLeadComment,
+    isAddingLeadComment,
+    handleAddLeadComment,
   } = useApplicantLeadsPage();
 
   if (!showLeadModal) return null;
@@ -225,15 +273,40 @@ export default function ApplicantLeadModal() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={closeLeadModal}
-              disabled={isSaving}
-              aria-label="Close applicant lead modal"
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <X size={16} />
-            </button>
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              {isEditMode ? (
+                <button
+                  ref={movementHistoryTriggerRef}
+                  type="button"
+                  onClick={() => setMovementHistoryOpen((current) => !current)}
+                  aria-expanded={movementHistoryOpen}
+                  aria-label={
+                    movementHistoryOpen
+                      ? "Close Movement History"
+                      : `Open Movement History, ${leadHistory.length} records`
+                  }
+                  className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[9px] 2xl:text-[10px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 ${
+                    movementHistoryOpen
+                      ? "border-[#FF5C28] bg-[#0D4676] shadow-[0_0_12px_rgba(255,92,40,0.2)]"
+                      : "border-white/15 bg-[#063560] hover:border-[#FF5C28]/60 hover:bg-[#0D4676]"
+                  }`}
+                >
+                  <History size={12} className="text-[#FF5C28]" />
+                  <span className="hidden sm:inline">Movement History</span>
+                  <span>({leadHistory.length})</span>
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={closeLeadModal}
+                disabled={isSaving}
+                aria-label="Close applicant lead modal"
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -309,13 +382,9 @@ export default function ApplicantLeadModal() {
                     value={formData.firstName}
                     placeholder="Enter First Name"
                     onChange={(event) =>
-                      updateFormField(
-                        setFormData,
-                        "firstName",
-                        event.target.value.toUpperCase(),
-                      )
+                      updateFormField(setFormData, "firstName", event.target.value)
                     }
-                    className={INPUT_CLASS}
+                    className={UPPERCASE_INPUT_CLASS}
                   />
                 </label>
 
@@ -329,13 +398,9 @@ export default function ApplicantLeadModal() {
                     value={formData.lastName}
                     placeholder="Enter Last Name"
                     onChange={(event) =>
-                      updateFormField(
-                        setFormData,
-                        "lastName",
-                        event.target.value.toUpperCase(),
-                      )
+                      updateFormField(setFormData, "lastName", event.target.value)
                     }
-                    className={INPUT_CLASS}
+                    className={UPPERCASE_INPUT_CLASS}
                   />
                 </label>
 
@@ -348,13 +413,9 @@ export default function ApplicantLeadModal() {
                     value={formData.middleName}
                     placeholder="Enter Middle Name"
                     onChange={(event) =>
-                      updateFormField(
-                        setFormData,
-                        "middleName",
-                        event.target.value.toUpperCase(),
-                      )
+                      updateFormField(setFormData, "middleName", event.target.value)
                     }
-                    className={INPUT_CLASS}
+                    className={UPPERCASE_INPUT_CLASS}
                   />
                 </label>
 
@@ -366,14 +427,10 @@ export default function ApplicantLeadModal() {
                   <input
                     value={formData.suffix}
                     onChange={(event) =>
-                      updateFormField(
-                        setFormData,
-                        "suffix",
-                        event.target.value.toUpperCase(),
-                      )
+                      updateFormField(setFormData, "suffix", event.target.value)
                     }
                     placeholder="e.g. Jr., Sr., III"
-                    className={INPUT_CLASS}
+                    className={UPPERCASE_INPUT_CLASS}
                   />
                 </label>
 
@@ -421,11 +478,57 @@ export default function ApplicantLeadModal() {
                     className={INPUT_CLASS}
                   />
                 </label>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                    Facebook Name
+                    <EditedIndicator show={editedFields.facebookName} />
+                  </span>
+                  <input
+                    value={formData.facebookName}
+                    onChange={(event) =>
+                      updateFormField(setFormData, "facebookName", event.target.value)
+                    }
+                    placeholder="Enter Facebook Name"
+                    className={UPPERCASE_INPUT_CLASS}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                    Facebook Link
+                    <EditedIndicator show={editedFields.facebookLink} />
+                  </span>
+                  <input
+                    value={formData.facebookLink}
+                    onChange={(event) =>
+                      updateFormField(setFormData, "facebookLink", event.target.value)
+                    }
+                    placeholder="Enter Facebook Profile Link"
+                    className={INPUT_CLASS}
+                  />
+                </label>
+
+                <label className="block sm:col-span-2">
+                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                    School
+                    <EditedIndicator show={editedFields.school} />
+                  </span>
+                  <AutoResizeTextarea
+                    value={formData.school}
+                    onChange={(event) =>
+                      updateFormField(setFormData, "school", event.target.value)
+                    }
+                    placeholder="Enter School"
+                    className={AUTO_GROW_UPPERCASE_TEXTAREA_CLASS}
+                  />
+                </label>
               </div>
             </FormSection>
 
             {/* Section 2: Organizational Placement */}
-            <FormSection
+            {isEditMode && (
+              <FormSection
               title="Organizational Placement"
               subtitle="Assign department, target account, facility site, and initial status."
               icon={Building2}
@@ -523,7 +626,8 @@ export default function ApplicantLeadModal() {
                   />
                 </div>
               </div>
-            </FormSection>
+              </FormSection>
+            )}
 
             {/* Section 3: Notes & Inquiry Remarks */}
             <FormSection
@@ -540,17 +644,57 @@ export default function ApplicantLeadModal() {
                   rows={3}
                   value={formData.notes}
                   onChange={(event) =>
-                    updateFormField(
-                      setFormData,
-                      "notes",
-                      event.target.value.toUpperCase(),
-                    )
+                    updateFormField(setFormData, "notes", event.target.value)
                   }
                   placeholder="Record preliminary background, shift availability, or interview notes..."
-                  className={TEXTAREA_CLASS}
+                  className={UPPERCASE_TEXTAREA_CLASS}
                 />
               </label>
             </FormSection>
+
+            {isEditMode && (
+              <FormSection
+                title="Lead Comments"
+                subtitle="Add comments to this applicant lead without changing HR Notes."
+                icon={MessageSquareText}
+              >
+                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+                  <div className="flex items-center gap-2 text-xs font-extrabold text-[#042C51]">
+                    <MessageSquareText size={14} className="text-[#FF5C28]" />
+                    Add Comment
+                  </div>
+                  <textarea
+                    rows={3}
+                    maxLength={3000}
+                    value={leadComment}
+                    onChange={(event) => setLeadComment(event.target.value)}
+                    placeholder="Add an activity comment for this applicant lead..."
+                    className={`${TEXTAREA_CLASS} mt-2 bg-white`}
+                  />
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <span className="text-[10px] font-semibold text-[#98A2B3]">
+                      {String(leadComment || "").length} / 3000
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddLeadComment}
+                      disabled={
+                        isAddingLeadComment ||
+                        !String(leadComment || "").trim()
+                      }
+                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-3.5 text-[11px] font-extrabold text-white transition hover:bg-[#073A69] disabled:cursor-not-allowed disabled:bg-[#DDE5EE] disabled:text-[#7B8DB3]"
+                    >
+                      {isAddingLeadComment ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <MessageSquareText size={12} />
+                      )}
+                      {isAddingLeadComment ? "Adding..." : "Add Comment"}
+                    </button>
+                  </div>
+                </div>
+              </FormSection>
+            )}
           </div>
 
           {/* Footer Actions */}
@@ -584,6 +728,16 @@ export default function ApplicantLeadModal() {
             </div>
           </footer>
         </form>
+
+        <ApplicantLeadMovementHistoryDrawer
+          open={isEditMode && movementHistoryOpen}
+          lead={editingLead || {}}
+          history={leadHistory}
+          isLoading={isLeadHistoryLoading}
+          error={leadHistoryError}
+          onClose={() => setMovementHistoryOpen(false)}
+          triggerRef={movementHistoryTriggerRef}
+        />
       </div>
     </div>
   );

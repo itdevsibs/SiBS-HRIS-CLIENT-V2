@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertCircle,
   Award,
@@ -2648,11 +2649,12 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
         </div>
       )}
 
-      {preview && (
-        <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/70 p-4"
-          onClick={closePreview}
-        >
+      {preview &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/70 p-4"
+            onClick={closePreview}
+          >
           <div
             className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
@@ -2727,8 +2729,9 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
               </div>
             </div>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
 
       {canEditDetails && deleteTarget && (
         <div
