@@ -35,24 +35,43 @@ export function getCandidateStage(candidate = {}) {
   return stage === "QA Certified" ? "Interviewed" : stage;
 }
 
+const EMPTY_ASSIGNMENT_VALUES = new Set([
+  "not assigned yet",
+  "null",
+  "undefined",
+  "n/a",
+  "na",
+]);
+
+export function cleanAssignmentValue(value = "") {
+  const text = String(value ?? "").trim();
+
+  if (!text || EMPTY_ASSIGNMENT_VALUES.has(text.toLowerCase())) {
+    return "";
+  }
+
+  return text;
+}
+
+function splitRoleAccount(roleAccount = "") {
+  const text = cleanAssignmentValue(roleAccount);
+
+  if (!text) return [];
+
+  return text
+    .split(/\s+(?:\/|-|•)\s+/)
+    .map(cleanAssignmentValue)
+    .filter(Boolean);
+}
+
 export function getRoleTitle(roleAccount = "") {
-  const text = String(roleAccount || "").trim();
-
-  if (!text) return "Not assigned yet";
-
-  const parts = text.split(" - ");
-
-  return parts?.[0]?.trim() || text || "Not assigned yet";
+  const parts = splitRoleAccount(roleAccount);
+  return parts[0] || "";
 }
 
 export function getAccount(roleAccount = "") {
-  const text = String(roleAccount || "").trim();
-
-  if (!text) return "Not assigned yet";
-
-  const parts = text.split(" - ");
-
-  return parts?.[1]?.trim() || "Not assigned yet";
+  const parts = splitRoleAccount(roleAccount);
+  return parts[1] || "";
 }
 
 export function hasInterviewSchedule(candidate) {
@@ -380,26 +399,24 @@ SIBS Talent Acquisition`,
 }
 
 export function getPipelineApplicationRoleAccount(candidate) {
-  const offerRole =
-    candidate?.offerDetails?.roleTitle || candidate?.offeredRoleTitle;
+  const rawRoleAccount =
+    candidate?.roleAccount || candidate?.role_account || "";
 
-  const offerAccount =
-    candidate?.offerDetails?.account || candidate?.offeredAccount;
+  const roleTitle = cleanAssignmentValue(
+    candidate?.offerDetails?.roleTitle ||
+      candidate?.offeredRoleTitle ||
+      candidate?.roleTitle ||
+      getRoleTitle(rawRoleAccount),
+  );
 
-  if (offerRole || offerAccount) {
-    return `${offerRole || "Not assigned yet"} - ${
-      offerAccount || "Not assigned yet"
-    }`;
-  }
+  const account = cleanAssignmentValue(
+    candidate?.offerDetails?.account ||
+      candidate?.offeredAccount ||
+      candidate?.account ||
+      getAccount(rawRoleAccount),
+  );
 
-  if (candidate?.roleAccount) return candidate.roleAccount;
-
-  const roleTitle = candidate?.roleTitle || "Not assigned yet";
-  const account = candidate?.account || "Not assigned yet";
-
-  return `${roleTitle || "Not assigned yet"} - ${
-    account || "Not assigned yet"
-  }`;
+  return [roleTitle, account].filter(Boolean).join(" - ");
 }
 
 export function getCandidateMasterStatusFromPipeline(candidate) {
@@ -454,15 +471,15 @@ export function buildPipelineSummaryForTalentPool(candidate) {
         ? candidate?.offerDetails?.roleTitle ||
           candidate?.roleTitle ||
           getRoleTitle(roleAccount) ||
-          "Not assigned yet"
-        : "Not assigned yet",
+          ""
+        : "",
     currentAppliedAccount:
       currentStage === "Offered" || currentStage === "Accepted"
         ? candidate?.offerDetails?.account ||
           candidate?.account ||
           getAccount(roleAccount) ||
-          "Not assigned yet"
-        : "Not assigned yet",
+          ""
+        : "",
     currentTaOwner: candidate?.taOwner || candidate?.owner || "—",
     currentPrfStatus: candidate?.prfStatus || "Review",
     currentAssessmentStatus: candidate?.assessmentStatus || "Not Take",
@@ -487,8 +504,8 @@ export function buildTalentPoolApplicationHistoryEntry(candidate, summary) {
 
   const currentStage = getCandidateStage(candidate);
   const isDropOff = currentStage === "Drop-off";
-  const role = summary.currentAppliedRole || "Not assigned yet";
-  const account = summary.currentAppliedAccount || "Not assigned yet";
+  const role = summary.currentAppliedRole || "";
+  const account = summary.currentAppliedAccount || "";
   const date = summary.lastPipelineUpdate || getCurrentDate();
 
   if (isDropOff) {
@@ -583,8 +600,8 @@ export function syncTalentPoolFromPipelineApplication(candidate) {
         getCandidateStage(candidate) === "Accepted"
           ? summary.currentAppliedAccount ||
             item.accountFit ||
-            "Not assigned yet"
-          : item.accountFit || candidate.leadAccount || "Not assigned yet",
+            ""
+          : item.accountFit || candidate.leadAccount || "",
       lastActivity: getCurrentDate(),
       applicationHistory: upsertTalentPoolApplicationHistory(
         item.applicationHistory,
@@ -655,12 +672,12 @@ export function normalizeCandidate(candidate) {
       candidate.offerDetails?.roleTitle ||
       candidate.roleTitle ||
       getRoleTitle(roleAccount) ||
-      "Not assigned yet",
+      "",
     account:
       candidate.offerDetails?.account ||
       candidate.account ||
       getAccount(roleAccount) ||
-      "Not assigned yet",
+      "",
     leadAccount:
       candidate.leadAccount ||
       candidate.accountFit ||
@@ -1061,7 +1078,7 @@ export function getPipelineAccountValue(candidate = {}) {
       candidate.currentAppliedAccount ||
       candidate.finalAccount ||
       candidate.account ||
-      "Not assigned yet"
+      ""
     );
   }
 
@@ -1072,6 +1089,6 @@ export function getPipelineAccountValue(candidate = {}) {
     candidate.candidateSnapshot?.leadAccount ||
     candidate.candidateSnapshot?.initialAccount ||
     candidate.candidateSnapshot?.accountFit ||
-    "Not assigned yet"
+    ""
   );
 }

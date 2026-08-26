@@ -1490,6 +1490,30 @@ function AnimatedProfileTabPanel({ children }) {
   return <>{children}</>;
 }
 
+function handleHorizontalNavigationWheel(event) {
+  const container = event.currentTarget;
+
+  if (!container || container.scrollWidth <= container.clientWidth) return;
+
+  const delta =
+    Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ? event.deltaX
+      : event.deltaY;
+
+  if (!delta) return;
+
+  const maxScrollLeft = container.scrollWidth - container.clientWidth;
+  const nextScrollLeft = Math.min(
+    maxScrollLeft,
+    Math.max(0, container.scrollLeft + delta),
+  );
+
+  if (nextScrollLeft === container.scrollLeft) return;
+
+  event.preventDefault();
+  container.scrollLeft = nextScrollLeft;
+}
+
 function CandidateProfileHorizontalNavigation({
   tabs = [],
   activeTab = "",
@@ -1511,7 +1535,10 @@ function CandidateProfileHorizontalNavigation({
       className="rounded-xl border border-sibs-border bg-white p-1.5 2xl:p-2 shadow-2xs"
       aria-label="Candidate profile navigation"
     >
-      <div className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto">
+      <div
+        onWheel={handleHorizontalNavigationWheel}
+        className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto overscroll-x-contain"
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon || FileText;
           const active = tab.key === activePrimaryKey;
@@ -1539,7 +1566,10 @@ function CandidateProfileHorizontalNavigation({
       </div>
 
       {secondaryTabs.length > 0 && (
-        <div className="no-scrollbar mt-1 flex items-center gap-1 overflow-x-auto border-t border-sibs-border pt-1">
+        <div
+          onWheel={handleHorizontalNavigationWheel}
+          className="no-scrollbar mt-1 flex items-center gap-1 overflow-x-auto overscroll-x-contain border-t border-sibs-border pt-1"
+        >
           <span className="shrink-0 px-1.5 text-[8.5px] font-black uppercase tracking-widest text-sibs-text-muted">
             Subsections:
           </span>
@@ -6100,12 +6130,12 @@ export default function CandidateProfileModal() {
 
           <ProfileDetail
             label="Final Role"
-            value={activeCandidate.currentAppliedRole || "Not assigned yet"}
+            value={activeCandidate.currentAppliedRole || ""}
           />
 
           <ProfileDetail
             label="Final Account"
-            value={activeCandidate.currentAppliedAccount || "Not assigned yet"}
+            value={activeCandidate.currentAppliedAccount || ""}
           />
 
           <ProfileDetail

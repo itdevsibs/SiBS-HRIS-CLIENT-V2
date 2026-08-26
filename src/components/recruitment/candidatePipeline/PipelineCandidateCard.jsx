@@ -217,14 +217,14 @@ const PipelineCandidateCard = ({
               getRoleTitle(candidate.roleAccount) ||
               candidate.roleTitle ||
               candidate.currentAppliedRole ||
-              "Not assigned yet"
+              ""
             }
             className="mt-0.5 truncate text-[10px] font-extrabold text-[#042C51]"
           >
             {getRoleTitle(candidate.roleAccount) ||
               candidate.roleTitle ||
               candidate.currentAppliedRole ||
-              "Not assigned yet"}
+              ""}
           </p>
         </div>
 
@@ -233,10 +233,10 @@ const PipelineCandidateCard = ({
             {resolvedAccountLabel}
           </p>
           <p
-            title={getPipelineAccountValue(candidate) || "Not assigned yet"}
+            title={getPipelineAccountValue(candidate) || ""}
             className="mt-0.5 truncate text-[10px] font-extrabold text-[#042C51]"
           >
-            {getPipelineAccountValue(candidate) || "Not assigned yet"}
+            {getPipelineAccountValue(candidate) || ""}
           </p>
         </div>
       </div>

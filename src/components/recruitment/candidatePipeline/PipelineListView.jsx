@@ -294,14 +294,14 @@ const PipelineListView = ({
                         <p className="sibs-kicker">Position</p>
                         <p className="mt-1 truncate text-[11px] font-extrabold text-[#042C51]">
                           {getRoleTitle(candidate.roleAccount) ||
-                            "Not assigned yet"}
+                            ""}
                         </p>
                       </div>
                       <div className="sibs-info-tile">
                         <p className="sibs-kicker">Account</p>
                         <p className="mt-1 truncate text-[11px] font-extrabold text-[#042C51]">
                           {getAccount(candidate.roleAccount) ||
-                            "Not assigned yet"}
+                            ""}
                         </p>
                       </div>
                     </div>
@@ -442,11 +442,11 @@ const PipelineListView = ({
                           <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5">
                             <p className="max-w-[210px] truncate sibs-text-xs font-bold text-sibs-navy">
                               {getRoleTitle(candidate.roleAccount) ||
-                                "Not assigned yet"}
+                                ""}
                             </p>
                             <p className="mt-0.5 max-w-[210px] truncate text-[10px] font-semibold text-[#667085]">
                               {getAccount(candidate.roleAccount) ||
-                                "Not assigned yet"}
+                                ""}
                             </p>
                           </td>
 

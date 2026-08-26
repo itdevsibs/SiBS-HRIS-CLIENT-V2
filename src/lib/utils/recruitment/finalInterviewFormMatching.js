@@ -268,6 +268,7 @@ export function findMatchingFinalInterviewForm({
   preferredFormId = "",
   positionId = "",
   positionTitle = "",
+  requireConfiguredQuestions = false,
 } = {}) {
   const availableForms = safeArray(
     forms ||
@@ -283,9 +284,20 @@ export function findMatchingFinalInterviewForm({
   const preferredId = cleanText(preferredFormId);
   const targetPositionId = cleanText(positionId);
   const targetPositionTitle = cleanText(positionTitle);
+  const eligibleForms = requireConfiguredQuestions
+    ? availableForms.filter((form) =>
+        getFinalInterviewFormFields(form).some(
+          (field) => field?.enabled !== false,
+        ),
+      )
+    : availableForms;
+
+  if (!eligibleForms.length) {
+    return null;
+  }
 
   if (preferredId) {
-    const formByExactId = availableForms.find(
+    const formByExactId = eligibleForms.find(
       (form) =>
         getFinalInterviewFormId(form) === preferredId,
     );
@@ -296,7 +308,7 @@ export function findMatchingFinalInterviewForm({
   }
 
   if (targetPositionId) {
-    const activeFormByPositionId = availableForms.find(
+    const activeFormByPositionId = eligibleForms.find(
       (form) =>
         isActiveForm(form) &&
         getFinalInterviewFormPositionId(form) ===
@@ -307,7 +319,7 @@ export function findMatchingFinalInterviewForm({
       return activeFormByPositionId;
     }
 
-    const formByPositionId = availableForms.find(
+    const formByPositionId = eligibleForms.find(
       (form) =>
         getFinalInterviewFormPositionId(form) ===
         targetPositionId,
@@ -319,7 +331,7 @@ export function findMatchingFinalInterviewForm({
   }
 
   if (targetPositionTitle) {
-    const activeExactTitleForm = availableForms.find(
+    const activeExactTitleForm = eligibleForms.find(
       (form) =>
         isActiveForm(form) &&
         isExactTextMatch(
@@ -332,7 +344,7 @@ export function findMatchingFinalInterviewForm({
       return activeExactTitleForm;
     }
 
-    const exactTitleForm = availableForms.find(
+    const exactTitleForm = eligibleForms.find(
       (form) =>
         isExactTextMatch(
           getFinalInterviewFormPositionTitle(form),
@@ -344,7 +356,7 @@ export function findMatchingFinalInterviewForm({
       return exactTitleForm;
     }
 
-    const activeLooseTitleForm = availableForms.find(
+    const activeLooseTitleForm = eligibleForms.find(
       (form) =>
         isActiveForm(form) &&
         isLooseTextMatch(
@@ -357,7 +369,7 @@ export function findMatchingFinalInterviewForm({
       return activeLooseTitleForm;
     }
 
-    const looseTitleForm = availableForms.find(
+    const looseTitleForm = eligibleForms.find(
       (form) =>
         isLooseTextMatch(
           getFinalInterviewFormPositionTitle(form),
@@ -370,14 +382,14 @@ export function findMatchingFinalInterviewForm({
     }
   }
 
-  const activeForms = availableForms.filter(isActiveForm);
+  const activeForms = eligibleForms.filter(isActiveForm);
 
   if (activeForms.length === 1) {
     return activeForms[0];
   }
 
-  if (availableForms.length === 1) {
-    return availableForms[0];
+  if (eligibleForms.length === 1) {
+    return eligibleForms[0];
   }
 
   return null;
