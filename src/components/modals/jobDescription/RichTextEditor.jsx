@@ -472,6 +472,8 @@ export default function RichTextEditor({
   value = "",
   onChange,
   onFocus,
+  onBlur,
+  syncValue = true,
   placeholder = "Enter content...",
   minHeight = 120,
 }) {
@@ -554,6 +556,15 @@ export default function RichTextEditor({
       forceToolbarRender((current) => current + 1);
     },
 
+    onBlur({ editor: currentEditor }) {
+      onBlur?.(
+        currentEditor.getHTML(),
+        currentEditor.getText({
+          blockSeparator: "\n",
+        }),
+      );
+    },
+
     onSelectionUpdate() {
       forceToolbarRender((current) => current + 1);
     },
@@ -566,7 +577,7 @@ export default function RichTextEditor({
   });
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || !syncValue) return;
 
     const nextContent =
       normalizeInitialContent(value);
@@ -582,7 +593,7 @@ export default function RichTextEditor({
         },
       );
     }
-  }, [editor, value]);
+  }, [editor, syncValue, value]);
 
   const canIndent =
     editor?.isActive("listItem") ||
@@ -606,6 +617,10 @@ export default function RichTextEditor({
           outline: none;
           overflow-wrap: anywhere;
           word-break: normal;
+        }
+
+        .jd-rich-text-editor > div {
+          min-height: inherit;
         }
 
         .jd-rich-text-editor .ProseMirror:focus,
@@ -949,6 +964,12 @@ export default function RichTextEditor({
 
       <div
         style={{ minHeight }}
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) {
+            event.preventDefault();
+            editor?.chain().focus().run();
+          }
+        }}
         className="jd-rich-text-editor bg-[#F8FAFC] px-3 py-2.5 focus-within:bg-white"
       >
         <EditorContent editor={editor} />
