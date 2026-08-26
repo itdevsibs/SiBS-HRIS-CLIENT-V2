@@ -8,8 +8,6 @@ import {
   ChevronUp,
   Eye,
   Filter,
-  Layers,
-  Lightbulb,
   ListChecks,
   Loader2,
   PenLine,
@@ -28,17 +26,29 @@ import {
 } from "../../../lib/axios/getRecruitmentSettings";
 import { useRecruitmentSettings } from "../../../services/context/RecruitmentSettingsContext";
 import StatusModal from "../../modals/StatusModal";
+import RichTextEditor from "../../modals/jobDescription/RichTextEditor";
+import RichTextViewer from "../../modals/jobDescription/RichTextViewer";
 import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
 
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
 const APPLICATION_FORMS_TABLE_PAGE_SIZE = 6;
 
-const SECTION_PRESETS = [
-  ["Voice Screening", "45-sec English audio recording prompt"],
-  ["Typing / Tech Diagnostic", "WPM benchmarks & tools proficiencies"],
-  ["Work & BPO History", "Tenure, past employer, account types"],
-  ["Shift & Readiness", "Night shift, on-site, start dates"],
-];
+function DraftRichTextEditor({ value = "", onCommit, ...props }) {
+  const [draft, setDraft] = useState(value);
+
+  return (
+    <RichTextEditor
+      {...props}
+      value={draft}
+      syncValue={false}
+      onChange={(html) => setDraft(html)}
+      onBlur={(html) => {
+        setDraft(html);
+        onCommit?.(html);
+      }}
+    />
+  );
+}
 
 function asText(value, fallback = "-") {
   const text = String(value ?? "").trim();
@@ -228,9 +238,6 @@ export default function ApplicationQuestionsFormSettings() {
   } = useRecruitmentSettings();
 
   const [mode, setMode] = useState("table");
-  const [step, setStep] = useState(1);
-  const [showGuide, setShowGuide] = useState(true);
-  const [showAllSteps, setShowAllSteps] = useState(false);
   const [selectedPositionId, setSelectedPositionId] = useState("");
   const [applicationForms, setApplicationForms] = useState([]);
   const [activeApplicationForm, setActiveApplicationForm] = useState(null);
@@ -583,14 +590,28 @@ export default function ApplicationQuestionsFormSettings() {
     const positionId = getPositionId(position);
     setSelectedPositionId(positionId);
     setMode("editor");
-    setStep(1);
-    setShowAllSteps(false);
     setQuestionSearch("");
     setStatusFilter("All");
     void loadApplicationFormForPosition(positionId);
   }
 
   async function handleSave() {
+    const formName = String(
+      activeApplicationForm?.formName ||
+        activeApplicationForm?.form_name ||
+        "",
+    ).trim();
+
+    if (!formName) {
+      setStatusModal({
+        open: true,
+        type: "error",
+        title: "Form Name Required",
+        message: "Enter a title for the application form before saving.",
+      });
+      return;
+    }
+
     if (!hasValidQuestion) {
       setStatusModal({
         open: true,
@@ -627,10 +648,7 @@ export default function ApplicationQuestionsFormSettings() {
       const response = await saveApplicationFormByPosition(
         getPositionId(selectedPosition),
         {
-          formName:
-            activeApplicationForm?.formName ||
-            activeApplicationForm?.form_name ||
-            `${getPositionTitle(selectedPosition)} - Application Intake Form`,
+          formName,
           status: activeApplicationForm?.status || "Active",
           benchmark:
             activeApplicationForm?.benchmark ||
@@ -1168,115 +1186,15 @@ export default function ApplicationQuestionsFormSettings() {
           </div>
         </div>
       </section>
-      <div className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white p-1.5 shadow-sm sibs-scrollbar">
-        {[
-          [1, "Form Info & Settings"],
-          [2, "Sections & Presets"],
-          [3, "Questions & Input Types"],
-        ].map(([number, label]) => {
-          const active = !showAllSteps && step === number;
-
-          return (
-            <button
-              key={number}
-              type="button"
-              onClick={() => {
-                setStep(number);
-                setShowAllSteps(false);
-              }}
-              className={`inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold transition ${
-                active
-                  ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
-                  : "border-transparent bg-white text-[#475467] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
-              }`}
-            >
-              <span
-                className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-extrabold ${
-                  active
-                    ? "bg-[#FF5C28] text-white"
-                    : "bg-[#E8EEF5] text-[#667085]"
-                }`}
-              >
-                {number}
-              </span>
-              <span className="truncate">{label}</span>
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => setShowAllSteps((previous) => !previous)}
-          className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border px-3 text-[11px] font-extrabold transition ${
-            showAllSteps
-              ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-primary-1 shadow-sm"
-              : "border-transparent bg-white text-[#344054] hover:border-[#D9E2EC] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
-          }`}
-        >
-          <Layers
-            size={15}
-            className={showAllSteps ? "text-[#FF5C28]" : "text-[#98A2B3]"}
-          />
-          Show All Steps
-        </button>
-      </div>
-
-      {showGuide && (
-        <div className="mb-5 rounded-2xl border border-amber-300 bg-[#FFFBEA] p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="flex items-center gap-2 text-xs font-extrabold uppercase text-[#9A4A00]">
-              <Sparkles size={15} className="text-[#FF5C28]" />
-              <Lightbulb size={14} className="text-amber-500" />
-              Beginner's Guide: How to Configure an Application Form Per JD
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowGuide(false)}
-              className="text-xs font-extrabold text-[#C75A00] underline"
-            >
-              Hide Guide
-            </button>
-          </div>
-          <div className="grid gap-3 lg:grid-cols-3">
-            {[
-              [
-                "Step 1: Form Details",
-                "Set form title, public portal URL slug, status (Active/Draft), and role intake benchmark.",
-              ],
-              [
-                "Step 2: Organize Sections",
-                "Structure candidate flow. Use 1-Click Presets for standard Voice, Typing, or Education sections.",
-              ],
-              [
-                "Step 3: Define Questions",
-                "Add intake questions, choose input type, and test inline previews.",
-              ],
-            ].map(([title, copy]) => (
-              <div
-                key={title}
-                className="rounded-xl border border-amber-200 bg-white px-4 py-3"
-              >
-                <p className="text-xs font-extrabold text-sibs-primary-1">
-                  {title}
-                </p>
-                <p className="mt-1 text-xs font-medium leading-5 text-[#475467]">
-                  {copy}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {(showAllSteps || step === 1) && (
-        <section className="mb-5 rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+      <section className="mb-5 rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-start justify-between border-b border-[#E6ECF2] pb-4">
             <div>
-              <span className="inline-flex rounded-md bg-[#F1F5F9] px-2 py-1 text-xs font-extrabold uppercase text-sibs-primary-1">
-                Step 1 of 3
-              </span>
-              <h4 className="mt-2 text-sm font-extrabold text-sibs-primary-1">
+              <h4 className="text-sm font-extrabold text-sibs-primary-1">
                 Form Basic Information & Portal Settings
               </h4>
+              <p className="text-xs font-medium text-[#475467]">
+                Configure the application form details shown to candidates.
+              </p>
             </div>
             <p className="text-xs font-semibold text-sibs-tertiary-5">
               Position Code: {getPositionCode(selectedPosition)}
@@ -1295,10 +1213,17 @@ export default function ApplicationQuestionsFormSettings() {
                 value={
                   activeApplicationForm?.formName ||
                   activeApplicationForm?.form_name ||
-                  `${getPositionTitle(selectedPosition)} - Application Intake Form`
+                  ""
                 }
-                readOnly
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-bold text-sibs-primary-1 outline-none"
+                onChange={(event) =>
+                  setActiveApplicationForm((previous) => ({
+                    ...(previous || {}),
+                    formName: event.target.value,
+                    form_name: event.target.value,
+                  }))
+                }
+                placeholder={`${getPositionTitle(selectedPosition)} - Application Intake Form`}
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
               />
               <span className="mt-1 block text-[11px] font-medium text-sibs-tertiary-5">
                 Name displayed at the top of the candidate application portal.
@@ -1326,239 +1251,33 @@ export default function ApplicationQuestionsFormSettings() {
               </span>
             </label>
           </div>
-          <label className="mt-4 block text-xs font-extrabold text-sibs-primary-1">
-            Candidate Directives / Overview
-            <input
-              value={
-                activeApplicationForm?.description ||
-                "Application screening form evaluating verbal English clarity, active listening, customer empathy, and operational night shift readiness."
-              }
-              readOnly
-              className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-bold text-sibs-primary-1 outline-none"
-            />
-            <span className="mt-1 block text-[11px] font-medium text-sibs-tertiary-5">
-              Instructions visible to applicants before filling out the form.
-            </span>
-          </label>
-          {!showAllSteps && (
-            <div className="mt-5 flex justify-end border-t border-[#E6ECF2] pt-4">
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white"
-              >
-                Next Step: Add & Organize Sections
-                <ArrowLeft size={15} className="rotate-180 text-[#FF5C28]" />
-              </button>
+          <div className="mt-4 text-xs font-extrabold text-sibs-primary-1">
+            <p>Candidate Directives / Overview</p>
+            <div className="mt-2">
+              <DraftRichTextEditor
+                key={`application-overview-${getPositionId(selectedPosition)}`}
+                id="application-form-candidate-directives"
+                value={activeApplicationForm?.description || ""}
+                onCommit={(html) =>
+                  setActiveApplicationForm((previous) => ({
+                    ...(previous || {}),
+                    description: html,
+                  }))
+                }
+                placeholder="Describe the application screening instructions shown to candidates."
+                minHeight={96}
+              />
             </div>
-          )}
-        </section>
-      )}
-
-      {(showAllSteps || step === 2) && (
-        <section className="mb-5 rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-          <div className="mb-4 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <span className="inline-flex rounded-md bg-[#F1F5F9] px-2 py-1 text-xs font-extrabold uppercase text-sibs-primary-1">
-                Step 2 of 3
+              <span className="mt-1 block text-[11px] font-medium text-sibs-tertiary-5">
+                Instructions visible to applicants before filling out the form.
               </span>
-              <h4 className="mt-2 text-sm font-extrabold text-sibs-primary-1">
-                Form Sections & 1-Click Standard Presets
-              </h4>
-              <p className="text-xs font-medium text-[#475467]">
-                Organize candidate intake topics into step-by-step wizard pages.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => addSection()}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white"
-            >
-              <Plus size={15} />
-              Add Blank Section
-            </button>
           </div>
-          <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-            <p className="mb-3 flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
-              <Sparkles size={15} className="text-[#FF5C28]" />
-              Quickly add pre-configured sections using 1-Click Standard
-              Presets:
-            </p>
-            <div className="grid gap-3 lg:grid-cols-4">
-              {SECTION_PRESETS.map(([title, copy]) => (
-                <button
-                  key={title}
-                  type="button"
-                  onClick={() => addSection(title, copy)}
-                  className="rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-left transition hover:border-[#FF5C28] hover:bg-[#FFF7F2]"
-                >
-                  <p className="text-xs font-extrabold text-sibs-primary-1">
-                    <Plus size={14} className="mr-2 inline text-[#FF5C28]" />
-                    {title}
-                  </p>
-                  <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-                    {copy}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="mt-5">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-extrabold uppercase text-sibs-primary-1">
-                Current Application Sections ({applicationSections.length})
-              </p>
-              <div className="flex items-center gap-2 text-xs font-extrabold text-sibs-primary-1">
-                <button
-                  type="button"
-                  onClick={() => setCollapsedSectionIds([])}
-                  className="hover:text-[#FF5C28]"
-                >
-                  Expand All
-                </button>
-                <span className="text-sibs-tertiary-5">•</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCollapsedSectionIds(
-                      applicationSections.map(
-                        (section) => section.clientSectionId || section.id,
-                      ),
-                    )
-                  }
-                  className="hover:text-[#FF5C28]"
-                >
-                  Collapse All
-                </button>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {applicationSections.map((section, index) => {
-                const sectionId = section.clientSectionId || section.id;
-                const collapsed = collapsedSectionIds.includes(sectionId);
+      </section>
 
-                return (
-                  <div
-                    key={section.id}
-                    className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
-                        S{index + 1}
-                      </span>
-                      <input
-                        value={section.title || ""}
-                        onChange={(event) =>
-                          updateSection(sectionId, {
-                            title: event.target.value,
-                          })
-                        }
-                        aria-label={`Section ${index + 1} title`}
-                        className="h-9 min-w-0 flex-1 rounded-lg border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold uppercase text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                      />
-                      <span className="hidden rounded-lg border border-[#D6DEE8] bg-white px-3 py-2 text-xs font-extrabold text-[#475467] sm:inline-flex">
-                        {(section.questions || []).length}{" "}
-                        {(section.questions || []).length === 1
-                          ? "Field"
-                          : "Fields"}
-                      </span>
-                      <div className="flex items-center rounded-lg border border-[#D6DEE8] bg-white">
-                        <button
-                          type="button"
-                          onClick={() => moveSection(index, -1)}
-                          disabled={index === 0}
-                          className="inline-flex h-9 w-8 items-center justify-center text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-30"
-                          title="Move section up"
-                        >
-                          <ChevronUp size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveSection(index, 1)}
-                          disabled={index === applicationSections.length - 1}
-                          className="inline-flex h-9 w-8 items-center justify-center text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-30"
-                          title="Move section down"
-                        >
-                          <ChevronDown size={14} />
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleSection(sectionId)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1"
-                        title={
-                          collapsed ? "Expand section" : "Collapse section"
-                        }
-                      >
-                        {collapsed ? (
-                          <ChevronDown size={15} />
-                        ) : (
-                          <ChevronUp size={15} />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeSection(sectionId)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50"
-                        title="Delete section"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                    {!collapsed && (
-                      <textarea
-                        rows={2}
-                        value={section.description || ""}
-                        onChange={(event) =>
-                          updateSection(sectionId, {
-                            description: event.target.value,
-                          })
-                        }
-                        placeholder="Section description (optional)"
-                        className="mt-3 w-full resize-none rounded-lg border border-[#D6DEE8] bg-white px-4 py-2 text-xs font-semibold text-[#475467] outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                      />
-                    )}
-                  </div>
-                );
-              })}
-              {!applicationSections.length && (
-                <div className="rounded-xl border border-dashed border-[#C8D7E8] bg-white px-4 py-10 text-center text-sm font-extrabold text-sibs-tertiary-5">
-                  No sections yet. Add a preset or blank section to start.
-                </div>
-              )}
-            </div>
-          </div>
-          {!showAllSteps && (
-            <div className="mt-5 flex items-center justify-between border-t border-[#E6ECF2] pt-5">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
-              >
-                <ArrowLeft size={15} />
-                Previous Step
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep(3)}
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-xs font-extrabold text-white"
-              >
-                Next Step: Edit Questions
-                <Plus size={15} className="text-[#FF5C28]" />
-              </button>
-            </div>
-          )}
-        </section>
-      )}
-
-      {(showAllSteps || step === 3) && (
-        <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
           <div className="mb-4 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <span className="inline-flex rounded-md bg-[#F1F5F9] px-2 py-1 text-xs font-extrabold uppercase text-sibs-primary-1">
-                Step 3 of 3
-              </span>
-              <h4 className="mt-2 text-sm font-extrabold uppercase text-sibs-primary-1">
+              <h4 className="text-sm font-extrabold uppercase text-sibs-primary-1">
                 Configure Questions & Input Types
               </h4>
               <p className="text-xs font-medium text-[#475467]">
@@ -1609,15 +1328,45 @@ export default function ApplicationQuestionsFormSettings() {
                   className="overflow-hidden rounded-xl border border-[#D9E2EC] bg-white"
                 >
                   <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
                       <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-extrabold text-white">
                         S{index + 1}
                       </span>
-                      <div className="min-w-0 flex-1 px-1 text-[13px] font-extrabold uppercase text-sibs-primary-1">
-                        {index + 1}. {section.title}
-                      </div>
+                      <label className="flex min-w-0 flex-1 items-center gap-1 text-[13px] font-extrabold text-sibs-primary-1">
+                        <span className="shrink-0">{index + 1}.</span>
+                        <input
+                          value={section.title || ""}
+                          onChange={(event) =>
+                            updateSection(sectionId, {
+                              title: event.target.value,
+                            })
+                          }
+                          aria-label={`Section ${index + 1} title`}
+                          className="h-9 min-w-0 flex-1 rounded-lg border border-[#D6DEE8] bg-white px-3 text-[13px] font-extrabold uppercase text-sibs-primary-1 outline-none transition hover:border-[#B8C7D9] focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
+                        />
+                      </label>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex items-center rounded-[9px] border border-[#D6DEE8] bg-white">
+                        <button
+                          type="button"
+                          onClick={() => moveSection(index, -1)}
+                          disabled={index === 0}
+                          className="inline-flex h-8 w-7 items-center justify-center text-[#667085] disabled:cursor-not-allowed disabled:opacity-30"
+                          title="Move section up"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveSection(index, 1)}
+                          disabled={index === applicationSections.length - 1}
+                          className="inline-flex h-8 w-7 items-center justify-center text-[#667085] disabled:cursor-not-allowed disabled:opacity-30"
+                          title="Move section down"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={() => toggleSection(sectionId)}
@@ -1639,6 +1388,14 @@ export default function ApplicationQuestionsFormSettings() {
                       >
                         <Plus size={15} />
                         Add Field
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeSection(sectionId)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] text-red-500 transition hover:bg-red-50"
+                        title="Delete section"
+                      >
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
@@ -1749,18 +1506,22 @@ export default function ApplicationQuestionsFormSettings() {
                               </div>
                             </div>
 
-                            <label className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
+                            <div className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
                               Question Prompt / Field Label
-                              <input
-                                value={question.label}
-                                onChange={(event) =>
-                                  updateQuestion(question.id, {
-                                    label: event.target.value,
-                                  })
-                                }
-                                className="mt-1 h-10 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-semibold text-sibs-primary-1 outline-none focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
-                              />
-                            </label>
+                              <div className="mt-1 normal-case">
+                                <DraftRichTextEditor
+                                  id={`application-question-${question.id}`}
+                                  value={question.label || ""}
+                                  onCommit={(html) =>
+                                    updateQuestion(question.id, {
+                                      label: html,
+                                    })
+                                  }
+                                  placeholder="Enter the application question prompt."
+                                  minHeight={84}
+                                />
+                              </div>
+                            </div>
                             <div className="mt-3 grid gap-3 lg:grid-cols-2">
                               <label className="text-[11px] font-extrabold uppercase text-sibs-tertiary-5">
                                 Sublabel / Helper Text (Optional)
@@ -1790,14 +1551,18 @@ export default function ApplicationQuestionsFormSettings() {
                             </div>
                             {previewQuestionId === question.id && (
                               <div className="mt-4 rounded-xl border border-dashed border-[#BFD1E5] bg-[#F8FAFC] p-4">
-                                <p className="text-xs font-extrabold text-sibs-primary-1">
-                                  {question.label || "Untitled question"}
+                                <div className="text-xs font-extrabold text-sibs-primary-1">
+                                  <RichTextViewer
+                                    value={question.label}
+                                    emptyText="Untitled question"
+                                    className="text-sibs-primary-1"
+                                  />
                                   {question.required !== false && (
                                     <span className="ml-1 text-[#FF5C28]">
                                       *
                                     </span>
                                   )}
-                                </p>
+                                </div>
                                 {question.helperText && (
                                   <p className="mt-1 text-[11px] font-medium text-[#667085]">
                                     {question.helperText}
@@ -1839,29 +1604,38 @@ export default function ApplicationQuestionsFormSettings() {
           <div className="mt-5 flex flex-col gap-3 border-t border-[#E6ECF2] pt-5 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
-              onClick={() => setStep(2)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+              onClick={() => setMode("table")}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1"
             >
               <ArrowLeft size={15} />
-              Previous Step
+              Done & Back to Table
             </button>
-            <button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={saving || !hasValidQuestion}
-              title={hasChanges ? "Save form changes" : "Save form"}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:opacity-70"
-            >
-              {saving ? (
-                <Loader2 size={15} className="animate-spin" />
-              ) : (
-                <Save size={15} className="text-[#FF5C28]" />
-              )}
-              Save Position Form
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={openCandidatePortalPreview}
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F1F5F9] px-4 text-xs font-extrabold text-sibs-primary-1"
+              >
+                <Eye size={15} className="text-[#FF5C28]" />
+                Preview Live Form
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={saving || !hasValidQuestion}
+                title={hasChanges ? "Save form changes" : "Save form"}
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:opacity-70"
+              >
+                {saving ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <Save size={15} className="text-[#FF5C28]" />
+                )}
+                Save Position Form
+              </button>
+            </div>
           </div>
-        </section>
-      )}
+      </section>
 
       <StatusModal
         open={statusModal.open}

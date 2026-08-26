@@ -18,6 +18,7 @@ import {
 import api from "../../../lib/axios/api-template";
 import { getFinalInterviewFormByPosition } from "../../../lib/axios/getRecruitmentSettings";
 import StatusModal from "../../../components/modals/StatusModal";
+import RichTextViewer from "../../../components/modals/jobDescription/RichTextViewer";
 import {
   findMatchingFinalInterviewForm,
   getFinalInterviewFormFields,
@@ -29,6 +30,17 @@ import {
 
 const RECRUITMENT_SETTINGS_STORAGE_KEY = "sibs_recruitment_settings_temp";
 const DEFAULT_JOB_EVALUATION_FORM_ID = "default-job-evaluation";
+
+function richTextToPlainText(value = "") {
+  const source = String(value || "");
+
+  if (typeof DOMParser === "undefined") {
+    return source.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  const parsed = new DOMParser().parseFromString(source, "text/html");
+  return String(parsed.body?.textContent || source).replace(/\s+/g, " ").trim();
+}
 
 const JOB_EVALUATION_FIELDS = {
   education: "je_education",
@@ -1763,7 +1775,7 @@ function FieldInput({ field, value, onChange, readOnly = false }) {
         onChange={(nextValue) => onChange(nextValue)}
         options={FINAL_INTERVIEW_RATING_OPTIONS}
         placeholder="Select rating"
-        ariaLabel={field.label || "Select rating"}
+        ariaLabel={richTextToPlainText(field.label) || "Select rating"}
         className="mt-2"
       />
     );
@@ -1790,7 +1802,7 @@ function FieldInput({ field, value, onChange, readOnly = false }) {
         onChange={(nextValue) => onChange(nextValue)}
         options={FINAL_INTERVIEW_RECOMMENDATION_OPTIONS}
         placeholder="Select answer"
-        ariaLabel={field.label || "Select answer"}
+        ariaLabel={richTextToPlainText(field.label) || "Select answer"}
         className="mt-2"
       />
     );
@@ -3533,10 +3545,13 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
                                   </div>
 
-                                  <label className="mt-3 block text-base font-extrabold leading-8 text-sibs-primary-1">
-                                    {field.label ||
-                                      "Untitled Final Interview question"}
-                                  </label>
+                                  <div className="mt-3 text-base font-extrabold leading-8 text-sibs-primary-1">
+                                    <RichTextViewer
+                                      value={field.label}
+                                      emptyText="Untitled Final Interview question"
+                                      className="text-sibs-primary-1"
+                                    />
+                                  </div>
 
                                   <div className="mt-4">
                                     {(publicMode || !isRatingQuestion) && (
