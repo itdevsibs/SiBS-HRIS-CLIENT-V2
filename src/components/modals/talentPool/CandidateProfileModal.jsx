@@ -1574,7 +1574,10 @@ function CandidateProfileHorizontalNavigation({
       </div>
 
       {secondaryTabs.length > 0 && (
-        <div className="no-scrollbar mt-1 xl:mt-1.5 flex items-center gap-1.5 overflow-x-auto border-t border-sibs-border pt-1 xl:pt-1.5">
+        <div
+          onWheel={handleHorizontalNavigationWheel}
+          className="no-scrollbar mt-1 xl:mt-1.5 flex items-center gap-1.5 overflow-x-auto overscroll-x-contain border-t border-sibs-border pt-1 xl:pt-1.5"
+        >
           <span className="shrink-0 px-1.5 text-[8.5px] xl:text-[9.5px] font-black uppercase tracking-widest text-sibs-text-muted">
             Subsections:
           </span>
