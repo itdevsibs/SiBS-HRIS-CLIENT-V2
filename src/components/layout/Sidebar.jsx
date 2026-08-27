@@ -407,12 +407,35 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
         }`}
       >
         <div className="flex min-w-0 items-baseline whitespace-nowrap">
-          <span className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em] text-white">
+          <MotionSpan
+            className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em]"
+            animate={{
+              color: ["#FFFFFF", "#FF5C28", "#FFFFFF"],
+            }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut",
+              times: [0, 0.5, 1],
+            }}
+          >
             SiBS&nbsp;
-          </span>
-          <span className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em] text-sibs-primary-2">
+          </MotionSpan>
+
+          <MotionSpan
+            className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em]"
+            animate={{
+              color: ["#FF5C28", "#FFFFFF", "#FF5C28"],
+            }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut",
+              times: [0, 0.5, 1],
+            }}
+          >
             HRIS
-          </span>
+          </MotionSpan>
         </div>
 
         <p className="mt-0.5 text-[7.5px] 2xl:text-[8.5px] font-semibold uppercase tracking-[0.08em] 2xl:tracking-[0.1em] text-slate-300/80">
