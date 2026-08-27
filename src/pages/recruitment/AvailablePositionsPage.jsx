@@ -1724,8 +1724,9 @@ export default function AvailablePositionsPage() {
                   className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RefreshCw
-                    size={16}
-                    className={isRefreshing ? "animate-spin" : ""}
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                    }`}
                   />
                 </button>
 

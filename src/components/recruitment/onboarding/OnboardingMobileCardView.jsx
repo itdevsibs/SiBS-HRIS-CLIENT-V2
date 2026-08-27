@@ -19,9 +19,13 @@ export default function OnboardingMobileCardView({
   formatDate,
   getShowStatusClass,
   getOutcomeClass,
+  delay = 0,
 }) {
   return (
-    <article className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+    <article
+      className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
+    >
       <button
         type="button"
         onClick={onView}

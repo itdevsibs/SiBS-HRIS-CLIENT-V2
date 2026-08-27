@@ -35,9 +35,9 @@ function getTodayISO() {
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       {children}
-      {required && <span className="text-red-500"> *</span>}
+      {required && <span className="text-[#FF5C28]"> *</span>}
     </label>
   );
 }
@@ -219,7 +219,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-2xl"
+      className="sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -256,7 +256,7 @@ function CustomSelect({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-xs font-bold outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border px-3 text-left sibs-text-xs font-semibold outline-none transition ${
           disabled
             ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
             : open
@@ -296,7 +296,7 @@ function CustomSelect({
                 onChange(option);
                 setOpen(false);
               }}
-              className={`block w-full px-4 py-3 text-left text-sm transition ${
+              className={`block w-full px-3 py-1.5 2xl:py-2 text-left sibs-text-xs transition ${
                 selected
                   ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
                   : "text-[#344054] hover:bg-[#F8FAFC]"
@@ -378,7 +378,7 @@ function DateDropdown({
 
           setOpen((prev) => !prev);
         }}
-        className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-xs font-bold outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border px-3 text-left sibs-text-xs font-semibold outline-none transition ${
           disabled
             ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
             : open
@@ -762,7 +762,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
                 type="button"
                 onClick={handleReset}
                 disabled={isSubmitting}
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={13} />
                 Reset
@@ -771,7 +771,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -786,7 +786,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 w-8.5 2xl:h-10 2xl:w-10 items-center justify-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Close source cost modal"
               >
                 <X size={16} />

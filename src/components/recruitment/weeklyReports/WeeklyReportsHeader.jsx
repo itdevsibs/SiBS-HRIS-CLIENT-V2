@@ -3,7 +3,7 @@ import { RefreshCw, Zap } from "lucide-react";
 export default function WeeklyReportsHeader({ onRefresh, onGenerate, isManualRefreshing = false }) {
   return (
     <section
-      className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm font-jakarta 2xl:p-6"
+      className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-xl 2xl:rounded-2xl border border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm font-jakarta"
       style={{ animationDelay: "0ms", animationFillMode: "both" }}
     >
       <span className="sibs-top-accent" aria-hidden="true" />
@@ -17,11 +17,11 @@ export default function WeeklyReportsHeader({ onRefresh, onGenerate, isManualRef
             </span>
           </div>
 
-          <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+          <h1 className="break-words text-lg 2xl:text-2xl font-black text-[#042C51]">
             Weekly Recruitment Reports
           </h1>
 
-          <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+          <p className="sibs-text-xs font-semibold leading-relaxed text-[#667085]">
             Overview of weekly hiring reports compiled from Hiring Needs, Candidate Pipeline, Offers, Onboarding, Action Items, Talent Pool, and the Weekly Hiring Plan.
           </p>
         </div>
@@ -35,7 +35,7 @@ export default function WeeklyReportsHeader({ onRefresh, onGenerate, isManualRef
             aria-label="Refresh weekly reports data"
             className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <RefreshCw size={15} className={isManualRefreshing ? "animate-spin" : ""} />
+            <RefreshCw className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""}`} />
           </button>
 
           <button

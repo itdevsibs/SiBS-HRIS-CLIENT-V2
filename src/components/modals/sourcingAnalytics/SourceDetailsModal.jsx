@@ -225,10 +225,10 @@ function getSourcePerformance(source = {}) {
 
 function FormLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-[#475467]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       {children}
       {required ? (
-        <span className="ml-1 text-red-500">*</span>
+        <span className="ml-1 text-[#FF5C28]">*</span>
       ) : null}
     </label>
   );
@@ -1205,12 +1205,12 @@ export default function SourceDetailsModal({
               </div>
             </div>
 
-            <footer className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-slate-50 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
+            <footer className="flex justify-end gap-2.5 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5">
               <button
                 type="button"
                 onClick={closeExpenseForm}
                 disabled={isSaving || mutating}
-                className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D7DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1218,19 +1218,19 @@ export default function SourceDetailsModal({
               <button
                 type="submit"
                 disabled={isSaving || mutating}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#042C51] px-5 text-xs font-black text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#042C51] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSaving || mutating ? (
                   <>
-                    <Loader2 size={15} className="animate-spin" />
+                    <Loader2 size={13} className="animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
                     {expenseMode === "edit" ? (
-                      <Edit2 size={15} />
+                      <Edit2 size={13} />
                     ) : (
-                      <Plus size={15} />
+                      <Plus size={13} />
                     )}
                     Save Expense
                   </>
@@ -1286,12 +1286,12 @@ export default function SourceDetailsModal({
               </div>
             </div>
 
-            <footer className="flex justify-center gap-2.5 border-t border-slate-200 bg-slate-50 px-4 py-4">
+            <footer className="flex justify-center gap-2.5 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5">
               <button
                 type="button"
                 onClick={closeRemoveExpense}
                 disabled={isRemoving || mutating}
-                className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D7DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1300,16 +1300,16 @@ export default function SourceDetailsModal({
                 type="button"
                 onClick={handleRemoveExpense}
                 disabled={isRemoving || mutating}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-red-600 px-4 text-xs font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isRemoving || mutating ? (
                   <>
-                    <Loader2 size={15} className="animate-spin" />
+                    <Loader2 size={13} className="animate-spin" />
                     Removing...
                   </>
                 ) : (
                   <>
-                    <Trash2 size={15} />
+                    <Trash2 size={13} />
                     Yes, Remove Entry
                   </>
                 )}

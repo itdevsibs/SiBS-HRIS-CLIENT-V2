@@ -2,9 +2,9 @@ import { getStatusTone } from "../availablePositionsHelpers";
 
 export function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+    <label className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       {children}
-      {required && <span className="text-red-500"> *</span>}
+      {required && <span className="text-[#FF5C28]"> *</span>}
     </label>
   );
 }

@@ -394,16 +394,16 @@ export default function ForecastWeekAccountDetailsModal({
       <div className="sibs-modal-pop-in flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[96vw] 2xl:max-w-7xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white font-jakarta shadow-2xl">
         <div
           data-layout="forecast-week-details-header-v2"
-          className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-[#042C51] px-4 py-2.5 2xl:px-6 2xl:py-3.5 text-white"
+          className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-[#042C51] px-5 py-3 2xl:py-3.5 text-white"
         >
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
-              <BarChart2 className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
+            <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <BarChart2 size={16} />
             </div>
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-white">
+                <h2 className="text-xs sm:text-sm 2xl:text-base font-extrabold text-white">
                   FORECAST WEEK DETAILS
                 </h2>
 
@@ -413,7 +413,7 @@ export default function ForecastWeekAccountDetailsModal({
                   Account / Cluster Breakdown
                 </span>
 
-                <span className="rounded-full bg-[#FF5C28] px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wider text-white shadow-sm">
+                <span className="rounded-full bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wider text-white shadow-sm">
                   {filteredRows.length} of {normalizedRows.length} rows
                 </span>
               </div>
@@ -440,16 +440,16 @@ export default function ForecastWeekAccountDetailsModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300 transition hover:bg-white/20 hover:text-white"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             aria-label="Close forecast details"
             title="Close Modal"
           >
-            <X className="h-4 w-4" />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5 2xl:px-5 2xl:py-3">
-          <p className="sibs-text-micro font-bold uppercase tracking-wide text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-2 2xl:px-5 2xl:py-2.5">
+          <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
             Clicked forecast week rows are shown per account and cluster.
           </p>
 
@@ -464,7 +464,7 @@ export default function ForecastWeekAccountDetailsModal({
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder="Search cluster or account..."
-              className="h-8 2xl:h-8.5 w-full rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-8.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+              className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] pl-9 pr-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
             />
           </div>
         </div>

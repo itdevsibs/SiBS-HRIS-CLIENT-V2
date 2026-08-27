@@ -192,22 +192,24 @@ function getEmployeeHireDate(employee) {
 function SummaryCard({ label, value, icon: Icon, delay = 0 }) {
   return (
     <div
-      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
       style={getAnimationStyle(delay)}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-            {label}
-          </p>
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
+          <div>
+            <p className="m-0 truncate sibs-text-micro font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              {label}
+            </p>
 
-          <p className="mt-3 truncate text-3xl font-extrabold leading-none text-sibs-primary-1">
-            {value}
-          </p>
+            <p className="mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums text-[#042C51]">
+              {value}
+            </p>
+          </div>
         </div>
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
-          <Icon size={22} />
+        <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full bg-[#EBF3FB] text-[#042C51]">
+          <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </div>
       </div>
     </div>
@@ -592,24 +594,45 @@ export default function KronosDatasPage() {
       >
         <div className="mx-auto max-w-[1600px] space-y-5">
           <section
-            className="sibs-page-header-in"
+            className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6"
             style={getAnimationStyle(animationTiming.header)}
           >
-            <div className="flex min-w-0 items-center gap-3">
-              <Database
-                size={34}
-                strokeWidth={2.2}
-                className="shrink-0 text-sibs-primary-1"
-              />
+            <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
+            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    Kronos Master Records
+                  </span>
+                  <span className="inline-flex w-max items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold text-[#042C51]">
+                    Production API
+                  </span>
+                </div>
+                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                  Kronos Datas
+                </h1>
+                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                  Production employee records loaded from the Kronos Datas API.
+                </p>
+              </div>
 
-              <h1 className="m-0 min-w-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
-                Kronos Datas
-              </h1>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  title="Refresh Kronos Datas"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      loading ? "animate-spin text-[#FF5C28]" : ""
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Production employee records loaded from the Kronos Datas API.
-            </p>
           </section>
 
           <section
@@ -617,35 +640,14 @@ export default function KronosDatasPage() {
             style={getAnimationStyle(animationTiming.summary)}
           >
             <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-[#101828]">
-                    Kronos Employee Summary
-                  </h2>
+              <div>
+                <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  Kronos Employee Summary
+                </h2>
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    Overview of production employee records from Kronos.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex w-max items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
-                    Production API
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={handleRefresh}
-                    disabled={loading}
-                    className="inline-flex h-9 w-max items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <RefreshCw
-                      size={14}
-                      className={loading ? "animate-spin" : ""}
-                    />
-                    Refresh
-                  </button>
-                </div>
+                <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                  Overview of production employee records from Kronos.
+                </p>
               </div>
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">

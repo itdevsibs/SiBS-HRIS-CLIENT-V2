@@ -129,7 +129,7 @@ function OnboardingSelect({ value, options = [], onChange, placeholder = "Select
 
   return (
     <div ref={anchorRef} className="relative min-w-0 font-jakarta">
-      <button type="button" disabled={disabled} onClick={() => setOpen((current) => !current)} className={`flex h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${disabled ? "cursor-not-allowed border-[#D7DEE8] bg-[#EEF2F6] text-[#98A2B3]" : open ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10" : "border-[#D6E0EA] bg-white text-[#042C51] hover:border-[#FF5C28]/45"}`}>
+      <button type="button" disabled={disabled} onClick={() => setOpen((current) => !current)} className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${disabled ? "cursor-not-allowed border-[#D7DEE8] bg-[#EEF2F6] text-[#98A2B3]" : open ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10" : "border-[#D7DEE8] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/45"}`}>
         <span className="flex min-w-0 items-center gap-2 truncate">
           {Icon ? <Icon size={14} className="shrink-0 text-[#98A2B3]" /> : null}
           <span className={`truncate ${selected ? "text-[#042C51]" : "text-[#98A2B3]"}`}>{selected?.label || placeholder}</span>
@@ -208,9 +208,9 @@ function OnboardingDateDropdown({ value, onChange, disabled = false }) {
 
   return (
     <div ref={anchorRef} className="relative min-w-0 font-jakarta">
-      <button type="button" disabled={disabled} onClick={() => setOpen((current) => !current)} className={`flex h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${open ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10" : "border-[#D6E0EA] bg-white hover:border-[#FF5C28]/45"}`}>
-        <span className={`flex items-center gap-2 truncate ${value ? "text-[#042C51]" : "text-[#98A2B3]"}`}><CalendarDays size={15} className="text-[#FF5C28]" />{value || "Select date"}</span>
-        <ChevronDown size={15} className={`text-[#FF5C28] transition-transform ${open ? "rotate-180" : ""}`} />
+      <button type="button" disabled={disabled} onClick={() => setOpen((current) => !current)} className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${open ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10" : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/45"}`}>
+        <span className={`flex items-center gap-2 truncate ${value ? "text-[#042C51]" : "text-[#98A2B3]"}`}><CalendarDays size={14} className="text-[#FF5C28]" />{value || "Select date"}</span>
+        <ChevronDown size={14} className={`text-[#FF5C28] transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && menuStyle && createPortal(
         <div ref={menuRef} className="sibs-dropdown-pop-in fixed z-[11000] overflow-visible rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-2xl" style={{ left: menuStyle.left, top: menuStyle.top, width: menuStyle.width }}>
@@ -516,7 +516,7 @@ export function CreateOnboardingModal({
               type="button"
               onClick={handleResetClick}
               disabled={isSubmitting}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RotateCcw size={14} />
               Reset
@@ -527,7 +527,7 @@ export function CreateOnboardingModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -535,7 +535,7 @@ export function CreateOnboardingModal({
                 type="submit"
                 form="create-onboarding-form"
                 disabled={saveDisabled}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus size={14} />
                 {isSubmitting ? "Saving..." : "Save Onboarding Record"}

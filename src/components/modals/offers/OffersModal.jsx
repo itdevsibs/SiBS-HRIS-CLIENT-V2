@@ -13,11 +13,11 @@ const declineCategoryOptions = [
 ];
 
 function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] ${extra}`;
 }
 
 function textareaClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `min-h-18 2xl:min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 sibs-text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] ${extra}`;
 }
 
 function getTodayDate() {
@@ -46,7 +46,7 @@ function formatCurrency(amount) {
 function DetailRow({ label, value }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-3 last:border-b-0">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </p>
 
@@ -150,7 +150,7 @@ export function CreateOfferModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
@@ -168,10 +168,10 @@ export function CreateOfferModal({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
             aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
@@ -185,8 +185,8 @@ export function CreateOfferModal({
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="md:col-span-2">
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Candidate <span className="text-red-500">*</span>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      Candidate <span className="text-[#FF5C28]"> *</span>
                     </label>
 
                     <select
@@ -209,68 +209,68 @@ export function CreateOfferModal({
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       Candidate Name
                     </label>
 
                     <input
                       readOnly
                       value={form.candidateName}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-bold text-[#042C51] outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       Candidate Email
                     </label>
 
                     <input
                       readOnly
                       value={form.candidateEmail}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-bold text-[#042C51] outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       Role Title
                     </label>
 
                     <input
                       readOnly
                       value={form.roleTitle}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-bold text-[#042C51] outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       Account
                     </label>
 
                     <input
                       readOnly
                       value={form.account}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-bold text-[#042C51] outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       TA Owner
                     </label>
 
                     <input
                       readOnly
                       value={form.owner}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-bold text-[#042C51] outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Offer Date <span className="text-red-500">*</span>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      Offer Date <span className="text-[#FF5C28]"> *</span>
                     </label>
 
                     <input
@@ -293,8 +293,8 @@ export function CreateOfferModal({
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Basic Pay <span className="text-red-500">*</span>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      Basic Pay <span className="text-[#FF5C28]"> *</span>
                     </label>
 
                     <input
@@ -304,13 +304,13 @@ export function CreateOfferModal({
                       value={form.basicPay}
                       onChange={(e) => handleBasicPayChange(e.target.value)}
                       placeholder="Example: 22000"
-                      className={inputClass()}
+                      className={`${inputClass()} tabular-nums`}
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      De Minimis <span className="text-red-500">*</span>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      De Minimis <span className="text-[#FF5C28]"> *</span>
                     </label>
 
                     <input
@@ -320,19 +320,19 @@ export function CreateOfferModal({
                       value={form.deMinimis}
                       onChange={(e) => handleDeMinimisChange(e.target.value)}
                       placeholder="Example: 3000"
-                      className={inputClass()}
+                      className={`${inputClass()} tabular-nums`}
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       Daily Rate
                     </label>
 
                     <input
                       readOnly
                       value={formatCurrency(computedDailyRate)}
-                      className="h-11 w-full cursor-not-allowed rounded-xl border border-blue-100 bg-blue-50 px-4 text-sm font-bold text-sibs-primary-1 outline-none"
+                      className="h-8.5 2xl:h-10 w-full cursor-not-allowed rounded-xl border border-blue-100 bg-blue-50 px-3 sibs-text-xs font-bold text-sibs-primary-1 outline-none tabular-nums"
                     />
 
                     <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
@@ -342,9 +342,8 @@ export function CreateOfferModal({
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Initial Offer Status{" "}
-                      <span className="text-red-500">*</span>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      Initial Offer Status <span className="text-[#FF5C28]"> *</span>
                     </label>
 
                     <select
@@ -361,8 +360,8 @@ export function CreateOfferModal({
 
                   {form.status === "Accepted" && (
                     <div>
-                      <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                        Accepted Date <span className="text-red-500">*</span>
+                      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                        Accepted Date <span className="text-[#FF5C28]"> *</span>
                       </label>
 
                       <input
@@ -380,8 +379,8 @@ export function CreateOfferModal({
                   {form.status === "Declined" && (
                     <>
                       <div>
-                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                          Declined Date <span className="text-red-500">*</span>
+                        <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                          Declined Date <span className="text-[#FF5C28]"> *</span>
                         </label>
 
                         <input
@@ -391,14 +390,13 @@ export function CreateOfferModal({
                           onChange={(e) =>
                             setForm({ ...form, declinedDate: e.target.value })
                           }
-                          className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+                          className={inputClass()}
                         />
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                          Decline Category{" "}
-                          <span className="text-red-500">*</span>
+                        <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                          Decline Category <span className="text-[#FF5C28]"> *</span>
                         </label>
 
                         <select
@@ -410,7 +408,7 @@ export function CreateOfferModal({
                               declineCategory: e.target.value,
                             })
                           }
-                          className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+                          className={inputClass()}
                         >
                           <option value="">Select decline category</option>
 
@@ -423,9 +421,8 @@ export function CreateOfferModal({
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                          Decline Reason{" "}
-                          <span className="text-red-500">*</span>
+                        <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                          Decline Reason <span className="text-[#FF5C28]"> *</span>
                         </label>
 
                         <textarea
@@ -439,12 +436,12 @@ export function CreateOfferModal({
                           }
                           rows={3}
                           placeholder="Example: Candidate accepted another offer with higher compensation."
-                          className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+                          className={textareaClass()}
                         />
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                           Candidate Feedback
                         </label>
 
@@ -463,7 +460,7 @@ export function CreateOfferModal({
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                           Experience Rating
                         </label>
 
@@ -486,7 +483,7 @@ export function CreateOfferModal({
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                           Feedback Tag
                         </label>
 
@@ -503,7 +500,7 @@ export function CreateOfferModal({
                   )}
 
                   <div className="md:col-span-2">
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       Remarks
                     </label>
 
@@ -599,7 +596,7 @@ export function CreateOfferModal({
                 <p className="mt-2 text-sm leading-6 text-amber-700/90">
                   This form should later call{" "}
                   <span className="font-bold">
-                    POST /api/recruitment/offers
+                     POST /api/recruitment/offers
                   </span>
                   . Accepted offers should update candidate pipeline to
                   Accepted. Declined offers should update candidate pipeline to
@@ -610,21 +607,21 @@ export function CreateOfferModal({
           </div>
         </form>
 
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
+        <div className="border-t border-gray-100 px-5 py-3 sm:px-6 2xl:py-4">
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
             >
-              <RotateCcw size={17} />
+              <RotateCcw size={15} />
               Reset
             </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-gray-600 transition hover:bg-gray-50"
             >
               Cancel
             </button>
@@ -632,9 +629,9 @@ export function CreateOfferModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-primary-1 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90 active:scale-[0.98]"
             >
-              <Plus size={17} />
+              <Plus size={15} />
               Save Offer
             </button>
           </div>

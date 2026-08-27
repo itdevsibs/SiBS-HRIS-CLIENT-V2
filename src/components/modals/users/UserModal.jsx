@@ -651,7 +651,7 @@ export default function UserModal({
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div ref={clusterDropdownRef} className="relative z-30">
-          <label className="mb-1 block text-sm font-bold text-[#101828]">
+          <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
             Cluster
           </label>
 
@@ -667,15 +667,15 @@ export default function UserModal({
               setShowEmployeeDropdown?.(false);
             }}
             disabled={saving}
-            className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 text-left sibs-text-xs font-semibold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#F8FAFC] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="truncate">
               {getClusterFilterLabel(selectedClusters)}
             </span>
 
             <ChevronDown
-              size={18}
-              className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-200 ${
+              size={16}
+              className={`shrink-0 text-[#98A2B3] transition-transform duration-200 ${
                 showClusterDropdown ? "rotate-180" : ""
               }`}
             />
@@ -685,7 +685,7 @@ export default function UserModal({
             <button
               type="button"
               onClick={() => handleToggleCluster("All")}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+              className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-left sibs-text-xs transition ${
                 isAllClustersSelected()
                   ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
                   : "text-[#344054] hover:bg-[#F8FAFC]"
@@ -710,7 +710,7 @@ export default function UserModal({
                   key={cluster}
                   type="button"
                   onClick={() => handleToggleCluster(cluster)}
-                  className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                  className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-left sibs-text-xs transition ${
                     checked
                       ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
                       : "text-[#344054] hover:bg-[#F8FAFC]"
@@ -731,20 +731,20 @@ export default function UserModal({
         </div>
 
         <div ref={accountDropdownRef} className="relative z-20">
-          <div className="mb-1 flex items-center justify-between gap-3">
-            <label className="block text-sm font-bold text-[#101828]">
+          <div className="mb-1.5 flex items-center justify-between gap-3">
+            <label className="block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
               Assigned Accounts
             </label>
 
-            <span className="text-xs font-bold text-sibs-primary-1">
+            <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
               Selected: {selectedAccountIds.length}
             </span>
           </div>
 
           <div className="relative">
             <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+              size={15}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
             />
 
             <input
@@ -760,25 +760,25 @@ export default function UserModal({
               onChange={(e) => {
                 setAccountSearch(e.target.value);
                 setShowAccountDropdown(true);
-              }}
-              onFocus={() => {
-                if (saving) return;
-
-                setShowAccountDropdown(true);
-                setAccountSearch("");
                 setShowClusterDropdown(false);
                 setAdminAccessOpen(false);
                 setStatusOpen(false);
                 setShowEmployeeDropdown?.(false);
               }}
+              onFocus={() => {
+                setShowAccountDropdown(true);
+                setShowClusterDropdown(false);
+                setAdminAccessOpen(false);
+                setStatusOpen(false);
+                setShowEmployeeDropdown?.(false);
+              }}
+              placeholder="Search and select accounts"
               disabled={saving}
-              placeholder="Search accounts..."
-              autoComplete="off"
-              className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white pl-9 pr-9 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
             />
 
             <ChevronDown
-              size={18}
+              size={16}
               onClick={() => {
                 if (saving) return;
 
@@ -854,7 +854,7 @@ export default function UserModal({
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={handleAnimatedClose}
       style={{
         animation: isClosing
@@ -869,42 +869,51 @@ export default function UserModal({
         aria-modal="true"
         aria-labelledby="user-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="relative z-[10000] flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-sibs-tertiary-9 bg-white shadow-2xl"
+        className="sibs-modal-pop-in relative z-[10000] flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
         style={{
           animation: isClosing
             ? "sibsUserModalOut 220ms ease-in both"
             : "sibsUserModalIn 240ms ease-out both",
         }}
       >
-        <div className="shrink-0 border-b border-sibs-tertiary-9 px-6 py-5">
-          <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <div className="flex items-center gap-2.5 2xl:gap-3 min-w-0">
             <div
-              className={`flex h-11 w-11 items-center justify-center rounded-xl ${headerIconClass}`}
+              className={`flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg ${isDelete ? "bg-red-600 text-white" : "bg-[#FF5C28] text-white"} shadow-sm`}
             >
-              <Icon size={22} />
+              <Icon size={16} />
             </div>
 
             <div className="min-w-0">
-              <h2 id="user-modal-title" className={titleClass}>
+              <h2 id="user-modal-title" className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
                 {title}
               </h2>
 
-              <p className="text-sm text-sibs-tertiary-5">{subtitle}</p>
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">{subtitle}</p>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleAnimatedClose}
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close modal"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {isDelete ? (
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-5">
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-                  <p className="text-sm font-semibold text-red-700">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
+              <div className="space-y-4">
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 2xl:p-4">
+                  <p className="sibs-text-xs font-bold text-red-700">
                     Are you sure you want to delete this user account?
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <ReadOnlyField label="SiBS ID" value={selectedUser.sibsId} />
                   <ReadOnlyField
                     label="Employee ID"
@@ -924,13 +933,13 @@ export default function UserModal({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-sibs-tertiary-9 bg-white p-6">
-              <div className="flex gap-3">
+            <div className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+              <div className="flex gap-2.5 justify-end">
                 <button
                   type="button"
                   onClick={handleAnimatedClose}
                   disabled={deleting || isClosing}
-                  className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10 disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -939,7 +948,7 @@ export default function UserModal({
                   type="button"
                   onClick={onConfirmDelete}
                   disabled={deleting || isClosing}
-                  className="w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-red-700 active:scale-[0.98] disabled:opacity-50"
                 >
                   {deleting ? "Deleting..." : "Delete User"}
                 </button>
@@ -948,11 +957,11 @@ export default function UserModal({
           </div>
         ) : (
           <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
+              <div className="space-y-4">
                 {isAdd && (
                   <div ref={employeeSearchRef} className="relative z-50">
-                    <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       SiBS ID / Employee Name
                     </label>
 
@@ -967,12 +976,12 @@ export default function UserModal({
                       placeholder="Search SiBS ID or employee name"
                       disabled={saving}
                       autoComplete="off"
-                      className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+                      className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
                     />
 
                     <AnimatedDropdown open={showEmployeeDropdown} maxHeight="max-h-60">
                       {searchingEmployees ? (
-                        <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                        <div className="px-4 py-3 text-xs font-semibold text-[#98A2B3]">
                           Searching...
                         </div>
                       ) : employeeResults.length > 0 ? (
@@ -981,13 +990,13 @@ export default function UserModal({
                             key={item.gyEmpId}
                             type="button"
                             onClick={() => onSelectEmployee?.(item)}
-                            className="block w-full border-b border-sibs-tertiary-9 px-4 py-3 text-left transition last:border-b-0 hover:bg-sibs-tertiary-10"
+                            className="block w-full border-b border-[#E6ECF2] px-3.5 py-2.5 text-left transition last:border-b-0 hover:bg-[#F8FAFC]"
                           >
-                            <div className="text-sm font-semibold text-sibs-primary-1">
+                            <div className="sibs-text-xs font-extrabold text-[#042C51]">
                               {item.sibsId}
                             </div>
 
-                            <div className="text-xs text-sibs-tertiary-5">
+                            <div className="text-[11px] font-semibold text-[#667085]">
                               {`${item.lastName || ""}${
                                 item.lastName ? ", " : ""
                               }${item.firstName || ""}${
@@ -997,11 +1006,11 @@ export default function UserModal({
                           </button>
                         ))
                       ) : employeeSearch.trim() ? (
-                        <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                        <div className="px-4 py-3 text-xs font-semibold text-[#98A2B3]">
                           No employees found
                         </div>
                       ) : (
-                        <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                        <div className="px-4 py-3 text-xs font-semibold text-[#98A2B3]">
                           Type to search
                         </div>
                       )}
@@ -1009,7 +1018,7 @@ export default function UserModal({
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {isEdit ? (
                     <>
                       <ReadOnlyField
@@ -1055,7 +1064,7 @@ export default function UserModal({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <SingleSelect
                     refBox={adminAccessRef}
                     label="Admin Access"
@@ -1122,22 +1131,22 @@ export default function UserModal({
                 {renderClusterAndAccountSelectors()}
 
                 {(isAdd || isEdit) && (
-                  <div className="rounded-xl border border-sibs-tertiary-9 bg-sibs-tertiary-10 p-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                  <div className="rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3">
+                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       Current Assigned Accounts
                     </p>
 
-                    <p className="mt-1 text-sm font-semibold text-sibs-primary-1">
+                    <p className="mt-0.5 sibs-text-xs font-bold text-[#042C51]">
                       {assignedAccountsDisplay}
                     </p>
                   </div>
                 )}
 
                 {isEdit && (
-                  <div className="rounded-xl border border-sibs-tertiary-9 bg-sibs-tertiary-10 p-4">
-                    <p className="text-sm text-sibs-tertiary-5">
+                  <div className="rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3">
+                    <p className="sibs-text-xs text-[#667085]">
                       Current Role Preview:
-                      <span className="ml-2 font-semibold text-sibs-primary-1">
+                      <span className="ml-1.5 font-bold text-[#042C51]">
                         {formatAdminAccess
                           ? formatAdminAccess(selectedAdminAccessValue)
                           : selectedAdminAccess || "-"}
@@ -1148,13 +1157,13 @@ export default function UserModal({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-sibs-tertiary-9 bg-white p-6">
-              <div className="flex gap-3">
+            <div className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+              <div className="flex gap-2.5 justify-end">
                 <button
                   type="button"
                   onClick={handleAnimatedClose}
                   disabled={saving || isClosing}
-                  className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10 disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -1162,7 +1171,7 @@ export default function UserModal({
                 <button
                   type="submit"
                   disabled={saving || isClosing}
-                  className="w-full rounded-xl bg-[var(--sibs-primary-1)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:opacity-50"
                 >
                   {saving ? "Saving..." : isEdit ? "Save Changes" : "Add User"}
                 </button>
@@ -1191,7 +1200,7 @@ function SingleSelect({
 }) {
   return (
     <div ref={refBox} className={`relative ${zIndex}`}>
-      <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </label>
 
@@ -1208,15 +1217,15 @@ function SingleSelect({
             setOpen((prev) => !prev);
           }}
           disabled={disabled}
-          className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-[var(--sibs-primary-1)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 text-left sibs-text-xs font-semibold outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <span className={value ? "text-sibs-primary-1" : "text-gray-400"}>
+          <span className={value ? "text-[#042C51]" : "text-[#98A2B3]"}>
             {value || placeholder}
           </span>
 
           <ChevronDown
-            size={18}
-            className={`text-sibs-tertiary-5 transition-transform duration-200 ${
+            size={16}
+            className={`text-[#98A2B3] transition-transform duration-200 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -1228,10 +1237,10 @@ function SingleSelect({
               key={option.value}
               type="button"
               onClick={() => onSelect(option.value)}
-              className={`block w-full px-4 py-3 text-left text-sm transition ${
+              className={`block w-full px-3.5 py-2.5 text-left sibs-text-xs transition ${
                 String(selectedValue || "") === option.value
-                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
-                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                  : "text-[#344054] hover:bg-[#F8FAFC]"
               }`}
             >
               {option.label}
@@ -1246,7 +1255,7 @@ function SingleSelect({
 function ReadOnlyField({ label, value }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </label>
 
@@ -1254,7 +1263,7 @@ function ReadOnlyField({ label, value }) {
         type="text"
         value={value || "-"}
         readOnly
-        className="w-full rounded-xl border border-sibs-tertiary-8 bg-sibs-tertiary-10 px-4 py-3 text-sm text-sibs-tertiary-5 outline-none"
+        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#DDE5EE] bg-[#EEF2F6] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#475467] outline-none"
       />
     </div>
   );

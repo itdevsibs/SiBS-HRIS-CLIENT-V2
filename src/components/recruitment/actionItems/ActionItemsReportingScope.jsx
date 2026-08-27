@@ -42,10 +42,10 @@ export default function ActionItemsReportingScope() {
 
   return (
     <section
-      className="relative z-30 overflow-visible sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5 font-jakarta"
+      className="relative z-30 overflow-visible sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 font-jakarta shadow-sm"
       style={{ animationDelay: "60ms", animationFillMode: "both" }}
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-[minmax(220px,1.5fr)_minmax(220px,1.5fr)_1fr_1fr_1fr_1fr_auto_auto] xl:items-end">
+      <div className="grid grid-cols-1 gap-2.5 2xl:gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-[minmax(180px,1.2fr)_minmax(180px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)_auto_auto] xl:items-end">
         <div className="min-w-0 space-y-1.5">
           <label className="block font-jakarta text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
             Reporting Week
@@ -64,7 +64,7 @@ export default function ActionItemsReportingScope() {
           <label className="block font-jakarta text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
             Previous Week
           </label>
-          <div className="flex h-10 items-center truncate rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 font-jakarta text-xs font-semibold text-[#667085]" title={previousWeekLabel}>
+          <div className="flex h-8.5 2xl:h-10 items-center truncate rounded-lg 2xl:rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 font-jakarta text-xs font-semibold text-[#667085]" title={previousWeekLabel}>
             {previousWeekLabel}
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function ActionItemsReportingScope() {
             type="button"
             onClick={() => setReportingFilter("atRiskOnly", !reportingScope.atRiskOnly)}
             aria-pressed={reportingScope.atRiskOnly}
-            className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border px-3 font-jakarta text-xs font-bold transition ${
+            className={`inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl border px-2.5 2xl:px-3 font-jakarta text-[11px] 2xl:text-xs font-bold transition ${
               reportingScope.atRiskOnly
                 ? "border-rose-300 bg-rose-50 text-rose-700 shadow-sm"
                 : "border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F8FAFC]"
@@ -149,9 +149,9 @@ export default function ActionItemsReportingScope() {
             onClick={clearReportingScope}
             title="Clear Selection"
             aria-label="Clear Selection"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D0D5DD] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+            className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
           >
-            <RotateCcw size={16} />
+            <RotateCcw size={15} />
           </button>
         </div>
       </div>

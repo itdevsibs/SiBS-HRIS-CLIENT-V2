@@ -21,7 +21,7 @@ export default function DeclineResponseModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl rounded-2xl bg-white shadow-xl"
+        className="sibs-modal-pop-in w-full max-w-xl rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
@@ -37,48 +37,24 @@ export default function DeclineResponseModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4 p-5">
           <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-              Decline Category *
+            <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              Decline Category <span className="text-[#FF5C28]"> *</span>
             </label>
-            {/* <select
-              required
-              value={form.declineCategory}
-              onChange={(e) =>
-                setForm({ ...form, declineCategory: e.target.value })
-              }
-              className={inputClass()}
-            >
-              <option value="">Select category</option>
-              {declineCategoryOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select> */}
           </div>
 
           <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-              Decline Reason *
+            <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              Decline Reason <span className="text-[#FF5C28]"> *</span>
             </label>
-            {/* <textarea
-              required
-              rows={4}
-              value={form.declineReason}
-              onChange={(e) =>
-                setForm({ ...form, declineReason: e.target.value })
-              }
-              className={textareaClass()}
-              placeholder="Reason from candidate"
-            /> */}
           </div>
         </form>
 
@@ -87,14 +63,14 @@ export default function DeclineResponseModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 hover:bg-[#F8FAFC]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#475467] hover:bg-[#F8FAFC]"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-red-600 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-red-700 active:scale-[0.98]"
             >
               Save Decline
             </button>

@@ -39,7 +39,7 @@ const modalMeta = {
 };
 
 const inputClass =
-  "h-10 w-full rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] px-3 text-sm font-semibold text-[#101828] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-2 focus:ring-[#FF5C28]/10";
+  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("en-PH", {
@@ -94,19 +94,19 @@ function ModalShell({ activeModal, onClose, generatedAt, children }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="admin-dashboard-modal-title"
-        className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-[#042C51] font-jakarta shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[88vh] 2xl:max-h-[90vh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-[#042C51] font-jakarta shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-4 py-3.5 text-white sm:px-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28]">
-              <Icon className="h-[18px] w-[18px]" />
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <Icon size={16} />
             </span>
             <div className="min-w-0">
-              <h2 id="admin-dashboard-modal-title" className="truncate text-base font-extrabold">
+              <h2 id="admin-dashboard-modal-title" className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
                 {meta.title}
               </h2>
-              <p className="mt-0.5 truncate text-xs text-slate-300">
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
                 {meta.subtitle}
               </p>
             </div>
@@ -115,18 +115,18 @@ function ModalShell({ activeModal, onClose, generatedAt, children }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             aria-label="Close modal"
           >
-            <X className="h-4 w-4" />
+            <X size={18} />
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white p-4 text-[#101828] sm:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white p-4 text-[#101828] sm:p-6 sibs-scrollbar">
           {children}
         </div>
 
-        <footer className="shrink-0 border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-2.5 text-[10px] font-semibold text-[#667085] sm:px-6">
+        <footer className="shrink-0 border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-2.5 2xl:py-3 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3] sm:px-6">
           Read-only dashboard records. {formatUpdatedAt(generatedAt)}.
         </footer>
       </section>
@@ -192,8 +192,8 @@ function PaginationControls({ pagination, onPageChange, disabled }) {
   const total = Number(pagination?.total || 0);
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between">
-      <span className="font-semibold text-[#667085]">
+    <div className="flex flex-col gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between font-jakarta">
+      <span className="sibs-text-xs font-semibold text-[#667085]">
         {formatNumber(total)} total record{total === 1 ? "" : "s"}
       </span>
       <div className="flex items-center gap-2">
@@ -201,18 +201,18 @@ function PaginationControls({ pagination, onPageChange, disabled }) {
           type="button"
           disabled={disabled || currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
-          className="h-8 rounded-lg border border-[#D6E0EA] bg-white px-3 font-extrabold text-[#042C51] transition hover:border-[#FF5C28] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40"
         >
           Previous
         </button>
-        <span className="min-w-20 text-center font-bold text-[#042C51]">
+        <span className="min-w-20 text-center sibs-text-xs font-bold text-[#042C51]">
           Page {currentPage} of {totalPages}
         </span>
         <button
           type="button"
           disabled={disabled || currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
-          className="h-8 rounded-lg border border-[#D6E0EA] bg-white px-3 font-extrabold text-[#042C51] transition hover:border-[#FF5C28] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40"
         >
           Next
         </button>
@@ -223,7 +223,7 @@ function PaginationControls({ pagination, onPageChange, disabled }) {
 
 function LoadingState() {
   return (
-    <div className="flex min-h-56 flex-col items-center justify-center text-center">
+    <div className="flex min-h-56 flex-col items-center justify-center text-center font-jakarta">
       <LoaderCircle className="h-8 w-8 animate-spin text-[#FF5C28]" />
       <p className="mt-3 text-sm font-extrabold text-[#042C51]">Loading live HRIS records...</p>
     </div>
@@ -232,25 +232,25 @@ function LoadingState() {
 
 function ErrorState({ error }) {
   return (
-    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-8 text-center">
+    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-8 text-center font-jakarta">
       <p className="text-sm font-extrabold text-rose-700">Unable to load this dashboard detail.</p>
-      <p className="mt-1 text-xs text-rose-600">{error || "Please close the modal and try again."}</p>
+      <p className="mt-1 sibs-text-xs font-semibold text-rose-600">{error || "Please close the modal and try again."}</p>
     </div>
   );
 }
 
 function EmployeesModal({ rows }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#E6ECF2]">
-      <table className="min-w-[900px] w-full border-collapse text-left text-xs">
-        <thead className="bg-[#F8FAFC] text-[10px] font-bold uppercase tracking-wide text-[#667085]">
+    <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] font-jakarta">
+      <table className="min-w-[900px] w-full border-collapse text-left">
+        <thead className="bg-[#F8FAFC] text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
           <tr>
-            <th className="px-4 py-3">SIBS ID</th>
-            <th className="px-4 py-3">Name</th>
-            <th className="px-4 py-3">Department</th>
-            <th className="px-4 py-3">Account / Role</th>
-            <th className="px-4 py-3">Shift</th>
-            <th className="px-4 py-3">Today</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">SIBS ID</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Name</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Department</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Account / Role</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Shift</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Today</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#EEF2F6]">
@@ -259,12 +259,12 @@ function EmployeesModal({ rows }) {
           ) : (
             rows.map((employee) => (
               <tr key={employee.id || employee.sibsId} className="transition hover:bg-slate-50/70">
-                <td className="whitespace-nowrap px-4 py-3 tabular-nums font-bold text-[#667085]">{employee.sibsId || employee.id}</td>
-                <td className="px-4 py-3 font-extrabold text-[#042C51]">{employee.name}</td>
-                <td className="px-4 py-3 text-[#344054]">{employee.department}</td>
-                <td className="px-4 py-3 text-[#667085]">{employee.role}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-[#667085]">{employee.shift}</td>
-                <td className="px-4 py-3"><StatusBadge status={employee.status} /></td>
+                <td className="whitespace-nowrap px-3.5 py-2.5 2xl:px-4 2xl:py-3 tabular-nums font-bold text-[#667085] sibs-text-xs">{employee.sibsId || employee.id}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-[#042C51] sibs-text-xs">{employee.name}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-[#344054] sibs-text-xs">{employee.department}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-[#667085] sibs-text-xs">{employee.role}</td>
+                <td className="whitespace-nowrap px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-[#667085] sibs-text-xs">{employee.shift}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3"><StatusBadge status={employee.status} /></td>
               </tr>
             ))
           )}
@@ -276,13 +276,13 @@ function EmployeesModal({ rows }) {
 
 function DepartmentsModal({ rows }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#E6ECF2]">
-      <table className="min-w-[720px] w-full border-collapse text-left text-sm">
-        <thead className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#667085]">
+    <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] font-jakarta">
+      <table className="min-w-[720px] w-full border-collapse text-left">
+        <thead className="bg-[#F8FAFC] text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
           <tr>
-            <th className="px-4 py-3">Department ID</th>
-            <th className="px-4 py-3">Department</th>
-            <th className="px-4 py-3">Active Headcount</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Department ID</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Department</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Active Headcount</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#EEF2F6]">
@@ -291,9 +291,9 @@ function DepartmentsModal({ rows }) {
           ) : (
             rows.map((department) => (
               <tr key={department.id} className="transition hover:bg-slate-50/70">
-                <td className="px-4 py-3 tabular-nums font-bold text-[#667085]">{department.id}</td>
-                <td className="px-4 py-3 font-extrabold text-[#042C51]">{department.name}</td>
-                <td className="px-4 py-3 font-extrabold text-[#042C51]">{formatNumber(department.headcount)}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 tabular-nums font-bold text-[#667085] sibs-text-xs">{department.id}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-[#042C51] sibs-text-xs">{department.name}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-[#042C51] sibs-text-xs">{formatNumber(department.headcount)}</td>
               </tr>
             ))
           )}
@@ -313,24 +313,24 @@ function AttendanceModal({ attendance }) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-jakarta">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {cards.map(([label, value, className]) => (
           <div key={label} className={`rounded-xl border p-4 text-center ${className}`}>
-            <span className="text-[10px] font-extrabold uppercase tracking-wide">{label}</span>
+            <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide">{label}</span>
             <p className="mt-1 text-2xl font-extrabold tabular-nums">{formatNumber(value)}</p>
           </div>
         ))}
       </div>
 
       <section className="rounded-xl border border-[#E6ECF2] p-4">
-        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#667085]">Shift Coverage Details</h3>
+        <h3 className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Shift Coverage Details</h3>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {(attendance.shifts || []).length === 0 ? (
-            <p className="text-xs font-semibold text-[#667085]">No shift attendance has been recorded today.</p>
+            <p className="sibs-text-xs font-semibold text-[#667085]">No shift attendance has been recorded today.</p>
           ) : (
             attendance.shifts.map((shift) => (
-              <div key={shift.label} className="flex items-center justify-between gap-3 border-b border-[#EEF2F6] py-2 text-xs">
+              <div key={shift.label} className="flex items-center justify-between gap-3 border-b border-[#EEF2F6] py-2 sibs-text-xs">
                 <span className="text-[#667085]">{shift.label}</span>
                 <span className="font-extrabold text-[#042C51]">{formatNumber(shift.value)} Employees</span>
               </div>
@@ -344,16 +344,16 @@ function AttendanceModal({ attendance }) {
 
 function InterviewsModal({ rows }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#E6ECF2]">
-      <table className="min-w-[880px] w-full border-collapse text-left text-sm">
-        <thead className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#667085]">
+    <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] font-jakarta">
+      <table className="min-w-[880px] w-full border-collapse text-left">
+        <thead className="bg-[#F8FAFC] text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
           <tr>
-            <th className="px-4 py-3">Time</th>
-            <th className="px-4 py-3">Candidate</th>
-            <th className="px-4 py-3">Position</th>
-            <th className="px-4 py-3">Account</th>
-            <th className="px-4 py-3">Type</th>
-            <th className="px-4 py-3">Status</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Time</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Candidate</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Position</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Account</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Type</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Status</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#EEF2F6]">
@@ -362,12 +362,12 @@ function InterviewsModal({ rows }) {
           ) : (
             rows.map((interview) => (
               <tr key={interview.id} className="transition hover:bg-slate-50/70">
-                <td className="whitespace-nowrap px-4 py-3 tabular-nums font-extrabold text-indigo-600">{interview.time}</td>
-                <td className="px-4 py-3 font-extrabold text-[#042C51]">{interview.candidate}</td>
-                <td className="px-4 py-3 text-[#344054]">{interview.position}</td>
-                <td className="px-4 py-3 text-[#667085]">{interview.account || "—"}</td>
-                <td className="px-4 py-3 text-[#667085]">{interview.type}</td>
-                <td className="px-4 py-3"><StatusBadge status={interview.status} /></td>
+                <td className="whitespace-nowrap px-3.5 py-2.5 2xl:px-4 2xl:py-3 tabular-nums font-extrabold text-indigo-600 sibs-text-xs">{interview.time}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-[#042C51] sibs-text-xs">{interview.candidate}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-[#344054] sibs-text-xs">{interview.position}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-[#667085] sibs-text-xs">{interview.account || "—"}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-[#667085] sibs-text-xs">{interview.type}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3"><StatusBadge status={interview.status} /></td>
               </tr>
             ))
           )}
@@ -379,15 +379,15 @@ function InterviewsModal({ rows }) {
 
 function PayrollModal({ rows }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#E6ECF2]">
-      <table className="min-w-[760px] w-full border-collapse text-left text-sm">
-        <thead className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#667085]">
+    <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] font-jakarta">
+      <table className="min-w-[760px] w-full border-collapse text-left">
+        <thead className="bg-[#F8FAFC] text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
           <tr>
-            <th className="px-4 py-3">SIBS ID</th>
-            <th className="px-4 py-3">Employee</th>
-            <th className="px-4 py-3">Department</th>
-            <th className="px-4 py-3">Account</th>
-            <th className="px-4 py-3">Eligibility</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">SIBS ID</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Employee</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Department</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Account</th>
+            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Eligibility</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#EEF2F6]">
@@ -396,11 +396,11 @@ function PayrollModal({ rows }) {
           ) : (
             rows.map((employee) => (
               <tr key={employee.id || employee.sibsId} className="transition hover:bg-slate-50/70">
-                <td className="px-4 py-3 tabular-nums font-bold text-[#667085]">{employee.sibsId || employee.id}</td>
-                <td className="px-4 py-3 font-extrabold text-[#042C51]">{employee.name}</td>
-                <td className="px-4 py-3 text-[#344054]">{employee.department}</td>
-                <td className="px-4 py-3 text-[#667085]">{employee.account}</td>
-                <td className="px-4 py-3"><StatusBadge status="Eligible" /></td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 tabular-nums font-bold text-[#667085] sibs-text-xs">{employee.sibsId || employee.id}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-[#042C51] sibs-text-xs">{employee.name}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-[#344054] sibs-text-xs">{employee.department}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-[#667085] sibs-text-xs">{employee.account}</td>
+                <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3"><StatusBadge status="Eligible" /></td>
               </tr>
             ))
           )}

@@ -373,8 +373,8 @@ export default function ApplicantLeadModal() {
             >
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    First Name <span className="text-red-500">*</span>
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    First Name <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator show={editedFields.firstName} />
                   </span>
                   <input
@@ -389,8 +389,8 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    Last Name <span className="text-red-500">*</span>
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Last Name <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator show={editedFields.lastName} />
                   </span>
                   <input
@@ -405,7 +405,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Middle Name
                     <EditedIndicator show={editedFields.middleName} />
                   </span>
@@ -420,7 +420,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Suffix
                     <EditedIndicator show={editedFields.suffix} />
                   </span>
@@ -435,8 +435,8 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    Cellphone / CP Number <span className="text-red-500">*</span>
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Cellphone / CP Number <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator show={editedFields.cpNum} />
                   </span>
                   <input
@@ -464,7 +464,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Email Address
                     <EditedIndicator show={editedFields.email} />
                   </span>
@@ -535,8 +535,8 @@ export default function ApplicantLeadModal() {
             >
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    Department <span className="text-red-500">*</span>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Department <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator
                       show={isAnyEdited("departmentId", "department")}
                     />
@@ -564,8 +564,8 @@ export default function ApplicantLeadModal() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    Account / Client <span className="text-red-500">*</span>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    Account / Client <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator
                       show={isAnyEdited("accountId", "specificAccount")}
                     />
@@ -593,7 +593,7 @@ export default function ApplicantLeadModal() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Preferred Work Location
                     <EditedIndicator show={editedFields.preferredSite} />
                   </label>
@@ -610,7 +610,7 @@ export default function ApplicantLeadModal() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Initial Lead Status
                     <EditedIndicator show={editedFields.status} />
                   </label>
@@ -636,7 +636,7 @@ export default function ApplicantLeadModal() {
               icon={FileText}
             >
               <label className="block">
-                <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                   HR Notes
                   <EditedIndicator show={editedFields.notes} />
                 </span>
@@ -704,7 +704,7 @@ export default function ApplicantLeadModal() {
                 type="button"
                 onClick={closeLeadModal}
                 disabled={isSaving}
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-white hover:text-[#042C51]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-white hover:text-[#042C51]"
               >
                 Cancel
               </button>
@@ -712,7 +712,7 @@ export default function ApplicantLeadModal() {
               <button
                 type="submit"
                 disabled={isSubmitDisabled}
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:border disabled:border-[#D6E0EA] disabled:bg-[#EEF3F8] disabled:text-[#6F8196] disabled:shadow-none"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:border disabled:border-[#D6E0EA] disabled:bg-[#EEF3F8] disabled:text-[#6F8196] disabled:shadow-none"
               >
                 {isSaving ? (
                   <Loader2 size={13} className="animate-spin text-white" />

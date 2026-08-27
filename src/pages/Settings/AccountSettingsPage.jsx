@@ -1199,30 +1199,30 @@ function ModalShell({
   if (variant === "talentPool") {
     return createPortal(
       <div
-        className="sibs-modal-blur fixed inset-0 z-[99999] flex h-dvh items-center justify-center px-3 py-3 font-jakarta sm:px-4"
+        className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
         role="presentation"
       >
         <section
           role="dialog"
           aria-modal="true"
           aria-labelledby="account-settings-modal-title"
-          className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F8FAFC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+          className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-2xl font-jakarta"
         >
-          <header className="flex shrink-0 items-center justify-between gap-4 border-b border-[#174A7C] bg-sibs-primary-1 px-5 py-3.5 text-white sm:px-6">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
-                <UserCog size={17} />
+          <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
+            <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+                <UserCog size={16} />
               </span>
 
               <div className="min-w-0">
                 <h2
                   id="account-settings-modal-title"
-                  className="truncate text-sm font-extrabold uppercase tracking-wide text-white"
+                  className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
                 >
                   {title}
                 </h2>
                 {description ? (
-                  <p className="truncate text-[11px] font-semibold text-blue-100">
+                  <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
                     {description}
                   </p>
                 ) : null}
@@ -1233,18 +1233,18 @@ function ModalShell({
               type="button"
               onClick={onClose}
               aria-label="Close account access modal"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             >
-              <X size={19} />
+              <X size={18} />
             </button>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 pb-6 sm:p-6 sm:pb-6 sibs-scrollbar">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
             {children}
           </div>
 
           {footer ? (
-            <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-3 sm:px-6 sm:py-4">
+            <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
               {footer}
             </footer>
           ) : null}
@@ -1256,69 +1256,51 @@ function ModalShell({
 
   return createPortal(
     <div
-      className="sibs-modal-blur fixed inset-0 z-[99999] overflow-y-auto"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex items-center justify-center p-2 font-jakarta sm:p-4"
       role="presentation"
     >
-      <div className="flex min-h-full items-center justify-center p-3 sm:p-5">
-        <section
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="account-settings-modal-title"
-          className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-[16px] border border-[#D9E2EC] bg-[#F4F7FB] shadow-2xl sm:max-h-[calc(100dvh-2.5rem)]"
-        >
-          <span
-            className="pointer-events-none absolute left-[1px] right-[1px] top-[1px] z-10 h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]"
-            aria-hidden="true"
-          />
-
-          <header className="relative flex shrink-0 items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 pb-5 pt-6 sm:px-6">
-            <div className="min-w-0">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
-                  Account Access Configuration
-                </span>
-
-                <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
-                  Module: Settings
-                </span>
-              </div>
-
-              <h2
-                id="account-settings-modal-title"
-                className="text-xl font-extrabold text-[#042C51] sm:text-2xl"
-              >
-                {title}
-              </h2>
-
-              {description && (
-                <p className="mt-1.5 max-w-3xl text-xs font-semibold leading-5 text-[#667085] sm:text-sm">
-                  {description}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] text-[#667085] transition hover:border-[#042C51]/20 hover:bg-white hover:text-[#042C51] focus:outline-none focus:ring-4 focus:ring-[#042C51]/10"
-              aria-label="Close modal"
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-settings-modal-title"
+        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-2xl font-jakarta"
+      >
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
+          <div className="min-w-0">
+            <h2
+              id="account-settings-modal-title"
+              className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
             >
-              <X size={19} />
-            </button>
-          </header>
+              {title}
+            </h2>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F4F7FB] p-4 sm:p-5 sibs-scrollbar">
-            {children}
+            {description && (
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+                {description}
+              </p>
+            )}
           </div>
 
-          {footer && (
-            <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-3 sm:px-6 sm:py-4">
-              {footer}
-            </footer>
-          )}
-        </section>
-      </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close modal"
+          >
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
+          {children}
+        </div>
+
+        {footer && (
+          <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
+            {footer}
+          </footer>
+        )}
+      </section>
     </div>,
     document.body,
   );

@@ -17,13 +17,13 @@ const EMPTY_FORM = {
 function SelectField({ label, value, options, onChange }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+      <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-3 text-xs font-extrabold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
+        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -69,20 +69,20 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/65 p-4 backdrop-blur-md"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex items-center justify-center p-2 font-jakarta sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <section className="sibs-modal-pop-in max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-[#E6ECF2] bg-white shadow-2xl">
-        <header className="flex items-center justify-between gap-4 bg-[#042C51] px-5 py-4 text-white">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#FF5C28]">
-              <UserPlus size={17} />
+      <section className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta">
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <UserPlus size={16} />
             </span>
-            <div>
-              <h3 className="text-sm font-extrabold">Add Admin User</h3>
-              <p className="mt-0.5 text-xs text-slate-300">
+            <div className="min-w-0">
+              <h3 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">Add Admin User</h3>
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
                 Frontend account setup preview
               </p>
             </div>
@@ -90,77 +90,79 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             aria-label="Close add admin modal"
           >
             <X size={18} />
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-3 p-5">
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-              Full Name
-            </span>
-            <input
-              required
-              value={form.name}
-              onChange={(event) => updateField("name", event.target.value)}
-              placeholder="e.g. Maria Santos"
-              className="h-11 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar space-y-3">
+            <label className="block">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                Full Name
+              </span>
+              <input
+                required
+                value={form.name}
+                onChange={(event) => updateField("name", event.target.value)}
+                placeholder="e.g. Maria Santos"
+                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                Work Email
+              </span>
+              <input
+                required
+                type="email"
+                value={form.email}
+                onChange={(event) => updateField("email", event.target.value)}
+                placeholder="name@thesiblingssolutions.com"
+                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+              />
+            </label>
+
+            <SelectField
+              label="Grounded Access Level (1-7)"
+              value={form.accessLevel}
+              options={ACCESS_LEVELS}
+              onChange={(value) => updateField("accessLevel", value)}
             />
-          </label>
 
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-              Work Email
-            </span>
-            <input
-              required
-              type="email"
-              value={form.email}
-              onChange={(event) => updateField("email", event.target.value)}
-              placeholder="name@thesiblingssolutions.com"
-              className="h-11 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
+            <label className="block">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                Department
+              </span>
+              <input
+                value={form.department}
+                onChange={(event) => updateField("department", event.target.value)}
+                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+              />
+            </label>
+
+            <SelectField
+              label="Account Group"
+              value={form.accountGroup}
+              options={ACCOUNT_GROUPS}
+              onChange={(value) => updateField("accountGroup", value)}
             />
-          </label>
+          </div>
 
-          <SelectField
-            label="Grounded Access Level (1-7)"
-            value={form.accessLevel}
-            options={ACCESS_LEVELS}
-            onChange={(value) => updateField("accessLevel", value)}
-          />
-
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-              Department
-            </span>
-            <input
-              value={form.department}
-              onChange={(event) => updateField("department", event.target.value)}
-              className="h-11 w-full rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
-            />
-          </label>
-
-          <SelectField
-            label="Account Group"
-            value={form.accountGroup}
-            options={ACCOUNT_GROUPS}
-            onChange={(value) => updateField("accountGroup", value)}
-          />
-
-          <div className="flex justify-end gap-2 border-t border-[#EEF2F6] pt-4">
+          <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
             <button
               type="button"
               onClick={onClose}
-              className="h-10 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] hover:bg-[#F8FAFC]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="h-10 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
             >
               Save Admin Account
             </button>

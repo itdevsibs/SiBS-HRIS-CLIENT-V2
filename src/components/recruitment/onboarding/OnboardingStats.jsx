@@ -61,7 +61,7 @@ function StatCard({ card, value, delay }) {
 
   return (
     <article
-      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
@@ -105,7 +105,7 @@ export default function OnboardingStats() {
   return (
     <section
       aria-label="Onboarding Summary"
-      className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6"
+      className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
     >
       {cards.map((card, index) => (
         <StatCard

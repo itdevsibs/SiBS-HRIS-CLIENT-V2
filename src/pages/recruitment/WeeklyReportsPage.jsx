@@ -20,7 +20,7 @@ export default function WeeklyReportsPage() {
         ref={weeklyReports.mainRef}
         className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 2xl:space-y-6">
+        <div className="mx-auto w-full max-w-[1600px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
           <WeeklyReportsHeader
             onRefresh={weeklyReports.handleRefreshData}
             onGenerate={weeklyReports.handleGenerateCurrentWeek}

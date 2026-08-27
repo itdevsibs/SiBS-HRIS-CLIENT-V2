@@ -959,24 +959,24 @@ export default function ResignationModal({
             isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
           }`}
         >
-          <header className="shrink-0 bg-[#07355F] px-5 py-5 text-white sm:px-6">
+          <header className="shrink-0 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
             <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-[0_8px_20px_rgba(255,92,40,0.28)]">
-                  <FileText size={20} strokeWidth={2.2} />
+              <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+                <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+                  <FileText size={16} strokeWidth={2.2} />
                 </span>
 
                 <div className="min-w-0">
                   <h2
                     id="employee-resignation-title"
-                    className="truncate text-lg font-extrabold tracking-tight text-white sm:text-xl"
+                    className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
                   >
                     {isEdit
                       ? "Manage Resignation Application"
                       : "Employee Resignation Application"}
                   </h2>
 
-                  <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-300 sm:text-xs">
+                  <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
                     Asia/Manila Timezone Aligned • SiBS Official HR Workflow
                   </p>
                 </div>
@@ -986,10 +986,10 @@ export default function ResignationModal({
                 type="button"
                 onClick={handleClose}
                 disabled={submitting || isClosing}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Close resignation modal"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
           </header>
@@ -1413,13 +1413,13 @@ export default function ResignationModal({
               )}
             </div>
 
-            <footer className="shrink-0 border-t border-[#DCE4ED] bg-white px-5 py-4 sm:px-6">
+            <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
               <div className="flex flex-col-reverse items-stretch justify-between gap-2.5 sm:flex-row sm:items-center">
                 <button
                   type="button"
                   onClick={handleClose}
                   disabled={submitting || isClosing}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-[#CBD5E1] bg-white px-4 text-xs font-extrabold text-[#475569] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -1427,7 +1427,7 @@ export default function ResignationModal({
                 <button
                   type="submit"
                   disabled={submitting || isClosing}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(255,92,40,0.24)] transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span>
                     {submitting
@@ -1438,7 +1438,7 @@ export default function ResignationModal({
                         ? "Submit Update Request"
                         : "Submit Resignation Application"}
                   </span>
-                  {!submitting && <ArrowRight size={15} />}
+                  {!submitting && <ArrowRight size={14} />}
                 </button>
               </div>
             </footer>

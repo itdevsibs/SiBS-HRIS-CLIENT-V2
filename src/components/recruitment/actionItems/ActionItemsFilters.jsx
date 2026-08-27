@@ -22,7 +22,7 @@ function FilterSelect({ label, filterKey, options }) {
   }));
 
   return (
-    <div className="w-full min-w-0 flex-[1_1_180px]">
+    <div className="w-full min-w-0 flex-[1_1_130px] 2xl:flex-[1_1_160px]">
       <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
         {label}
       </label>
@@ -70,14 +70,14 @@ export default function ActionItemsFilters() {
 
   return (
     <div className="bg-white font-jakarta">
-      <div className="flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
-        <div className="relative w-full min-w-0 xl:min-w-[280px] xl:flex-[1_1_360px]">
+      <div className="flex flex-col gap-2.5 2xl:gap-3 overflow-visible xl:flex-row xl:items-end">
+        <div className="relative w-full min-w-0 xl:min-w-[240px] 2xl:xl:min-w-[280px] xl:flex-[1_1_300px] 2xl:xl:flex-[1_1_360px]">
           <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
             Search
           </label>
           <div className="group relative">
             <Search
-              size={17}
+              size={15}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
             />
             <input
@@ -86,7 +86,7 @@ export default function ActionItemsFilters() {
               onChange={(event) => setSearchInput(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && commitSearch()}
               placeholder="Search action, role, account, owner..."
-              className="h-10 w-full rounded-xl border border-[#D0D5DD] bg-white px-3.5 pl-9 text-xs font-semibold text-[#101828] outline-none transition focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
+              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 pl-9 sibs-text-xs font-semibold text-[#101828] outline-none transition focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
             />
           </div>
         </div>
@@ -102,9 +102,9 @@ export default function ActionItemsFilters() {
             type="button"
             onClick={handleClearAll}
             disabled={!hasActiveFilters}
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D0D5DD] bg-white px-4 text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+            className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
           >
-            <Filter size={15} />
+            <Filter size={14} />
             Clear
           </button>
         </div>

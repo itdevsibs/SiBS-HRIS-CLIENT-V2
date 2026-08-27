@@ -166,7 +166,7 @@ export default function ActionItemsTable() {
                     className="sibs-data-table-row sibs-page-card-in cursor-pointer transition hover:bg-[#F8FAFC]"
                     style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                   >
-                    <td className="max-w-[360px] border-r border-[#E6ECF2] px-3.5 py-2.5 align-middle">
+                    <td className="max-w-[360px] border-r border-[#E6ECF2] px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
                       <div className="flex items-center gap-2">
                         <span className="rounded bg-[#F2F4F7] px-1.5 py-0.5 font-jakarta text-[9px] font-extrabold text-[#042C51]">{item.actionId}</span>
                         <span className={`rounded border px-1.5 py-0.5 text-[8px] font-extrabold uppercase ${systemGenerated ? "border-purple-100 bg-purple-50 text-purple-700" : "border-blue-100 bg-blue-50 text-blue-700"}`}>
@@ -175,12 +175,12 @@ export default function ActionItemsTable() {
                       </div>
                       <p className="mt-1 line-clamp-2 text-xs font-extrabold leading-5 text-[#042C51]" title={item.actionItem}>{item.actionItem}</p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-3.5 py-2.5 align-middle">
+                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
                       <p className="text-xs font-extrabold text-[#042C51]">{item.account || "—"}</p>
                       <p className="mt-0.5 text-[10px] font-semibold uppercase text-[#667085]">{item.roleTitle || item.roleAccount || "—"}</p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-3 py-2.5 align-middle text-xs font-bold text-[#042C51]">{item.owner || "—"}</td>
-                    <td className="border-r border-[#E6ECF2] px-3 py-2.5 align-middle">
+                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle text-xs font-bold text-[#042C51]">{item.owner || "—"}</td>
+                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
                       <p className="text-xs font-extrabold text-[#042C51]">{formatDate(item.deadline)}</p>
                       <p className="mt-0.5 text-[9px] font-extrabold text-[#667085]">
                         {item.status === "Completed"
@@ -188,22 +188,22 @@ export default function ActionItemsTable() {
                           : getDaysLeft(item.deadline)}
                       </p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-3 py-2.5 align-middle">
+                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
                       <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getStatusClass(item.status)}`}>{item.status}</span>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-3 py-2.5 align-middle">
+                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
                       <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getRiskClass(item.riskLevel)}`}>{item.riskLevel}</span>
                     </td>
-                    <td className="max-w-[300px] border-r border-[#E6ECF2] px-3.5 py-2.5 align-middle">
+                    <td className="max-w-[300px] border-r border-[#E6ECF2] px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
                       <p className="line-clamp-2 text-xs font-semibold leading-4 text-[#667085]" title={item.remarks}>{item.remarks || "No remarks logged"}</p>
                     </td>
-                    <td className="px-3 py-3 text-right" onClick={(event) => event.stopPropagation()}>
+                    <td className="px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 text-right" onClick={(event) => event.stopPropagation()}>
                       <div className="flex justify-end gap-1.5">
                         {!systemGenerated && item.status !== "Completed" ? (
                           <button
                             type="button"
                             onClick={() => completeActionItem(item)}
-                            className="inline-flex items-center gap-1 rounded bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white transition hover:bg-emerald-700"
+                            className="inline-flex h-7.5 2xl:h-8 items-center gap-1 rounded-lg bg-emerald-600 px-2.5 2xl:px-3 text-[10px] 2xl:text-xs font-black text-white transition hover:bg-emerald-700 active:scale-[0.98]"
                           >
                             <CheckCircle2 size={12} /> Resolve
                           </button>
@@ -211,7 +211,7 @@ export default function ActionItemsTable() {
                         <button
                           type="button"
                           onClick={() => setSelectedItem(item)}
-                          className="inline-flex items-center gap-1 rounded bg-[#042C51] px-2.5 py-1.5 text-[10px] font-black text-white transition hover:bg-[#073966]"
+                          className="inline-flex h-7.5 2xl:h-8 items-center gap-1 rounded-lg bg-[#042C51] px-2.5 2xl:px-3 text-[10px] 2xl:text-xs font-black text-white transition hover:bg-[#073966] active:scale-[0.98]"
                         >
                           <Eye size={12} /> Details
                         </button>

@@ -1111,7 +1111,7 @@ export default function EmployeeDashboardPage() {
 
       {selectedAnnouncement ? (
         <div
-          className="sibs-modal-blur fixed inset-0 z-[99999] flex items-center justify-center p-4"
+          className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex items-center justify-center p-2 font-jakarta sm:p-4"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
@@ -1123,57 +1123,63 @@ export default function EmployeeDashboardPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="dashboard-announcement-title"
-            className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
           >
-            <header className="flex items-center justify-between gap-4 bg-[#042C51] px-5 py-4 text-white">
-              <div className="flex min-w-0 items-center gap-2">
-                <Bell size={18} className="shrink-0 text-[#FF5C28]" />
-                <h2
-                  id="dashboard-announcement-title"
-                  className="truncate text-sm font-black uppercase tracking-wider"
-                >
-                  {selectedAnnouncement.category}
-                </h2>
+            <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+              <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+                <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+                  <Bell size={16} />
+                </span>
+                <div className="min-w-0">
+                  <h2
+                    id="dashboard-announcement-title"
+                    className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                  >
+                    {selectedAnnouncement.category || "Company Announcement"}
+                  </h2>
+                  <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+                    Official Employee Notice & Bulletin
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedAnnouncement(null)}
-                className="rounded-lg p-1 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
                 aria-label="Close announcement"
               >
                 <X size={18} />
               </button>
             </header>
 
-            <div className="space-y-4 p-5 sm:p-6">
+            <div className="min-h-0 flex-1 overflow-y-auto space-y-4 p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
               <div>
-                <div className="flex flex-col gap-1 text-[10px] font-semibold text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3] sm:flex-row sm:items-center sm:justify-between">
                   <span>
                     Issued: {formatDashboardDate(selectedAnnouncement.date)}
                   </span>
                   <span>By: {selectedAnnouncement.author}</span>
                 </div>
-                <h3 className="mt-2 text-base font-black leading-6 text-[#042C51]">
+                <h3 className="mt-2 text-sm sm:text-base font-extrabold leading-snug text-[#042C51]">
                   {selectedAnnouncement.title}
                 </h3>
               </div>
 
-              <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs font-medium leading-6 text-slate-700">
+              <p className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5 2xl:p-4 sibs-text-xs font-medium leading-relaxed text-[#344054]">
                 {selectedAnnouncement.summary ||
                   "No additional announcement details were supplied."}
               </p>
-
-              <div className="flex justify-end border-t border-slate-200 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setSelectedAnnouncement(null)}
-                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-black text-white transition hover:bg-[#063968]"
-                >
-                  <CheckCircle2 size={14} className="text-[#FF5C28]" />
-                  Close Notice
-                </button>
-              </div>
             </div>
+
+            <footer className="flex shrink-0 items-center justify-end border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setSelectedAnnouncement(null)}
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+              >
+                Close Notice
+              </button>
+            </footer>
           </section>
         </div>
       ) : null}

@@ -785,75 +785,54 @@ export default function AddFieldCard() {
   }
 
   const modal = open ? (
-    <div className="fixed inset-0 z-[100000] overflow-y-auto bg-[#0B1726]/55 p-0 backdrop-blur-[3px] sm:p-4">
-      <div className="flex min-h-full items-center justify-center">
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-form-questions-title"
-          className="
-            flex
-            h-dvh
-            w-full
-            max-w-[920px]
-            flex-col
-            overflow-hidden
-            bg-white
-            shadow-[0_30px_90px_rgba(3,30,54,0.28)]
-            sm:h-[min(720px,calc(100vh-32px))]
-            sm:rounded-[22px]
-          "
-        >
-          {/* =================================================
-              HEADER
-          ================================================= */}
+    <div
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[100000] flex items-center justify-center p-2 font-jakarta sm:p-4"
+      onClick={closeModal}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-form-questions-title"
+        onClick={(event) => event.stopPropagation()}
+        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
+      >
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
-          <div className="flex shrink-0 items-center justify-between gap-4 bg-[#07365F] px-6 py-5 text-white">
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <Plus size={16} />
+            </span>
             <div className="min-w-0">
               <h2
                 id="add-form-questions-title"
-                className="text-lg font-extrabold tracking-[-0.02em] text-white sm:text-xl"
+                className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
               >
                 {editingFieldId
                   ? "Edit Form Question"
                   : "Add Form Questions"}
               </h2>
 
-              <p className="mt-1 text-xs font-medium text-[#D7E7F5]">
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
                 {editingFieldId
                   ? "Update the title, question, and input type."
                   : "Create one title and add one or more questions under it."}
               </p>
             </div>
-
-            <button
-              type="button"
-              onClick={closeModal}
-              disabled={
-                questionsSaving
-              }
-              aria-label="Close question modal"
-              className="
-                inline-flex
-                h-9
-                w-9
-                shrink-0
-                cursor-pointer
-                items-center
-                justify-center
-                rounded-full
-                bg-white/10
-                text-[#AFC8DD]
-                transition
-                hover:bg-white/15
-                hover:text-white
-                disabled:cursor-not-allowed
-                disabled:opacity-50
-              "
-            >
-              <X size={20} />
-            </button>
           </div>
+
+          <button
+            type="button"
+            onClick={closeModal}
+            disabled={questionsSaving}
+            aria-label="Close question modal"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X size={18} />
+          </button>
+        </header>
 
           {/* =================================================
               CONTENT
@@ -1163,33 +1142,12 @@ export default function AddFieldCard() {
               FOOTER
           ================================================= */}
 
-          <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#E4EAF1] bg-white px-6 py-4">
+          <footer className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
             <button
               type="button"
               onClick={closeModal}
-              disabled={
-                questionsSaving
-              }
-              className="
-                inline-flex
-                h-10
-                cursor-pointer
-                items-center
-                justify-center
-                rounded-[10px]
-                border
-                border-[#D4DEE8]
-                bg-white
-                px-5
-                text-xs
-                font-extrabold
-                text-[#173B61]
-                shadow-sm
-                transition
-                hover:bg-[#F8FAFC]
-                disabled:cursor-not-allowed
-                disabled:opacity-60
-              "
+              disabled={questionsSaving}
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -1197,29 +1155,8 @@ export default function AddFieldCard() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={
-                questionsSaving
-              }
-              className="
-                inline-flex
-                h-10
-                min-w-[160px]
-                cursor-pointer
-                items-center
-                justify-center
-                gap-2
-                rounded-[10px]
-                bg-[#073B68]
-                px-5
-                text-xs
-                font-extrabold
-                text-white
-                shadow-[0_5px_12px_rgba(7,59,104,0.18)]
-                transition
-                hover:bg-[#052F54]
-                disabled:cursor-not-allowed
-                disabled:opacity-60
-              "
+              disabled={questionsSaving}
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {questionsSaving ? (
                 <Loader2
@@ -1231,7 +1168,6 @@ export default function AddFieldCard() {
               ) : (
                 <Plus
                   size={15}
-                  className="text-[#FF5C28]"
                 />
               )}
 
@@ -1241,7 +1177,7 @@ export default function AddFieldCard() {
                   ? "Save Changes"
                   : "Save Questions"}
             </button>
-          </div>
+          </footer>
         </div>
       </div>
     </div>

@@ -39,7 +39,7 @@ export default function CandidateExperienceAnalytics({ records, metrics }) {
   const topCategory = categoryRows[0]?.label || "No response category data";
 
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-4 font-jakarta">
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-4 font-jakarta">
       <Panel icon={BarChart3} title="Drop-offs by Stage" subtitle="Where candidates leave the recruitment journey." delay={120}>
         <BarList rows={stageRows} emptyText="No drop-off stage data yet." />
       </Panel>
@@ -53,25 +53,25 @@ export default function CandidateExperienceAnalytics({ records, metrics }) {
       </Panel>
 
       <section
-        className="sibs-page-card-in relative overflow-hidden rounded-2xl bg-sibs-primary-1 p-5 text-white shadow-sm"
+        className="sibs-page-card-in relative overflow-hidden rounded-xl 2xl:rounded-2xl bg-[#042C51] p-3.5 sm:p-4 2xl:p-5 text-white shadow-sm font-jakarta"
         style={{ animationDelay: "255ms", animationFillMode: "both" }}
       >
-        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-sibs-primary-2/15" />
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#FF5C28]/15" />
         <div className="relative">
-          <div className="flex items-center gap-2 text-sibs-primary-2">
-            <Sparkles size={17} />
-            <h3 className="text-xs font-extrabold uppercase tracking-wider">Experience Insight</h3>
+          <div className="flex items-center gap-2 text-[#FF5C28]">
+            <Sparkles size={16} />
+            <h3 className="text-xs font-black uppercase tracking-wider text-white">Experience Insight</h3>
           </div>
 
-          <div className="mt-4 rounded-xl border border-white/10 bg-white/10 p-4">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-sibs-tertiary-9">Primary Drop-off Stage</p>
-            <p className="mt-1 text-lg font-extrabold">{topStage}</p>
+          <div className="mt-3 rounded-lg 2xl:rounded-xl border border-white/10 bg-white/10 p-3 2xl:p-3.5">
+            <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-blue-200">Primary Drop-off Stage</p>
+            <p className="mt-0.5 text-base 2xl:text-lg font-extrabold text-white">{topStage}</p>
 
-            <p className="mt-4 text-[10px] font-extrabold uppercase tracking-wider text-sibs-tertiary-9">Top Experience Category</p>
-            <p className="mt-1 text-sm font-extrabold text-[#FFB69E]">{topCategory}</p>
+            <p className="mt-3 text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-blue-200">Top Experience Category</p>
+            <p className="mt-0.5 text-xs 2xl:text-sm font-extrabold text-[#FFB69E]">{topCategory}</p>
           </div>
 
-          <p className="mt-4 text-xs leading-5 text-sibs-tertiary-9">
+          <p className="mt-3 sibs-text-xs leading-relaxed text-blue-200">
             {metrics.responsesReceived
               ? `${metrics.responsesReceived} response${metrics.responsesReceived === 1 ? "" : "s"} recorded with an average rating of ${metrics.averageRating}/5.`
               : "Candidate experience insights will populate when survey or manual feedback is recorded."}
@@ -85,16 +85,16 @@ export default function CandidateExperienceAnalytics({ records, metrics }) {
 function Panel({ icon: Icon, title, subtitle, delay = 120, children }) {
   return (
     <section
-      className="sibs-page-card-in rounded-2xl border border-sibs-subtle-border bg-sibs-card p-5 shadow-sm transition-all duration-200 hover:shadow-md"
+      className="sibs-page-card-in rounded-xl 2xl:rounded-2xl border border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm transition-all duration-200 hover:shadow-md font-jakarta"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="mb-4 flex items-start justify-between gap-3 border-b border-sibs-subtle-border/60 pb-3">
+      <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-2.5">
         <div>
-          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">{title}</h3>
-          <p className="mt-1 text-xs font-semibold leading-4 text-[#667085]">{subtitle}</p>
+          <h3 className="text-xs 2xl:text-sm font-black uppercase tracking-wide text-[#042C51]">{title}</h3>
+          <p className="mt-0.5 sibs-text-xs font-semibold leading-tight text-[#667085]">{subtitle}</p>
         </div>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E9F0FC] text-[#042C51]">
-          <Icon size={16} strokeWidth={2} />
+        <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-[#042C51]">
+          <Icon size={15} strokeWidth={2} />
         </span>
       </div>
       {children}

@@ -38,41 +38,102 @@ export default function CandidateExperiencePage() {
     return response;
   }
 
-  return <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta"><div className="shrink-0"><Header /></div><main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"><div className="mx-auto max-w-[1600px] space-y-5"><CandidateExperienceHeader onAddManual={() => setManualOpen(true)} onRefresh={refresh} refreshing={loading} onExport={exportCsv} />{notice ? <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold text-[#042C51]">{notice}<button type="button" onClick={() => setNotice("")} className="ml-2 font-black underline">Dismiss</button></div> : null}{error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">{error}</div> : null}{dataMode === "local-fallback" ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">Candidate Experience backend is not connected yet. Existing/manual records are currently using the frontend recruitment store; public survey responses still require the backend endpoint.</div> : null}        <CandidateExperienceSummary metrics={metrics} />
-    <CandidateExperienceAnalytics records={records} metrics={metrics} />
-
-    <section
-      className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm font-jakarta"
-      style={{ animationDelay: "240ms", animationFillMode: "both" }}
-    >
-      <header className="flex flex-col gap-1.5 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-base font-extrabold text-[#042C51]">
-            Candidate Experience Records
-          </h2>
-          <p className="text-xs font-semibold text-[#667085]">
-            Select a row or mobile card to open the complete recruitment journey and survey details.
-          </p>
-        </div>
-      </header>
-
-      <div className="p-4 sm:p-5 font-jakarta space-y-4">
-        <CandidateExperienceFilters
-          filters={filters}
-          onChange={(key, value) => setFilters((current) => ({ ...current, [key]: value }))}
-          onClear={() => setFilters(emptyFilters)}
-          count={filteredRecords.length}
-        />
-
-        {loading ? (
-          <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] p-10 text-center text-xs font-bold text-[#667085]">
-            Loading Candidate Experience records...
-          </div>
-        ) : (
-          <CandidateExperienceTable records={filteredRecords} onSelect={setSelectedRecord} />
-        )}
+  return (
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <div className="shrink-0">
+        <Header />
       </div>
-    </section>
-  </div>
-  </main><AddExperienceModal open={manualOpen} candidates={candidateOptions} candidatesLoading={candidateLoading} onClose={() => setManualOpen(false)} onSave={handleManualSave} /><CandidateExperienceDetailsModal record={selectedRecord} onClose={() => setSelectedRecord(null)} /></div>;
+
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-3.5 sm:p-4 2xl:p-6">
+        <div className="mx-auto max-w-[1600px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
+          <CandidateExperienceHeader
+            onAddManual={() => setManualOpen(true)}
+            onRefresh={refresh}
+            refreshing={loading}
+            onExport={exportCsv}
+          />
+
+          {notice ? (
+            <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-2.5 2xl:py-3 sibs-text-xs font-semibold text-[#042C51]">
+              {notice}
+              <button
+                type="button"
+                onClick={() => setNotice("")}
+                className="ml-2 font-black underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 2xl:py-3 sibs-text-xs font-semibold text-rose-700">
+              {error}
+            </div>
+          ) : null}
+
+          {dataMode === "local-fallback" ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 2xl:py-3 sibs-text-xs font-semibold text-amber-800">
+              Candidate Experience backend is not connected yet. Existing/manual records are currently using the frontend recruitment store; public survey responses still require the backend endpoint.
+            </div>
+          ) : null}
+
+          <CandidateExperienceSummary metrics={metrics} />
+
+          <CandidateExperienceAnalytics records={records} metrics={metrics} />
+
+          <section
+            className="sibs-page-card-in overflow-hidden rounded-xl 2xl:rounded-2xl border border-[#E6ECF2] bg-white shadow-sm font-jakarta"
+            style={{ animationDelay: "240ms", animationFillMode: "both" }}
+          >
+            <header className="flex flex-col gap-1.5 border-b border-[#E6ECF2] bg-white px-4 py-3 sm:px-5 2xl:px-6 2xl:py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-extrabold text-[#042C51] 2xl:text-lg">
+                  Candidate Experience Records
+                </h2>
+                <p className="sibs-text-xs font-semibold text-[#667085]">
+                  Select a row or mobile card to open the complete recruitment journey and survey details.
+                </p>
+              </div>
+            </header>
+
+            <div className="space-y-3.5 p-3.5 sm:space-y-4 sm:p-4 2xl:p-5 font-jakarta">
+              <CandidateExperienceFilters
+                filters={filters}
+                onChange={(key, value) =>
+                  setFilters((current) => ({ ...current, [key]: value }))
+                }
+                onClear={() => setFilters(emptyFilters)}
+                count={filteredRecords.length}
+              />
+
+              {loading ? (
+                <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] p-10 text-center text-xs font-bold text-[#667085]">
+                  Loading Candidate Experience records...
+                </div>
+              ) : (
+                <CandidateExperienceTable
+                  records={filteredRecords}
+                  onSelect={setSelectedRecord}
+                />
+              )}
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <AddExperienceModal
+        open={manualOpen}
+        candidates={candidateOptions}
+        candidatesLoading={candidateLoading}
+        onClose={() => setManualOpen(false)}
+        onSave={handleManualSave}
+      />
+
+      <CandidateExperienceDetailsModal
+        record={selectedRecord}
+        onClose={() => setSelectedRecord(null)}
+      />
+    </div>
+  );
 }
