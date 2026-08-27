@@ -30,7 +30,7 @@ export default function TalentPoolMobileCard({ candidate, index = 0 }) {
     candidate.openPosition || candidate.roleCapability || "—";
   const location = candidate.applyingLocation || "—";
   const finalAccount =
-    candidate.currentAppliedAccount || "Not assigned yet";
+    candidate.currentAppliedAccount || "";
 
   return (
     <button

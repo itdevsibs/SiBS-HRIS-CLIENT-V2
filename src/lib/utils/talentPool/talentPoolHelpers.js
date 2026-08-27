@@ -17,6 +17,24 @@ export function getTodayDate() {
   return new Date().toISOString().split("T")[0];
 }
 
+const EMPTY_ASSIGNMENT_VALUES = new Set([
+  "not assigned yet",
+  "null",
+  "undefined",
+  "n/a",
+  "na",
+]);
+
+export function cleanTalentPoolAssignmentValue(value = "") {
+  const text = String(value ?? "").trim();
+
+  if (!text || EMPTY_ASSIGNMENT_VALUES.has(text.toLowerCase())) {
+    return "";
+  }
+
+  return text;
+}
+
 export function generateCandidateId(nextNumber) {
   return `CAND-${String(nextNumber).padStart(3, "0")}`;
 }
@@ -321,7 +339,7 @@ export function normalizeCandidateRecord(candidate) {
       candidate.attachmentFileType || candidate.attachmentMimeType || "",
     source,
     availability: candidate.availability || "Available",
-    accountFit: candidate.accountFit || "Not assigned yet",
+    accountFit: cleanTalentPoolAssignmentValue(candidate.accountFit),
     entryType:
       candidate.entryType ||
       (candidate.isPublicSubmission ? "Public Application" : "TA Manual Entry"),
@@ -368,7 +386,7 @@ export function importPublicSubmission(submission, index = 0) {
     lastActivity:
       submission.lastActivity || submission.submittedAt || getTodayDate(),
     isPublicSubmission: true,
-    accountFit: submission.accountFit || "Not assigned yet",
+    accountFit: cleanTalentPoolAssignmentValue(submission.accountFit),
     applicationHistory:
       Array.isArray(submission.applicationHistory) &&
       submission.applicationHistory.length > 0
@@ -464,7 +482,7 @@ export function candidateToForm(
       name: item?.name || "",
       phone: item?.phone || "",
     })),
-    accountFit: normalized.accountFit || "Not assigned yet",
+    accountFit: cleanTalentPoolAssignmentValue(normalized.accountFit),
     consent: Boolean(normalized.consent ?? true),
   };
 }
@@ -838,7 +856,7 @@ export function parseUploadedLeadRow(row, nextId, index) {
       ["availability", "Availability"],
       "Available",
     ),
-    accountFit: "Not assigned yet",
+    accountFit: "",
     lastActivity: getTodayDate(),
     tags: normalizeTags(
       openPosition,
@@ -848,7 +866,7 @@ export function parseUploadedLeadRow(row, nextId, index) {
     applicationHistory: [
       {
         role: openPosition,
-        account: "Not assigned yet",
+        account: "",
         outcome: "Imported from CSV",
         date: getTodayDate(),
       },
@@ -906,7 +924,7 @@ export function pipelineApplicationToTalentPoolCandidate(
     snapshot.openPosition ||
     snapshot.roleCapability ||
     application.roleTitle ||
-    "Not assigned yet";
+    "";
 
   const applicationHistory = Array.isArray(application.timeline)
     ? application.timeline.map((item) => ({
@@ -914,8 +932,8 @@ export function pipelineApplicationToTalentPoolCandidate(
           application.roleTitle ||
           snapshot.openPosition ||
           openPosition ||
-          "Not assigned yet",
-        account: application.account || "Not assigned yet",
+          "",
+        account: cleanTalentPoolAssignmentValue(application.account),
         outcome:
           item.reason ||
           item.remarks ||
@@ -967,8 +985,8 @@ export function pipelineApplicationToTalentPoolCandidate(
     currentPipelineStage,
     currentApplicationStatus: application.applicationStatus || "",
 
-    currentAppliedRole: application.roleTitle || "Not assigned yet",
-    currentAppliedAccount: application.account || "Not assigned yet",
+    currentAppliedRole: cleanTalentPoolAssignmentValue(application.roleTitle),
+    currentAppliedAccount: cleanTalentPoolAssignmentValue(application.account),
     currentTaOwner: application.taOwner || application.owner || "",
 
     currentPrfStatus: application.prfStatus || "",
@@ -990,8 +1008,8 @@ export function pipelineApplicationToTalentPoolCandidate(
         ? applicationHistory
         : [
             {
-              role: application.roleTitle || openPosition || "Not assigned yet",
-              account: application.account || "Not assigned yet",
+              role: application.roleTitle || openPosition || "",
+              account: cleanTalentPoolAssignmentValue(application.account),
               outcome: `Pipeline Stage: ${currentPipelineStage || "—"}`,
               date:
                 application.updatedAt ||

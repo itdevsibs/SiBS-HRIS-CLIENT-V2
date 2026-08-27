@@ -18,7 +18,7 @@ export default function TalentPoolDetailRow({ candidate }) {
 
   const referrer = candidate.referredBy || "—";
   const preferredLocation = candidate.applyingLocation || "—";
-  const finalAccount = candidate.currentAppliedAccount || "Not assigned yet";
+  const finalAccount = candidate.currentAppliedAccount || "";
 
   const displayStatus =
     candidate.currentPipelineStage ||

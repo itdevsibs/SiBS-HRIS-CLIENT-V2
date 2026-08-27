@@ -50,7 +50,7 @@ export function getDropOffCandidateRole(candidate = {}) {
     candidate.open_position ||
     candidate.roleCapability ||
     candidate.role_capability ||
-    "Not assigned yet"
+    ""
   );
 }
 
@@ -63,7 +63,7 @@ export function getDropOffCandidateAccount(candidate = {}) {
     candidate.lead_account ||
     candidate.accountFit ||
     candidate.account_fit ||
-    "Not assigned yet"
+    ""
   );
 }
 

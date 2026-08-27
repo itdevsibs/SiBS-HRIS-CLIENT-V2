@@ -207,7 +207,7 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                         candidate.applyingLocation || "—";
 
                       const finalAccount =
-                        candidate.currentAppliedAccount || "Not assigned yet";
+                        candidate.currentAppliedAccount || "";
 
                       const displayStatus =
                         candidate.currentPipelineStage ||

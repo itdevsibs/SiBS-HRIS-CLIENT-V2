@@ -502,7 +502,7 @@ export default function MoveToPipeLineModal() {
         pipelineTarget.roleTitle ||
         pipelineTarget.positionTitle ||
         matchedPosition?.positionTitle,
-    ) || "Not assigned yet";
+    ) || "";
 
   function showError(title, message) {
     setStatusModal({

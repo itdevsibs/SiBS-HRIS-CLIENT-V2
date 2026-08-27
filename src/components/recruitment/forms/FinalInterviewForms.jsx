@@ -16,7 +16,10 @@ import {
 } from "../../../lib/axios/getFinalInterviewDraft";
 
 import api from "../../../lib/axios/api-template";
-import { getFinalInterviewFormByPosition } from "../../../lib/axios/getRecruitmentSettings";
+import {
+  getFinalInterviewFormByPosition,
+  getFinalInterviewForms,
+} from "../../../lib/axios/getRecruitmentSettings";
 import StatusModal from "../../../components/modals/StatusModal";
 import RichTextViewer from "../../../components/modals/jobDescription/RichTextViewer";
 import {
@@ -1164,12 +1167,12 @@ function BreakdownScoreLine({ label, subtext = "", value = 0, suffix = "pts" }) 
 function BreakdownTextLine({ label, value = "—" }) {
   return (
     <div className="rounded-[18px] bg-[#F8FAFC] px-4 py-4">
-      <div className="flex items-start justify-between gap-4">
-        <p className="min-w-0 text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+      <div className="grid grid-cols-[minmax(90px,0.8fr)_minmax(0,1.6fr)] items-start gap-4">
+        <p className="min-w-0 break-words text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
           {label}
         </p>
 
-        <p className="shrink-0 text-right text-[15px] font-extrabold text-[#101828]">
+        <p className="min-w-0 break-words text-right text-[15px] font-extrabold leading-5 text-[#101828]">
           {value || "—"}
         </p>
       </div>
@@ -1201,8 +1204,13 @@ function ScoreSummaryCard({
   const finalInterviewHasScore =
     finalInterviewRatingScore.answeredRatingFields > 0;
 
+  const finalInterviewComplete =
+    finalInterviewRatingScore.totalRatingFields > 0 &&
+    finalInterviewRatingScore.answeredRatingFields >=
+      finalInterviewRatingScore.totalRatingFields;
+
   const finalInterviewPassed =
-    finalInterviewHasScore &&
+    finalInterviewComplete &&
     finalInterviewRatingScore.percentageScore >= passingScore;
 
   const finalInterviewPercent = finalInterviewHasScore
@@ -1215,6 +1223,13 @@ function ScoreSummaryCard({
 
   const jobEvaluationRankTone = getRankTone(jobEvaluationScore.rank);
   const jobEvaluationRankStatus = getRankStatus(jobEvaluationScore.rank);
+  const jobEvaluationComplete = Boolean(
+    cleanText(answers[JOB_EVALUATION_FIELDS.education]) &&
+      cleanText(answers[JOB_EVALUATION_FIELDS.experience]) &&
+      cleanText(answers[JOB_EVALUATION_FIELDS.location]) &&
+      safeArray(answers[JOB_EVALUATION_FIELDS.duties]).length > 0 &&
+      safeArray(answers[JOB_EVALUATION_FIELDS.competencies]).length > 0,
+  );
 
   const selectedEducation = getSelectedOptionDetail(
     educationOptions,
@@ -1247,10 +1262,16 @@ function ScoreSummaryCard({
         <SummaryMetricCard
           title="Job Evaluation Score"
           value={`${jobEvaluationScore.percentageScore.toFixed(0)}%`}
-          subtext={`Rank ${jobEvaluationScore.rank} · ${jobEvaluationRankStatus}`}
-          tone={jobEvaluationRankTone}
+          subtext={
+            jobEvaluationComplete
+              ? `Rank ${jobEvaluationScore.rank} · ${jobEvaluationRankStatus}`
+              : "Evaluation in progress"
+          }
+          tone={jobEvaluationComplete ? jobEvaluationRankTone : "default"}
           progressValue={jobEvaluationScore.percentageScore}
-          statusLabel={`Rank ${jobEvaluationScore.rank}`}
+          statusLabel={
+            jobEvaluationComplete ? `Rank ${jobEvaluationScore.rank}` : ""
+          }
           statusTone={jobEvaluationRankTone}
         />
 
@@ -1263,7 +1284,7 @@ function ScoreSummaryCard({
               : "No rating recorded"
           }
           tone={
-            !finalInterviewHasScore
+            !finalInterviewComplete
               ? "default"
               : finalInterviewPassed
                 ? "success"
@@ -1275,7 +1296,7 @@ function ScoreSummaryCard({
               : null
           }
           statusLabel={
-            finalInterviewHasScore
+            finalInterviewComplete
               ? finalInterviewPassed
                 ? "Passed"
                 : "Failed"
@@ -1321,10 +1342,12 @@ function ScoreSummaryCard({
             value={jobEvaluationScore.competenciesScore}
           />
 
-          <BreakdownResultLine
-            label="Evaluation Result"
-            value={jobEvaluationRankStatus}
-          />
+          {jobEvaluationComplete && (
+            <BreakdownResultLine
+              label="Evaluation Result"
+              value={jobEvaluationRankStatus}
+            />
+          )}
         </BreakdownPanel>
 
         <BreakdownPanel
@@ -1350,16 +1373,12 @@ function ScoreSummaryCard({
             value={`${finalInterviewRatingScore.answeredRatingFields}/${finalInterviewRatingScore.totalRatingFields}`}
           />
 
-          <BreakdownTextLine
-            label="Interview Result"
-            value={
-              finalInterviewHasScore
-                ? finalInterviewPassed
-                  ? "Passed"
-                  : "Failed"
-                : "No rating"
-            }
-          />
+          {finalInterviewComplete && (
+            <BreakdownTextLine
+              label="Interview Result"
+              value={finalInterviewPassed ? "Passed" : "Failed"}
+            />
+          )}
         </BreakdownPanel>
 
         <BreakdownPanel
@@ -2325,6 +2344,14 @@ export default function FinalInterviewForms({ publicMode = false }) {
     );
   }, [positionId, currentCandidate]);
 
+  const databasePositionTitle = useMemo(() => {
+    return (
+      positionTitleFromUrl ||
+      getCandidatePositionName(currentCandidate) ||
+      ""
+    );
+  }, [positionTitleFromUrl, currentCandidate]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -2345,10 +2372,37 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
         if (cancelled) return;
 
+        const exactPositionForm = response?.success
+          ? response.data || null
+          : null;
+        const exactPositionHasQuestions = Boolean(
+          exactPositionForm &&
+            getFinalInterviewFormFields(exactPositionForm).some(
+              (field) => field?.enabled !== false,
+            ),
+        );
+
+        if (exactPositionHasQuestions || !databasePositionTitle) {
+          setDatabaseForm(exactPositionForm);
+          return;
+        }
+
+        const formsResponse = await getFinalInterviewForms();
+
+        if (cancelled) return;
+
+        const configuredFallbackForm = findMatchingFinalInterviewForm({
+          forms: formsResponse?.success
+            ? formsResponse.data || []
+            : [],
+          preferredFormId: templateFormId || formId,
+          positionId: databasePositionIdentifier,
+          positionTitle: databasePositionTitle,
+          requireConfiguredQuestions: true,
+        });
+
         setDatabaseForm(
-          response?.success
-            ? response.data || null
-            : null,
+          configuredFallbackForm || exactPositionForm,
         );
       } catch (error) {
         if (cancelled) return;
@@ -2372,7 +2426,12 @@ export default function FinalInterviewForms({ publicMode = false }) {
     return () => {
       cancelled = true;
     };
-  }, [databasePositionIdentifier]);
+  }, [
+    databasePositionIdentifier,
+    databasePositionTitle,
+    templateFormId,
+    formId,
+  ]);
 
   const activeForm = useMemo(() => {
     if (databaseForm) {
@@ -2627,8 +2686,13 @@ export default function FinalInterviewForms({ publicMode = false }) {
     const jobEvaluationPassed =
       jobEvaluationScore.percentageScore >= passingScore;
 
+    const finalInterviewComplete =
+      finalInterviewRatingScore.totalRatingFields > 0 &&
+      finalInterviewRatingScore.answeredRatingFields >=
+        finalInterviewRatingScore.totalRatingFields;
+
     const finalInterviewPassed =
-      finalInterviewRatingScore.answeredRatingFields > 0 &&
+      finalInterviewComplete &&
       finalInterviewRatingScore.percentageScore >= passingScore;
 
     return {
@@ -2642,8 +2706,12 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
       finalInterview: {
         ...finalInterviewRatingScore,
-        status: finalInterviewPassed ? "Passed" : "Failed",
-        passed: finalInterviewPassed,
+        status: finalInterviewComplete
+          ? finalInterviewPassed
+            ? "Passed"
+            : "Failed"
+          : "In Progress",
+        passed: finalInterviewComplete ? finalInterviewPassed : null,
       },
     };
   }, [jobEvaluationScore, finalInterviewRatingScore, passingScore]);
@@ -3500,12 +3568,12 @@ export default function FinalInterviewForms({ publicMode = false }) {
                         key={`${group.section}-${groupIndex}`}
                         className="overflow-visible rounded-[20px] border border-[#D9E2EC] bg-white"
                       >
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E4E7EC] bg-[#F8FAFC] px-5 py-4">
-                          <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-t-[20px] border-b border-[#E4E7EC] bg-[#F8FAFC] px-5 py-4">
+                          <h3 className="min-w-0 text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
                             {group.section}
                           </h3>
 
-                          <span className="text-xs font-extrabold text-[#667085]">
+                          <span className="inline-flex shrink-0 items-center rounded-full border border-[#D9E2EC] bg-white px-3 py-1.5 text-xs font-extrabold text-[#667085]">
                             {safeArray(group.questions).length}{" "}
                             {safeArray(group.questions).length === 1
                               ? "question"

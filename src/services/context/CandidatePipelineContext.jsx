@@ -25,6 +25,7 @@ import {
   getCandidateStage,
   getRoleTitle,
   getAccount,
+  cleanAssignmentValue,
   getNextStage,
   canMoveToOnlineAssessment,
   canScheduleInterview,
@@ -681,10 +682,19 @@ function getCandidateRecordId(candidate = {}) {
 }
 
 function normalizeRoleAccount(roleTitle, account) {
-  const role = cleanText(roleTitle) || "Not assigned yet";
-  const accountName = cleanText(account) || "Not assigned yet";
+  const role = cleanAssignmentValue(roleTitle);
+  const accountName = cleanAssignmentValue(account);
 
-  return `${role} - ${accountName}`;
+  return [role, accountName].filter(Boolean).join(" - ");
+}
+
+function firstAssignmentValue(...values) {
+  for (const value of values) {
+    const cleaned = cleanAssignmentValue(value);
+    if (cleaned) return cleaned;
+  }
+
+  return "";
 }
 
 function normalizePipelineCandidateForBoard(candidate = {}) {
@@ -697,32 +707,29 @@ function normalizePipelineCandidateForBoard(candidate = {}) {
       "Initial Screening",
   );
 
-  const roleTitle =
-    candidate.roleTitle ||
-    candidate.role_title ||
-    candidate.currentAppliedRole ||
-    candidate.current_applied_role ||
-    candidate.openPosition ||
-    candidate.open_position ||
-    candidate.roleCapability ||
-    getRoleTitle(candidate.roleAccount || candidate.role_account) ||
-    "Not assigned yet";
+  const roleTitle = firstAssignmentValue(
+    candidate.roleTitle,
+    candidate.role_title,
+    candidate.currentAppliedRole,
+    candidate.current_applied_role,
+    candidate.openPosition,
+    candidate.open_position,
+    candidate.roleCapability,
+    getRoleTitle(candidate.roleAccount || candidate.role_account),
+  );
 
-  const account =
-    candidate.account ||
-    candidate.currentAppliedAccount ||
-    candidate.current_applied_account ||
-    candidate.leadAccount ||
-    candidate.lead_account ||
-    candidate.accountFit ||
-    candidate.account_fit ||
-    getAccount(candidate.roleAccount || candidate.role_account) ||
-    "Not assigned yet";
+  const account = firstAssignmentValue(
+    candidate.account,
+    candidate.currentAppliedAccount,
+    candidate.current_applied_account,
+    candidate.leadAccount,
+    candidate.lead_account,
+    candidate.accountFit,
+    candidate.account_fit,
+    getAccount(candidate.roleAccount || candidate.role_account),
+  );
 
-  const roleAccount =
-    candidate.roleAccount ||
-    candidate.role_account ||
-    normalizeRoleAccount(roleTitle, account);
+  const roleAccount = normalizeRoleAccount(roleTitle, account);
 
   const prfStatus = getCandidatePrfStatus(candidate);
 
@@ -923,7 +930,7 @@ function getCandidateRoleForFilter(candidate = {}) {
     candidate.openPosition ||
     candidate.roleCapability ||
     getRoleTitle(candidate.roleAccount) ||
-    "Not assigned yet"
+    ""
   );
 }
 
@@ -934,7 +941,7 @@ function getCandidateAccountForFilter(candidate = {}) {
     candidate.leadAccount ||
     candidate.accountFit ||
     getAccount(candidate.roleAccount) ||
-    "Not assigned yet"
+    ""
   );
 }
 
@@ -2360,10 +2367,10 @@ export function CandidatePipelineProvider({ children }) {
         "",
       roleTitle:
         offerDetails.roleTitle ||
-        (currentRoleTitle === "Not assigned yet" ? "" : currentRoleTitle),
+        (currentRoleTitle === "" ? "" : currentRoleTitle),
       account:
         offerDetails.account ||
-        (currentAccount === "Not assigned yet" ? "" : currentAccount),
+        (currentAccount === "" ? "" : currentAccount),
       basicPay: offerDetails.basicPay || "",
       deminimisDailyRate: offerDetails.deminimisDailyRate || "",
       startDate: offerDetails.startDate || offerDetails.start_date || "",

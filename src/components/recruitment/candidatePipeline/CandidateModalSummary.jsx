@@ -1,31 +1,32 @@
 import React from "react";
 import CandidateAvatar from "./CandidateAvatar";
+import {
+  cleanAssignmentValue,
+  getAccount as getRoleAccountAccount,
+  getRoleTitle as getRoleAccountRole,
+} from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 
 function cleanText(value) {
   return String(value ?? "").trim();
 }
 
 function getRole(candidate = {}) {
-  return cleanText(
+  return cleanAssignmentValue(
     candidate.currentAppliedRole ||
       candidate.roleTitle ||
       candidate.openPosition ||
       candidate.position ||
-      candidate.roleAccount?.split?.(" - ")?.[0] ||
-      "Not assigned yet",
+      getRoleAccountRole(candidate.roleAccount || candidate.role_account),
   );
 }
 
 function getAccount(candidate = {}) {
-  const roleAccount = cleanText(candidate.roleAccount);
-  const roleAccountParts = roleAccount.split(" - ");
-  return cleanText(
+  return cleanAssignmentValue(
     candidate.currentAppliedAccount ||
       candidate.account ||
       candidate.initialAccount ||
       candidate.finalAccount ||
-      roleAccountParts[1] ||
-      "Not assigned yet",
+      getRoleAccountAccount(candidate.roleAccount || candidate.role_account),
   );
 }
 
