@@ -161,20 +161,20 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[120] flex items-center justify-center px-4 py-6"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[120] flex items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={() => !submitLoading && onClose?.()}
     >
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-6xl rounded-2xl bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
       >
-        <div className="flex items-start justify-between border-b px-6 py-5">
-          <div>
-            <h2 className="text-2xl font-bold text-sibs-primary-1">
+        <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <div className="min-w-0">
+            <h2 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
               Create Job Requisition
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
               Fill in the requisition details and submit for approval
             </p>
           </div>
@@ -182,16 +182,17 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
           <button
             type="button"
             onClick={() => !submitLoading && onClose?.()}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-sibs-primary-1"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="max-h-[85vh] overflow-y-auto p-6">
-          <div className="space-y-8">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar space-y-6">
             <Section title="Basic Information">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Input
                   label="Job Title *"
                   name="jobTitle"
@@ -365,24 +366,24 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center justify-end gap-3 border-t pt-4">
-              <button
-                type="button"
-                onClick={() => !submitLoading && onClose?.()}
-                className="rounded-lg border px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
-              >
-                Cancel
-              </button>
+          <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+            <button
+              type="button"
+              onClick={() => !submitLoading && onClose?.()}
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+            >
+              Cancel
+            </button>
 
-              <button
-                type="submit"
-                disabled={submitLoading}
-                className="rounded-lg bg-[var(--sibs-primary-1)] px-4 py-2 text-white transition hover:opacity-90 disabled:opacity-50"
-              >
-                {submitLoading ? "Submitting..." : "Submit for Approval"}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={submitLoading}
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:opacity-50"
+            >
+              {submitLoading ? "Submitting..." : "Submit for Approval"}
+            </button>
           </div>
         </form>
       </div>
@@ -393,7 +394,7 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
 function Section({ title, children }) {
   return (
     <div>
-      <h2 className="mb-4 font-semibold">{title}</h2>
+      <h2 className="mb-3 text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">{title}</h2>
       {children}
     </div>
   );
@@ -402,13 +403,13 @@ function Section({ title, children }) {
 function Input({ label, name, onChange, type = "text", full, value }) {
   return (
     <div className={full ? "md:col-span-2" : ""}>
-      <label className="text-sm">{label}</label>
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">{label}</label>
       <input
         type={type}
         name={name}
         value={value}
         onChange={onChange}
-        className="mt-1 w-full rounded-lg border px-3 py-2"
+        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
       />
     </div>
   );
@@ -425,13 +426,13 @@ function Select({
 }) {
   return (
     <div>
-      <label className="text-sm">{label}</label>
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">{label}</label>
       <select
         name={name}
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="mt-1 w-full rounded-lg border px-3 py-2 disabled:bg-gray-100"
+        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:bg-[#EEF2F6] disabled:text-[#98A2B3]"
       >
         <option value="">{placeholder}</option>
 
@@ -510,7 +511,7 @@ function SearchableSelect({
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <label className="text-sm">{label}</label>
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">{label}</label>
 
       <input
         type="text"
@@ -531,24 +532,24 @@ function SearchableSelect({
         placeholder={placeholder}
         disabled={disabled}
         autoComplete="off"
-        className="mt-1 w-full rounded-lg border px-3 py-2 disabled:bg-gray-100"
+        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:bg-[#EEF2F6] disabled:text-[#98A2B3]"
       />
 
       {open && !disabled && (
-        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-white shadow">
+        <div className="sibs-dropdown-pop-in absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-[#D7DEE8] bg-white p-1 shadow-lg sibs-scrollbar">
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => handleSelect(option.value)}
-                className="block w-full px-3 py-2 text-left hover:bg-gray-100"
+                className="block w-full rounded-lg px-3 py-2 text-left sibs-text-xs font-semibold text-[#042C51] hover:bg-[#F8FAFC]"
               >
                 {option.label}
               </button>
             ))
           ) : (
-            <div className="px-3 py-2 text-sm text-gray-500">
+            <div className="px-3 py-2 sibs-text-xs font-semibold text-[#98A2B3]">
               NO RESULTS FOUND
             </div>
           )}
@@ -561,15 +562,15 @@ function SearchableSelect({
 function Textarea({ label, name, onChange, helper, value }) {
   return (
     <div>
-      <label className="text-sm">{label}</label>
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">{label}</label>
       <textarea
         name={name}
         value={value}
         onChange={onChange}
         rows={4}
-        className="mt-1 w-full rounded-lg border px-3 py-2"
+        className="w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
       />
-      {helper && <p className="mt-1 text-xs text-gray-400">{helper}</p>}
+      {helper && <p className="mt-1 text-[10px] font-medium text-[#98A2B3]">{helper}</p>}
     </div>
   );
 }

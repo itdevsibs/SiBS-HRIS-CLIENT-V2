@@ -41,7 +41,7 @@ const VALID_LOCATION_SITES = ["Davao Site", "Tagum Site", "Mabini Site"];
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="sibs-modal-field-label mb-1.5 block">
+    <label className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       {children}
       {required && <span className="text-[#FF5C28]"> *</span>}
     </label>
@@ -52,7 +52,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`sibs-modal-input ${className}`}
+      className={`h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 font-jakarta text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-2 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#EEF2F6] disabled:text-[#98A2B3] ${className}`}
     />
   );
 }
@@ -74,7 +74,7 @@ function FormSection({
   headerAction = null,
 }) {
   return (
-    <section className="rounded-2xl border border-[#D6E0EA] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm">
+    <section className="rounded-xl 2xl:rounded-2xl border border-[#D6E0EA] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm">
       <div className="mb-3 2xl:mb-4 flex flex-col gap-2.5 border-b border-[#EEF2F6] pb-2.5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-2 2xl:gap-2.5">
           {React.createElement(SectionIcon, {
@@ -83,11 +83,11 @@ function FormSection({
           })}
 
           <div className="min-w-0">
-            <h3 className="font-jakarta text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+            <h3 className="font-jakarta text-sm font-extrabold text-[#042C51]">
               {title}
             </h3>
 
-            <p className="mt-0.5 font-jakarta text-xs font-semibold leading-relaxed text-[#667085]">
+            <p className="mt-0.5 font-jakarta text-[10px] sm:text-xs font-semibold leading-relaxed text-[#667085]">
               {subtitle}
             </p>
           </div>
@@ -2614,25 +2614,25 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
         aria-labelledby="add-hiring-needs-title"
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[1050px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-[#F7F9FC] shadow-2xl font-jakarta"
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-2.5 text-white sm:px-6 2xl:py-3">
+        <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
-                <FileText className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
+                <FileText className="h-4 w-4 text-[#FF5C28]" />
               </span>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2
                     id="add-hiring-needs-title"
-                    className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-white"
+                    className="text-sm sm:text-base 2xl:text-lg font-extrabold text-white"
                   >
                     New Personnel Requisition
                   </h2>
 
-                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-white">
+                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] font-extrabold uppercase text-white">
                     {form.requestType === "downsize"
                       ? "Downsize"
                       : form.requestType === "requisition"
@@ -2641,7 +2641,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   </span>
                 </div>
 
-                <p className="mt-0.5 sibs-text-micro font-medium leading-relaxed text-blue-100">
+                <p className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-4 text-slate-300">
                   Create a Requisition or Downsize request and route it for approval.
                 </p>
               </div>
@@ -2652,7 +2652,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                 type="button"
                 onClick={handleReset}
                 disabled={isSubmitting}
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-3 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Reset
@@ -2662,7 +2662,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                 type="submit"
                 form="add-hiring-needs-form"
                 disabled={isSubmitting}
-                className="inline-flex h-8 2xl:h-8.5 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
               >
                 {isSubmitting ? (
                   <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
@@ -2676,11 +2676,11 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-close-btn"
                 aria-label="Close Personnel Requisition modal"
                 title="Close"
               >
-                <X className="h-4 w-4" />
+                <X size={17} />
               </button>
             </div>
           </div>

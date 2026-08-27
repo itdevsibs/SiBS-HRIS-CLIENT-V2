@@ -475,9 +475,9 @@ export default function DeleteJobDescriptionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#082d50]/90 px-4 py-5 backdrop-blur-[1px]">
+    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-3 sm:p-5 font-jakarta bg-[#042C51]/60">
       <div
-        className="flex max-h-[calc(100vh-40px)] w-full max-w-[690px] flex-col overflow-hidden rounded-[17px] border-white/70 bg-white shadow-[0_30px_90px_rgba(3,32,60,0.45)]"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
         onClick={(event) => {
           event.stopPropagation();
         }}
@@ -485,35 +485,35 @@ export default function DeleteJobDescriptionModal({
         {/* ======================================
             RED HEADER
         ====================================== */}
-        <div className="relative shrink-0 bg-gradient-to-r from-[#f50000] via-[#ef0017] to-[#db0037] px-6 py-6 text-white">
+        <div className="relative shrink-0 bg-gradient-to-r from-[#f50000] via-[#ef0017] to-[#db0037] px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5 text-white">
           <button
             type="button"
             onClick={handleClose}
             disabled={deleting}
-            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="sibs-modal-close-btn absolute right-4 top-3.5 sm:right-5 2xl:right-6"
             aria-label="Close permanent deletion modal"
           >
-            <X size={22} />
+            <X size={17} />
           </button>
 
-          <div className="flex items-start gap-4 pr-10">
-            <div className="flex h-[43px] w-[43px] shrink-0 items-center justify-center rounded-[14px] border border-white/35 bg-white/10">
-              <ShieldAlert size={22} strokeWidth={1.8} />
+          <div className="flex items-start gap-3 pr-10">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/35 bg-white/10">
+              <ShieldAlert size={20} strokeWidth={1.8} />
             </div>
 
             <div className="min-w-0">
-              <div className="mb-1.5">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-red-300/60 bg-red-900/30 px-2.5 py-1 text-[10px] font-extrabold tracking-[0.01em] text-white">
+              <div className="mb-1">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-red-300/60 bg-red-900/30 px-2 py-0.5 text-[8.5px] font-extrabold tracking-wide text-white">
                   <AlertTriangle size={11} fill="currentColor" />
                   STRICT DELETION SAFEGUARD
                 </span>
               </div>
 
-              <h2 className="text-[20px] font-extrabold leading-tight tracking-[-0.03em]">
+              <h2 className="text-sm sm:text-base 2xl:text-lg font-extrabold leading-tight">
                 Permanent Job Description Deletion
               </h2>
 
-              <p className="mt-1 text-[12px] font-medium leading-5 text-white/95">
+              <p className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-4 text-white/90">
                 Review linked available positions and verify safety confirmation
                 before proceeding.
               </p>
@@ -811,7 +811,7 @@ export default function DeleteJobDescriptionModal({
         {/* ======================================
             FIXED FOOTER
         ====================================== */}
-        <div className="shrink-0 border-t border-slate-200 bg-[#f8fbff] px-5 py-4">
+        <div className="shrink-0 border-t border-slate-200 bg-[#f8fbff] px-4 py-3 sm:px-5 2xl:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
               <ShieldAlert
@@ -827,7 +827,7 @@ export default function DeleteJobDescriptionModal({
                 type="button"
                 onClick={handleClose}
                 disabled={deleting}
-                className="h-[38px] rounded-xl border border-slate-300 bg-white px-5 text-[12px] font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg 2xl:rounded-xl border border-slate-300 bg-white px-4 2xl:px-5 sibs-text-xs font-bold text-[#042C51] shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
               >
                 Cancel
               </button>
@@ -837,7 +837,7 @@ export default function DeleteJobDescriptionModal({
                 onClick={handlePermanentDelete}
                 disabled={!canPermanentlyDelete}
                 className={[
-                  "inline-flex h-[38px] min-w-[275px] items-center justify-center gap-2 rounded-xl border px-5 text-[12px] font-extrabold shadow-sm transition",
+                  "inline-flex h-8.5 2xl:h-10 min-w-[240px] items-center justify-center gap-2 rounded-lg 2xl:rounded-xl border px-4 2xl:px-5 sibs-text-xs font-extrabold shadow-sm transition active:scale-[0.98]",
                   canPermanentlyDelete
                     ? "border-red-600 bg-red-600 text-white hover:bg-red-700"
                     : "cursor-not-allowed border-slate-300 bg-slate-200 text-slate-400",

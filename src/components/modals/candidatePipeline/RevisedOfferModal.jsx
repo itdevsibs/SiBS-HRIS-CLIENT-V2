@@ -173,7 +173,7 @@ export default function RevisedOfferModal({
           <CandidateModalSection title="Proposed Compensation">
             <div className="space-y-2.5">
               <label className="block">
-                <span className="mb-1 block sibs-kicker text-sibs-primary-1">New Basic Daily Rate</span>
+                <span className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">New Basic Daily Rate <span className="text-[#FF5C28]">*</span></span>
                 <input
                   type="number"
                   min="0"
@@ -185,12 +185,12 @@ export default function RevisedOfferModal({
                   onKeyDown={preventNumberArrowChange}
                   onChange={(event) => setBasicDailyRate(event.target.value)}
                   placeholder="Enter new basic daily rate"
-                  className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-bold tabular-nums text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold tabular-nums text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3]"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 block sibs-kicker text-sibs-primary-1">New Daily De Minimis</span>
+                <span className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">New Daily De Minimis <span className="text-[#FF5C28]">*</span></span>
                 <input
                   type="number"
                   min="0"
@@ -202,7 +202,7 @@ export default function RevisedOfferModal({
                   onKeyDown={preventNumberArrowChange}
                   onChange={(event) => setDailyDeMinimis(event.target.value)}
                   placeholder="Enter new daily de minimis"
-                  className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-bold tabular-nums text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold tabular-nums text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3]"
                 />
               </label>
 

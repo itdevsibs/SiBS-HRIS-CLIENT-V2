@@ -346,9 +346,9 @@ function FileTypeIcon({ filename }) {
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       {children}
-      {required && <span className="text-red-500"> *</span>}
+      {required && <span className="text-[#FF5C28]"> *</span>}
     </label>
   );
 }
@@ -357,7 +357,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-gray-50 disabled:text-[#667085] ${className}`}
+      className={`h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-[#667085] ${className}`}
     />
   );
 }
@@ -366,19 +366,19 @@ function TextAreaInput({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-[115px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+      className={`min-h-[100px] w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 py-2.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${className}`}
     />
   );
 }
 
-function InfoBox({ label, value, valueClassName = "text-[#344054]" }) {
+function InfoBox({ label, value, valueClassName = "text-[#042C51]" }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-      <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+    <div className="rounded-xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4">
+      <p className="mb-1 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </p>
 
-      <div className={`break-words text-sm font-bold ${valueClassName}`}>
+      <div className={`break-words sibs-text-micro 2xl:sibs-text-xs font-extrabold ${valueClassName}`}>
         {value ?? "—"}
       </div>
     </div>
@@ -390,34 +390,34 @@ function MetricCard({
   value,
   subtitle,
   icon: Icon,
-  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
-  valueClassName = "text-sibs-primary-1",
+  iconClassName = "bg-[#F2F6FA] text-[#042C51]",
+  valueClassName = "text-[#042C51]",
 }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-center justify-between gap-4">
+    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+          <p className="truncate text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
             {title}
           </p>
 
           <p
-            className={`mt-2 truncate text-2xl font-extrabold ${valueClassName}`}
+            className={`mt-1.5 truncate text-xl 2xl:text-2xl font-black tabular-nums ${valueClassName}`}
           >
             {value}
           </p>
 
           {subtitle && (
-            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+            <p className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
               {subtitle}
             </p>
           )}
         </div>
 
         <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+          className={`flex h-9 w-9 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-xl ${iconClassName}`}
         >
-          {Icon ? React.createElement(Icon, { size: 20 }) : null}
+          {Icon ? React.createElement(Icon, { size: 18 }) : null}
         </div>
       </div>
     </div>
@@ -426,25 +426,25 @@ function MetricCard({
 
 function ViewOnlyFileBox({ fileName, openingFile, onOpen }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+    <div className="rounded-xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4">
+      <p className="mb-2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         Uploaded Supporting File
       </p>
 
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-2.5">
         <div className="flex min-w-0 items-center gap-3">
           {fileName ? (
             <FileTypeIcon filename={fileName} />
           ) : (
-            <Paperclip size={20} className="shrink-0 text-sibs-tertiary-5" />
+            <Paperclip size={18} className="shrink-0 text-sibs-tertiary-5" />
           )}
 
           <div className="min-w-0">
-            <p className="truncate text-sm font-extrabold text-[#344054]">
+            <p className="truncate sibs-text-xs font-extrabold text-[#042C51]">
               {fileName || "No uploaded supporting file"}
             </p>
 
-            <p className="mt-0.5 text-xs font-semibold text-sibs-tertiary-5">
+            <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
               View only
             </p>
           </div>
@@ -681,18 +681,13 @@ function UpdateHeadcountModal({
           isClosing ? "sibs-inner-modal-pop-out" : "sibs-inner-modal-pop-in"
         }`}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <BarChart3 size={13} />
-              Update Headcount
-            </div>
-
-            <h2 className="mt-3 text-xl font-extrabold text-[#101828]">
+            <h2 className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
               Required Headcount Update
             </h2>
 
-            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
+            <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
               Submitted updates will stay pending until approved. The displayed
               required headcount will only change after approval.
             </p>
@@ -701,15 +696,15 @@ function UpdateHeadcountModal({
           <button
             type="button"
             onClick={handleAnimatedClose}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             aria-label="Close update headcount modal"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-5">
-          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-5">
+          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 sm:p-5 shadow-sm">
             <div>
               <FieldLabel required>How many required headcount?</FieldLabel>
 
@@ -737,22 +732,22 @@ function UpdateHeadcountModal({
             <div className="mt-4">
               <FieldLabel>Supporting Document</FieldLabel>
 
-              <label className="flex min-h-[58px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 transition hover:bg-[#F8FAFC] hover:shadow-sm">
+              <label className="flex min-h-[50px] 2xl:min-h-[54px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 py-2.5 transition hover:bg-[#F8FAFC] hover:shadow-sm">
                 <div className="flex min-w-0 items-center gap-3">
-                  <Upload size={18} className="shrink-0 text-sibs-primary-1" />
+                  <Upload size={16} className="shrink-0 text-[#FF5C28]" />
 
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-extrabold text-[#101828]">
+                    <p className="truncate sibs-text-xs font-extrabold text-[#042C51]">
                       {weeklyPlanFile?.name || "Upload supporting document"}
                     </p>
 
-                    <p className="mt-0.5 text-xs font-semibold text-sibs-tertiary-5">
+                    <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
                       PDF, Word, Excel, CSV, or image
                     </p>
                   </div>
                 </div>
 
-                <span className="shrink-0 rounded-lg bg-[#EAF2FB] px-4 py-2 text-xs font-extrabold text-sibs-primary-1">
+                <span className="shrink-0 rounded-lg bg-[#FFF0EB] px-3 py-1.5 sibs-text-micro font-extrabold text-[#FF5C28]">
                   Browse
                 </span>
 
@@ -769,14 +764,14 @@ function UpdateHeadcountModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-[#E6ECF2] bg-white px-5 py-4">
+        <div className="flex justify-end gap-2.5 border-t border-[#E6ECF2] bg-white px-5 py-3 2xl:py-3.5">
           <button
             type="button"
             onClick={onReset}
             disabled={isSaving || isClosing}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <RotateCcw size={16} />
+            <RotateCcw size={14} />
             Reset
           </button>
 
@@ -784,7 +779,7 @@ function UpdateHeadcountModal({
             type="button"
             onClick={handleAnimatedClose}
             disabled={isSaving || isClosing}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-gray-600 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:text-sibs-primary-1 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -793,9 +788,9 @@ function UpdateHeadcountModal({
             type="button"
             onClick={onSave}
             disabled={isSaving || isClosing}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Save size={17} />
+            <Save size={15} />
             {isSaving ? "Submitting..." : "Submit for Approval"}
           </button>
         </div>
@@ -1193,29 +1188,29 @@ export default function ViewPlanModal(props = {}) {
 
   return (
     <div
-      className={`fixed inset-0 z-[1000] flex items-center justify-center bg-sibs-primary-1/45 backdrop-blur-md px-4 py-6 ${
+      className={`sibs-modal-blur fixed inset-0 z-[1000] flex items-center justify-center px-4 py-6 font-jakarta ${
         isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
       }`}
     >
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-2xl ${
-          isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
+        className={`sibs-modal-pop-in relative flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-2xl ${
+          isClosing ? "sibs-modal-pop-out" : ""
         }`}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#D9E2EC] bg-white px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <BarChart3 size={14} />
-              Workforce Hiring Plan
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+                {item.account || "Account Plan"}
+              </h2>
+              <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
+                Workforce Hiring Plan
+              </span>
             </div>
 
-            <h2 className="mt-3 truncate text-xl font-extrabold text-[#101828]">
-              {item.account || "Account Plan"}
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+            <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
               {item.cluster || "Unassigned Cluster"} ·{" "}
               {item.week || "Weekly Plan"}
             </p>
@@ -1239,9 +1234,9 @@ export default function ViewPlanModal(props = {}) {
               title="Add Action Item"
               aria-label="Add Action Item"
               disabled={isClosing}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white transition hover:bg-white/20 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <ClipboardList size={19} />
+              <ClipboardList size={16} />
             </button>
 
             <button
@@ -1250,9 +1245,9 @@ export default function ViewPlanModal(props = {}) {
               title="Close"
               aria-label="Close"
               disabled={isClosing}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -1645,15 +1640,15 @@ export default function ViewPlanModal(props = {}) {
           <ActionItemsSection item={item} />
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-[#D9E2EC] bg-white px-5 py-4">
+        <div className="flex justify-end gap-2.5 border-t border-[#D9E2EC] bg-white px-5 py-3 2xl:py-3.5">
           {canEditRequiredHeadcount && (
             <button
               type="button"
               onClick={() => setShowHeadcountModal(true)}
               disabled={isClosing}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-blue-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <BarChart3 size={17} />
+              <BarChart3 size={15} />
               Update Headcount
             </button>
           )}
@@ -1662,7 +1657,7 @@ export default function ViewPlanModal(props = {}) {
             type="button"
             onClick={handleAnimatedClose}
             disabled={isClosing}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Close
           </button>

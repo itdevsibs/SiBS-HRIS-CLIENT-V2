@@ -7,12 +7,20 @@ import {
   textareaClass,
   toDisplayPersonName,
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
-import { FieldLabel } from "../../recruitment/talentPool/TalentPoolShared";
 import {
   markTalentPoolCandidateAsDropOff,
   moveTalentPoolCandidateToPipeline,
 } from "../../../lib/axios/getTalentPool";
 import StatusModal from "../StatusModal";
+
+function FieldLabel({ children, required = false }) {
+  return (
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      {children}
+      {required && <span className="text-[#FF5C28]"> *</span>}
+    </label>
+  );
+}
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -341,7 +349,7 @@ function ResumeStageDropdown({
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left sibs-text-xs font-semibold shadow-xs outline-none transition ${
           open
             ? "border-sibs-primary-1 ring-4 ring-blue-100"
             : "border-[#D0D5DD] hover:border-sibs-primary-1"
@@ -368,7 +376,7 @@ function ResumeStageDropdown({
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[10050] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+8px)] z-[10050] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-64 overflow-y-auto py-1 sibs-scrollbar" role="listbox">
             {options.length > 0 ? (
               options.map((option) => {
@@ -381,7 +389,7 @@ function ResumeStageDropdown({
                     role="option"
                     aria-selected={active}
                     onClick={() => handleSelect(option)}
-                    className={`block w-full px-4 py-3 text-left text-sm font-semibold transition ${
+                    className={`block w-full px-3 py-1.5 2xl:py-2 text-left sibs-text-xs font-semibold transition ${
                       active
                         ? "bg-[#EAF4FF] text-sibs-primary-1"
                         : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
@@ -392,7 +400,7 @@ function ResumeStageDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-3 text-sm font-semibold text-[#98A2B3]">
+              <div className="px-3 py-2 text-xs font-semibold text-[#98A2B3]">
                 No completed stages found.
               </div>
             )}
@@ -870,13 +878,13 @@ export default function MoveToPipeLineModal() {
           </div>
         </form>
 
-        <div className="border-t border-sibs-border bg-white px-4 py-2.5 sm:px-6 sm:py-3.5">
+        <div className="border-t border-sibs-border bg-white px-4 py-2.5 sm:px-6 sm:py-3">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={closeMoveToPipeline}
               disabled={isBusy}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -886,7 +894,7 @@ export default function MoveToPipeLineModal() {
                 type="button"
                 onClick={handleOpenDropOff}
                 disabled={isBusy}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-red-200 bg-red-50 px-4 sibs-text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-xs disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-xs disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <UserX size={15} />
                 Mark as Drop Off
@@ -902,7 +910,7 @@ export default function MoveToPipeLineModal() {
                     !resumeStageOptions.includes(selectedResumeStage)))
               }
               onClick={handleMoveCandidate}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-4.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ArrowRight size={15} />
               {moveSaving
@@ -984,13 +992,13 @@ export default function MoveToPipeLineModal() {
               </div>
             </form>
 
-            <div className="border-t border-gray-100 px-5 py-4">
+            <div className="border-t border-gray-100 px-5 py-3.5">
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={handleCloseDropOff}
                   disabled={dropOffSaving}
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -999,9 +1007,9 @@ export default function MoveToPipeLineModal() {
                   type="button"
                   onClick={handleConfirmDropOff}
                   disabled={dropOffSaving || !cleanText(dropOffReason)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <UserX size={17} />
+                  <UserX size={15} />
                   {dropOffSaving ? "Saving..." : "Confirm Drop Off"}
                 </button>
               </div>

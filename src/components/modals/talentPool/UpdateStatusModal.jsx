@@ -98,8 +98,8 @@ export default function UpdateStatusModal() {
               className="space-y-4"
             >
               <div>
-                <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wider text-[#042C51]">
-                  New Status <span className="text-red-500">*</span>
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  New Status <span className="text-[#FF5C28]">*</span>
                 </label>
                 <select
                   value={statusForm.status}
@@ -124,7 +124,7 @@ export default function UpdateStatusModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wider text-[#042C51]">
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                   Remarks
                 </label>
                 <textarea
@@ -151,7 +151,7 @@ export default function UpdateStatusModal() {
               type="button"
               onClick={closeStatus}
               disabled={isSaving}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -160,7 +160,7 @@ export default function UpdateStatusModal() {
               type="submit"
               form="update-status-form"
               disabled={isSaving || !statusForm.status}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-4.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? (
                 <Loader2 size={15} className="animate-spin" />

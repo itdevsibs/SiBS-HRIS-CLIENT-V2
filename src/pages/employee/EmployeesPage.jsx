@@ -148,6 +148,16 @@ export default function EmployeesPage() {
     }
   }
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  function handleRefresh() {
+    setIsRefreshing(true);
+    setPage?.(1);
+    window.setTimeout(() => {
+      setIsRefreshing(false);
+    }, 600);
+  }
+
   return (
     <div className="sibs-dashboard-shell">
       <div className="shrink-0">
@@ -157,7 +167,10 @@ export default function EmployeesPage() {
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <div style={getAnimationStyle(animationTiming.header)}>
-            <EmployeeDirectoryHeader />
+            <EmployeeDirectoryHeader
+              onRefresh={handleRefresh}
+              isManualRefreshing={isRefreshing}
+            />
           </div>
 
           <div style={getAnimationStyle(animationTiming.summary)}>

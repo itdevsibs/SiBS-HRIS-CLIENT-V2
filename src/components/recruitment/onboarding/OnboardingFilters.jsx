@@ -67,7 +67,7 @@ export default function OnboardingFilters() {
   return (
     <div className="bg-white font-jakarta">
       <div className="flex flex-col gap-3 overflow-visible sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="relative w-full min-w-0 sm:min-w-[280px] sm:flex-1">
+        <div className="relative w-full min-w-0 sm:min-w-[240px] 2xl:sm:min-w-[280px] sm:flex-1">
           <label className={labelClass}>Search</label>
           <div className="relative">
             <Search
@@ -81,7 +81,7 @@ export default function OnboardingFilters() {
                 if (event.key === "Enter") commitSearch();
               }}
               placeholder="Search candidate, onboarding ID, email, role, account, or owner..."
-              className="h-10 w-full rounded-[10px] border border-[#D0D5DD] bg-white pl-9 pr-9 text-xs font-semibold text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
+              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white pl-9 pr-9 sibs-text-xs font-semibold text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
             />
 
             {cleanText(searchInput) ? (
@@ -98,9 +98,9 @@ export default function OnboardingFilters() {
         </div>
 
         {[
-          ["Status", showStatus, ["All Status", "Pending", "Show", "No Show", "Withdrawn"], "showStatus", "sm:w-[175px]"],
-          ["Outcome", outcome, ["All Outcomes", "Pending Start", "True Hire", "No Show", "Pre-start Withdrawal"], "outcome", "sm:w-[210px]"],
-          ["Owner", owner, ownerOptions, "owner", "sm:w-[185px]"],
+          ["Status", showStatus, ["All Status", "Pending", "Show", "No Show", "Withdrawn"], "showStatus", "sm:w-[145px] 2xl:sm:w-[175px]"],
+          ["Outcome", outcome, ["All Outcomes", "Pending Start", "True Hire", "No Show", "Pre-start Withdrawal"], "outcome", "sm:w-[175px] 2xl:sm:w-[210px]"],
+          ["Owner", owner, ownerOptions, "owner", "sm:w-[155px] 2xl:sm:w-[185px]"],
         ].map(([label, selectedValue, options, key, widthClass]) => (
           <div key={key} className={`w-full min-w-0 ${widthClass}`}>
             <label className={labelClass}>{label}</label>
@@ -119,9 +119,9 @@ export default function OnboardingFilters() {
           type="button"
           onClick={handleResetFilters}
           disabled={!isFiltered}
-          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D0D5DD] bg-white px-4 text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
-          <Filter size={15} />
+          <Filter size={14} />
           Clear
         </button>
       </div>

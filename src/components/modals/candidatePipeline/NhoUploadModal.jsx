@@ -673,7 +673,7 @@ function RequirementCard({
         type="button"
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
-        className={`mt-3 flex h-11 w-full items-center justify-between rounded-xl border border-dashed px-3 text-left text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+        className={`mt-3 flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border border-dashed px-3 text-left sibs-text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-70 ${
           hasFiles
             ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
             : "border-[#B9C7D6] bg-white text-sibs-primary-1 hover:bg-[#F3F8FF]"
@@ -817,7 +817,7 @@ function FilePreviewPanel({ file }) {
           href={resolvedFileUrl}
           target="_blank"
           rel="noreferrer"
-          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+          className="mt-5 inline-flex h-8.5 2xl:h-10 w-full items-center justify-center rounded-lg bg-sibs-primary-1 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90"
         >
           Open File
         </a>
@@ -921,7 +921,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                       type="button"
                       disabled={disabled}
                       onClick={() => onSelect?.(file)}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF] disabled:cursor-not-allowed disabled:opacity-70"
+                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF] disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       <Eye size={15} />
                       View
@@ -932,7 +932,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                         href={resolvedFileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF]"
+                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF]"
                       >
                         <ExternalLink size={15} />
                         Open
@@ -943,7 +943,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                       type="button"
                       disabled={disabled}
                       onClick={() => onRemove?.(file)}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
                       title="Remove file"
                     >
                       <Trash2 size={15} />

@@ -152,8 +152,9 @@ export default function TalentPoolPage() {
                   className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RefreshCw
-                    size={15}
-                    className={pageIsRefreshing ? "animate-spin" : ""}
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      pageIsRefreshing ? "animate-spin text-sibs-orange" : ""
+                    }`}
                   />
                 </button>
 

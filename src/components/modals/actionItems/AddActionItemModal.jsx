@@ -454,23 +454,23 @@ function ActionItemDatePicker({
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.04em] text-[#667085]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       {children}
-      {required ? <span className="text-rose-500"> *</span> : null}
+      {required ? <span className="text-[#FF5C28]"> *</span> : null}
     </label>
   );
 }
 
 const inputClass =
-  "h-9 w-full rounded-lg border border-[#D0D5DD] bg-[#F8FAFC] px-3 text-xs font-bold text-[#042C51] outline-none transition placeholder:font-medium placeholder:text-[#98A2B3] focus:border-[#042C51] focus:bg-white focus:ring-2 focus:ring-[#042C51]/10";
+  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:font-normal placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
 
 const selectClass = `${inputClass} min-w-0 pr-8`;
 
 const readOnlyInputClass =
-  "h-9 w-full rounded-lg border border-[#DDE5EE] bg-[#EEF2F6] px-3 text-xs font-bold text-[#475467] outline-none";
+  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#DDE5EE] bg-[#EEF2F6] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#475467] outline-none";
 
 const textAreaClass =
-  "w-full resize-none rounded-lg border border-[#D0D5DD] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold leading-5 text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-[#042C51] focus:bg-white focus:ring-2 focus:ring-[#042C51]/10";
+  "w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 py-2.5 sibs-text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
 
 function ContextValue({ label, value, mono = false }) {
   return (
@@ -490,11 +490,11 @@ function ContextValue({ label, value, mono = false }) {
 
 function MetricCell({ label, value, valueClass = "text-[#042C51]" }) {
   return (
-    <div className="flex min-h-[54px] flex-col items-center justify-center px-2 text-center">
-      <span className="text-[8px] font-black uppercase leading-3 tracking-[0.04em] text-[#98A2B3]">
+    <div className="flex min-h-[50px] 2xl:min-h-[54px] flex-col items-center justify-center px-2 text-center">
+      <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase leading-3 tracking-wide text-[#98A2B3]">
         {label}
       </span>
-      <span className={`mt-1 font-mono text-base font-black ${valueClass}`}>
+      <span className={`mt-1 font-mono text-sm 2xl:text-base font-black ${valueClass}`}>
         {value}
       </span>
     </div>
@@ -628,35 +628,34 @@ export default function AddActionItemModal() {
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-slate-950/65 p-3 font-jakarta backdrop-blur-sm sm:p-5"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onMouseDown={closeAddModal}
       role="presentation"
     >
       <form
         onSubmit={addActionItem}
         onMouseDown={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[94dvh] w-full max-w-[1020px] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-action-item-title"
       >
-        <header className="shrink-0 bg-[#042C51] px-5 py-3.5 text-white sm:px-6">
+        <header className="shrink-0 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-2.5">
-              <ClipboardList
-                size={19}
-                className="mt-0.5 shrink-0 text-[#FF5C28]"
-              />
+            <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+                <ClipboardList size={16} />
+              </span>
 
               <div className="min-w-0">
                 <h2
                   id="add-action-item-title"
-                  className="text-sm font-black tracking-tight sm:text-base"
+                  className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
                 >
                   Add Recruitment Action Item
                 </h2>
 
-                <p className="mt-0.5 text-[11px] font-medium leading-4 text-slate-300">
+                <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
                   Link a hiring gap to one accountable owner, deadline, risk
                   level, and follow-up action.
                 </p>
@@ -666,7 +665,7 @@ export default function AddActionItemModal() {
             <button
               type="button"
               onClick={closeAddModal}
-              className="sibs-modal-close-btn"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
               aria-label="Close modal"
             >
               <X size={18} />
@@ -935,19 +934,19 @@ export default function AddActionItemModal() {
           </div>
         </main>
 
-        <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 sm:px-6">
+        <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={handleReset}
-                className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3 text-[10px] font-black text-[#475467] transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98]"
               >
                 <RotateCcw size={13} />
                 Reset Form
               </button>
 
-              <div className="flex min-w-0 items-start gap-1.5 text-[9px] font-medium leading-4 text-[#667085]">
+              <div className="flex min-w-0 items-start gap-1.5 text-[8.5px] 2xl:text-[9px] font-medium leading-4 text-[#667085]">
                 <Info size={13} className="mt-0.5 shrink-0 text-[#042C51]" />
                 <span>
                   Rule: Every role where Current Filled &lt; Requirement must
@@ -960,14 +959,14 @@ export default function AddActionItemModal() {
               <button
                 type="button"
                 onClick={closeAddModal}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-[#D0D5DD] bg-white px-4 text-xs font-black text-[#475467] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98]"
               >
                 Cancel
               </button>
 
               <button
                 type="submit"
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#FF5C28] px-4 text-xs font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E04B1D] hover:shadow-md active:scale-[0.98]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
               >
                 <Plus size={14} />
                 Save Action Item

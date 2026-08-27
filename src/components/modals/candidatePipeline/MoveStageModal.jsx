@@ -138,8 +138,8 @@ const MoveStageModal = ({
         <CandidateModalSection title="Movement Details">
           <form onSubmit={handleSubmit} className="space-y-2.5 2xl:space-y-3.5">
             <label className="block">
-              <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">
-                Movement Reason <span className="text-red-500">*</span>
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                Movement Reason <span className="text-[#FF5C28]"> *</span>
               </span>
               <textarea
                 required
@@ -155,7 +155,7 @@ const MoveStageModal = ({
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block sibs-kicker text-sibs-primary-1">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                 Internal Remarks
               </span>
               <textarea

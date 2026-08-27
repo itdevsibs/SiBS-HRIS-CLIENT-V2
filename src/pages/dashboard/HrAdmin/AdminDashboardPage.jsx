@@ -569,6 +569,8 @@ export default function AdminDashboardPage() {
             title={dashboardTitle}
             fullName={fullName}
             onOpenEmployees={() => navigate(EXISTING_ADMIN_ROUTES.employees)}
+            onRefresh={() => refreshOverview({ manual: true, forceRefresh: true })}
+            isManualRefreshing={overviewRefreshing}
           />
 
           {overviewError ? (

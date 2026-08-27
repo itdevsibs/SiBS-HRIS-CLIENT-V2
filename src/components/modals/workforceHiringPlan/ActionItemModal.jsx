@@ -55,9 +55,9 @@ function getHeadcountStatusText(item) {
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       {children}
-      {required && <span className="text-red-500"> *</span>}
+      {required && <span className="text-[#FF5C28]"> *</span>}
     </label>
   );
 }
@@ -66,7 +66,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#667085] ${className}`}
+      className={`h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-[#667085] ${className}`}
     />
   );
 }
@@ -75,24 +75,17 @@ function TextAreaInput({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-[115px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#667085] ${className}`}
+      className={`min-h-[85px] w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 py-2.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-[#667085] ${className}`}
     />
   );
 }
 
 function AnimatedDropdown({ open, children }) {
+  if (!open) return null;
   return (
-    <div
-      className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-300 ease-out ${
-        open
-          ? "grid-rows-[1fr] translate-y-0 opacity-100"
-          : "pointer-events-none grid-rows-[0fr] -translate-y-1 opacity-0"
-      }`}
-    >
-      <div className="min-h-0 overflow-hidden">
-        <div className="overflow-hidden rounded-xl border border-[#D0D5DD] bg-white shadow-xl">
-          <div className="max-h-56 overflow-y-auto py-2">{children}</div>
-        </div>
+    <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-full z-[9999] mt-1.5">
+      <div className="overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-xl">
+        <div className="sibs-scrollbar max-h-56 overflow-y-auto py-1.5">{children}</div>
       </div>
     </div>
   );
@@ -129,14 +122,14 @@ function StatusDropdown({ value, onChange, disabled = false }) {
           if (disabled) return;
           setOpen((prev) => !prev);
         }}
-        className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/40 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#667085] ${
-          open ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10" : ""
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-3 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#667085] ${
+          open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
         }`}
       >
         <span className="truncate">{selected.label}</span>
 
         <ChevronDown
-          size={18}
+          size={16}
           className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
             open ? "rotate-180" : ""
           }`}
@@ -155,21 +148,21 @@ function StatusDropdown({ value, onChange, disabled = false }) {
                 onChange(option.value);
                 setOpen(false);
               }}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+              className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-left sibs-text-xs transition ${
                 isSelected
-                  ? "bg-[#EAF2FB] font-extrabold text-sibs-primary-1"
-                  : "font-semibold text-[#344054] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                  : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
               }`}
             >
               <span
-                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition ${
+                className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border transition ${
                   isSelected
-                    ? "border-sibs-primary-1 bg-sibs-primary-1"
-                    : "border-[#D0D5DD] bg-white"
+                    ? "border-[#FF5C28] bg-[#FF5C28]"
+                    : "border-[#D7DEE8] bg-white"
                 }`}
               >
                 {isSelected && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  <span className="h-1 w-1 rounded-full bg-white" />
                 )}
               </span>
 
@@ -296,19 +289,19 @@ export default function ActionItemModal({
           isClosing ? "sibs-action-drawer-out" : "sibs-action-drawer-in"
         }`}
       >
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-5 py-5">
+        <div className="shrink-0 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                <ClipboardList size={14} />
-                Action Item
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+                  Add Action Item
+                </h2>
+                <span className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
+                  Workforce
+                </span>
               </div>
 
-              <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
-                Add Action Item
-              </h2>
-
-              <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
+              <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
                 Add a weekly action item for {item.account || "—"} /{" "}
                 {item.cluster || "—"}.
               </p>
@@ -318,10 +311,10 @@ export default function ActionItemModal({
               type="button"
               onClick={handleAnimatedClose}
               disabled={isClosing || submitting}
-              className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               aria-label="Close action item drawer"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -443,13 +436,13 @@ export default function ActionItemModal({
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-4">
-          <div className="flex flex-col justify-end gap-3 sm:flex-row">
+        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3 2xl:py-3.5">
+          <div className="flex flex-col justify-end gap-2.5 sm:flex-row">
             <button
               type="button"
               onClick={handleAnimatedClose}
               disabled={isClosing || submitting}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -457,9 +450,9 @@ export default function ActionItemModal({
             <button
               type="submit"
               disabled={isClosing || submitting}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Plus size={17} />
+              <Plus size={15} />
               {submitting ? "Saving..." : "Save Action Item"}
             </button>
           </div>

@@ -322,7 +322,7 @@ export default function OnboardingDetailsModal({
                     <button
                       type="button"
                       onClick={() => onOpenOutcomeModal(normalizedRecord, "Show")}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 sibs-text-xs font-extrabold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.98]"
+                      className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm hover:bg-emerald-700 active:scale-[0.98]"
                     >
                       <UserCheck size={14} />
                       Mark as Show
@@ -330,7 +330,7 @@ export default function OnboardingDetailsModal({
                     <button
                       type="button"
                       onClick={() => onOpenOutcomeModal(normalizedRecord, "No Show")}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 sibs-text-xs font-extrabold text-red-700 hover:bg-red-100 active:scale-[0.98]"
+                      className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-red-700 hover:bg-red-100 active:scale-[0.98]"
                     >
                       <UserX size={14} />
                       Mark as No Show
@@ -338,7 +338,7 @@ export default function OnboardingDetailsModal({
                     <button
                       type="button"
                       onClick={() => onOpenOutcomeModal(normalizedRecord, "Withdrawn")}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 sibs-text-xs font-extrabold text-orange-700 hover:bg-orange-100 active:scale-[0.98]"
+                      className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-orange-700 hover:bg-orange-100 active:scale-[0.98]"
                     >
                       <CircleX size={14} />
                       Mark as Withdrawn
@@ -383,7 +383,7 @@ export default function OnboardingDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D6E0EA] bg-white px-5 sibs-text-xs font-extrabold text-[#667085] hover:bg-[#F8FAFC] hover:text-[#042C51]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] hover:bg-[#F8FAFC] hover:text-[#042C51]"
             >
               Close Details
             </button>

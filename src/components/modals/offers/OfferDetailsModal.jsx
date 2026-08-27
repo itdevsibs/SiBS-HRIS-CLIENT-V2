@@ -52,15 +52,15 @@ function getVersionTone(status = "") {
 
 function EvaluationResultItem({ label, value, detail = "" }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-3">
-      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+    <div className="rounded-xl border border-[#E6ECF2] bg-white p-2.5 2xl:p-3">
+      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </p>
-      <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+      <p className="mt-0.5 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">
         {value || "—"}
       </p>
       {detail ? (
-        <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+        <p className="mt-0.5 sibs-text-micro font-semibold leading-4 text-[#667085]">
           {detail}
         </p>
       ) : null}
@@ -75,27 +75,27 @@ function VersionRateChange({ label, previousValue, currentValue }) {
     previousValue !== "";
 
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 2xl:p-3">
+      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </p>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
         {hasPrevious ? (
           <>
-            <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+            <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
               Previous Offer
             </span>
-            <span className="text-sm font-bold text-[#667085]">
+            <span className="sibs-text-xs 2xl:sibs-text-sm font-bold text-[#667085] tabular-nums">
               {getRateDisplay(previousValue)}
             </span>
-            <ArrowRight size={15} className="text-sibs-primary-1" />
+            <ArrowRight size={14} className="text-[#FF5C28]" />
           </>
         ) : null}
-        <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+        <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
           Current Offer
         </span>
-        <span className="text-sm font-extrabold text-[#042C51]">
+        <span className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51] tabular-nums">
           {getRateDisplay(currentValue)}
         </span>
       </div>
@@ -444,19 +444,19 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4 font-jakarta"
       onClick={handleClose}
     >
       <div
-        className="relative flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white font-jakarta shadow-xl"
+        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white font-jakarta shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-4 text-white sm:px-6">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div>
-            <h2 className="text-lg font-extrabold tracking-normal sm:text-xl">
+            <h2 className="text-base sm:text-lg 2xl:text-xl font-extrabold tracking-tight">
               Offer Details
             </h2>
-            <p className="mt-1 text-xs font-semibold text-white/75 sm:text-sm">
+            <p className="mt-0.5 sibs-text-xs font-semibold text-white/75 2xl:text-sm">
               Approval, evaluation results, and complete offer negotiation history.
             </p>
           </div>
@@ -465,32 +465,32 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
             type="button"
             onClick={handleClose}
             disabled={isBusy}
-            className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close offer details"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6">
+          <div className="grid grid-cols-1 gap-4 2xl:gap-5 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="min-w-0 space-y-5">
-              <section className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 sm:p-5 shadow-sm">
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                   <div>
-                    <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
+                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
                       {offer.offerId}
                     </p>
-                    <h3 className="mt-1 text-xl font-extrabold tracking-normal text-[#042C51] sm:text-2xl">
+                    <h3 className="mt-1 text-lg 2xl:text-xl font-extrabold tracking-tight text-[#042C51]">
                       {offer.candidateName}
                     </h3>
-                    <p className="mt-1 text-xs font-semibold text-[#667085] sm:text-sm">
+                    <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
                       {offer.roleTitle || "—"}
                     </p>
                   </div>
 
                   <span
-                    className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                    className={`w-fit rounded-full border px-3 py-1 sibs-text-xs font-extrabold ${getStatusClass(
                       approvalStatus,
                     )}`}
                   >
@@ -500,16 +500,16 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </section>
 
               {canSubmitRevision ? (
-                <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-                  <h3 className="text-sm font-extrabold text-amber-900">
+                <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-sm">
+                  <h3 className="sibs-text-sm font-extrabold text-amber-900">
                     Candidate Requested Negotiation
                   </h3>
-                  <p className="mt-2 rounded-lg border border-amber-200 bg-white p-3 text-sm font-semibold text-amber-900">
+                  <p className="mt-2 rounded-lg border border-amber-200 bg-white p-3 sibs-text-xs font-semibold text-amber-900">
                     {negotiationMessage || "No negotiation message was saved."}
                   </p>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <label className="text-xs font-extrabold text-[#042C51]">
+                    <label className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       New Basic Daily Rate
                       <input
                         type="number"
@@ -524,11 +524,11 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                           setRevisedBasicPay(event.target.value)
                         }
                         placeholder="Enter new basic daily rate"
-                        className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        className="mt-1.5 h-8.5 2xl:h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-bold outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-[#FF5C28] disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       />
                     </label>
 
-                    <label className="text-xs font-extrabold text-[#042C51]">
+                    <label className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                       New Daily De Minimis
                       <input
                         type="number"
@@ -543,19 +543,19 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                           setRevisedDeminimis(event.target.value)
                         }
                         placeholder="Enter new daily de minimis"
-                        className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        className="mt-1.5 h-8.5 2xl:h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-bold outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-[#FF5C28] disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       />
                     </label>
                   </div>
 
-                  <label className="mt-3 block text-xs font-extrabold text-[#042C51]">
+                  <label className="mt-3 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Internal Remarks
                     <textarea
                       rows={3}
                       value={revisedRemarks}
                       disabled={isBusy}
                       onChange={(event) => setRevisedRemarks(event.target.value)}
-                      className="mt-2 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white p-3 text-sm font-semibold outline-none focus:border-sibs-primary-1"
+                      className="mt-1.5 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white p-3 sibs-text-xs font-semibold outline-none focus:border-[#FF5C28]"
                     />
                   </label>
 
@@ -563,10 +563,10 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     type="button"
                     disabled={isBusy}
                     onClick={submitRevision}
-                    className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-4 inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-5 sibs-text-xs font-extrabold text-white transition hover:bg-[#E94F1F] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {savingRevision ? (
-                      <Loader2 size={16} className="animate-spin" />
+                      <Loader2 size={15} className="animate-spin" />
                     ) : null}
                     {savingRevision
                       ? "Submitting..."
@@ -577,22 +577,22 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
               <section
                 ref={historySectionRef}
-                className="scroll-mt-5 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                className="scroll-mt-5 rounded-xl border border-[#E6ECF2] bg-white p-4 sm:p-5 shadow-sm"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <History size={18} className="text-sibs-primary-1" />
-                      <h3 className="text-sm font-extrabold text-[#042C51]">
+                      <History size={16} className="text-[#FF5C28]" />
+                      <h3 className="sibs-text-sm font-extrabold text-[#042C51]">
                         Negotiation History
                       </h3>
                     </div>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-[#667085] sm:text-sm">
+                    <p className="mt-0.5 sibs-text-xs font-semibold leading-relaxed text-[#667085]">
                       Current offer compared with the previous offer.
                     </p>
                   </div>
 
-                  <span className="w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                  <span className="w-fit rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-[#042C51]">
                     Current Offer
                   </span>
                 </div>
@@ -604,44 +604,44 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   </div>
                 ) : null}
 
-                <div className="mt-5 space-y-4">
+                <div className="mt-4 space-y-3.5">
                   {displayedOfferHistory.map((version) => (
                     <article
                       key={`${version.id || "version"}-${version.versionNumber}`}
-                      className="rounded-2xl border border-[#D9E2EC] bg-white p-4"
+                      className="rounded-2xl border border-[#D9E2EC] bg-white p-3.5 2xl:p-4"
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-[#042C51] px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                            <span className="rounded-full bg-[#042C51] px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
                               Current Offer
                             </span>
                             <span
-                              className={`rounded-full border px-3 py-1 text-[10px] font-extrabold uppercase ${getVersionTone(
+                              className={`rounded-full border px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase ${getVersionTone(
                                 version.approvalStatus,
                               )}`}
                             >
                               {version.approvalStatus || "For Review"}
                             </span>
-                            <span className="text-[10px] font-extrabold uppercase text-[#667085]">
+                            <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-[#667085]">
                               Previous Offer → Current Offer
                             </span>
                           </div>
 
-                          <p className="mt-2 text-xs font-semibold text-[#667085]">
+                          <p className="mt-1.5 sibs-text-micro font-semibold text-[#667085]">
                             Submitted: {formatOfferVersionDate(version.submittedAt)}
                           </p>
-                          <p className="mt-1 text-xs font-semibold text-[#667085]">
+                          <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
                             Submitted by: {version.submittedBy || "—"}
                           </p>
                         </div>
 
-                        <span className="w-fit rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-extrabold text-[#475467]">
+                        <span className="w-fit rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-[#475467]">
                           Candidate: {version.candidateResponse || "Pending"}
                         </span>
                       </div>
 
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
                         <VersionRateChange
                           label="Basic Daily Rate"
                           previousValue={version.previousBasicDailyRate}
@@ -655,61 +655,61 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       </div>
 
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+                        <div className="rounded-xl border border-amber-100 bg-amber-50 p-2.5 2xl:p-3">
+                          <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-amber-700">
                             Candidate Remark
                           </p>
-                          <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-amber-900">
+                          <p className="mt-1.5 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-amber-900">
                             {version.candidateMessage || "—"}
                           </p>
                         </div>
 
-                        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                        <div className="rounded-xl border border-blue-100 bg-blue-50 p-2.5 2xl:p-3">
+                          <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]">
                             Internal Remark
                           </p>
-                          <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-[#344054]">
+                          <p className="mt-1.5 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-[#344054]">
                             {version.internalRemarks || "—"}
                           </p>
                         </div>
                       </div>
 
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                      <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 2xl:p-3">
+                          <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                             Approval Decision
                           </p>
-                          <p className="mt-1 text-xs font-extrabold text-[#042C51]">
+                          <p className="mt-0.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#042C51]">
                             {version.approvedBy
                               ? `Approved by ${version.approvedBy}`
                               : version.rejectedBy
                                 ? `Rejected by ${version.rejectedBy}`
                                 : "Waiting for approval"}
                           </p>
-                          <p className="mt-1 text-[11px] font-semibold text-[#667085]">
+                          <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
                             {formatOfferVersionDate(
                               version.approvedAt || version.rejectedAt,
                             )}
                           </p>
                         </div>
 
-                        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 2xl:p-3">
+                          <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                             Approval Remarks
                           </p>
-                          <p className="mt-1 text-xs font-bold leading-5 text-[#475467]">
+                          <p className="mt-0.5 sibs-text-micro 2xl:sibs-text-xs font-bold leading-relaxed text-[#475467]">
                             {version.approvalRemarks || "—"}
                           </p>
                         </div>
 
-                        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 2xl:p-3">
+                          <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                             Offer Email
                           </p>
-                          <p className="mt-1 text-xs font-extrabold text-[#042C51]">
+                          <p className="mt-0.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#042C51]">
                             {version.offerEmailSent ? "Sent" : "Not Sent"}
                           </p>
-                          <p className="mt-1 text-[11px] font-semibold text-[#667085]">
+                          <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
                             {formatOfferVersionDate(version.offerSentAt)}
                           </p>
                         </div>
@@ -732,9 +732,9 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                             )}/pdf`;
                             window.open(pdfUrl, "_blank", "noopener,noreferrer");
                           }}
-                          className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-blue-100"
+                          className="mt-3 inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-blue-100"
                         >
-                          <FileText size={16} />
+                          <FileText size={15} />
                           Open Employment Offer PDF
                         </button>
                       ) : null}
@@ -743,23 +743,23 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 </div>
               </section>
 
-              <section className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-extrabold text-[#042C51]">
+              <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 sm:p-5 shadow-sm">
+                <h3 className="sibs-text-sm font-extrabold text-[#042C51]">
                   Remarks
                 </h3>
-                <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-semibold leading-6 text-[#344054]">
+                <p className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5 sibs-text-xs font-semibold leading-relaxed text-[#344054]">
                   {offer.remarks || "—"}
                 </p>
               </section>
             </div>
 
-            <aside className="space-y-5 lg:sticky lg:top-0 lg:self-start">
-              <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-extrabold text-[#042C51]">
+            <aside className="space-y-4 2xl:space-y-5 lg:sticky lg:top-0 lg:self-start">
+              <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 2xl:p-5">
+                <h3 className="sibs-text-sm font-extrabold text-[#042C51]">
                   Offer Summary
                 </h3>
 
-                <div className="mt-4">
+                <div className="mt-3">
                   <DetailRow label="Candidate ID" value={offer.candidateId} />
                   <DetailRow
                     label="Hiring Requirement"
@@ -835,15 +835,15 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 </div>
               </section>
 
-              <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-extrabold text-[#042C51]">
+              <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 2xl:p-5">
+                <h3 className="sibs-text-sm font-extrabold text-[#042C51]">
                   Evaluation Results
                 </h3>
-                <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                <p className="mt-0.5 sibs-text-xs font-semibold leading-relaxed text-[#667085]">
                   Scores carried forward from Candidate Pipeline.
                 </p>
 
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2.5">
                   <EvaluationResultItem
                     label="Assessment Score"
                     value={evaluationScores.assessment.display}
@@ -876,13 +876,13 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
           </div>
         </div>
 
-        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+        <div className="border-t border-[#E6ECF2] bg-white px-5 py-3 sm:px-6 2xl:py-4">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={handleClose}
               disabled={isBusy}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Close
             </button>
@@ -893,12 +893,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   type="button"
                   disabled={isBusy}
                   onClick={() => handleOfferApproval("Rejected")}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-extrabold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {approvalAction === "Rejected" ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={15} className="animate-spin" />
                   ) : (
-                    <XCircle size={16} />
+                    <XCircle size={15} />
                   )}
                   {approvalAction === "Rejected" ? "Declining..." : "Decline"}
                 </button>
@@ -907,12 +907,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   type="button"
                   disabled={isBusy}
                   onClick={() => handleOfferApproval("Approved")}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-primary-1 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {approvalAction === "Approved" ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={15} className="animate-spin" />
                   ) : (
-                    <Check size={16} />
+                    <Check size={15} />
                   )}
                   {approvalAction === "Approved" ? "Approving..." : "Approve"}
                 </button>

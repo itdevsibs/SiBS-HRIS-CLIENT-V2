@@ -33,7 +33,7 @@ export default function WeeklyReportsFilters({
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search by Week Label, Date Range, or Report ID..."
-              className="h-10 w-full rounded-[10px] border border-[#D0D5DD] bg-white pl-9 pr-9 text-xs font-semibold text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
+              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white pl-9 pr-9 text-xs font-semibold text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
             />
 
             {search ? (
@@ -57,7 +57,7 @@ export default function WeeklyReportsFilters({
             onChange={onStatusChange}
             searchable={false}
             showPlaceholderOption={false}
-            className="w-full"
+            className="w-full h-8.5 2xl:h-10"
           />
         </div>
 
@@ -65,9 +65,9 @@ export default function WeeklyReportsFilters({
           type="button"
           onClick={onClear}
           disabled={!isFiltered}
-          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D0D5DD] bg-white px-4 text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto active:scale-[0.98]"
         >
-          <Filter size={15} />
+          <Filter size={14} />
           Clear
         </button>
       </div>

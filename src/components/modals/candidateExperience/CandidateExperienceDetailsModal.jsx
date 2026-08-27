@@ -164,67 +164,67 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
 
   return (
     <div
-      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto bg-[#042C51]/55 p-3 backdrop-blur-sm sm:p-5"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Candidate Experience Details"
-        className="my-auto flex max-h-[94dvh] w-full max-w-[760px] flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="bg-[#073A68] px-5 py-5 text-white sm:px-6">
-          <div className="flex items-start justify-between gap-4">
+        <header className="shrink-0 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded bg-white/10 px-2.5 py-1 text-[9px] font-mono font-bold text-slate-100 ring-1 ring-white/15">
+              <div className="flex flex-wrap items-center gap-1.5 2xl:gap-2">
+                <span className="rounded bg-white/10 px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9.5px] font-mono font-bold text-slate-100 ring-1 ring-white/15">
                   Record ID: {record.id || "—"}
                   {record.candidateId ? ` (${record.candidateId})` : ""}
                 </span>
 
                 <span
-                  className={`rounded px-2.5 py-1 text-[9px] font-black uppercase ${outcome.badge}`}
+                  className={`rounded px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9.5px] font-black uppercase ${outcome.badge}`}
                 >
                   {outcome.label}
                 </span>
 
-                <span className="rounded bg-[#0A487F] px-2.5 py-1 text-[9px] font-mono font-bold text-blue-100">
+                <span className="rounded bg-white/10 px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9.5px] font-mono font-bold text-blue-100">
                   Recorded: {formatRecordedDate(recordedDate)}
                 </span>
               </div>
 
-              <h2 className="mt-3 truncate text-[18px] font-black tracking-tight text-white sm:text-[19px]">
+              <h2 className="mt-1.5 truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
                 {record.candidateName || "Candidate Experience Details"}
               </h2>
 
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-semibold text-slate-200 sm:text-[11px]">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 sibs-text-xs font-semibold text-white/75">
                 <span className="inline-flex items-center gap-1.5">
-                  <Mail size={13} className="text-slate-300" />
+                  <Mail size={12} className="text-slate-300" />
                   {record.candidateEmail || "—"}
                 </span>
 
                 <span className="hidden text-slate-400 sm:inline">•</span>
 
                 <span className="inline-flex items-center gap-1.5">
-                  <BriefcaseBusiness size={13} className="text-slate-300" />
+                  <BriefcaseBusiness size={12} className="text-slate-300" />
                   {record.roleTitle || "—"}
                 </span>
 
                 <span className="hidden text-slate-400 sm:inline">•</span>
 
                 <span className="inline-flex items-center gap-1.5">
-                  <Building2 size={13} className="text-slate-300" />
+                  <Building2 size={12} className="text-slate-300" />
                   {record.account || "—"}
                 </span>
               </div>
 
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="text-[9px] font-black uppercase tracking-wide text-blue-100">
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <span className="text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-blue-100">
                   OVERALL RATING:
                 </span>
-                <RatingStars rating={record.experienceRating} size={14} />
-                <span className="text-[10px] font-black text-amber-300">
+                <RatingStars rating={record.experienceRating} size={13} />
+                <span className="text-[9.5px] 2xl:text-[10.5px] font-black text-amber-300">
                   ({Number(record.experienceRating || 0).toFixed(1)} / 5.0)
                 </span>
               </div>
@@ -233,7 +233,7 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="sibs-modal-close-btn"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
               aria-label="Close modal"
             >
               <X size={18} />
@@ -241,14 +241,14 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6 sm:py-6">
-          <div className="space-y-5">
-            <section>
-              <h3 className="text-[10px] font-black uppercase tracking-wide text-[#637A9A]">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-3.5 sm:p-4 2xl:p-5 sibs-scrollbar font-jakarta">
+          <div className="space-y-3.5 2xl:space-y-4">
+            <section className="rounded-xl border border-[#E6ECF2] bg-white p-3 2xl:p-4 shadow-sm">
+              <h3 className="text-[10px] 2xl:text-[11px] font-black uppercase tracking-wide text-[#042C51]">
                 EVENT & EXIT OVERVIEW
               </h3>
 
-              <div className="mt-2 grid grid-cols-2 gap-3 rounded-xl border border-[#D7E0EB] bg-[#F8FAFC] px-4 py-3 sm:grid-cols-5">
+              <div className="mt-2 grid grid-cols-2 gap-2.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:grid-cols-5">
                 <OverviewItem label="Event Type" value={record.eventType} />
                 <OverviewItem
                   label="Final Status"
@@ -261,24 +261,24 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
               </div>
             </section>
 
-            <section className="rounded-xl border border-[#FFCAB8] bg-[#FFF0EB] px-4 py-4">
+            <section className="rounded-xl border border-orange-200 bg-[#FFF7F3] p-3.5 2xl:p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-[#FF5C28]">
+                <h3 className="inline-flex items-center gap-1.5 text-[10px] 2xl:text-[11px] font-black uppercase tracking-wide text-[#FF5C28]">
                   <MessageSquareText size={14} />
                   CANDIDATE QUALITATIVE FEEDBACK (VOICE OF CANDIDATE)
                 </h3>
 
-                <span className="text-[9px] font-mono font-black text-[#FF7A50]">
+                <span className="text-[9px] font-mono font-black text-[#FF5C28]">
                   Direct Raw Quote
                 </span>
               </div>
 
-              <blockquote className="mt-3 border-l-2 border-[#FF5C28] pl-3 text-[11px] font-semibold italic leading-5 text-[#173B5E]">
+              <blockquote className="mt-2.5 border-l-2 border-[#FF5C28] pl-3 text-[11px] font-semibold italic leading-4.5 text-[#173B5E] 2xl:text-xs">
                 “{record.feedback || "No candidate qualitative feedback recorded."}”
               </blockquote>
 
-              <div className="mt-3 rounded-lg border border-[#FFD7CA] bg-white/80 px-3 py-2 text-[10px] leading-4 text-[#274A6B]">
-                <strong className="font-black text-[#073A68]">
+              <div className="mt-2.5 rounded-lg border border-orange-200/80 bg-white/90 p-2.5 text-[10px] 2xl:text-[11px] leading-4 text-[#274A6B]">
+                <strong className="font-black text-[#042C51]">
                   Root Cause Description:
                 </strong>{" "}
                 {rootCause}
@@ -287,19 +287,19 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
 
             <CandidateJourney record={record} />
 
-            <section className="flex flex-col gap-3 rounded-xl border border-[#D7E0EB] bg-[#F8FAFC] px-4 py-3 text-[10px] sm:flex-row sm:items-center sm:justify-between">
+            <section className="flex flex-col gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 2xl:p-3 text-[10px] 2xl:text-[11px] sm:flex-row sm:items-center sm:justify-between">
               <div className="inline-flex min-w-0 items-center gap-2 text-[#64748B]">
-                <UserRound size={14} className="shrink-0 text-[#073A68]" />
+                <UserRound size={13} className="shrink-0 text-[#042C51]" />
                 <span>
                   Assigned TA Recruiter:{" "}
-                  <strong className="font-black text-[#073A68]">
+                  <strong className="font-black text-[#042C51]">
                     {record.owner || record.recordedBy || "Unassigned"}
                   </strong>
                 </span>
               </div>
 
               <div className="inline-flex min-w-0 items-center gap-2 font-mono text-[#64748B]">
-                <FileText size={13} className="shrink-0 text-[#91A4BE]" />
+                <FileText size={12} className="shrink-0 text-[#91A4BE]" />
                 <span>
                   System Record ID:{" "}
                   <strong className="font-black text-[#425B78]">
@@ -311,11 +311,11 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
           </div>
         </div>
 
-        <footer className="flex justify-end bg-white px-5 pb-5 pt-1 sm:px-6 sm:pb-6">
+        <footer className="flex shrink-0 items-center justify-end border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#042C51] px-5 text-[11px] font-black text-white shadow-sm transition hover:bg-[#073A68] active:scale-[0.98]"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
           >
             Close Experience Record
           </button>

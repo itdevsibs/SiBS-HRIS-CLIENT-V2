@@ -61,11 +61,11 @@ function getRiskClass(riskFlag) {
 
 function DeliveryDetail({ label, value }) {
   return (
-    <div className="rounded-lg border border-[#E6ECF2] bg-white p-3">
-      <span className="block text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
+    <div className="rounded-xl border border-[#E6ECF2] bg-white p-3 font-jakarta">
+      <span className="block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </span>
-      <span className="mt-1 block break-words text-xs font-extrabold text-[#042C51]">
+      <span className="mt-1 block break-words sibs-text-xs font-extrabold text-[#042C51]">
         {safeValue(value)}
       </span>
     </div>
@@ -129,22 +129,22 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="ta-role-kpi-title"
-        className="sibs-modal-pop-in flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-[#042C51] font-jakarta shadow-2xl sm:max-h-[88vh] sm:rounded-2xl"
+        className="sibs-modal-pop-in flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl bg-[#042C51] font-jakarta shadow-2xl sm:max-h-[88vh]"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#042C51] px-3 py-3 text-white sm:gap-4 sm:px-5 sm:py-3.5">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28]">
-              <Target className="h-[18px] w-[18px]" />
+        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#042C51] px-5 py-3 text-white sm:gap-4 sm:px-6 2xl:py-3.5">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <Target size={16} />
             </span>
             <div className="min-w-0">
               <h2
                 id="ta-role-kpi-title"
-                className="truncate text-base font-extrabold"
+                className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
               >
                 Role KPI Details
               </h2>
-              <p className="mt-0.5 truncate text-xs text-slate-300">
+              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
                 Recruitment dashboard analytics
               </p>
             </div>
@@ -153,10 +153,10 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             aria-label="Close role details"
           >
-            <X className="h-4 w-4" />
+            <X size={18} />
           </button>
         </header>
 
@@ -283,25 +283,25 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
           </div>
         </div>
 
-        <footer className="flex shrink-0 flex-col gap-3 border-t border-[#E6ECF2] bg-[#F8FAFC] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p className="text-center text-[10px] font-semibold leading-relaxed text-[#667085] sm:text-left">
+        <footer className="flex shrink-0 flex-col gap-3 border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-2.5 2xl:py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p className="text-center text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3] sm:text-left">
             Frontend-only TA data. Values remain unchanged after applying the new theme.
           </p>
           <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
             <button
               type="button"
               onClick={handleShare}
-              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-slate-100 px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-200 sm:w-auto"
+              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] sm:w-auto"
             >
-              <Link2 className="h-3.5 w-3.5" />
+              <Link2 size={13} />
               Share Link
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] sm:w-auto"
+              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28] active:scale-[0.98] sm:w-auto"
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
+              <CheckCircle2 size={13} />
               Close Details
             </button>
           </div>

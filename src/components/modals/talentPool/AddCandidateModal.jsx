@@ -855,13 +855,13 @@ function getCandidateFileName(candidateForm = {}, type = "audio") {
 function inputClass(extra = "", options = {}) {
   const shouldUppercase = options.uppercase !== false;
 
-  return `h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold ${
+  return `h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold ${
     shouldUppercase ? "uppercase" : "normal-case"
   } text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function textareaInputClass(extra = "") {
-  return `w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold uppercase text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
+  return `w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold uppercase text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function AutoResizeTextarea({
@@ -902,14 +902,14 @@ function AutoResizeTextarea({
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
       <span>{children}</span>
     </label>
   );
 }
 
 function RequiredMark() {
-  return <span className="text-red-500">*</span>;
+  return <span className="text-[#FF5C28]"> *</span>;
 }
 
 function ApplicationPageTabs({
@@ -2745,7 +2745,7 @@ function TextField({
 function createEmptyExperience(baseExperience = {}) {
   return {
     ...baseExperience,
-    id: Date.now(),
+    id: `exp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     industry: "",
     industryRelevantExperience: "",
     lengthOfWorkExperience: "",
@@ -2806,7 +2806,7 @@ function ExperienceFields({
   }
 
   return (
-    <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
+    <div className="sibs-page-card-in rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 shadow-2xs transition-all duration-200 hover:border-[#C9D7E6] sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h4 className="text-sm font-extrabold text-sibs-primary-1">{title}</h4>
 
@@ -5039,30 +5039,14 @@ export default function AddCandidateModal() {
                       lengthOptions={safeFormOptions.lengthOfExperience}
                     />
 
-                    <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px] md:items-end">
-                        <div>
-                          <FieldLabel>Do you have other experience?</FieldLabel>
-                          <YesNoSelect
-                            required={false}
-                            value={hasOtherExperience ? "Yes" : "No"}
-                            options={safeFormOptions.yesNo}
-                            onChange={handleOtherExperienceAnswer}
-                          />
-                        </div>
-
-                        {hasOtherExperience && (
-                          <button
-                            type="button"
-                            onClick={addOtherExperience}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-4 text-sm font-bold text-white transition hover:opacity-90"
-                          >
-                            <Plus size={16} />
-                            Add Other Experience
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    <WorkReadinessQuestion
+                      question="Do you have other experience?"
+                      name="has-other-experience-modal"
+                      required={false}
+                      value={hasOtherExperience ? "Yes" : "No"}
+                      options={safeFormOptions.yesNo}
+                      onChange={handleOtherExperienceAnswer}
+                    />
 
                     {hasOtherExperience &&
                       workExperiences.slice(1).map((experience, itemIndex) => {
@@ -5081,6 +5065,19 @@ export default function AddCandidateModal() {
                           />
                         );
                       })}
+
+                    {hasOtherExperience && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={addOtherExperience}
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[var(--sibs-primary-1)] px-4 text-xs font-extrabold text-white shadow-sm transition hover:opacity-90"
+                        >
+                          <Plus size={14} />
+                          Add Other Experience
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -54,7 +54,7 @@ export default function SuperAdminDashboardHeader({
           <button
             type="button"
             onClick={onAddUser}
-            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream hover:text-sibs-navy"
+            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream hover:text-sibs-navy active:scale-[0.98]"
           >
             <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-orange" />
             Add Admin / User
@@ -63,7 +63,7 @@ export default function SuperAdminDashboardHeader({
           <button
             type="button"
             onClick={onOpenEmployees}
-            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:bg-sibs-orange"
+            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98]"
           >
             <Users className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
             Launch Employee Directory

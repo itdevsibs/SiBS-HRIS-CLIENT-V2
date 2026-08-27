@@ -3,7 +3,7 @@ import { Download, Plus, RefreshCw } from "lucide-react";
 export default function CandidateExperienceHeader({ onAddManual, onRefresh, refreshing, onExport }) {
   return (
     <section
-      className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
+      className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-xl 2xl:rounded-2xl border border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 font-jakarta shadow-sm"
       style={{ animationDelay: "0ms", animationFillMode: "both" }}
     >
       <span className="sibs-top-accent" aria-hidden="true" />
@@ -20,7 +20,7 @@ export default function CandidateExperienceHeader({ onAddManual, onRefresh, refr
           <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
             Candidate Experience
           </h1>
-          <p className="max-w-5xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+          <p className="max-w-5xl sibs-text-xs font-semibold leading-relaxed text-[#667085]">
             Monitor completed and drop-off candidate journeys, survey delivery, response sources, ratings, and Voice of Candidate feedback.
           </p>
         </div>

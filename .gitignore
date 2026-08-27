@@ -39,16 +39,21 @@ Thumbs.db
 *.md
 
 # Codex & Skills
-.codex
+.codex/
 .agents/
-!.agents/skills/
+[Ss]kills/
 
-# Graphify output & cache
+# Graphify output, cache, & venv
 graphify-out/
 .graphify/
+.graphify_venv/
+
+# Playwright MCP
+.playwright-mcp/
+
+# Superpowers docs & metadata
+.superpowers/
+docs/superpowers/
 
 # Local Git worktrees
 .worktrees/
-
-# Superpowers docs
-docs/superpowers/

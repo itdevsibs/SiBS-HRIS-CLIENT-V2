@@ -14,7 +14,7 @@ function OutcomeBar({ label, value, count, toneClass, delay = 0 }) {
   return (
     <div
       className="sibs-page-card-in space-y-1.5"
-      style={{ animationDelay: `${delay}ms` }}
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
@@ -73,7 +73,7 @@ export default function OnboardingOutcomeOverview() {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 font-jakarta">
       <section
         className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm lg:col-span-7 transition-all duration-200 hover:shadow-md flex flex-col justify-between"
-        style={{ animationDelay: "120ms" }}
+        style={{ animationDelay: "120ms", animationFillMode: "both" }}
       >
         <div>
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[#E6ECF2]/60 pb-3">
@@ -104,7 +104,7 @@ export default function OnboardingOutcomeOverview() {
 
       <aside
         className="sibs-page-card-in relative overflow-hidden rounded-2xl border border-[#083A69] bg-[#042C51] p-5 text-white shadow-sm lg:col-span-5 flex flex-col justify-between"
-        style={{ animationDelay: "180ms" }}
+        style={{ animationDelay: "180ms", animationFillMode: "both" }}
       >
         <div
           className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#FF5C28]/15 blur-2xl"

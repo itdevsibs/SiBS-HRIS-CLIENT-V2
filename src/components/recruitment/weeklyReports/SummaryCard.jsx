@@ -50,7 +50,7 @@ export default function SummaryCard({
 
   return (
     <article
-      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
@@ -62,30 +62,17 @@ export default function SummaryCard({
             <p className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${currentTone.label}`}>
               {title}
             </p>
-
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <p className={`truncate text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${currentTone.value}`}>
-                {typeof value === "number" ? value.toLocaleString("en-US") : value}
-              </p>
-
-              {badge ? (
-                <span className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
-                  {badge}
-                </span>
-              ) : null}
-            </div>
+            <p className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${currentTone.value}`}>
+              {Number(value || 0).toLocaleString("en-US")}
+            </p>
           </div>
 
-          {description ? (
-            <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
-              {description}
-            </p>
-          ) : null}
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
+            {description}
+          </p>
         </div>
 
-        <span
-          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${currentTone.iconWrap} ${currentTone.icon}`}
-        >
+        <span className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${currentTone.iconWrap} ${currentTone.icon}`}>
           <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </span>
       </div>

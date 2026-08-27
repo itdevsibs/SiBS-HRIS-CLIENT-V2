@@ -5,6 +5,7 @@ import {
   Shield,
   Search,
   UserPlus,
+  RefreshCw,
   MoreHorizontal,
   CheckCircle2,
   XCircle,
@@ -904,61 +905,98 @@ export default function UserManagementPage() {
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--sibs-tertiary-10)]">
-        <Header />
+      <div className="sibs-dashboard-shell font-jakarta">
+        <div className="shrink-0">
+          <Header />
+        </div>
 
-        <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <Shield size={28} className="shrink-0 text-sibs-primary-1" />
+        <main className="sibs-dashboard-main-wide">
+          <div className="mx-auto w-full max-w-[1600px] space-y-5">
+            <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6">
+              <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
 
-                <h1 className="truncate text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
-                  User Management
-                </h1>
+              <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
+                      <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                      Super Admin System Control
+                    </span>
+                  </div>
+
+                  <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                    User Management
+                  </h1>
+
+                  <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                    Manage system user credentials, security roles, and administrative access permissions.
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => fetchManagementUsers(1, search)}
+                    disabled={pageLoading}
+                    title="Refresh Users"
+                    className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  >
+                    <RefreshCw
+                      className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                        pageLoading ? "animate-spin text-[#FF5C28]" : ""
+                      }`}
+                    />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={openAddModal}
+                    className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98]"
+                  >
+                    <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
+                    Add User
+                  </button>
+                </div>
               </div>
+            </section>
 
-              <p className="mt-1 text-sm text-sibs-tertiary-5">
-                Manage system users and access roles
-              </p>
-            </div>
+            <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <SummaryCard
+                title="Total Users"
+                value={pagination.total}
+                tone="navy"
+                delay={0}
+              />
 
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--sibs-primary-1)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 sm:w-auto"
-            >
-              <UserPlus size={16} />
-              Add User
-            </button>
-          </div>
+              <SummaryCard
+                title="Active Accounts"
+                value={users.filter((u) => u.status === "active").length}
+                tone="emerald"
+                delay={60}
+              />
 
-          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <SummaryCard title="Total Users" value={pagination.total} />
+              <SummaryCard
+                title="Super Admin"
+                value={
+                  users.filter(
+                    (u) => Number(getSingleAdminAccess(u.adminAccess)) === 7
+                  ).length
+                }
+                tone="orange"
+                delay={120}
+              />
 
-            <SummaryCard
-              title="Active"
-              value={users.filter((u) => u.status === "active").length}
-            />
-
-            <SummaryCard
-              title="Super Admin"
-              value={
-                users.filter(
-                  (u) => Number(getSingleAdminAccess(u.adminAccess)) === 7
-                ).length
-              }
-            />
-
-            <SummaryCard
-              title="HR Admin"
-              value={
-                users.filter(
-                  (u) => Number(getSingleAdminAccess(u.adminAccess)) === 3
-                ).length
-              }
-            />
-          </div>
+              <SummaryCard
+                title="HR Admin"
+                value={
+                  users.filter(
+                    (u) => Number(getSingleAdminAccess(u.adminAccess)) === 3
+                  ).length
+                }
+                tone="amber"
+                delay={180}
+              />
+            </section>
 
           <div className="overflow-hidden rounded-xl border border-sibs-tertiary-9 bg-white shadow-sm">
             <div className="border-b border-sibs-tertiary-9 p-4">
@@ -1341,16 +1379,63 @@ function StatusBadge({ status }) {
   );
 }
 
-function SummaryCard({ title, value }) {
-  return (
-    <div className="rounded-xl border border-sibs-tertiary-9 bg-white p-4 shadow-sm">
-      <p className="truncate text-xs text-sibs-tertiary-5 sm:text-sm">
-        {title}
-      </p>
+function SummaryCard({ title, value, icon, tone = "navy", delay = 0 }) {
+  const tones = {
+    navy: {
+      label: "text-[#042C51]",
+      value: "text-[#042C51]",
+      icon: "bg-[#EAF2FB] text-[#042C51]",
+    },
+    emerald: {
+      label: "text-[#047857]",
+      value: "text-[#047857]",
+      icon: "bg-[#ECFDF3] text-[#059669]",
+    },
+    amber: {
+      label: "text-[#B45309]",
+      value: "text-[#F59E0B]",
+      icon: "bg-[#FFFBEB] text-[#F59E0B]",
+    },
+    orange: {
+      label: "text-[#C2410C]",
+      value: "text-[#FF5C28]",
+      icon: "bg-[#FFF3ED] text-[#FF5C28]",
+    },
+  };
 
-      <h2 className="mt-1 text-xl font-bold text-sibs-primary-1 sm:text-2xl">
-        {value}
-      </h2>
-    </div>
+  const selectedTone = tones[tone] || tones.navy;
+  const IconComponent = icon;
+
+  return (
+    <article
+      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
+    >
+      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
+        <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${selectedTone.label}`}
+            >
+              {title}
+            </p>
+
+            <p
+              className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+            >
+              {value}
+            </p>
+          </div>
+        </div>
+
+        {IconComponent ? (
+          <span
+            className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
+          >
+            <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
+          </span>
+        ) : null}
+      </div>
+    </article>
   );
 }

@@ -410,7 +410,7 @@ export default function CandidatePipelineModalShell({
                 type="button"
                 onClick={onClose}
                 disabled={closeDisabled}
-                className="inline-flex h-7 w-7 2xl:h-8 2xl:w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label="Close modal"
               >
                 <X size={16} />

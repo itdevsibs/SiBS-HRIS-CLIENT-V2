@@ -279,7 +279,22 @@ export default function OffersPage() {
     approvalUsersLoading = false,
     filteredOffers = [],
     isProcessingOfferDecision = false,
+    refreshOffers,
   } = useOffers();
+
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    if (isManualRefreshing) return;
+    setIsManualRefreshing(true);
+    try {
+      if (typeof refreshOffers === "function") {
+        await refreshOffers();
+      }
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -519,18 +534,20 @@ export default function OffersPage() {
         {isProcessingOfferDecision ? (
           <OffersDecisionSkeleton />
         ) : (
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+        <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
           <OfferHeader
             routeFilterActive={Boolean(routeCandidate)}
             routeCandidateLabel={routeCandidateLabel}
             onClearRouteFilter={handleClearRouteCandidate}
+            onRefresh={handleManualRefresh}
+            isManualRefreshing={isManualRefreshing}
           />
 
           <OfferSummaryCards />
 
           <section
             className="sibs-page-card-in sibs-card relative z-[10] overflow-visible font-jakarta"
-            style={{ animationDelay: "120ms", animationFillMode: "both" }}
+            style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <OfferFilters />
 

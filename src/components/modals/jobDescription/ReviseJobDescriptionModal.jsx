@@ -3238,22 +3238,22 @@ export default function ReviseJobDescriptionModal({
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    <GitCompare size={14} />
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <GitCompare size={13} className="text-[#FF5C28]" />
                     Revision Editor
                   </span>
 
-                  <span className="rounded-full border border-amber-300 bg-[#FFF3B8] px-3 py-1 text-xs font-extrabold text-[#101828]">
+                  <span className="rounded-full border border-amber-300 bg-[#FFF3B8] px-2.5 py-0.5 text-[8.5px] 2xl:text-[9.5px] font-extrabold text-[#101828]">
                     {totalComments} reviewer comment
                     {totalComments === 1 ? "" : "s"}
                   </span>
 
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[8.5px] 2xl:text-[9.5px] font-extrabold text-emerald-700">
                     {progress.changed}/{progress.total} sections modified
                   </span>
                 </div>
 
-                <h2 className="mt-3 truncate text-xl font-extrabold text-[#101828]">
+                <h2 className="mt-2 truncate text-base 2xl:text-xl font-extrabold text-[#042C51]">
                   {activeItem.documentTitle ||
                     activeItem.document_title ||
                     activeItem.title ||
@@ -3262,11 +3262,21 @@ export default function ReviseJobDescriptionModal({
                     "Revise Job Description"}
                 </h2>
 
-                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
+                <p className="mt-0.5 text-[10px] sm:text-xs font-semibold text-[#667085]">
                   Compare the current version with reviewer comments and write
                   the corrected version on the right.
                 </p>
               </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-8.5 2xl:h-9 w-8.5 2xl:w-9 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] hover:bg-[#F8FAFC] transition active:scale-[0.98] self-start"
+                aria-label="Close revision editor"
+                title="Close"
+              >
+                <X size={17} />
+              </button>
             </div>
 
             <nav
@@ -3497,7 +3507,7 @@ export default function ReviseJobDescriptionModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg 2xl:rounded-xl border border-[#D7DEE8] bg-white px-4 2xl:px-5 sibs-text-xs font-bold text-[#042C51] transition hover:bg-[#F8FAFC] active:scale-[0.98]"
               >
                 Cancel
               </button>
@@ -3512,7 +3522,7 @@ export default function ReviseJobDescriptionModal({
                       } remaining`
                     : ""
                 }
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sibs-primary-2 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg 2xl:rounded-xl bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70 active:scale-[0.98]"
               >
                 {revisionSaving ? (
                   <Loader2 size={16} className="animate-spin" />
