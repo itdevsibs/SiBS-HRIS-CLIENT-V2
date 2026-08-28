@@ -1,11 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, HeartPulse } from "lucide-react";
 
 import Header from "../../components/layout/Header";
+import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
 import StatusModal from "../../components/modals/StatusModal";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
-import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
+import EmployeeProfileContent from "../../components/employee/profile/components/EmployeeProfileContent.jsx";
+import EmployeeProfileContextPanel from "../../components/employee/profile/components/EmployeeProfileContextPanel.jsx";
+import EmployeeProfileHeader from "../../components/employee/profile/components/EmployeeProfileHeader.jsx";
+import EmployeeProfileNavigation from "../../components/employee/profile/components/EmployeeProfileNavigation.jsx";
+import EmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
+import ChwcpCoverageSection from "../../components/employee/profile/components/ChwcpCoverageSection.jsx";
+
 import { useUser } from "../../services/context/UserContext";
 import {
   getEmployeeById,
@@ -13,7 +20,6 @@ import {
   updateEmployeeProfile,
   updateEmployeeProfileSection,
 } from "../../lib/axios/getEmployee";
-import { getTalentPoolApplications } from "../../lib/axios/getTalentPool";
 import { buildChangedProfilePayload } from "../../lib/utils/employees/employeeProfilePayload.js";
 import {
   buildEmployeeProfileSectionPayload,
@@ -26,14 +32,61 @@ import {
   getProfileSibsId,
 } from "../../lib/utils/employees/employeeProfileHelpers.js";
 import { buildEditableEmployee } from "../../lib/utils/employees/employeeProfileNormalizer.js";
-import { canEditProfileDetails } from "../../lib/utils/employees/employeeProfilePermissions.js";
-import EmployeeProfileContent from "../../components/employee/profile/components/EmployeeProfileContent.jsx";
-import EmployeeProfileContextPanel from "../../components/employee/profile/components/EmployeeProfileContextPanel.jsx";
-import EmployeeProfileHeader from "../../components/employee/profile/components/EmployeeProfileHeader.jsx";
-import EmployeeProfileNavigation from "../../components/employee/profile/components/EmployeeProfileNavigation.jsx";
-import EmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
+import { PROFILE_TABS } from "../../lib/utils/employees/employeeProfileSchemas.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
+const CHWCP_PROFILE_TAB = {
+  key: "chwcp",
+  label: "CHWCP",
+  icon: HeartPulse,
+};
+
+const EMPLOYEE_PROFILE_TABS = PROFILE_TABS.flatMap((tab) =>
+  tab.key === "documents" ? [tab, CHWCP_PROFILE_TAB] : [tab],
+);
+
+function normalizeRole(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function canEditProfileDetails(user) {
+  const access = Number(
+    user?.admin_access ??
+      user?.adminAccess ??
+      user?.access ??
+      user?.gy_user_access ??
+      user?.gyUserAccess ??
+      0,
+  );
+
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return (
+    (access >= 1 && access <= 7) ||
+    roles.some((role) =>
+      [
+        "admin",
+        "hr",
+        "hr_admin",
+        "hradmin",
+        "super_admin",
+        "superadmin",
+        "super_administrator",
+      ].includes(role),
+    )
+  );
+}
 
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
@@ -48,7 +101,6 @@ export default function EmployeeDataPage() {
   const [openProfilePictureModal, setOpenProfilePictureModal] = useState(false);
   const [openProfileDropdown, setOpenProfileDropdown] = useState(false);
   const [openAddResignation, setOpenAddResignation] = useState(false);
-
   const [statusModal, setStatusModal] = useState({
     open: false,
     type: "success",
@@ -62,89 +114,79 @@ export default function EmployeeDataPage() {
   const activeSubTab = String(activeTab).includes(".")
     ? String(activeTab).split(".")[1]
     : "";
-  const showContextPanel = true;
-  const activeProfileLabel = getActiveProfileLabel(activeTab);
+  const activeProfileLabel =
+    activePrimary === "chwcp"
+      ? { primary: "CHWCP", secondary: "Coverage" }
+      : getActiveProfileLabel(activeTab);
+  const activeSectionSupportsSave =
+    activePrimary === "personal" ||
+    Boolean(getStructuredProfileSection(activePrimary));
+  const visibleTabs = useMemo(() => EMPLOYEE_PROFILE_TABS, []);
 
   useEffect(() => {
-    const fetchEmployee = async () => {
+    let cancelled = false;
+
+    async function fetchEmployee() {
+      const sibsId =
+        sessionStorage.getItem("selectedEmployeeId") ||
+        sessionStorage.getItem("selectedCandidateId");
+
+      if (!sibsId) {
+        navigate("/employee", { replace: true });
+        return;
+      }
+
+      setLoading(true);
+
       try {
-        const sibsId =
-          sessionStorage.getItem("selectedEmployeeId") ||
-          sessionStorage.getItem("selectedCandidateId");
-
-        if (!sibsId) {
-          navigate("/employee", { replace: true });
-          return;
-        }
-
-        const [employeeResult, sectionsResult] = await Promise.all([
+        const [employeeResult, sectionsResult] = await Promise.allSettled([
           getEmployeeById(sibsId),
           getEmployeeProfileSections(sibsId),
         ]);
 
-        if (!employeeResult?.success || !employeeResult?.data) {
+        if (cancelled) return;
+
+        const employeeResponse =
+          employeeResult.status === "fulfilled" ? employeeResult.value : null;
+        const sectionsResponse =
+          sectionsResult.status === "fulfilled" ? sectionsResult.value : null;
+
+        if (!employeeResponse?.success || !employeeResponse?.data) {
           navigate("/employee", { replace: true });
           return;
         }
 
-        const baseEmployee = buildEditableEmployee(employeeResult.data);
-        let mergedEmployee = sectionsResult?.success && sectionsResult?.data
-          ? mergeEmployeeProfileSections(baseEmployee, sectionsResult.data)
-          : baseEmployee;
-
-        // Auto-link candidate recruitment history from Talent Pool if statusHistory is empty
-        if (
-          (!Array.isArray(mergedEmployee.statusHistory) || mergedEmployee.statusHistory.length === 0) &&
-          (!Array.isArray(mergedEmployee.applicationHistory) || mergedEmployee.applicationHistory.length === 0)
-        ) {
-          try {
-            const searchQuery = mergedEmployee.email || mergedEmployee.firstName || sibsId;
-            if (searchQuery) {
-              const tpRes = await getTalentPoolApplications({ search: searchQuery, limit: 10 });
-              const matchedCandidate = Array.isArray(tpRes?.data)
-                ? tpRes.data.find(
-                    (cand) =>
-                      (cand.email && cand.email.toLowerCase() === String(mergedEmployee.email).toLowerCase()) ||
-                      cand.id === sibsId ||
-                      cand.sibsId === sibsId ||
-                      (cand.candidateFirstName &&
-                        cand.candidateFirstName.toLowerCase() === String(mergedEmployee.firstName).toLowerCase()),
-                  ) || tpRes.data[0]
-                : null;
-
-              if (matchedCandidate?.applicationHistory && Array.isArray(matchedCandidate.applicationHistory)) {
-                mergedEmployee = {
-                  ...mergedEmployee,
-                  applicationHistory: matchedCandidate.applicationHistory,
-                };
-              }
-            }
-          } catch (tpErr) {
-            console.warn("Could not auto-fetch candidate history for employee:", tpErr);
-          }
-        }
+        const baseEmployee = buildEditableEmployee(employeeResponse.data);
+        const mergedEmployee =
+          sectionsResponse?.success && sectionsResponse?.data
+            ? mergeEmployeeProfileSections(baseEmployee, sectionsResponse.data)
+            : baseEmployee;
 
         setEmployee(buildEditableEmployee(mergedEmployee));
 
-        if (!sectionsResult?.success) {
+        if (!sectionsResponse?.success) {
           setStatusModal({
             open: true,
             type: "error",
             title: "Structured Profile Not Loaded",
             message:
-              sectionsResult?.message ||
-              "The employee record loaded, but the structured HRIS sections could not be loaded.",
+              sectionsResponse?.message ||
+              "The employee record loaded, but some structured profile sections could not be loaded.",
           });
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error);
-        navigate("/employee", { replace: true });
+        if (!cancelled) navigate("/employee", { replace: true });
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
+    }
 
-    fetchEmployee();
+    void fetchEmployee();
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   function showFeedback(message, type = "success", title) {
@@ -156,13 +198,30 @@ export default function EmployeeDataPage() {
     });
   }
 
+  function closeStatusModal() {
+    setStatusModal({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+  }
+
   function openResignationModal() {
     setOpenProfileDropdown(false);
     setOpenAddResignation(true);
   }
 
   function startEditing() {
-    if (!employee || isSaving) return;
+    if (
+      !employee ||
+      isSaving ||
+      !canEditDetails ||
+      activePrimary === "chwcp" ||
+      !activeSectionSupportsSave
+    ) {
+      return;
+    }
 
     setOpenProfileDropdown(false);
     setDraftEmployee(buildEditableEmployee(employee));
@@ -174,20 +233,6 @@ export default function EmployeeDataPage() {
 
     setDraftEmployee(null);
     setIsEditing(false);
-  }
-
-  function saveLocalChanges() {
-    if (!draftEmployee || isSaving) return;
-
-    setEmployee(buildEditableEmployee(draftEmployee));
-    setDraftEmployee(null);
-    setIsEditing(false);
-
-    showFeedback(
-      "This section is not included in the structured profile backend.",
-      "success",
-      "Section Updated Locally",
-    );
   }
 
   async function saveProfileChanges() {
@@ -335,20 +380,27 @@ export default function EmployeeDataPage() {
       return saveStructuredProfileChanges(structuredSection);
     }
 
-    return saveLocalChanges();
+    return undefined;
   }
 
   function handleTabChange(nextTab) {
     if (isSaving || nextTab === activeTab) return;
 
+    if (
+      !visibleTabs.some((tab) => {
+        if (tab.key === nextTab) return true;
+        return tab.children?.some((child) => child.key === nextTab);
+      })
+    ) {
+      return;
+    }
+
     if (isEditing) {
-      setStatusModal({
-        open: true,
-        type: "error",
-        title: "Unsaved Changes",
-        message:
-          "Save or cancel your changes before opening another profile section.",
-      });
+      showFeedback(
+        "Save or cancel your changes before opening another profile section.",
+        "error",
+        "Unsaved Changes",
+      );
       return;
     }
 
@@ -390,11 +442,15 @@ export default function EmployeeDataPage() {
 
   const sectionProps = {
     employee,
-    canEditDetails,
     displayEmployee,
     isEditing,
     isSaving,
-    onEdit: canEditDetails ? startEditing : undefined,
+    onEdit:
+      canEditDetails &&
+      activeSectionSupportsSave &&
+      activePrimary !== "chwcp"
+        ? startEditing
+        : undefined,
     onSave: saveChanges,
     onCancel: cancelEditing,
     onChange: updateDraftField,
@@ -417,26 +473,33 @@ export default function EmployeeDataPage() {
     >
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden sibs-scrollbar bg-[#E8EDF3] px-3 py-3 sm:px-5 sm:py-4 2xl:px-6 2xl:py-5">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#E8EDF3] px-3 py-4 sm:p-6">
         <div className="mx-auto w-full max-w-[1600px]">
-          <div className="mb-3 2xl:mb-4 flex items-center justify-between gap-4">
+          <div className="mb-4 flex items-center justify-between gap-4">
             <button
               type="button"
               onClick={() => navigate("/employee")}
               className="inline-flex items-center gap-1.5"
             >
-              <ChevronLeft size={15} className="text-[#FF5C28] hover:scale-110 hover:text-[#FF3C00]" />
-              <span className="text-xs 2xl:text-sm font-bold text-[#042C51] hover:text-[#FF5C28]">Back to Employees</span>
+              <ChevronLeft
+                size={15}
+                className="text-[#FF5C28] hover:scale-110 hover:text-[#FF3C00]"
+              />
+              <span className="text-sm font-bold text-[#042C51] hover:text-[#FF5C28]">
+                Back to Employees
+              </span>
             </button>
 
-            <div className="hidden min-w-0 items-center gap-1.5 text-[10px] 2xl:text-xs font-semibold text-[#667085] sm:flex">
+            <div className="hidden min-w-0 items-center gap-1.5 text-[10px] font-semibold text-[#667085] sm:flex">
               <span>SiBS HRIS Portal</span>
               <span>/</span>
               <span>Employee Directory</span>
               <span>/</span>
               <span className="max-w-[260px] truncate font-black text-[#042C51]">
                 {displayEmployee
-                  ? `${displayEmployee.lastName || ""}, ${displayEmployee.firstName || ""}`.toUpperCase()
+                  ? `${displayEmployee.lastName || ""}, ${
+                      displayEmployee.firstName || ""
+                    }`.toUpperCase()
                   : "EMPLOYEE"}
               </span>
             </div>
@@ -451,11 +514,15 @@ export default function EmployeeDataPage() {
               Profile not found.
             </div>
           ) : (
-            <div className="sibs-page-header-in space-y-3.5 sm:space-y-4 2xl:space-y-5">
+            <div className="sibs-page-header-in space-y-4 sm:space-y-5">
               <EmployeeProfileHeader
                 employee={displayEmployee}
                 apiUrl={API_URL}
-                canEdit={canEditDetails}
+                canEdit={
+                  canEditDetails &&
+                  activeSectionSupportsSave &&
+                  activePrimary !== "chwcp"
+                }
                 isEditing={isEditing}
                 isSaving={isSaving}
                 onEdit={startEditing}
@@ -473,10 +540,7 @@ export default function EmployeeDataPage() {
                 }}
                 morePanel={
                   <div
-                    className={[
-                      "sibs-animated-dropdown absolute right-0 top-[calc(100%+6px)] z-[70] w-[250px] 2xl:w-[260px] origin-top-right",
-                      openProfileDropdown ? "open" : "closed",
-                    ].join(" ")}
+                    className="sibs-profile-dropdown-panel absolute right-0 top-full z-[70] mt-2"
                     onClick={(event) => event.stopPropagation()}
                   >
                     <ProfileDropdown
@@ -490,58 +554,67 @@ export default function EmployeeDataPage() {
               <EmployeeProfileNavigation
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
+                tabs={visibleTabs}
               />
 
-              <div
-                className={`sibs-page-card-in grid grid-cols-1 items-start gap-4 2xl:gap-6 ${
-                  showContextPanel
-                    ? "xl:grid-cols-[minmax(0,1.85fr)_minmax(260px,1fr)] 2xl:grid-cols-[minmax(0,2fr)_minmax(310px,1fr)]"
-                    : ""
-                }`}
-              >
+              <div className="sibs-page-card-in grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
                 <section
                   key={activeTab}
-                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-4 2xl:p-5 shadow-sm"
+                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
                 >
-                  <div className="mb-4 2xl:mb-5 flex flex-col gap-2.5 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="break-words text-sm font-black uppercase tracking-wider text-[#042C51]">
                         {activeProfileLabel.primary}
                         {activeProfileLabel.secondary
                           ? ` - ${activeProfileLabel.secondary}`
                           : ""}
-                      </h3>
-                      <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
-                        {isEditing
-                          ? "Editable input mode. Save the profile to lock the current updates."
-                          : "Official record values are shown from the existing employee data source."}
+                      </h2>
+                      <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
+                        {activePrimary === "chwcp"
+                          ? "Read-only CHWCP shared and personal coverage for the selected employee."
+                          : isEditing
+                            ? "Editable input mode. Save the profile to lock the current updates."
+                            : "Official record values are shown from the existing employee data source."}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap sm:self-start">
                       <span
-                        className={`h-2 w-2 rounded-full ${
+                        className={`h-2.5 w-2.5 rounded-full ${
                           isEditing
                             ? "animate-pulse bg-amber-400"
                             : "bg-[#042C51]"
                         }`}
                       />
-                      <span className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">
-                        {isEditing ? "Modified Draft" : "Official Profile Record"}
+                      <span className="text-[10px] font-bold uppercase text-slate-500">
+                        {activePrimary === "chwcp"
+                          ? "View Only"
+                          : isEditing
+                            ? "Modified Draft"
+                            : "Official Profile Record"}
                       </span>
                     </div>
                   </div>
 
-                  <EmployeeProfileContent activePrimary={activePrimary} activeSubTab={activeSubTab} sectionProps={sectionProps} />
+                  {activePrimary === "chwcp" ? (
+                    <ChwcpCoverageSection
+                      sibsId={getProfileSibsId(employee)}
+                    />
+                  ) : (
+                    <EmployeeProfileContent
+                      activePrimary={activePrimary}
+                      activeSubTab={activeSubTab}
+                      sectionProps={sectionProps}
+                    />
+                  )}
                 </section>
 
-                {showContextPanel && (
-                  <EmployeeProfileContextPanel
-                    employee={employee}
-                    onNavigate={handleTabChange}
-                    onAction={handleContextAction}
-                  />
-                )}
+                <EmployeeProfileContextPanel
+                  employee={employee}
+                  onNavigate={handleTabChange}
+                  onAction={handleContextAction}
+                />
               </div>
             </div>
           )}
@@ -567,14 +640,9 @@ export default function EmployeeDataPage() {
         type={statusModal.type}
         title={statusModal.title}
         message={statusModal.message}
-        onClose={() =>
-          setStatusModal({
-            open: false,
-            type: "success",
-            title: "",
-            message: "",
-          })
-        }
+        variant="center"
+        lockScroll
+        onClose={closeStatusModal}
       />
     </div>
   );

@@ -1,10 +1,20 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { FileCheck2, UserRoundCheck } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  FileCheck2,
+  RefreshCcw,
+  UserRoundCheck,
+} from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import EmployeeDirectoryContent from "../../components/employee/directory/EmployeeDirectoryContent.jsx";
-import EmployeeDirectoryHeader from "../../components/employee/directory/EmployeeDirectoryHeader.jsx";
-import EmployeeDirectoryStats from "../../components/employee/directory/EmployeeDirectoryStats.jsx";
+import ChwcpTable from "../../components/tables/employees/ChwcpTable";
+import EmployeeTable from "../../components/tables/employees/EmployeeTable";
+import { getChwcpRequests } from "../../lib/axios/getChwcp";
 import { usePagination } from "@/services/context/PaginationContext";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
@@ -13,6 +23,8 @@ const animationTiming = {
   header: 0,
   summary: 60,
   table: 120,
+  summaryCardBase: 0,
+  summaryCardStagger: 60,
 };
 
 const employeeTabs = [
@@ -24,10 +36,10 @@ const employeeTabs = [
     tone: "navy",
   },
   {
-    label: "CHWCP",
-    count: 2,
+    label: "CHWCP Requests",
+    count: 0,
     icon: FileCheck2,
-    description: "Health and compliance records",
+    description: "Health and compliance requests",
     tone: "emerald",
   },
 ];
@@ -39,25 +51,126 @@ function getAnimationStyle(delay = 0) {
   };
 }
 
+function getMetricTone(tone) {
+  if (tone === "emerald") {
+    return {
+      label: "text-[#047857]",
+      value: "text-[#047857]",
+      iconWrap: "bg-[#ECFDF3]",
+      icon: "text-[#059669]",
+    };
+  }
+
+  return {
+    label: "text-[#042C51]",
+    value: "text-[#042C51]",
+    iconWrap: "bg-[#EAF2FB]",
+    icon: "text-[#042C51]",
+  };
+}
+
+function SummaryCard({
+  label,
+  value,
+  description,
+  icon,
+  tone = "navy",
+  delay = 0,
+}) {
+  const metricTone = getMetricTone(tone);
+  const CardIcon = icon;
+
+  return (
+    <article
+      className="sibs-metric-card"
+      style={getAnimationStyle(delay)}
+    >
+      <div className="flex h-full items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 self-stretch">
+          <p
+            className={`m-0 truncate text-[10px] font-extrabold uppercase tracking-normal ${metricTone.label}`}
+          >
+            {label}
+          </p>
+
+          <p
+            className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal ${metricTone.value}`}
+          >
+            {Number(value || 0).toLocaleString("en-PH")}
+          </p>
+
+          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+            {description}
+          </p>
+        </div>
+
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${metricTone.iconWrap} ${metricTone.icon}`}
+        >
+          <CardIcon size={17} strokeWidth={2} />
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function EmployeesPage() {
   const { setSearch, setSearchInput, setPage, pagination } =
     usePagination("employees");
 
   const [activeEmployeeTab, setActiveEmployeeTab] = useState("Employees");
+  const [chwcpTotal, setChwcpTotal] = useState(0);
+  const [summaryRefreshing, setSummaryRefreshing] = useState(false);
+  const [chwcpReloadKey, setChwcpReloadKey] = useState(0);
 
   const restoredRef = useRef(false);
-  const didMountTabRef = useRef(false);
   const mainScrollRef = useRef(null);
 
-  const directoryTabs = employeeTabs.map((tab) =>
-    tab.label === "Employees"
-      ? { ...tab, count: Number(pagination?.total || 0) }
-      : tab,
+  const directoryTabs = employeeTabs.map((tab) => {
+    if (tab.label === "Employees") {
+      return {
+        ...tab,
+        count: Number(pagination?.total || 0),
+      };
+    }
+
+    if (tab.label === "CHWCP Requests") {
+      return {
+        ...tab,
+        count: Number(chwcpTotal || 0),
+      };
+    }
+
+    return tab;
+  });
+
+  const activeTabIndex = Math.max(
+    0,
+    directoryTabs.findIndex((tab) => tab.label === activeEmployeeTab),
   );
 
-  const activeTab =
-    directoryTabs.find((tab) => tab.label === activeEmployeeTab) ||
-    directoryTabs[0];
+  const activeTab = directoryTabs[activeTabIndex] || directoryTabs[0];
+
+  const loadChwcpCount = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setSummaryRefreshing(true);
+
+    try {
+      const result = await getChwcpRequests({
+        page: 1,
+        limit: 1,
+        search: "",
+        stage: "all",
+      });
+
+      setChwcpTotal(Number(result.summary?.totalVisible || 0));
+      return true;
+    } catch (error) {
+      console.error("LOAD CHWCP SUMMARY COUNT ERROR:", error);
+      return false;
+    } finally {
+      if (!silent) setSummaryRefreshing(false);
+    }
+  }, []);
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
@@ -86,9 +199,14 @@ export default function EmployeesPage() {
   }, []);
 
   useEffect(() => {
+    loadChwcpCount({ silent: true });
+  }, [loadChwcpCount]);
+
+  useEffect(() => {
     if (restoredRef.current) return;
 
     restoredRef.current = true;
+    setActiveEmployeeTab("Employees");
 
     try {
       const savedState = sessionStorage.getItem(EMPLOYEE_STATE_KEY);
@@ -100,14 +218,6 @@ export default function EmployeesPage() {
           setPage?.(Number(parsed.page));
         }
 
-        if (
-          parsed?.activeTab &&
-          directoryTabs.some((tab) => tab.label === parsed.activeTab)
-        ) {
-          setActiveEmployeeTab(parsed.activeTab);
-        } else if (parsed?.activeTab) {
-          setActiveEmployeeTab("Employees");
-        }
       }
 
       setSearch?.("");
@@ -120,15 +230,6 @@ export default function EmployeesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!didMountTabRef.current) {
-      didMountTabRef.current = true;
-      return;
-    }
-
-    scrollToTop("smooth");
-  }, [activeEmployeeTab]);
-
   function handleTabChange(tabLabel) {
     if (tabLabel === activeEmployeeTab) return;
 
@@ -140,7 +241,6 @@ export default function EmployeesPage() {
         EMPLOYEE_STATE_KEY,
         JSON.stringify({
           page: 1,
-          activeTab: tabLabel,
         }),
       );
     } catch (error) {
@@ -148,14 +248,38 @@ export default function EmployeesPage() {
     }
   }
 
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  async function handleSummaryRefresh() {
+    const refreshed = await loadChwcpCount();
 
-  function handleRefresh() {
-    setIsRefreshing(true);
-    setPage?.(1);
-    window.setTimeout(() => {
-      setIsRefreshing(false);
-    }, 600);
+    if (refreshed && activeEmployeeTab === "CHWCP Requests") {
+      setChwcpReloadKey((current) => current + 1);
+    }
+  }
+
+  function renderActiveTable() {
+    if (activeEmployeeTab === "Employees") {
+      return (
+        <EmployeeTable
+          tabs={directoryTabs}
+          activeTab={activeEmployeeTab}
+          onTabChange={handleTabChange}
+        />
+      );
+    }
+
+    if (activeEmployeeTab === "CHWCP Requests") {
+      return (
+        <ChwcpTable
+          key={chwcpReloadKey}
+          tabs={directoryTabs}
+          activeTab={activeEmployeeTab}
+          onTabChange={handleTabChange}
+          onTotalChange={setChwcpTotal}
+        />
+      );
+    }
+
+    return null;
   }
 
   return (
@@ -164,46 +288,84 @@ export default function EmployeesPage() {
         <Header />
       </div>
 
-      <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
+      <main
+        ref={mainScrollRef}
+        className="sibs-dashboard-main-wide"
+      >
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
-          <div style={getAnimationStyle(animationTiming.header)}>
-            <EmployeeDirectoryHeader
-              onRefresh={handleRefresh}
-              isManualRefreshing={isRefreshing}
-            />
-          </div>
+          <section
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6"
+            style={getAnimationStyle(animationTiming.header)}
+          >
+            <span className="sibs-top-accent" aria-hidden="true" />
 
-          <div style={getAnimationStyle(animationTiming.summary)}>
-            <EmployeeDirectoryStats tabs={directoryTabs} />
-          </div>
+            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28] animate-sibs-pulse" />
+                    Employee Directory View
+                  </span>
+                </div>
+
+                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                  Employee Directory
+                </h1>
+
+                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  Manage employee records and CHWCP compliance information.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSummaryRefresh}
+                disabled={summaryRefreshing}
+                title="Refresh employee directory summary"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-[#042C51] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RefreshCcw
+                  size={16}
+                  className={summaryRefreshing ? "animate-spin" : ""}
+                />
+              </button>
+            </div>
+          </section>
+
+          <section
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            style={getAnimationStyle(animationTiming.summary)}
+          >
+            {directoryTabs.map((tab, index) => (
+              <SummaryCard
+                key={tab.label}
+                label={tab.label}
+                value={tab.count}
+                description={tab.description}
+                icon={tab.icon}
+                tone={tab.tone}
+                delay={
+                  animationTiming.summaryCardBase +
+                  index * animationTiming.summaryCardStagger
+                }
+              />
+            ))}
+          </section>
 
           <section
             className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
             style={getAnimationStyle(animationTiming.table)}
           >
-            <div className="border-b border-[#E6ECF2] bg-white p-4 sm:p-5 2xl:p-6">
-              <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-                <div className="min-w-0">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
-                    {activeTab.label === "Employees"
-                      ? "Employee Records"
-                      : `${activeTab.label} Records`}
-                  </h3>
-
-                  <p className="mt-1 text-xs font-semibold text-[#667085]">
-                    {activeTab.description}
-                  </p>
-                </div>
-              </div>
+            <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+              <h2 className="sibs-section-title">
+                {activeTab.label === "Employees"
+                  ? "Employee Records"
+                  : "CHWCP Records"}
+              </h2>
+              <p className="sibs-section-subtitle">{activeTab.description}</p>
             </div>
 
-            <div className="sibs-page-card-in" style={getAnimationStyle(60)}>
-              <EmployeeDirectoryContent
-                tabs={directoryTabs}
-                activeTab={activeEmployeeTab}
-                onTabChange={handleTabChange}
-              />
-            </div>
+            {renderActiveTable()}
           </section>
         </div>
       </main>

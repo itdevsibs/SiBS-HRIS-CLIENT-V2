@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { HeartPulse } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
@@ -9,6 +10,7 @@ import EmployeeProfileContextPanel from "../../components/employee/profile/compo
 import MyEmployeeProfileHeader from "../../components/employee/profile/components/EmployeeProfileHeader.jsx";
 import EmployeeProfileNavigation from "../../components/employee/profile/components/EmployeeProfileNavigation.jsx";
 import MyEmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
+import ChwcpCoverageSection from "../../components/employee/profile/components/ChwcpCoverageSection.jsx";
 
 import { useUser } from "../../services/context/UserContext";
 import { useResignationList } from "../../services/context/ResignationListContext";
@@ -40,7 +42,17 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 const HEADER_PROFILE_PICTURE_UPDATED_EVENT = "sibs:profile-picture-updated";
 
-const EMPLOYEE_PROFILE_TABS = PROFILE_TABS.filter((tab) => tab.key !== "notes");
+const CHWCP_PROFILE_TAB = {
+  key: "chwcp",
+  label: "CHWCP",
+  icon: HeartPulse,
+};
+
+const EMPLOYEE_PROFILE_TABS = PROFILE_TABS
+  .filter((tab) => tab.key !== "notes")
+  .flatMap((tab) =>
+    tab.key === "documents" ? [tab, CHWCP_PROFILE_TAB] : [tab],
+  );
 
 const MY_PROFILE_QUICK_ACTIONS = [
   { label: "Request Profile Change", action: "request-change" },
@@ -94,7 +106,10 @@ export default function UserProfilePage() {
   const activeSubTab = String(activeTab).includes(".")
     ? String(activeTab).split(".")[1]
     : "";
-  const activeProfileLabel = getActiveProfileLabel(activeTab);
+  const activeProfileLabel =
+    activePrimary === "chwcp"
+      ? { primary: "CHWCP", secondary: "Coverage" }
+      : getActiveProfileLabel(activeTab);
   const activeSectionSupportsSave =
     activePrimary === "personal" ||
     Boolean(getStructuredProfileSection(activePrimary));
@@ -653,9 +668,11 @@ export default function UserProfilePage() {
                           : ""}
                       </h2>
                       <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
-                        {isEditing
-                          ? "Editable input mode. Save the profile to lock the current updates."
-                          : "Official record values are shown from the existing employee data source."}
+                        {activePrimary === "chwcp"
+                          ? "Read-only CHWCP shared and personal coverage from the existing CHWCP data source."
+                          : isEditing
+                            ? "Editable input mode. Save the profile to lock the current updates."
+                            : "Official record values are shown from the existing employee data source."}
                       </p>
                     </div>
 
@@ -668,16 +685,24 @@ export default function UserProfilePage() {
                         }`}
                       />
                       <span className="text-[10px] font-bold uppercase text-slate-500">
-                        {isEditing ? "Modified Draft" : "Official Profile Record"}
+                        {activePrimary === "chwcp"
+                          ? "View Only"
+                          : isEditing
+                            ? "Modified Draft"
+                            : "Official Profile Record"}
                       </span>
                     </div>
                   </div>
 
-                  <EmployeeProfileContent
-                    activePrimary={activePrimary}
-                    activeSubTab={activeSubTab}
-                    sectionProps={sectionProps}
-                  />
+                  {activePrimary === "chwcp" ? (
+                    <ChwcpCoverageSection />
+                  ) : (
+                    <EmployeeProfileContent
+                      activePrimary={activePrimary}
+                      activeSubTab={activeSubTab}
+                      sectionProps={sectionProps}
+                    />
+                  )}
                 </section>
 
                 <EmployeeProfileContextPanel

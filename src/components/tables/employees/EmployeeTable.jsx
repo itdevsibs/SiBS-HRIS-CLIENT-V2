@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion as Motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import {
-  Briefcase,
-  Building2,
   CalendarDays,
   Mail,
   MapPin,
@@ -336,6 +334,91 @@ function getEmployeeAccounts(employee = {}) {
   }
 
   return accounts.length ? accounts : ["Unassigned"];
+}
+
+function getEmployeeDepartments(employee = {}) {
+  const departments = [];
+  const seen = new Set();
+
+  function addDepartment(value) {
+    const departmentName =
+      typeof value === "string" || typeof value === "number"
+        ? getCleanValue(value)
+        : getCleanValue(
+            value?.department,
+            value?.departmentName,
+            value?.department_name,
+            value?.name_department,
+            value?.gy_dept_name,
+          );
+
+    if (
+      !departmentName ||
+      /^unassigned$/i.test(departmentName) ||
+      /^n\/?a$/i.test(departmentName)
+    ) {
+      return;
+    }
+
+    const key = departmentName.toLowerCase();
+    if (seen.has(key)) return;
+
+    seen.add(key);
+    departments.push(departmentName);
+  }
+
+  addDepartment(getDepartment(employee));
+
+  const returnedDepartments =
+    employee.departments ||
+    employee.departmentNames ||
+    employee.department_names ||
+    [];
+
+  if (Array.isArray(returnedDepartments)) {
+    returnedDepartments.forEach(addDepartment);
+  }
+
+  const assignedAccounts =
+    employee.assignedAccounts ||
+    employee.assigned_accounts ||
+    [];
+
+  if (Array.isArray(assignedAccounts)) {
+    assignedAccounts.forEach(addDepartment);
+  }
+
+  return departments.length ? departments : [getDepartment(employee)];
+}
+
+function EmployeeDepartmentList({ employee, compact = false }) {
+  return (
+    <div className={`flex flex-col ${compact ? "gap-0.5" : "gap-1"}`}>
+      {getEmployeeDepartments(employee).map((department) => (
+        <div
+          key={department}
+          className="flex min-w-0 items-start gap-1.5"
+        >
+          <span
+            aria-hidden="true"
+            className={`shrink-0 font-extrabold leading-tight text-[#667085] ${
+              compact ? "text-[11px]" : "text-xs"
+            }`}
+          >
+            •
+          </span>
+
+          <span
+            className={`min-w-0 break-words font-extrabold leading-tight text-[#042C51] ${
+              compact ? "text-[11px]" : "text-xs"
+            }`}
+          >
+            {department}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function EmployeeAccountChips({ employee, compact = false }) {
@@ -683,17 +766,14 @@ function MobileEmployeeCard({ employee, onOpen }) {
             Department
           </p>
           {getPosition(employee) ? (
-            <>
-              <p className="mt-1 break-words text-xs font-extrabold text-[#042C51]">
-                {getPosition(employee)}
-              </p>
-              <DetailLine icon={Building2}>{getDepartment(employee)}</DetailLine>
-            </>
-          ) : (
             <p className="mt-1 break-words text-xs font-extrabold text-[#042C51]">
-              {getDepartment(employee)}
+              {getPosition(employee)}
             </p>
-          )}
+          ) : null}
+
+          <div className="mt-1.5">
+            <EmployeeDepartmentList employee={employee} compact />
+          </div>
         </div>
 
         <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
@@ -1141,7 +1221,9 @@ export default function EmployeeTable({
                       size={14}
                       className={`shrink-0 ${isActive ? "text-[#FF5C28]" : "text-[#98A2B3]"}`}
                     />
-                    <span className="truncate">{tab.label}</span>
+                    <span className="truncate">
+                      {tab.label === "CHWCP" ? "CHWCP Requests" : tab.label}
+                    </span>
 
                     {Number(tab.count || 0) > 0 ? (
                       <span
@@ -1296,19 +1378,14 @@ export default function EmployeeTable({
                         <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                           <div className="min-w-[180px]">
                             {getPosition(employee) ? (
-                              <>
-                                <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
-                                  {getPosition(employee)}
-                                </p>
-                                <div className="mt-0.5 2xl:mt-1">
-                                  <DetailLine icon={Briefcase}>{getDepartment(employee)}</DetailLine>
-                                </div>
-                              </>
-                            ) : (
                               <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
-                                {getDepartment(employee)}
+                                {getPosition(employee)}
                               </p>
-                            )}
+                            ) : null}
+
+                            <div className={getPosition(employee) ? "mt-1" : ""}>
+                              <EmployeeDepartmentList employee={employee} />
+                            </div>
                           </div>
                         </td>
 
