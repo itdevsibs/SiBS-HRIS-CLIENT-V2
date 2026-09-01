@@ -31,24 +31,26 @@ export default function ApplicantLeadsDirectory() {
         : leads.length;
 
   return (
-    <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs font-jakarta">
-      <div className="border-b border-[#E6ECF2] px-4 py-3.5 sm:px-5 2xl:py-4">
+    <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta">
+      <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <div className="flex flex-col gap-0.5">
-          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          <h2 className="sibs-card-title">
             {title}
-          </h3>
-          <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+          </h2>
+          <p className="sibs-card-subtitle">
             {description}
           </p>
         </div>
+
+        <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+          <ApplicantLeadsFilters />
+        </div>
       </div>
 
-      <ApplicantLeadsFilters />
-
-      <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
+      <div className="min-h-0 flex-1 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
         <ApplicantLeadViewTabs />
         {leadView === "channels" ? (
-          <div className="overflow-hidden rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white">
+          <div className="overflow-hidden rounded-b-xl border border-t-0 border-sibs-border bg-white">
             <ApplicantLeadsChannelSources />
           </div>
         ) : (

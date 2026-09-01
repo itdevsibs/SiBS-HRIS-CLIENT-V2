@@ -311,7 +311,7 @@ function StatCard({
               {title}
             </p>
             <p
-              className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${valueClassName}`}
+              className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${valueClassName}`}
             >
               {value}
             </p>
@@ -1327,17 +1327,17 @@ export default function KronosAttendancePage() {
 
       <main
         ref={mainRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
+        <div className="mx-auto w-full max-w-[1700px] space-y-5">
           <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6">
-            <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
+            <span className="sibs-top-accent" aria-hidden="true" />
             <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
-                    Kronos Live Records
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
+                    Core HR View
                   </span>
                   <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
                     Page {currentPage}
@@ -1363,7 +1363,7 @@ export default function KronosAttendancePage() {
                     </span>
                   ) : null}
                 </div>
-                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
                   {pageTitle}
                 </h1>
                 <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
@@ -1450,11 +1450,11 @@ export default function KronosAttendancePage() {
             <div className="relative z-40 border-b border-[#E6ECF2] bg-white p-4 sm:p-5">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0">
-                  <h2 className="text-base font-bold text-[#101828]">
+                  <h2 className="font-heading text-sm sm:text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
                     Kronos Attendance Records
                   </h2>
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-[#667085]">
                     Showing {pageStart} to {pageEnd} of {totalRecords} Kronos
                     attendance records.
                   </p>
@@ -1476,7 +1476,7 @@ export default function KronosAttendancePage() {
                         value={searchInput}
                         onChange={(event) => setSearchInput(event.target.value)}
                         placeholder="Search employee..."
-                        className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-3 text-sm font-medium text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:bg-white focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-3 sibs-text-xs font-medium text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:bg-white focus:ring-4 focus:ring-sibs-primary-1/10"
                       />
                     </div>
 
@@ -1484,20 +1484,16 @@ export default function KronosAttendancePage() {
                       id="dateFrom"
                       label="From"
                       value={dateFrom}
-                      onChange={handleDateFromChange}
-                      disabled={loading}
-                      openCalendar={openCalendar}
-                      setOpenCalendar={setOpenCalendar}
+                      onChange={(nextDate) => setDateFrom(nextDate)}
+                      placeholder="Start date"
                     />
 
                     <CustomCalendarPicker
                       id="dateTo"
                       label="To"
                       value={dateTo}
-                      onChange={handleDateToChange}
-                      disabled={loading}
-                      openCalendar={openCalendar}
-                      setOpenCalendar={setOpenCalendar}
+                      onChange={(nextDate) => setDateTo(nextDate)}
+                      placeholder="End date"
                     />
                   </div>
 
@@ -1544,12 +1540,12 @@ export default function KronosAttendancePage() {
                         Reset
                       </button>
                     </div>
-                  ) : (
+                  ) : isEmployee ? (
                     <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[auto_auto] xl:w-auto">
                       <button
                         type="submit"
                         disabled={loading}
-                        className="h-11 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-11 rounded-xl bg-sibs-primary-1 px-4 sibs-text-xs font-bold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Search
                       </button>
@@ -1558,7 +1554,26 @@ export default function KronosAttendancePage() {
                         type="button"
                         onClick={handleClearFilters}
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 sibs-text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[auto_auto] xl:w-auto">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="h-11 rounded-xl bg-sibs-primary-1 px-4 sibs-text-xs font-bold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Search
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleClearFilters}
+                        disabled={loading}
+                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 sibs-text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Reset
                       </button>
@@ -1574,56 +1589,56 @@ export default function KronosAttendancePage() {
               </div>
             ) : null}
 
-            <div className="p-4 sm:p-6">
+            <div className="p-4 sm:p-6 font-jakarta">
               <div className="hidden lg:block">
                 <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
-                  <div className="max-h-[580px] overflow-auto">
+                  <div className="max-h-[580px] overflow-auto sibs-scrollbar">
                     <table className="w-full min-w-[1480px] border-collapse bg-white">
-                      <thead className="sticky top-0 z-10 bg-slate-50">
+                      <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
                         <tr>
-                          <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                            SiBS ID
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                            SIBS ID
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             Employee Name
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             Department
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             Account
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             Site
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             Tracker Date
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             Login
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             Start Break
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             End Break
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             Logout
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             WH
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             BH
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             OT
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             ATH
                           </th>
-                          <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                             Status
                           </th>
                         </tr>
@@ -1635,7 +1650,7 @@ export default function KronosAttendancePage() {
                             <tr key={index}>
                               <td
                                 colSpan={15}
-                                className="border-t border-[#f3f4f6] px-5 py-4"
+                                className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5"
                               >
                                 <div className="h-5 w-full animate-pulse rounded bg-gray-200" />
                               </td>
@@ -1645,7 +1660,7 @@ export default function KronosAttendancePage() {
                           <tr>
                             <td
                               colSpan={15}
-                              className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
+                              className="border-t border-[#f3f4f6] p-10 text-center sibs-text-sm font-bold text-gray-500"
                             >
                               No Kronos attendance records found.
                             </td>
@@ -1670,33 +1685,33 @@ export default function KronosAttendancePage() {
                                   item.gy_tracker_date ||
                                   "row"
                                 }-${index}`}
-                                className="transition-all duration-200 hover:bg-slate-50"
+                                className="transition-all duration-200 hover:bg-[#FFF8F5]"
                               >
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
                                   {item.gy_emp_code || "—"}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#042C51]">
                                   {formatEmployeeName(item)}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                                   {item.department || "—"}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                                   {item.gy_emp_account || "—"}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                                   {getAssignedSite(item)}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#344054]">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                                   {formatDate(item.gy_tracker_date)}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                   <TimeBadge
                                     value={loginTime}
                                     className={getTimeBadgeClass(
@@ -1706,7 +1721,7 @@ export default function KronosAttendancePage() {
                                   />
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                   <TimeBadge
                                     value={breakoutTime}
                                     className={getTimeBadgeClass(
@@ -1716,7 +1731,7 @@ export default function KronosAttendancePage() {
                                   />
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                   <TimeBadge
                                     value={breakinTime}
                                     className={getTimeBadgeClass(
@@ -1726,7 +1741,7 @@ export default function KronosAttendancePage() {
                                   />
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                   <TimeBadge
                                     value={logoutTime}
                                     className={getTimeBadgeClass(
@@ -1736,23 +1751,23 @@ export default function KronosAttendancePage() {
                                   />
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-sibs-primary-1">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold text-[#042C51] tabular-nums">
                                   {getWorkHours(item)}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
                                   {item.gy_tracker_bh ?? "—"}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
                                   {item.gy_tracker_ot ?? "—"}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
                                   {item.gy_tracker_ath ?? "—"}
                                 </td>
 
-                                <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                   {renderStatusBadge(item.gy_tracker_status)}
                                 </td>
                               </tr>

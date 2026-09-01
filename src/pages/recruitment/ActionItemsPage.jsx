@@ -29,10 +29,10 @@ function ActionItemsContent() {
       <ActionItemsCurrentStatus />
 
       <section
-        className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm font-jakarta"
+        className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm font-jakarta"
         style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
-        <header className="flex flex-col gap-2 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <header className="flex flex-col gap-2 border-b border-sibs-border bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="sibs-section-title">
               Action Items – JIT Delivery Focus Registry
@@ -49,7 +49,7 @@ function ActionItemsContent() {
       </section>
 
       <section
-        className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5 font-jakarta"
+        className="sibs-page-card-in rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5 font-jakarta"
         style={{ animationDelay: "300ms", animationFillMode: "both" }}
       >
         <div className="mb-4">
@@ -97,8 +97,8 @@ export default function ActionItemsPage() {
   return (
     <div className="sibs-dashboard-shell">
       <div className="shrink-0"><Header /></div>
-      <main ref={mainRef} className="sibs-dashboard-main">
-        <div className="mx-auto w-full max-w-[1600px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
+      <main ref={mainRef} className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
           <ActionItemsReportProvider>
             <ActionItemsContent />
           </ActionItemsReportProvider>

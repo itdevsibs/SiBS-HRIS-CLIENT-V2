@@ -27,7 +27,7 @@ export default function SuperAdminDashboardHeader({
             Whole-System HRIS Operations &amp; Governance
           </h1>
 
-          <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+          <p className="sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
             Welcome back,{" "}
             <span className="font-extrabold text-sibs-navy">{displayName}</span>.
             You have whole-system administrative permissions across all HRIS modules.

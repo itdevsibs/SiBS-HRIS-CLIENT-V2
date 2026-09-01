@@ -1126,6 +1126,10 @@ export default function EmployeeTable({
     }
   }
 
+  const currentTab = (tabs || []).find((t) => t.label === activeTab);
+  const activeTabDescription =
+    currentTab?.description || "Employee master records";
+
   return (
     <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
       <style>{`
@@ -1154,7 +1158,16 @@ export default function EmployeeTable({
         }
       `}</style>
 
-      <div className="relative overflow-visible p-4 sm:p-5">
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+        <h3 className="font-heading text-sm sm:text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
+          {activeTab === "Employees"
+            ? "Employee Records"
+            : `${activeTab} Records`}
+        </h3>
+        <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-[#667085]">
+          {activeTabDescription}
+        </p>
+
         <PaginationTable
           filterLayout="ta-inline"
           showFilterPanel={false}
@@ -1194,11 +1207,11 @@ export default function EmployeeTable({
                 ]
               : []
           }
-          className="border-0 bg-transparent p-0 shadow-none"
+          className="mt-4 border-0 bg-transparent p-0 shadow-none"
         />
       </div>
 
-      <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
+      <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
         {tabs.length > 1 ? (
           <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
             <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
@@ -1211,7 +1224,7 @@ export default function EmployeeTable({
                     key={tab.label}
                     type="button"
                     onClick={() => onTabChange?.(tab.label)}
-                    className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
+                    className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 sibs-text-xs font-extrabold uppercase tracking-wide transition-colors ${
                       isActive
                         ? "rounded-t-xl bg-white text-[#042C51]"
                         : "text-[#667085] hover:text-[#042C51]"
@@ -1227,7 +1240,7 @@ export default function EmployeeTable({
 
                     {Number(tab.count || 0) > 0 ? (
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors ${
+                        className={`rounded-full px-2 py-0.5 sibs-text-micro font-extrabold tabular-nums transition-colors ${
                           isActive
                             ? "bg-[#042C51] text-white"
                             : "bg-slate-200 text-slate-600"
@@ -1287,22 +1300,22 @@ export default function EmployeeTable({
             <table className="w-full min-w-[1100px] table-fixed border-collapse text-left">
               <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
                 <tr className="border-b border-[#E6ECF2]">
-                  <th scope="col" className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                  <th scope="col" className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     SIBS ID
                   </th>
-                  <th scope="col" className="w-[24%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                  <th scope="col" className="w-[24%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     EMPLOYEE NAME
                   </th>
-                  <th scope="col" className="w-[19%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                  <th scope="col" className="w-[19%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     ACCOUNT / SITE
                   </th>
-                  <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                  <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     DEPARTMENT
                   </th>
-                  <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                  <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     CONTACT & EMAIL
                   </th>
-                  <th scope="col" className="w-[11%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                  <th scope="col" className="w-[11%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
                     HR METADATA
                   </th>
                 </tr>
@@ -1343,7 +1356,7 @@ export default function EmployeeTable({
                           animationDelay: `${Math.min(index, 10) * 36}ms`,
                         }}
                       >
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-xs font-extrabold text-[#FF5C28]">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-[#FF5C28]">
                           {getSibsId(employee) || "N/A"}
                         </td>
 
@@ -1352,12 +1365,12 @@ export default function EmployeeTable({
                             <EmployeeAvatar employee={employee} />
 
                             <div className="min-w-0">
-                              <p className="break-words text-xs font-extrabold leading-tight text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
+                              <p className="break-words sibs-text-xs font-extrabold leading-tight text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
                                 {getEmployeeName(employee)}
                               </p>
 
                               {preferredName ? (
-                                <p className="mt-0.5 text-[10px] font-semibold text-[#8A98B8]">
+                                <p className="mt-0.5 sibs-text-micro font-semibold text-[#8A98B8]">
                                   Preferred: {preferredName}
                                 </p>
                               ) : null}
@@ -1399,7 +1412,7 @@ export default function EmployeeTable({
                         </td>
 
                         <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                          <div className="min-w-[120px] space-y-0.5 text-[10px] font-semibold leading-4 text-[#7B8DB3]">
+                          <div className="min-w-[120px] space-y-0.5 sibs-text-micro font-semibold leading-4 text-[#7B8DB3]">
                             <p>Gender: {getGender(employee)}</p>
                             <p>Civil: {getCivilStatus(employee)}</p>
                             <p>

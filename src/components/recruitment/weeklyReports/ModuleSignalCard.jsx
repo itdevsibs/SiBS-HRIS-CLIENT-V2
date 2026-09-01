@@ -68,7 +68,7 @@ export default function ModuleSignalCard({ item, delay = 0, tone = "navy" }) {
             </p>
 
             <p
-              className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+              className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${selectedTone.value}`}
             >
               {formatNumber(item.value)}
             </p>

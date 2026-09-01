@@ -122,10 +122,10 @@ export default function OMRoleHiringStatus({
       <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
-            <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               Role Hiring Status
             </h3>
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
+            <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
               Role-level delivery, risk status, aging, and ownership
             </p>
           </div>
@@ -202,14 +202,14 @@ export default function OMRoleHiringStatus({
             <table className="w-full min-w-[920px] border-collapse bg-white text-left text-xs">
               <thead className="sibs-data-table-head">
                 <tr className="sibs-data-table-head-row">
-                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Role / Account</th>
-                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Req.</th>
-                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Filled</th>
-                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Open</th>
-                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Due Date</th>
-                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Status</th>
-                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">TA Owner</th>
-                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Aging</th>
+                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Role / Account</th>
+                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Req.</th>
+                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Filled</th>
+                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Open</th>
+                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Due Date</th>
+                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Status</th>
+                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">TA Owner</th>
+                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Aging</th>
                 </tr>
               </thead>
 

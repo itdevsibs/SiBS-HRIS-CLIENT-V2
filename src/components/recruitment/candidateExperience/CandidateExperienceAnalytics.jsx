@@ -85,15 +85,15 @@ export default function CandidateExperienceAnalytics({ records, metrics }) {
 function Panel({ icon: Icon, title, subtitle, delay = 120, children }) {
   return (
     <section
-      className="sibs-page-card-in rounded-xl 2xl:rounded-2xl border border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm transition-all duration-200 hover:shadow-md font-jakarta"
+      className="sibs-page-card-in rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm transition-all duration-200 hover:shadow-md font-jakarta"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="mb-3 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-2.5">
+      <div className="mb-3 flex items-start justify-between gap-3 border-b border-sibs-border pb-2.5">
         <div>
-          <h3 className="text-xs 2xl:text-sm font-black uppercase tracking-wide text-[#042C51]">{title}</h3>
-          <p className="mt-0.5 sibs-text-xs font-semibold leading-tight text-[#667085]">{subtitle}</p>
+          <h3 className="sibs-card-title">{title}</h3>
+          <p className="sibs-card-subtitle">{subtitle}</p>
         </div>
-        <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-[#042C51]">
+        <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-sibs-navy">
           <Icon size={15} strokeWidth={2} />
         </span>
       </div>

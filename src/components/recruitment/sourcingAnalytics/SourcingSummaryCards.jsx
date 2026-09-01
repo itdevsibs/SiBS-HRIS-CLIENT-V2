@@ -94,7 +94,7 @@ function MetricCard({
             </p>
 
             <p
-              className={`mt-1.5 2xl:mt-2 truncate font-extrabold leading-none tabular-nums sibs-tone-${item.tone}-label ${
+              className={`font-heading mt-1.5 2xl:mt-2 truncate font-bold leading-none tabular-nums tracking-tight sibs-tone-${item.tone}-label ${
                 isLongValue ? "text-lg sm:text-xl 2xl:text-2xl" : "text-2xl 2xl:text-3xl"
               }`}
               title={formattedValue}
@@ -103,7 +103,7 @@ function MetricCard({
             </p>
           </div>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-sibs-muted">
             {item.description(totals)}
           </p>
         </div>

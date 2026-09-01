@@ -30,7 +30,7 @@ function SummaryCard({ title, value, icon: Icon, description, tone = "navy", del
             </p>
 
             <p
-              className={`mt-1 text-xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${
+              className={`font-heading mt-1.5 2xl:mt-2 text-xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${
                 featured ? "text-white" : `sibs-tone-${tone}-label`
               }`}
             >

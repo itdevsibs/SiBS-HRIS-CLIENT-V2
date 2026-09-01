@@ -769,75 +769,77 @@ export default function JobDescriptionTable({
   ===================================================== */
 
   return (
-    <section className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
-      <div className="border-b border-[#E6ECF2] px-4 py-5 sm:px-5">
-        <h2 className="sibs-section-title">Job Description Records</h2>
+    <section className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm">
+      <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
+        <h2 className="sibs-card-title">Job Description Records</h2>
 
-        <p className="sibs-section-subtitle">
+        <p className="sibs-card-subtitle">
           Search and filter JD records by role, department, account, and
           supervisory level.
         </p>
+
+        <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+          <PaginationTable
+            filterLayout="ta-inline"
+            showFilterPanel={false}
+            showFilterHeader={false}
+            showPagination={false}
+            searchValue={searchTerm}
+            searchPlaceholder="Search role title, document, department, account, or hiring need..."
+            onSearchChange={(value) => updateFilter(setSearchTerm, value)}
+            dropdownFilters={[
+              {
+                key: "department",
+                value: departmentFilter,
+                options: toDropdownOptions(departmentOptions, "All Departments"),
+                onChange: (value) => updateFilter(setDepartmentFilter, value),
+                includeAll: true,
+                allLabel: "All Departments",
+                label: "Department",
+                placeholder: "Search departments...",
+                searchable: true,
+              },
+              {
+                key: "account",
+                value: accountFilter,
+                options: toDropdownOptions(accountOptions, "All Accounts"),
+                onChange: (value) => updateFilter(setAccountFilter, value),
+                includeAll: true,
+                allLabel: "All Accounts",
+                label: "Account",
+                placeholder: "Search accounts...",
+                searchable: true,
+              },
+              {
+                key: "supervisory",
+                value: supervisoryFilter,
+                options: toDropdownOptions(supervisoryOptions, "All Levels"),
+                onChange: (value) => updateFilter(setSupervisoryFilter, value),
+                includeAll: true,
+                allLabel: "All Levels",
+                label: "Supervisory Level",
+                placeholder: "Search levels...",
+                searchable: true,
+              },
+            ]}
+            rightContent={
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                disabled={!hasActiveFilters}
+                className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-sibs-border disabled:hover:bg-white disabled:hover:text-sibs-muted xl:w-auto"
+              >
+                <RotateCcw size={14} />
+                Clear
+              </button>
+            }
+            className="border-0 bg-transparent p-0 shadow-none"
+          />
+        </div>
       </div>
 
-      <div className="relative space-y-4 overflow-visible p-3.5 sm:p-4 2xl:p-5">
-        <PaginationTable
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          searchValue={searchTerm}
-          searchPlaceholder="Search role title, document, department, account, or hiring need..."
-          onSearchChange={(value) => updateFilter(setSearchTerm, value)}
-          dropdownFilters={[
-            {
-              key: "department",
-              value: departmentFilter,
-              options: toDropdownOptions(departmentOptions, "All Departments"),
-              onChange: (value) => updateFilter(setDepartmentFilter, value),
-              includeAll: true,
-              allLabel: "All Departments",
-              label: "Department",
-              placeholder: "Search departments...",
-              searchable: true,
-            },
-            {
-              key: "account",
-              value: accountFilter,
-              options: toDropdownOptions(accountOptions, "All Accounts"),
-              onChange: (value) => updateFilter(setAccountFilter, value),
-              includeAll: true,
-              allLabel: "All Accounts",
-              label: "Account",
-              placeholder: "Search accounts...",
-              searchable: true,
-            },
-            {
-              key: "supervisory",
-              value: supervisoryFilter,
-              options: toDropdownOptions(supervisoryOptions, "All Levels"),
-              onChange: (value) => updateFilter(setSupervisoryFilter, value),
-              includeAll: true,
-              allLabel: "All Levels",
-              label: "Supervisory Level",
-              placeholder: "Search levels...",
-              searchable: true,
-            },
-          ]}
-          rightContent={
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              disabled={!hasActiveFilters}
-              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#52637A] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#52637A] xl:w-auto"
-            >
-              <RotateCcw size={14} />
-              Clear
-            </button>
-          }
-          className="border-0 bg-transparent p-0 shadow-none"
-        />
-
-        <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+      <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
+        <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
           {/* =================================================
               STATUS TABS
           ================================================= */}
@@ -979,11 +981,12 @@ export default function JobDescriptionTable({
                         className="sibs-data-table-row sibs-page-card-in cursor-pointer hover:bg-[#FFFDFC]"
                         style={{
                           animationDelay: `${index * 30}ms`,
+                          animationFillMode: "both",
                         }}
                       >
                         {/* ROLE / DOCUMENT */}
 
-                        <td className="px-4 py-3.5">
+                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3">
                           <div className="flex items-start gap-2">
                             <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
 
@@ -1007,7 +1010,7 @@ export default function JobDescriptionTable({
 
                         {/* DEPARTMENT / ACCOUNT */}
 
-                        <td className="px-4 py-3.5">
+                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3">
                           <p
                             title={getDepartment(item) || ""}
                             className="truncate text-xs font-extrabold text-[#042C51]"
@@ -1025,19 +1028,19 @@ export default function JobDescriptionTable({
 
                         {/* SUPERVISORY */}
 
-                        <td className="px-4 py-3.5 text-xs font-semibold text-[#475467]">
+                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3 text-xs font-semibold text-[#475467]">
                           {getSupervisoryLevel(item) || "--"}
                         </td>
 
                         {/* STATUS */}
 
-                        <td className="px-4 py-3.5">
+                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3">
                           <JdStatusBadge status={status} />
                         </td>
 
                         {/* DATE / VERSION */}
 
-                        <td className="px-4 py-3.5">
+                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3">
                           <p className="text-xs font-extrabold text-[#042C51]">
                             {getVersion(item) || "--"}
                           </p>

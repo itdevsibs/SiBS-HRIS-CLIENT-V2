@@ -32,8 +32,8 @@ export default function ActionItemsPage() {
         <Header />
       </div>
 
-      <main ref={mainRef} className="sibs-dashboard-main">
-        <div className="mx-auto w-full max-w-[1600px] space-y-5">
+      <main ref={mainRef} className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
           <ActionItemsHeader />
           <ActionItemsStats />
 

@@ -1690,25 +1690,25 @@ export default function AvailablePositionsPage() {
       </div>
 
       <main ref={mainRef} className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
-          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative z-[30] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
+        <div className="mx-auto w-full max-w-[1700px] space-y-5 sm:space-y-6">
+          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative z-[30] overflow-hidden rounded-2xl border border-sibs-border bg-white p-5 font-jakarta shadow-sm sm:p-6">
             <span className="sibs-top-accent" aria-hidden="true" />
 
             <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
                     <Database className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" strokeWidth={2.2} />
                     Recruitment View
                   </span>
                 </div>
 
-                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold tracking-tight text-[#042C51]">
+                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold tracking-tight text-sibs-navy">
                   Available Positions
                 </h1>
 
-                <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                <p className="max-w-3xl text-xs font-semibold leading-relaxed text-sibs-muted sm:text-sm">
                   Manage canonical roles, organizational mapping, linked Job
                   Descriptions, and applicant visibility.
                 </p>
@@ -1721,11 +1721,11 @@ export default function AvailablePositionsPage() {
                   disabled={isRefreshing || isSaving}
                   aria-label="Refresh available positions"
                   title="Refresh available positions"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-sm transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                      isRefreshing ? "animate-spin text-sibs-orange" : ""
                     }`}
                   />
                 </button>
@@ -1739,7 +1739,7 @@ export default function AvailablePositionsPage() {
                     !departmentOptions.length ||
                     !accountOptions.length
                   }
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   Add New Position
@@ -1755,105 +1755,107 @@ export default function AvailablePositionsPage() {
           ) : null}
 
           <section
-            className="sibs-profile-tab-panel sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm"
+            className="sibs-profile-tab-panel sibs-page-card-in rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm"
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
           >
-            <div className="rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-3.5 sm:px-5 2xl:py-4">
+            <div className="rounded-t-2xl border-b border-sibs-border bg-white p-4 sm:p-5 2xl:p-6">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <h2 className="sibs-card-title">
                     Available Position Records
-                  </h3>
+                  </h2>
 
-                  <p className="sibs-section-subtitle">
+                  <p className="sibs-card-subtitle">
                     Search and filter positions by title, department, account,
                     status, and site.
                   </p>
                 </div>
 
-                <span className="inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 sibs-text-micro font-extrabold text-[#042C51]">
+                <span className="inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 sibs-text-micro font-extrabold text-sibs-navy">
                   {filteredPositions.length} Records
                 </span>
               </div>
+
+              <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+                <PaginationTable
+                  filterLayout="ta-inline"
+                  showFilterPanel={false}
+                  showFilterHeader={false}
+                  showPagination={false}
+                  loading={isLoading}
+                  searchValue={search}
+                  searchPlaceholder="Search position, JD, department, account, or skills..."
+                  onSearchChange={setSearch}
+                  dropdownFilters={[
+                    {
+                      key: "status",
+                      value: statusFilter,
+                      options: statusFilterOptions,
+                      onChange: handleStatusFilterChange,
+                      includeAll: false,
+                      allLabel: "All Statuses",
+                      label: "Status",
+                      placeholder: "All Statuses",
+                      searchable: false,
+                      disabled: isLoading,
+                    },
+                    {
+                      key: "department",
+                      value: departmentFilter,
+                      options: departmentFilterOptions,
+                      onChange: handleDepartmentFilterChange,
+                      includeAll: false,
+                      allLabel: "All Departments",
+                      label: "Department",
+                      placeholder: "Search departments...",
+                      searchable: true,
+                      disabled: isLoading,
+                    },
+                    {
+                      key: "account",
+                      value: accountFilter,
+                      options: accountFilterOptions,
+                      onChange: setAccountFilter,
+                      includeAll: false,
+                      allLabel: "All Accounts",
+                      label: "Account",
+                      placeholder: "Search accounts...",
+                      searchable: true,
+                      disabled:
+                        isLoading ||
+                        (departmentFilter !== "All" &&
+                          !filteredAccountOptions.length),
+                    },
+                    {
+                      key: "location",
+                      value: locationFilter,
+                      options: locationFilterOptions,
+                      onChange: setLocationFilter,
+                      includeAll: false,
+                      allLabel: "All Locations",
+                      label: "Location",
+                      placeholder: "Search locations...",
+                      searchable: true,
+                      disabled: isLoading,
+                    },
+                  ]}
+                  rightContent={
+                    <button
+                      type="button"
+                      onClick={handleClearFilters}
+                      disabled={!hasActiveFilters || isLoading}
+                      className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-sibs-border disabled:hover:bg-white disabled:hover:text-sibs-muted xl:w-auto"
+                    >
+                      <RotateCcw size={14} />
+                      Clear
+                    </button>
+                  }
+                  className="border-0 bg-transparent p-0 shadow-none"
+                />
+              </div>
             </div>
 
-            <div className="relative z-[1] space-y-4 rounded-b-2xl p-3.5 sm:p-4 2xl:p-5">
-              <PaginationTable
-                filterLayout="ta-inline"
-                showFilterPanel={false}
-                showFilterHeader={false}
-                showPagination={false}
-                loading={isLoading}
-                searchValue={search}
-                searchPlaceholder="Search position, JD, department, account, or skills..."
-                onSearchChange={setSearch}
-                dropdownFilters={[
-                  {
-                    key: "status",
-                    value: statusFilter,
-                    options: statusFilterOptions,
-                    onChange: handleStatusFilterChange,
-                    includeAll: false,
-                    allLabel: "All Statuses",
-                    label: "Status",
-                    placeholder: "All Statuses",
-                    searchable: false,
-                    disabled: isLoading,
-                  },
-                  {
-                    key: "department",
-                    value: departmentFilter,
-                    options: departmentFilterOptions,
-                    onChange: handleDepartmentFilterChange,
-                    includeAll: false,
-                    allLabel: "All Departments",
-                    label: "Department",
-                    placeholder: "Search departments...",
-                    searchable: true,
-                    disabled: isLoading,
-                  },
-                  {
-                    key: "account",
-                    value: accountFilter,
-                    options: accountFilterOptions,
-                    onChange: setAccountFilter,
-                    includeAll: false,
-                    allLabel: "All Accounts",
-                    label: "Account",
-                    placeholder: "Search accounts...",
-                    searchable: true,
-                    disabled:
-                      isLoading ||
-                      (departmentFilter !== "All" &&
-                        !filteredAccountOptions.length),
-                  },
-                  {
-                    key: "location",
-                    value: locationFilter,
-                    options: locationFilterOptions,
-                    onChange: setLocationFilter,
-                    includeAll: false,
-                    allLabel: "All Locations",
-                    label: "Location",
-                    placeholder: "Search locations...",
-                    searchable: true,
-                    disabled: isLoading,
-                  },
-                ]}
-                rightContent={
-                  <button
-                    type="button"
-                    onClick={handleClearFilters}
-                    disabled={!hasActiveFilters || isLoading}
-                    className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#52637A] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#52637A] xl:w-auto"
-                  >
-                    <RotateCcw size={14} />
-                    Clear
-                  </button>
-                }
-                className="border-0 bg-transparent p-0 shadow-none"
-              />
-
+            <div className="relative z-[1] min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
               <AvailablePositionsTable
                 isLoading={isLoading}
                 paginatedPositions={paginatedPositions}

@@ -56,7 +56,7 @@ export default function KpiCard({
       <div className="mt-1 2xl:mt-1.5">
         <AnimatedNumber
           value={value}
-          className={`block text-xl 2xl:text-2xl font-extrabold leading-none tabular-nums tracking-normal ${palette.value}`}
+          className={`font-heading block text-xl 2xl:text-2xl font-bold leading-none tabular-nums tracking-tight ${palette.value}`}
         />
         <p
           title={subtitle}

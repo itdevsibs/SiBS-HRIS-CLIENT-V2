@@ -438,9 +438,9 @@ function SummaryCard({
 }) {
   const toneClasses = {
     navy: {
-      label: "text-[#042C51]",
-      value: "text-[#042C51]",
-      icon: "bg-[#EAF2FB] text-[#042C51]",
+      label: "text-sibs-navy",
+      value: "text-sibs-navy",
+      icon: "bg-[#EAF2FB] text-sibs-navy",
     },
     emerald: {
       label: "text-[#047857]",
@@ -459,8 +459,8 @@ function SummaryCard({
     },
     orange: {
       label: "text-[#C2410C]",
-      value: "text-[#FF5C28]",
-      icon: "bg-[#FFF3ED] text-[#FF5C28]",
+      value: "text-sibs-orange",
+      icon: "bg-[#FFF3ED] text-sibs-orange",
     },
   };
 
@@ -474,15 +474,15 @@ function SummaryCard({
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
         <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
           <div>
-            <p className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${selectedTone.label}`}>
+            <p className={`m-0 truncate sibs-kpi-kicker ${selectedTone.label}`}>
               {title}
             </p>
-            <p className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${valueClassName || selectedTone.value}`}>
+            <p className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${valueClassName || selectedTone.value}`}>
               {value}
             </p>
           </div>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-kpi-desc text-sibs-muted">
             {description}
           </p>
         </div>
@@ -1323,9 +1323,9 @@ export default function CandidateExperiencePage() {
         ref={mainRef}
         className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
+        <div className="mx-auto w-full max-w-[1700px] space-y-5">
           <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6 mb-5">
-            <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
+            <span className="sibs-top-accent" aria-hidden="true" />
             <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1335,7 +1335,7 @@ export default function CandidateExperiencePage() {
                   </span>
                 </div>
 
-                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
                   Candidate Experience
                 </h1>
 
@@ -1373,10 +1373,10 @@ export default function CandidateExperiencePage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            className="sibs-profile-tab-panel rounded-xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5"
             style={{ animationDelay: "60ms" }}
           >
-            <h2 className="text-base font-bold text-[#101828]">
+            <h2 className="sibs-card-title">
               Candidate Experience Summary
             </h2>
 
@@ -1441,18 +1441,18 @@ export default function CandidateExperiencePage() {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_420px]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:gap-5">
             <section
-              className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+              className="sibs-profile-tab-panel rounded-xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5"
               style={{ animationDelay: "120ms" }}
             >
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <h2 className="text-base font-bold text-[#101828]">
+                  <h2 className="sibs-card-title">
                     Drop-offs by Stage
                   </h2>
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  <p className="sibs-card-subtitle">
                     Shows where candidates are lost.
                   </p>
                 </div>
@@ -1476,7 +1476,7 @@ export default function CandidateExperiencePage() {
                     ),
                   )
                 ) : (
-                  <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-sibs-tertiary-5">
+                  <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-surface p-5 text-center text-sm font-bold text-sibs-tertiary-5">
                     No drop-off data yet.
                   </div>
                 )}
@@ -1484,16 +1484,16 @@ export default function CandidateExperiencePage() {
             </section>
 
             <section
-              className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+              className="sibs-profile-tab-panel rounded-xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5"
               style={{ animationDelay: "180ms" }}
             >
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <h2 className="text-base font-bold text-[#101828]">
+                  <h2 className="sibs-card-title">
                     Drop-offs by Reason
                   </h2>
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  <p className="sibs-card-subtitle">
                     Shows why candidates exit.
                   </p>
                 </div>
@@ -1517,7 +1517,7 @@ export default function CandidateExperiencePage() {
                     ),
                   )
                 ) : (
-                  <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-sibs-tertiary-5">
+                  <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-surface p-5 text-center text-sm font-bold text-sibs-tertiary-5">
                     No drop-off reason data yet.
                   </div>
                 )}
@@ -1534,7 +1534,7 @@ export default function CandidateExperiencePage() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-bold text-sibs-primary-1">
+                  <h3 className="sibs-card-title">
                     Candidate Experience Insight
                   </h3>
 
@@ -1550,17 +1550,17 @@ export default function CandidateExperiencePage() {
           </div>
 
           <section
-            className="relative z-[80] sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+            className="relative z-[80] sibs-profile-tab-panel overflow-visible rounded-2xl border border-sibs-border bg-white shadow-sm"
             style={{ animationDelay: "300ms" }}
           >
-            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+            <div className="border-b border-sibs-border p-4 sm:p-5">
               <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-sibs-primary-1">
+                  <h2 className="sibs-card-title">
                     Candidate Experience List
                   </h2>
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  <p className="sibs-card-subtitle">
                     Search and filter candidate experience records.
                   </p>
                 </div>
@@ -1572,7 +1572,7 @@ export default function CandidateExperiencePage() {
 
               <div className="grid grid-cols-1 gap-3 2xl:grid-cols-[1fr_260px_230px_160px_auto] 2xl:items-end">
                 <div>
-                  <label className="mb-1 block text-sm font-bold text-[#101828]">
+                  <label className="sibs-field-label">
                     Search
                   </label>
 

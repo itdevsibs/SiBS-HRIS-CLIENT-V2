@@ -29,7 +29,7 @@ export default function AdminDashboardActivity({
           <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             Recent Activity
           </h2>
-          <p className="sibs-text-xs font-semibold text-[#667085]">
+          <p className="sibs-text-xs font-semibold text-sibs-muted">
             Latest system and employee activity logs
           </p>
         </div>
@@ -47,11 +47,11 @@ export default function AdminDashboardActivity({
         </button>
       </div>
 
-      <div className="divide-y divide-[#F1F5F9]">
+      <div className="divide-y divide-sibs-border">
         {activities.length === 0 ? (
           <div className="py-8 2xl:py-12 text-center">
-            <Activity className="mx-auto h-6 w-6 2xl:h-7 2xl:w-7 text-[#667085]" />
-            <p className="mt-2 sibs-text-xs font-bold text-[#667085]">
+            <Activity className="mx-auto h-6 w-6 2xl:h-7 2xl:w-7 text-sibs-muted" />
+            <p className="mt-2 sibs-text-xs font-bold text-sibs-muted">
               No activity yet
             </p>
           </div>
@@ -92,7 +92,7 @@ export default function AdminDashboardActivity({
         )}
       </div>
 
-      <div className="flex justify-end border-t border-[#F1F5F9] pt-2.5 2xl:pt-3">
+      <div className="flex justify-end border-t border-sibs-border pt-2.5 2xl:pt-3">
         <button
           type="button"
           onClick={onViewAll}

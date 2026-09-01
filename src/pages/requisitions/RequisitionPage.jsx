@@ -49,10 +49,10 @@ export default function RequisitionPage() {
       <main className="overflow-y-auto p-6">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-sibs-primary-1">
+            <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
               Job Requisitions
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="sibs-text-sm font-semibold text-[#667085]">
               Manage job requisition requests and approvals
             </p>
           </div>
@@ -150,9 +150,9 @@ export default function RequisitionPage() {
 
 function StatCard({ title, value }) {
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
-      <p className="text-sm text-gray-500">{title}</p>
-      <h2 className="text-2xl font-bold">{value}</h2>
+    <div className="rounded-xl bg-white p-4 shadow-sm font-jakarta">
+      <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">{title}</p>
+      <p className="font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-sibs-navy">{value}</p>
     </div>
   );
 }

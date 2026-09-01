@@ -80,9 +80,9 @@ export default function RecruitmentSettingsPage() {
       <main
         ref={mainRef}
         data-recruitment-settings-main="true"
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
+        <div className="mx-auto w-full max-w-[1700px] space-y-5">
           <RecruitmentSettingsHero
             onSyncConfigurations={handleSyncConfigurations}
           />

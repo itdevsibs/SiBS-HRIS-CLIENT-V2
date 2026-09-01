@@ -4,7 +4,7 @@ import ThemedDropdown from "../../layout/dropdown/ThemedDropdown.jsx";
 import { WEEKLY_REPORT_STATUS_OPTIONS } from "../../../lib/utils/weeklyReports/weeklyReportsConstants.js";
 
 const labelClass =
-  "mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]";
+  "mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-sibs-navy";
 
 function toOptions(options) {
   return options.map((option) => ({ label: option, value: option }));
@@ -27,13 +27,13 @@ export default function WeeklyReportsFilters({
           <div className="relative">
             <Search
               size={15}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3]"
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-faint"
             />
             <input
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search by Week Label, Date Range, or Report ID..."
-              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white pl-9 pr-9 text-xs font-semibold text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
+              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border-subtle bg-white pl-9 pr-9 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/20"
             />
 
             {search ? (
@@ -41,7 +41,7 @@ export default function WeeklyReportsFilters({
                 type="button"
                 onClick={() => onSearchChange("")}
                 aria-label="Clear weekly reports search"
-                className="absolute right-2.5 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[#98A2B3] hover:bg-white hover:text-[#FF5C28]"
+                className="absolute right-2.5 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-sibs-faint hover:bg-white hover:text-sibs-orange"
               >
                 <X size={13} />
               </button>
@@ -65,7 +65,7 @@ export default function WeeklyReportsFilters({
           type="button"
           onClick={onClear}
           disabled={!isFiltered}
-          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto active:scale-[0.98]"
+          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl border border-sibs-border-subtle bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-secondary transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto active:scale-[0.98]"
         >
           <Filter size={14} />
           Clear

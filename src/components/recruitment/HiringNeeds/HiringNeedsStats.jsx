@@ -70,7 +70,7 @@ function MetricCard({ item, value, delay = 0 }) {
             </p>
 
             <p
-              className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${item.tone}-label`}
+              className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight sibs-tone-${item.tone}-label`}
             >
               {value.toLocaleString("en-PH")}
             </p>
