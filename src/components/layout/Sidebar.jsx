@@ -354,25 +354,10 @@ async function getApprovalNotificationCountByModule(moduleName) {
 }
 
 function SibsLogo({ collapsed = false, isMobile = false }) {
-  const showFullLogo = !collapsed || isMobile;
-
-  if (showFullLogo) {
-    return (
-      <div className="flex min-w-0 select-none items-center">
-        <img
-          src="/SiBS_Login_Logo.svg"
-          alt="SiBS HRIS"
-          draggable={false}
-          onDragStart={(event) => event.preventDefault()}
-          className="pointer-events-none block h-auto w-[165px] max-w-full select-none object-contain 2xl:w-[180px]"
-          style={{ WebkitUserDrag: "none", userSelect: "none" }}
-        />
-      </div>
-    );
-  }
+  const showText = !collapsed || isMobile;
 
   return (
-    <div className="flex min-w-0 select-none items-center justify-center">
+    <div className="flex min-w-0 select-none items-center">
       <MotionDiv
         whileHover={{ rotate: -3, scale: 1.05 }}
         transition={{ type: "spring", stiffness: 260, damping: 18 }}
@@ -413,6 +398,50 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           S
         </MotionSpan>
       </MotionDiv>
+
+      <div
+        className={`min-w-0 leading-none overflow-hidden whitespace-nowrap transition-all duration-300 ${
+          showText
+            ? "max-w-[150px] 2xl:max-w-[170px] opacity-100 ml-2.5"
+            : "max-w-0 opacity-0 pointer-events-none ml-0"
+        }`}
+      >
+        <div className="flex min-w-0 items-baseline whitespace-nowrap">
+          <MotionSpan
+            className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em]"
+            animate={{
+              color: ["#FFFFFF", "#FF5C28", "#FFFFFF"],
+            }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut",
+              times: [0, 0.5, 1],
+            }}
+          >
+            SiBS&nbsp;
+          </MotionSpan>
+
+          <MotionSpan
+            className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em]"
+            animate={{
+              color: ["#FF5C28", "#FFFFFF", "#FF5C28"],
+            }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut",
+              times: [0, 0.5, 1],
+            }}
+          >
+            HRIS
+          </MotionSpan>
+        </div>
+
+        <p className="mt-0.5 text-[7.5px] 2xl:text-[8.5px] font-semibold uppercase tracking-[0.08em] 2xl:tracking-[0.1em] text-slate-300/80">
+          Human Resource System
+        </p>
+      </div>
     </div>
   );
 }
