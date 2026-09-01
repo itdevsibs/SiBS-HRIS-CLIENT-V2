@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Activity, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useUser } from "../../services/context/UserContext";
 import { getLogin } from "../../lib/axios/getLogin";
 
@@ -9,24 +9,6 @@ function getResponseUser(result) {
     result?.user ||
     result?.data?.user ||
     result?.data ||
-    null
-  );
-}
-
-function getResponseExpiry(result) {
-  return (
-    result?.expiresAt ||
-    result?.data?.expiresAt ||
-    result?.accessTokenExpiresAt ||
-    result?.data?.accessTokenExpiresAt ||
-    null
-  );
-}
-
-function getResponseExpiresInMs(result) {
-  return (
-    result?.expiresInMs ||
-    result?.data?.expiresInMs ||
     null
   );
 }
@@ -51,26 +33,6 @@ function getDashboardPath(user) {
   }
 
   return "/dashboard/admin";
-}
-
-function getSafePostLoginRedirect(search = "") {
-  const params = new URLSearchParams(search || "");
-  const redirect = String(params.get("redirect") || "").trim();
-
-  /*
-   * Only allow internal application paths. This prevents an external URL
-   * from being used as an open redirect.
-   */
-  if (
-    !redirect ||
-    !redirect.startsWith("/") ||
-    redirect.startsWith("//") ||
-    redirect.includes("\\")
-  ) {
-    return "";
-  }
-
-  return redirect;
 }
 
 function getLoginFailureMessage(result = {}) {
@@ -98,19 +60,19 @@ function getLoginFailureMessage(result = {}) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { completeInteractiveLogin } = useUser();
+  const { setUser } = useUser();
 
   const [sibsId, setSibsId] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showError, setShowError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const showPopup = (message) => {
     setErrorMessage(message);
     setShowError(true);
-    window.setTimeout(() => setShowError(false), 3000);
+    setTimeout(() => setShowError(false), 3000);
   };
 
   const clearError = () => {
@@ -118,10 +80,31 @@ export default function LoginPage() {
     setShowError(false);
   };
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
+  const saveExpiry = (result) => {
+    const expiresAt =
+      result?.expiresAt ||
+      result?.data?.expiresAt ||
+      result?.accessTokenExpiresAt ||
+      result?.data?.accessTokenExpiresAt;
+
+    if (expiresAt) {
+      sessionStorage.setItem("accessTokenExpiresAt", String(expiresAt));
+      localStorage.setItem("token_expires_at", String(expiresAt));
+      return;
+    }
+
+    sessionStorage.removeItem("accessTokenExpiresAt");
+    localStorage.removeItem("token_expires_at");
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
     const finalSibsId = sibsId.trim();
+
+    /*
+     * Preserve the password exactly as entered.
+     */
     const finalPassword = password;
 
     if (!finalSibsId || !finalPassword) {
@@ -151,31 +134,22 @@ export default function LoginPage() {
         return;
       }
 
-      const expiresAt = getResponseExpiry(result);
-      const expiresInMs = getResponseExpiresInMs(result);
+      saveExpiry(result);
+      setUser(user);
 
-      completeInteractiveLogin(user, expiresAt, expiresInMs);
+      const dashboardPath = getDashboardPath(user);
 
-      const postLoginRedirect =
-        getSafePostLoginRedirect(location.search);
-
-      navigate(
-        postLoginRedirect || getDashboardPath(user),
-        { replace: true },
-      );
-    } catch (error) {
-      console.error(
-        "Login error:",
-        error?.response?.data || error?.message,
-      );
+      navigate(dashboardPath, { replace: true });
+    } catch (err) {
+      console.error("Login error:", err?.response?.data || err?.message);
 
       sessionStorage.removeItem("accessTokenExpiresAt");
       localStorage.removeItem("token_expires_at");
 
       setPassword("");
       showPopup(
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
           "Invalid SIBS ID or password.",
       );
     } finally {
@@ -187,10 +161,12 @@ export default function LoginPage() {
     <div style={styles.page}>
       <div style={styles.card}>
         <div style={styles.logoBox}>
-          <Activity size={40} color="white" />
-          <span style={styles.logoText}>
-            SiBS <span style={styles.orange}>HRIS</span>
-          </span>
+          <img
+            src="/SiBS_Login_Logo.svg"
+            alt="SiBS HRIS"
+            draggable={false}
+            style={styles.logoImage}
+          />
         </div>
 
         {showError && (
@@ -212,8 +188,8 @@ export default function LoginPage() {
               autoComplete="username"
               value={sibsId}
               disabled={loading}
-              onChange={(event) => {
-                setSibsId(event.target.value);
+              onChange={(e) => {
+                setSibsId(e.target.value);
                 if (showError) clearError();
               }}
               style={styles.input}
@@ -222,18 +198,31 @@ export default function LoginPage() {
 
           <label style={styles.label}>
             Password
-            <input
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              value={password}
-              disabled={loading}
-              onChange={(event) => {
-                setPassword(event.target.value);
-                if (showError) clearError();
-              }}
-              style={styles.input}
-            />
+            <div style={styles.passwordField}>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                autoComplete="current-password"
+                value={password}
+                disabled={loading}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (showError) clearError();
+                }}
+                style={{ ...styles.input, ...styles.passwordInput }}
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                disabled={loading}
+                style={styles.passwordToggle}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </label>
 
           <button type="submit" disabled={loading} style={styles.button}>
@@ -275,13 +264,14 @@ const styles = {
     gap: "12px",
     marginBottom: "24px",
   },
-  logoText: {
-    color: "white",
-    fontSize: "30px",
-    fontWeight: "600",
-  },
-  orange: {
-    color: "#f97316",
+  logoImage: {
+    display: "block",
+    width: "100%",
+    maxWidth: "300px",
+    height: "auto",
+    objectFit: "contain",
+    userSelect: "none",
+    WebkitUserDrag: "none",
   },
   label: {
     display: "block",
@@ -300,6 +290,29 @@ const styles = {
     outline: "none",
     fontSize: "15px",
     boxSizing: "border-box",
+  },
+  passwordField: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: "46px",
+  },
+  passwordToggle: {
+    position: "absolute",
+    right: "10px",
+    top: "50%",
+    transform: "translateY(-38%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "30px",
+    height: "30px",
+    padding: 0,
+    border: "none",
+    borderRadius: "6px",
+    background: "transparent",
+    color: "rgba(255,255,255,0.9)",
+    cursor: "pointer",
   },
   button: {
     width: "100%",
