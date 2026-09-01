@@ -1479,10 +1479,10 @@ export default function WorkforceHiringOverviewDetailsTable() {
             <div className="flex min-w-0 items-start gap-2">
 
               <div className="min-w-0 space-y-0.5">
-                <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
+                <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                   Detailed Performance by Cluster / Account (6-Week Multi-Week Ledger)
                 </h2>
-                <p className="sibs-text-xs font-semibold text-[#667085]">
+                <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
                   Master account-level capacity ledger across the selected six-week window, including requirements, buffer, workforce loss, pipeline, and yield metrics.
                 </p>
               </div>

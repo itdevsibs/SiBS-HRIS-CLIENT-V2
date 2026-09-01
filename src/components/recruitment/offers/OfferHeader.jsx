@@ -16,16 +16,16 @@ export default function OfferHeader({
 
       <div className="mt-0.5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 space-y-1">
-          <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
-            <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+          <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
+            <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
             Recruitment View
           </span>
 
-          <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+          <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
             Offers
           </h1>
 
-          <p className="max-w-6xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+          <p className="max-w-6xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
             Review candidates currently in the Offered stage, track approval
             progress, and keep offer decisions synchronized with Candidate
             Pipeline.
@@ -38,13 +38,13 @@ export default function OfferHeader({
               type="button"
               onClick={onRefresh}
               disabled={isManualRefreshing}
-              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-sm outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
               aria-label="Refresh offers data"
               title="Refresh offers"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                  isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                  isManualRefreshing ? "animate-spin text-sibs-orange" : ""
                 }`}
               />
             </button>
@@ -53,13 +53,13 @@ export default function OfferHeader({
       </div>
 
       {routeFilterActive ? (
-        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[#FF5C28]/20 bg-[#FFF7F3] p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-sibs-orange/20 bg-sibs-cream-light p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="sibs-kicker text-[#FF5C28]">Selected Candidate</p>
-            <p className="mt-1 truncate text-xs font-extrabold text-[#042C51] sm:text-sm">
+            <p className="sibs-kicker text-sibs-orange">Selected Candidate</p>
+            <p className="mt-1 truncate text-xs font-extrabold text-sibs-navy sm:text-sm">
               {routeCandidateLabel || "Candidate from Pipeline"}
             </p>
-            <p className="mt-0.5 text-[11px] font-semibold text-[#667085]">
+            <p className="mt-0.5 text-[11px] font-semibold text-sibs-muted">
               The directory is temporarily narrowed to this candidate.
             </p>
           </div>

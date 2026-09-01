@@ -62,7 +62,7 @@ export default function SummaryCard({
             <p className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${currentTone.label}`}>
               {title}
             </p>
-            <p className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${currentTone.value}`}>
+            <p className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${currentTone.value}`}>
               {Number(value || 0).toLocaleString("en-US")}
             </p>
           </div>

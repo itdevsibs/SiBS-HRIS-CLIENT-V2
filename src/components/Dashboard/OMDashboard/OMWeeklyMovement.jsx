@@ -32,7 +32,7 @@ export default function OMWeeklyMovement({ movement = {}, delay = 0 }) {
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div>
-        <h2 className="text-sm 2xl:text-base font-extrabold text-[#042C51]">
+        <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           Weekly Movement Pipeline
         </h2>
         <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
@@ -49,10 +49,10 @@ export default function OMWeeklyMovement({ movement = {}, delay = 0 }) {
                 animationFillMode: "both",
               }}
             >
-              <span className="text-[9px] 2xl:text-[10px] font-extrabold uppercase tracking-normal">
+              <span className="sibs-text-micro font-extrabold uppercase tracking-normal">
                 {label}
               </span>
-              <span className="mt-1.5 2xl:mt-2 text-base 2xl:text-xl font-extrabold tabular-nums">
+              <span className="mt-1.5 2xl:mt-2 font-heading text-base 2xl:text-xl font-bold tabular-nums">
                 {formatNumber(value)}
               </span>
             </div>

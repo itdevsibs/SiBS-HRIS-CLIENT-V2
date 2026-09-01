@@ -14,7 +14,7 @@ export default function EmployeeDirectoryTabs({ tabs, activeTab, onTabChange }) 
               key={tab.label}
               type="button"
               onClick={() => onTabChange?.(tab.label)}
-              className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
+              className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 sibs-text-xs font-extrabold uppercase tracking-wide transition-colors ${
                 isActive
                   ? "rounded-t-xl bg-white text-[#042C51]"
                   : "text-[#667085] hover:text-[#042C51]"
@@ -28,7 +28,7 @@ export default function EmployeeDirectoryTabs({ tabs, activeTab, onTabChange }) 
 
               {Number(tab.count || 0) > 0 ? (
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors ${
+                  className={`rounded-full px-2 py-0.5 sibs-text-micro font-extrabold tabular-nums transition-colors ${
                     isActive
                       ? "bg-[#042C51] text-white"
                       : "bg-slate-200 text-slate-600"

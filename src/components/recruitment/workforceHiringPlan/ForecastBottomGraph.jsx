@@ -254,10 +254,10 @@ function AnalyticsCard({
     <article className="flex h-full min-h-[360px] 2xl:min-h-[390px] flex-col overflow-hidden rounded-xl border border-[#DDE5EE] bg-white p-3.5 2xl:p-4 shadow-sm">
       <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[#E9EEF4] pb-2.5">
         <div className="min-w-0">
-          <h3 className="truncate text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          <h3 className="truncate font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             {title}
           </h3>
-          <p className="mt-0.5 truncate sibs-text-micro font-semibold text-[#667085]">
+          <p className="mt-0.5 truncate sibs-text-xs font-semibold text-[#667085]">
             {subtitle}
           </p>
         </div>

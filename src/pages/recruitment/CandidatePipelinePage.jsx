@@ -430,15 +430,15 @@ function PipelineMetricCard({ label, value, description, icon: Icon, tone = "nav
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
         <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
           <div>
-            <p className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${tone}-label`}>
+            <p className={`m-0 truncate sibs-kpi-kicker sibs-tone-${tone}-label`}>
               {label}
             </p>
-            <p className={`mt-0.5 font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums sibs-tone-${tone}-label`}>
+            <p className={`mt-0.5 font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight sibs-tone-${tone}-label`}>
               {Number(value || 0).toLocaleString("en-US")}
             </p>
           </div>
 
-          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
+          <p className="line-clamp-1 truncate sibs-kpi-desc text-sibs-muted">
             {description}
           </p>
         </div>
@@ -744,22 +744,22 @@ export default function CandidatePipelinePage() {
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
           <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm sm:p-5 2xl:p-6 md:flex-row md:items-center"
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm sm:p-5 2xl:p-6 md:flex-row md:items-center"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
             <span className="sibs-top-accent" aria-hidden="true" />
 
             <div className="mt-0.5 min-w-0">
-              <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+              <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
+                <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
                 Recruitment Lifecycle
               </div>
 
-              <h1 className="mt-1 break-words text-lg 2xl:text-2xl font-extrabold tracking-normal text-[#042C51]">
+              <h1 className="font-heading mt-1 break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
                 Candidate Pipeline
               </h1>
 
-              <p className="mt-0.5 max-w-3xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+              <p className="mt-0.5 max-w-3xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
                 Stage-by-stage applicant progress engine. Review PRFs, issue online assessments, schedule interviews, process offers, and track onboarding conversions.
               </p>
             </div>
@@ -771,15 +771,15 @@ export default function CandidatePipelinePage() {
                 disabled={isLoading}
                 title="Refresh pipeline data"
                 aria-label="Refresh pipeline data"
-                className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-sm outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <RefreshCw className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${isLoading ? "animate-spin text-[#FF5C28]" : ""}`} />
+                <RefreshCw className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${isLoading ? "animate-spin text-sibs-orange" : ""}`} />
               </button>
 
               <button
                 type="button"
                 onClick={() => navigate("/recruitment/talent-pool")}
-                className="sibs-button-primary inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] active:scale-[0.98]"
+                className="sibs-button-primary inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover active:scale-[0.98]"
               >
                 <Users size={15} />
                 Sourced Talent Pool

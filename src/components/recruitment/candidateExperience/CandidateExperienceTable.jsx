@@ -23,10 +23,10 @@ export default function CandidateExperienceTable({ records, onSelect }) {
     <div className="font-jakarta">
       <CandidateExperienceMobileCards records={paginatedRecords} onSelect={onSelect} />
 
-      <div className="hidden overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white md:block">
+      <div className="hidden overflow-x-auto rounded-xl border border-sibs-border bg-white md:block">
         <table className="w-full min-w-[1200px] border-collapse font-jakarta text-xs text-left">
-          <thead className="bg-[#F8FAFC]">
-            <tr className="border-b border-[#E6ECF2]">
+          <thead className="bg-sibs-surface">
+            <tr className="border-b border-sibs-border">
               {[
                 "Candidate",
                 "Role / Account",
@@ -40,14 +40,14 @@ export default function CandidateExperienceTable({ records, onSelect }) {
               ].map((label) => (
                 <th
                   key={label}
-                  className="px-2.5 py-2 2xl:px-4 2xl:py-3 text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-[#042C51]"
+                  className="px-2.5 py-2 2xl:px-4 2xl:py-3 text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy"
                 >
                   {label}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#E6ECF2] font-jakarta">
+          <tbody className="divide-y divide-sibs-border font-jakarta">
             {paginatedRecords.length ? (
               paginatedRecords.map((record, index) => (
                 <tr

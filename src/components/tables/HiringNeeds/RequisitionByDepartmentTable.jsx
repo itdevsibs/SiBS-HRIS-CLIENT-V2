@@ -85,11 +85,11 @@ export default function RequisitionByDepartmentTable({
       }}
     >
       <div>
-        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+        <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           Requisition by Department
         </h3>
 
-        <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+        <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
           Active approved and pending request quota
         </p>
       </div>

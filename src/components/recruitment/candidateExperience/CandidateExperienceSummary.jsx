@@ -22,7 +22,7 @@ function SummaryCard({
     <article
       className={`sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-2.5 2xl:p-3.5 font-jakarta ${
         featured
-          ? "!border-transparent !bg-gradient-to-br !from-[#042C51] !to-[#0A467E] text-white"
+          ? "!border-transparent !bg-gradient-to-br !from-sibs-navy !to-[#0A467E] text-white"
           : ""
       }`}
       style={{
@@ -34,7 +34,7 @@ function SummaryCard({
         <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
           <div>
             <p
-              className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${
+              className={`m-0 truncate sibs-kpi-kicker ${
                 featured ? "text-white" : `sibs-tone-${tone}-label`
               }`}
             >
@@ -42,7 +42,7 @@ function SummaryCard({
             </p>
 
             <p
-              className={`mt-0.5 text-xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${
+              className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${
                 featured ? "text-white" : `sibs-tone-${tone}-label`
               }`}
             >
@@ -51,8 +51,8 @@ function SummaryCard({
           </div>
 
           <p
-            className={`line-clamp-1 truncate sibs-text-micro font-bold ${
-              featured ? "text-slate-200" : "text-[#667085]"
+            className={`line-clamp-1 truncate sibs-kpi-desc ${
+              featured ? "text-slate-200" : "text-sibs-muted"
             }`}
           >
             {description}

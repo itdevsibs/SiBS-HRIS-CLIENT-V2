@@ -14,7 +14,7 @@ function SummaryCard({ item, delay = 0 }) {
 
   return (
     <article
-      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card font-jakarta flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
@@ -26,7 +26,7 @@ function SummaryCard({ item, delay = 0 }) {
           </p>
 
           <p
-            className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${metricTone.value}`}
+            className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${metricTone.value}`}
           >
             {item.count}
           </p>

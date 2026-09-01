@@ -242,12 +242,12 @@ function StatCard({
         <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
           <div>
             <p
-              className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${tone}-label`}
+              className={`m-0 truncate sibs-kpi-kicker sibs-tone-${tone}-label`}
             >
               {title}
             </p>
             <div className="mt-1.5 2xl:mt-2 flex flex-wrap items-baseline justify-between gap-2">
-              <p className={`text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}>
+              <p className={`font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight sibs-tone-${tone}-label`}>
                 {value}
               </p>
               {badgeText && (
@@ -259,7 +259,7 @@ function StatCard({
               )}
             </div>
           </div>
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-kpi-desc text-sibs-muted">
             {description}
           </p>
         </div>
@@ -792,31 +792,26 @@ export default function JobDescriptionPage() {
       >
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
           <section
-            className="sibs-page-header-in sibs-page-card-in relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
-            <span
-              className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 overflow-hidden rounded-t-[15px]"
-              aria-hidden="true"
-            >
-              <span className="block h-full w-full bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
-            </span>
+            <span className="sibs-top-accent" aria-hidden="true" />
 
             <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
                     <ClipboardList className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" strokeWidth={2.2} />
                     Recruitment View
                   </span>
                 </div>
 
-                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold tracking-tight text-[#042C51]">
+                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
                   Job Description
                 </h1>
 
-                <p className="max-w-2xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                <p className="max-w-2xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
                   Manage JD readiness for Existing, For Revision, and New Job Description requirements.
                 </p>
               </div>
@@ -826,13 +821,13 @@ export default function JobDescriptionPage() {
                   type="button"
                   onClick={loadJobDescriptionRecords}
                   disabled={isRefreshing}
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-sm transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
                   title="Refresh Job Descriptions"
                   aria-label="Refresh Job Descriptions"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                      isRefreshing ? "animate-spin text-sibs-orange" : ""
                     }`}
                   />
                 </button>
@@ -840,7 +835,7 @@ export default function JobDescriptionPage() {
                 <button
                   type="button"
                   onClick={handleOpenCreateModal}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover focus:outline-none focus:ring-4 focus:ring-sibs-orange/20"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   New Job Description

@@ -140,7 +140,7 @@ export default function StatusModal({
                 )}
               </div>
 
-              <h3 className="break-words font-jakarta text-base 2xl:text-lg font-extrabold tracking-tight text-[#042C51]">
+              <h3 className="break-words font-heading text-base 2xl:text-lg font-bold tracking-tight text-sibs-navy">
                 {finalTitle}
               </h3>
             </div>
@@ -208,7 +208,7 @@ export default function StatusModal({
               )}
             </div>
 
-            <h2 className="font-jakarta text-lg 2xl:text-xl font-extrabold tracking-tight text-[#042C51]">
+            <h2 className="font-heading text-lg 2xl:text-xl font-bold tracking-tight text-sibs-navy">
               {finalTitle}
             </h2>
 

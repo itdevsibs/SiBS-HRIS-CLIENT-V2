@@ -531,18 +531,18 @@ function SummaryCard({ icon: Icon, label, value, description, tone = "blue" }) {
       <div className="flex h-full items-start justify-between gap-4">
         <div className="min-w-0 flex-1 self-stretch">
           <p
-            className={`m-0 truncate text-[10px] font-extrabold uppercase tracking-normal ${selectedTone.label}`}
+            className={`m-0 truncate sibs-text-micro font-extrabold uppercase tracking-normal ${selectedTone.label}`}
           >
             {label}
           </p>
 
           <p
-            className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal ${selectedTone.value}`}
+            className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${selectedTone.value}`}
           >
             {formatNumber(value)}
           </p>
 
-          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-2 sibs-text-micro font-semibold leading-tight text-[#667085]">
             {description}
           </p>
         </div>
@@ -2160,10 +2160,10 @@ function AccountSettingsLoading() {
         <Header />
       </div>
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mx-auto max-w-[1600px] space-y-5">
+      <main className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1700px] space-y-5">
           <section className="sibs-card relative overflow-hidden p-5 sm:p-6">
-            <span className="pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
+            <span className="sibs-top-accent" aria-hidden="true" />
             <div className="mt-1">
               <div className="mb-3 h-6 w-56 animate-sibs-pulse rounded bg-gray-200" />
               <div className="mb-2 h-8 w-64 max-w-full animate-sibs-pulse rounded bg-gray-200" />
@@ -2560,13 +2560,10 @@ export default function AccountSettingsPage() {
         <Header />
       </div>
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mx-auto max-w-[1600px] space-y-5">
+      <main className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1700px] space-y-5">
           <section className="sibs-page-header-in sibs-card relative overflow-hidden p-5 sm:p-6">
-            <span
-              className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]"
-              aria-hidden="true"
-            />
+            <span className="sibs-top-accent" aria-hidden="true" />
 
             <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 space-y-1.5">
@@ -2581,7 +2578,7 @@ export default function AccountSettingsPage() {
                   </span>
                 </div>
 
-                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
                   Account Settings
                 </h1>
 

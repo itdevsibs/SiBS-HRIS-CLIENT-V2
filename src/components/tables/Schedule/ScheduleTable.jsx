@@ -123,7 +123,7 @@ function StatCard({
 
   return (
     <article
-      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card font-jakarta flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={getAnimationStyle(delay)}
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
@@ -135,7 +135,7 @@ function StatCard({
           </p>
 
           <p
-            className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+            className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${selectedTone.value}`}
           >
             {value}
           </p>
@@ -348,11 +348,11 @@ export default function ScheduleTable({
           className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs"
           style={getAnimationStyle(120)}
         >
-          <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
-            <h3 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
+          <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               Schedule Records
             </h3>
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
+            <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
               Review your scheduled work days, shift times, breaks, and registered dates.
             </p>
 
@@ -439,33 +439,33 @@ export default function ScheduleTable({
                             animationFillMode: "both",
                           }}
                         >
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-xs font-extrabold text-[#536887]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#536887]">
                             {formatDate(item.gy_sched_day)}
                           </td>
 
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
                             <Badge className={getModeBadgeClass(item.gy_sched_mode)}>
                               {formatMode(item.gy_sched_mode)}
                             </Badge>
                           </td>
 
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#042C51]">
                             {formatTime(item.gy_sched_login)}
                           </td>
 
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
                             {formatTime(item.gy_sched_breakout)}
                           </td>
 
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
                             {formatTime(item.gy_sched_breakin)}
                           </td>
 
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#042C51]">
                             {formatTime(item.gy_sched_logout)}
                           </td>
 
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 2xl:py-3 text-center text-xs font-semibold text-[#667085]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#667085]">
                             {formatDate(item.gy_sched_reg)}
                           </td>
                         </tr>

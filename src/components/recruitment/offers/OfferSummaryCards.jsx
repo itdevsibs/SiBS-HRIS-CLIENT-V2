@@ -25,7 +25,7 @@ function StatCard({ title, value, icon, description, tone = "navy", delay = 0 })
               {title}
             </p>
             <p
-              className={`mt-1 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums sibs-tone-${tone}-label`}
+              className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight sibs-tone-${tone}-label`}
             >
               {value ?? 0}
             </p>

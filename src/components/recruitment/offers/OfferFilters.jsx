@@ -32,9 +32,9 @@ export default function OfferFilters() {
     (accountFilter && accountFilter !== "All Accounts");
 
   return (
-    <div className="border-b border-[#E6ECF2] px-4 py-3.5 font-jakarta sm:px-5 2xl:px-6 2xl:py-4">
-      <h2 className="font-jakarta text-base 2xl:text-lg font-extrabold text-[#042C51]">Offer Records</h2>
-      <p className="mt-0.5 font-jakarta sibs-text-xs font-semibold leading-relaxed text-[#667085]">
+    <div className="border-b border-sibs-border px-4 py-3.5 font-jakarta sm:px-5 2xl:px-6 2xl:py-4">
+      <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">Offer Records</h2>
+      <p className="mt-0.5 sibs-text-xs font-semibold leading-relaxed text-sibs-muted">
         Search and filter offered candidates by approval status and account.
       </p>
 
@@ -76,7 +76,7 @@ export default function OfferFilters() {
               type="button"
               onClick={clearFilters}
               disabled={!hasActiveFilters}
-              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#D7DEE8] disabled:hover:bg-white disabled:hover:text-[#98A2B3] xl:w-auto"
+              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-3 text-xs font-extrabold text-sibs-faint transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-sibs-border-subtle disabled:hover:bg-white disabled:hover:text-sibs-faint xl:w-auto"
             >
               <Filter size={14} />
               Clear

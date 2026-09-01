@@ -1116,11 +1116,11 @@ export default function LeavesTable({
         className="sibs-profile-tab-panel sibs-page-card-in sibs-card flex min-h-full flex-1 flex-col justify-between min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs"
         style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
-        <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
-          <h3 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
+        <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+          <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             {isPersonalView ? "My Leave Records" : "Leave Records"}
           </h3>
-          <p className="mt-1 text-xs font-semibold text-[#667085]">
+          <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
             {isPersonalView
               ? "Review your filed leaves, approval statuses, justifications, and attachment context."
               : "Review employee leave requests, approval statuses, justifications, and attachment records."}
@@ -1188,13 +1188,13 @@ export default function LeavesTable({
           />
         </div>
 
-        <div className="p-4 sm:p-5 2xl:p-6">
+        <div className="p-4 sm:p-5 2xl:p-6 font-jakarta">
           <div className="mt-3 block sm:hidden">
             <button
               type="button"
               onClick={runSearch}
               disabled={loading}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E64B1B] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E64B1B] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Search size={16} />
               Search Leave Records
@@ -1213,7 +1213,7 @@ export default function LeavesTable({
                       SIBS ID
                     </th>
                     <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left">
-                      Employee
+                      Employee Name
                     </th>
                     <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left">
                       Account
@@ -1279,13 +1279,11 @@ export default function LeavesTable({
                           animationFillMode: "both",
                         }}
                       >
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs">
-                          <span className="font-extrabold text-[#FF5C28]">
-                            {item.gy_user_code || "—"}
-                          </span>
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
+                          {item.gy_user_code || "—"}
                         </td>
 
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
                           <div className="flex items-center gap-2.5">
                             <div
                               className="shrink-0"
@@ -1295,19 +1293,19 @@ export default function LeavesTable({
                               <EmployeeAvatar employee={item} />
                             </div>
 
-                            <p className="m-0 max-w-[240px] truncate font-extrabold text-[#042C51]">
+                            <p className="m-0 max-w-[240px] truncate sibs-text-xs font-extrabold text-[#042C51]">
                               {item.gy_full_name || item.gy_username || "—"}
                             </p>
                           </div>
                         </td>
 
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs font-bold text-[#344054]">
-                          <span className="inline-flex max-w-[190px] truncate rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-[#164E7A]">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <span className="inline-flex max-w-[190px] truncate rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-[#164E7A]">
                             {item.gy_emp_account || "—"}
                           </span>
                         </td>
 
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs font-bold text-[#344054]">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                           {item.leaveTypeLabel ||
                             getLeaveTypeLabel(
                               item.gy_leave_type,
@@ -1315,28 +1313,28 @@ export default function LeavesTable({
                             )}
                         </td>
 
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-semibold text-[#52637A]">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#52637A]">
                           {formatDate(item.gy_leave_filed)}
                         </td>
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-semibold text-[#52637A]">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#52637A]">
                           {formatDate(item.gy_leave_date_from)}
                         </td>
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-semibold text-[#52637A]">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#52637A]">
                           {formatDate(item.gy_leave_date_to)}
                         </td>
-                        <td className="whitespace-nowrap bg-[#F8FAFC]/60 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-[#042C51]">
+                        <td className="whitespace-nowrap bg-[#F8FAFC]/60 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#042C51]">
                           {formatNumber(item.gy_leave_day)}
                         </td>
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-[#344054]">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#344054]">
                           {formatNumber(item.leave_credit)}
                         </td>
-                        <td className="whitespace-nowrap bg-amber-50/30 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-amber-600">
+                        <td className="whitespace-nowrap bg-amber-50/30 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-amber-600">
                           {formatNumber(item.leave_plotted)}
                         </td>
-                        <td className="whitespace-nowrap bg-emerald-50/30 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-emerald-600">
+                        <td className="whitespace-nowrap bg-emerald-50/30 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-emerald-600">
                           {formatNumber(item.leave_remaining)}
                         </td>
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs">
+                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs">
                           <Badge className={getStatusClass(item.gy_leave_status)}>
                             {item.normalizedStatus ||
                               normalizeStatus(item.gy_leave_status)}

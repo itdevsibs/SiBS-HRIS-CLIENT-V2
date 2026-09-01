@@ -18,7 +18,7 @@ export default function StatusFilterTabs({
   }
 
   return (
-    <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-scrollbar sm:px-4">
+    <div className="flex overflow-x-auto border-b border-sibs-border bg-sibs-surface px-3 pt-2.5 sibs-scrollbar sm:px-4">
       {tabs.map((tab) => {
         const active = activeValue === tab.value;
         const showCount = countKeys.includes(tab.value);
@@ -32,8 +32,8 @@ export default function StatusFilterTabs({
             onClick={() => onChange?.(tab.value)}
             className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 sibs-text-micro font-extrabold uppercase tracking-normal transition-colors ${
               active
-                ? "rounded-t-xl bg-white text-[#042C51]"
-                : "text-[#667085] hover:text-[#042C51]"
+                ? "rounded-t-xl bg-white text-sibs-navy"
+                : "text-sibs-muted hover:text-sibs-navy"
             }`}
           >
             {tab.label}
@@ -59,7 +59,7 @@ export default function StatusFilterTabs({
             {active ? (
               <Motion.div
                 layoutId="statusFilterActiveTabIndicator"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-sibs-orange"
                 transition={{
                   type: "spring",
                   stiffness: 380,

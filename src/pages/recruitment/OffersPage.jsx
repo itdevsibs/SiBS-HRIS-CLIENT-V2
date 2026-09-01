@@ -172,7 +172,7 @@ function OfferSkeletonBlock({ className = "" }) {
 function OffersDecisionSkeleton() {
   return (
     <div
-      className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6"
+      className="mx-auto w-full max-w-[1700px] space-y-5 sm:space-y-6"
       aria-live="polite"
       aria-busy="true"
       aria-label="Processing offer decision"

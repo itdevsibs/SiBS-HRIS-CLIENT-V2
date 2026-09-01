@@ -42,8 +42,8 @@ export default function ActionItemsModuleSignals() {
       style={{ animationDelay: "240ms", animationFillMode: "both" }}
     >
       <div className="shrink-0">
-        <h2 className="text-xs font-black uppercase tracking-wider text-[#042C51]">Data-Driven Module Signals</h2>
-        <p className="mt-1 text-[11px] font-medium leading-5 text-slate-500">Auto-detected recruitment indicators from current module records.</p>
+        <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">Data-Driven Module Signals</h2>
+        <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">Auto-detected recruitment indicators from current module records.</p>
       </div>
       <div
         tabIndex={0}
