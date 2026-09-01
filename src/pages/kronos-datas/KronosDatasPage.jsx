@@ -202,7 +202,7 @@ function SummaryCard({ label, value, icon: Icon, delay = 0 }) {
               {label}
             </p>
 
-            <p className="mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums text-[#042C51]">
+            <p className="font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-[#042C51]">
               {value}
             </p>
           </div>
@@ -590,29 +590,29 @@ export default function KronosDatasPage() {
 
       <main
         ref={mainScrollRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
+        <div className="mx-auto w-full max-w-[1700px] space-y-5">
           <section
             className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6"
             style={getAnimationStyle(animationTiming.header)}
           >
-            <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
+            <span className="sibs-top-accent" aria-hidden="true" />
             <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
-                    Kronos Master Records
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
+                    Core HR View
                   </span>
-                  <span className="inline-flex w-max items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold text-[#042C51]">
+                  <span className="inline-flex w-max items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold text-sibs-navy">
                     Production API
                   </span>
                 </div>
-                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold text-[#042C51]">
+                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
                   Kronos Datas
                 </h1>
-                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                <p className="sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
                   Production employee records loaded from the Kronos Datas API.
                 </p>
               </div>
@@ -623,11 +623,11 @@ export default function KronosDatasPage() {
                   onClick={handleRefresh}
                   disabled={loading}
                   title="Refresh Kronos Datas"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      loading ? "animate-spin text-[#FF5C28]" : ""
+                      loading ? "animate-spin text-sibs-orange" : ""
                     }`}
                   />
                 </button>
@@ -641,11 +641,11 @@ export default function KronosDatasPage() {
           >
             <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
               <div>
-                <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                   Kronos Employee Summary
                 </h2>
 
-                <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
                   Overview of production employee records from Kronos.
                 </p>
               </div>
@@ -691,18 +691,18 @@ export default function KronosDatasPage() {
             <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-bold text-[#101828]">
+                  <div className="flex flex-wrap items-center gap-2 font-jakarta">
+                    <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                       Employee Records
                     </h2>
 
-                    <span className="inline-flex items-center gap-1 rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-primary-1">
                       <Server size={12} />
                       Kronos Datas
                     </span>
                   </div>
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
                     Showing {pageStart} to {pageEnd} of {pagination.total}{" "}
                     production employee records. Only {PAGE_LIMIT} records are
                     loaded per page.
@@ -724,7 +724,7 @@ export default function KronosDatasPage() {
                       value={searchInput}
                       onChange={(event) => setSearchInput(event.target.value)}
                       placeholder="Search employee..."
-                      className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-3 text-sm font-medium text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:bg-white focus:ring-4 focus:ring-sibs-primary-1/10"
+                      className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-3 sibs-text-xs font-medium text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:bg-white focus:ring-4 focus:ring-sibs-primary-1/10"
                     />
                   </div>
 
@@ -734,7 +734,7 @@ export default function KronosDatasPage() {
                         value={department}
                         onChange={handleDepartmentChange}
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 sibs-text-xs font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                       >
                         <option value="All">All Departments</option>
                         {departmentOptions.map((item) => (
@@ -751,7 +751,7 @@ export default function KronosDatasPage() {
                         value={account}
                         onChange={handleAccountChange}
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 sibs-text-xs font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                       >
                         <option value="All">All Accounts</option>
                         {accountOptions.map((item) => (
@@ -763,33 +763,24 @@ export default function KronosDatasPage() {
                     </>
                   ) : null}
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="h-11 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Search
-                  </button>
-
-                  {search ? (
+                  <div className="flex gap-2">
                     <button
-                      type="button"
-                      onClick={handleClearSearch}
+                      type="submit"
                       disabled={loading}
-                      className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-11 rounded-xl bg-sibs-primary-1 px-4 sibs-text-xs font-bold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Clear Search
+                      Search
                     </button>
-                  ) : (
+
                     <button
                       type="button"
                       onClick={handleClearFilters}
                       disabled={loading}
-                      className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 sibs-text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Reset
                     </button>
-                  )}
+                  </div>
                 </form>
               </div>
             </div>
@@ -800,7 +791,7 @@ export default function KronosDatasPage() {
               </div>
             ) : null}
 
-            <div className="sibs-page-card-in" style={getAnimationStyle(60)}>
+            <div className="sibs-page-card-in font-jakarta" style={getAnimationStyle(60)}>
               <div className="grid gap-3 p-4 lg:hidden">
                 {loading ? <MobileLoadingCards /> : null}
 
@@ -818,25 +809,25 @@ export default function KronosDatasPage() {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="text-xs font-extrabold uppercase tracking-wide text-slate-400">
+                              <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-slate-400">
                                 #{rowNumber}
                               </p>
 
-                              <h3 className="mt-1 truncate text-sm font-extrabold text-[#101828]">
+                              <h3 className="mt-1 truncate sibs-text-xs font-extrabold text-[#101828]">
                                 {formatFullName(employee) || "—"}
                               </h3>
 
-                              <p className="mt-0.5 text-xs font-bold text-sibs-primary-1">
+                              <p className="mt-0.5 sibs-text-xs font-bold text-sibs-primary-1">
                                 {getEmployeeSibsId(employee)}
                               </p>
                             </div>
 
-                            <span className="inline-flex shrink-0 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-extrabold text-sibs-primary-1">
+                            <span className="inline-flex shrink-0 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 sibs-text-micro font-extrabold text-sibs-primary-1">
                               {getEmployeeSite(employee)}
                             </span>
                           </div>
 
-                          <div className="mt-4 grid gap-2 text-sm">
+                          <div className="mt-4 grid gap-2 sibs-text-xs">
                             <div className="flex justify-between gap-3">
                               <span className="font-bold text-slate-400">
                                 Email
@@ -888,7 +879,7 @@ export default function KronosDatasPage() {
                   : null}
 
                 {!loading && records.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#D9E2EC] bg-white px-5 py-12 text-center text-sm font-medium text-slate-500">
+                  <div className="rounded-2xl border border-dashed border-[#D9E2EC] bg-white px-5 py-12 text-center sibs-text-xs font-medium text-slate-500">
                     No Kronos employee records found.
                   </div>
                 ) : null}
@@ -898,31 +889,31 @@ export default function KronosDatasPage() {
                 <table className="min-w-full divide-y divide-[#E6ECF2]">
                   <thead className="bg-[#F8FAFC]">
                     <tr>
-                      <th className="px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                         #
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                         SIBS ID
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-[#667085]">
-                        Employee
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                        Employee Name
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                         Email
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                         Contact Number
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                         Department
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                         Account
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                         Site
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                         Hire Date
                       </th>
                     </tr>
@@ -941,45 +932,45 @@ export default function KronosDatasPage() {
                         return (
                           <tr
                             key={`${getEmployeeSibsId(employee)}-${rowNumber}`}
-                            className="transition hover:bg-[#F8FAFC]"
+                            className="transition hover:bg-[#FFF8F5]"
                           >
-                            <td className="whitespace-nowrap px-5 py-4 text-sm font-medium text-slate-500">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-medium text-slate-500">
                               {rowNumber}
                             </td>
 
-                            <td className="whitespace-nowrap px-5 py-4 text-sm font-extrabold text-sibs-primary-1">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
                               {getEmployeeSibsId(employee)}
                             </td>
 
-                            <td className="whitespace-nowrap px-5 py-4">
-                              <p className="text-sm font-bold text-[#101828]">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
+                              <p className="m-0 max-w-[220px] truncate sibs-text-xs font-extrabold text-[#042C51]">
                                 {formatFullName(employee) || "—"}
                               </p>
                             </td>
 
-                            <td className="whitespace-nowrap px-5 py-4 text-sm font-medium text-slate-700">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-medium text-slate-700">
                               {getEmployeeEmail(employee)}
                             </td>
 
-                            <td className="whitespace-nowrap px-5 py-4 text-sm font-medium text-slate-700">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-medium text-slate-700">
                               {getEmployeeContact(employee)}
                             </td>
 
-                            <td className="whitespace-nowrap px-5 py-4 text-sm font-medium text-slate-700">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                               {getEmployeeDepartment(employee)}
                             </td>
 
-                            <td className="whitespace-nowrap px-5 py-4 text-sm font-medium text-slate-700">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                               {getEmployeeAccount(employee)}
                             </td>
 
-                            <td className="whitespace-nowrap px-5 py-4">
-                              <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
+                              <span className="inline-flex rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-[#164E7A]">
                                 {getEmployeeSite(employee)}
                               </span>
                             </td>
 
-                            <td className="whitespace-nowrap px-5 py-4 text-sm font-medium text-slate-700">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#52637A]">
                               {formatDate(getEmployeeHireDate(employee))}
                             </td>
                           </tr>
@@ -989,7 +980,7 @@ export default function KronosDatasPage() {
                       <tr>
                         <td
                           colSpan={9}
-                          className="px-5 py-14 text-center text-sm font-medium text-slate-500"
+                          className="px-5 py-14 text-center sibs-text-xs font-medium text-slate-500"
                         >
                           No Kronos employee records found.
                         </td>

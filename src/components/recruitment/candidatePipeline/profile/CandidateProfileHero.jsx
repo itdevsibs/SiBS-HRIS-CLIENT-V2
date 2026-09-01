@@ -23,10 +23,7 @@ export default function CandidateProfileHero({ data }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white p-4 sm:p-5 shadow-sm">
       {/* Top Gradient Accent Bar */}
-      <span
-        className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]"
-        aria-hidden="true"
-      />
+      <span className="sibs-top-accent" aria-hidden="true" />
 
       <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-center sm:justify-between">
         {/* Left: Avatar & Candidate Identity */}

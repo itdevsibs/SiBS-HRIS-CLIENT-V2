@@ -23,8 +23,8 @@ function HeaderFact({ icon: Icon, children }) {
   if (!children) return null;
 
   return (
-    <span className="inline-flex min-w-0 items-center gap-1 text-[10px] 2xl:text-xs font-semibold text-[#667085]">
-      <Icon size={13} className="shrink-0 text-[#042C51]" />
+    <span className="inline-flex min-w-0 items-center gap-1 text-[10px] 2xl:text-xs font-semibold text-sibs-muted">
+      <Icon size={13} className="shrink-0 text-sibs-navy" />
       <span className="truncate max-w-[200px] 2xl:max-w-none">{children}</span>
     </span>
   );
@@ -87,8 +87,8 @@ export default function EmployeeProfileHeader({
   const regularizationDate = getRegularizationDate(employee);
 
   return (
-    <section className="sibs-page-header-in sibs-card relative overflow-visible p-3.5 2xl:p-4">
-      <span className="sibs-top-accent pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 rounded-t-[15px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" aria-hidden="true" />
+    <section className="sibs-page-header-in sibs-card relative overflow-hidden p-3.5 2xl:p-4">
+      <span className="sibs-top-accent" aria-hidden="true" />
 
       <div className="mt-0.5 flex flex-col items-center justify-between gap-4 2xl:gap-5 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-col items-center gap-3.5 2xl:gap-4 text-center sm:flex-row sm:text-left">
@@ -100,7 +100,7 @@ export default function EmployeeProfileHeader({
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              <h1 className="break-words text-base 2xl:text-lg font-black leading-tight tracking-tight text-[#042C51]">
+              <h1 className="break-words text-base 2xl:text-lg font-black leading-tight tracking-tight text-sibs-navy">
                 {fullName}
               </h1>
 
@@ -109,13 +109,13 @@ export default function EmployeeProfileHeader({
                 {employee?.employmentStatus || employee?.status || "Active"}
               </span>
 
-              <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold uppercase text-[#042C51]">
+              <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold uppercase text-sibs-navy">
                 {getProfileSibsId(employee) || "SIBS ID N/A"}
               </span>
             </div>
 
             {role ? (
-              <p className="mt-0.5 text-xs font-semibold text-[#FF5C28]">
+              <p className="mt-0.5 text-xs font-semibold text-sibs-orange">
                 {role}
               </p>
             ) : null}
@@ -158,7 +158,7 @@ export default function EmployeeProfileHeader({
                   type="button"
                   onClick={onCancel}
                   disabled={isSaving}
-                  className="inline-flex h-8 2xl:h-9 items-center justify-center rounded-lg bg-slate-100 px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-[#667085] transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8 2xl:h-9 items-center justify-center rounded-lg bg-slate-100 px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-sibs-muted transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -167,9 +167,9 @@ export default function EmployeeProfileHeader({
               <button
                 type="button"
                 onClick={onEdit}
-                className="inline-flex h-8 2xl:h-9 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-white shadow-sm transition hover:bg-[#063560]"
+                className="inline-flex h-8 2xl:h-9 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-white shadow-sm transition hover:bg-sibs-tertiary-2"
               >
-                <Edit3 size={13} className="text-[#FF5C28] 2xl:h-[14px] 2xl:w-[14px]" />
+                <Edit3 size={13} className="text-sibs-orange 2xl:h-[14px] 2xl:w-[14px]" />
                 Edit Profile Record
               </button>
             )
@@ -177,7 +177,7 @@ export default function EmployeeProfileHeader({
             <button
               type="button"
               onClick={onRequestChange}
-              className="inline-flex h-8 2xl:h-9 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-[#042C51] transition hover:bg-slate-50"
+              className="inline-flex h-8 2xl:h-9 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-sibs-navy transition hover:bg-slate-50"
             >
               Request a Change
             </button>

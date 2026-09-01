@@ -27,7 +27,7 @@ export default function AdminDashboardWelcome({
             {title}
           </h1>
 
-          <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+          <p className="sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
             Welcome back,{" "}
             <span className="font-extrabold text-sibs-navy">{fullName}</span>.
             You have administrative permissions.

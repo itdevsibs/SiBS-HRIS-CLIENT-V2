@@ -119,7 +119,7 @@ export default function TalentPoolPage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1600px] space-y-4 sm:space-y-5 2xl:space-y-6">
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5 2xl:space-y-6">
           <section
             className="sibs-page-header-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 2xl:p-6 font-jakarta shadow-sm"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
@@ -196,20 +196,22 @@ export default function TalentPoolPage() {
             className="sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
-            <div className="border-b border-sibs-border px-4 py-3 sm:px-5 2xl:py-3.5">
+            <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
               <div className="flex flex-col gap-0.5">
-                <h3 className="font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+                <h2 className="sibs-card-title">
                   Candidate Directory
-                </h3>
-                <p className="sibs-text-xs font-semibold text-sibs-text-muted">
+                </h2>
+                <p className="sibs-card-subtitle">
                   Search and narrow the reusable candidate database
                 </p>
               </div>
+
+              <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+                <TalentPoolFilters />
+              </div>
             </div>
 
-            <TalentPoolFilters />
-
-            <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
+            <div className="min-h-0 flex-1 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
               <TalentPoolTabs
                 activeTab={activeTab}
                 onChange={setActiveTab}

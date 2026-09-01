@@ -28,8 +28,8 @@ export default function ActionItemsHealth() {
     <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
-          <h3 className="text-sm font-black text-[#042C51]">Recruitment Action Health</h3>
-          <p className="mt-1 text-[11px] font-semibold text-[#667085]">Distribution across the active reporting scope.</p>
+          <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">Recruitment Action Health</h3>
+          <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">Distribution across the active reporting scope.</p>
         </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#042C51]"><ListChecks size={20} /></div>
       </div>

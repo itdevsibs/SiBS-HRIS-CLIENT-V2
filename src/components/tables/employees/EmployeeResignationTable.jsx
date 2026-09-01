@@ -1044,37 +1044,37 @@ export default function ResignationTable({
                   <col className="w-[180px]" />
                 </colgroup>
 
-                <thead className="sticky top-0 z-10 bg-slate-50">
+                <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
                   <tr>
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      SiBS ID
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                      SIBS ID
                     </th>
 
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                       Resignation Type
                     </th>
 
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                       Employee Name
                     </th>
 
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                       Assigned Location
                     </th>
 
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                       Uploaded File
                     </th>
 
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                       Resignation Date
                     </th>
 
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                       Last Working Date
                     </th>
 
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
                       Submitted At
                     </th>
                   </tr>
@@ -1086,7 +1086,7 @@ export default function ResignationTable({
                       <tr key={index}>
                         <td
                           colSpan={8}
-                          className="border-t border-[#f3f4f6] px-5 py-4"
+                          className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5"
                         >
                           <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
                         </td>
@@ -1096,7 +1096,7 @@ export default function ResignationTable({
                     <tr>
                       <td
                         colSpan={8}
-                        className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
+                        className="border-t border-[#f3f4f6] p-10 text-center sibs-text-sm font-bold text-[#667085]"
                       >
                         No resignation records found.
                       </td>
@@ -1111,43 +1111,43 @@ export default function ResignationTable({
                         <tr
                           key={item.id}
                           onClick={() => handleOpenEdit(item)}
-                          className={`transition-all duration-200 hover:bg-slate-50 ${
+                          className={`transition-all duration-200 hover:bg-[#FFF8F5] ${
                             isAssignedSupervisor
                               ? "cursor-pointer"
                               : "cursor-not-allowed opacity-80"
                           }`}
                         >
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
+                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
                             {item.sibsId || "N/A"}
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                             {item.resignationType || "N/A"}
                           </td>
 
-                          <td className="border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
+                          <td className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#042C51]">
                             <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap uppercase">
                               {item.fullName || "N/A"}
                             </p>
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                             {mapAssignedLocation(item.location)}
                           </td>
 
-                          <td className="border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                          <td className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                             <UploadedFileCell item={item} />
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                             {formatDate(item.resignationDate)}
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                             {formatDate(item.lastWorkingDate)}
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
                             {formatDateTime(item.createdAt)}
                           </td>
                         </tr>
@@ -1158,7 +1158,7 @@ export default function ResignationTable({
               </table>
             </div>
 
-            <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+            <p className="mt-2 sibs-text-xs font-semibold text-[#667085]">
               Hold left click and drag left or right to scroll the table.
             </p>
           </div>

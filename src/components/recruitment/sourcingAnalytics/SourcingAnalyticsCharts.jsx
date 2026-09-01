@@ -137,10 +137,10 @@ function ChartCard({ title, description, icon: Icon, children, delay = 0 }) {
     >
       <div className="mb-2.5 2xl:mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             {title}
           </h3>
-          <p className="mt-0.5 text-xs font-medium leading-relaxed text-[#667085]">
+          <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
             {description}
           </p>
         </div>

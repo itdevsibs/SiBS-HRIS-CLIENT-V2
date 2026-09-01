@@ -148,7 +148,7 @@ function DashboardLoadingState() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1600px] space-y-6">
+        <div className="mx-auto w-full max-w-[1700px] space-y-6">
           <div className="h-36 animate-sibs-pulse rounded-2xl bg-slate-300" />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -523,21 +523,21 @@ export default function EmployeeDashboardPage() {
 
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                    <span className="rounded-full border border-[#FF5C28]/30 bg-[#FF5C28]/15 px-2.5 py-0.5 text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-[#FF8A63]">
+                    <span className="rounded-full border border-[#FF5C28]/30 bg-[#FF5C28]/15 px-2.5 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#FF8A63]">
                       SIBS Employee Portal
                     </span>
                     {profile.sibsId ? (
-                      <span className="font-mono text-[10px] 2xl:text-[11px] font-semibold text-slate-300">
+                      <span className="font-mono sibs-text-xs font-semibold text-slate-300">
                         ID: {profile.sibsId}
                       </span>
                     ) : null}
                   </div>
 
-                  <h1 className="mt-0.5 break-words text-xl font-black tracking-tight text-white sm:text-2xl 2xl:text-3xl">
+                  <h1 className="font-heading mt-0.5 break-words text-xl font-bold tracking-tight text-white sm:text-2xl 2xl:text-3xl">
                     Welcome Back, {profile.firstName}!
                   </h1>
 
-                  <p className="mt-0.5 max-w-3xl text-[11px] 2xl:text-xs font-semibold leading-5 text-slate-300">
+                  <p className="mt-0.5 max-w-3xl sibs-text-xs font-semibold leading-5 text-slate-300">
                     {profileSubtitle ||
                       "Your employee self-service records and HRIS shortcuts are available below."}
                   </p>
@@ -545,14 +545,14 @@ export default function EmployeeDashboardPage() {
               </div>
 
               <div className="w-full shrink-0 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-center backdrop-blur-sm sm:w-[200px] 2xl:w-[220px] md:text-right">
-                <div className="flex items-center justify-center gap-1.5 text-[11px] 2xl:text-xs font-medium text-slate-300 md:justify-end">
+                <div className="flex items-center justify-center gap-1.5 sibs-text-xs font-medium text-slate-300 md:justify-end">
                   <Clock size={13} className="text-[#FF5C28]" />
                   Current Time (PHT)
                 </div>
-                <p className="mt-0.5 font-mono text-xl 2xl:text-2xl font-black tabular-nums tracking-tight text-white">
+                <p className="font-heading mt-0.5 text-xl 2xl:text-2xl font-bold tabular-nums tracking-tight text-white">
                   {formatPhtTime(now)}
                 </p>
-                <p className="mt-0.5 text-[10px] 2xl:text-[11px] font-semibold text-slate-300">
+                <p className="mt-0.5 sibs-text-micro font-semibold text-slate-300">
                   {formatPhtDate(now)}
                 </p>
               </div>
@@ -1241,13 +1241,13 @@ function DashboardCard({ children }) {
 
 function DashboardCardHeader({ title, description, action }) {
   return (
-    <div className="flex flex-col gap-2.5 border-b border-[#E6ECF2] pb-2.5 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-2.5 border-b border-[#E6ECF2] pb-2.5 sm:flex-row sm:items-start sm:justify-between font-jakarta">
       <div className="min-w-0">
-        <h2 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
+        <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           {title}
         </h2>
         {description ? (
-          <p className="mt-0.5 text-[11px] 2xl:text-xs font-semibold leading-4 2xl:leading-5 text-[#667085]">
+          <p className="mt-0.5 sibs-text-xs font-semibold leading-4 2xl:leading-5 text-[#667085]">
             {description}
           </p>
         ) : null}
@@ -1260,10 +1260,10 @@ function DashboardCardHeader({ title, description, action }) {
 function MetricBox({ label, value, valueClassName = "text-[#042C51]" }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-2.5 2xl:p-3">
-      <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wide text-slate-400">
+      <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-slate-400">
         {label}
       </p>
-      <p className={`mt-0.5 font-mono text-xs 2xl:text-sm font-black ${valueClassName}`}>
+      <p className={`font-heading mt-0.5 text-xs 2xl:text-sm font-bold tabular-nums tracking-tight ${valueClassName}`}>
         {value || "—"}
       </p>
     </div>
@@ -1287,7 +1287,7 @@ function SummaryTile({ tone = "light", label, value, detail, icon: Icon }) {
           className={dark ? "text-[#FF8A63]" : "text-slate-500"}
         />
         <p
-          className={`text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider ${
+          className={`sibs-text-micro font-extrabold uppercase tracking-wider ${
             dark ? "text-slate-300" : "text-slate-400"
           }`}
         >
@@ -1295,14 +1295,14 @@ function SummaryTile({ tone = "light", label, value, detail, icon: Icon }) {
         </p>
       </div>
       <p
-        className={`mt-1.5 break-words text-xs 2xl:text-sm font-black leading-4 2xl:leading-5 ${
+        className={`font-heading mt-1.5 break-words text-xs 2xl:text-sm font-bold leading-4 2xl:leading-5 ${
           dark ? "text-white" : "text-[#042C51]"
         }`}
       >
         {value}
       </p>
       <p
-        className={`mt-0.5 break-words text-[9px] 2xl:text-[10px] font-semibold ${
+        className={`mt-0.5 break-words sibs-text-micro font-semibold ${
           dark ? "text-slate-300" : "text-slate-500"
         }`}
       >
@@ -1319,9 +1319,9 @@ function FutureFeature({ icon: Icon, label }) {
         <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
           <Icon size={14} />
         </span>
-        <span className="text-[11px] 2xl:text-xs font-black text-[#042C51]">{label}</span>
+        <span className="sibs-text-xs font-extrabold text-[#042C51]">{label}</span>
       </div>
-      <p className="mt-1.5 text-[9px] 2xl:text-[10px] font-semibold leading-4 text-slate-500">
+      <p className="mt-1.5 sibs-text-micro font-semibold leading-4 text-slate-500">
         Awaiting the connected performance data source.
       </p>
     </div>
@@ -1355,7 +1355,7 @@ function QuickAction({ icon: Icon, label, onClick }) {
       className="flex min-h-[64px] 2xl:min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-2 2xl:p-2.5 text-center text-slate-700 transition hover:border-blue-200 hover:bg-[#E9F0FC] hover:text-[#042C51]"
     >
       <Icon size={15} className="text-[#FF5C28]" />
-      <span className="text-[9px] 2xl:text-[10px] font-black">{label}</span>
+      <span className="sibs-text-micro font-extrabold">{label}</span>
     </button>
   );
 }
@@ -1373,16 +1373,16 @@ function LeaveBalanceCard({ label, code, available, total, tone }) {
       }`}
     >
       <div
-        className={`flex items-center justify-between text-[8px] 2xl:text-[9px] font-black uppercase ${
+        className={`flex items-center justify-between sibs-text-micro font-extrabold uppercase ${
           emerald ? "text-emerald-700" : "text-blue-800"
         }`}
       >
         <span>{label}</span>
         <span className="font-mono">{code}</span>
       </div>
-      <p className="mt-0.5 font-mono text-base 2xl:text-lg font-black text-[#042C51]">
+      <p className="font-heading mt-0.5 text-base 2xl:text-lg font-bold tabular-nums tracking-tight text-[#042C51]">
         {formatLeaveValue(available)}
-        <span className="ml-1 text-[9px] 2xl:text-[10px] font-normal text-slate-500">
+        <span className="ml-1 sibs-text-micro font-normal text-slate-500">
           / {formatLeaveValue(total)} Days
         </span>
       </p>
@@ -1418,8 +1418,8 @@ function DashboardEmptyState({
         size={compact ? 16 : 20}
         className="mx-auto text-slate-400"
       />
-      <p className="mt-1.5 text-[11px] 2xl:text-xs font-black text-[#042C51]">{title}</p>
-      <p className="mx-auto mt-0.5 max-w-xl text-[9px] 2xl:text-[10px] font-semibold leading-4 text-slate-500">
+      <p className="mt-1.5 sibs-text-xs font-extrabold text-[#042C51]">{title}</p>
+      <p className="mx-auto mt-0.5 max-w-xl sibs-text-micro font-semibold leading-4 text-slate-500">
         {message}
       </p>
     </div>

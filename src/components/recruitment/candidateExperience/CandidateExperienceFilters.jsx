@@ -2,7 +2,7 @@ import { Filter, Search, X } from "lucide-react";
 import ThemedDropdown from "@/components/layout/dropdown/ThemedDropdown.jsx";
 import { getResponseSourceLabel, getSurveyStatusLabel, SURVEY_STATUS_OPTIONS } from "@/lib/utils/candidateExperience/index.js";
 
-const labelClass = "mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]";
+const labelClass = "mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-sibs-navy";
 
 const OUTCOME_OPTIONS = [
   { label: "All Outcomes", value: "All" },
@@ -44,20 +44,20 @@ export default function CandidateExperienceFilters({ filters, onChange, onClear 
           <div className="group relative">
             <Search
               size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-faint transition-colors group-focus-within:text-sibs-orange"
             />
             <input
               type="text"
               value={filters.search}
               onChange={(e) => onChange("search", e.target.value)}
               placeholder="Search candidate, email, role, account, owner..."
-              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3 pl-8.5 pr-8 sibs-text-xs font-semibold text-[#101828] outline-none transition focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
+              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border-subtle bg-white px-3 pl-8.5 pr-8 sibs-text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/20"
             />
             {filters.search ? (
               <button
                 type="button"
                 onClick={() => onChange("search", "")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#98A2B3] hover:text-[#101828]"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sibs-faint hover:text-sibs-navy"
               >
                 <X size={13} />
               </button>
@@ -123,7 +123,7 @@ export default function CandidateExperienceFilters({ filters, onChange, onClear 
             type="button"
             onClick={onClear}
             disabled={!hasActiveFilters}
-            className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg 2xl:rounded-xl border border-sibs-border-subtle bg-white px-3.5 sibs-text-xs font-extrabold text-sibs-secondary transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             <Filter size={14} />
             Clear

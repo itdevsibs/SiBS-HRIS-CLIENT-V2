@@ -16,8 +16,8 @@ export default function ActionItemsPriorityWatchlist() {
     <section className="rounded-xl border border-rose-100 bg-rose-50/70 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <h3 className="flex items-center gap-1.5 text-sm font-black text-rose-700"><AlertTriangle size={16} /> Priority Watchlist</h3>
-          <p className="mt-1 text-[11px] font-semibold text-rose-700/75">Most urgent open actions by risk and deadline.</p>
+          <h3 className="flex items-center gap-1.5 font-heading text-sm 2xl:text-base font-bold tracking-tight text-rose-700"><AlertTriangle size={16} /> Priority Watchlist</h3>
+          <p className="mt-0.5 sibs-text-xs font-semibold text-rose-700/80">Most urgent open actions by risk and deadline.</p>
         </div>
         <span className="rounded border border-rose-200 bg-white px-2 py-1 text-[9px] font-black uppercase text-rose-700">Action Required</span>
       </div>

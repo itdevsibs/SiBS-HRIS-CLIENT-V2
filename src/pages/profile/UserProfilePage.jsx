@@ -588,7 +588,7 @@ export default function UserProfilePage() {
       </div>
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden sibs-scrollbar bg-[#EEF2F6] px-3 py-4 sm:p-6">
-        <div className="mx-auto w-full max-w-[1600px] space-y-5">
+        <div className="mx-auto w-full max-w-[1700px] space-y-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-sm font-black text-[#042C51]">My Profile</h1>

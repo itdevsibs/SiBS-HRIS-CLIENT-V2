@@ -111,55 +111,53 @@ export default function TalentPoolFilters() {
     cleanText(search) || statusFilter !== "All" || positionFilter !== "All";
 
   return (
-    <div className="relative z-[90] overflow-visible bg-white p-4 sm:p-5">
-      <PaginationTable
-        filterLayout="ta-inline"
-        showFilterPanel={false}
-        showFilterHeader={false}
-        showPagination={false}
-        loading={isLoading}
-        searchValue={search}
-        searchPlaceholder="Search candidate, email, phone, position, location..."
-        onSearchChange={setSearch}
-        dropdownFilters={[
-          {
-            key: "position",
-            value: positionFilter,
-            options: positionDropdownOptions,
-            onChange: setPositionFilter,
-            includeAll: false,
-            allLabel: "All Positions",
-            label: "Applied Position",
-            placeholder: "Search positions...",
-            searchable: true,
-            disabled: isLoading,
-          },
-          {
-            key: "status",
-            value: statusFilter,
-            options: statusDropdownOptions,
-            onChange: setStatusFilter,
-            includeAll: false,
-            allLabel: "All Status",
-            label: "Status",
-            placeholder: "All Status",
-            searchable: false,
-            disabled: isLoading,
-          },
-        ]}
-        rightContent={
-          <button
-            type="button"
-            onClick={clearFilters}
-            disabled={!hasActiveFilters || isLoading}
-            className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3 sibs-text-xs font-extrabold text-sibs-text-muted outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
-          >
-            <Filter size={14} />
-            Clear
-          </button>
-        }
-        className="border-0 bg-transparent p-0 shadow-none"
-      />
-    </div>
+    <PaginationTable
+      filterLayout="ta-inline"
+      showFilterPanel={false}
+      showFilterHeader={false}
+      showPagination={false}
+      loading={isLoading}
+      searchValue={search}
+      searchPlaceholder="Search candidate, email, phone, position, location..."
+      onSearchChange={setSearch}
+      dropdownFilters={[
+        {
+          key: "position",
+          value: positionFilter,
+          options: positionDropdownOptions,
+          onChange: setPositionFilter,
+          includeAll: false,
+          allLabel: "All Positions",
+          label: "Applied Position",
+          placeholder: "Search positions...",
+          searchable: true,
+          disabled: isLoading,
+        },
+        {
+          key: "status",
+          value: statusFilter,
+          options: statusDropdownOptions,
+          onChange: setStatusFilter,
+          includeAll: false,
+          allLabel: "All Status",
+          label: "Status",
+          placeholder: "All Status",
+          searchable: false,
+          disabled: isLoading,
+        },
+      ]}
+      rightContent={
+        <button
+          type="button"
+          onClick={clearFilters}
+          disabled={!hasActiveFilters || isLoading}
+          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3 sibs-text-xs font-extrabold text-sibs-text-muted outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+        >
+          <Filter size={14} />
+          Clear
+        </button>
+      }
+      className="border-0 bg-transparent p-0 shadow-none"
+    />
   );
 }

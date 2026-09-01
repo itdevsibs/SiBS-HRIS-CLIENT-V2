@@ -107,10 +107,10 @@ export function HiringFunnelCard() {
   return (
     <section className="sibs-page-card-in sibs-card flex h-full min-h-[480px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
       <div>
-        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+        <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           Hiring Funnel
         </h3>
-        <p className="mt-1 text-xs font-semibold text-[#667085]">
+        <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
           Visual stacked funnel depicting active candidate volume and sequential conversion rates.
         </p>
       </div>

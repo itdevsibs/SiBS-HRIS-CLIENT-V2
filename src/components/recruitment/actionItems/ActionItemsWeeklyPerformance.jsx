@@ -36,25 +36,25 @@ export default function ActionItemsWeeklyPerformance() {
 
   return (
     <section
-      className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+      className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"
       style={{ animationDelay: "120ms", animationFillMode: "both" }}
     >
-      <header className="flex flex-col gap-2 border-b border-[#E6ECF2] bg-white px-4 py-3.5 sm:px-5 2xl:px-6 2xl:py-4 sm:flex-row sm:items-start sm:justify-between">
+      <header className="flex flex-col gap-2 border-b border-sibs-border bg-white px-4 py-3.5 sm:px-5 2xl:px-6 2xl:py-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="sibs-section-title">
+          <h2 className="sibs-card-title">
             Weekly Performance - Previous Sprint Results
           </h2>
-          <p className="sibs-section-subtitle">
+          <p className="sibs-card-subtitle">
             Master account-level candidate movement and delivery for {previousWeekLabel}.
           </p>
         </div>
-        <span className="inline-flex w-fit shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 sibs-text-micro font-extrabold text-[#042C51]">
+        <span className="inline-flex w-fit shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 sibs-text-micro font-extrabold text-sibs-navy">
           {filteredWeeklyPerformanceRows.length} Records
         </span>
       </header>
 
       <div className="p-3.5 sm:p-4 2xl:p-5">
-        <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+        <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
           <div
             ref={dragScrollRef}
             tabIndex={0}

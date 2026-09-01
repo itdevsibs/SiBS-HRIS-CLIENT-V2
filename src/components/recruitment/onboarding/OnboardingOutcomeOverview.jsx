@@ -80,11 +80,11 @@ export default function OnboardingOutcomeOverview() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <BarChart3 size={16} className="shrink-0 text-[#FF5C28]" />
-                <h2 className="sibs-text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
+                <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                   Onboarding Outcome Distribution
                 </h2>
               </div>
-              <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+              <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
                 Current accepted-offer outcomes across active onboarding records.
               </p>
             </div>

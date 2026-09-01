@@ -80,9 +80,9 @@ export default function PipelineStageTabs({
   counts = {},
 }) {
   return (
-    <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
+    <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-sibs-border bg-white">
       <div
-        className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-2.5 sibs-no-scrollbar sm:px-4"
+        className="flex overflow-x-auto border-b border-sibs-border bg-sibs-surface px-3 pt-2.5 sibs-no-scrollbar sm:px-4"
         role="tablist"
         aria-label="Candidate pipeline stages"
       >
@@ -100,8 +100,8 @@ export default function PipelineStageTabs({
               onClick={() => onChange?.(tab.key)}
               className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
                 active
-                  ? "rounded-t-xl bg-white text-[#042C51]"
-                  : "text-[#667085] hover:text-[#042C51]"
+                  ? "rounded-t-xl bg-white text-sibs-navy"
+                  : "text-sibs-muted hover:text-sibs-navy"
               }`}
             >
               <Icon
@@ -110,8 +110,8 @@ export default function PipelineStageTabs({
                   active
                     ? tab.key === PIPELINE_STAGE_TABS.DROP_OFF
                       ? "text-red-500"
-                      : "text-[#FF5C28]"
-                    : "text-[#98A2B3]"
+                      : "text-sibs-orange"
+                    : "text-sibs-faint"
                 }`}
               />
               <span className="truncate">{tab.label}</span>
@@ -120,7 +120,7 @@ export default function PipelineStageTabs({
                   active
                     ? tab.key === PIPELINE_STAGE_TABS.DROP_OFF
                       ? "bg-red-600 text-white"
-                      : "bg-[#042C51] text-white"
+                      : "bg-sibs-navy text-white"
                     : "bg-slate-200 text-slate-600"
                 }`}
               >
@@ -132,7 +132,7 @@ export default function PipelineStageTabs({
                   className={`absolute bottom-0 left-0 right-0 h-0.5 ${
                     tab.key === PIPELINE_STAGE_TABS.DROP_OFF
                       ? "bg-red-500"
-                      : "bg-[#FF5C28]"
+                      : "bg-sibs-orange"
                   }`}
                   transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />

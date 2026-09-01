@@ -9,7 +9,7 @@ function cleanText(value) {
 }
 
 const labelClass =
-  "mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]";
+  "mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-sibs-navy";
 
 function toOptions(options) {
   return options.map((option) => ({ label: option, value: option }));
@@ -72,7 +72,7 @@ export default function OnboardingFilters() {
           <div className="relative">
             <Search
               size={15}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#98A2B3]"
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-faint"
             />
             <input
               value={searchInput}
@@ -81,7 +81,7 @@ export default function OnboardingFilters() {
                 if (event.key === "Enter") commitSearch();
               }}
               placeholder="Search candidate, onboarding ID, email, role, account, or owner..."
-              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white pl-9 pr-9 sibs-text-xs font-semibold text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
+              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border-subtle bg-white pl-9 pr-9 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/20"
             />
 
             {cleanText(searchInput) ? (
@@ -89,7 +89,7 @@ export default function OnboardingFilters() {
                 type="button"
                 onClick={handleClearSearch}
                 aria-label="Clear onboarding search"
-                className="absolute right-2.5 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[#98A2B3] hover:bg-white hover:text-[#FF5C28]"
+                className="absolute right-2.5 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-sibs-faint hover:bg-white hover:text-sibs-orange"
               >
                 <X size={13} />
               </button>
@@ -119,7 +119,7 @@ export default function OnboardingFilters() {
           type="button"
           onClick={handleResetFilters}
           disabled={!isFiltered}
-          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg 2xl:rounded-xl border border-sibs-border-subtle bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-secondary transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           <Filter size={14} />
           Clear

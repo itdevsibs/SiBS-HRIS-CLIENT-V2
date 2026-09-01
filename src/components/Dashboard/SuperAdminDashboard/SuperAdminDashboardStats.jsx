@@ -88,28 +88,30 @@ function SuperAdminMetricCard({ item, value, onClick, delay = 0 }) {
       }}
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-        <div className="min-w-0 flex-1 self-stretch">
-          <p
-            className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${tone.label}`}
-          >
-            {item?.label}
-          </p>
+        <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${tone.label}`}
+            >
+              {item?.label}
+            </p>
 
-          <div className="mt-1.5 2xl:mt-2 flex flex-wrap items-baseline gap-1.5 2xl:gap-2">
-            <span className="font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-sibs-navy">
-              {value}
-            </span>
-
-            {item?.badge ? (
-              <span
-                className={`rounded px-1.5 py-0.5 sibs-text-micro font-extrabold ${tone.badge}`}
-              >
-                {item.badge}
+            <div className="mt-1.5 2xl:mt-2 flex flex-wrap items-baseline gap-1.5 2xl:gap-2">
+              <span className="font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-sibs-navy">
+                {value}
               </span>
-            ) : null}
+
+              {item?.badge ? (
+                <span
+                  className={`rounded px-1.5 py-0.5 sibs-text-micro font-extrabold ${tone.badge}`}
+                >
+                  {item.badge}
+                </span>
+              ) : null}
+            </div>
           </div>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-4 text-sibs-muted">
             {item?.description}
           </p>
         </div>
@@ -133,7 +135,7 @@ function SuperAdminMetricCard({ item, value, onClick, delay = 0 }) {
 
 export default function SuperAdminDashboardStats({ adminCount, onMetricClick }) {
   return (
-    <section className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6">
+    <section className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:gap-3">
       {METRICS.map((metric, index) => {
         const val = metric.key === "admins" ? String(adminCount) : metric.value;
         return (

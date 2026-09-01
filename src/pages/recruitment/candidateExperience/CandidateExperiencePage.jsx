@@ -44,8 +44,8 @@ export default function CandidateExperiencePage() {
         <Header />
       </div>
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-3.5 sm:p-4 2xl:p-6">
-        <div className="mx-auto max-w-[1600px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
+      <main className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
           <CandidateExperienceHeader
             onAddManual={() => setManualOpen(true)}
             onRefresh={refresh}
@@ -83,30 +83,32 @@ export default function CandidateExperiencePage() {
           <CandidateExperienceAnalytics records={records} metrics={metrics} />
 
           <section
-            className="sibs-page-card-in overflow-hidden rounded-xl 2xl:rounded-2xl border border-[#E6ECF2] bg-white shadow-sm font-jakarta"
+            className="sibs-page-card-in overflow-hidden rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white shadow-sm font-jakarta"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
-            <header className="flex flex-col gap-1.5 border-b border-[#E6ECF2] bg-white px-4 py-3 sm:px-5 2xl:px-6 2xl:py-4 sm:flex-row sm:items-center sm:justify-between">
+            <header className="border-b border-sibs-border bg-white p-4 sm:p-5 2xl:p-6 font-jakarta">
               <div>
-                <h2 className="text-base font-extrabold text-[#042C51] 2xl:text-lg">
+                <h2 className="sibs-card-title">
                   Candidate Experience Records
                 </h2>
-                <p className="sibs-text-xs font-semibold text-[#667085]">
+                <p className="sibs-card-subtitle">
                   Select a row or mobile card to open the complete recruitment journey and survey details.
                 </p>
               </div>
+
+              <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+                <CandidateExperienceFilters
+                  filters={filters}
+                  onChange={(key, value) =>
+                    setFilters((current) => ({ ...current, [key]: value }))
+                  }
+                  onClear={() => setFilters(emptyFilters)}
+                  count={filteredRecords.length}
+                />
+              </div>
             </header>
 
-            <div className="space-y-3.5 p-3.5 sm:space-y-4 sm:p-4 2xl:p-5 font-jakarta">
-              <CandidateExperienceFilters
-                filters={filters}
-                onChange={(key, value) =>
-                  setFilters((current) => ({ ...current, [key]: value }))
-                }
-                onClear={() => setFilters(emptyFilters)}
-                count={filteredRecords.length}
-              />
-
+            <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
               {loading ? (
                 <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] p-10 text-center text-xs font-bold text-[#667085]">
                   Loading Candidate Experience records...

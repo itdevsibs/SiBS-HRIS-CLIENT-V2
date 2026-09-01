@@ -195,7 +195,7 @@ export default function OMDashboardPage() {
     <div className={PAGE_SHELL_CLASS}>
       <Header />
       <main className={MAIN_SHELL_CLASS}>
-        <div className="mx-auto flex min-h-full w-full max-w-[1600px] flex-1 flex-col space-y-4 2xl:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-1 flex-col space-y-4 2xl:space-y-5">
           <OMDashboardWelcome
             departmentBadge={departmentBadge}
             scopeText={scopeText}

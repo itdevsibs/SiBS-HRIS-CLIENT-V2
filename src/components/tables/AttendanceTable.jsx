@@ -698,7 +698,7 @@ function StatCard({
 
   return (
     <article
-      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
+      className="sibs-metric-card font-jakarta flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={getAnimationStyle(delay)}
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
@@ -711,7 +711,7 @@ function StatCard({
             </p>
 
             <p
-              className={`mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+              className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${selectedTone.value}`}
             >
               {value}
             </p>
@@ -1439,11 +1439,11 @@ export default function AttendanceTable() {
         className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
         style={getAnimationStyle(120)}
       >
-        <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
-          <h3 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
+        <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+          <h3 className="font-heading text-sm sm:text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
             Attendance Records
           </h3>
-          <p className="mt-1 text-xs font-semibold text-[#667085]">
+          <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-[#667085]">
             {adminView
               ? "Review employee time entries, work hours, breaks, and approval status."
               : "Review your time entries, work hours, breaks, and approval status."}
@@ -1528,7 +1528,7 @@ export default function AttendanceTable() {
                   <tr className="sibs-data-table-head-row">
                       {adminView ? (
                         <th className="sibs-data-table-th">
-                          SiBS ID
+                          SIBS ID
                         </th>
                       ) : null}
 
@@ -1605,7 +1605,7 @@ export default function AttendanceTable() {
                       <tr>
                         <td
                           colSpan={emptyColSpan}
-                          className="px-5 py-12 text-center text-xs font-bold text-[#667085]"
+                          className="px-5 py-12 text-center sibs-text-xs font-bold text-[#667085]"
                         >
                           No attendance records found.
                         </td>
@@ -1640,19 +1640,19 @@ export default function AttendanceTable() {
                             }}
                           >
                             {adminView ? (
-                              <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold tabular-nums text-[#FF5C28]">
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-[#FF5C28]">
                                 {item.gy_emp_code || "—"}
                               </td>
                             ) : null}
 
                             {adminView ? (
-                              <td className="px-4 py-3.5">
+                              <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                                 <div className="flex min-w-0 items-center gap-2.5">
                                   <AttendanceEmployeeAvatar
                                     item={item}
                                     employeeName={employeeName}
                                   />
-                                  <p className="max-w-[190px] min-w-0 break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                                  <p className="max-w-[190px] min-w-0 break-words sibs-text-xs font-extrabold leading-tight text-[#042C51]">
                                     {employeeName}
                                   </p>
                                 </div>
@@ -1661,7 +1661,7 @@ export default function AttendanceTable() {
 
                             {attendanceFiltersView ? (
                               <td
-                                className="max-w-[190px] truncate px-4 py-3.5 text-xs font-semibold text-[#52637A]"
+                                className="max-w-[190px] truncate px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#52637A]"
                                 title={item.department || "—"}
                               >
                                 {item.department || "—"}
@@ -1670,7 +1670,7 @@ export default function AttendanceTable() {
 
                             {attendanceFiltersView ? (
                               <td
-                                className="max-w-[160px] truncate px-4 py-3.5 text-xs font-extrabold text-[#344054]"
+                                className="max-w-[160px] truncate px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]"
                                 title={item.gy_emp_account || "—"}
                               >
                                 {item.gy_emp_account || "—"}
@@ -1678,9 +1678,9 @@ export default function AttendanceTable() {
                             ) : null}
 
                             {attendanceFiltersView ? (
-                              <td className="whitespace-nowrap px-4 py-3.5">
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
                                 <span
-                                  className={`inline-flex rounded-md border px-2 py-0.5 text-[9px] font-extrabold uppercase ${getSiteBadgeClass(
+                                  className={`inline-flex rounded-md border px-2 py-0.5 sibs-text-micro font-extrabold uppercase ${getSiteBadgeClass(
                                     site,
                                   )}`}
                                 >
@@ -1689,11 +1689,11 @@ export default function AttendanceTable() {
                               </td>
                             ) : null}
 
-                            <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold text-[#536887]">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#536887]">
                               {formatDate(item.gy_tracker_date)}
                             </td>
 
-                            <td className="whitespace-nowrap px-4 py-3.5">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
                               <TimeIndicator
                                 value={loginTime}
                                 label={loginIndicator.label}
@@ -1701,15 +1701,15 @@ export default function AttendanceTable() {
                               />
                             </td>
 
-                            <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
                               {breakoutTime}
                             </td>
 
-                            <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
                               {breakinTime}
                             </td>
 
-                            <td className="whitespace-nowrap px-4 py-3.5">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
                               <TimeIndicator
                                 value={logoutTime}
                                 label={logoutIndicator.label}
@@ -1717,23 +1717,23 @@ export default function AttendanceTable() {
                               />
                             </td>
 
-                            <td className="bg-slate-50/60 px-3 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#101828]">
+                            <td className="bg-slate-50/60 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#101828]">
                               {displayCappedWorkHours(item)}
                             </td>
 
-                            <td className="px-3 py-3.5 text-center text-xs font-semibold tabular-nums text-[#667085]">
+                            <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold tabular-nums text-[#667085]">
                               {item.gy_tracker_bh ?? "—"}
                             </td>
 
-                            <td className="bg-blue-50/20 px-3 py-3.5 text-center text-xs font-extrabold tabular-nums text-blue-600">
+                            <td className="bg-blue-50/20 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-blue-600">
                               {ot > 0 ? `+${formatNumber(ot)}` : "—"}
                             </td>
 
-                            <td className="bg-orange-50/20 px-3 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#FF5C28]">
+                            <td className="bg-orange-50/20 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#FF5C28]">
                               {ath > 0 ? formatNumber(ath) : "—"}
                             </td>
 
-                            <td className="whitespace-nowrap px-4 py-3.5 text-center">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                               {renderStatusBadge(item.gy_tracker_status)}
                             </td>
                           </tr>

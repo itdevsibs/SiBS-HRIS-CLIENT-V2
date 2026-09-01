@@ -760,11 +760,11 @@ export default function ForecastHeadcountPlanTable({
       <section className="sibs-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 2xl:px-5 2xl:py-4">
           <div>
-            <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               6-Week Forecast Headcount Plan
             </h3>
 
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
+            <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
               Projected next 6 weeks from the past 6 actual workforce weeks.
             </p>
           </div>
