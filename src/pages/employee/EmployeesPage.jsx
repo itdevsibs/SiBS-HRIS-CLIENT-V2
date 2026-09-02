@@ -54,18 +54,16 @@ function getAnimationStyle(delay = 0) {
 function getMetricTone(tone) {
   if (tone === "emerald") {
     return {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      iconWrap: "bg-[#ECFDF3]",
-      icon: "text-[#059669]",
+      label: "sibs-tone-emerald-label",
+      value: "text-emerald-700",
+      iconWrap: "sibs-tone-emerald-icon",
     };
   }
 
   return {
-    label: "text-[#042C51]",
-    value: "text-[#042C51]",
-    iconWrap: "bg-[#EAF2FB]",
-    icon: "text-[#042C51]",
+    label: "sibs-tone-navy-label",
+    value: "text-sibs-navy",
+    iconWrap: "sibs-tone-navy-icon",
   };
 }
 
@@ -82,32 +80,32 @@ function SummaryCard({
 
   return (
     <article
-      className="sibs-metric-card"
+      className="group sibs-metric-card sibs-page-card-in font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={getAnimationStyle(delay)}
     >
-      <div className="flex h-full items-start justify-between gap-4">
-        <div className="min-w-0 flex-1 self-stretch">
-          <p
-            className={`m-0 truncate text-[10px] font-extrabold uppercase tracking-normal ${metricTone.label}`}
-          >
-            {label}
-          </p>
+      <div className="flex h-full items-start justify-between gap-3 2xl:gap-4">
+        <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
+          <div>
+            <p
+              className={`m-0 truncate sibs-text-micro font-extrabold uppercase tracking-wide ${metricTone.label}`}
+            >
+              {label}
+            </p>
 
-          <p
-            className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal ${metricTone.value}`}
-          >
-            {Number(value || 0).toLocaleString("en-PH")}
-          </p>
+            <p className="font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-sibs-navy">
+              {Number(value || 0).toLocaleString("en-PH")}
+            </p>
+          </div>
 
-          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-4 text-sibs-muted">
             {description}
           </p>
         </div>
 
         <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${metricTone.iconWrap} ${metricTone.icon}`}
+          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${metricTone.iconWrap}`}
         >
-          <CardIcon size={17} strokeWidth={2} />
+          <CardIcon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </div>
       </div>
     </article>
@@ -294,25 +292,25 @@ export default function EmployeesPage() {
       >
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6"
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
             style={getAnimationStyle(animationTiming.header)}
           >
             <span className="sibs-top-accent" aria-hidden="true" />
 
-            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1.5">
+            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28] animate-sibs-pulse" />
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange animate-sibs-pulse" />
                     Employee Directory View
                   </span>
                 </div>
 
-                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
                   Employee Directory
                 </h1>
 
-                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                <p className="sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
                   Manage employee records and CHWCP compliance information.
                 </p>
               </div>
@@ -322,11 +320,10 @@ export default function EmployeesPage() {
                 onClick={handleSummaryRefresh}
                 disabled={summaryRefreshing}
                 title="Refresh employee directory summary"
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-[#042C51] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCcw
-                  size={16}
-                  className={summaryRefreshing ? "animate-spin" : ""}
+                  className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${summaryRefreshing ? "animate-spin text-sibs-orange" : ""}`}
                 />
               </button>
             </div>
@@ -353,18 +350,9 @@ export default function EmployeesPage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+            className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"
             style={getAnimationStyle(animationTiming.table)}
           >
-            <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
-              <h2 className="sibs-section-title">
-                {activeTab.label === "Employees"
-                  ? "Employee Records"
-                  : "CHWCP Records"}
-              </h2>
-              <p className="sibs-section-subtitle">{activeTab.description}</p>
-            </div>
-
             {renderActiveTable()}
           </section>
         </div>

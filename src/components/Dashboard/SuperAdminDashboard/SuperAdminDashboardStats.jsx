@@ -135,7 +135,7 @@ function SuperAdminMetricCard({ item, value, onClick, delay = 0 }) {
 
 export default function SuperAdminDashboardStats({ adminCount, onMetricClick }) {
   return (
-    <section className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:gap-3">
+    <section className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 2xl:gap-3">
       {METRICS.map((metric, index) => {
         const val = metric.key === "admins" ? String(adminCount) : metric.value;
         return (

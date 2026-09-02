@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { getEmployeeById } from "../../lib/axios/getEmployee";
 import {
@@ -21,6 +21,7 @@ const INITIAL_STATUS_MODAL = {
 
 export default function useEmployeeProfile(currentUser) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [employee, setEmployee] = useState(null);
   const [draftEmployee, setDraftEmployee] = useState(null);
@@ -35,9 +36,11 @@ export default function useEmployeeProfile(currentUser) {
   useEffect(() => {
     let active = true;
 
-    async function fetchEmployee() {
+    async function loadEmployee(explicitSibsId) {
       try {
         const sibsId =
+          explicitSibsId ||
+          location.state?.sibsId ||
           sessionStorage.getItem("selectedEmployeeId") ||
           sessionStorage.getItem("selectedCandidateId");
 
@@ -45,6 +48,10 @@ export default function useEmployeeProfile(currentUser) {
           navigate("/employee", { replace: true });
           return;
         }
+
+        setLoading(true);
+        setIsEditing(false);
+        setDraftEmployee(null);
 
         const result = await getEmployeeById(sibsId);
 
@@ -64,12 +71,33 @@ export default function useEmployeeProfile(currentUser) {
       }
     }
 
-    fetchEmployee();
+    void loadEmployee();
+
+    function handleSelectedEmployeeEvent(event) {
+      const newSibsId = event?.detail?.sibsId;
+      if (newSibsId) {
+        void loadEmployee(newSibsId);
+      }
+    }
+
+    window.addEventListener(
+      "sibs:selected-employee-changed",
+      handleSelectedEmployeeEvent,
+    );
 
     return () => {
       active = false;
+      window.removeEventListener(
+        "sibs:selected-employee-changed",
+        handleSelectedEmployeeEvent,
+      );
     };
-  }, [navigate]);
+  }, [
+    location.key,
+    location.state?.sibsId,
+    location.state?.timestamp,
+    navigate,
+  ]);
 
   const displayEmployee = isEditing ? draftEmployee || employee : employee;
   const canEditDetails = canEditProfileDetails(currentUser);
