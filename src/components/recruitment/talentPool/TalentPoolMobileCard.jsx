@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import { getStatusClass } from "../../../lib/utils/talentPool/talentPoolHelpers";
+import { isUnder18Candidate } from "../../../lib/utils/talentPool/talentPoolTabs";
 
 function getTalentPoolStatusLabel(status = "") {
   const value = String(status || "").trim();
@@ -15,16 +16,27 @@ function getTalentPoolStatusLabel(status = "") {
   return value || "—";
 }
 
+function getTalentPoolStatusClass(status = "") {
+  const value = String(status || "").trim().toLowerCase();
+
+  if (value === "under age") {
+    return "border-red-200 bg-red-50 text-red-700";
+  }
+
+  return getStatusClass(status);
+}
+
 export default function TalentPoolMobileCard({ candidate, index = 0 }) {
   const { setSelectedCandidate } = useTalentPool();
 
-  const displayStatus =
-    candidate.currentPipelineStage ||
-    candidate.pipelineStage ||
-    candidate.currentStage ||
-    candidate.pipelineStatus ||
-    candidate.status ||
-    "—";
+  const displayStatus = isUnder18Candidate(candidate)
+    ? "Under Age"
+    : candidate.currentPipelineStage ||
+      candidate.pipelineStage ||
+      candidate.currentStage ||
+      candidate.pipelineStatus ||
+      candidate.status ||
+      "—";
 
   const position =
     candidate.openPosition || candidate.roleCapability || "—";
@@ -60,7 +72,7 @@ export default function TalentPoolMobileCard({ candidate, index = 0 }) {
 
         <span
           title={displayStatus}
-          className={`inline-flex max-w-[150px] shrink-0 items-center justify-center rounded-lg border px-2 py-0.5 2xl:py-1 text-center text-[10px] font-extrabold leading-4 ${getStatusClass(
+          className={`inline-flex max-w-[150px] shrink-0 items-center justify-center rounded-lg border px-2 py-0.5 2xl:py-1 text-center text-[10px] font-extrabold leading-4 ${getTalentPoolStatusClass(
             displayStatus,
           )}`}
         >

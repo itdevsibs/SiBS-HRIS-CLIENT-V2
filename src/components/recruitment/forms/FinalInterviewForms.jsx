@@ -2070,6 +2070,32 @@ export default function FinalInterviewForms({ publicMode = false }) {
     afterClose: null,
   });
 
+  useLayoutEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    const body = document.body;
+    const html = document.documentElement;
+
+    /*
+     * Candidate Pipeline modals lock document scrolling while open.
+     * Navigation to this full-page Final Interview route can happen before
+     * the modal cleanup restores overflow, which leaves the page unable to
+     * scroll on first open. This route must always own normal document
+     * scrolling when it mounts.
+     */
+    body.style.overflow = "";
+    html.style.overflow = "";
+    body.style.overflowY = "";
+    html.style.overflowY = "";
+    body.style.paddingRight = "";
+    html.style.paddingRight = "";
+
+    body.classList.remove("overflow-hidden");
+    html.classList.remove("overflow-hidden");
+
+    return undefined;
+  }, []);
+
   function showStatusModal({
     type = "error",
     title = "Something went wrong",

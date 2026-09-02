@@ -313,7 +313,7 @@ export default function HiringRequirementSection({
             : "No Existing Job Description - New Job Description"
         }
         searchable
-        zIndex="z-[100]"
+        zIndex="z-[300]"
         onChange={(value) => {
           handleLinkedRequirementChange?.(value);
         }}
@@ -345,6 +345,7 @@ export default function HiringRequirementSection({
           options={accounts}
           placeholder="Search account"
           searchable
+          zIndex="z-[200]"
           onChange={handleAccountChange}
         />
 

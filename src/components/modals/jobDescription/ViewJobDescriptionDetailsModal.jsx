@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { AlertTriangle, Eye, Loader2 } from "lucide-react";
+import { AlertTriangle, Eye, Loader2, X } from "lucide-react";
 import Details from "../../layout/tabs/JobDescriptionView/Details";
 import { normalizeJdStatus } from "../../../lib/utils/NormalizeJDStatus";
 import RevisionHistory from "../../layout/tabs/JobDescriptionView/RevisionHistory";

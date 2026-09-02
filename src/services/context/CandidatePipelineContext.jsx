@@ -200,6 +200,18 @@ function getCandidatePrfStatus(candidate = {}) {
   );
 }
 
+function getCandidateOfferApprovalStatus(candidate = {}) {
+  return cleanText(
+    candidate.latestOfferVersion?.approvalStatus ||
+      candidate.latestOfferVersion?.approval_status ||
+      candidate.offerApprovalStatus ||
+      candidate.offer_approval_status ||
+      candidate.offerRevisionStatus ||
+      candidate.offer_revision_status ||
+      "",
+  ).toLowerCase();
+}
+
 function toBooleanFlag(value, fallback = false) {
   if (value === true || value === false) return value;
 
@@ -2345,20 +2357,53 @@ export function CandidatePipelineProvider({ children }) {
   async function handleOpenOfferModal(candidate) {
     if (!candidate) return;
 
-    const currentStage = normalizePipelineStageName(getCandidateStage(candidate));
+    const currentStage =
+      normalizePipelineStageName(
+        getCandidateStage(candidate),
+      );
 
-    if (currentStage !== "Interviewed") {
+    const normalizedCandidate =
+      normalizePipelineCandidateForBoard(
+        candidate,
+      );
+
+    const isRejectedOfferRevision =
+      currentStage === "Offered" &&
+      getCandidateOfferApprovalStatus(
+        normalizedCandidate,
+      ) === "rejected";
+
+    if (
+      currentStage !== "Interviewed" &&
+      !isRejectedOfferRevision
+    ) {
       showError(
-        "Offer details can only be prepared after the interview is completed.",
+        currentStage === "Offered"
+          ? "A new offer can only be created after the current offer is rejected by an approver."
+          : "Offer details can only be prepared after the interview is completed.",
       );
       return;
     }
 
-    const normalizedCandidate = normalizePipelineCandidateForBoard(candidate);
-    const offerDetails = normalizedCandidate.offerDetails || {};
-    const currentRoleTitle = getRoleTitle(normalizedCandidate.roleAccount);
-    const currentAccount = getAccount(normalizedCandidate.roleAccount);
+    const offerDetails =
+      normalizedCandidate.offerDetails || {};
 
+    const currentRoleTitle =
+      getRoleTitle(
+        normalizedCandidate.roleAccount,
+      );
+
+    const currentAccount =
+      getAccount(
+        normalizedCandidate.roleAccount,
+      );
+
+    /*
+     * A rejected approver version starts a fresh compensation proposal while
+     * preserving the approved assignment / PRF. The backend will create the
+     * next candidate_offer_versions row instead of overwriting the rejected
+     * version.
+     */
     setOfferCandidate(normalizedCandidate);
     setOfferForm({
       hiringRequirementId:
@@ -2367,13 +2412,30 @@ export function CandidatePipelineProvider({ children }) {
         "",
       roleTitle:
         offerDetails.roleTitle ||
-        (currentRoleTitle === "" ? "" : currentRoleTitle),
+        (currentRoleTitle === ""
+          ? ""
+          : currentRoleTitle),
       account:
         offerDetails.account ||
-        (currentAccount === "" ? "" : currentAccount),
-      basicPay: offerDetails.basicPay || "",
-      deminimisDailyRate: offerDetails.deminimisDailyRate || "",
-      startDate: offerDetails.startDate || offerDetails.start_date || "",
+        (currentAccount === ""
+          ? ""
+          : currentAccount),
+      basicPay:
+        isRejectedOfferRevision
+          ? ""
+          : offerDetails.basicPay || "",
+      deminimisDailyRate:
+        isRejectedOfferRevision
+          ? ""
+          : offerDetails.deminimisDailyRate || "",
+      startDate:
+        isRejectedOfferRevision
+          ? ""
+          : (
+              offerDetails.startDate ||
+              offerDetails.start_date ||
+              ""
+            ),
       remarks: "",
     });
   }
@@ -2466,6 +2528,14 @@ export function CandidatePipelineProvider({ children }) {
 
     const id = getCandidateRecordId(offerCandidate);
 
+    const isRejectedOfferRevision =
+      normalizePipelineStageName(
+        getCandidateStage(offerCandidate),
+      ) === "Offered" &&
+      getCandidateOfferApprovalStatus(
+        offerCandidate,
+      ) === "rejected";
+
     setOfferSubmitting(true);
 
     let employmentOfferPdf = null;
@@ -2516,9 +2586,14 @@ export function CandidatePipelineProvider({ children }) {
         }),
       {
         activeStageAfter: "Offered",
-        successTitle: "Offer Submitted for Approval",
+        successTitle:
+          isRejectedOfferRevision
+            ? "New Offer Submitted for Approval"
+            : "Offer Submitted for Approval",
         successMessage:
-          `${offerCandidate.name}'s offer was submitted for approval successfully.`,
+          isRejectedOfferRevision
+            ? `${offerCandidate.name}'s new offer version was submitted for approval successfully.`
+            : `${offerCandidate.name}'s offer was submitted for approval successfully.`,
         errorTitle: "Offer Submission Failed",
       },
       );

@@ -7,7 +7,6 @@ export const TALENT_POOL_TABS = Object.freeze({
   DROP_OFF: "drop-off",
 });
 
-
 export function getTalentPoolTabFromSearchParams(searchParams) {
   const requestedTab = cleanText(searchParams?.get?.("tab")).toLowerCase();
   const validTabs = Object.values(TALENT_POOL_TABS);
@@ -74,6 +73,7 @@ export function getCandidateDateOfBirth(candidate = {}) {
     candidate.date_of_birth ||
     candidate.birthDate ||
     candidate.birth_date ||
+    candidate.birthdate ||
     ""
   );
 }
@@ -171,8 +171,11 @@ export function getCurrentCandidateStatus(candidate = {}) {
   );
 }
 
-export function isNewApplicantCandidate(candidate = {}) {
-  return getCurrentCandidateStatus(candidate) === "new applicant";
+export function isNewApplicantCandidate(candidate = {}, today = new Date()) {
+  return (
+    !isUnder18Candidate(candidate, today) &&
+    getCurrentCandidateStatus(candidate) === "new applicant"
+  );
 }
 
 export function isApplicantPipelineCandidate(candidate = {}) {
@@ -182,7 +185,6 @@ export function isApplicantPipelineCandidate(candidate = {}) {
     !isDropOffCandidateValue(candidate)
   );
 }
-
 
 export function shouldShowMoveToPipelineAction(
   candidate = {},
@@ -212,7 +214,9 @@ export function filterTalentPoolCandidatesForTab(
   }
 
   if (tab === TALENT_POOL_TABS.NEW_APPLICANT) {
-    return list.filter(isNewApplicantCandidate);
+    return list.filter((candidate) =>
+      isNewApplicantCandidate(candidate, today),
+    );
   }
 
   if (tab === TALENT_POOL_TABS.APPLICANT_PIPELINE) {

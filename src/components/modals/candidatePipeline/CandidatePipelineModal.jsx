@@ -904,32 +904,62 @@ function getLatestFinalInterviewSubmission(candidate = {}) {
   const parsedForms = getFinalInterviewSubmissions(candidate);
 
   return [...parsedForms]
-    .sort((a, b) => {
-      const aTime = new Date(
-        a.submittedAtIso ||
-          a.submitted_at_iso ||
-          a.submittedAt ||
-          a.submitted_at ||
-          a.createdAt ||
-          a.created_at ||
+    .map((submission, index) => ({
+      submission,
+      attemptNo: getFinalInterviewAttemptNo(
+        submission,
+        index + 1,
+      ),
+    }))
+    .sort((first, second) => {
+      if (second.attemptNo !== first.attemptNo) {
+        return second.attemptNo - first.attemptNo;
+      }
+
+      const firstSubmission = first.submission || {};
+      const secondSubmission = second.submission || {};
+
+      const firstTime = new Date(
+        firstSubmission.completedAtIso ||
+          firstSubmission.completed_at_iso ||
+          firstSubmission.submittedAtIso ||
+          firstSubmission.submitted_at_iso ||
+          firstSubmission.startedAtIso ||
+          firstSubmission.started_at_iso ||
+          firstSubmission.completedAt ||
+          firstSubmission.completed_at ||
+          firstSubmission.submittedAt ||
+          firstSubmission.submitted_at ||
+          firstSubmission.startedAt ||
+          firstSubmission.started_at ||
+          firstSubmission.createdAt ||
+          firstSubmission.created_at ||
           0,
       ).getTime();
 
-      const bTime = new Date(
-        b.submittedAtIso ||
-          b.submitted_at_iso ||
-          b.submittedAt ||
-          b.submitted_at ||
-          b.createdAt ||
-          b.created_at ||
+      const secondTime = new Date(
+        secondSubmission.completedAtIso ||
+          secondSubmission.completed_at_iso ||
+          secondSubmission.submittedAtIso ||
+          secondSubmission.submitted_at_iso ||
+          secondSubmission.startedAtIso ||
+          secondSubmission.started_at_iso ||
+          secondSubmission.completedAt ||
+          secondSubmission.completed_at ||
+          secondSubmission.submittedAt ||
+          secondSubmission.submitted_at ||
+          secondSubmission.startedAt ||
+          secondSubmission.started_at ||
+          secondSubmission.createdAt ||
+          secondSubmission.created_at ||
           0,
       ).getTime();
 
       return (
-        (Number.isFinite(bTime) ? bTime : 0) -
-        (Number.isFinite(aTime) ? aTime : 0)
+        (Number.isFinite(secondTime) ? secondTime : 0) -
+        (Number.isFinite(firstTime) ? firstTime : 0)
       );
-    })[0];
+    })[0]?.submission;
 }
 
 function getTimelineFinalInterviewScoreSummary(item = {}, candidate = {}) {
@@ -1849,6 +1879,26 @@ function getResolvedFileUrl(fileUrl = "") {
   }
 
   return value;
+}
+
+function normalizeOnlineInterviewLink(value = "") {
+  const rawLink = cleanText(value);
+
+  if (!rawLink) return "";
+
+  if (/^https?:\/\//i.test(rawLink)) {
+    return rawLink;
+  }
+
+  if (/^\/\//.test(rawLink)) {
+    return `https:${rawLink}`;
+  }
+
+  if (/^[a-z0-9.-]+\.[a-z]{2,}(?:[/:?#]|$)/i.test(rawLink)) {
+    return `https://${rawLink}`;
+  }
+
+  return rawLink;
 }
 
 function isRawBrowserFile(file) {
@@ -6583,6 +6633,8 @@ const CandidatePipelineModal = ({
   const normalizedOfferRevisionStatus = cleanText(
     activeCandidate.latestOfferVersion?.approvalStatus ||
       activeCandidate.latestOfferVersion?.approval_status ||
+      activeCandidate.offerApprovalStatus ||
+      activeCandidate.offer_approval_status ||
       activeCandidate.offerRevisionStatus ||
       activeCandidate.offer_revision_status ||
       activeCandidate.offerStatus ||
@@ -6599,6 +6651,10 @@ const CandidatePipelineModal = ({
     "for_review",
     "revised_offer_pending_approval",
   ].includes(normalizedOfferRevisionStatus);
+
+  const isOfferApprovalRejected =
+    normalizedOfferRevisionStatus ===
+    "rejected";
 
   const hasFinalOfferDecision = [
     "accepted",
@@ -7026,13 +7082,23 @@ const CandidatePipelineModal = ({
   );
 
   const candidateHasSchedule = hasInterviewSchedule(activeCandidate);
+  const latestFinalInterviewAttempt =
+    getLatestFinalInterviewSubmission(activeCandidate) || null;
+  const hasActiveFinalInterviewAttempt = Boolean(
+    latestFinalInterviewAttempt &&
+      isFinalInterviewSubmissionStarted(latestFinalInterviewAttempt) &&
+      !isFinalInterviewSubmissionCompleted(latestFinalInterviewAttempt),
+  );
   const modalStatus = getDisplayInterviewStatus(activeCandidate);
   const isInterviewReadyToStart =
     isInterviewScheduled &&
     cleanText(modalStatus).toLowerCase() === "scheduled";
   const isInterviewInProgress =
     isInterviewScheduled &&
-    cleanText(modalStatus).toLowerCase() === "interview in progress";
+    (
+      cleanText(modalStatus).toLowerCase() === "interview in progress" ||
+      hasActiveFinalInterviewAttempt
+    );
   const isInterviewRescheduled =
     isInterviewScheduled &&
     cleanText(modalStatus).toLowerCase() === "rescheduled";
@@ -7047,6 +7113,7 @@ const CandidatePipelineModal = ({
     "rescheduled",
   ].includes(interviewResponseStatus);
   const canStartOrContinueInterview =
+    hasActiveFinalInterviewAttempt ||
     isInterviewInProgress ||
     (isInterviewReadyToStart && candidateConfirmedInterview);
 
@@ -9838,7 +9905,10 @@ async function handleConfirmScheduleNho() {
   async function handleStartOrContinueInterview() {
     if (isStartingInterview) return;
 
-    if (isInterviewInProgress) {
+    if (
+      isInterviewInProgress ||
+      hasActiveFinalInterviewAttempt
+    ) {
       openFinalInterviewForm();
       return;
     }
@@ -10554,7 +10624,7 @@ async function handleConfirmScheduleNho() {
       )}
 
       {isInterviewScheduled &&
-        candidateHasSchedule &&
+        (candidateHasSchedule || hasActiveFinalInterviewAttempt) &&
         canStartOrContinueInterview && (
           <CandidateModalPrimaryButton
             type="button"
@@ -10581,12 +10651,32 @@ async function handleConfirmScheduleNho() {
         </CandidateModalPrimaryButton>
       )}
 
-      {isOffered && (
-        <CandidateModalPrimaryButton type="button" onClick={handleGoToOffer}>
-          <ArrowRight size={15} />
-          Go to Offer
-        </CandidateModalPrimaryButton>
-      )}
+      {isOffered &&
+        isOfferApprovalRejected && (
+          <CandidateModalPrimaryButton
+            type="button"
+            onClick={() =>
+              onOpenMoveModal?.(
+                activeCandidate,
+                "Offered",
+              )
+            }
+          >
+            <RefreshCcw size={15} />
+            Create New Offer
+          </CandidateModalPrimaryButton>
+        )}
+
+      {isOffered &&
+        !isOfferApprovalRejected && (
+          <CandidateModalPrimaryButton
+            type="button"
+            onClick={handleGoToOffer}
+          >
+            <ArrowRight size={15} />
+            Go to Offer
+          </CandidateModalPrimaryButton>
+        )}
 
       {isAccepted && (
         <CandidateModalPrimaryButton
@@ -10879,21 +10969,30 @@ async function handleConfirmScheduleNho() {
                   <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Interview Link
                   </p>
-                  {displayValueOrNA(activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link) !== EMPTY_DISPLAY_VALUE ? (
-                    <button
-                      type="button"
-                      title={activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link}
-                      onClick={() =>
-                        window.open(
-                          activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link,
-                          "_blank",
-                          "noopener,noreferrer",
-                        )
-                      }
+                  {displayValueOrNA(
+                    normalizeOnlineInterviewLink(
+                      activeCandidate.onlineInterviewLink ||
+                        activeCandidate.online_interview_link,
+                    ),
+                  ) !== EMPTY_DISPLAY_VALUE ? (
+                    <a
+                      href={normalizeOnlineInterviewLink(
+                        activeCandidate.onlineInterviewLink ||
+                          activeCandidate.online_interview_link,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={normalizeOnlineInterviewLink(
+                        activeCandidate.onlineInterviewLink ||
+                          activeCandidate.online_interview_link,
+                      )}
                       className="mt-0.5 block max-w-full truncate text-left text-[11px] 2xl:text-xs font-extrabold text-blue-600 underline"
                     >
-                      {activeCandidate.onlineInterviewLink || activeCandidate.online_interview_link}
-                    </button>
+                      {normalizeOnlineInterviewLink(
+                        activeCandidate.onlineInterviewLink ||
+                          activeCandidate.online_interview_link,
+                      )}
+                    </a>
                   ) : (
                     <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
                       {EMPTY_DISPLAY_VALUE}

@@ -77,6 +77,7 @@ import {
   getTalentPoolStatusForNhoStage,
 } from "../../../lib/utils/candidatePipeline/nhoRequirementRouting";
 import {
+  isUnder18Candidate,
   shouldShowMoveToPipelineAction,
 } from "../../../lib/utils/talentPool/talentPoolTabs";
 
@@ -4622,9 +4623,12 @@ export default function CandidateProfileModal() {
     "Candidate";
   const isDoNotReprocess = activeCandidate.status === "Do Not Reprocess";
   const isDropOffCandidate = isDropOffCandidateRecord(activeCandidate);
-  const candidateDisplayStatus = isDropOffCandidate
-    ? "Drop-off"
-    : activeCandidate.status;
+  const isUnderAgeCandidate = isUnder18Candidate(activeCandidate);
+  const candidateDisplayStatus = isUnderAgeCandidate
+    ? "Under Age"
+    : isDropOffCandidate
+      ? "Drop-off"
+      : activeCandidate.status;
 
   const isAlreadyInPipeline =
     isCandidateActivelyLinkedToPipeline(activeCandidate);

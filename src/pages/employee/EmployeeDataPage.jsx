@@ -445,6 +445,7 @@ export default function EmployeeDataPage() {
     displayEmployee,
     isEditing,
     isSaving,
+    canEditDetails,
     onEdit:
       canEditDetails &&
       activeSectionSupportsSave &&
