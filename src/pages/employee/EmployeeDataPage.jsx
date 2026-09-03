@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, HeartPulse } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -90,6 +90,7 @@ function canEditProfileDetails(user) {
 
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user: currentUser } = useUser();
 
   const [employee, setEmployee] = useState(null);
@@ -126,8 +127,10 @@ export default function EmployeeDataPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchEmployee() {
+    async function loadEmployee(explicitSibsId) {
       const sibsId =
+        explicitSibsId ||
+        location.state?.sibsId ||
         sessionStorage.getItem("selectedEmployeeId") ||
         sessionStorage.getItem("selectedCandidateId");
 
@@ -137,6 +140,8 @@ export default function EmployeeDataPage() {
       }
 
       setLoading(true);
+      setIsEditing(false);
+      setDraftEmployee(null);
 
       try {
         const [employeeResult, sectionsResult] = await Promise.allSettled([
@@ -182,12 +187,33 @@ export default function EmployeeDataPage() {
       }
     }
 
-    void fetchEmployee();
+    void loadEmployee();
+
+    function handleSelectedEmployeeEvent(event) {
+      const newSibsId = event?.detail?.sibsId;
+      if (newSibsId) {
+        void loadEmployee(newSibsId);
+      }
+    }
+
+    window.addEventListener(
+      "sibs:selected-employee-changed",
+      handleSelectedEmployeeEvent,
+    );
 
     return () => {
       cancelled = true;
+      window.removeEventListener(
+        "sibs:selected-employee-changed",
+        handleSelectedEmployeeEvent,
+      );
     };
-  }, [navigate]);
+  }, [
+    location.key,
+    location.state?.sibsId,
+    location.state?.timestamp,
+    navigate,
+  ]);
 
   function showFeedback(message, type = "success", title) {
     setStatusModal({
@@ -210,6 +236,62 @@ export default function EmployeeDataPage() {
   function openResignationModal() {
     setOpenProfileDropdown(false);
     setOpenAddResignation(true);
+  }
+
+  async function handleContextAction(actionType) {
+    if (actionType === "sync") {
+      const sibsId = getProfileSibsId(employee);
+      if (sibsId) {
+        setLoading(true);
+        try {
+          const [employeeResult, sectionsResult] = await Promise.allSettled([
+            getEmployeeById(sibsId),
+            getEmployeeProfileSections(sibsId),
+          ]);
+
+          const employeeResponse =
+            employeeResult.status === "fulfilled" ? employeeResult.value : null;
+          const sectionsResponse =
+            sectionsResult.status === "fulfilled" ? sectionsResult.value : null;
+
+          if (employeeResponse?.success && employeeResponse?.data) {
+            const baseEmployee = buildEditableEmployee(employeeResponse.data);
+            const mergedEmployee =
+              sectionsResponse?.success && sectionsResponse?.data
+                ? mergeEmployeeProfileSections(baseEmployee, sectionsResponse.data)
+                : baseEmployee;
+
+            setEmployee(buildEditableEmployee(mergedEmployee));
+            showFeedback(
+              "Employee record has been successfully re-synchronized with the database.",
+              "success",
+              "Profile Synchronized",
+            );
+          } else {
+            showFeedback(
+              "Failed to re-sync profile from database.",
+              "error",
+              "Synchronization Failed",
+            );
+          }
+        } catch (err) {
+          showFeedback("Failed to sync profile record.", "error", "Sync Error");
+        } finally {
+          setLoading(false);
+        }
+      }
+      return;
+    }
+
+    if (actionType === "print") {
+      window.print();
+      return;
+    }
+
+    if (actionType === "resignation") {
+      openResignationModal();
+      return;
+    }
   }
 
   function startEditing() {
@@ -561,17 +643,17 @@ export default function EmployeeDataPage() {
               <div className="sibs-page-card-in grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
                 <section
                   key={activeTab}
-                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-sibs-border bg-white p-5 shadow-xs"
                 >
-                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-sibs-border pb-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <h2 className="break-words text-sm font-black uppercase tracking-wider text-[#042C51]">
+                      <h2 className="font-heading break-words text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                         {activeProfileLabel.primary}
                         {activeProfileLabel.secondary
                           ? ` - ${activeProfileLabel.secondary}`
                           : ""}
                       </h2>
-                      <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
+                      <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
                         {activePrimary === "chwcp"
                           ? "Read-only CHWCP shared and personal coverage for the selected employee."
                           : isEditing
@@ -585,10 +667,10 @@ export default function EmployeeDataPage() {
                         className={`h-2.5 w-2.5 rounded-full ${
                           isEditing
                             ? "animate-pulse bg-amber-400"
-                            : "bg-[#042C51]"
+                            : "bg-sibs-navy"
                         }`}
                       />
-                      <span className="text-[10px] font-bold uppercase text-slate-500">
+                      <span className="font-heading text-xs font-bold text-sibs-muted tracking-tight">
                         {activePrimary === "chwcp"
                           ? "View Only"
                           : isEditing
@@ -613,7 +695,7 @@ export default function EmployeeDataPage() {
 
                 <EmployeeProfileContextPanel
                   employee={employee}
-                  onNavigate={handleTabChange}
+                  onNavigate={setActiveTab}
                   onAction={handleContextAction}
                 />
               </div>

@@ -4,14 +4,14 @@ export default function ProfilePanel({
   children,
   className = "",
 }) {
-  const dotClass = accent === "navy" ? "bg-[#042C51]" : "bg-[#FF5C28]";
+  const dotClass = accent === "navy" ? "bg-sibs-navy" : "bg-sibs-orange";
 
   return (
     <section
-      className={`rounded-xl border border-slate-200 bg-[#F8FAFC] p-4 transition hover:border-slate-300 ${className}`}
+      className={`rounded-xl border border-sibs-border bg-sibs-surface p-4 transition hover:border-sibs-border-subtle font-jakarta ${className}`}
     >
       {title ? (
-        <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-[#042C51]">
+        <h3 className="mb-4 flex items-center gap-2 border-b border-sibs-border pb-2.5 font-heading text-xs 2xl:text-sm font-bold text-sibs-navy tracking-tight">
           <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
           {title}
         </h3>

@@ -1159,12 +1159,12 @@ export default function EmployeeTable({
       `}</style>
 
       <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
-        <h3 className="font-heading text-sm sm:text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
+        <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           {activeTab === "Employees"
             ? "Employee Records"
             : `${activeTab} Records`}
         </h3>
-        <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-[#667085]">
+        <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
           {activeTabDescription}
         </p>
 

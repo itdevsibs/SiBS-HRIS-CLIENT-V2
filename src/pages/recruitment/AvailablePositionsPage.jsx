@@ -1743,24 +1743,26 @@ export default function AvailablePositionsPage() {
 
       <main ref={mainRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-5 sm:space-y-6">
-          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative z-[30] overflow-hidden rounded-2xl border border-sibs-border bg-white p-5 font-jakarta shadow-sm sm:p-6">
+          <section
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative z-[30] overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
+          >
             <span className="sibs-top-accent" aria-hidden="true" />
 
             <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
                     <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    <Database className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" strokeWidth={2.2} />
                     Recruitment View
                   </span>
                 </div>
 
-                <h1 className="break-words text-lg 2xl:text-2xl font-extrabold tracking-tight text-sibs-navy">
+                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
                   Available Positions
                 </h1>
 
-                <p className="max-w-3xl text-xs font-semibold leading-relaxed text-sibs-muted sm:text-sm">
+                <p className="max-w-3xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
                   Manage canonical roles, organizational mapping, linked Job
                   Descriptions, and applicant visibility.
                 </p>
