@@ -312,16 +312,16 @@ export default function TalentPoolTable({
                               {showsLeadAndTalentPoolIds ? (
                                 <div className="mt-0.5 space-y-0.5">
                                   <p
-                                    title={leadId}
+                                    title={talentPoolId}
                                     className="truncate font-mono text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted tracking-tight"
                                   >
-                                    Talent Pool ID: {leadId || "—"}
+                                    Talent Pool ID: {talentPoolId || "—"}
                                   </p>
                                   <p
-                                    title={talentPoolId}
+                                    title={leadId}
                                     className="truncate font-mono text-[10px] 2xl:text-[11px] font-extrabold text-emerald-700 tracking-tight"
                                   >
-                                    Lead ID: {talentPoolId || "—"}
+                                    Lead ID: {leadId || "—"}
                                   </p>
                                 </div>
                               ) : (
