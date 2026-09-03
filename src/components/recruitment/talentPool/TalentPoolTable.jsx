@@ -10,6 +10,7 @@ import {
   formatDate,
   getStatusClass,
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
+import { isUnder18Candidate } from "../../../lib/utils/talentPool/talentPoolTabs";
 import TalentPoolMobileCard from "./TalentPoolMobileCard";
 
 const PAGE_SIZE = 15;
@@ -25,6 +26,16 @@ function getTalentPoolStatusLabel(status = "") {
   }
 
   return value || "—";
+}
+
+function getTalentPoolStatusClass(status = "") {
+  const value = String(status || "").trim().toLowerCase();
+
+  if (value === "under age") {
+    return "border-red-200 bg-red-50 text-red-700";
+  }
+
+  return getStatusClass(status);
 }
 
 function TableState({ icon, title, message, tone = "neutral", spin = false }) {
@@ -209,13 +220,14 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                       const finalAccount =
                         candidate.currentAppliedAccount || "";
 
-                      const displayStatus =
-                        candidate.currentPipelineStage ||
-                        candidate.pipelineStage ||
-                        candidate.currentStage ||
-                        candidate.pipelineStatus ||
-                        candidate.status ||
-                        "—";
+                      const displayStatus = isUnder18Candidate(candidate)
+                        ? "Under Age"
+                        : candidate.currentPipelineStage ||
+                          candidate.pipelineStage ||
+                          candidate.currentStage ||
+                          candidate.pipelineStatus ||
+                          candidate.status ||
+                          "—";
 
                       const shortStatus = getTalentPoolStatusLabel(displayStatus);
 
@@ -295,7 +307,7 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                           <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
                             <span
                               title={displayStatus}
-                              className={`mx-auto inline-flex max-w-[195px] items-center justify-center rounded-lg border px-2.5 py-1 text-center text-[10px] 2xl:text-[10.5px] font-extrabold leading-tight shadow-2xs ${getStatusClass(
+                              className={`mx-auto inline-flex max-w-[195px] items-center justify-center rounded-lg border px-2.5 py-1 text-center text-[10px] 2xl:text-[10.5px] font-extrabold leading-tight shadow-2xs ${getTalentPoolStatusClass(
                                 displayStatus,
                               )}`}
                             >

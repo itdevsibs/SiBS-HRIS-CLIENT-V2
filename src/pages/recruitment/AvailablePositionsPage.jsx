@@ -78,6 +78,52 @@ function getCurrentUserSibsId(user = {}) {
   );
 }
 
+function getCurrentUserAuditLabel(user = {}) {
+  const sibsId = getCurrentUserSibsId(user);
+
+  const lastName = cleanText(
+    user?.lastName ||
+      user?.last_name ||
+      user?.surname ||
+      user?.familyName ||
+      user?.family_name ||
+      "",
+  );
+
+  const firstName = cleanText(
+    user?.firstName ||
+      user?.first_name ||
+      user?.givenName ||
+      user?.given_name ||
+      "",
+  );
+
+  const middleName = cleanText(
+    user?.middleName ||
+      user?.middle_name ||
+      "",
+  );
+
+  const structuredName =
+    lastName && firstName
+      ? `${lastName}, ${[firstName, middleName]
+          .filter(Boolean)
+          .join(" ")}`
+      : "";
+
+  const fallbackName = getUserDisplayName(user);
+
+  const displayName =
+    structuredName ||
+    cleanText(fallbackName);
+
+  if (sibsId && displayName) {
+    return `${sibsId} - ${displayName}`;
+  }
+
+  return displayName || sibsId || "Unknown User";
+}
+
 function getApprovalSettingsRows(responseData) {
   const rows =
     responseData?.data?.users ||
@@ -409,9 +455,15 @@ export default function AvailablePositionsPage() {
 
   const { user } = useUser();
 
-  const currentUserName = getUserDisplayName(user);
+  const currentUserSibsId = useMemo(
+    () => getCurrentUserSibsId(user),
+    [user],
+  );
 
-  const currentUserSibsId = useMemo(() => getCurrentUserSibsId(user), [user]);
+  const currentUserAuditLabel = useMemo(
+    () => getCurrentUserAuditLabel(user),
+    [user],
+  );
 
   const [positionList, setPositionList] = useState([]);
 
@@ -1194,9 +1246,9 @@ export default function AvailablePositionsPage() {
 
       remarks: cleanText(positionForm.remarks),
 
-      createdBy: currentUserName,
+      createdBy: currentUserAuditLabel,
 
-      updatedBy: currentUserName,
+      updatedBy: currentUserAuditLabel,
     };
 
     const isRelinking =
@@ -1209,7 +1261,7 @@ export default function AvailablePositionsPage() {
       const response = isRelinking
         ? await relinkAvailablePositionJobDescription(editTarget.id, {
             jobDescriptionId: payload.jdId,
-            updatedBy: currentUserName,
+            updatedBy: currentUserAuditLabel,
           })
         : formMode === "edit" && editTarget
           ? await updateAvailablePosition(editTarget.id, payload)
@@ -1447,7 +1499,7 @@ export default function AvailablePositionsPage() {
           const response = await updateAvailablePositionStatus(position.id, {
             status: nextStatus,
 
-            updatedBy: currentUserName,
+            updatedBy: currentUserAuditLabel,
           });
 
           if (!response?.success) {

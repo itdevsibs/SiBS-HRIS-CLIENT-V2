@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Activity } from "lucide-react";
+import { Activity, Eye, EyeOff, X } from "lucide-react";
 
 import { useHeader } from "../../services/context/HeaderContext";
 import { useUser } from "../../services/context/UserContext";
@@ -16,6 +16,7 @@ export default function AdminLoginModal() {
   const { getAccessLabel } = useAdmin();
 
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [statusModal, setStatusModal] = useState({
@@ -52,6 +53,7 @@ export default function AdminLoginModal() {
 
     setAdminLogin(false);
     setPassword("");
+    setShowPassword(false);
     closeStatusModal();
   };
 
@@ -191,15 +193,28 @@ export default function AdminLoginModal() {
                   Password <span className="text-[#FF5C28]">*</span>
                 </label>
 
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={`Enter ${targetAccessLabel} password`}
-                  disabled={loading}
-                  autoComplete="current-password"
-                  className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={`Enter ${targetAccessLabel} password`}
+                    disabled={loading}
+                    autoComplete="current-password"
+                    className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 pr-10 2xl:px-3.5 2xl:pr-11 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    disabled={loading}
+                    className="absolute right-2.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#98A2B3] transition hover:bg-[#F2F4F7] hover:text-[#042C51] disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5 pt-1">

@@ -22,6 +22,26 @@ function normalizeText(value = "") {
     .toLowerCase();
 }
 
+function getUpdatedByDisplay(position = {}) {
+  const value = String(
+    getAvailablePositionUpdatedBy(position) || "",
+  ).trim();
+
+  if (!value) return "—";
+
+  /*
+   * New audit values are stored as:
+   * SIBS ID - Lastname, Firstname Middlename
+   * Preserve that exact value instead of passing it through formatPersonName.
+   * Older name-only rows keep the existing formatter for backward compatibility.
+   */
+  if (/^[^-]+\s-\s.+/.test(value)) {
+    return value;
+  }
+
+  return formatPersonName(value);
+}
+
 function EmptyTableRow() {
   return (
     <tr>
@@ -279,6 +299,9 @@ export default function AvailablePositionsTable({
 
                         const rowClickable = !isSaving;
 
+                        const updatedByDisplay =
+                          getUpdatedByDisplay(position);
+
                         return (
                           <tr
                             key={position.id}
@@ -414,15 +437,10 @@ export default function AvailablePositionsTable({
                               </p>
 
                               <p
-                                className="mt-0.5 max-w-[130px] truncate text-[10px] font-bold text-[#667085]"
-                                title={formatPersonName(
-                                  getAvailablePositionUpdatedBy(position),
-                                )}
+                                className="mt-0.5 max-w-[220px] truncate text-[10px] font-bold text-[#667085]"
+                                title={updatedByDisplay}
                               >
-                                By:{" "}
-                                {formatPersonName(
-                                  getAvailablePositionUpdatedBy(position),
-                                )}
+                                By: {updatedByDisplay}
                               </p>
                             </td>
                           </tr>

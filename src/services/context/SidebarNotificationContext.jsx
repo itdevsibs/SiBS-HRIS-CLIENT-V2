@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { useUser } from "./UserContext";
+import { getLeavesSummary } from "../../lib/axios/getLeaves";
 import {
   createSidebarNotificationState,
   getSidebarNotification,
@@ -47,17 +48,6 @@ const SEEDED_SIDEBAR_NOTIFICATIONS = [
 ];
 
 const DEFAULT_SYSTEM_NOTIFICATIONS = [
-  {
-    id: "notif-leaves-pending",
-    category: "approvals",
-    type: "action",
-    title: "Pending Leave Requests",
-    message: "580 leave requests require administrative review and signoff.",
-    time: "10 mins ago",
-    timestamp: Date.now() - 10 * 60 * 1000,
-    actionLabel: "Review Leaves",
-    actionPath: "/leaves",
-  },
   {
     id: "notif-interview-response",
     category: "system",
@@ -159,12 +149,77 @@ export function SidebarNotificationProvider({ children }) {
   const [readNotifIds, setReadNotifIds] = useState({});
   const [dismissedNotifIds, setDismissedNotifIds] = useState({});
   const [dynamicNotifications, setDynamicNotifications] = useState([]);
+  const [leavePendingNotification, setLeavePendingNotification] = useState(null);
 
   useEffect(() => {
     setLastSeen(readStorage(sidebarStorageKey));
     setReadNotifIds(readStorage(readNotifsStorageKey));
     setDismissedNotifIds(readStorage(dismissedNotifsStorageKey));
   }, [sidebarStorageKey, readNotifsStorageKey, dismissedNotifsStorageKey]);
+
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshPendingLeaveNotification() {
+      if (!user) {
+        if (!cancelled) setLeavePendingNotification(null);
+        return;
+      }
+
+      const result = await getLeavesSummary();
+
+      if (cancelled) return;
+
+      if (!result?.success || !result?.data) {
+        setLeavePendingNotification(null);
+        return;
+      }
+
+      const pendingLeaves = Number(result.data.pendingLeaves || 0);
+
+      if (!Number.isFinite(pendingLeaves) || pendingLeaves <= 0) {
+        setLeavePendingNotification(null);
+        return;
+      }
+
+      const canReview = result?.access?.canReview !== false;
+      const requestLabel = pendingLeaves === 1 ? "leave request" : "leave requests";
+
+      setLeavePendingNotification({
+        id: "notif-leaves-pending",
+        category: canReview ? "approvals" : "system",
+        type: "action",
+        title: "Pending Leave Requests",
+        message: canReview
+          ? `${pendingLeaves.toLocaleString("en-PH")} ${requestLabel} require administrative review and signoff.`
+          : `${pendingLeaves.toLocaleString("en-PH")} ${requestLabel} currently pending.`,
+        time: "Current",
+        timestamp: Date.now(),
+        actionLabel: canReview ? "Review Leaves" : "View Leaves",
+        actionPath: "/leaves",
+      });
+    }
+
+    refreshPendingLeaveNotification();
+
+    const interval = window.setInterval(
+      refreshPendingLeaveNotification,
+      60_000,
+    );
+
+    const handleWindowFocus = () => {
+      refreshPendingLeaveNotification();
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [user, userNotificationId]);
 
   const setSidebarNotification = useCallback((key, notification) => {
     if (!key) return;
@@ -227,14 +282,18 @@ export function SidebarNotificationProvider({ children }) {
 
   // Mark all system notifications as read
   const markAllAsRead = useCallback(() => {
-    const all = [...DEFAULT_SYSTEM_NOTIFICATIONS, ...dynamicNotifications];
+    const all = [
+      ...(leavePendingNotification ? [leavePendingNotification] : []),
+      ...DEFAULT_SYSTEM_NOTIFICATIONS,
+      ...dynamicNotifications,
+    ];
     const next = {};
     all.forEach((item) => {
       if (item.id) next[item.id] = true;
     });
     setReadNotifIds(next);
     writeStorage(readNotifsStorageKey, next);
-  }, [dynamicNotifications, readNotifsStorageKey]);
+  }, [dynamicNotifications, leavePendingNotification, readNotifsStorageKey]);
 
   // Dismiss a system notification
   const dismissNotification = useCallback(
@@ -257,14 +316,18 @@ export function SidebarNotificationProvider({ children }) {
 
   // Compute merged system notifications list
   const notificationsList = useMemo(() => {
-    const combined = [...dynamicNotifications, ...DEFAULT_SYSTEM_NOTIFICATIONS];
+    const combined = [
+      ...dynamicNotifications,
+      ...(leavePendingNotification ? [leavePendingNotification] : []),
+      ...DEFAULT_SYSTEM_NOTIFICATIONS,
+    ];
     return combined
       .filter((n) => !dismissedNotifIds[n.id])
       .map((n) => ({
         ...n,
         isRead: Boolean(readNotifIds[n.id]),
       }));
-  }, [dynamicNotifications, dismissedNotifIds, readNotifIds]);
+  }, [dynamicNotifications, leavePendingNotification, dismissedNotifIds, readNotifIds]);
 
   // Total unread count
   const unreadCount = useMemo(

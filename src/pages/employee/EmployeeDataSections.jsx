@@ -2733,101 +2733,129 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
           document.body,
         )}
 
-      {canEditDetails && deleteTarget && (
-        <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4"
-          onClick={() => !deleting && setDeleteTarget(null)}
-        >
+      {canEditDetails &&
+        deleteTarget &&
+        createPortal(
           <div
-            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+            className="fixed inset-0 z-[100000] flex min-h-screen w-screen items-center justify-center bg-slate-900/60 p-4"
+            onClick={() => !deleting && setDeleteTarget(null)}
           >
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
-                <Trash2 size={18} />
-              </span>
-              <div>
-                <h3 className="text-sm font-extrabold text-[#042C51]">
-                  Permanently delete document?
-                </h3>
-                <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
-                  This permanently deletes the physical file and any linked HRIS
-                  metadata for <strong>{deleteTarget.name}</strong>. This action
-                  cannot be undone.
-                </p>
+            <div
+              className="w-full max-w-md overflow-hidden rounded-2xl bg-white p-5 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                  <Trash2 size={18} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-extrabold text-[#042C51]">
+                    Permanently delete document?
+                  </h3>
+
+                  <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                    This permanently deletes the physical file and any linked HRIS
+                    metadata for:
+                  </p>
+
+                  <div className="mt-2 max-w-full rounded-lg bg-[#F8FAFC] px-3 py-2">
+                    <p className="break-all [overflow-wrap:anywhere] text-xs font-extrabold leading-5 text-[#344054]">
+                      {deleteTarget.name}
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={permanentlyDeleteDocument}
+                  disabled={deleting}
+                  className="h-9 rounded-xl bg-red-600 px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deleting ? "Deleting..." : "Delete Permanently"}
+                </button>
               </div>
             </div>
+          </div>,
+          document.body,
+        )}
 
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleting}
-                className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085] disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={permanentlyDeleteDocument}
-                disabled={deleting}
-                className="h-9 rounded-xl bg-red-600 px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {deleting ? "Deleting..." : "Delete Permanently"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {canEditDetails && requirementDeleteTarget && (
-        <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4"
-          onClick={() =>
-            !deletingRequirementId && setRequirementDeleteTarget(null)
-          }
-        >
+      {canEditDetails &&
+        requirementDeleteTarget &&
+        createPortal(
           <div
-            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+            className="fixed inset-0 z-[100000] flex min-h-screen w-screen items-center justify-center bg-slate-900/60 p-4"
+            onClick={() =>
+              !deletingRequirementId && setRequirementDeleteTarget(null)
+            }
           >
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
-                <Trash2 size={18} />
-              </span>
-              <div>
-                <h3 className="text-sm font-extrabold text-[#042C51]">
-                  Delete pre-employment file?
-                </h3>
-                <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
-                  This permanently deletes the Candidate Pipeline file for
-                  <strong> {requirementDeleteTarget.name}</strong> and removes its
-                  linked NHO file metadata. This action cannot be undone.
-                </p>
+            <div
+              className="w-full max-w-md overflow-hidden rounded-2xl bg-white p-5 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                  <Trash2 size={18} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-extrabold text-[#042C51]">
+                    Delete pre-employment file?
+                  </h3>
+
+                  <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                    This permanently deletes the Candidate Pipeline file for:
+                  </p>
+
+                  <div className="mt-2 max-w-full rounded-lg bg-[#F8FAFC] px-3 py-2">
+                    <p className="break-all [overflow-wrap:anywhere] text-xs font-extrabold leading-5 text-[#344054]">
+                      {requirementDeleteTarget.name}
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                    The linked NHO file metadata will also be removed. This action
+                    cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRequirementDeleteTarget(null)}
+                  disabled={Boolean(deletingRequirementId)}
+                  className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={permanentlyDeleteRequirement}
+                  disabled={Boolean(deletingRequirementId)}
+                  className="h-9 rounded-xl bg-red-600 px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deletingRequirementId ? "Deleting..." : "Delete Permanently"}
+                </button>
               </div>
             </div>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setRequirementDeleteTarget(null)}
-                disabled={Boolean(deletingRequirementId)}
-                className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085] disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={permanentlyDeleteRequirement}
-                disabled={Boolean(deletingRequirementId)}
-                className="h-9 rounded-xl bg-red-600 px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {deletingRequirementId ? "Deleting..." : "Delete Permanently"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

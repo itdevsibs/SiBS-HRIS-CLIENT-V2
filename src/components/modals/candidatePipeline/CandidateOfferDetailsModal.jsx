@@ -173,6 +173,43 @@ function isInvalidMoney(value) {
   return !Number.isFinite(numericValue) || numericValue <= 0;
 }
 
+function getSuggestedReprofileOption(
+  options = [],
+  {
+    hiringRequirementId = "",
+    roleTitle = "",
+    account = "",
+  } = {},
+) {
+  const requirementId = cleanText(hiringRequirementId);
+  const roleKey = normalizeKey(roleTitle);
+  const accountKey = normalizeKey(account);
+
+  if (requirementId) {
+    const exactRequirement = options.find(
+      (option) => String(option.value) === String(requirementId),
+    );
+
+    if (exactRequirement) {
+      return exactRequirement;
+    }
+  }
+
+  if (!accountKey) return null;
+
+  return (
+    options.find((option) => {
+      const optionAccountKey = normalizeKey(option.account);
+      const optionRoleKey = normalizeKey(option.roleTitle);
+
+      return (
+        optionAccountKey === accountKey &&
+        (!roleKey || !optionRoleKey || optionRoleKey === roleKey)
+      );
+    }) || null
+  );
+}
+
 function HrisDropdown({
   label,
   required = false,
@@ -785,6 +822,21 @@ export default function CandidateOfferDetailsModal({
     });
   }, [approvedHiringNeeds]);
 
+  const suggestedReprofileOption = useMemo(
+    () =>
+      getSuggestedReprofileOption(reprofileOptions, {
+        hiringRequirementId: form?.hiringRequirementId,
+        roleTitle: candidateRoleTitle,
+        account: form?.account,
+      }),
+    [
+      reprofileOptions,
+      form?.hiringRequirementId,
+      form?.account,
+      candidateRoleTitle,
+    ],
+  );
+
   if (!open || !candidate) return null;
 
   function updateForm(patch) {
@@ -923,7 +975,7 @@ export default function CandidateOfferDetailsModal({
           <div className="fixed inset-0 z-[24000] cursor-wait bg-transparent" aria-hidden="true" />
         )}
 
-        <form id="candidate-offer-details-form" onSubmit={handleProceedClick} className="space-y-4">
+        <form id="candidate-offer-details-form" onSubmit={handleProceedClick} className="space-y-4 pb-8 sm:pb-10">
           <CandidateModalSummary candidate={candidate} stage={candidate?.currentStage || "Offered"} />
 
           <div ref={finalAssignmentRef}>
@@ -949,7 +1001,12 @@ export default function CandidateOfferDetailsModal({
                     <button
                       ref={reprofileButtonRef}
                       type="button"
-                      onClick={() => setReprofileOpen(true)}
+                      onClick={() => {
+                        setSelectedReprofileId(
+                          suggestedReprofileOption?.value || "",
+                        );
+                        setReprofileOpen(true);
+                      }}
                       className="absolute right-1.5 top-1/2 inline-flex h-7.5 2xl:h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-2.5 2xl:px-3 text-[10px] font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100"
                     >
                       <RefreshCw size={13} /> Reprofile
@@ -1051,7 +1108,7 @@ export default function CandidateOfferDetailsModal({
           </CandidateModalSection>
 
           <CandidateModalSection title="Start Date & Remarks">
-            <div className="space-y-4">
+            <div className="space-y-4 pb-2">
               <button
                 type="button"
                 onClick={() => {
