@@ -16,7 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { getLeaves } from "@/lib/axios/getLeaves";
+import { getLeaves, getLeavesSummary } from "@/lib/axios/getLeaves";
 import { useUser } from "../../services/context/UserContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { usePagination } from "@/services/context/PaginationContext";
@@ -255,6 +255,7 @@ export default function LeavesPage() {
   const restoredRef = useRef(false);
 
   const [leaves, setLeaves] = useState([]);
+  const [leaveSummary, setLeaveSummary] = useState(null);
   const [recordScope, setRecordScope] = useState("all");
 
   const [statusFilter, setStatusFilter] = useState("All");
@@ -340,18 +341,25 @@ export default function LeavesPage() {
     setLoading(true);
 
     try {
-      const res = await getLeaves({
-        page: pageValue,
-        limit: PAGE_LIMIT,
-        search: searchValue,
-        status: statusValue,
-        department: showDepartmentFilter ? departmentValue : "All",
-        account: showAccountFilter ? accountValue : "All",
-        dateFrom: dateFromValue,
-        dateTo: dateToValue,
-        includeDepartments: showDepartmentFilter,
-        includeAccounts: showAccountFilter,
-      });
+      const [res, summaryRes] = await Promise.all([
+        getLeaves({
+          page: pageValue,
+          limit: PAGE_LIMIT,
+          search: searchValue,
+          status: statusValue,
+          department: showDepartmentFilter ? departmentValue : "All",
+          account: showAccountFilter ? accountValue : "All",
+          dateFrom: dateFromValue,
+          dateTo: dateToValue,
+          includeDepartments: showDepartmentFilter,
+          includeAccounts: showAccountFilter,
+        }),
+        getLeavesSummary(),
+      ]);
+
+      if (summaryRes?.success && summaryRes?.data) {
+        setLeaveSummary(summaryRes.data);
+      }
 
       if (res?.success && Array.isArray(res.data)) {
         setLeaves(res.data);
@@ -579,21 +587,21 @@ export default function LeavesPage() {
   }, [leaves]);
 
   const pageStats = useMemo(() => {
-    const totalLeaves = paginatedLeaves.length;
+    const pageTotalLeaves = paginatedLeaves.length;
 
-    const approvedLeaves = paginatedLeaves.filter(
+    const pageApprovedLeaves = paginatedLeaves.filter(
       (item) => item.normalizedStatus === "Approved",
     ).length;
 
-    const pendingLeaves = paginatedLeaves.filter(
+    const pagePendingLeaves = paginatedLeaves.filter(
       (item) => item.normalizedStatus === "Pending",
     ).length;
 
-    const rejectedLeaves = paginatedLeaves.filter(
+    const pageRejectedLeaves = paginatedLeaves.filter(
       (item) => item.normalizedStatus === "Rejected",
     ).length;
 
-    const totalLeaveDays = paginatedLeaves.reduce(
+    const pageTotalLeaveDays = paginatedLeaves.reduce(
       (sum, item) => sum + Number(item.gy_leave_day || 0),
       0,
     );
@@ -603,15 +611,28 @@ export default function LeavesPage() {
       0,
     );
 
+    const hasSummary =
+      leaveSummary && typeof leaveSummary === "object";
+
     return {
-      totalLeaves,
-      approvedLeaves,
-      pendingLeaves,
-      rejectedLeaves,
-      totalLeaveDays,
+      totalLeaves: hasSummary
+        ? Number(leaveSummary.totalLeaves || 0)
+        : pageTotalLeaves,
+      approvedLeaves: hasSummary
+        ? Number(leaveSummary.approvedLeaves || 0)
+        : pageApprovedLeaves,
+      pendingLeaves: hasSummary
+        ? Number(leaveSummary.pendingLeaves || 0)
+        : pagePendingLeaves,
+      rejectedLeaves: hasSummary
+        ? Number(leaveSummary.rejectedLeaves || 0)
+        : pageRejectedLeaves,
+      totalLeaveDays: hasSummary
+        ? Number(leaveSummary.totalLeaveDays || 0)
+        : pageTotalLeaveDays,
       totalRemaining,
     };
-  }, [paginatedLeaves]);
+  }, [leaveSummary, paginatedLeaves]);
 
   const isPersonalView = isEmployeeAccount || recordScope === "personal";
 
@@ -725,9 +746,9 @@ export default function LeavesPage() {
             className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
           >
             <StatCard
-              title="Loaded Leaves"
+              title="Total Leaves"
               value={loading ? "..." : formatNumber(pageStats.totalLeaves)}
-              description="Records loaded on this page"
+              description="Accessible leave requests"
               icon={FileText}
               tone="navy"
               delay={0}
@@ -761,9 +782,9 @@ export default function LeavesPage() {
             />
 
             <StatCard
-              title="Page Leave Days"
+              title="Leave Days"
               value={loading ? "..." : formatNumber(pageStats.totalLeaveDays)}
-              description="Leave days on this page"
+              description="Accessible leave days"
               icon={CalendarDays}
               tone="orange"
               delay={240}
