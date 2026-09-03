@@ -66,6 +66,7 @@ import StatusModal from "../StatusModal";
 import DocumentVaultManager from "../../documents/DocumentVaultManager.jsx";
 import NhoUploadModal from "../candidatePipeline/NhoUploadModal";
 import api from "../../../lib/axios/api-template";
+import { getApplicantLeadHistory } from "../../../lib/axios/getApplicantLeads";
 import {
   getTalentPoolApplicationById,
   getTalentPoolApplicationAnswers,
@@ -751,6 +752,7 @@ function normalizeTimelineItem(
     id: `${stage}-${rawDate || index}-${index}`,
     stage,
     displayStage,
+    source: cleanText(item.source),
     reason,
     rawDate,
     updatedBy,
@@ -817,6 +819,40 @@ function getTalentPoolPersonalMovementHistory(
       candidate.name || candidate.candidateName || candidate.candidate_name || "",
     ),
   }));
+}
+
+function getCandidateLeadId(candidate = {}) {
+  const safeCandidate = safeObject(candidate);
+
+  return cleanText(
+    safeCandidate.leadId ||
+      safeCandidate.lead_id ||
+      safeCandidate.applicantLeadId ||
+      safeCandidate.applicant_lead_id ||
+      safeCandidate.sourceLeadId ||
+      safeCandidate.source_lead_id ||
+      "",
+  );
+}
+
+function normalizeLeadProcessHistory(history = []) {
+  return safeArray(history).map((item = {}) => {
+    const actorSibsId = cleanText(item.actorSibsId || item.actor_sibs_id);
+    const actorName = cleanText(item.actorName || item.actor_name);
+    const updatedBy = [actorSibsId, actorName].filter(Boolean).join(" - ");
+    const description = cleanText(item.description);
+    const comment = cleanText(item.comment || item.comment_text);
+
+    return {
+      ...item,
+      stage: cleanText(item.activityLabel || item.activity_label) || "Lead Process",
+      reason: description || comment || "Applicant lead record updated.",
+      remarks: comment && comment !== description ? comment : "",
+      date: item.createdAt || item.created_at || "",
+      updatedBy: updatedBy || "System",
+      source: "Applicant Lead",
+    };
+  });
 }
 
 function getTalentPoolApplicationId(candidate = {}) {
@@ -4034,6 +4070,7 @@ export default function CandidateProfileModal() {
     useState("");
 
   const [resolvedPipelineId, setResolvedPipelineId] = useState("");
+  const [leadProcessHistory, setLeadProcessHistory] = useState([]);
 
   const [candidatePipelineFiles, setCandidatePipelineFiles] = useState([]);
   const [candidatePipelineFilesLoading, setCandidatePipelineFilesLoading] =
@@ -4085,6 +4122,7 @@ export default function CandidateProfileModal() {
     setApplicationAnswersError("");
     setPipelineCandidateDetails(null);
     setResolvedPipelineId("");
+    setLeadProcessHistory([]);
     setCandidatePipelineFiles([]);
     setCandidatePipelineFilesError("");
     setPipelineCandidateDetailsError("");
@@ -4096,6 +4134,36 @@ export default function CandidateProfileModal() {
     setDropOffValidation("");
     setIsGeneratingResume(false);
   }, [selectedCandidate?.id, selectedCandidate?.candidateId]);
+
+  const candidateLeadId = useMemo(
+    () => getCandidateLeadId(selectedCandidate),
+    [selectedCandidate],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!candidateLeadId) {
+      setLeadProcessHistory([]);
+      return undefined;
+    }
+
+    async function loadLeadProcessHistory() {
+      const result = await getApplicantLeadHistory(candidateLeadId);
+
+      if (cancelled) return;
+
+      setLeadProcessHistory(
+        result.success ? normalizeLeadProcessHistory(result.data) : [],
+      );
+    }
+
+    void loadLeadProcessHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [candidateLeadId]);
 
   const loadTalentPoolCandidateDetails = useCallback(async () => {
     if (!selectedCandidate || !talentPoolApplicationId) {
@@ -4493,10 +4561,11 @@ export default function CandidateProfileModal() {
           sourceMetadata.movementHistory,
           sourceMetadata.movement_history,
         ];
-    const personalTimeline =
+    const candidateTimeline =
       timelineSources
         .map((source) => normalizeCandidateRecordList(source))
         .find((records) => records.length > 0) || [];
+    const personalTimeline = [...candidateTimeline, ...leadProcessHistory];
     const candidateName = firstCandidateValue(
       baseCandidate.name,
       baseCandidate.candidateName,
@@ -4521,6 +4590,7 @@ export default function CandidateProfileModal() {
     selectedCandidate,
     pipelineCandidateDetails,
     shouldLoadCandidatePipelineData,
+    leadProcessHistory,
   ]);
 
   const personalMovementHistory = useMemo(
@@ -6996,6 +7066,7 @@ export default function CandidateProfileModal() {
             <div className="space-y-4">
               {personalMovementHistory.map((item, index) => {
                 const isLatest = index === 0;
+                const isLeadProcess = item.source === "Applicant Lead";
                 const details = safeObject(item.details);
                 const offerSummary = safeObject(details.offerSummary);
                 const links = safeArray(details.links);
@@ -7035,6 +7106,12 @@ export default function CandidateProfileModal() {
                             {isLatest && (
                               <span className="rounded bg-[#FF5C28] px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white">
                                 Latest
+                              </span>
+                            )}
+
+                            {isLeadProcess && (
+                              <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-emerald-700">
+                                Lead Process
                               </span>
                             )}
                           </div>

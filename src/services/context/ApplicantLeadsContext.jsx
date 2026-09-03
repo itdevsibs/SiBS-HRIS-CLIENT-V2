@@ -137,7 +137,7 @@ export function ApplicantLeadsProvider({ children }) {
   const [sourceFilter, setSourceFilter] = useState("All");
   const [siteFilter, setSiteFilter] = useState("All");
   const [departmentFilter, setDepartmentFilter] = useState("All");
-  const [leadView, setLeadView] = useState("active");
+  const [leadView, setLeadView] = useState("all");
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [formData, setFormData] = useState(EMPTY_APPLICANT_LEAD_FORM);
@@ -166,7 +166,16 @@ export function ApplicantLeadsProvider({ children }) {
     () => leads.filter(isMovedToTalentPoolLead),
     [leads],
   );
-  const leadsForCurrentView = leadView === "archive" ? archivedLeads : activeLeads;
+  const leadViewStatus = leadView.startsWith("status:")
+    ? leadView.slice("status:".length)
+    : "";
+  const leadsForCurrentView = useMemo(() => {
+    const scopedLeads = leadView === "archive" ? archivedLeads : activeLeads;
+
+    if (!leadViewStatus) return scopedLeads;
+
+    return scopedLeads.filter((lead) => lead.status === leadViewStatus);
+  }, [activeLeads, archivedLeads, leadView, leadViewStatus]);
 
   const filteredLeads = useMemo(
     () =>

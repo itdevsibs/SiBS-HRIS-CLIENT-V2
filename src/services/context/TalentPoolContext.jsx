@@ -343,6 +343,20 @@ function normalizeCandidateRecord(candidate = {}) {
   return {
     ...candidate,
     id,
+    leadId:
+      candidate.leadId ||
+      candidate.lead_id ||
+      candidate.applicantLeadId ||
+      candidate.applicant_lead_id ||
+      candidate.sourceLeadId ||
+      candidate.source_lead_id ||
+      "",
+    talentPoolApplicationId:
+      candidate.talentPoolApplicationId ||
+      candidate.talent_pool_application_id ||
+      candidate.applicationId ||
+      candidate.application_id ||
+      "",
     candidateId: candidate.candidateId || candidate.candidate_id || "",
     name,
     firstName: candidate.firstName || candidate.first_name || "",

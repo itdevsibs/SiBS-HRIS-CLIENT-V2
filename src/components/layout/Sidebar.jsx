@@ -1207,10 +1207,10 @@ export default function Sidebar() {
 
               {alertBadgeText ? (
                 <span
-                  className={`inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded-full px-1.5 text-[8px] font-black leading-none shadow-sm ring-1 transition-all duration-300 ${
+                  className={`inline-flex h-5 max-w-[70px] items-center justify-center gap-1 rounded px-1.5 sibs-text-micro font-bold uppercase leading-none tracking-wide transition-all duration-300 ${
                     isActive
-                      ? "bg-[#7A2713] text-white ring-white/50"
-                      : "bg-[#FF5C28] text-white ring-[#FFAA8F]/70"
+                      ? "bg-[#7A2713] text-white"
+                      : "bg-[#FF5C28] text-white"
                   }`}
                   title={alertBadgeTitle}
                 >
