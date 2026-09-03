@@ -5,6 +5,7 @@ export const TALENT_POOL_TABS = Object.freeze({
   BELOW_18: "below-18",
   INCOMPLETE_REQUIREMENTS: "incomplete-requirements",
   DROP_OFF: "drop-off",
+  LEADS_CONVERTED: "leads-converted",
 });
 
 export function getTalentPoolTabFromSearchParams(searchParams) {

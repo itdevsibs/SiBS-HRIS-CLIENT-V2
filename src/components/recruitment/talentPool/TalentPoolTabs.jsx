@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Archive,
   ClipboardList,
   UsersRound,
   UserRoundPlus,
@@ -15,6 +16,7 @@ const tabs = [
   { key: TALENT_POOL_TABS.BELOW_18, label: "Below 18", icon: UserRoundX },
   { key: TALENT_POOL_TABS.INCOMPLETE_REQUIREMENTS, label: "Incomplete Requirements", icon: ClipboardList },
   { key: TALENT_POOL_TABS.DROP_OFF, label: "Drop Off List", icon: AlertTriangle },
+  { key: TALENT_POOL_TABS.LEADS_CONVERTED, label: "Leads Converted", icon: Archive },
 ];
 
 export default function TalentPoolTabs({ activeTab, onChange, counts = {} }) {

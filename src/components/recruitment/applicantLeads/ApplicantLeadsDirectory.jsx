@@ -6,29 +6,22 @@ import ApplicantLeadsFilters from "./ApplicantLeadsFilters";
 import ApplicantLeadsTable from "./ApplicantLeadsTable";
 
 export default function ApplicantLeadsDirectory() {
-  const { filteredLeads, leads, leadView, activeLeadCount, archivedLeadCount } =
-    useApplicantLeadsPage();
+  const { leadView } = useApplicantLeadsPage();
+  const selectedStatus = leadView.startsWith("status:")
+    ? leadView.slice("status:".length)
+    : "";
 
   const title =
-    leadView === "archive"
-      ? "Moved to Talent Pool Archive"
-      : leadView === "channels"
+    leadView === "channels"
         ? "Channel Sources"
         : "Applicant Lead Directory";
 
   const description =
-    leadView === "archive"
-      ? "Historical repository of applicant leads converted and transferred to the Talent Pool module."
-      : leadView === "channels"
+    leadView === "channels"
         ? "Review lead-generation source mix and account intake volume."
+        : selectedStatus
+          ? `Showing applicant leads currently marked as ${selectedStatus}.`
         : "Search and filter pre-applicant inquiries by status, department, account, site, and recruiter account.";
-
-  const totalForView =
-    leadView === "archive"
-      ? archivedLeadCount
-      : leadView === "active"
-        ? activeLeadCount
-        : leads.length;
 
   return (
     <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta">

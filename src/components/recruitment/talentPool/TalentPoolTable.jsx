@@ -1,9 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  AlertCircle,
-  LoaderCircle,
-  UsersRound,
-} from "lucide-react";
+import { AlertCircle, LoaderCircle, UsersRound } from "lucide-react";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
@@ -26,6 +22,10 @@ function getTalentPoolStatusLabel(status = "") {
   }
 
   return value || "—";
+}
+
+function cleanText(value) {
+  return String(value ?? "").trim();
 }
 
 function getTalentPoolStatusClass(status = "") {
@@ -54,7 +54,9 @@ function TableState({ icon, title, message, tone = "neutral", spin = false }) {
       role={tone === "error" ? "alert" : "status"}
     >
       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80">
-        <IconComponent className={`h-4.5 w-4.5 ${spin ? "animate-spin" : ""}`} />
+        <IconComponent
+          className={`h-4.5 w-4.5 ${spin ? "animate-spin" : ""}`}
+        />
       </span>
       <p className="mt-2 text-[13px] font-extrabold">{title}</p>
       {message ? (
@@ -66,7 +68,12 @@ function TableState({ icon, title, message, tone = "neutral", spin = false }) {
   );
 }
 
-export default function TalentPoolTable({ candidates = null, emptyTitle = "No candidate profiles found", emptyMessage = "Try changing or clearing the current search filters." }) {
+export default function TalentPoolTable({
+  candidates = null,
+  emptyTitle = "No candidate profiles found",
+  emptyMessage = "Try changing or clearing the current search filters.",
+  recordLabel = "candidate profiles",
+}) {
   const {
     filteredCandidates,
     setSelectedCandidate,
@@ -80,7 +87,9 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
     page: 1,
   });
 
-  const displayedCandidates = Array.isArray(candidates) ? candidates : filteredCandidates;
+  const displayedCandidates = Array.isArray(candidates)
+    ? candidates
+    : filteredCandidates;
   const totalCandidates = displayedCandidates.length;
   const totalPages = Math.max(1, Math.ceil(totalCandidates / PAGE_SIZE));
 
@@ -100,21 +109,14 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
   );
 
   const currentPage = Math.min(
-    Math.max(
-      pageState.key === filteredCandidateKey ? pageState.page : 1,
-      1,
-    ),
+    Math.max(pageState.key === filteredCandidateKey ? pageState.page : 1, 1),
     totalPages,
   );
 
   const pageStartIndex = (currentPage - 1) * PAGE_SIZE;
 
   const paginatedCandidates = useMemo(
-    () =>
-      displayedCandidates.slice(
-        pageStartIndex,
-        pageStartIndex + PAGE_SIZE,
-      ),
+    () => displayedCandidates.slice(pageStartIndex, pageStartIndex + PAGE_SIZE),
     [displayedCandidates, pageStartIndex],
   );
 
@@ -196,13 +198,21 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
               <table className="w-full min-w-[980px] 2xl:min-w-[1060px] table-fixed border-separate border-spacing-0 text-left">
                 <thead className="sibs-data-table-head">
                   <tr className="sibs-data-table-head-row">
-                    <th className="sibs-data-table-th w-[23%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">Candidate</th>
-                    <th className="sibs-data-table-th w-[22%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">Applied Position</th>
+                    <th className="sibs-data-table-th w-[23%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                      Candidate
+                    </th>
+                    <th className="sibs-data-table-th w-[22%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                      Applied Position
+                    </th>
                     <th className="sibs-data-table-th w-[25%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
                       Preferred Location / Final Account
                     </th>
-                    <th className="sibs-data-table-th w-[15%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">Status</th>
-                    <th className="sibs-data-table-th w-[15%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">Last Activity</th>
+                    <th className="sibs-data-table-th w-[15%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                      Status
+                    </th>
+                    <th className="sibs-data-table-th w-[15%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                      Last Activity
+                    </th>
                   </tr>
                 </thead>
 
@@ -229,11 +239,32 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                           candidate.status ||
                           "—";
 
-                      const shortStatus = getTalentPoolStatusLabel(displayStatus);
+                      const shortStatus =
+                        getTalentPoolStatusLabel(displayStatus);
 
                       const lastActivity = formatDate(
                         candidate.lastPipelineUpdate || candidate.lastActivity,
                       );
+                      const leadId = cleanText(
+                        candidate.leadId ||
+                          candidate.lead_id ||
+                          candidate.applicantLeadId ||
+                          candidate.applicant_lead_id ||
+                          candidate.sourceLeadId ||
+                          candidate.source_lead_id,
+                      );
+                      const talentPoolId =
+                        candidate.candidateId ||
+                        candidate.candidate_id ||
+                        candidate.publicTalentPoolId ||
+                        candidate.public_talent_pool_id ||
+                        candidate.talentPoolCandidateId ||
+                        candidate.talent_pool_candidate_id ||
+                        candidate.talentPoolApplicationId ||
+                        candidate.talent_pool_application_id ||
+                        "";
+                      const showsLeadAndTalentPoolIds =
+                        Boolean(candidate.isConvertedLead) || Boolean(leadId);
 
                       return (
                         <tr
@@ -241,9 +272,14 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                           role="button"
                           tabIndex={0}
                           onClick={() => openCandidate(candidate)}
-                          onKeyDown={(event) => handleRowKeyDown(event, candidate)}
-                          className="sibs-page-card-in cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
-                          style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
+                          onKeyDown={(event) =>
+                            handleRowKeyDown(event, candidate)
+                          }
+                          className="sibs-page-card-in cursor-pointer transition hover:bg-[#F8FAFC] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
+                          style={{
+                            animationDelay: `${index * 35}ms`,
+                            animationFillMode: "both",
+                          }}
                         >
                           <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 align-middle">
                             <div className="min-w-0">
@@ -255,22 +291,47 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                                   {candidate.name || "—"}
                                 </p>
 
-                                {candidate.isPublicSubmission ? (
+                                {candidate.isPublicSubmission &&
+                                !showsLeadAndTalentPoolIds ? (
                                   <span
                                     title="Public Submission"
                                     className="shrink-0 rounded border border-purple-200 bg-purple-50 px-1.5 py-0.2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-purple-700"
                                   >
                                     Public
                                   </span>
-                                ) : null}
+                                ) : (
+                                  <span
+                                    title="Public Submission"
+                                    className="shrink-0 rounded border border-green-200 bg-green-50 px-1.5 py-0.2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-green-700"
+                                  >
+                                    Lead
+                                  </span>
+                                )}
                               </div>
 
-                              <p
-                                title={candidate.candidateId}
-                                className="mt-0.5 truncate font-mono text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted tracking-tight"
-                              >
-                                {candidate.candidateId || "—"}
-                              </p>
+                              {showsLeadAndTalentPoolIds ? (
+                                <div className="mt-0.5 space-y-0.5">
+                                  <p
+                                    title={leadId}
+                                    className="truncate font-mono text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted tracking-tight"
+                                  >
+                                    Talent Pool ID: {leadId || "—"}
+                                  </p>
+                                  <p
+                                    title={talentPoolId}
+                                    className="truncate font-mono text-[10px] 2xl:text-[11px] font-extrabold text-emerald-700 tracking-tight"
+                                  >
+                                    Lead ID: {talentPoolId || "—"}
+                                  </p>
+                                </div>
+                              ) : (
+                                <p
+                                  title={candidate.candidateId}
+                                  className="mt-0.5 truncate font-mono text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted tracking-tight"
+                                >
+                                  Talent Pool ID: {candidate.candidateId || "—"}
+                                </p>
+                              )}
                             </div>
                           </td>
 
@@ -325,7 +386,6 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
                               {lastActivity}
                             </p>
                           </td>
-
                         </tr>
                       );
                     })
@@ -358,7 +418,7 @@ export default function TalentPoolTable({ candidates = null, emptyTitle = "No ca
             totalPages={totalPages}
             loadedCount={paginatedCandidates.length}
             totalRecords={totalCandidates}
-            recordLabel="candidate profiles"
+            recordLabel={recordLabel}
             onPrevious={goToPreviousPage}
             onNext={goToNextPage}
             className="border-0 bg-transparent p-0 shadow-none"

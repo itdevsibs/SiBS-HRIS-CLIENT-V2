@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   CircleCheckBig,
   Mail,
@@ -12,6 +12,7 @@ import {
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import { isApplicantLeadApplicationLinkSent } from "../../../lib/utils/applicantLeads/applicantLeadEmailStatus";
+import StatusModal from "../../modals/StatusModal";
 import ApplicantLeadStatusBadge from "./ApplicantLeadStatusBadge";
 
 function cleanText(value, fallback = "-") {
@@ -19,7 +20,13 @@ function cleanText(value, fallback = "-") {
   return text || fallback;
 }
 
-export default function ApplicantLeadsTable() {
+export default function ApplicantLeadsTable({
+  leadsOverride = null,
+  leadViewOverride = "",
+  emptyTitle = "No applicant leads found",
+  emptyMessage = "Try changing or resetting your search and filter criteria.",
+  recordLabel = "applicant leads",
+}) {
   const {
     paginatedLeads = [],
     filteredLeads = [],
@@ -37,13 +44,75 @@ export default function ApplicantLeadsTable() {
     leadView,
   } = useApplicantLeadsPage();
 
+  const usesOverride = Array.isArray(leadsOverride);
+  const displayedLeads = usesOverride ? leadsOverride : paginatedLeads;
+  const activeLeadView = leadViewOverride || leadView;
+  const [overridePage, setOverridePage] = useState(1);
+  const [emailConfirmationLead, setEmailConfirmationLead] = useState(null);
+  const overridePageSize = pageSize || 10;
+  const overrideTotalPages = Math.max(
+    1,
+    Math.ceil((leadsOverride?.length || 0) / overridePageSize),
+  );
+  const safeOverridePage = Math.min(overridePage, overrideTotalPages);
+  const overridePaginatedLeads = useMemo(() => {
+    if (!usesOverride) return [];
+
+    const startIndex = (safeOverridePage - 1) * overridePageSize;
+    return leadsOverride.slice(startIndex, startIndex + overridePageSize);
+  }, [leadsOverride, overridePageSize, safeOverridePage, usesOverride]);
+
+  useEffect(() => {
+    if (usesOverride) {
+      setOverridePage(1);
+    }
+  }, [leadsOverride, usesOverride]);
+  const rows = usesOverride ? overridePaginatedLeads : displayedLeads;
+  const tableTotalPages = usesOverride ? overrideTotalPages : totalPages;
+  const tableCurrentPage = usesOverride ? safeOverridePage : currentPage;
+  const tableTotalRecords = usesOverride ? leadsOverride.length : totalRecords;
+
   function goToPreviousPage() {
+    if (usesOverride) {
+      setOverridePage((prev) => Math.max(prev - 1, 1));
+      return;
+    }
+
     setCurrentPage((prev) => Math.max(prev - 1, 1));
   }
 
   function goToNextPage() {
+    if (usesOverride) {
+      setOverridePage((prev) => Math.min(prev + 1, tableTotalPages));
+      return;
+    }
+
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   }
+
+  function requestSendApplicationLink(event, lead) {
+    event.stopPropagation();
+    setEmailConfirmationLead(lead);
+  }
+
+  function closeEmailConfirmation() {
+    setEmailConfirmationLead(null);
+  }
+
+  function confirmSendApplicationLink() {
+    if (!emailConfirmationLead) return;
+
+    const lead = emailConfirmationLead;
+    setEmailConfirmationLead(null);
+    markApplicationLinkSent(lead);
+  }
+
+  const confirmationLeadName = cleanText(
+    emailConfirmationLead?.fullName,
+    "this lead",
+  );
+  const confirmationLeadEmail = cleanText(emailConfirmationLead?.email);
+  const confirmationLeadPhone = cleanText(emailConfirmationLead?.cpNum);
 
   return (
     <div className="w-full">
@@ -86,7 +155,7 @@ export default function ApplicantLeadsTable() {
             </thead>
 
             <tbody className="divide-y divide-[#E6ECF2] bg-white">
-              {paginatedLeads.map((lead, index) => {
+              {rows.map((lead, index) => {
                 const leadId = cleanText(lead.leadId || lead.lead_id, "");
                 const fullName = cleanText(lead.fullName, "Unnamed Applicant");
                 const phone = cleanText(lead.cpNum);
@@ -131,7 +200,7 @@ export default function ApplicantLeadsTable() {
                             Lead ID: {leadId}
                           </p>
                         )}
-                        {leadView === "archive" && talentPoolApplicationId ? (
+                        {activeLeadView === "archive" && talentPoolApplicationId ? (
                           <p className="mt-0.5 truncate text-[9px] font-extrabold uppercase tracking-wide text-emerald-700">
                             TP ID: {talentPoolApplicationId}
                           </p>
@@ -231,17 +300,14 @@ export default function ApplicantLeadsTable() {
 
                     {/* ACTIONS */}
                     <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                      {leadView === "archive" ? (
+                      {activeLeadView === "archive" ? (
                         <div className="h-7" />
                       ) : (
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
                             disabled={isSendingApplicationLink}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              markApplicationLinkSent(lead);
-                            }}
+                            onClick={(event) => requestSendApplicationLink(event, lead)}
                             title={
                               applicationLinkSent
                                 ? "Resend application link email"
@@ -306,16 +372,16 @@ export default function ApplicantLeadsTable() {
               )}
 
               {/* EMPTY */}
-              {!isLoading && !errorMessage && !paginatedLeads.length && (
+              {!isLoading && !errorMessage && !rows.length && (
                 <tr>
                   <td colSpan={7} className="px-5 py-14 text-center">
                     <div className="flex flex-col items-center justify-center text-[#667085]">
                       <UsersRound className="h-6 w-6 text-[#98A2B3]" />
                       <p className="mt-2 text-[13px] font-extrabold text-[#042C51]">
-                        No applicant leads found
+                        {emptyTitle}
                       </p>
                       <p className="mt-1 text-xs font-medium">
-                        Try changing or resetting your search and filter criteria.
+                        {emptyMessage}
                       </p>
                     </div>
                   </td>
@@ -330,14 +396,28 @@ export default function ApplicantLeadsTable() {
         showSearch={false}
         showPagination
         showCount
-        currentPage={currentPage}
-        totalPages={totalPages}
-        loadedCount={paginatedLeads.length}
-        totalRecords={totalRecords}
-        recordLabel="applicant leads"
+        currentPage={tableCurrentPage}
+        totalPages={tableTotalPages}
+        loadedCount={rows.length}
+        totalRecords={tableTotalRecords}
+        recordLabel={recordLabel}
         onPrevious={goToPreviousPage}
         onNext={goToNextPage}
         className="border-0 bg-transparent p-0 shadow-none"
+      />
+
+      <StatusModal
+        open={Boolean(emailConfirmationLead)}
+        type="confirm"
+        title="Send Application Link?"
+        message={`Send the application link email to ${confirmationLeadName} at ${confirmationLeadEmail}${
+          confirmationLeadPhone !== "-" ? ` (${confirmationLeadPhone})` : ""
+        }?`}
+        confirmLabel="Send Email"
+        cancelLabel="Cancel"
+        confirmTone="brand"
+        onCancel={closeEmailConfirmation}
+        onConfirm={confirmSendApplicationLink}
       />
     </div>
   );

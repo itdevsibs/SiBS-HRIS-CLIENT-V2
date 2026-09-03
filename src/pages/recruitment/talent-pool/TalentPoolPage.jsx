@@ -4,11 +4,12 @@ import {
   ExternalLink,
   Plus,
   RefreshCw,
-  UsersRound,
 } from "lucide-react";
 
 import Header from "../../../components/layout/Header";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
+import { ApplicantLeadsProvider } from "../../../services/context/ApplicantLeadsContext";
+import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 
 import TalentPoolStats from "../../../components/recruitment/talentPool/TalentPoolStats";
 import TalentPoolFilters from "../../../components/recruitment/talentPool/TalentPoolFilters";
@@ -26,7 +27,97 @@ import {
   TALENT_POOL_TABS,
 } from "../../../lib/utils/talentPool/talentPoolTabs";
 
-export default function TalentPoolPage() {
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function mapConvertedLeadToTalentPoolCandidate(lead = {}, talentPoolCandidate = {}) {
+  const leadId = cleanText(lead.leadId || lead.lead_id || lead.id);
+  const talentPoolApplicationDbId = cleanText(
+    talentPoolCandidate.id ||
+      talentPoolCandidate.talentPoolApplicationId ||
+      talentPoolCandidate.talent_pool_application_id ||
+      lead.talentPoolApplicationId ||
+      lead.talent_pool_application_id ||
+      lead.applicationId ||
+      lead.application_id,
+  );
+  const talentPoolPublicId = cleanText(
+    talentPoolCandidate.candidateId ||
+      talentPoolCandidate.candidate_id ||
+      lead.candidateId ||
+      lead.candidate_id,
+  );
+  const fullName =
+    cleanText(talentPoolCandidate.name || talentPoolCandidate.fullName) ||
+    cleanText(lead.fullName || lead.name) ||
+    "Unnamed Applicant";
+  const appliedPosition = cleanText(
+    talentPoolCandidate.openPosition ||
+      talentPoolCandidate.open_position ||
+      talentPoolCandidate.roleCapability ||
+      talentPoolCandidate.role_capability ||
+      lead.openPosition ||
+      lead.open_position ||
+      lead.appliedPosition ||
+      lead.applied_position ||
+      lead.position ||
+      lead.positionTitle ||
+      lead.department,
+  );
+
+  return {
+    ...lead,
+    ...talentPoolCandidate,
+    id: talentPoolCandidate.id || talentPoolApplicationDbId || leadId || lead.id,
+    name: fullName,
+    candidateId: talentPoolPublicId,
+    leadId,
+    talentPoolApplicationId: talentPoolApplicationDbId,
+    openPosition: appliedPosition,
+    roleCapability: appliedPosition,
+    applyingLocation: cleanText(
+      talentPoolCandidate.applyingLocation ||
+        talentPoolCandidate.applying_location ||
+        lead.applyingLocation ||
+        lead.applying_location ||
+        lead.preferredSite ||
+        lead.preferred_site ||
+        lead.preferredLocation,
+    ),
+    currentAppliedAccount: cleanText(
+      talentPoolCandidate.currentAppliedAccount ||
+        talentPoolCandidate.current_applied_account ||
+        talentPoolCandidate.accountFit ||
+        talentPoolCandidate.account_fit ||
+        lead.currentAppliedAccount ||
+        lead.current_applied_account ||
+        lead.specificAccount ||
+        lead.accountName ||
+        lead.account,
+    ),
+    skillsLanguage: cleanText(
+      talentPoolCandidate.skillsLanguage ||
+        talentPoolCandidate.skills_language ||
+        lead.skillsLanguage ||
+        lead.skills_language,
+    ),
+    status: cleanText(talentPoolCandidate.status) || "Leads Converted",
+    currentPipelineStage: cleanText(talentPoolCandidate.currentPipelineStage),
+    pipelineStage: cleanText(talentPoolCandidate.pipelineStage),
+    currentStage: cleanText(talentPoolCandidate.currentStage),
+    pipelineStatus: cleanText(talentPoolCandidate.pipelineStatus),
+    lastActivity:
+      talentPoolCandidate.lastPipelineUpdate ||
+      talentPoolCandidate.lastActivity ||
+      lead.movedToTalentPoolAt ||
+      lead.updatedAt ||
+      lead.dateLogged,
+    isConvertedLead: true,
+  };
+}
+
+function TalentPoolPageContent() {
   const {
     openPublicForm,
     openAddCandidateModal,
@@ -45,6 +136,11 @@ export default function TalentPoolPage() {
     loadError: dropOffListError,
     refresh: refreshDropOffCandidates,
   } = useCombinedDropOffCandidates();
+  const {
+    archivedLeads,
+    archivedLeadCount,
+    refreshApplicantLeads,
+  } = useApplicantLeadsPage();
 
   const [searchParams] = useSearchParams();
   const requestedTab = getTalentPoolTabFromSearchParams(searchParams);
@@ -76,11 +172,51 @@ export default function TalentPoolPage() {
       TALENT_POOL_TABS.INCOMPLETE_REQUIREMENTS,
     ).length,
     [TALENT_POOL_TABS.DROP_OFF]: dropOffCandidates.length,
-  }), [candidateList, dropOffCandidates.length]);
+    [TALENT_POOL_TABS.LEADS_CONVERTED]: archivedLeadCount,
+  }), [candidateList, dropOffCandidates.length, archivedLeadCount]);
 
   const tabCandidates = useMemo(() =>
     filterTalentPoolCandidatesForTab(filteredCandidates, activeTab),
   [filteredCandidates, activeTab]);
+
+  const talentPoolCandidateByApplicationId = useMemo(() => {
+    const lookup = new Map();
+
+    candidateList.forEach((candidate) => {
+      [
+        candidate.talentPoolApplicationId,
+        candidate.talent_pool_application_id,
+        candidate.candidateId,
+        candidate.candidate_id,
+        candidate.applicationId,
+        candidate.application_id,
+        candidate.id,
+      ].forEach((value) => {
+        const key = cleanText(value);
+        if (key) lookup.set(key, candidate);
+      });
+    });
+
+    return lookup;
+  }, [candidateList]);
+
+  const convertedLeadCandidates = useMemo(
+    () =>
+      archivedLeads.map((lead) => {
+        const talentPoolApplicationId = cleanText(
+          lead.talentPoolApplicationId ||
+            lead.talent_pool_application_id ||
+            lead.applicationId ||
+            lead.application_id,
+        );
+
+        return mapConvertedLeadToTalentPoolCandidate(
+          lead,
+          talentPoolCandidateByApplicationId.get(talentPoolApplicationId),
+        );
+      }),
+    [archivedLeads, talentPoolCandidateByApplicationId],
+  );
 
   const activeTabCopy = {
     [TALENT_POOL_TABS.ALL]: {
@@ -103,6 +239,10 @@ export default function TalentPoolPage() {
       title: "No incomplete NHO requirements",
       message: "Candidates in For Onboarding - Incomplete Requirements will appear here.",
     },
+    [TALENT_POOL_TABS.LEADS_CONVERTED]: {
+      title: "No converted leads found",
+      message: "Applicant leads moved into Talent Pool will appear here.",
+    },
   }[activeTab] || {};
 
   const pageIsRefreshing = isLoading || dropOffListLoading;
@@ -110,6 +250,7 @@ export default function TalentPoolPage() {
   const handleRefreshPage = () => {
     refreshTalentPool();
     refreshDropOffCandidates();
+    refreshApplicantLeads();
   };
 
   return (
@@ -227,6 +368,13 @@ export default function TalentPoolPage() {
                     onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
                   />
                 </div>
+              ) : activeTab === TALENT_POOL_TABS.LEADS_CONVERTED ? (
+                <TalentPoolTable
+                  candidates={convertedLeadCandidates}
+                  emptyTitle={activeTabCopy.title}
+                  emptyMessage={activeTabCopy.message}
+                  recordLabel="converted leads"
+                />
               ) : (
                 <div className="relative z-[1]">
                   <TalentPoolTable
@@ -247,5 +395,13 @@ export default function TalentPoolPage() {
       <UpdateStatusModal />
       <MoveToPipeLineModal />
     </div>
+  );
+}
+
+export default function TalentPoolPage() {
+  return (
+    <ApplicantLeadsProvider>
+      <TalentPoolPageContent />
+    </ApplicantLeadsProvider>
   );
 }
