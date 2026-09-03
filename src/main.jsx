@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BrowserRouter,
@@ -8,16 +8,46 @@ import {
 } from "react-router-dom";
 
 import App from "./App.jsx";
-
-import PublicInterviewDateSelectionPage from "./pages/recruitment/candidate-pipeline/PublicInterviewDateSelectionPage.jsx";
-import PublicOfferResponsePage from "./pages/recruitment/PublicOfferResponsePage.jsx";
-import PublicNhoScheduleResponsePage from "./pages/recruitment/PublicNhoScheduleResponsePage.jsx";
-
-import PublicTalentPoolApplicationPage from "./pages/recruitment/talent-pool/PublicTalentPoolApplicationPage.jsx";
-import PublicJobDescriptionPage from "./pages/recruitment/talent-pool/PublicJobDescriptionPage.jsx";
-import CandidateExperienceSurveyPage from "./pages/recruitment/candidateExperience/public/CandidateExperienceSurveyPage.jsx";
-
+import PageFallback from "./components/ui/PageFallback.jsx";
 import "./index.css";
+
+function lazyWithRetry(componentImport) {
+  return lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem("sibs-page-has-been-force-refreshed") || "false"
+    );
+
+    try {
+      return await componentImport();
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem("sibs-page-has-been-force-refreshed", "true");
+        window.location.reload();
+        return { default: () => null };
+      }
+      throw error;
+    }
+  });
+}
+
+const PublicInterviewDateSelectionPage = lazyWithRetry(() =>
+  import("./pages/recruitment/candidate-pipeline/PublicInterviewDateSelectionPage.jsx")
+);
+const PublicOfferResponsePage = lazyWithRetry(() =>
+  import("./pages/recruitment/PublicOfferResponsePage.jsx")
+);
+const PublicNhoScheduleResponsePage = lazyWithRetry(() =>
+  import("./pages/recruitment/PublicNhoScheduleResponsePage.jsx")
+);
+const PublicTalentPoolApplicationPage = lazyWithRetry(() =>
+  import("./pages/recruitment/talent-pool/PublicTalentPoolApplicationPage.jsx")
+);
+const PublicJobDescriptionPage = lazyWithRetry(() =>
+  import("./pages/recruitment/talent-pool/PublicJobDescriptionPage.jsx")
+);
+const CandidateExperienceSurveyPage = lazyWithRetry(() =>
+  import("./pages/recruitment/candidateExperience/public/CandidateExperienceSurveyPage.jsx")
+);
 
 /* =====================================================
    PUBLIC APPLICATION HOST
@@ -127,7 +157,8 @@ function isStandalonePublicPath(pathname = "", hostname = "") {
 
 export function StandalonePublicApp() {
   return (
-    <Routes>
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
         {/* =========================================
             TALENT POOL APPLICATION
 
@@ -257,7 +288,8 @@ export function StandalonePublicApp() {
           path="*"
           element={<Navigate to="/" replace />}
         />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

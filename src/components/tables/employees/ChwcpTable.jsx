@@ -663,7 +663,14 @@ export default function ChwcpTable({
         }
       `}</style>
 
-      <div className="relative overflow-visible p-4 sm:p-5">
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+        <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+          CHWCP Records
+        </h3>
+        <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+          Review employee CHWCP compliance requests and approval records.
+        </p>
+
         <PaginationTable
           filterLayout="ta-inline"
           showFilterPanel={false}

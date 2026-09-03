@@ -617,14 +617,45 @@ function scoreModule(moduleItem, query) {
   return Number.POSITIVE_INFINITY;
 }
 
+function HighlightMatch({ text, query }) {
+  const safeText = String(text ?? "");
+  const cleanQuery = String(query ?? "").trim();
+
+  if (!cleanQuery || !safeText) {
+    return <span>{safeText}</span>;
+  }
+
+  const escapedQuery = cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(${escapedQuery})`, "gi");
+  const parts = safeText.split(regex);
+
+  return (
+    <span>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <span
+            key={i}
+            className="font-black text-sibs-orange underline decoration-sibs-orange/40"
+          >
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </span>
+  );
+}
+
 function SearchResultButton({
   item,
   index,
   active,
+  query,
   onHover,
   onSelect,
 }) {
-  const Icon = item.icon;
+  const Icon = item.icon || UserRound;
 
   if (item.type === "employee") {
     return (
@@ -637,29 +668,45 @@ function SearchResultButton({
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => onSelect(item)}
         className={[
-          "flex w-full items-center gap-3 px-3 py-2.5 text-left transition",
-          active ? "bg-[#EEF4FA]" : "hover:bg-[#F7F9FC]",
+          "group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition",
+          active ? "bg-sibs-cream-light ring-1 ring-sibs-orange/30" : "hover:bg-[#F8FAFC]",
         ].join(" ")}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E9F0FC] text-xs font-extrabold text-sibs-primary-1">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#D7DEE8] bg-[#F4F7FA] text-xs font-black text-sibs-navy shadow-xs group-hover:border-sibs-orange/40 group-hover:text-sibs-orange">
           {item.initials}
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-xs font-extrabold text-[#101828]">
-            {item.label}
-          </span>
-          <span className="mt-0.5 block truncate text-[10px] font-bold text-sibs-primary-2">
-            {item.breadcrumb}
-          </span>
-          {item.details ? (
-            <span className="mt-0.5 block truncate text-[10px] text-[#667085]">
-              {item.details}
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-xs font-extrabold text-sibs-navy">
+              <HighlightMatch text={item.label} query={query} />
             </span>
-          ) : null}
+            <span className="inline-flex items-center rounded border border-[#B8E6CB] bg-[#EDFBF2] px-1.5 py-0.5 text-[8.5px] font-black uppercase text-[#1B804B]">
+              <HighlightMatch text={item.sibsId} query={query} />
+            </span>
+          </div>
+
+          <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#667085]">
+            {item.details ? (
+              <span className="truncate">
+                <HighlightMatch text={item.details} query={query} />
+              </span>
+            ) : (
+              <span className="font-semibold text-sibs-primary-2">
+                {item.breadcrumb}
+              </span>
+            )}
+          </div>
         </span>
 
-        <ArrowRight className="h-4 w-4 shrink-0 text-[#98A2B3]" />
+        <ArrowRight
+          className={[
+            "h-3.5 w-3.5 shrink-0 transition-transform",
+            active
+              ? "translate-x-0.5 text-sibs-orange"
+              : "text-[#98A2B3] group-hover:text-sibs-navy",
+          ].join(" ")}
+        />
       </button>
     );
   }
@@ -674,29 +721,42 @@ function SearchResultButton({
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => onSelect(item)}
       className={[
-        "flex w-full items-center gap-3 px-3 py-2.5 text-left transition",
-        active ? "bg-[#EEF4FA]" : "hover:bg-[#F7F9FC]",
+        "group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition",
+        active ? "bg-sibs-cream-light ring-1 ring-sibs-orange/30" : "hover:bg-[#F8FAFC]",
       ].join(" ")}
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sibs-navy text-white shadow-xs group-hover:bg-sibs-orange">
         <Icon className="h-4 w-4" />
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-extrabold text-[#101828]">
-          {item.label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="truncate text-xs font-extrabold text-sibs-navy">
+            <HighlightMatch text={item.label} query={query} />
+          </span>
+          <span className="inline-flex items-center rounded bg-[#EEF4FA] px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase text-sibs-navy">
+            {item.group || "Module"}
+          </span>
+        </div>
         <span className="mt-0.5 block truncate text-[10px] text-[#667085]">
-          {item.group} • {item.description}
+          <HighlightMatch text={item.description} query={query} />
         </span>
       </span>
 
-      <ArrowRight className="h-4 w-4 shrink-0 text-[#98A2B3]" />
+      <ArrowRight
+        className={[
+          "h-3.5 w-3.5 shrink-0 transition-transform",
+          active
+            ? "translate-x-0.5 text-sibs-orange"
+            : "text-[#98A2B3] group-hover:text-sibs-navy",
+        ].join(" ")}
+      />
     </button>
   );
 }
 
 const RECENT_SEARCHES_STORAGE_KEY = "sibs_hris_recent_searches";
+const RECENT_PROFILES_STORAGE_KEY = "sibs_hris_recent_profiles";
 
 function getRecentSearchesFromStorage() {
   if (typeof window === "undefined") return [];
@@ -742,6 +802,62 @@ function clearRecentSearchesFromStorage() {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(RECENT_SEARCHES_STORAGE_KEY);
+  } catch {
+    // Ignore
+  }
+}
+
+function getRecentProfilesFromStorage() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_PROFILES_STORAGE_KEY);
+    const parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed.filter((p) => p && p.sibsId).slice(0, 4) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentProfileToStorage(profile) {
+  if (!profile || !profile.sibsId || typeof window === "undefined") return [];
+  try {
+    const existing = getRecentProfilesFromStorage().filter(
+      (p) => String(p.sibsId).toLowerCase() !== String(profile.sibsId).toLowerCase(),
+    );
+    const updated = [
+      {
+        sibsId: profile.sibsId,
+        label: profile.label,
+        initials: profile.initials,
+        details: profile.details,
+        timestamp: Date.now(),
+      },
+      ...existing,
+    ].slice(0, 4);
+    localStorage.setItem(RECENT_PROFILES_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return getRecentProfilesFromStorage();
+  }
+}
+
+function removeRecentProfileFromStorage(sibsId) {
+  if (typeof window === "undefined") return [];
+  try {
+    const updated = getRecentProfilesFromStorage().filter(
+      (p) => String(p.sibsId).toLowerCase() !== String(sibsId).toLowerCase(),
+    );
+    localStorage.setItem(RECENT_PROFILES_STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+function clearRecentProfilesFromStorage() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(RECENT_PROFILES_STORAGE_KEY);
   } catch {
     // Ignore
   }
@@ -798,6 +914,8 @@ export default function Header() {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState(getRecentSearchesFromStorage);
+  const [recentProfiles, setRecentProfiles] = useState(getRecentProfilesFromStorage);
+  const [activeCategory, setActiveCategory] = useState("all");
   const [employeeResults, setEmployeeResults] = useState([]);
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeError, setEmployeeError] = useState("");
@@ -1018,9 +1136,15 @@ export default function Header() {
     return [...moduleResults, ...employeeResults];
   }, [normalizedQuery, moduleResults, employeeResults]);
 
+  const displayedResults = useMemo(() => {
+    if (activeCategory === "employees") return employeeResults;
+    if (activeCategory === "modules") return moduleResults;
+    return allResults;
+  }, [activeCategory, employeeResults, moduleResults, allResults]);
+
   useEffect(() => {
-    setActiveIndex(allResults.length > 0 ? 0 : -1);
-  }, [normalizedQuery, allResults.length]);
+    setActiveIndex(displayedResults.length > 0 ? 0 : -1);
+  }, [normalizedQuery, displayedResults.length, activeCategory]);
 
   function closeSearch({ clear = false } = {}) {
     setSearchOpen(false);
@@ -1046,7 +1170,23 @@ export default function Header() {
     if (item.type === "employee") {
       sessionStorage.setItem("selectedEmployeeId", item.sibsId);
       sessionStorage.removeItem("selectedCandidateId");
-      navigate("/employee/employee-data");
+      const updatedProfiles = saveRecentProfileToStorage(item);
+      setRecentProfiles(updatedProfiles);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("sibs:selected-employee-changed", {
+            detail: { sibsId: item.sibsId },
+          }),
+        );
+      }
+
+      navigate("/employee/employee-data", {
+        state: {
+          sibsId: item.sibsId,
+          timestamp: Date.now(),
+        },
+      });
       return;
     }
 
@@ -1074,22 +1214,22 @@ export default function Header() {
   function handleSearchKeyDown(event) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      if (!allResults.length) return;
+      if (!displayedResults.length) return;
 
       setSearchOpen(true);
       setActiveIndex((previous) =>
-        previous >= allResults.length - 1 ? 0 : previous + 1,
+        previous >= displayedResults.length - 1 ? 0 : previous + 1,
       );
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      if (!allResults.length) return;
+      if (!displayedResults.length) return;
 
       setSearchOpen(true);
       setActiveIndex((previous) =>
-        previous <= 0 ? allResults.length - 1 : previous - 1,
+        previous <= 0 ? displayedResults.length - 1 : previous - 1,
       );
       return;
     }
@@ -1098,7 +1238,7 @@ export default function Header() {
       if (!searchOpen || activeIndex < 0) return;
 
       event.preventDefault();
-      selectSearchResult(allResults[activeIndex]);
+      selectSearchResult(displayedResults[activeIndex]);
       return;
     }
 
@@ -1190,22 +1330,30 @@ export default function Header() {
                   ? `header-search-result-${activeIndex}`
                   : undefined
               }
-              className="h-full min-w-0 flex-1 bg-transparent pl-9 pr-8 sibs-text-xs font-semibold text-[#101828] outline-none placeholder:font-medium placeholder:text-[#98A2B3] sm:pr-9"
+              className="h-full min-w-0 flex-1 bg-transparent pl-9 pr-14 sibs-text-xs font-semibold text-sibs-navy outline-none placeholder:font-medium placeholder:text-[#98A2B3] sm:pr-16"
             />
 
-            {query ? (
-              <button
-                type="button"
-                onClick={() => {
-                  closeSearch({ clear: true });
-                  searchInputRef.current?.focus();
-                }}
-                className="absolute right-2 flex h-7 w-7 items-center justify-center rounded-md text-[#98A2B3] transition hover:bg-[#E7EDF4] hover:text-sibs-primary-1"
-                aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            ) : null}
+            <div className="absolute right-2 flex items-center gap-1">
+              {employeeLoading ? (
+                <span className="flex h-5 w-5 items-center justify-center text-sibs-orange" title="Searching directory...">
+                  <Loader2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 animate-spin" />
+                </span>
+              ) : null}
+
+              {query ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeSearch({ clear: true });
+                    searchInputRef.current?.focus();
+                  }}
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#98A2B3] transition hover:bg-[#E7EDF4] hover:text-sibs-navy"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {showSearchPanel ? (
@@ -1216,6 +1364,73 @@ export default function Header() {
             >
               {isQueryEmpty ? (
                 <div className="space-y-4">
+                  {recentProfiles.length > 0 ? (
+                    <div>
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#667085]">
+                          Recently Viewed Profiles
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearRecentProfilesFromStorage();
+                            setRecentProfiles([]);
+                          }}
+                          className="text-[10px] font-bold text-[#FF5C28] hover:underline"
+                        >
+                          Clear
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {recentProfiles.map((prof) => (
+                          <div
+                            key={prof.sibsId}
+                            className="group flex items-center justify-between gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3]"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                selectSearchResult({
+                                  type: "employee",
+                                  sibsId: prof.sibsId,
+                                  label: prof.label,
+                                  initials: prof.initials,
+                                  details: prof.details,
+                                });
+                              }}
+                              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                            >
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#D7DEE8] bg-white text-[10px] font-black text-sibs-navy">
+                                {prof.initials}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-xs font-extrabold text-sibs-navy group-hover:text-sibs-orange">
+                                  {prof.label}
+                                </span>
+                                <span className="block truncate text-[9.5px] text-[#667085]">
+                                  {prof.sibsId}
+                                </span>
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const updated = removeRecentProfileFromStorage(prof.sibsId);
+                                setRecentProfiles(updated);
+                              }}
+                              className="text-[#98A2B3] hover:text-sibs-navy"
+                              aria-label={`Remove ${prof.label}`}
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
                   {recentSearches.length > 0 ? (
                     <div>
                       <div className="mb-2 flex items-center justify-between">
@@ -1295,78 +1510,72 @@ export default function Header() {
                 </div>
               ) : (
                 <div className="thin-scroll max-h-[500px] overflow-y-auto py-1">
-                  {moduleResults.length > 0 ? (
-                    <section>
-                      <div className="flex items-center justify-between px-3 pb-1.5 pt-1">
-                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#98A2B3]">
-                          Modules
-                        </p>
-                        <span className="text-[9px] font-bold text-[#667085]">
-                          {moduleResults.length} result
-                          {moduleResults.length === 1 ? "" : "s"}
-                        </span>
-                      </div>
-
-                      <div className="divide-y divide-[#EEF2F6]">
-                        {moduleResults.map((item, index) => (
-                          <SearchResultButton
-                            key={`module-${item.path}`}
-                            item={item}
-                            index={index}
-                            active={activeIndex === index}
-                            onHover={setActiveIndex}
-                            onSelect={selectSearchResult}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  ) : null}
-
-                  {employeeSearchAllowed && query.trim().length >= 2 ? (
-                    <section
-                      className={moduleResults.length ? "mt-2 border-t border-[#E6ECF2] pt-2" : ""}
+                  <div className="mb-2 flex items-center gap-1.5 border-b border-[#E6ECF2] pb-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveCategory("all");
+                        setActiveIndex(0);
+                      }}
+                      className={[
+                        "rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition",
+                        activeCategory === "all"
+                          ? "bg-sibs-navy text-white shadow-xs"
+                          : "bg-[#F1F5F9] text-[#667085] hover:bg-[#E2E8F0] hover:text-sibs-navy",
+                      ].join(" ")}
                     >
-                      <div className="flex items-center justify-between px-3 pb-1.5 pt-1">
-                        <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#98A2B3]">
-                          Employees
-                        </p>
+                      All ({allResults.length})
+                    </button>
 
-                        {employeeLoading ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#667085]">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Searching
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-bold text-[#667085]">
-                            {employeeResults.length} result
-                            {employeeResults.length === 1 ? "" : "s"}
-                          </span>
-                        )}
-                      </div>
+                    {employeeSearchAllowed ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveCategory("employees");
+                          setActiveIndex(0);
+                        }}
+                        className={[
+                          "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition",
+                          activeCategory === "employees"
+                            ? "bg-sibs-orange text-white shadow-xs"
+                            : "bg-[#F1F5F9] text-[#667085] hover:bg-[#E2E8F0] hover:text-sibs-navy",
+                        ].join(" ")}
+                      >
+                        Employees ({employeeResults.length})
+                      </button>
+                    ) : null}
 
-                      {employeeError ? (
-                        <div className="mx-3 mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-semibold text-amber-700">
-                          {employeeError}
-                        </div>
-                      ) : null}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveCategory("modules");
+                        setActiveIndex(0);
+                      }}
+                      className={[
+                        "rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition",
+                        activeCategory === "modules"
+                          ? "bg-sibs-navy text-white shadow-xs"
+                          : "bg-[#F1F5F9] text-[#667085] hover:bg-[#E2E8F0] hover:text-sibs-navy",
+                      ].join(" ")}
+                    >
+                      Modules ({moduleResults.length})
+                    </button>
+                  </div>
 
-                      <div className="divide-y divide-[#EEF2F6]">
-                        {employeeResults.map((item, employeeIndex) => {
-                          const resultIndex = moduleResults.length + employeeIndex;
-
-                          return (
-                            <SearchResultButton
-                              key={`employee-${item.sibsId}`}
-                              item={item}
-                              index={resultIndex}
-                              active={activeIndex === resultIndex}
-                              onHover={setActiveIndex}
-                              onSelect={selectSearchResult}
-                            />
-                          );
-                        })}
-                      </div>
-                    </section>
+                  {displayedResults.length > 0 ? (
+                    <div className="divide-y divide-[#EEF2F6]">
+                      {displayedResults.map((item, index) => (
+                        <SearchResultButton
+                          key={item.type === "employee" ? `emp-${item.sibsId}` : `mod-${item.path}`}
+                          item={item}
+                          index={index}
+                          active={activeIndex === index}
+                          query={query}
+                          onHover={setActiveIndex}
+                          onSelect={selectSearchResult}
+                        />
+                      ))}
+                    </div>
                   ) : null}
 
                   {employeeSearchAllowed && query.trim().length === 1 ? (
@@ -1376,7 +1585,7 @@ export default function Header() {
                     </div>
                   ) : null}
 
-                  {noResults ? (
+                  {noResults || (displayedResults.length === 0 && !employeeLoading && query.trim().length >= 2) ? (
                     <div className="px-5 py-8 text-center">
                       <Search className="mx-auto h-6 w-6 text-[#98A2B3]" />
                       <p className="mt-2 text-xs font-extrabold text-[#344054]">

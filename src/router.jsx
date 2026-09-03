@@ -1,55 +1,79 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import NotFound from "@/pages/NotFound";
 import LoginPage from "./pages/login/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import PageFallback from "@/components/ui/PageFallback";
 
-import AdminDashboardPage from "./pages/dashboard/HrAdmin/AdminDashboardPage";
-import EmployeeDashboardPage from "./pages/dashboard/EmployeeDashboardPage";
-import OMDashboardPage from "./pages/dashboard/OMDashboard/OMDashboardPage";
-import SuperAdminDashboardPage from "./pages/dashboard/SuperAdmin/SuperAdminDashboardPage";
+function lazyWithRetry(componentImport) {
+  return lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem("sibs-page-has-been-force-refreshed") || "false"
+    );
 
-import EmployeeDataPage from "./pages/employee/EmployeeDataPage";
-import EmployeesPage from "./pages/employee/EmployeesPage";
+    try {
+      return await componentImport();
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem("sibs-page-has-been-force-refreshed", "true");
+        window.location.reload();
+        return { default: () => null };
+      }
+      throw error;
+    }
+  });
+}
 
-import AttendancePage from "./pages/attendance/AttendancePage";
-import KronosAttendancePage from "./pages/kronos-attendance/KronosAttendancePage";
-import LeavesPage from "./pages/leaves/LeavesPage";
-import ResignationManagementPage from "./pages/resignation-management/ResignationManagementPage";
-import RequisitionsPage from "./pages/requisitions/RequisitionPage";
-import SchedulePage from "./pages/schedule/SchedulePage";
-import ProfileUserPage from "./pages/profile/UserProfilePage";
+// Dashboards
+const AdminDashboardPage = lazyWithRetry(() => import("./pages/dashboard/HrAdmin/AdminDashboardPage"));
+const EmployeeDashboardPage = lazyWithRetry(() => import("./pages/dashboard/EmployeeDashboardPage"));
+const OMDashboardPage = lazyWithRetry(() => import("./pages/dashboard/OMDashboard/OMDashboardPage"));
+const SuperAdminDashboardPage = lazyWithRetry(() => import("./pages/dashboard/SuperAdmin/SuperAdminDashboardPage"));
+const TADashboardPage = lazyWithRetry(() => import("./pages/dashboard/TADashboard/TADashboardPage"));
 
-import TADashboardPage from "./pages/dashboard/TADashboard/TADashboardPage";
-import HiringNeedsPage from "./pages/recruitment/HiringNeedsPage";
-import JobDescriptionPage from "./pages/recruitment/JobDescriptionPage";
-import JobDescriptionViewPage from "./pages/recruitment/JobDescriptionViewPage";
-import WorkforceHiringPlanPage from "./pages/recruitment/WorkforceHiringPlanPage";
-import TalentPoolPage from "./pages/recruitment/talent-pool/TalentPoolPage";
-import TalentPoolApplyPage from "./pages/recruitment/talent-pool/PublicTalentPoolApplicationPage";
-import CandidatePipelinePage from "./pages/recruitment/CandidatePipelinePage";
-import PublicInterviewDateSelectionPage from "./pages/recruitment/candidate-pipeline/PublicInterviewDateSelectionPage";
-import OffersPage from "./pages/recruitment/OffersPage";
-import PublicOfferResponsePage from "./pages/recruitment/PublicOfferResponsePage";
-import PublicNhoScheduleResponsePage from "./pages/recruitment/PublicNhoScheduleResponsePage";
-import OnboardingPage from "./pages/recruitment/OnboardingPage";
-import CandidateExperiencePage from "./pages/recruitment/candidateExperience/CandidateExperiencePage";
-import CandidateExperienceSurveyPage from "./pages/recruitment/candidateExperience/public/CandidateExperienceSurveyPage";
-import SourcingAnalyticsPage from "./pages/recruitment/SourcingAnalyticsPage";
-import ActionItemsPage from "./pages/recruitment/ActionItemsPage";
-import WeeklyReportsPage from "./pages/recruitment/WeeklyReportsPage";
-import AvailablePositionsPage from "./pages/recruitment/AvailablePositionsPage";
+// Employees
+const EmployeeDataPage = lazyWithRetry(() => import("./pages/employee/EmployeeDataPage"));
+const EmployeesPage = lazyWithRetry(() => import("./pages/employee/EmployeesPage"));
+const ProfileUserPage = lazyWithRetry(() => import("./pages/profile/UserProfilePage"));
 
-import FinalInterviewForms from "./components/recruitment/forms/FinalInterviewForms";
-import RecruitmentSettingsPage from "./pages/Settings/RecruitmentSettingsPage";
-import AccountSettingsPage from "./pages/Settings/AccountSettingsPage";
+// Core HR & Operations
+const AttendancePage = lazyWithRetry(() => import("./pages/attendance/AttendancePage"));
+const KronosAttendancePage = lazyWithRetry(() => import("./pages/kronos-attendance/KronosAttendancePage"));
+const LeavesPage = lazyWithRetry(() => import("./pages/leaves/LeavesPage"));
+const ResignationManagementPage = lazyWithRetry(() => import("./pages/resignation-management/ResignationManagementPage"));
+const RequisitionsPage = lazyWithRetry(() => import("./pages/requisitions/RequisitionPage"));
+const SchedulePage = lazyWithRetry(() => import("./pages/schedule/SchedulePage"));
+const KronosDatasPage = lazyWithRetry(() => import("./pages/kronos-datas/KronosDatasPage"));
+const ApprovalRequest = lazyWithRetry(() => import("./pages/communication/ApprovalRequest"));
 
-import ApprovalRequest from "./pages/communication/ApprovalRequest";
-import KronosDatasPage from "./pages/kronos-datas/KronosDatasPage";
-import WorkforceHiringOverviewPage from "./pages/recruitment/WorkforceHiringOverviewPage";
-import PublicJobDescriptionPage from "./pages/recruitment/talent-pool/PublicJobDescriptionPage";
-import ApplicantLeadsPage from "./pages/recruitment/ApplicantLeadsPage";
+// Recruitment
+const HiringNeedsPage = lazyWithRetry(() => import("./pages/recruitment/HiringNeedsPage"));
+const JobDescriptionPage = lazyWithRetry(() => import("./pages/recruitment/JobDescriptionPage"));
+const JobDescriptionViewPage = lazyWithRetry(() => import("./pages/recruitment/JobDescriptionViewPage"));
+const WorkforceHiringPlanPage = lazyWithRetry(() => import("./pages/recruitment/WorkforceHiringPlanPage"));
+const WorkforceHiringOverviewPage = lazyWithRetry(() => import("./pages/recruitment/WorkforceHiringOverviewPage"));
+const TalentPoolPage = lazyWithRetry(() => import("./pages/recruitment/talent-pool/TalentPoolPage"));
+const TalentPoolApplyPage = lazyWithRetry(() => import("./pages/recruitment/talent-pool/PublicTalentPoolApplicationPage"));
+const CandidatePipelinePage = lazyWithRetry(() => import("./pages/recruitment/CandidatePipelinePage"));
+const PublicInterviewDateSelectionPage = lazyWithRetry(() => import("./pages/recruitment/candidate-pipeline/PublicInterviewDateSelectionPage"));
+const OffersPage = lazyWithRetry(() => import("./pages/recruitment/OffersPage"));
+const PublicOfferResponsePage = lazyWithRetry(() => import("./pages/recruitment/PublicOfferResponsePage"));
+const PublicNhoScheduleResponsePage = lazyWithRetry(() => import("./pages/recruitment/PublicNhoScheduleResponsePage"));
+const OnboardingPage = lazyWithRetry(() => import("./pages/recruitment/OnboardingPage"));
+const CandidateExperiencePage = lazyWithRetry(() => import("./pages/recruitment/candidateExperience/CandidateExperiencePage"));
+const CandidateExperienceSurveyPage = lazyWithRetry(() => import("./pages/recruitment/candidateExperience/public/CandidateExperienceSurveyPage"));
+const SourcingAnalyticsPage = lazyWithRetry(() => import("./pages/recruitment/SourcingAnalyticsPage"));
+const ActionItemsPage = lazyWithRetry(() => import("./pages/recruitment/ActionItemsPage"));
+const WeeklyReportsPage = lazyWithRetry(() => import("./pages/recruitment/WeeklyReportsPage"));
+const AvailablePositionsPage = lazyWithRetry(() => import("./pages/recruitment/AvailablePositionsPage"));
+const ApplicantLeadsPage = lazyWithRetry(() => import("./pages/recruitment/ApplicantLeadsPage"));
+const PublicJobDescriptionPage = lazyWithRetry(() => import("./pages/recruitment/talent-pool/PublicJobDescriptionPage"));
+const FinalInterviewForms = lazyWithRetry(() => import("./components/recruitment/forms/FinalInterviewForms"));
+
+// Settings
+const RecruitmentSettingsPage = lazyWithRetry(() => import("./pages/Settings/RecruitmentSettingsPage"));
+const AccountSettingsPage = lazyWithRetry(() => import("./pages/Settings/AccountSettingsPage"));
 
 const DEFAULT_PUBLIC_APPLICATION_HOST = "sibsapply.getleadsource.com";
 
@@ -564,9 +588,13 @@ export default function Router() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname : "";
 
-  if (isPublicApplicationHostname(hostname)) {
-    return <PublicApplicationRoutes />;
-  }
-
-  return <MainApplicationRoutes />;
+  return (
+    <Suspense fallback={<PageFallback />}>
+      {isPublicApplicationHostname(hostname) ? (
+        <PublicApplicationRoutes />
+      ) : (
+        <MainApplicationRoutes />
+      )}
+    </Suspense>
+  );
 }

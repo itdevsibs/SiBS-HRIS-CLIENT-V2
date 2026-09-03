@@ -100,16 +100,16 @@ export default function EmployeeProfileHeader({
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              <h1 className="break-words text-base 2xl:text-lg font-black leading-tight tracking-tight text-sibs-navy">
+              <h1 className="font-heading break-words text-lg 2xl:text-2xl font-bold leading-tight tracking-tight text-sibs-navy">
                 {fullName}
               </h1>
 
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold uppercase text-emerald-700">
+              <span className="font-heading inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] 2xl:text-[10px] font-bold uppercase text-emerald-700 tracking-wide">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 {employee?.employmentStatus || employee?.status || "Active"}
               </span>
 
-              <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold uppercase text-sibs-navy">
+              <span className="font-heading rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] 2xl:text-[10px] font-bold uppercase text-sibs-navy tracking-wide">
                 {getProfileSibsId(employee) || "SIBS ID N/A"}
               </span>
             </div>

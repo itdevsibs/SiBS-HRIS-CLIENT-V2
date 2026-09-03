@@ -7,14 +7,14 @@ export function ProfileReadField({
   className = "",
 }) {
   return (
-    <div className={`flex min-w-0 flex-col gap-1 text-left ${className}`}>
-      <span className="block text-[9px] 2xl:text-[10px] font-bold uppercase tracking-wider text-[#8EA3BF]">
+    <div className={`flex min-w-0 flex-col gap-1 text-left font-jakarta ${className}`}>
+      <span className="block sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
         {label}
       </span>
-      <div className="flex min-h-[34px] 2xl:min-h-[38px] items-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1.5 2xl:px-3 2xl:py-2 transition-colors duration-150">
+      <div className="flex min-h-[34px] 2xl:min-h-[38px] items-center rounded-xl border border-sibs-border bg-sibs-surface px-2.5 py-1.5 2xl:px-3 2xl:py-2 transition-colors duration-150">
         <span
-          className={`block min-w-0 break-words text-[11px] 2xl:text-xs font-semibold leading-snug ${
-            hasValue(value) ? "text-[#101828]" : "text-[#98A2B3]"
+          className={`block min-w-0 break-words sibs-text-xs 2xl:sibs-text-sm font-semibold leading-snug ${
+            hasValue(value) ? "text-sibs-secondary" : "text-sibs-faint"
           } ${mono ? "font-mono" : ""}`}
         >
           {hasValue(value) ? value : "—"}
@@ -37,11 +37,11 @@ export function ProfileFieldControl({
   className = "",
 }) {
   const common =
-    "w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-semibold text-[#101828] outline-none transition-all duration-150 placeholder:text-[#98A2B3] hover:border-[#C9D6E4] focus:border-[#042C51] focus:bg-white focus:ring-2 focus:ring-[#042C51]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#EEF2F6] disabled:text-[#98A2B3] disabled:hover:border-[#E6ECF2] disabled:focus:border-[#E6ECF2] disabled:focus:bg-[#EEF2F6] disabled:focus:ring-0";
+    "w-full rounded-xl border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 sibs-text-xs 2xl:sibs-text-sm font-semibold text-sibs-secondary outline-none transition-all duration-150 placeholder:text-sibs-faint hover:border-sibs-border-subtle focus:border-sibs-navy focus:bg-white focus:ring-2 focus:ring-sibs-navy/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-[#EEF2F6] disabled:text-sibs-faint disabled:hover:border-sibs-border disabled:focus:border-sibs-border disabled:focus:bg-[#EEF2F6] disabled:focus:ring-0 font-jakarta";
 
   return (
-    <label className={`block min-w-0 ${className}`}>
-      <span className="mb-1 block text-[9px] 2xl:text-[10px] font-bold uppercase tracking-wider text-[#8EA3BF]">
+    <label className={`block min-w-0 font-jakarta ${className}`}>
+      <span className="mb-1 block sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
         {label} {required ? "*" : ""}
       </span>
 

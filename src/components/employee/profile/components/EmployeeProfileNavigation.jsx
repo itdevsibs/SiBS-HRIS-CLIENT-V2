@@ -16,7 +16,7 @@ export default function EmployeeProfileNavigation({
   }
 
   return (
-    <nav className="sibs-card p-2 2xl:p-2.5" aria-label="Employee profile navigation">
+    <nav className="sibs-card p-2 2xl:p-2.5 font-jakarta" aria-label="Employee profile navigation">
       <div className="flex min-w-0 items-center gap-1 2xl:gap-1.5 overflow-x-auto pb-1 2xl:pb-1.5 sibs-scrollbar">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -30,13 +30,13 @@ export default function EmployeeProfileNavigation({
               aria-current={active ? "page" : undefined}
               className={`inline-flex h-8 2xl:h-9 min-w-max items-center justify-center gap-1.5 rounded-lg border px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold transition-all ${
                 active
-                  ? "border-[#BFD3F2] bg-[#E9F0FC] text-[#042C51] shadow-sm"
-                  : "border-transparent text-[#667085] hover:bg-[#F8FAFC] hover:text-[#042C51]"
+                  ? "border-[#BFD3F2] bg-[#E9F0FC] text-sibs-navy shadow-xs"
+                  : "border-transparent text-sibs-muted hover:bg-sibs-surface hover:text-sibs-navy"
               }`}
             >
               <Icon
                 size={13}
-                className={`2xl:h-[14px] 2xl:w-[14px] ${active ? "text-[#FF5C28]" : "text-[#98A2B3]"}`}
+                className={`2xl:h-[14px] 2xl:w-[14px] ${active ? "text-sibs-orange" : "text-sibs-faint"}`}
               />
               {tab.label}
             </button>
@@ -45,8 +45,8 @@ export default function EmployeeProfileNavigation({
       </div>
 
       {secondaryTabs.length > 0 ? (
-        <div className="mt-1.5 2xl:mt-2 flex items-center gap-1.5 overflow-x-auto border-t border-[#F1F5F9] pt-1.5 2xl:pt-2 pb-0.5 sibs-scrollbar">
-          <span className="shrink-0 px-1.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#98A2B3]">
+        <div className="mt-1.5 2xl:mt-2 flex items-center gap-1.5 overflow-x-auto border-t border-sibs-border pt-1.5 2xl:pt-2 pb-0.5 sibs-scrollbar">
+          <span className="shrink-0 px-1.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
             Subsections:
           </span>
 
@@ -61,8 +61,8 @@ export default function EmployeeProfileNavigation({
                 aria-selected={active}
                 className={`h-6 2xl:h-7 min-w-max rounded-full px-2.5 2xl:px-3 sibs-text-micro font-extrabold transition-all ${
                   active
-                    ? "bg-[#042C51] text-white"
-                    : "bg-[#F1F5F9] text-[#667085] hover:bg-[#E2E8F0] hover:text-[#042C51]"
+                    ? "bg-sibs-navy text-white shadow-xs"
+                    : "bg-[#F1F5F9] text-sibs-muted hover:bg-[#E2E8F0] hover:text-sibs-navy"
                 }`}
               >
                 {child.label}

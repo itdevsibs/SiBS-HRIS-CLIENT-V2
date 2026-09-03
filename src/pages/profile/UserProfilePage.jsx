@@ -255,6 +255,23 @@ export default function UserProfilePage() {
     );
   }
 
+  function handleContextAction(actionType) {
+    if (actionType === "request-change") {
+      requestProfileChange();
+      return;
+    }
+
+    if (actionType === "print") {
+      window.print();
+      return;
+    }
+
+    if (actionType === "resignation") {
+      openResignationModal();
+      return;
+    }
+  }
+
   function startEditing() {
     if (!employee || isSaving || !canEditDetails) return;
 
@@ -657,17 +674,17 @@ export default function UserProfilePage() {
               <div className="sibs-page-card-in grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_360px]">
                 <section
                   key={activeTab}
-                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-sibs-border bg-white p-5 shadow-xs"
                 >
-                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-sibs-border pb-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <h2 className="break-words text-sm font-black uppercase tracking-wider text-[#042C51]">
+                      <h2 className="font-heading break-words text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                         {activeProfileLabel.primary}
                         {activeProfileLabel.secondary
                           ? ` - ${activeProfileLabel.secondary}`
                           : ""}
                       </h2>
-                      <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
+                      <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
                         {activePrimary === "chwcp"
                           ? "Read-only CHWCP shared and personal coverage from the existing CHWCP data source."
                           : isEditing
@@ -681,10 +698,10 @@ export default function UserProfilePage() {
                         className={`h-2.5 w-2.5 rounded-full ${
                           isEditing
                             ? "animate-pulse bg-amber-400"
-                            : "bg-[#042C51]"
+                            : "bg-sibs-navy"
                         }`}
                       />
-                      <span className="text-[10px] font-bold uppercase text-slate-500">
+                      <span className="font-heading text-xs font-bold text-sibs-muted tracking-tight">
                         {activePrimary === "chwcp"
                           ? "View Only"
                           : isEditing
@@ -707,7 +724,7 @@ export default function UserProfilePage() {
 
                 <EmployeeProfileContextPanel
                   employee={employee}
-                  onNavigate={handleTabChange}
+                  onNavigate={setActiveTab}
                   onAction={handleContextAction}
                   showAuditTrail={false}
                   quickActions={MY_PROFILE_QUICK_ACTIONS}
