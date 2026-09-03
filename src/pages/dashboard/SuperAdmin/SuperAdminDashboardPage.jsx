@@ -1,23 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "../../../components/layout/Header";
 import { useUser } from "../../../services/context/UserContext";
 import { usePagination } from "../../../services/context/PaginationContext";
+import useRefetchOnFocus from "../../../hooks/useRefetchOnFocus";
+import {
+  getHrDashboardFeed,
+  getHrDashboardOverview,
+} from "../../../lib/axios/getHrDashboard";
+import { getEmployee } from "../../../lib/axios/getEmployee";
+import { getApprovalRequests } from "../../../lib/axios/getApprovalRequest";
+import { getLeaves } from "../../../lib/axios/getLeaves";
+import { getAccountSettingsUsers } from "../../../lib/axios/accountSettings";
+import { normalizeDashboardOverview } from "../../../lib/utils/Dashboards/AdminDashboard/adminDashboardHelpers";
 import {
   ACCESS_LEVELS,
-  ACCOUNT_GROUPS,
-  INITIAL_ACTIVITY_LOGS,
-  INITIAL_ADMIN_USERS,
-  INITIAL_EXCEPTIONS,
-  SNAPSHOT_CARDS,
-  SUMMARY_CARDS,
   SUPER_ADMIN_ROUTES,
+  buildDynamicSnapshotCards,
+  buildDynamicSummaryCards,
+  deriveLiveExceptions,
+  enrichActivityLogs,
+  exportActivityLogsToCsv,
   filterSuperAdminActivity,
   filterSuperAdminAdmins,
   filterSuperAdminExceptions,
   getSuperAdminPageLimit,
   getUserDisplayName,
+  normalizeAssignedAdminUsers,
+  normalizeSuperAdminMetrics,
   paginateSuperAdminItems,
 } from "../../../lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers.js";
 
@@ -54,13 +65,16 @@ export default function SuperAdminDashboardPage() {
 
   const [activeTab, setActiveTab] = useState("overview");
   const [isAddAdminOpen, setIsAddAdminOpen] = useState(false);
-  const [adminUsers, setAdminUsers] = useState(() => [
-    ...INITIAL_ADMIN_USERS,
-  ]);
-  const [exceptions, setExceptions] = useState(() => [...INITIAL_EXCEPTIONS]);
-  const [activityLogs, setActivityLogs] = useState(() => [
-    ...INITIAL_ACTIVITY_LOGS,
-  ]);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [exceptions, setExceptions] = useState([]);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [backendOverview, setBackendOverview] = useState(null);
+  const [extraCounts, setExtraCounts] = useState({
+    employeeTotal: null,
+    departmentsTotal: null,
+    approvalsTotal: null,
+    leavesTotal: null,
+  });
   const [notice, setNotice] = useState("");
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
@@ -69,18 +83,167 @@ export default function SuperAdminDashboardPage() {
   const account = filterValues?.account || "All Accounts";
   const status = filterValues?.status || "All Statuses";
 
+  const fetchDashboardData = useCallback(
+    async ({ forceRefresh = false } = {}) => {
+      try {
+        setLoading(true);
+        const [
+          overviewData,
+          feedData,
+          employeeData,
+          assignedUsersData,
+          approvalsData,
+          leavesData,
+        ] = await Promise.allSettled([
+          getHrDashboardOverview({ forceRefresh }),
+          getHrDashboardFeed({ forceRefresh }),
+          getEmployee(1, "", "All", {
+            includeDepartments: true,
+            includeAccounts: true,
+          }),
+          getAccountSettingsUsers({ limit: 100 }),
+          getApprovalRequests({ status: "Pending", limit: 50 }),
+          getLeaves({ status: "Pending", limit: 50 }),
+        ]);
+
+        if (overviewData.status === "fulfilled" && overviewData.value) {
+          const normOverview = normalizeDashboardOverview(overviewData.value);
+          setBackendOverview(normOverview);
+        }
+
+        let empTotal = null;
+        let deptTotal = null;
+        if (employeeData.status === "fulfilled" && employeeData.value) {
+          const empVal = employeeData.value;
+          empTotal = empVal.pagination?.total ?? null;
+          deptTotal = Array.isArray(empVal.departmentOptions)
+            ? empVal.departmentOptions.length
+            : null;
+        }
+
+        if (
+          assignedUsersData.status === "fulfilled" &&
+          Array.isArray(assignedUsersData.value?.data) &&
+          assignedUsersData.value.data.length > 0
+        ) {
+          const liveAdmins = normalizeAssignedAdminUsers(
+            assignedUsersData.value.data,
+          );
+          setAdminUsers(liveAdmins);
+        } else if (
+          employeeData.status === "fulfilled" &&
+          Array.isArray(employeeData.value?.data) &&
+          employeeData.value.data.length > 0
+        ) {
+          const liveAdmins = employeeData.value.data
+            .filter(
+              (emp) =>
+                Number(emp.adminAccess || emp.admin_access || 0) > 0 ||
+                emp.role === "admin" ||
+                emp.role === "super_admin",
+            )
+            .map((emp, idx) => ({
+              id: emp.sibsId || emp.sibs_id || `ADM-${idx + 1}`,
+              name:
+                emp.fullName ||
+                emp.name ||
+                `${emp.firstName || ""} ${emp.lastName || ""}`.trim() ||
+                "Admin User",
+              email: emp.email || "admin@thesiblingssolutions.com",
+              accessLevel: `${emp.adminAccess || emp.admin_access || 7} - ${emp.role || "Admin"}`,
+              department: emp.department || "Operations",
+              accountGroup: emp.account || "Internal HR Ops",
+              lastActive: "Today",
+              status: emp.employmentStatus || emp.status || "Active",
+            }));
+
+          if (liveAdmins.length > 0) {
+            setAdminUsers(liveAdmins);
+          }
+        }
+
+        let appTotal = null;
+        if (approvalsData.status === "fulfilled" && approvalsData.value) {
+          appTotal =
+            approvalsData.value.counts?.pending ??
+            approvalsData.value.total ??
+            null;
+        }
+
+        let lvsTotal = null;
+        if (leavesData.status === "fulfilled" && leavesData.value) {
+          lvsTotal =
+            leavesData.value.pagination?.total ?? leavesData.value.total ?? null;
+        }
+
+        setExtraCounts({
+          employeeTotal: empTotal,
+          departmentsTotal: deptTotal,
+          approvalsTotal: appTotal,
+          leavesTotal: lvsTotal,
+        });
+
+        const liveExceptions = deriveLiveExceptions({
+          employeeData:
+            employeeData.status === "fulfilled" ? employeeData.value : null,
+          approvalsData:
+            approvalsData.status === "fulfilled" ? approvalsData.value : null,
+          leavesData:
+            leavesData.status === "fulfilled" ? leavesData.value : null,
+          overviewData:
+            overviewData.status === "fulfilled" ? overviewData.value : null,
+        });
+        setExceptions(liveExceptions);
+
+        if (
+          feedData.status === "fulfilled" &&
+          Array.isArray(feedData.value?.recentActivities) &&
+          feedData.value.recentActivities.length > 0
+        ) {
+          const mappedLogs = enrichActivityLogs(feedData.value.recentActivities);
+          setActivityLogs(mappedLogs);
+        }
+      } catch (err) {
+        console.error("Super Admin Dashboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setLoading],
+  );
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  useRefetchOnFocus(fetchDashboardData);
+
   async function handleManualRefresh() {
     if (isManualRefreshing) return;
     setIsManualRefreshing(true);
     try {
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      setNotice("Super Admin dashboard data refreshed.");
+      await fetchDashboardData({ forceRefresh: true });
+      setNotice("Super Admin dashboard data refreshed from server.");
+    } catch {
+      setNotice("Failed to refresh dashboard data.");
     } finally {
       setIsManualRefreshing(false);
-      setLoading(false);
     }
   }
+
+  const liveMetrics = useMemo(
+    () =>
+      normalizeSuperAdminMetrics(backendOverview, {
+        ...extraCounts,
+        adminCount: adminUsers.length,
+      }),
+    [backendOverview, extraCounts, adminUsers.length],
+  );
+
+  const dynamicSummaryCards = useMemo(
+    () => buildDynamicSummaryCards(liveMetrics),
+    [liveMetrics],
+  );
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -145,29 +308,53 @@ export default function SuperAdminDashboardPage() {
   }, [activePagination.currentPage, page, setPage]);
 
   const moduleOptions = useMemo(
-    () => [
-      "All Modules",
-      ...Array.from(
+    () =>
+      Array.from(
         new Set([
-          ...exceptions.map((item) => item.moduleTarget),
-          ...activityLogs.map((item) => item.module),
+          ...exceptions.map((item) => item.moduleTarget).filter(Boolean),
+          ...activityLogs.map((item) => item.module).filter(Boolean),
         ]),
-      ).sort((left, right) => left.localeCompare(right)),
-    ],
+      )
+        .filter((mod) => mod !== "All" && mod !== "All Modules")
+        .sort((left, right) => left.localeCompare(right)),
     [activityLogs, exceptions],
   );
 
   const statusOptions = useMemo(
-    () => [
-      "All Statuses",
-      ...Array.from(
+    () =>
+      Array.from(
         new Set([
-          ...adminUsers.map((item) => item.status),
-          ...activityLogs.map((item) => item.status),
+          ...adminUsers.map((item) => item.status).filter(Boolean),
+          ...activityLogs.map((item) => item.status).filter(Boolean),
         ]),
-      ).sort((left, right) => left.localeCompare(right)),
-    ],
+      )
+        .filter((stat) => stat !== "All" && stat !== "All Statuses")
+        .sort((left, right) => left.localeCompare(right)),
     [activityLogs, adminUsers],
+  );
+
+  const accountOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          adminUsers
+            .map((item) => item.accountGroup)
+            .filter(Boolean)
+            .filter((acc) => acc !== "All" && acc !== "All Accounts"),
+        ),
+      ).sort((left, right) => left.localeCompare(right)),
+    [adminUsers],
+  );
+
+  const dynamicSnapshotCards = useMemo(
+    () =>
+      buildDynamicSnapshotCards({
+        metrics: liveMetrics,
+        overview: backendOverview,
+        accountCount: accountOptions.length,
+        adminCount: adminUsers.length,
+      }),
+    [accountOptions.length, adminUsers.length, backendOverview, liveMetrics],
   );
 
   function handleSearchKeyDown(event) {
@@ -210,7 +397,8 @@ export default function SuperAdminDashboardPage() {
   }
 
   function handleEditAccess(item) {
-    setNotice(`Opening access editor for ${item.email}.`);
+    setNotice(`Navigating to access editor for ${item.name || item.email}...`);
+    navigate(SUPER_ADMIN_ROUTES.accessSettings);
   }
 
   const paginationProps = {
@@ -269,6 +457,7 @@ export default function SuperAdminDashboardPage() {
 
           <SuperAdminDashboardStats
             adminCount={adminUsers.length}
+            liveMetrics={liveMetrics}
             onMetricClick={handleMetricClick}
           />
 
@@ -292,7 +481,7 @@ export default function SuperAdminDashboardPage() {
             >
               {activeTab === "overview" ? (
                 <SuperAdminOverview
-                  cards={SUMMARY_CARDS}
+                  cards={dynamicSummaryCards}
                   exceptionsCount={exceptions.length}
                   onNavigate={navigate}
                   onOpenExceptions={() => handleTabChange("exceptions")}
@@ -328,15 +517,18 @@ export default function SuperAdminDashboardPage() {
                   accessLevel={accessLevel}
                   account={account}
                   status={status}
-                  accessOptions={["All Access Levels", ...ACCESS_LEVELS]}
-                  accountOptions={["All Accounts", ...ACCOUNT_GROUPS]}
+                  accessOptions={ACCESS_LEVELS}
+                  accountOptions={accountOptions}
                   statusOptions={statusOptions}
                   onFilterChange={setFilter}
                 />
               ) : null}
 
               {activeTab === "snapshot" ? (
-                <SuperAdminSnapshot cards={SNAPSHOT_CARDS} onNavigate={navigate} />
+                <SuperAdminSnapshot
+                  cards={dynamicSnapshotCards}
+                  onNavigate={navigate}
+                />
               ) : null}
 
               {activeTab === "activity" ? (
@@ -344,9 +536,16 @@ export default function SuperAdminDashboardPage() {
                   items={activePagination.items}
                   totalItems={filteredLogs.length}
                   pagination={paginationProps}
-                  onExport={() =>
-                    setNotice("Activity log export prepared for frontend preview.")
-                  }
+                  onExport={() => {
+                    const success = exportActivityLogsToCsv(filteredLogs);
+                    if (success) {
+                      setNotice(
+                        `Exported ${filteredLogs.length} activity audit log records to CSV.`,
+                      );
+                    } else {
+                      setNotice("No activity logs available to export.");
+                    }
+                  }}
                   searchInput={searchInput}
                   onSearchChange={setSearchInput}
                   onSearchKeyDown={handleSearchKeyDown}

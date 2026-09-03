@@ -19,16 +19,16 @@ import {
   normalizeText,
 } from "./weeklyReportsHelpers.js";
 
-export function buildModuleContext() {
-  const publicSubmissions = safeReadArray(PUBLIC_SUBMISSIONS_KEY);
-  const internalCandidates = safeReadArray(INTERNAL_CANDIDATES_KEY);
-  const candidateApplications = safeReadArray(CANDIDATE_APPLICATIONS_KEY);
-  const pipelineCandidates = safeReadArray(PIPELINE_CANDIDATES_KEY);
-  const offers = safeReadArray(OFFER_RECORDS_KEY);
-  const onboarding = safeReadArray(ONBOARDING_RECORDS_KEY);
-  const hiringNeeds = safeReadArray(HIRING_NEEDS_KEY);
-  const weeklyPlan = safeReadArray(WORKFORCE_HIRING_PLAN_KEY);
-  const actionItems = safeReadArray(ACTION_ITEMS_STORAGE_KEY);
+export function buildModuleContext(records = null) {
+  const publicSubmissions = records?.publicSubmissions || safeReadArray(PUBLIC_SUBMISSIONS_KEY);
+  const internalCandidates = records?.internalCandidates || safeReadArray(INTERNAL_CANDIDATES_KEY);
+  const candidateApplications = records?.candidateApplications || safeReadArray(CANDIDATE_APPLICATIONS_KEY);
+  const pipelineCandidates = records?.pipelineCandidates || safeReadArray(PIPELINE_CANDIDATES_KEY);
+  const offers = records?.offers || safeReadArray(OFFER_RECORDS_KEY);
+  const onboarding = records?.onboarding || safeReadArray(ONBOARDING_RECORDS_KEY);
+  const hiringNeeds = records?.hiringNeeds || safeReadArray(HIRING_NEEDS_KEY);
+  const weeklyPlan = records?.weeklyPlan || safeReadArray(WORKFORCE_HIRING_PLAN_KEY);
+  const actionItems = records?.actionItems || safeReadArray(ACTION_ITEMS_STORAGE_KEY);
 
   const allCandidates = [...publicSubmissions, ...internalCandidates];
   const allPipeline = [...candidateApplications, ...pipelineCandidates];

@@ -133,15 +133,42 @@ function SuperAdminMetricCard({ item, value, onClick, delay = 0 }) {
   );
 }
 
-export default function SuperAdminDashboardStats({ adminCount, onMetricClick }) {
+export default function SuperAdminDashboardStats({
+  adminCount,
+  liveMetrics = null,
+  onMetricClick,
+}) {
   return (
     <section className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 2xl:gap-3">
       {METRICS.map((metric, index) => {
-        const val = metric.key === "admins" ? String(adminCount) : metric.value;
+        let val = metric.value;
+        let desc = metric.description;
+
+        if (liveMetrics) {
+          if (metric.key === "employees" && liveMetrics.employees) {
+            val = liveMetrics.employees;
+            if (liveMetrics.departmentsCount) {
+              desc = `Across ${liveMetrics.departmentsCount} active depts`;
+            }
+          } else if (metric.key === "admins") {
+            val = String(liveMetrics.admins || adminCount || 0);
+          } else if (metric.key === "attendance" && liveMetrics.attendanceFlags !== undefined) {
+            val = String(liveMetrics.attendanceFlags);
+          } else if (metric.key === "approvals" && liveMetrics.pendingApprovals !== undefined) {
+            val = String(liveMetrics.pendingApprovals);
+          } else if (metric.key === "leaves" && liveMetrics.leavesCount !== undefined) {
+            val = String(liveMetrics.leavesCount);
+          } else if (metric.key === "recruitment" && liveMetrics.recruitmentCount !== undefined) {
+            val = String(liveMetrics.recruitmentCount);
+          }
+        } else if (metric.key === "admins") {
+          val = String(adminCount || 0);
+        }
+
         return (
           <SuperAdminMetricCard
             key={metric.key}
-            item={metric}
+            item={{ ...metric, description: desc }}
             value={val}
             onClick={() => onMetricClick?.(metric)}
             delay={index * 60}

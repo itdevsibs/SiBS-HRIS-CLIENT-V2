@@ -638,7 +638,18 @@ function ResignationAnalytics({ data = [], loading = false }) {
       (item) => getResignationStatus(item) === "Declined",
     ).length;
 
-    const monthMap = new Map();
+    const monthLabels = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleDateString("en-PH", {
+        month: "short",
+        timeZone: "Asia/Manila",
+      });
+      monthLabels.push(label);
+    }
+
+    const monthCounts = Object.fromEntries(monthLabels.map((m) => [m, 0]));
 
     data.forEach((item) => {
       const rawDate = getItemDate(item);
@@ -652,10 +663,12 @@ function ResignationAnalytics({ data = [], loading = false }) {
         timeZone: "Asia/Manila",
       });
 
-      monthMap.set(label, (monthMap.get(label) || 0) + 1);
+      if (monthCounts[label] !== undefined) {
+        monthCounts[label] += 1;
+      }
     });
 
-    const trend = Array.from(monthMap.entries()).slice(-6);
+    const trend = monthLabels.map((label) => [label, monthCounts[label] || 0]);
     const maxTrendValue = Math.max(...trend.map(([, value]) => value), 1);
 
     return {
@@ -835,35 +848,183 @@ function ResignationAnalytics({ data = [], loading = false }) {
               <Loader2 size={26} className="animate-spin text-sibs-primary-1" />
             </div>
           ) : analytics.trend.length > 0 ? (
-            <div className="flex h-40 items-end gap-3">
-              {analytics.trend.map(([label, value]) => (
-                <div
-                  key={label}
-                  className="flex min-w-0 flex-1 flex-col items-center gap-2"
-                >
-                  <div className="flex h-28 w-full items-end rounded-full bg-[#f2f4f7]">
-                    <div
-                      className="w-full rounded-full bg-sibs-primary-1 transition-all duration-300"
-                      style={{
-                        height: `${Math.max(
-                          12,
-                          (value / analytics.maxTrendValue) * 100,
-                        )}%`,
-                      }}
+            <div className="relative flex h-48 w-full flex-col justify-end">
+              {(() => {
+                const width = 500;
+                const height = 150;
+                const padLeft = 32;
+                const padRight = 32;
+                const padTop = 28;
+                const padBottom = 32;
+                const plotWidth = width - padLeft - padRight;
+                const plotHeight = height - padTop - padBottom;
+                const baselineY = height - padBottom;
+
+                const points = analytics.trend.map(([label, value], idx) => {
+                  const x =
+                    padLeft +
+                    (idx / Math.max(analytics.trend.length - 1, 1)) * plotWidth;
+                  const ratio =
+                    analytics.maxTrendValue > 0
+                      ? value / analytics.maxTrendValue
+                      : 0;
+                  const y = padTop + (1 - ratio) * plotHeight;
+                  return { x, y, label, value };
+                });
+
+                let curvePath = "";
+                if (points.length > 0) {
+                  curvePath = `M ${points[0].x} ${points[0].y}`;
+                  for (let i = 0; i < points.length - 1; i++) {
+                    const curr = points[i];
+                    const next = points[i + 1];
+                    const cX = (curr.x + next.x) / 2;
+                    curvePath += ` C ${cX} ${curr.y}, ${cX} ${next.y}, ${next.x} ${next.y}`;
+                  }
+                }
+
+                const areaPath =
+                  points.length > 0
+                    ? `${curvePath} L ${points[points.length - 1].x} ${baselineY} L ${points[0].x} ${baselineY} Z`
+                    : "";
+
+                return (
+                  <svg
+                    viewBox={`0 0 ${width} ${height}`}
+                    className="h-full w-full overflow-visible"
+                    preserveAspectRatio="none"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="resignationTrendGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="0%" stopColor="#042C51" stopOpacity="0.22" />
+                        <stop offset="85%" stopColor="#042C51" stopOpacity="0.02" />
+                        <stop offset="100%" stopColor="#042C51" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Horizontal Grid lines */}
+                    <line
+                      x1={padLeft}
+                      y1={padTop}
+                      x2={width - padRight}
+                      y2={padTop}
+                      stroke="#EAECF0"
+                      strokeDasharray="3 3"
+                      strokeWidth="1"
                     />
-                  </div>
+                    <line
+                      x1={padLeft}
+                      y1={padTop + plotHeight / 2}
+                      x2={width - padRight}
+                      y2={padTop + plotHeight / 2}
+                      stroke="#EAECF0"
+                      strokeDasharray="3 3"
+                      strokeWidth="1"
+                    />
+                    <line
+                      x1={padLeft}
+                      y1={baselineY}
+                      x2={width - padRight}
+                      y2={baselineY}
+                      stroke="#E4E7EC"
+                      strokeWidth="1.2"
+                    />
 
-                  <div className="text-center">
-                    <p className="font-heading text-xs 2xl:text-sm font-bold tabular-nums text-sibs-primary-1">
-                      {value}
-                    </p>
+                    {/* Gradient Area */}
+                    {areaPath ? (
+                      <path
+                        d={areaPath}
+                        fill="url(#resignationTrendGradient)"
+                        className="transition-all duration-300"
+                      />
+                    ) : null}
 
-                    <p className="sibs-text-micro font-semibold text-[#667085]">
-                      {label}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                    {/* Smooth Trend Line */}
+                    {curvePath ? (
+                      <path
+                        d={curvePath}
+                        fill="none"
+                        stroke="#042C51"
+                        strokeWidth="2.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="transition-all duration-300"
+                      />
+                    ) : null}
+
+                    {/* Data Points & Markers */}
+                    {points.map((pt, idx) => {
+                      const isZero = pt.value === 0;
+                      return (
+                        <g key={`${pt.label}-${idx}`} className="group cursor-pointer">
+                          {/* Vertical hover guide */}
+                          <line
+                            x1={pt.x}
+                            y1={padTop}
+                            x2={pt.x}
+                            y2={baselineY}
+                            stroke="#042C51"
+                            strokeOpacity="0.1"
+                            strokeDasharray="2 2"
+                            className="opacity-0 transition-opacity group-hover:opacity-100"
+                          />
+
+                          {/* Outer pulse for active points */}
+                          {!isZero ? (
+                            <circle
+                              cx={pt.x}
+                              cy={pt.y}
+                              r="8"
+                              fill="#FF5C28"
+                              fillOpacity="0.18"
+                              className="animate-pulse"
+                            />
+                          ) : null}
+
+                          {/* Center Dot */}
+                          <circle
+                            cx={pt.x}
+                            cy={pt.y}
+                            r={isZero ? "3.5" : "5"}
+                            fill={isZero ? "#98A2B3" : "#042C51"}
+                            stroke="#FFFFFF"
+                            strokeWidth="2"
+                            className="transition-transform duration-200 group-hover:scale-125"
+                          />
+
+                          {/* Value Badge above Point */}
+                          <text
+                            x={pt.x}
+                            y={pt.y - 9}
+                            textAnchor="middle"
+                            className={`font-heading text-[11px] font-bold tabular-nums ${
+                              isZero ? "fill-[#98A2B3]" : "fill-sibs-navy"
+                            }`}
+                          >
+                            {pt.value}
+                          </text>
+
+                          {/* Month Label below baseline */}
+                          <text
+                            x={pt.x}
+                            y={baselineY + 18}
+                            textAnchor="middle"
+                            className="text-[10px] font-bold uppercase tracking-wider fill-[#667085]"
+                          >
+                            {pt.label}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                );
+              })()}
             </div>
           ) : (
             <div

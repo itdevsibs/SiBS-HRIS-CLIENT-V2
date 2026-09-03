@@ -392,11 +392,7 @@ export function ActionItemsProvider({
       const identifier = getItemIdentifier(itemOrId);
       const target = combinedItems.find((item) => sameItem(item, identifier));
 
-      if (
-        !target ||
-        target.systemGenerated ||
-        String(target.sourceType || "").toLowerCase().includes("system")
-      ) {
+      if (!target) {
         return false;
       }
 
@@ -429,6 +425,20 @@ export function ActionItemsProvider({
         return next;
       }
 
+      if (isSystemControlled(target)) {
+        const updatedSystemItem = applyChanges({
+          ...target,
+          systemGenerated: false,
+        });
+
+        setManualItems((previous) => [
+          updatedSystemItem,
+          ...previous.filter((item) => !sameItem(item, identifier)),
+        ]);
+        setSelectedItem(updatedSystemItem);
+        return true;
+      }
+
       setManualItems((previous) =>
         previous.map((item) =>
           sameItem(item, identifier) ? applyChanges(item) : item,
@@ -458,7 +468,7 @@ export function ActionItemsProvider({
 
   const completeActionItem = useCallback(
     (item) => {
-      if (!item || isSystemControlled(item)) return false;
+      if (!item) return false;
 
       return updateActionItem(item, {
         status: "Completed",

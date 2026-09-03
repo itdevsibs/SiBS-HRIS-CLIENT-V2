@@ -7,11 +7,12 @@ import {
   useState,
 } from "react";
 import {
+  ACTION_ITEMS_STORAGE_KEY,
+  OFFER_RECORDS_KEY,
   REPORTS_PER_PAGE,
   WEEKLY_REPORT_REFRESH_EVENTS,
   WEEKLY_REPORTS_STORAGE_KEY,
 } from "../../lib/utils/weeklyReports/weeklyReportsConstants.js";
-import { fallbackWeeklyReports } from "../../lib/utils/weeklyReports/weeklyReportsFallbackData.js";
 import {
   buildModuleContext,
   getModuleSignalCards,
@@ -22,6 +23,12 @@ import {
   safeWriteArray,
 } from "../../lib/utils/weeklyReports/weeklyReportsStorage.js";
 
+import { getHiringNeeds } from "../../lib/axios/getHiringNeeds.js";
+import { getCandidatePipelineCandidates } from "../../lib/axios/getCandidatePipeline.js";
+import onboardingApi from "../../lib/axios/getOnboarding.js";
+import { getSourcingAnalyticsData } from "../../lib/axios/getSourcingAnalytics.js";
+import { getWorkforceHiringPlanAccounts } from "../../lib/axios/getWorkforceHiringPlan.js";
+
 export default function useWeeklyReportsPage() {
   const mainRef = useRef(null);
 
@@ -30,11 +37,176 @@ export default function useWeeklyReportsPage() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [liveRecords, setLiveRecords] = useState(null);
 
   const [savedReports, setSavedReports] = useState(() => {
-    const stored = safeReadArray(WEEKLY_REPORTS_STORAGE_KEY, []);
-    return stored.length > 0 ? stored : fallbackWeeklyReports;
+    return safeReadArray(WEEKLY_REPORTS_STORAGE_KEY, []);
   });
+
+  const fetchLiveWeeklyReportData = useCallback(async () => {
+    try {
+      const [
+        hiringNeedsRes,
+        pipelineRes,
+        onboardingRes,
+        sourcingRes,
+        workforceRes,
+      ] = await Promise.allSettled([
+        getHiringNeeds().catch(() => ({})),
+        getCandidatePipelineCandidates().catch(() => ({})),
+        onboardingApi.getOnboardingRecords().catch(() => ({})),
+        getSourcingAnalyticsData().catch(() => ({})),
+        getWorkforceHiringPlanAccounts().catch(() => ([])),
+      ]);
+
+      const hiringNeedsData =
+        hiringNeedsRes.status === "fulfilled"
+          ? Array.isArray(hiringNeedsRes.value?.data)
+            ? hiringNeedsRes.value.data
+            : Array.isArray(hiringNeedsRes.value)
+              ? hiringNeedsRes.value
+              : []
+          : [];
+
+      const pipelineData =
+        pipelineRes.status === "fulfilled"
+          ? Array.isArray(pipelineRes.value?.data)
+            ? pipelineRes.value.data
+            : Array.isArray(pipelineRes.value?.candidates)
+              ? pipelineRes.value.candidates
+              : Array.isArray(pipelineRes.value)
+                ? pipelineRes.value
+                : []
+          : [];
+
+      const onboardingData =
+        onboardingRes.status === "fulfilled"
+          ? Array.isArray(onboardingRes.value?.data)
+            ? onboardingRes.value.data
+            : Array.isArray(onboardingRes.value?.records)
+              ? onboardingRes.value.records
+              : Array.isArray(onboardingRes.value?.list)
+                ? onboardingRes.value.list
+                : []
+          : [];
+
+      const sourcingData =
+        sourcingRes.status === "fulfilled"
+          ? sourcingRes.value?.data || sourcingRes.value || {}
+          : {};
+
+      const workforceData =
+        workforceRes.status === "fulfilled"
+          ? Array.isArray(workforceRes.value?.data)
+            ? workforceRes.value.data
+            : Array.isArray(workforceRes.value)
+              ? workforceRes.value
+              : []
+          : [];
+
+      // Derive live offers from candidate pipeline
+      const pipelineOffers = pipelineData
+        .filter((cand) => {
+          const stage = String(
+            cand.stage || cand.pipelineStage || cand.currentStage || "",
+          ).toLowerCase();
+          const status = String(
+            cand.status || cand.candidateStatus || "",
+          ).toLowerCase();
+          const offerStat = String(cand.offerStatus || "").toLowerCase();
+          return (
+            stage.includes("offer") ||
+            status.includes("offer") ||
+            offerStat.length > 0 ||
+            Boolean(cand.offeredSalary || cand.basicPay)
+          );
+        })
+        .map((cand) => ({
+          id: cand.id || cand.candidateId,
+          candidateName: cand.fullName || cand.candidateName || cand.name,
+          role: cand.role || cand.position || cand.jobTitle,
+          account: cand.account || cand.accountName || cand.finalAccount,
+          status: cand.offerStatus || cand.status || "Pending Offer",
+          approvalStatus:
+            cand.approvalStatus || cand.offerApprovalStatus || "Pending",
+          finalStatus: cand.finalStatus || cand.offerStatus || cand.status,
+        }));
+
+      const storedOffers = safeReadArray(OFFER_RECORDS_KEY, []);
+      const combinedOffers = [...pipelineOffers];
+      storedOffers.forEach((st) => {
+        if (!combinedOffers.some((o) => o.id === st.id)) {
+          combinedOffers.push(st);
+        }
+      });
+
+      // Derive live action items from open hiring needs and onboarding items
+      const storedActionItems = safeReadArray(ACTION_ITEMS_STORAGE_KEY, []);
+      const systemActionItems = [];
+      hiringNeedsData
+        .filter((hn) =>
+          String(hn.approvalStatus || hn.status || "")
+            .toLowerCase()
+            .includes("pending"),
+        )
+        .forEach((hn, idx) => {
+          systemActionItems.push({
+            id: `ACT-HN-${hn.id || idx}`,
+            actionItem: `Follow up pending hiring need approval for ${hn.role || hn.position || "Staff"} (${hn.account || "Operations"})`,
+            status: "Open",
+            priority: "High",
+          });
+        });
+
+      onboardingData
+        .filter((ob) =>
+          String(ob.status || ob.finalOutcome || "")
+            .toLowerCase()
+            .includes("pending"),
+        )
+        .forEach((ob, idx) => {
+          systemActionItems.push({
+            id: `ACT-OB-${ob.id || idx}`,
+            actionItem: `Confirm onboarding start requirements for ${ob.candidateName || ob.name || "Candidate"}`,
+            status: "Open",
+            priority: "Medium",
+          });
+        });
+
+      const combinedActionItems = [...storedActionItems];
+      systemActionItems.forEach((act) => {
+        if (
+          !combinedActionItems.some(
+            (item) => item.actionItem === act.actionItem,
+          )
+        ) {
+          combinedActionItems.push(act);
+        }
+      });
+
+      setLiveRecords({
+        hiringNeeds: hiringNeedsData,
+        pipelineCandidates: pipelineData,
+        onboarding: onboardingData,
+        publicSubmissions: Array.isArray(sourcingData?.publicSubmissions)
+          ? sourcingData.publicSubmissions
+          : [],
+        internalCandidates: Array.isArray(sourcingData?.internalCandidates)
+          ? sourcingData.internalCandidates
+          : [],
+        weeklyPlan: workforceData,
+        offers: combinedOffers,
+        actionItems: combinedActionItems,
+      });
+    } catch (err) {
+      console.error("Failed to load live weekly report data:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLiveWeeklyReportData();
+  }, [fetchLiveWeeklyReportData]);
 
   const scrollToTop = useCallback((behavior = "auto") => {
     requestAnimationFrame(() => {
@@ -78,6 +250,7 @@ export default function useWeeklyReportsPage() {
 
   useEffect(() => {
     function refreshFromStorage() {
+      fetchLiveWeeklyReportData();
       setRefreshKey((previous) => previous + 1);
       scrollToTopAfterRender();
     }
@@ -91,9 +264,12 @@ export default function useWeeklyReportsPage() {
         window.removeEventListener(eventName, refreshFromStorage);
       });
     };
-  }, [scrollToTopAfterRender]);
+  }, [scrollToTopAfterRender, fetchLiveWeeklyReportData]);
 
-  const moduleContext = useMemo(() => buildModuleContext(), [refreshKey]);
+  const moduleContext = useMemo(
+    () => buildModuleContext(liveRecords),
+    [liveRecords, refreshKey],
+  );
 
   const generatedCurrentReport = useMemo(
     () => buildCurrentReportFromModules(moduleContext),
@@ -235,19 +411,16 @@ export default function useWeeklyReportsPage() {
     scrollToTopAfterRender();
   }
 
-  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
-
   async function handleRefreshData() {
     if (isManualRefreshing) return;
     setIsManualRefreshing(true);
     try {
+      await fetchLiveWeeklyReportData();
       setRefreshKey((previous) => previous + 1);
       setCurrentPage(1);
       scrollToTopAfterRender();
-      // brief debounce for natural tactile feedback
-      await new Promise((resolve) => setTimeout(resolve, 300));
     } finally {
-      setIsManualRefreshing(false);
+      setTimeout(() => setIsManualRefreshing(false), 400);
     }
   }
 

@@ -35,18 +35,13 @@ export const DASHBOARD_ACCESS = {
     ADMIN_ACCESS.HR,
     ADMIN_ACCESS.HR_ADMIN,
     ADMIN_ACCESS.EXECUTIVE,
-    ADMIN_ACCESS.SUPER_ADMIN,
   ],
   TA: [
     ADMIN_ACCESS.TA,
-    ADMIN_ACCESS.EXECUTIVE,
-    ADMIN_ACCESS.SUPER_ADMIN,
   ],
   OM: [
     ADMIN_ACCESS.MANAGER,
     ADMIN_ACCESS.SOM,
-    ADMIN_ACCESS.EXECUTIVE,
-    ADMIN_ACCESS.SUPER_ADMIN,
   ],
 };
 
@@ -98,22 +93,36 @@ export const ACCESS_RULES = [
   {
     paths: ["/dashboard/super-admin"],
     roles: ["super_admin"],
-    adminAccess: DASHBOARD_ACCESS.SUPER_ADMIN,
+    adminAccess: [ADMIN_ACCESS.SUPER_ADMIN],
   },
   {
     paths: ["/dashboard/admin"],
     roles: ["hr", "hr_admin", "executive", "super_admin"],
-    adminAccess: DASHBOARD_ACCESS.HR,
+    adminAccess: [
+      ADMIN_ACCESS.HR,
+      ADMIN_ACCESS.HR_ADMIN,
+      ADMIN_ACCESS.EXECUTIVE,
+      ADMIN_ACCESS.SUPER_ADMIN,
+    ],
   },
   {
     paths: ["/recruitment/ta-dashboard"],
     roles: ["ta", "executive", "super_admin"],
-    adminAccess: DASHBOARD_ACCESS.TA,
+    adminAccess: [
+      ADMIN_ACCESS.TA,
+      ADMIN_ACCESS.EXECUTIVE,
+      ADMIN_ACCESS.SUPER_ADMIN,
+    ],
   },
   {
     paths: ["/recruitment/om-dashboard"],
     roles: ["manager", "som", "executive", "super_admin"],
-    adminAccess: DASHBOARD_ACCESS.OM,
+    adminAccess: [
+      ADMIN_ACCESS.MANAGER,
+      ADMIN_ACCESS.SOM,
+      ADMIN_ACCESS.EXECUTIVE,
+      ADMIN_ACCESS.SUPER_ADMIN,
+    ],
   },
   {
     paths: ["/employee", "/employee/employee-data"],
