@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import Providers from "@/services/providers";
 import ConditionalSidebar from "@/components/layout/ConditionalSidebar";
 import AdminLoginModal from "@/components/modals/AdminLoginModal";
+import SiBSAIAssistant from "@/components/ai/SiBSAIAssistant";
 
 const PUBLIC_ROUTES_WITHOUT_SIDEBAR = [
   "/",
@@ -40,6 +41,7 @@ export default function AppShell({ children }) {
         </div>
       )}
 
+      <SiBSAIAssistant enabled={!hideSidebar} />
       <AdminLoginModal />
     </Providers>
   );
