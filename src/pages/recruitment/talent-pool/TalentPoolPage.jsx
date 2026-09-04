@@ -178,6 +178,9 @@ function mapConvertedLeadToTalentPoolCandidate(lead = {}, talentPoolCandidate = 
 }
 
 function TalentPoolPageContent() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const {
     openPublicForm,
     openAddCandidateModal,

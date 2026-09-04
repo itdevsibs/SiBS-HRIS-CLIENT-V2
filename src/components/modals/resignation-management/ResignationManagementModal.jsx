@@ -1032,7 +1032,6 @@ function CalendarPopover({
 function EmployeePickerField({
   label,
   selectedSibsId,
-  selectedEmployeeName = "",
   employees = [],
   loading = false,
   error = "",
@@ -1043,36 +1042,6 @@ function EmployeePickerField({
   onSelect,
 }) {
   const anchorRef = useRef(null);
-  const inputRef = useRef(null);
-
-  const selectedLabel = selectedSibsId
-    ? `${selectedSibsId}${
-        selectedEmployeeName ? ` - ${selectedEmployeeName}` : ""
-      }`
-    : "";
-
-  const inputValue = open ? search || selectedLabel : selectedLabel;
-
-  function handleFocus(event) {
-    onOpenChange?.(true);
-
-    if (selectedLabel) {
-      window.requestAnimationFrame(() => {
-        event.currentTarget.select();
-      });
-    }
-  }
-
-  function handleInputChange(event) {
-    const nextValue = event.target.value;
-    onSearchChange?.(nextValue);
-    onOpenChange?.(true);
-  }
-
-  function handleToggle() {
-    onOpenChange?.(!open);
-    window.requestAnimationFrame(() => inputRef.current?.focus());
-  }
 
   return (
     <div className="relative min-w-0">
@@ -1080,7 +1049,7 @@ function EmployeePickerField({
         {label}
       </label>
 
-      <div
+      <button
         ref={anchorRef}
         type="button"
         onClick={() => onOpenChange?.(!open)}
@@ -1089,10 +1058,14 @@ function EmployeePickerField({
             ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
             : "bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
         }`}
+        aria-expanded={open}
+        aria-haspopup="listbox"
       >
         <span
           className={`block min-w-0 flex-1 truncate whitespace-nowrap ${
-            selectedSibsId ? "font-bold text-[#042C51]" : "font-medium text-[#98A2B3]"
+            selectedSibsId
+              ? "font-bold text-[#042C51]"
+              : "font-medium text-[#98A2B3]"
           }`}
           title={selectedSibsId || "Select employee under your management"}
         >
@@ -1120,15 +1093,20 @@ function EmployeePickerField({
             />
 
             <input
+              type="search"
               value={search}
-              onChange={(e) => onSearchChange?.(e.target.value)}
+              onChange={(event) => onSearchChange?.(event.target.value)}
               placeholder="Search SIBS ID or employee name..."
+              autoComplete="off"
               className="h-8.5 2xl:h-9 w-full rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] pl-9 pr-3 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-2 focus:ring-[#FF5C28]/10"
             />
           </div>
         </div>
 
-        <div className="max-h-[320px] overflow-y-auto py-1.5 sibs-scrollbar font-jakarta">
+        <div
+          className="max-h-[320px] overflow-y-auto py-1.5 sibs-scrollbar font-jakarta"
+          role="listbox"
+        >
           {loading ? (
             <div className="flex items-center justify-center gap-2 px-4 py-6 text-xs font-bold text-[#042C51]">
               <Loader2 size={15} className="animate-spin text-[#FF5C28]" />
@@ -1821,13 +1799,11 @@ export function ResignationManagementModal({
               selectedSibsId={form?.employeeSibsId}
               employees={managedEmployees}
               loading={employeePickerLoading}
+              error={employeePickerError}
               search={employeePickerSearch}
               open={employeePickerOpen}
               onOpenChange={onEmployeePickerOpenChange}
-              onSearchChange={(value) => {
-                onEmployeePickerSearchChange?.(value);
-                onSearchManagedEmployees?.(value);
-              }}
+              onSearchChange={onEmployeePickerSearchChange}
               onSelect={onSelectManagedEmployee}
             />
 
@@ -1978,8 +1954,6 @@ export function ResignationManagementModal({
                   placeholder="Add remarks before sending the resignation request for approval."
                   disabled={detailsDisabled}
                 />
-              </div>
-            </section>
           </div>
         </div>
 
