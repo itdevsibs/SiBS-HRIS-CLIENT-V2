@@ -10,13 +10,12 @@ import {
 
 import { useUser } from "./UserContext";
 import { getLeavesSummary } from "../../lib/axios/getLeaves";
-import { getCandidatePipelineCandidates } from "../../lib/axios/getCandidatePipeline";
-import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
+import { getAuditNotifications } from "../../lib/axios/getAuditNotifications";
 import {
-  buildCandidatePipelineNotifications,
-  buildHiringNeedsNotifications,
-  sortNotificationsByNewest,
-} from "../../lib/utils/notificationFeed";
+  canUseAuditNotifications,
+  formatAuditNotificationTime,
+  normalizeAuditNotificationsResponse,
+} from "../../lib/utils/notifications/auditNotificationHelpers";
 import {
   createSidebarNotificationState,
   getSidebarNotification,
@@ -54,6 +53,29 @@ const SEEDED_SIDEBAR_NOTIFICATIONS = [
   },
 ];
 
+export const DEFAULT_SYSTEM_NOTIFICATIONS = [];
+
+function getActionLabelByModule(module = "") {
+  switch (module) {
+    case "candidate-pipeline":
+      return "Open Pipeline";
+    case "onboarding":
+      return "Review Onboarding";
+    case "hiring-needs":
+      return "View Requisition";
+    case "attendance":
+      return "View Attendance";
+    case "leaves":
+      return "Review Leaves";
+    case "job-description":
+      return "View Job Description";
+    case "employees":
+    case "employee-profile":
+      return "View Employee";
+    default:
+      return "View Details";
+  }
+}
 
 function getUserNotificationId(user) {
   return (
@@ -111,7 +133,7 @@ export function SidebarNotificationProvider({ children }) {
   const [dismissedNotifIds, setDismissedNotifIds] = useState({});
   const [dynamicNotifications, setDynamicNotifications] = useState([]);
   const [leavePendingNotification, setLeavePendingNotification] = useState(null);
-  const [operationalNotifications, setOperationalNotifications] = useState([]);
+  const [auditNotifications, setAuditNotifications] = useState([]);
 
   useEffect(() => {
     setLastSeen(readStorage(sidebarStorageKey));
@@ -191,81 +213,66 @@ export function SidebarNotificationProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function refreshOperationalNotifications() {
+    async function refreshAuditNotifications() {
       if (!user) {
-        if (!cancelled) {
-          setOperationalNotifications([]);
-        }
+        if (!cancelled) setAuditNotifications([]);
         return;
       }
 
-      const [pipelineResult, hiringNeedsResult] =
-        await Promise.allSettled([
-          getCandidatePipelineCandidates({
-            page: 1,
-            limit: 500,
-          }),
-          getHiringNeeds(),
-        ]);
+      if (!canUseAuditNotifications(user)) {
+        if (!cancelled) setAuditNotifications([]);
+        return;
+      }
 
-      if (cancelled) return;
+      try {
+        const payload = await getAuditNotifications({ limit: 20 });
+        if (cancelled) return;
 
-      const pipelinePayload =
-        pipelineResult.status === "fulfilled"
-          ? pipelineResult.value
-          : null;
+        const normalized = normalizeAuditNotificationsResponse(payload);
+        const mapped = normalized.map((item) => {
+          const isApproval =
+            ["approval-request", "hiring-needs", "job-description", "leaves"].includes(item.module) ||
+            ["APPROVE", "SUBMIT", "PENDING", "STATUS_CHANGE"].includes(item.action);
 
-      const hiringNeedsPayload =
-        hiringNeedsResult.status === "fulfilled"
-          ? hiringNeedsResult.value
-          : null;
+          return {
+            id: item.id || `audit-${item.auditLogId}`,
+            category: isApproval ? "approvals" : "system",
+            type:
+              item.tone === "danger" || item.tone === "warning"
+                ? "warning"
+                : item.tone === "action"
+                  ? "action"
+                  : "info",
+            title: item.title,
+            message: item.message,
+            time: formatAuditNotificationTime(item.occurredAt),
+            timestamp: item.occurredAt ? new Date(item.occurredAt).getTime() : Date.now(),
+            actionLabel: getActionLabelByModule(item.module),
+            actionPath: item.targetPath || "/approval-request",
+          };
+        });
 
-      setOperationalNotifications(
-        sortNotificationsByNewest([
-          ...buildCandidatePipelineNotifications(
-            pipelinePayload || {},
-          ),
-          ...buildHiringNeedsNotifications(
-            hiringNeedsPayload || {},
-          ),
-        ]),
-      );
+        if (!cancelled) {
+          setAuditNotifications(mapped);
+        }
+      } catch (err) {
+        console.warn("[SidebarNotificationContext] live audit notifications failed:", err?.message);
+        if (!cancelled) setAuditNotifications([]);
+      }
     }
 
-    refreshOperationalNotifications();
+    refreshAuditNotifications();
 
-    const interval = window.setInterval(
-      refreshOperationalNotifications,
-      60_000,
-    );
-
-    const refreshEvents = [
-      "ta-pipeline-candidates-updated",
-      "ta-talent-pool-updated",
-      "ta-hiring-needs-updated",
-    ];
-
-    const handleRefresh = () => {
-      refreshOperationalNotifications();
-    };
-
-    refreshEvents.forEach((eventName) => {
-      window.addEventListener(eventName, handleRefresh);
-    });
-
-    window.addEventListener("focus", handleRefresh);
+    const interval = window.setInterval(refreshAuditNotifications, 60_000);
+    const handleFocus = () => refreshAuditNotifications();
+    window.addEventListener("focus", handleFocus);
 
     return () => {
       cancelled = true;
       window.clearInterval(interval);
-
-      refreshEvents.forEach((eventName) => {
-        window.removeEventListener(eventName, handleRefresh);
-      });
-
-      window.removeEventListener("focus", handleRefresh);
+      window.removeEventListener("focus", handleFocus);
     };
-  }, [user, userNotificationId]);
+  }, [user]);
 
   const setSidebarNotification = useCallback((key, notification) => {
     if (!key) return;
@@ -330,7 +337,8 @@ export function SidebarNotificationProvider({ children }) {
   const markAllAsRead = useCallback(() => {
     const all = [
       ...(leavePendingNotification ? [leavePendingNotification] : []),
-      ...operationalNotifications,
+      ...auditNotifications,
+      ...DEFAULT_SYSTEM_NOTIFICATIONS,
       ...dynamicNotifications,
     ];
     const next = {};
@@ -339,12 +347,7 @@ export function SidebarNotificationProvider({ children }) {
     });
     setReadNotifIds(next);
     writeStorage(readNotifsStorageKey, next);
-  }, [
-    dynamicNotifications,
-    leavePendingNotification,
-    operationalNotifications,
-    readNotifsStorageKey,
-  ]);
+  }, [dynamicNotifications, leavePendingNotification, auditNotifications, readNotifsStorageKey]);
 
   // Dismiss a system notification
   const dismissNotification = useCallback(
@@ -370,21 +373,16 @@ export function SidebarNotificationProvider({ children }) {
     const combined = sortNotificationsByNewest([
       ...dynamicNotifications,
       ...(leavePendingNotification ? [leavePendingNotification] : []),
-      ...operationalNotifications,
-    ]);
+      ...auditNotifications,
+      ...DEFAULT_SYSTEM_NOTIFICATIONS,
+    ];
     return combined
       .filter((n) => !dismissedNotifIds[n.id])
       .map((n) => ({
         ...n,
         isRead: Boolean(readNotifIds[n.id]),
       }));
-  }, [
-    dynamicNotifications,
-    leavePendingNotification,
-    operationalNotifications,
-    dismissedNotifIds,
-    readNotifIds,
-  ]);
+  }, [dynamicNotifications, leavePendingNotification, auditNotifications, dismissedNotifIds, readNotifIds]);
 
   // Total unread count
   const unreadCount = useMemo(

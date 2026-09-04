@@ -739,20 +739,19 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
               </span>
 
               <div className="min-w-0">
-                <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
                   Sourcing Cost
                 </span>
 
                 <h2
                   id="source-cost-modal-title"
-                  className="mt-0.5 text-sm sm:text-base font-extrabold text-white"
+                  className="sibs-modal-title mt-0.5 truncate text-white"
                 >
                   Register Source Cost Entry
                 </h2>
 
-                <p className="mt-0.5 sibs-text-xs font-medium text-blue-100">
-                  Record a sourcing expense and the recruiting
-                  period covered.
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
+                  Record a sourcing expense and the recruiting period covered.
                 </p>
               </div>
             </div>

@@ -66,12 +66,12 @@ export function CandidateModalSection({
             {icon ? <span className="mt-0.5 shrink-0">{icon}</span> : null}
             <div className="min-w-0">
               {title ? (
-                <h3 className="text-sm font-extrabold text-[#042C51]">
+                <h3 className="sibs-modal-section-title text-[#042C51]">
                   {title}
                 </h3>
               ) : null}
               {subtitle ? (
-                <p className="mt-0.5 text-[10px] font-semibold leading-4 text-[#667085] sm:text-xs sm:leading-5">
+                <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
                   {subtitle}
                 </p>
               ) : null}
@@ -358,20 +358,20 @@ export default function CandidatePipelineModalShell({
                     <div className="flex flex-wrap items-center gap-1.5">
                       <h2
                         id={titleId}
-                        className="truncate text-xs sm:text-sm 2xl:text-base font-extrabold text-white"
+                        className="sibs-modal-title truncate text-white"
                       >
                         {title}
                       </h2>
 
                       {badge ? (
-                        <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white/90 sm:text-[8.5px]">
+                        <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white/90">
                           {badge}
                         </span>
                       ) : null}
                     </div>
 
                     {subtitle ? (
-                      <p className="mt-0.5 truncate text-[9.5px] font-semibold text-white/65 sm:text-[11px]">
+                      <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                         {subtitle}
                       </p>
                     ) : null}

@@ -435,13 +435,13 @@ export default function ViewJobDescriptionDetailsModal({
         <div className="shrink-0 border-b border-[#D9E2EC] bg-white px-4 py-3 sm:px-6 2xl:py-3.5">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-[#042C51]/80">
+              <div className="sibs-kicker text-[#042C51]/80">
                 Job Description Overview
               </div>
 
               <h2
                 id="view-job-description-modal-title"
-                className="mt-0.5 min-w-0 break-words text-base 2xl:text-xl font-extrabold leading-tight text-[#042C51]"
+                className="mt-0.5 min-w-0 break-words font-heading text-lg 2xl:text-2xl font-bold leading-tight text-[#042C51]"
               >
                 {jdTitle}
               </h2>

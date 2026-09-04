@@ -1,26 +1,54 @@
 import React from "react";
-import { Archive, BarChart3, ClipboardList } from "lucide-react";
+import {
+  BarChart3,
+  CirclePause,
+  MailCheck,
+  PhoneCall,
+  UserCheck,
+  UserPlus,
+  UserX,
+  UsersRound,
+} from "lucide-react";
 import { motion as Motion } from "framer-motion";
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 
 export default function ApplicantLeadViewTabs() {
-  const { leadView, setLeadView, activeLeadCount, archivedLeadCount } =
+  const { leadView, setLeadView, activeLeads, statusOptions } =
     useApplicantLeadsPage();
+
+  const statusIcon = {
+    "New Lead": UserPlus,
+    Contacted: PhoneCall,
+    "Application Link Sent": MailCheck,
+    "Converted to Applicant": UserCheck,
+    "Not Interested": UserX,
+    "On Hold": CirclePause,
+  };
+  const statusLabel = {
+    "New Lead": "New Leads",
+  };
+  const configuredStatuses = statusOptions
+    .map((option) => String(option?.label || option?.name || option?.value || option).trim())
+    .filter((status) => status && status !== "Moved to Talent Pool Archive");
+  const leadStatuses = activeLeads
+    .map((lead) => String(lead.status || "").trim())
+    .filter(Boolean);
+  const statuses = Array.from(new Set([...configuredStatuses, ...leadStatuses]));
 
   const tabs = [
     {
-      id: "active",
-      label: "Active Leads",
-      count: activeLeadCount,
-      icon: ClipboardList,
+      id: "all",
+      label: "All Leads",
+      count: activeLeads.length,
+      icon: UsersRound,
     },
-    {
-      id: "archive",
-      label: "Moved to Talent Pool Archive",
-      count: archivedLeadCount,
-      icon: Archive,
-    },
+    ...statuses.map((status) => ({
+      id: `status:${status}`,
+      label: statusLabel[status] || status,
+      count: activeLeads.filter((lead) => lead.status === status).length,
+      icon: statusIcon[status] || UserCheck,
+    })),
     {
       id: "channels",
       label: "Channel Sources",
@@ -53,7 +81,7 @@ export default function ApplicantLeadViewTabs() {
               />
               <span className="truncate">{tab.label}</span>
 
-              {tab.count !== null && Number(tab.count) > 0 ? (
+              {tab.count !== null ? (
                 <span
                   className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors ${
                     active

@@ -879,24 +879,24 @@ export default function ViewHiringNeedsModal({
               <div className="min-w-0">
                 <h2
                   id="view-hiring-needs-title"
-                  className="text-sm sm:text-base 2xl:text-lg font-extrabold text-white"
+                  className="sibs-modal-title truncate text-white"
                 >
                   Personnel Requisition Form Details
                 </h2>
 
-                <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                <div className="mt-0.5 flex flex-wrap items-center gap-2 sibs-modal-subtitle text-white/75 truncate sm:text-clip">
                   <span className="text-[10px] 2xl:text-[11px] font-extrabold text-blue-100 font-mono">
                     {requestIdDisplay}
                   </span>
 
                   {isRelinkMode ? (
-                    <span className="inline-flex rounded-full border border-amber-300/50 bg-amber-400/15 px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-amber-100">
+                    <span className="inline-flex rounded-full border border-amber-300/50 bg-amber-400/15 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-amber-100">
                       Relink Required
                     </span>
                   ) : null}
 
                   <span
-                    className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide ${getRequestTypeClass(
+                    className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide ${getRequestTypeClass(
                       requestType,
                     )}`}
                   >

@@ -99,9 +99,10 @@ const acceptedDocumentExtensions = [
 ];
 
 const OUTBOUND_SOURCE = "Outbound";
+const EXTERNAL_REFERRAL_LISTINGS_SOURCE = "External Referral Listings";
 
 const defaultFormOptions = {
-  hearAboutUs: [OUTBOUND_SOURCE],
+  hearAboutUs: [EXTERNAL_REFERRAL_LISTINGS_SOURCE, OUTBOUND_SOURCE],
   locations: [],
   workExperience: [],
   lengthOfExperience: [],
@@ -1166,7 +1167,10 @@ function normalizeOptionsPayload(payload) {
   return {
     hearAboutUs: sortHearAboutUsOptions(
       ensureOption(
-        Array.isArray(data.hearAboutUs) ? data.hearAboutUs : [],
+        ensureOption(
+          Array.isArray(data.hearAboutUs) ? data.hearAboutUs : [],
+          EXTERNAL_REFERRAL_LISTINGS_SOURCE,
+        ),
         OUTBOUND_SOURCE,
       ),
     ),
@@ -3425,7 +3429,7 @@ export default function PublicTalentPoolApplicationPage() {
           email: cleanText(prefill.email),
           phone1: cleanText(prefill.phone1),
           applyingLocation: cleanText(prefill.applyingLocation),
-          hearAboutUs: [OUTBOUND_SOURCE],
+          hearAboutUs: [EXTERNAL_REFERRAL_LISTINGS_SOURCE],
         };
 
         referralPrefillValuesRef.current = matchedPrefillValues;
@@ -3980,7 +3984,7 @@ export default function PublicTalentPoolApplicationPage() {
       if (
         Array.isArray(next.hearAboutUs) &&
         next.hearAboutUs.length === 1 &&
-        next.hearAboutUs[0] === OUTBOUND_SOURCE
+        next.hearAboutUs[0] === EXTERNAL_REFERRAL_LISTINGS_SOURCE
       ) {
         next.hearAboutUs = [];
       }

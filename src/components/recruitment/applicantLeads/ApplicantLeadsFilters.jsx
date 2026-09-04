@@ -16,8 +16,6 @@ export default function ApplicantLeadsFilters() {
   const {
     searchTerm,
     setSearchTerm,
-    statusFilter,
-    setStatusFilter,
     departmentFilter,
     setDepartmentFilter,
     siteFilter,
@@ -25,20 +23,8 @@ export default function ApplicantLeadsFilters() {
     clearFilters,
     departmentOptions,
     siteOptions,
-    statusOptions,
     isLoading,
   } = useApplicantLeadsPage();
-
-  const formattedStatusOptions = useMemo(() => {
-    return [
-      { id: "All", label: "All Status", value: "All" },
-      ...statusOptions.map((opt) => ({
-        id: getOptionLabel(opt),
-        label: getOptionLabel(opt),
-        value: getOptionLabel(opt),
-      })),
-    ];
-  }, [statusOptions]);
 
   const formattedDepartmentOptions = useMemo(() => {
     return [
@@ -64,7 +50,6 @@ export default function ApplicantLeadsFilters() {
 
   const hasActiveFilters =
     cleanText(searchTerm) ||
-    statusFilter !== "All" ||
     departmentFilter !== "All" ||
     siteFilter !== "All";
 
@@ -100,18 +85,6 @@ export default function ApplicantLeadsFilters() {
           allLabel: "All Sites",
           label: "Site",
           placeholder: "All Sites",
-          searchable: false,
-          disabled: isLoading,
-        },
-        {
-          key: "status",
-          value: statusFilter,
-          options: formattedStatusOptions,
-          onChange: setStatusFilter,
-          includeAll: false,
-          allLabel: "All Status",
-          label: "Status",
-          placeholder: "All Status",
           searchable: false,
           disabled: isLoading,
         },

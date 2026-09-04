@@ -32,12 +32,12 @@ export default function SuperAdminAccessGovernance({
       >
         <h2 className="sibs-section-title flex items-center gap-1.5 2xl:gap-2">
           <Lock size={14} className="text-[#FF5C28]" />
-          Grounded 7 Admin Access Levels Hierarchy
+          Grounded Admin Access Levels Hierarchy
         </h2>
 
-        <div className="mt-2 2xl:mt-2.5 grid grid-cols-2 gap-1.5 2xl:gap-2 sm:grid-cols-4 xl:grid-cols-7">
+        <div className="mt-2 2xl:mt-2.5 grid grid-cols-2 gap-1.5 2xl:gap-2 sm:grid-cols-5 xl:grid-cols-10">
           {ACCESS_HIERARCHY.map(([level, description], index) => {
-            const superAdmin = level === "7 - Super Admin";
+            const superAdmin = String(level).startsWith("7");
 
             return (
               <div
@@ -53,14 +53,14 @@ export default function SuperAdminAccessGovernance({
                 }}
               >
                 <span
-                  className={`block text-[9px] 2xl:text-[10px] font-extrabold ${
+                  className={`block text-[9px] 2xl:text-[10px] font-extrabold whitespace-nowrap truncate ${
                     superAdmin ? "text-[#FF5C28]" : ""
                   }`}
                 >
                   {level}
                 </span>
                 <span
-                  className={`mt-0.5 block text-[8px] 2xl:text-[9px] font-semibold leading-3.5 ${
+                  className={`mt-0.5 block text-[8px] 2xl:text-[9px] font-semibold leading-3.5 line-clamp-2 ${
                     superAdmin ? "text-slate-200" : "text-[#667085]"
                   }`}
                 >
@@ -109,7 +109,8 @@ export default function SuperAdminAccessGovernance({
               options: accessOptions,
               onChange: (value) => onFilterChange?.("accessLevel", value),
               searchable: false,
-              includeAll: false,
+              allLabel: "All Access Levels",
+              includeAll: true,
             },
             {
               key: "account",
@@ -128,7 +129,8 @@ export default function SuperAdminAccessGovernance({
               options: statusOptions,
               onChange: (value) => onFilterChange?.("status", value),
               searchable: false,
-              includeAll: false,
+              allLabel: "All Statuses",
+              includeAll: true,
             },
           ]}
           className="border-0 bg-transparent p-0 shadow-none"
@@ -156,7 +158,7 @@ export default function SuperAdminAccessGovernance({
                   </p>
                 </div>
                 <span
-                  className={`rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusPillClass(
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold capitalize ${getStatusPillClass(
                     item.status,
                   )}`}
                 >
@@ -184,7 +186,7 @@ export default function SuperAdminAccessGovernance({
               <button
                 type="button"
                 onClick={() => onEditAccess(item)}
-                className="mt-3 h-7.5 2xl:h-8 rounded-lg bg-[#F2F6FA] px-3 text-[10px] font-extrabold text-[#042C51] hover:bg-[#E6ECF2]"
+                className="mt-3 inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg bg-[#F2F6FA] px-3 text-[10px] font-extrabold text-[#042C51] hover:bg-[#E6ECF2]"
               >
                 Edit Access
               </button>
@@ -197,7 +199,16 @@ export default function SuperAdminAccessGovernance({
 
       <div className="mt-4 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white hidden lg:block">
         <div className="max-h-[520px] overflow-auto sibs-scrollbar">
-          <table className="w-full min-w-[980px] border-collapse bg-white text-left text-xs">
+          <table className="w-full min-w-[1020px] table-fixed border-collapse bg-white text-left text-xs">
+            <colgroup>
+              <col className="w-[19%]" />
+              <col className="w-[14%]" />
+              <col className="w-[18%]" />
+              <col className="w-[23%]" />
+              <col className="w-[9%]" />
+              <col className="w-[8%]" />
+              <col className="w-[9%]" />
+            </colgroup>
             <thead className="sibs-data-table-head">
               <tr className="sibs-data-table-head-row">
                 <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Name & Email</th>
@@ -221,30 +232,30 @@ export default function SuperAdminAccessGovernance({
                     }}
                   >
                     <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
-                      <p className="font-extrabold text-[#042C51]">{item.name}</p>
-                      <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3]">
+                      <p className="font-extrabold text-[#042C51] truncate">{item.name}</p>
+                      <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3] truncate">
                         {item.email}
                       </p>
                     </td>
                     <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                       <span
-                        className={`rounded-full px-2 2xl:px-2.5 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold ${getAccessLevelClass(
+                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-[9.5px] 2xl:text-[10px] font-extrabold ${getAccessLevelClass(
                           item.accessLevel,
                         )}`}
                       >
                         {item.accessLevel}
                       </span>
                     </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-semibold text-[#344054]">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-semibold text-[#344054] truncate">
                       {item.department}
                     </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[#667085]">{item.accountGroup}</td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] text-[#98A2B3]">
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[#667085] truncate">{item.accountGroup}</td>
+                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] text-[#98A2B3] whitespace-nowrap">
                       {item.lastActive}
                     </td>
                     <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                       <span
-                        className={`rounded-full border px-2 2xl:px-2.5 py-0.5 text-[9px] 2xl:text-[10px] font-extrabold ${getStatusPillClass(
+                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[9.5px] 2xl:text-[10px] font-extrabold capitalize ${getStatusPillClass(
                           item.status,
                         )}`}
                       >
@@ -255,7 +266,7 @@ export default function SuperAdminAccessGovernance({
                       <button
                         type="button"
                         onClick={() => onEditAccess(item)}
-                        className="h-7.5 2xl:h-8 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 sibs-text-micro font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                        className="inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-[10px] 2xl:text-[11px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
                       >
                         Edit Access
                       </button>

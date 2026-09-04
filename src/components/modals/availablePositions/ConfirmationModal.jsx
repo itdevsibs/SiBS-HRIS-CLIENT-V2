@@ -41,13 +41,13 @@ function ConfirmationModal({
               </span>
 
               <div className="min-w-0">
-                <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-slate-300">
+                <p className="sibs-modal-subtitle text-white/75 truncate sm:text-clip">
                   Position Dictionary
                 </p>
 
                 <h3
                   id="available-position-confirm-title"
-                  className="mt-0.5 text-sm sm:text-base font-extrabold text-white"
+                  className="sibs-modal-title mt-0.5 truncate text-white"
                 >
                   {title}
                 </h3>

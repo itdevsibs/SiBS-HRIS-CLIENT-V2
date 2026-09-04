@@ -777,7 +777,7 @@ export default function MoveToPipeLineModal() {
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="truncate text-xs 2xl:text-sm font-extrabold text-white">
+                <h2 className="sibs-modal-title truncate text-white">
                   {dropOffResume
                     ? hasPipelineHistory
                       ? "Resume Candidate in Pipeline"
@@ -790,7 +790,7 @@ export default function MoveToPipeLineModal() {
                 </span>
               </div>
 
-              <p className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-semibold text-blue-100">
+              <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                 {candidateName}
               </p>
             </div>
@@ -937,10 +937,10 @@ export default function MoveToPipeLineModal() {
           >
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
               <div>
-                <h3 className="text-lg font-bold text-[#B42318]">
+                <h3 className="sibs-modal-title text-[#B42318]">
                   Mark as Drop Off
                 </h3>
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                <p className="sibs-modal-subtitle mt-0.5 text-[#667085]">
                   {candidateName}
                 </p>
               </div>

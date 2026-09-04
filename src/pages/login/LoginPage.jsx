@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useUser } from "../../services/context/UserContext";
 import { getLogin } from "../../lib/axios/getLogin";
+import { getDefaultDashboardPath } from "../../config/accessControl";
 
 function getResponseUser(result) {
   return (
@@ -13,26 +14,8 @@ function getResponseUser(result) {
   );
 }
 
-function getUserRole(user) {
-  return String(
-    user?.role ||
-      user?.userRole ||
-      user?.user_role ||
-      user?.access ||
-      "",
-  )
-    .trim()
-    .toLowerCase();
-}
-
 function getDashboardPath(user) {
-  const role = getUserRole(user);
-
-  if (role === "employee") {
-    return "/dashboard/employee";
-  }
-
-  return "/dashboard/admin";
+  return getDefaultDashboardPath(user);
 }
 
 function getLoginFailureMessage(result = {}) {

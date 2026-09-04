@@ -6,6 +6,7 @@ import { useHeader } from "../../services/context/HeaderContext";
 import { useUser } from "../../services/context/UserContext";
 import { useAdmin } from "../../services/context/AdminContext";
 import { getAdminLogin } from "../../lib/axios/getAdminLogin";
+import { getDefaultDashboardPath } from "../../config/accessControl";
 import StatusModal from "./StatusModal";
 
 export default function AdminLoginModal() {
@@ -112,7 +113,8 @@ export default function AdminLoginModal() {
       setPassword("");
       setAdminLogin(false);
 
-      navigate("/dashboard/admin", { replace: true });
+      const targetUser = data?.user || user;
+      navigate(getDefaultDashboardPath(targetUser), { replace: true });
     } catch (error) {
       showStatus({
         type: "error",

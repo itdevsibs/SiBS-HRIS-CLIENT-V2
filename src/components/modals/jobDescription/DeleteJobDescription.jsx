@@ -509,13 +509,12 @@ export default function DeleteJobDescriptionModal({
                 </span>
               </div>
 
-              <h2 className="text-sm sm:text-base 2xl:text-lg font-extrabold leading-tight">
+              <h2 className="sibs-modal-title truncate text-white">
                 Permanent Job Description Deletion
               </h2>
 
-              <p className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-4 text-white/90">
-                Review linked available positions and verify safety confirmation
-                before proceeding.
+              <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
+                Review linked available positions and verify safety confirmation before proceeding.
               </p>
             </div>
           </div>

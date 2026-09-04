@@ -210,6 +210,9 @@ export function getStatusClass(status) {
     case "Hired / Active":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
 
+    case "Leads Converted":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+
     case "Withdrawn":
       return "border-gray-200 bg-gray-50 text-gray-600";
 

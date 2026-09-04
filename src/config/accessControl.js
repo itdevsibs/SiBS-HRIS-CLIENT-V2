@@ -35,22 +35,22 @@ export const DASHBOARD_ACCESS = {
     ADMIN_ACCESS.HR,
     ADMIN_ACCESS.HR_ADMIN,
     ADMIN_ACCESS.EXECUTIVE,
-    ADMIN_ACCESS.SUPER_ADMIN,
   ],
   TA: [
     ADMIN_ACCESS.TA,
-    ADMIN_ACCESS.EXECUTIVE,
-    ADMIN_ACCESS.SUPER_ADMIN,
   ],
   OM: [
     ADMIN_ACCESS.MANAGER,
     ADMIN_ACCESS.SOM,
-    ADMIN_ACCESS.EXECUTIVE,
-    ADMIN_ACCESS.SUPER_ADMIN,
   ],
 };
 
 export function getAdminAccess(user = {}) {
+  const role = cleanRole(user?.role);
+  if (role === "super_admin" || role === "superadmin") {
+    return ADMIN_ACCESS.SUPER_ADMIN;
+  }
+
   const access = Number(
     user?.adminAccess ??
       user?.admin_access ??
@@ -72,14 +72,34 @@ export function getDefaultDashboardPath(user = {}) {
 
   if (role === "employee") return "/dashboard/employee";
 
+  if (role === "super_admin" || role === "superadmin") {
+    return "/dashboard/super-admin";
+  }
+
   const access = getAdminAccess(user);
 
   if (DASHBOARD_ACCESS.SUPER_ADMIN.includes(access)) {
     return "/dashboard/super-admin";
   }
-  if (DASHBOARD_ACCESS.HR.includes(access)) return "/dashboard/admin";
-  if (DASHBOARD_ACCESS.TA.includes(access)) return "/recruitment/ta-dashboard";
-  if (DASHBOARD_ACCESS.OM.includes(access)) return "/recruitment/om-dashboard";
+  if (
+    ["hr", "hr_admin", "executive"].includes(role) ||
+    DASHBOARD_ACCESS.HR.includes(access)
+  ) {
+    return "/dashboard/admin";
+  }
+  if (
+    role === "ta" ||
+    role === "talent_acquisition" ||
+    DASHBOARD_ACCESS.TA.includes(access)
+  ) {
+    return "/recruitment/ta-dashboard";
+  }
+  if (
+    ["om", "manager", "som"].includes(role) ||
+    DASHBOARD_ACCESS.OM.includes(access)
+  ) {
+    return "/recruitment/om-dashboard";
+  }
 
   return "/employee";
 }
@@ -98,22 +118,36 @@ export const ACCESS_RULES = [
   {
     paths: ["/dashboard/super-admin"],
     roles: ["super_admin"],
-    adminAccess: DASHBOARD_ACCESS.SUPER_ADMIN,
+    adminAccess: [ADMIN_ACCESS.SUPER_ADMIN],
   },
   {
     paths: ["/dashboard/admin"],
     roles: ["hr", "hr_admin", "executive", "super_admin"],
-    adminAccess: DASHBOARD_ACCESS.HR,
+    adminAccess: [
+      ADMIN_ACCESS.HR,
+      ADMIN_ACCESS.HR_ADMIN,
+      ADMIN_ACCESS.EXECUTIVE,
+      ADMIN_ACCESS.SUPER_ADMIN,
+    ],
   },
   {
     paths: ["/recruitment/ta-dashboard"],
     roles: ["ta", "executive", "super_admin"],
-    adminAccess: DASHBOARD_ACCESS.TA,
+    adminAccess: [
+      ADMIN_ACCESS.TA,
+      ADMIN_ACCESS.EXECUTIVE,
+      ADMIN_ACCESS.SUPER_ADMIN,
+    ],
   },
   {
     paths: ["/recruitment/om-dashboard"],
     roles: ["manager", "som", "executive", "super_admin"],
-    adminAccess: DASHBOARD_ACCESS.OM,
+    adminAccess: [
+      ADMIN_ACCESS.MANAGER,
+      ADMIN_ACCESS.SOM,
+      ADMIN_ACCESS.EXECUTIVE,
+      ADMIN_ACCESS.SUPER_ADMIN,
+    ],
   },
   {
     paths: ["/employee", "/employee/employee-data"],
