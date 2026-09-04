@@ -46,6 +46,11 @@ export const DASHBOARD_ACCESS = {
 };
 
 export function getAdminAccess(user = {}) {
+  const role = cleanRole(user?.role);
+  if (role === "super_admin" || role === "superadmin") {
+    return ADMIN_ACCESS.SUPER_ADMIN;
+  }
+
   const access = Number(
     user?.adminAccess ??
       user?.admin_access ??
@@ -67,14 +72,34 @@ export function getDefaultDashboardPath(user = {}) {
 
   if (role === "employee") return "/dashboard/employee";
 
+  if (role === "super_admin" || role === "superadmin") {
+    return "/dashboard/super-admin";
+  }
+
   const access = getAdminAccess(user);
 
   if (DASHBOARD_ACCESS.SUPER_ADMIN.includes(access)) {
     return "/dashboard/super-admin";
   }
-  if (DASHBOARD_ACCESS.HR.includes(access)) return "/dashboard/admin";
-  if (DASHBOARD_ACCESS.TA.includes(access)) return "/recruitment/ta-dashboard";
-  if (DASHBOARD_ACCESS.OM.includes(access)) return "/recruitment/om-dashboard";
+  if (
+    ["hr", "hr_admin", "executive"].includes(role) ||
+    DASHBOARD_ACCESS.HR.includes(access)
+  ) {
+    return "/dashboard/admin";
+  }
+  if (
+    role === "ta" ||
+    role === "talent_acquisition" ||
+    DASHBOARD_ACCESS.TA.includes(access)
+  ) {
+    return "/recruitment/ta-dashboard";
+  }
+  if (
+    ["om", "manager", "som"].includes(role) ||
+    DASHBOARD_ACCESS.OM.includes(access)
+  ) {
+    return "/recruitment/om-dashboard";
+  }
 
   return "/employee";
 }

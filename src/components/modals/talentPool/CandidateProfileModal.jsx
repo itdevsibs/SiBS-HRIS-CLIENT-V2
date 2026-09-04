@@ -7483,10 +7483,10 @@ export default function CandidateProfileModal() {
               </span>
 
               <div className="min-w-0">
-                <h2 className="truncate text-xs sm:text-sm xl:text-base font-extrabold uppercase tracking-wide text-white">
+                <h2 className="sibs-modal-title truncate text-white">
                   Talent Pool Candidate Profile
                 </h2>
-                <p className="truncate text-[9.5px] sm:text-[10.5px] xl:text-xs font-semibold text-blue-100">
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                   Comprehensive candidate filing and talent screening profile record
                 </p>
               </div>
@@ -7766,16 +7766,16 @@ export default function CandidateProfileModal() {
 
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="truncate text-sm font-extrabold text-white sm:text-base">
+                      <h2 className="sibs-modal-title truncate text-white">
                         Update Candidate Status
                       </h2>
 
-                      <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white/90 sm:text-[9px]">
+                      <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white/90">
                         Talent Pool Status
                       </span>
                     </div>
 
-                    <p className="mt-0.5 truncate text-[10px] font-semibold text-white/65 sm:text-xs">
+                    <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                       Update classification and recruitment stage for this candidate.
                     </p>
                   </div>

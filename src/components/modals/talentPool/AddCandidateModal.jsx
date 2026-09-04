@@ -4505,14 +4505,14 @@ export default function AddCandidateModal() {
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-sm 2xl:text-base font-extrabold text-white">
+                  <h2 className="sibs-modal-title truncate text-white">
                     Add Candidate
                   </h2>
                   <span className="rounded bg-sibs-orange px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-normal text-white">
                     Registration
                   </span>
                 </div>
-                <p className="mt-0.5 sibs-text-xs font-semibold leading-relaxed text-blue-100">
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                   Create a reusable candidate profile using database options and backend storage.
                 </p>
               </div>

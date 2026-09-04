@@ -333,6 +333,11 @@ export default function AdminDashboardPage() {
       if (location.pathname !== targetPath) {
         navigate(targetPath, { replace: true });
       }
+      return;
+    }
+
+    if (userRole === "super_admin" || userRole === "superadmin") {
+      navigate("/dashboard/super-admin", { replace: true });
     }
   }, [loading, user, isAdminSide, userRole, location.pathname, navigate]);
 
@@ -568,6 +573,7 @@ export default function AdminDashboardPage() {
           <AdminDashboardWelcome
             title={dashboardTitle}
             fullName={fullName}
+            badge={userRole === "super_admin" ? "Super Admin View" : "HR Admin View"}
             onOpenEmployees={() => navigate(EXISTING_ADMIN_ROUTES.employees)}
             onRefresh={() => refreshOverview({ manual: true, forceRefresh: true })}
             isManualRefreshing={overviewRefreshing}

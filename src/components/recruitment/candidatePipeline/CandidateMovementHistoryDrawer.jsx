@@ -904,7 +904,7 @@ export default function CandidateMovementHistoryDrawer({
                   </span>
                 </div>
 
-                <h3 className="mt-0.5 break-words text-base font-extrabold text-white sm:text-lg">
+                <h3 className="sibs-modal-title mt-0.5 break-words text-white">
                   Movement History
                 </h3>
               </div>
@@ -1180,7 +1180,7 @@ export default function CandidateMovementHistoryDrawer({
               <div className="flex min-w-0 items-center gap-2">
                 <FolderLock size={17} className="shrink-0 text-[#FF5C28]" />
                 <h3
-                  className="truncate text-xs font-extrabold uppercase tracking-wide"
+                  className="truncate font-heading text-sm font-bold text-white"
                   title={getMovementFileName(preview.file)}
                 >
                   {getMovementFileName(preview.file)}

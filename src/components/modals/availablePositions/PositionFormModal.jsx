@@ -927,7 +927,7 @@ export default function PositionFormModal({
 
                 <h2
                   id="available-position-modal-title"
-                  className="mt-0.5 truncate text-sm sm:text-base 2xl:text-lg font-extrabold leading-tight text-white"
+                  className="sibs-modal-title mt-0.5 truncate text-white"
                 >
                   {isRelinkMode
                     ? "Relink Available Position"
@@ -938,7 +938,7 @@ export default function PositionFormModal({
                         : "Register Available Position"}
                 </h2>
 
-                <p className="mt-0.5 truncate text-[10px] sm:text-xs font-semibold leading-4 text-slate-300">
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                   {isRelinkMode
                     ? "This position is disconnected from its Job Description. Select a new approved Job Description before continuing."
                     : isViewMode

@@ -402,7 +402,7 @@ function MetricCard({
           </p>
 
           <p
-            className={`mt-1.5 truncate text-xl 2xl:text-2xl font-black tabular-nums ${valueClassName}`}
+            className={`mt-1.5 truncate font-heading text-xl 2xl:text-2xl font-bold tabular-nums ${valueClassName}`}
           >
             {value}
           </p>
@@ -553,11 +553,11 @@ function ActionItemsSection({ item }) {
     <section className="mt-5 rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-base font-extrabold text-[#101828]">
+          <h3 className="sibs-modal-section-title text-[#042C51]">
             Action Items
           </h3>
 
-          <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+          <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
             Saved weekly action item details for this account.
           </p>
         </div>
@@ -683,11 +683,11 @@ function UpdateHeadcountModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="min-w-0">
-            <h2 className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+            <h2 className="sibs-modal-title truncate text-white">
               Required Headcount Update
             </h2>
 
-            <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
+            <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
               Submitted updates will stay pending until approved. The displayed
               required headcount will only change after approval.
             </p>
@@ -1202,7 +1202,7 @@ export default function ViewPlanModal(props = {}) {
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+              <h2 className="sibs-modal-title truncate text-white">
                 {item.account || "Account Plan"}
               </h2>
               <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
@@ -1210,7 +1210,7 @@ export default function ViewPlanModal(props = {}) {
               </span>
             </div>
 
-            <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
+            <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate">
               {item.cluster || "Unassigned Cluster"} ·{" "}
               {item.week || "Weekly Plan"}
             </p>
@@ -1350,11 +1350,11 @@ export default function ViewPlanModal(props = {}) {
           <section className="mt-5 rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-base font-extrabold text-[#101828]">
+                <h3 className="sibs-modal-section-title text-[#042C51]">
                   Hiring Plan Details
                 </h3>
 
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
                   Review the same Excel-based computation used in the Weekly
                   Hiring Accounts table.
                 </p>
@@ -1539,7 +1539,7 @@ export default function ViewPlanModal(props = {}) {
 
           <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
             <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
-              <h3 className="text-base font-extrabold text-[#101828]">
+              <h3 className="sibs-modal-section-title text-[#042C51]">
                 Risk Metrics
               </h3>
 
@@ -1567,7 +1567,7 @@ export default function ViewPlanModal(props = {}) {
             </section>
 
             <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
-              <h3 className="text-base font-extrabold text-[#101828]">
+              <h3 className="sibs-modal-section-title text-[#042C51]">
                 Weekly Support File
               </h3>
 
@@ -1588,7 +1588,7 @@ export default function ViewPlanModal(props = {}) {
 
           {previousWeekItem && (
             <section className="mt-5 rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
-              <h3 className="text-base font-extrabold text-[#101828]">
+              <h3 className="sibs-modal-section-title text-[#042C51]">
                 Previous Week Comparison
               </h3>
 

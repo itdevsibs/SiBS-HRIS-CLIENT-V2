@@ -135,10 +135,10 @@ function FormSection({ title, subtitle, icon: Icon, children }) {
       <div className="mb-3 2xl:mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
         <Icon size={16} className="mt-0.5 shrink-0 text-[#FF5C28]" />
         <div className="min-w-0">
-          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          <h3 className="sibs-modal-section-title text-[#042C51]">
             {title}
           </h3>
-          <p className="mt-0.5 text-xs font-semibold leading-5 text-[#667085]">
+          <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
             {subtitle}
           </p>
         </div>
@@ -255,19 +255,19 @@ export default function ApplicantLeadModal() {
                 <div className="flex flex-wrap items-center gap-2">
                   <h2
                     id="applicant-lead-modal-title"
-                    className="text-sm sm:text-base font-extrabold leading-5 text-white"
+                    className="sibs-modal-title truncate text-white"
                   >
                     {isEditMode
                       ? "Edit Applicant Lead"
                       : "Log New Applicant Lead"}
                   </h2>
 
-                  <span className="inline-flex rounded-full bg-[#FF5C28] px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-white">
+                  <span className="inline-flex rounded-full bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
                     Lead Intake
                   </span>
                 </div>
 
-                <p className="mt-0.5 sibs-text-xs font-medium text-blue-100">
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                   Capture preliminary inquiries before moving to Talent Pool.
                 </p>
               </div>

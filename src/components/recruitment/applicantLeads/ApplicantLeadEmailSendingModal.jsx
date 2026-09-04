@@ -37,7 +37,7 @@ export default function ApplicantLeadEmailSendingModal() {
             <Mail size={20} strokeWidth={2.2} />
           )}
         </div>
-        <h3 className="mt-4 text-base font-black text-[#042C51]">
+        <h3 className="mt-4 font-heading text-base sm:text-lg font-bold text-[#042C51]">
           {isSent ? "Email sent successfully" : "Sending application link"}
         </h3>
         <p className="mt-2 text-sm font-semibold leading-6 text-[#667085]">

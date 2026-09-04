@@ -37,7 +37,7 @@ export default function UpdateStatusModal() {
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="truncate text-xs 2xl:text-sm font-extrabold text-white">
+                  <h2 className="sibs-modal-title truncate text-white">
                     Update Candidate Status
                   </h2>
 
@@ -46,7 +46,7 @@ export default function UpdateStatusModal() {
                   </span>
                 </div>
 
-                <p className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-semibold text-blue-100">
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                   Update classification and recruitment stage for this candidate.
                 </p>
               </div>

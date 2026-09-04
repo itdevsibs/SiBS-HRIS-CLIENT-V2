@@ -108,7 +108,7 @@ const SEARCHABLE_MODULES = [
     description: "HRIS administrative dashboard",
     path: "/dashboard/admin",
     scope: "admin",
-    allowedUsers: ALL_ADMIN_ACCESS,
+    allowedUsers: [2, 3, 6],
     icon: LayoutDashboard,
     keywords: ["home", "hr dashboard", "admin dashboard"],
   },

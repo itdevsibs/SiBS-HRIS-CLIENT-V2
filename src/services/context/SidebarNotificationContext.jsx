@@ -10,6 +10,12 @@ import {
 
 import { useUser } from "./UserContext";
 import { getLeavesSummary } from "../../lib/axios/getLeaves";
+import { getAuditNotifications } from "../../lib/axios/getAuditNotifications";
+import {
+  canUseAuditNotifications,
+  formatAuditNotificationTime,
+  normalizeAuditNotificationsResponse,
+} from "../../lib/utils/notifications/auditNotificationHelpers";
 import {
   createSidebarNotificationState,
   getSidebarNotification,
@@ -47,52 +53,29 @@ const SEEDED_SIDEBAR_NOTIFICATIONS = [
   },
 ];
 
-const DEFAULT_SYSTEM_NOTIFICATIONS = [
-  {
-    id: "notif-interview-response",
-    category: "system",
-    type: "info",
-    title: "Candidate Interview Confirmed",
-    message: "POOCHII YENA LABUS responded and confirmed their Full Stack Developer interview.",
-    time: "25 mins ago",
-    timestamp: Date.now() - 25 * 60 * 1000,
-    actionLabel: "Open Pipeline",
-    actionPath: "/recruitment/candidate-pipeline",
-  },
-  {
-    id: "notif-onboarding-reqs",
-    category: "system",
-    type: "warning",
-    title: "Incomplete Onboarding Requirements",
-    message: "TOTODILE CROCONAW FERALIGATR has 2 missing onboarding requirements for Software Management.",
-    time: "1 hour ago",
-    timestamp: Date.now() - 60 * 60 * 1000,
-    actionLabel: "Review Profile",
-    actionPath: "/recruitment/onboarding",
-  },
-  {
-    id: "notif-requisition-approved",
-    category: "approvals",
-    type: "action",
-    title: "New Requisition Submitted",
-    message: "A new requisition request for Full Stack Developer was submitted for review.",
-    time: "3 hours ago",
-    timestamp: Date.now() - 3 * 60 * 60 * 1000,
-    actionLabel: "View Requisition",
-    actionPath: "/recruitment/hiring-needs",
-  },
-  {
-    id: "notif-attendance-sync",
-    category: "system",
-    type: "info",
-    title: "Biometric Attendance Synced",
-    message: "Daily biometric attendance synchronized successfully with 14 exceptions flagged.",
-    time: "5 hours ago",
-    timestamp: Date.now() - 5 * 60 * 60 * 1000,
-    actionLabel: "View Attendance",
-    actionPath: "/attendance",
-  },
-];
+export const DEFAULT_SYSTEM_NOTIFICATIONS = [];
+
+function getActionLabelByModule(module = "") {
+  switch (module) {
+    case "candidate-pipeline":
+      return "Open Pipeline";
+    case "onboarding":
+      return "Review Onboarding";
+    case "hiring-needs":
+      return "View Requisition";
+    case "attendance":
+      return "View Attendance";
+    case "leaves":
+      return "Review Leaves";
+    case "job-description":
+      return "View Job Description";
+    case "employees":
+    case "employee-profile":
+      return "View Employee";
+    default:
+      return "View Details";
+  }
+}
 
 function getUserNotificationId(user) {
   return (
@@ -150,6 +133,7 @@ export function SidebarNotificationProvider({ children }) {
   const [dismissedNotifIds, setDismissedNotifIds] = useState({});
   const [dynamicNotifications, setDynamicNotifications] = useState([]);
   const [leavePendingNotification, setLeavePendingNotification] = useState(null);
+  const [auditNotifications, setAuditNotifications] = useState([]);
 
   useEffect(() => {
     setLastSeen(readStorage(sidebarStorageKey));
@@ -221,6 +205,70 @@ export function SidebarNotificationProvider({ children }) {
     };
   }, [user, userNotificationId]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshAuditNotifications() {
+      if (!user) {
+        if (!cancelled) setAuditNotifications([]);
+        return;
+      }
+
+      if (!canUseAuditNotifications(user)) {
+        if (!cancelled) setAuditNotifications([]);
+        return;
+      }
+
+      try {
+        const payload = await getAuditNotifications({ limit: 20 });
+        if (cancelled) return;
+
+        const normalized = normalizeAuditNotificationsResponse(payload);
+        const mapped = normalized.map((item) => {
+          const isApproval =
+            ["approval-request", "hiring-needs", "job-description", "leaves"].includes(item.module) ||
+            ["APPROVE", "SUBMIT", "PENDING", "STATUS_CHANGE"].includes(item.action);
+
+          return {
+            id: item.id || `audit-${item.auditLogId}`,
+            category: isApproval ? "approvals" : "system",
+            type:
+              item.tone === "danger" || item.tone === "warning"
+                ? "warning"
+                : item.tone === "action"
+                  ? "action"
+                  : "info",
+            title: item.title,
+            message: item.message,
+            time: formatAuditNotificationTime(item.occurredAt),
+            timestamp: item.occurredAt ? new Date(item.occurredAt).getTime() : Date.now(),
+            actionLabel: getActionLabelByModule(item.module),
+            actionPath: item.targetPath || "/approval-request",
+          };
+        });
+
+        if (!cancelled) {
+          setAuditNotifications(mapped);
+        }
+      } catch (err) {
+        console.warn("[SidebarNotificationContext] live audit notifications failed:", err?.message);
+        if (!cancelled) setAuditNotifications([]);
+      }
+    }
+
+    refreshAuditNotifications();
+
+    const interval = window.setInterval(refreshAuditNotifications, 60_000);
+    const handleFocus = () => refreshAuditNotifications();
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [user]);
+
   const setSidebarNotification = useCallback((key, notification) => {
     if (!key) return;
 
@@ -284,6 +332,7 @@ export function SidebarNotificationProvider({ children }) {
   const markAllAsRead = useCallback(() => {
     const all = [
       ...(leavePendingNotification ? [leavePendingNotification] : []),
+      ...auditNotifications,
       ...DEFAULT_SYSTEM_NOTIFICATIONS,
       ...dynamicNotifications,
     ];
@@ -293,7 +342,7 @@ export function SidebarNotificationProvider({ children }) {
     });
     setReadNotifIds(next);
     writeStorage(readNotifsStorageKey, next);
-  }, [dynamicNotifications, leavePendingNotification, readNotifsStorageKey]);
+  }, [dynamicNotifications, leavePendingNotification, auditNotifications, readNotifsStorageKey]);
 
   // Dismiss a system notification
   const dismissNotification = useCallback(
@@ -319,6 +368,7 @@ export function SidebarNotificationProvider({ children }) {
     const combined = [
       ...dynamicNotifications,
       ...(leavePendingNotification ? [leavePendingNotification] : []),
+      ...auditNotifications,
       ...DEFAULT_SYSTEM_NOTIFICATIONS,
     ];
     return combined
@@ -327,7 +377,7 @@ export function SidebarNotificationProvider({ children }) {
         ...n,
         isRead: Boolean(readNotifIds[n.id]),
       }));
-  }, [dynamicNotifications, leavePendingNotification, dismissedNotifIds, readNotifIds]);
+  }, [dynamicNotifications, leavePendingNotification, auditNotifications, dismissedNotifIds, readNotifIds]);
 
   // Total unread count
   const unreadCount = useMemo(

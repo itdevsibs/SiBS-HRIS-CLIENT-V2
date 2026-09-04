@@ -919,21 +919,20 @@ export default function AddJobDescription({
                 <div className="flex flex-wrap items-center gap-2">
                   <h2
                     id="add-job-description-modal-title"
-                    className="text-sm sm:text-base 2xl:text-lg font-extrabold text-white"
+                    className="sibs-modal-title truncate text-white"
                   >
                     Add Job Description
                   </h2>
-                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] font-extrabold uppercase text-white">
+                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
                     Specification
                   </span>
                 </div>
 
                 <p
                   id="add-job-description-modal-description"
-                  className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-4 text-slate-300"
+                  className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip"
                 >
-                  Create or update job description specifications for hiring
-                  requirements.
+                  Create or update job description specifications for hiring requirements.
                 </p>
               </div>
             </div>
