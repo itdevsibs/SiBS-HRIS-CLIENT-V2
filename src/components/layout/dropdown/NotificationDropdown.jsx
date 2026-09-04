@@ -118,8 +118,11 @@ export default function NotificationDropdown() {
   const handleActionClick = (notification) => {
     markAsRead?.(notification.id);
     setOpen(false);
+
     if (notification.actionPath) {
-      navigate(notification.actionPath);
+      navigate(notification.actionPath, {
+        state: notification.actionState || null,
+      });
     }
   };
 
@@ -235,13 +238,46 @@ export default function NotificationDropdown() {
                 filteredNotifications.map((notif) => {
                   const categoryMeta = getCategoryIcon(notif.type, notif.category);
                   const Icon = categoryMeta.icon;
+                  const isWholeCardAction = Boolean(notif.actionPath);
+
+                  function handleNotificationCardClick() {
+                    if (isWholeCardAction) {
+                      handleActionClick(notif);
+                      return;
+                    }
+
+                    markAsRead?.(notif.id);
+                  }
+
+                  function handleNotificationCardKeyDown(event) {
+                    if (!isWholeCardAction) return;
+
+                    if (event.key !== "Enter" && event.key !== " ") {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    handleActionClick(notif);
+                  }
 
                   return (
                     <article
                       key={notif.id}
-                      onClick={() => markAsRead?.(notif.id)}
+                      role={isWholeCardAction ? "button" : undefined}
+                      tabIndex={isWholeCardAction ? 0 : undefined}
+                      aria-label={
+                        isWholeCardAction
+                          ? `${notif.title || "Notification"} - open related page`
+                          : undefined
+                      }
+                      onClick={handleNotificationCardClick}
+                      onKeyDown={handleNotificationCardKeyDown}
                       className={`group relative flex items-start gap-3 p-3.5 transition-colors hover:bg-[#FFF8F5] cursor-pointer ${
                         notif.isRead ? "bg-white opacity-85" : "bg-[#F4F7FA]/60"
+                      } ${
+                        isWholeCardAction
+                          ? "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
+                          : ""
                       }`}
                     >
                       {/* Icon */}
@@ -270,20 +306,24 @@ export default function NotificationDropdown() {
                           {notif.message}
                         </p>
 
-                        {/* Action CTA */}
-                        {notif.actionLabel ? (
+                        {/* Action CTA / Dismiss */}
+                        {notif.actionLabel || isWholeCardAction ? (
                           <div className="mt-2 flex items-center justify-between">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleActionClick(notif);
-                              }}
-                              className="inline-flex items-center gap-1 rounded bg-orange-50 px-2 py-0.5 sibs-text-micro font-extrabold text-sibs-orange transition hover:bg-sibs-orange hover:text-white"
-                            >
-                              <span>{notif.actionLabel}</span>
-                              <ExternalLink size={10} />
-                            </button>
+                            {!isWholeCardAction && notif.actionLabel ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleActionClick(notif);
+                                }}
+                                className="inline-flex items-center gap-1 rounded bg-orange-50 px-2 py-0.5 sibs-text-micro font-extrabold text-sibs-orange transition hover:bg-sibs-orange hover:text-white"
+                              >
+                                <span>{notif.actionLabel}</span>
+                                <ExternalLink size={10} />
+                              </button>
+                            ) : (
+                              <span />
+                            )}
 
                             <button
                               type="button"
@@ -292,7 +332,8 @@ export default function NotificationDropdown() {
                                 dismissNotification?.(notif.id);
                               }}
                               title="Dismiss"
-                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity"
+                              aria-label={`Dismiss ${notif.title || "notification"}`}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity focus:opacity-100"
                             >
                               <X size={12} />
                             </button>

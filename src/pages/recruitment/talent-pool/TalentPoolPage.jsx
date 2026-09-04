@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import {
   ExternalLink,
   Plus,
@@ -26,7 +30,66 @@ import {
   TALENT_POOL_TABS,
 } from "../../../lib/utils/talentPool/talentPoolTabs";
 
+function cleanIdentityValue(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function getCandidateNotificationIdentity(candidate = {}) {
+  return {
+    id: cleanIdentityValue(candidate.id || candidate.rawId || candidate.raw_id),
+    pipelineId: cleanIdentityValue(
+      candidate.pipelineId ||
+        candidate.pipeline_id ||
+        candidate.pipelineDbId ||
+        candidate.pipeline_db_id ||
+        candidate.candidatePipelineId ||
+        candidate.candidate_pipeline_id ||
+        candidate.pipelineCandidate?.id ||
+        candidate.pipelineCandidate?.dbId,
+    ),
+    candidateId: cleanIdentityValue(
+      candidate.candidateId || candidate.candidate_id,
+    ),
+    applicationId: cleanIdentityValue(
+      candidate.applicationId ||
+        candidate.application_id ||
+        candidate.candidateApplicationId ||
+        candidate.candidate_application_id,
+    ),
+    email: cleanIdentityValue(candidate.email || candidate.candidateEmail),
+    name: cleanIdentityValue(
+      candidate.name || candidate.fullName || candidate.full_name,
+    ),
+  };
+}
+
+function matchesNotificationCandidate(candidate = {}, target = {}) {
+  const current = getCandidateNotificationIdentity(candidate);
+
+  const expected = {
+    id: cleanIdentityValue(target.id),
+    pipelineId: cleanIdentityValue(target.pipelineId),
+    candidateId: cleanIdentityValue(target.candidateId),
+    applicationId: cleanIdentityValue(target.applicationId),
+    email: cleanIdentityValue(target.email),
+    name: cleanIdentityValue(target.name),
+  };
+
+  return Boolean(
+    (expected.pipelineId && expected.pipelineId === current.pipelineId) ||
+      (expected.candidateId && expected.candidateId === current.candidateId) ||
+      (expected.applicationId &&
+        expected.applicationId === current.applicationId) ||
+      (expected.id && expected.id === current.id) ||
+      (expected.email && expected.email === current.email) ||
+      (expected.name && expected.name === current.name),
+  );
+}
+
 export default function TalentPoolPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const {
     openPublicForm,
     openAddCandidateModal,
@@ -53,6 +116,44 @@ export default function TalentPoolPage() {
   useEffect(() => {
     setActiveTab(requestedTab);
   }, [requestedTab]);
+
+  useEffect(() => {
+    const notificationState = location.state;
+
+    if (
+      notificationState?.source !==
+      "incomplete-requirements-notification"
+    ) {
+      return;
+    }
+
+    setActiveTab(TALENT_POOL_TABS.INCOMPLETE_REQUIREMENTS);
+
+    if (isLoading) return;
+
+    const targetIdentity =
+      notificationState.candidateIdentity || {};
+
+    const matchedCandidate = candidateList.find((candidate) =>
+      matchesNotificationCandidate(candidate, targetIdentity),
+    );
+
+    if (matchedCandidate) {
+      setSelectedCandidate(matchedCandidate);
+    }
+
+    navigate(location.pathname, {
+      replace: true,
+      state: null,
+    });
+  }, [
+    candidateList,
+    isLoading,
+    location.pathname,
+    location.state,
+    navigate,
+    setSelectedCandidate,
+  ]);
 
   const tabCounts = useMemo(() => ({
     [TALENT_POOL_TABS.ALL]: filterTalentPoolCandidatesForTab(

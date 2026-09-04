@@ -124,6 +124,19 @@ export function formatDisplayDate(value) {
   });
 }
 
+export function formatLongDisplayDate(value) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+
+  return parsed.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function getRegularizationDate(employee) {
   const explicitDate = firstValue(
     employee?.regularizationDate,

@@ -24,6 +24,10 @@ import {
 } from "lucide-react";
 
 import { formatDate } from "../../layout/FormatDateTime";
+import {
+  convertHeicBlobToJpeg,
+  isHeicFileName,
+} from "../../../lib/utils/heicBrowserPreview";
 
 const RESIGNATION_TYPES = ["Formal", "Immediate"];
 
@@ -273,8 +277,14 @@ function getProfileImageUrl(item) {
 
 function ProfileAvatar({ item, size = "md" }) {
   const sibsId = getEmployeeSibsId(item);
+  const anchorRef = useRef(null);
   const [fetchedEmployee, setFetchedEmployee] = useState(null);
   const [imageFailed, setImageFailed] = useState(false);
+  const [preview, setPreview] = useState({
+    open: false,
+    top: 0,
+    left: 0,
+  });
 
   const mergedItem = {
     ...(item || {}),
@@ -291,6 +301,10 @@ function ProfileAvatar({ item, size = "md" }) {
 
   useEffect(() => {
     setImageFailed(false);
+    setPreview((current) => ({
+      ...current,
+      open: false,
+    }));
   }, [imageUrl, sibsId]);
 
   useEffect(() => {
@@ -330,20 +344,66 @@ function ProfileAvatar({ item, size = "md" }) {
     };
   }, [shouldFetchProfile, sibsId]);
 
-  function handleOpenProfile(e) {
-    e.stopPropagation();
+  function showProfilePreview() {
+    const anchor = anchorRef.current;
 
-    if (!imageUrl || imageFailed) return;
+    if (
+      !anchor ||
+      !imageUrl ||
+      imageFailed ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
 
-    window.open(imageUrl, "_blank", "noopener,noreferrer");
+    const rect = anchor.getBoundingClientRect();
+    const previewSize = 176;
+    const gap = 10;
+    const viewportPadding = 8;
+
+    let left = rect.right + gap;
+
+    if (
+      left + previewSize >
+      window.innerWidth - viewportPadding
+    ) {
+      left = rect.left - previewSize - gap;
+    }
+
+    left = Math.max(
+      viewportPadding,
+      Math.min(
+        left,
+        window.innerWidth -
+          previewSize -
+          viewportPadding,
+      ),
+    );
+
+    const top = Math.max(
+      viewportPadding,
+      Math.min(
+        rect.top +
+          rect.height / 2 -
+          previewSize / 2,
+        window.innerHeight -
+          previewSize -
+          viewportPadding,
+      ),
+    );
+
+    setPreview({
+      open: true,
+      top,
+      left,
+    });
   }
 
-  function handleProfileKeyDown(e) {
-    if (e.key !== "Enter" && e.key !== " ") return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    handleOpenProfile(e);
+  function hideProfilePreview() {
+    setPreview((current) => ({
+      ...current,
+      open: false,
+    }));
   }
 
   const sizeClass =
@@ -359,7 +419,10 @@ function ProfileAvatar({ item, size = "md" }) {
         src={imageUrl}
         alt="Profile"
         className="h-full w-full object-cover"
-        onError={() => setImageFailed(true)}
+        onError={() => {
+          setImageFailed(true);
+          hideProfilePreview();
+        }}
       />
     ) : (
       <div className="flex h-full w-full items-center justify-center text-sibs-primary-1">
@@ -367,27 +430,42 @@ function ProfileAvatar({ item, size = "md" }) {
       </div>
     );
 
-  if (imageUrl && !imageFailed) {
-    return (
+  return (
+    <>
       <div
-        role="button"
-        tabIndex={0}
-        onClick={handleOpenProfile}
-        onKeyDown={handleProfileKeyDown}
-        title="Open profile picture"
-        className={`group flex ${sizeClass} shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm outline-none transition hover:scale-[1.03] hover:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+        ref={anchorRef}
+        onMouseEnter={showProfilePreview}
+        onMouseLeave={hideProfilePreview}
+        className={`flex ${sizeClass} shrink-0 cursor-default items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm`}
       >
         {avatarContent}
       </div>
-    );
-  }
 
-  return (
-    <div
-      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm`}
-    >
-      {avatarContent}
-    </div>
+      {preview.open &&
+      imageUrl &&
+      !imageFailed &&
+      typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="pointer-events-none fixed z-[100000] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white p-1.5 shadow-2xl"
+              style={{
+                top: preview.top,
+                left: preview.left,
+                width: 176,
+                height: 176,
+              }}
+              aria-hidden="true"
+            >
+              <img
+                src={imageUrl}
+                alt=""
+                className="h-full w-full rounded-xl object-cover"
+              />
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 
@@ -482,10 +560,15 @@ function getUploadedFileUrl(item) {
   return "";
 }
 
-function FileTypeIcon({ filename }) {
-  const ext = String(filename || "").split(".").pop()?.toLowerCase() || "";
+function isPreviewableImageFileName(filename = "") {
+  const ext =
+    String(filename || "")
+      .trim()
+      .split(".")
+      .pop()
+      ?.toLowerCase() || "";
 
-  const isImage = [
+  return [
     "jpg",
     "jpeg",
     "png",
@@ -495,6 +578,12 @@ function FileTypeIcon({ filename }) {
     "heic",
     "heif",
   ].includes(ext);
+}
+
+function FileTypeIcon({ filename }) {
+  const ext = String(filename || "").split(".").pop()?.toLowerCase() || "";
+
+  const isImage = isPreviewableImageFileName(filename);
 
   const isPdf = ext === "pdf";
   const isExcel = ["xls", "xlsx", "csv"].includes(ext);
@@ -653,7 +742,7 @@ function EmployeeDropdownPortal({ open, anchorRef, children, onClose }) {
       const rect = anchorRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
 
-      const dropdownWidth = Math.min(460, viewportWidth - 32);
+      const dropdownWidth = Math.min(rect.width, viewportWidth - 32);
       const preferredLeft = rect.left;
 
       const safeLeft = Math.min(
@@ -940,8 +1029,10 @@ function CalendarPopover({
 function EmployeePickerField({
   label,
   selectedSibsId,
+  selectedEmployeeName = "",
   employees = [],
   loading = false,
+  error = "",
   search = "",
   open = false,
   onOpenChange,
@@ -949,96 +1040,147 @@ function EmployeePickerField({
   onSelect,
 }) {
   const anchorRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const selectedLabel = selectedSibsId
+    ? `${selectedSibsId}${
+        selectedEmployeeName ? ` - ${selectedEmployeeName}` : ""
+      }`
+    : "";
+
+  const inputValue = open ? search || selectedLabel : selectedLabel;
+
+  function handleFocus(event) {
+    onOpenChange?.(true);
+
+    if (selectedLabel) {
+      window.requestAnimationFrame(() => {
+        event.currentTarget.select();
+      });
+    }
+  }
+
+  function handleInputChange(event) {
+    const nextValue = event.target.value;
+    onSearchChange?.(nextValue);
+    onOpenChange?.(true);
+  }
+
+  function handleToggle() {
+    onOpenChange?.(!open);
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  }
 
   return (
     <div className="relative min-w-0">
-      <label className="mb-2 block text-sm font-bold text-sibs-primary-1">
+      <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wide text-[#52637A]">
         {label}
       </label>
 
-      <button
+      <div
         ref={anchorRef}
-        type="button"
-        onClick={() => onOpenChange?.(!open)}
-        className={`flex ${FIELD_HEIGHT} w-full min-w-0 items-center justify-between gap-3 ${EDGE} ${FIELD_BORDER} bg-white px-4 text-left text-sm font-bold outline-none transition ${
+        className={`relative flex ${FIELD_HEIGHT} w-full min-w-0 items-center ${EDGE} ${FIELD_BORDER} bg-white shadow-sm transition ${
           open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
+            ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
+            : "hover:border-[#FF5C28]/40"
         }`}
       >
-        <span
-          className={`block min-w-0 flex-1 truncate whitespace-nowrap ${
-            selectedSibsId ? "text-sibs-primary-1" : "text-gray-400"
-          }`}
-          title={selectedSibsId || "Select employee under your management"}
-        >
-          {selectedSibsId || "Select employee under your management"}
-        </span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
+        <Search
+          size={17}
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2F6CA5]"
         />
-      </button>
+
+        <input
+          ref={inputRef}
+          type="search"
+          value={inputValue}
+          onFocus={handleFocus}
+          onChange={handleInputChange}
+          placeholder="Search SIBS ID or employee name..."
+          autoComplete="off"
+          className="h-full min-w-0 flex-1 rounded-[10px] border-0 bg-transparent pl-10 pr-11 text-sm font-bold text-[#042C51] outline-none placeholder:text-[#98A2B3]"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+        />
+
+        <button
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={handleToggle}
+          className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#042C51] transition hover:bg-[#F2F6FA]"
+          aria-label={open ? "Close employee results" : "Open employee results"}
+        >
+          <ChevronDown
+            size={18}
+            className={`transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
 
       <EmployeeDropdownPortal
         open={open}
         anchorRef={anchorRef}
         onClose={() => onOpenChange?.(false)}
       >
-        <div className="sticky top-0 z-10 border-b border-[#E6ECF2] bg-white p-3">
-          <div className="relative">
-            <Search
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-            />
-
-            <input
-              value={search}
-              onChange={(e) => onSearchChange?.(e.target.value)}
-              placeholder="Search SIBS ID or employee name..."
-              className={`h-10 ${FIELD_BASE} pl-9`}
-            />
-          </div>
-        </div>
-
-        <div className="max-h-[320px] overflow-y-auto py-2 sibs-scrollbar">
+        <div className="max-h-[300px] overflow-y-auto py-1.5 sibs-scrollbar" role="listbox">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-bold text-sibs-primary-1">
-              <Loader2 size={17} className="animate-spin" />
+            <div className="flex items-center justify-center gap-2 px-4 py-7 text-sm font-bold text-[#042C51]">
+              <Loader2 size={17} className="animate-spin text-[#FF5C28]" />
               Loading employees...
             </div>
+          ) : error ? (
+            <div className="mx-3 my-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle size={17} className="mt-0.5 shrink-0 text-red-600" />
+                <div>
+                  <p className="text-xs font-extrabold text-red-700">
+                    Unable to load employees
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold leading-5 text-red-600">
+                    {error}
+                  </p>
+                </div>
+              </div>
+            </div>
           ) : employees.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm font-bold text-sibs-tertiary-5">
-              No employees found under your management.
+            <div className="px-4 py-7 text-center">
+              <UserRound size={22} className="mx-auto text-[#98A2B3]" />
+              <p className="mt-2 text-sm font-extrabold text-[#52637A]">
+                {search.trim()
+                  ? "No employees match your search."
+                  : "No active employees available within your access scope."}
+              </p>
             </div>
           ) : (
             employees.map((employee) => (
               <button
                 key={employee.sibsId}
                 type="button"
+                role="option"
+                aria-selected={selectedSibsId === employee.sibsId}
                 onClick={() => onSelect?.(employee)}
-                className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                className={`flex w-full items-center gap-3 border-b border-[#F0F4F8] px-4 py-3 text-left text-sm transition last:border-b-0 ${
                   selectedSibsId === employee.sibsId
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                    ? "bg-[#FFF7F3] text-[#042C51]"
+                    : "text-[#042C51] hover:bg-[#F8FAFC]"
                 }`}
               >
                 <ProfileAvatar item={employee} size="sm" />
 
                 <div className="min-w-0 flex-1">
-                  <span className="block truncate font-bold">
-                    {employee.sibsId || "N/A"} -{" "}
-                    {employee.fullName || "Unnamed Employee"}
+                  <span className="block truncate font-extrabold">
+                    {employee.sibsId || "N/A"} - {employee.fullName || "Unnamed Employee"}
                   </span>
 
-                  <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
+                  <span className="mt-1 block truncate text-xs font-semibold text-[#667085]">
                     {employee.department || "No department"}
                     {employee.account ? ` · ${employee.account}` : ""}
                   </span>
                 </div>
+
+                {selectedSibsId === employee.sibsId ? (
+                  <CheckCircle2 size={17} className="shrink-0 text-emerald-600" />
+                ) : null}
               </button>
             ))
           )}
@@ -1556,11 +1698,11 @@ export function ResignationManagementModal({
   submitting,
   managedEmployees = [],
   employeePickerLoading = false,
+  employeePickerError = "",
   employeePickerSearch = "",
   employeePickerOpen = false,
   onEmployeePickerOpenChange,
   onEmployeePickerSearchChange,
-  onSearchManagedEmployees,
   onSelectManagedEmployee,
   onClose,
   onChange,
@@ -1637,209 +1779,224 @@ export function ResignationManagementModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="resignation-management-title"
-      data-layout="compact-resignation-management-v2"
+      data-layout="resignation-management-v3"
       className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1100] flex items-center justify-center p-3 font-jakarta sm:p-4"
     >
       <form
         onSubmit={onSubmit}
-        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-[680px] flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white shadow-[0_24px_70px_rgba(4,44,81,0.30)] sm:max-h-[92vh]"
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-[760px] flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white shadow-[0_24px_70px_rgba(4,44,81,0.30)] sm:max-h-[92vh]"
       >
-        <header className="shrink-0 border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h2
-                id="resignation-management-title"
-                className="truncate text-xl font-extrabold tracking-tight text-sibs-primary-1 sm:text-[22px]"
-              >
-                Submit Resignation
-              </h2>
+        <header className="shrink-0 bg-[#06345B] px-5 py-4 text-white sm:px-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+                <FileText size={20} />
+              </span>
 
-              <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                Select an employee and enter the resignation request details.
-              </p>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2
+                    id="resignation-management-title"
+                    className="truncate text-lg font-extrabold tracking-tight text-white sm:text-xl"
+                  >
+                    Submit Resignation
+                  </h2>
+                  <span className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white/90">
+                    Core HR
+                  </span>
+                </div>
+
+                <p className="mt-0.5 truncate text-xs font-semibold text-blue-100 sm:text-sm">
+                  Select an employee and complete the resignation request details.
+                </p>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#98A2B3] transition hover:bg-[#F2F6FA] hover:text-sibs-primary-1 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-white transition hover:bg-white/20 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
               aria-label="Close resignation modal"
             >
-              <X size={20} />
+              <X size={19} />
             </button>
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sibs-scrollbar sm:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#F5F8FC] px-4 py-4 sibs-scrollbar sm:px-5 sm:py-5">
           <div className="space-y-4">
-            <EmployeePickerField
-              label="Employee SIBS ID *"
-              selectedSibsId={form?.employeeSibsId}
-              employees={managedEmployees}
-              loading={employeePickerLoading}
-              search={employeePickerSearch}
-              open={employeePickerOpen}
-              onOpenChange={onEmployeePickerOpenChange}
-              onSearchChange={(value) => {
-                onEmployeePickerSearchChange?.(value);
-                onSearchManagedEmployees?.(value);
-              }}
-              onSelect={onSelectManagedEmployee}
-            />
+            <section className="rounded-2xl border border-[#DFE7F0] bg-white p-4 shadow-sm sm:p-5">
+              <div className="mb-4 border-b border-[#E6ECF2] pb-3">
+                <h3 className="text-sm font-extrabold text-[#042C51]">
+                  Employee Selection
+                </h3>
+                <p className="mt-1 text-xs font-semibold text-[#667085]">
+                  Search by SIBS ID or employee name. Only active employees available within your HRIS access scope are listed.
+                </p>
+              </div>
 
-            {hasSelectedEmployee ? (
-              <section className="flex min-w-0 items-center gap-3 rounded-xl border border-[#E1E8F0] bg-[#F8FAFC] px-4 py-3">
-                <ProfileAvatar item={selectedEmployee} size="md" />
+              <EmployeePickerField
+                label="Employee SIBS ID *"
+                selectedSibsId={form?.employeeSibsId}
+                selectedEmployeeName={form?.employeeName}
+                employees={managedEmployees}
+                loading={employeePickerLoading}
+                error={employeePickerError}
+                search={employeePickerSearch}
+                open={employeePickerOpen}
+                onOpenChange={onEmployeePickerOpenChange}
+                onSearchChange={onEmployeePickerSearchChange}
+                onSelect={onSelectManagedEmployee}
+              />
 
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Selected Employee
+              {hasSelectedEmployee ? (
+                <div className="mt-3 flex min-w-0 items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
+                  <ProfileAvatar item={selectedEmployee} size="md" />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">
+                      Selected Employee
+                    </p>
+                    <p className="mt-0.5 truncate text-sm font-extrabold text-[#042C51]">
+                      {form?.employeeName}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs font-semibold text-[#667085]">
+                      {form?.employeeSibsId}
+                      {form?.department ? ` · ${form.department}` : ""}
+                      {form?.account ? ` · ${form.account}` : ""}
+                    </p>
+                  </div>
+
+                  <CheckCircle2 size={19} className="shrink-0 text-emerald-600" />
+                </div>
+              ) : (
+                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-800">
+                  Select an employee first. The remaining resignation fields will become available after selection.
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl border border-[#DFE7F0] bg-white p-4 shadow-sm sm:p-5">
+              <div className="mb-4 border-b border-[#E6ECF2] pb-3">
+                <h3 className="text-sm font-extrabold text-[#042C51]">
+                  Resignation Details
+                </h3>
+                <p className="mt-1 text-xs font-semibold text-[#667085]">
+                  Complete the resignation type, dates, email attachment, summary, and management remarks.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <ModalSelectField
+                  label="Type of Resignation *"
+                  value={form?.resignationType}
+                  options={RESIGNATION_TYPES}
+                  placeholder="Select type"
+                  onSelect={handleTypeSelect}
+                  disabled={detailsDisabled}
+                />
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormDateField
+                    label="Resignation Date *"
+                    name="resignationDate"
+                    value={form?.resignationDate}
+                    onChange={handleResignationDateChange}
+                    disabled={detailsDisabled}
+                    readOnly
+                    placeholder="Select resignation date"
+                  />
+
+                  <FormDateField
+                    label="Last Working Date *"
+                    name="lastWorkingDate"
+                    value={form?.lastWorkingDate}
+                    onChange={onChange}
+                    disabled={detailsDisabled}
+                    readOnly={isFormal}
+                    minDate={isImmediate ? getImmediateMinDate(form?.resignationDate) : ""}
+                    maxDate={isImmediate ? getImmediateMaxDate(form?.resignationDate) : ""}
+                    placeholder="Select last working date"
+                  />
+                </div>
+
+                {isFormal ? (
+                  <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700">
+                    Formal resignation automatically sets the last working date to 30 days after the resignation date.
                   </p>
+                ) : null}
 
-                  <p className="mt-0.5 truncate text-sm font-extrabold text-[#042C51]">
-                    {form?.employeeName}
+                {isImmediate ? (
+                  <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700">
+                    Immediate resignation allows a last working date from 1 to 29 days after the resignation date.
                   </p>
+                ) : null}
 
-                  <p className="mt-0.5 truncate text-xs font-semibold text-[#667085]">
-                    {form?.employeeSibsId}
-                    {form?.department ? ` · ${form.department}` : ""}
-                    {form?.account ? ` · ${form.account}` : ""}
+                <div>
+                  <FormFieldLabel label="Email Attachment *" />
+
+                  <label
+                    className={`flex min-h-[50px] items-center justify-between gap-3 rounded-[10px] border border-[#D0D5DD] px-3.5 py-2.5 text-sm transition ${
+                      detailsDisabled
+                        ? "cursor-not-allowed bg-[#F8FAFC] opacity-70"
+                        : "cursor-pointer bg-white hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5]"
+                    }`}
+                  >
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <Paperclip size={17} className="shrink-0 text-[#2F6CA5]" />
+                      <span
+                        className={`truncate text-sm font-semibold ${
+                          form?.uploadedFile?.name ? "text-[#344054]" : "text-[#667085]"
+                        }`}
+                      >
+                        {form?.uploadedFile?.name ||
+                          (detailsDisabled
+                            ? "Select employee before uploading file"
+                            : "Choose resignation email attachment")}
+                      </span>
+                    </span>
+
+                    <span className="shrink-0 rounded-lg bg-[#042C51] px-3 py-1.5 text-xs font-extrabold text-white">
+                      Browse
+                    </span>
+
+                    <input
+                      type="file"
+                      name="uploadedFile"
+                      onChange={onChange}
+                      disabled={detailsDisabled}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,.heif,image/heic,image/heif"
+                    />
+                  </label>
+
+                  <p className="mt-1.5 text-[10px] font-medium text-[#667085]">
+                    Accepted: PDF, DOC, DOCX, JPG, JPEG, PNG, HEIC, HEIF · Maximum 15 MB
                   </p>
                 </div>
 
-                <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold text-emerald-700 sm:inline-flex">
-                  <CheckCircle2 size={12} />
-                  Selected
-                </span>
-              </section>
-            ) : (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-800">
-                Select an employee first. The remaining resignation fields will
-                become available after selection.
-              </div>
-            )}
-
-            <ModalSelectField
-              label="Type of Resignation *"
-              value={form?.resignationType}
-              options={RESIGNATION_TYPES}
-              placeholder="Select type"
-              onSelect={handleTypeSelect}
-              disabled={detailsDisabled}
-            />
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormDateField
-                label="Resignation Date *"
-                name="resignationDate"
-                value={form?.resignationDate}
-                onChange={handleResignationDateChange}
-                disabled={detailsDisabled}
-                readOnly
-                placeholder="Select resignation date"
-              />
-
-              <FormDateField
-                label="Last Working Date *"
-                name="lastWorkingDate"
-                value={form?.lastWorkingDate}
-                onChange={onChange}
-                disabled={detailsDisabled}
-                readOnly={isFormal}
-                minDate={
-                  isImmediate ? getImmediateMinDate(form?.resignationDate) : ""
-                }
-                maxDate={
-                  isImmediate ? getImmediateMaxDate(form?.resignationDate) : ""
-                }
-                placeholder="Select last working date"
-              />
-            </div>
-
-            {isFormal ? (
-              <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700">
-                Formal resignation automatically sets the last working date to
-                30 days after the resignation date.
-              </p>
-            ) : null}
-
-            {isImmediate ? (
-              <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700">
-                Immediate resignation allows a last working date from 1 to 29
-                days after the resignation date.
-              </p>
-            ) : null}
-
-            <div>
-              <FormFieldLabel label="Email Attachment *" />
-
-              <label
-                className={`flex min-h-[50px] items-center justify-between gap-3 rounded-[10px] border border-[#D0D5DD] px-3.5 py-2.5 text-sm transition ${
-                  detailsDisabled
-                    ? "cursor-not-allowed bg-[#F8FAFC] opacity-70"
-                    : "cursor-pointer bg-white hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
-                }`}
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <Paperclip
-                    size={17}
-                    className="shrink-0 text-[#2F6CA5]"
-                  />
-
-                  <span
-                    className={`truncate text-sm font-semibold ${
-                      form?.uploadedFile?.name
-                        ? "text-[#344054]"
-                        : "text-[#667085]"
-                    }`}
-                  >
-                    {form?.uploadedFile?.name ||
-                      (detailsDisabled
-                        ? "Select employee before uploading file"
-                        : "Choose resignation file")}
-                  </span>
-                </span>
-
-                <span className="shrink-0 rounded-lg bg-[#D7E0EA] px-3 py-1.5 text-xs font-bold text-[#24496B]">
-                  Browse
-                </span>
-
-                <input
-                  type="file"
-                  name="uploadedFile"
+                <FormTextarea
+                  label="Reason / Summary *"
+                  name="reason"
+                  value={form?.reason}
                   onChange={onChange}
+                  rows={3}
+                  placeholder="Summarize the employee’s resignation reason based on the submitted email."
                   disabled={detailsDisabled}
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,image/heic,image/heif"
                 />
-              </label>
 
-              <p className="mt-1.5 text-[10px] font-medium text-[#667085]">
-                Accepted file types: .pdf, .doc, .docx, .jpg, .jpeg, .png,
-                .heic
-              </p>
-            </div>
-
-            <FormTextarea
-              label="Reason / Summary *"
-              name="reason"
-              value={form?.reason}
-              onChange={onChange}
-              rows={3}
-              placeholder="Summarize the employee’s resignation reason based on the submitted email."
-              disabled={detailsDisabled}
-            />
-
-            <FormTextarea
-              label="TL / OM Remarks *"
-              name="remarks"
-              value={form?.remarks}
-              onChange={onChange}
-              rows={2}
-              placeholder="Add remarks before sending the resignation request for approval."
-              disabled={detailsDisabled}
-            />
+                <FormTextarea
+                  label="TL / OM Remarks *"
+                  name="remarks"
+                  value={form?.remarks}
+                  onChange={onChange}
+                  rows={2}
+                  placeholder="Add remarks before sending the resignation request for approval."
+                  disabled={detailsDisabled}
+                />
+              </div>
+            </section>
           </div>
         </div>
 
@@ -1849,7 +2006,7 @@ export function ResignationManagementModal({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#2F6CA5] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-[#042C51] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -1857,7 +2014,7 @@ export function ResignationManagementModal({
             <button
               type="submit"
               disabled={submitting || !hasSelectedEmployee}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#042C51] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#063C69] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#E94F1E] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? (
                 <>
@@ -2375,9 +2532,215 @@ function getAttachmentEntries(item) {
   });
 }
 
-export function ViewResignationModal({ open, item, onClose }) {
+function ImageAttachmentPreviewModal({
+  open,
+  fileName,
+  fileUrl,
+  onClose,
+}) {
+  const objectUrlRef = useRef("");
+  const [state, setState] = useState({
+    loading: false,
+    imageUrl: "",
+    error: "",
+  });
+
+  useEffect(() => {
+    if (!open || !fileUrl) return undefined;
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    function revokeCurrentObjectUrl() {
+      if (!objectUrlRef.current) return;
+
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = "";
+    }
+
+    async function loadPreview() {
+      revokeCurrentObjectUrl();
+      setState({
+        loading: true,
+        imageUrl: "",
+        error: "",
+      });
+
+      try {
+        const response = await fetch(fileUrl, {
+          method: "GET",
+          credentials: "include",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          let message = "Unable to load this image.";
+
+          try {
+            const payload = await response.json();
+            message = payload?.message || message;
+          } catch {
+            // Keep the formal fallback for non-JSON responses.
+          }
+
+          throw new Error(message);
+        }
+
+        const sourceBlob = await response.blob();
+        const previewBlob =
+          isHeicFileName(fileName)
+            ? await convertHeicBlobToJpeg(sourceBlob)
+            : sourceBlob;
+
+        if (cancelled) return;
+
+        const objectUrl = URL.createObjectURL(previewBlob);
+        objectUrlRef.current = objectUrl;
+
+        setState({
+          loading: false,
+          imageUrl: objectUrl,
+          error: "",
+        });
+      } catch (error) {
+        if (
+          cancelled ||
+          error?.name === "AbortError"
+        ) {
+          return;
+        }
+
+        setState({
+          loading: false,
+          imageUrl: "",
+          error:
+            error?.message ||
+            "Unable to preview this image.",
+        });
+      }
+    }
+
+    loadPreview();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      revokeCurrentObjectUrl();
+    };
+  }, [open, fileName, fileUrl]);
+
   useEffect(() => {
     if (!open) return undefined;
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        onClose?.();
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100020] flex items-center justify-center bg-black/75 p-4 backdrop-blur-[2px]"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Preview ${fileName || "image"}`}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose?.();
+        }
+      }}
+    >
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-white shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E7ECF2] bg-[#042C51] px-4 py-3 2xl:px-5 2xl:py-4">
+          <div className="min-w-0">
+            <p className="sibs-text-xs font-extrabold uppercase tracking-wide text-white/70">
+              Image Preview
+            </p>
+            <h3 className="mt-0.5 truncate sibs-text-sm 2xl:text-base font-extrabold text-white">
+              {fileName || "Image"}
+            </h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close image preview"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-white transition hover:bg-white/20"
+          >
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="flex min-h-[320px] flex-1 items-center justify-center overflow-auto bg-[#111827] p-4 2xl:p-6">
+          {state.loading ? (
+            <div className="flex flex-col items-center gap-3 text-white">
+              <Loader2 size={32} className="animate-spin" />
+              <p className="sibs-text-xs font-bold">
+                {isHeicFileName(fileName)
+                  ? "Preparing HEIC image preview..."
+                  : "Preparing image preview..."}
+              </p>
+            </div>
+          ) : state.error ? (
+            <div className="max-w-lg rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-center">
+              <AlertCircle
+                size={28}
+                className="mx-auto text-red-500"
+              />
+              <p className="mt-2 sibs-text-xs font-extrabold text-red-700">
+                Preview unavailable
+              </p>
+              <p className="mt-1 sibs-text-micro font-semibold leading-relaxed text-red-600">
+                {state.error}
+              </p>
+            </div>
+          ) : state.imageUrl ? (
+            <img
+              src={state.imageUrl}
+              alt={fileName || "Resignation image preview"}
+              className="max-h-[76vh] max-w-full rounded-xl object-contain shadow-2xl"
+            />
+          ) : null}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+export function ViewResignationModal({ open, item, onClose }) {
+  const [imagePreview, setImagePreview] = useState({
+    open: false,
+    fileName: "",
+    fileUrl: "",
+  });
+
+  function closeImagePreview() {
+    setImagePreview({
+      open: false,
+      fileName: "",
+      fileUrl: "",
+    });
+  }
+
+  useEffect(() => {
+    if (!open) {
+      setImagePreview({
+        open: false,
+        fileName: "",
+        fileUrl: "",
+      });
+      return undefined;
+    }
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -2439,13 +2802,34 @@ export function ViewResignationModal({ open, item, onClose }) {
     item?.supervisorName ||
     "TL / OM";
 
-  const filedByRole =
-    filedByObject?.role ||
+  const filedByAccess =
+    filedByObject?.access ||
+    filedByObject?.accessLabel ||
+    item?.filedByAccess ||
+    item?.filed_by_access ||
     item?.filedByRole ||
     item?.filed_by_role ||
     item?.encodedByRole ||
     item?.supervisorRole ||
     "";
+
+  const filedBySibsId =
+    filedByObject?.sibsId ||
+    filedByObject?.sibs_id ||
+    item?.filedBySibsId ||
+    item?.filed_by_sibs_id ||
+    item?.supervisorSibsId ||
+    item?.supervisor_sibs_id ||
+    "";
+
+  const filedByDisplay =
+    filedByAccess && filedBySibsId
+      ? `${filedByAccess} (${filedBySibsId}) - ${filedByName}`
+      : filedBySibsId
+        ? `${filedBySibsId} - ${filedByName}`
+        : filedByAccess
+          ? `${filedByAccess} - ${filedByName}`
+          : filedByName;
 
   const approvalStages = buildApprovalStageRows(item);
   const attachments = getAttachmentEntries(item);
@@ -2455,9 +2839,6 @@ export function ViewResignationModal({ open, item, onClose }) {
     employeeDepartment !== "--" ? employeeDepartment : "",
     employeeAccount !== "--" ? employeeAccount : "",
   ].filter(Boolean);
-
-  const employeeInitial =
-    String(employeeName || "E").trim().charAt(0).toUpperCase() || "E";
 
   return createPortal(
     <div
@@ -2505,9 +2886,7 @@ export function ViewResignationModal({ open, item, onClose }) {
           <div className="space-y-4 2xl:space-y-5">
             <section className="flex flex-col gap-3 2xl:gap-4 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-3 2xl:p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-full bg-[#042C51] sibs-text-xs font-extrabold text-white">
-                  {employeeInitial}
-                </span>
+                <ProfileAvatar item={item} size="lg" />
 
                 <div className="min-w-0">
                   <h3 className="truncate sibs-text-sm 2xl:text-base font-extrabold text-[#042C51]">
@@ -2667,8 +3046,56 @@ export function ViewResignationModal({ open, item, onClose }) {
 
               {attachments.length > 0 ? (
                 <div className="mt-1.5 2xl:mt-2 flex flex-wrap gap-2">
-                  {attachments.map((attachment) =>
-                    attachment.url ? (
+                  {attachments.map((attachment) => {
+                    if (!attachment.url) {
+                      return (
+                        <span
+                          key={attachment.id}
+                          title={attachment.name}
+                          className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51]"
+                        >
+                          <FileText
+                            size={14}
+                            className="shrink-0 text-[#7E8DA8]"
+                          />
+                          <span className="max-w-[240px] truncate">
+                            {attachment.name}
+                          </span>
+                        </span>
+                      );
+                    }
+
+                    if (
+                      isPreviewableImageFileName(
+                        attachment.name,
+                      )
+                    ) {
+                      return (
+                        <button
+                          key={attachment.id}
+                          type="button"
+                          onClick={() =>
+                            setImagePreview({
+                              open: true,
+                              fileName: attachment.name,
+                              fileUrl: attachment.url,
+                            })
+                          }
+                          title={`Preview ${attachment.name}`}
+                          className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                        >
+                          <FileText
+                            size={14}
+                            className="shrink-0 text-[#7E8DA8]"
+                          />
+                          <span className="max-w-[240px] truncate">
+                            {attachment.name}
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    return (
                       <a
                         key={attachment.id}
                         href={attachment.url}
@@ -2685,22 +3112,8 @@ export function ViewResignationModal({ open, item, onClose }) {
                           {attachment.name}
                         </span>
                       </a>
-                    ) : (
-                      <span
-                        key={attachment.id}
-                        title={attachment.name}
-                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51]"
-                      >
-                        <FileText
-                          size={14}
-                          className="shrink-0 text-[#7E8DA8]"
-                        />
-                        <span className="max-w-[240px] truncate">
-                          {attachment.name}
-                        </span>
-                      </span>
-                    ),
-                  )}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="mt-1.5 sibs-text-xs font-semibold text-[#98A2B3]">
@@ -2716,8 +3129,7 @@ export function ViewResignationModal({ open, item, onClose }) {
             <span className="font-extrabold text-[#667085]">
               Filed By:
             </span>{" "}
-            {filedByName}
-            {filedByRole ? ` (${filedByRole})` : ""}
+            {filedByDisplay}
           </p>
 
           <button
@@ -2728,6 +3140,13 @@ export function ViewResignationModal({ open, item, onClose }) {
             Close profile
           </button>
         </footer>
+
+        <ImageAttachmentPreviewModal
+          open={imagePreview.open}
+          fileName={imagePreview.fileName}
+          fileUrl={imagePreview.fileUrl}
+          onClose={closeImagePreview}
+        />
       </section>
     </div>,
     document.body,

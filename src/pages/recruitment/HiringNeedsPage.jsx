@@ -6,6 +6,10 @@ import React, {
   useState,
 } from "react";
 import { ClipboardList, Plus, RefreshCw } from "lucide-react";
+import {
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import Header from "../../components/layout/Header";
 import HiringNeedsStats from "../../components/recruitment/HiringNeeds/HiringNeedsStats";
@@ -95,8 +99,12 @@ function getHiringNeedsRequestId(item = {}) {
 
 export default function HiringNeedsPage() {
   const mainRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useUser();
   const {
+    list,
+    loading,
     fetchList,
     fetchJobDescriptions,
     jobDescriptions,
@@ -138,6 +146,44 @@ export default function HiringNeedsPage() {
     fetchList();
     fetchJobDescriptions();
   }, [fetchList, fetchJobDescriptions]);
+
+  useEffect(() => {
+    const notificationState = location.state;
+
+    if (
+      notificationState?.source !==
+      "hiring-needs-notification"
+    ) {
+      return;
+    }
+
+    if (loading) return;
+
+    const targetId = cleanText(
+      notificationState.hiringNeedId,
+    );
+
+    const matchedItem = list.find(
+      (item) =>
+        getHiringNeedsRequestId(item) === targetId ||
+        cleanText(item.id) === targetId,
+    );
+
+    if (matchedItem) {
+      setSelectedItem(matchedItem);
+    }
+
+    navigate(location.pathname, {
+      replace: true,
+      state: null,
+    });
+  }, [
+    list,
+    loading,
+    location.pathname,
+    location.state,
+    navigate,
+  ]);
 
   useEffect(() => {
     let cancelled = false;

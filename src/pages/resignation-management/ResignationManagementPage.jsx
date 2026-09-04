@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertCircle,
   CheckCircle2,
@@ -14,7 +15,6 @@ import {
   Loader2,
   Mail,
   Plus,
-  Paperclip,
   RefreshCcw,
   RefreshCw,
   Send,
@@ -35,12 +35,6 @@ import {
   ResignationManagementModal,
   ViewResignationModal,
 } from "../../components/modals/resignation-management/ResignationManagementModal";
-import AttachmentsModal from "../../components/modals/resignation/attachmentsModal";
-import {
-  getAttachmentCount,
-  getAttachmentCountLabel,
-} from "../../lib/utils/resignation/attachmentUtils.js";
-
 import {
   getManagedEmployees,
   getSupervisorResignations,
@@ -213,10 +207,28 @@ function getProfileImageUrl(item) {
   )}/api/employee-profile/file/${encodeURIComponent(filename)}`;
 }
 
+function getProfileAvatarPreviewPosition(element) {
+  if (!element || typeof window === "undefined") return null;
+
+  const rect = element.getBoundingClientRect();
+  const previewHeight = 176;
+  const gap = 12;
+  const placeBelow = rect.top < previewHeight + gap;
+
+  return {
+    left: rect.left + rect.width / 2,
+    top: placeBelow ? rect.bottom + gap : rect.top - gap,
+    placeBelow,
+  };
+}
+
 function ProfileAvatar({ item, size = "md" }) {
   const sibsId = getEmployeeSibsId(item);
+  const avatarRef = useRef(null);
   const [fetchedEmployee, setFetchedEmployee] = useState(null);
   const [failedImageKey, setFailedImageKey] = useState("");
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState(null);
 
   const mergedItem = {
     ...(item || {}),
@@ -273,55 +285,134 @@ function ProfileAvatar({ item, size = "md" }) {
     };
   }, [shouldFetchProfile, sibsId]);
 
-  function handleOpenProfile(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  useEffect(() => {
+    if (!previewVisible) return undefined;
 
+    const updatePreviewPosition = () => {
+      setPreviewPosition(
+        getProfileAvatarPreviewPosition(
+          avatarRef.current,
+        ),
+      );
+    };
+
+    window.addEventListener(
+      "resize",
+      updatePreviewPosition,
+    );
+    window.addEventListener(
+      "scroll",
+      updatePreviewPosition,
+      true,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        updatePreviewPosition,
+      );
+      window.removeEventListener(
+        "scroll",
+        updatePreviewPosition,
+        true,
+      );
+    };
+  }, [previewVisible]);
+
+  function showPreview() {
     if (!imageUrl || imageFailed) return;
 
-    window.open(imageUrl, "_blank", "noopener,noreferrer");
+    setPreviewPosition(
+      getProfileAvatarPreviewPosition(
+        avatarRef.current,
+      ),
+    );
+    setPreviewVisible(true);
+  }
+
+  function hidePreview() {
+    setPreviewVisible(false);
   }
 
   const sizeClass =
     size === "lg"
-      ? "h-12 w-12"
+      ? "h-11 w-11"
       : size === "sm"
         ? "h-9 w-9"
-        : "h-10 w-10";
+        : "h-9 w-9";
 
   const avatarContent =
     imageUrl && !imageFailed ? (
       <img
         src={imageUrl}
-        alt="Profile"
-        className="h-full w-full object-cover"
-        onError={() => setFailedImageKey(imageKey)}
+        alt=""
+        loading="lazy"
+        className="absolute inset-0 h-full w-full object-cover"
+        onError={() => {
+          setFailedImageKey(imageKey);
+          setPreviewVisible(false);
+        }}
       />
     ) : (
-      <div className="flex h-full w-full items-center justify-center text-sibs-primary-1">
-        <UserRound size={size === "lg" ? 24 : 20} />
-      </div>
+      <UserRound
+        size={size === "lg" ? 22 : 18}
+        className="text-[#042C51]"
+      />
     );
 
-  if (imageUrl && !imageFailed) {
-    return (
-      <button
-        type="button"
-        onClick={handleOpenProfile}
-        title="Open profile picture"
-        className={`group flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm outline-none transition hover:scale-[1.03] hover:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
-      >
-        {avatarContent}
-      </button>
-    );
-  }
+  const preview =
+    previewVisible &&
+    previewPosition &&
+    imageUrl &&
+    !imageFailed &&
+    typeof document !== "undefined"
+      ? createPortal(
+          <span
+            className="pointer-events-none fixed z-[9999] rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            style={{
+              left: previewPosition.left,
+              top: previewPosition.top,
+              transform: previewPosition.placeBelow
+                ? "translate(-50%, 0)"
+                : "translate(-50%, -100%)",
+            }}
+            aria-hidden="true"
+          >
+            <span className="relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border border-[#D9E2EC] bg-[#F2F6FA]">
+              <img
+                src={imageUrl}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+                onError={() => {
+                  setFailedImageKey(imageKey);
+                  setPreviewVisible(false);
+                }}
+              />
+            </span>
+          </span>,
+          document.body,
+        )
+      : null;
 
   return (
-    <div
-      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm`}
-    >
-      {avatarContent}
-    </div>
+    <>
+      <span
+        ref={avatarRef}
+        tabIndex={0}
+        aria-label={`${getFullName(item) || "Employee"} profile picture`}
+        onMouseEnter={showPreview}
+        onMouseLeave={hidePreview}
+        onFocus={showPreview}
+        onBlur={hidePreview}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-inner outline-none`}
+      >
+        {avatarContent}
+      </span>
+
+      {preview}
+    </>
   );
 }
 
@@ -976,7 +1067,6 @@ function ResignationTableCard({
   hasActiveFilters,
   onClearFilters,
   onView,
-  onOpenAttachments,
 }) {
   const [pageState, setPageState] = useState({ data, page: 1 });
   const totalPages = Math.max(Math.ceil(data.length / PAGE_LIMIT), 1);
@@ -1021,7 +1111,7 @@ function ResignationTableCard({
             </h2>
 
             <p className="sibs-text-xs font-semibold text-[#667085]">
-              View filing details and submitted resignation attachments.
+              View filing details, status, and resignation progress.
             </p>
           </div>
         </div>
@@ -1079,34 +1169,53 @@ function ResignationTableCard({
           className="border-0 bg-transparent p-0 shadow-none"
         />
 
-        <div className="mt-5 hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-          <div className="max-h-[620px] overflow-auto sibs-scrollbar">
-            <table className="w-full min-w-[1380px] border-collapse bg-white text-left">
-              <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                <tr className="border-b border-[#E6ECF2]">
-                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[240px] whitespace-nowrap text-left">Employee Name</th>
-                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[190px] whitespace-nowrap text-left">Filed By</th>
-                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[110px] whitespace-nowrap text-center">Type</th>
-                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[140px] whitespace-nowrap text-center">Resignation Date</th>
-                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Last Working Date</th>
-                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Status</th>
-                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[220px] whitespace-nowrap text-left">Reason</th>
-                  <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[170px] whitespace-nowrap text-center">Attachments</th>
+        <div className="mt-5 hidden overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:block">
+          <div className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar">
+            <table className="w-full min-w-[1220px] border-collapse bg-white">
+              <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
+                <tr className="sibs-data-table-head-row">
+                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-left 2xl:px-4 2xl:py-2.5">
+                    Employee Name
+                  </th>
+                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-left 2xl:px-4 2xl:py-2.5">
+                    Filed By
+                  </th>
+                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
+                    Type
+                  </th>
+                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
+                    Resignation Date
+                  </th>
+                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
+                    Last Working Date
+                  </th>
+                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
+                    Status
+                  </th>
+                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-left 2xl:px-4 2xl:py-2.5">
+                    Reason
+                  </th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody className="divide-y divide-[#F1F5F9]">
                 {loading ? (
                   Array.from({ length: 7 }).map((_, index) => (
                     <tr key={index}>
-                      <td colSpan={8} className="border-t border-[#EEF2F6] px-4 py-3.5">
-                        <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E9EEF5]" />
+                      <td
+                        colSpan={7}
+                        className="px-3 py-2 2xl:px-4 2xl:py-2.5"
+                      >
+                        <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E6ECF2]" />
                       </td>
                     </tr>
                   ))
                 ) : pageData.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-16 text-center sibs-text-sm font-bold text-[#667085]">
+                    <td
+                      colSpan={7}
+                      className="px-5 py-16 text-center sibs-text-sm font-bold text-[#667085]"
+                    >
                       No resignation records found.
                     </td>
                   </tr>
@@ -1115,8 +1224,8 @@ function ResignationTableCard({
                     <ResignationRow
                       key={item?.id || item?.resignationId || index}
                       item={item}
+                      index={index}
                       onView={() => onView(item)}
-                      onOpenAttachments={() => onOpenAttachments?.(item)}
                     />
                   ))
                 )}
@@ -1142,7 +1251,6 @@ function ResignationTableCard({
                   key={item?.id || item?.resignationId || index}
                   item={item}
                   onView={() => onView(item)}
-                  onOpenAttachments={() => onOpenAttachments?.(item)}
                 />
               ))}
             </div>
@@ -1168,10 +1276,9 @@ function ResignationTableCard({
   );
 }
 
-function ResignationRow({ item, onView, onOpenAttachments }) {
+function ResignationRow({ item, index = 0, onView }) {
   const status = getResignationStatus(item);
   const employeeName = getFullName(item);
-  const attachmentCount = getAttachmentCount(item);
 
   const filedBy =
     item?.filedByName ||
@@ -1188,9 +1295,16 @@ function ResignationRow({ item, onView, onOpenAttachments }) {
 
   const reason = item?.reason || item?.remarks || "—";
   const resignationDate =
-    item?.resignationDate || item?.resignation_date || getItemDate(item);
-  const lastWorkingDate = item?.lastWorkingDate || item?.last_working_date;
-  const resignationType = item?.resignationType || item?.type || "—";
+    item?.resignationDate ||
+    item?.resignation_date ||
+    getItemDate(item);
+  const lastWorkingDate =
+    item?.lastWorkingDate ||
+    item?.last_working_date;
+  const resignationType =
+    item?.resignationType ||
+    item?.type ||
+    "—";
 
   function handleRowKeyDown(event) {
     if (event.key === "Enter" || event.key === " ") {
@@ -1206,56 +1320,96 @@ function ResignationRow({ item, onView, onOpenAttachments }) {
       onClick={onView}
       onKeyDown={handleRowKeyDown}
       title="Open resignation details"
-      className="sibs-data-table-row"
+      className="sibs-data-table-row sibs-page-card-in"
+      style={{
+        animationDelay: `${index * 35}ms`,
+        animationFillMode: "both",
+      }}
     >
-      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 align-middle">
-        <div className="flex min-w-0 items-center gap-3">
-          <ProfileAvatar item={item} />
+      <td className="whitespace-nowrap px-3 py-2 2xl:px-4 2xl:py-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div
+            className="shrink-0"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+            onKeyDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <ProfileAvatar item={item} />
+          </div>
+
           <div className="min-w-0">
-            <p title={employeeName} className="truncate sibs-text-xs font-extrabold text-[#042C51]">{employeeName}</p>
-            <p className="mt-0.5 truncate sibs-text-micro font-bold text-[#667085]"><span className="font-extrabold text-[#FF5C28]">{getEmployeeSibsId(item)}</span> · {getEmployeeDepartment(item)}</p>
+            <p
+              title={employeeName}
+              className="m-0 max-w-[300px] truncate sibs-text-xs font-extrabold text-[#042C51]"
+            >
+              {employeeName}
+            </p>
+
+            <p className="mt-0.5 max-w-[300px] truncate sibs-text-micro font-bold text-[#667085]">
+              <span className="font-extrabold text-[#FF5C28]">
+                {getEmployeeSibsId(item)}
+              </span>
+              {" · "}
+              {getEmployeeDepartment(item)}
+            </p>
           </div>
         </div>
       </td>
-      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 align-middle">
-        <p className="truncate sibs-text-xs font-extrabold text-[#344054]">{filedBy}</p>
-        <p className="mt-0.5 truncate sibs-text-micro font-bold text-[#667085]">{filedByRole}</p>
+
+      <td className="whitespace-nowrap px-3 py-2 2xl:px-4 2xl:py-2.5">
+        <p
+          title={filedBy}
+          className="m-0 max-w-[250px] truncate sibs-text-xs font-extrabold text-[#344054]"
+        >
+          {filedBy}
+        </p>
+        <p className="mt-0.5 max-w-[250px] truncate sibs-text-micro font-bold text-[#667085]">
+          {filedByRole}
+        </p>
       </td>
-      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center align-middle">
-        <span className="inline-flex rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 sibs-text-micro font-extrabold text-[#344054]">{resignationType}</span>
+
+      <td className="whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
+        <span className="inline-flex items-center justify-center rounded-md border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 sibs-text-micro font-extrabold text-[#344054]">
+          {resignationType}
+        </span>
       </td>
-      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-bold text-[#344054]">{formatDate(resignationDate)}</td>
-      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-bold text-[#344054]">{formatDate(lastWorkingDate)}</td>
-      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center">
-        <span className={`inline-flex min-w-[124px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 sibs-text-micro font-extrabold ${getStatusClass(status)}`}>
+
+      <td className="whitespace-nowrap px-3 py-2 text-center sibs-text-xs font-semibold text-[#52637A] 2xl:px-4 2xl:py-2.5">
+        {formatDate(resignationDate)}
+      </td>
+
+      <td className="whitespace-nowrap px-3 py-2 text-center sibs-text-xs font-semibold text-[#52637A] 2xl:px-4 2xl:py-2.5">
+        {formatDate(lastWorkingDate)}
+      </td>
+
+      <td className="whitespace-nowrap px-3 py-2 text-center sibs-text-xs 2xl:px-4 2xl:py-2.5">
+        <span
+          className={`inline-flex min-w-[124px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${getStatusClass(
+            status,
+          )}`}
+        >
           {renderStatusIcon(status, 12)}
           {status}
         </span>
       </td>
-      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-semibold text-[#344054]">
-        <p title={reason} className="truncate">{reason}</p>
-      </td>
-      <td className="border-t border-[#EEF2F6] px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenAttachments?.();
-          }}
-          disabled={attachmentCount === 0}
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-2.5 2xl:px-3 sibs-text-micro font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F8FAFC] disabled:text-[#98A2B3]"
+
+      <td className="px-3 py-2 sibs-text-xs font-semibold text-[#344054] 2xl:px-4 2xl:py-2.5">
+        <p
+          title={reason}
+          className="m-0 max-w-[260px] truncate"
         >
-          <Paperclip size={13} />
-          {getAttachmentCountLabel(item)}
-        </button>
+          {reason}
+        </p>
       </td>
     </tr>
   );
 }
 
-function ResignationMobileCard({ item, onView, onOpenAttachments }) {
+function ResignationMobileCard({ item, onView }) {
   const status = getResignationStatus(item);
-  const attachmentCount = getAttachmentCount(item);
 
   return (
     <article
@@ -1292,20 +1446,6 @@ function ResignationMobileCard({ item, onView, onOpenAttachments }) {
         <MobileMetric label="Filed By" value={item?.filedByName || item?.supervisorName || "TL / OM"} />
       </div>
 
-      <div className="mt-4">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenAttachments?.();
-          }}
-          disabled={attachmentCount === 0}
-          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
-        >
-          <Paperclip size={15} />
-          {getAttachmentCountLabel(item)}
-        </button>
-      </div>
     </article>
   );
 }
@@ -1337,10 +1477,10 @@ export default function ResignationManagementPage() {
   const [resignations, setResignations] = useState([]);
   const [resignationLoading, setResignationLoading] = useState(false);
   const [selectedResignation, setSelectedResignation] = useState(null);
-  const [attachmentResignation, setAttachmentResignation] = useState(null);
 
   const [managedEmployees, setManagedEmployees] = useState([]);
   const [employeePickerLoading, setEmployeePickerLoading] = useState(false);
+  const [employeePickerError, setEmployeePickerError] = useState("");
   const [employeePickerSearch, setEmployeePickerSearch] = useState("");
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
 
@@ -1351,6 +1491,7 @@ export default function ResignationManagementPage() {
   });
 
   const mainScrollRef = useRef(null);
+  const employeePickerRequestRef = useRef(0);
 
   const userRole = normalizeRoleKey(
     user?.role || user?.userRole || user?.adminRole || user?.position || "",
@@ -1464,33 +1605,59 @@ export default function ResignationManagementPage() {
     async (searchValue = "") => {
       if (!canCreateResignation) {
         setManagedEmployees([]);
+        setEmployeePickerError("");
         return [];
       }
 
+      const requestId = employeePickerRequestRef.current + 1;
+      employeePickerRequestRef.current = requestId;
+
       try {
         setEmployeePickerLoading(true);
+        setEmployeePickerError("");
 
         const result = await getManagedEmployees({
           page: 1,
-          limit: 50,
+          limit: 100,
           search: searchValue,
         });
 
+        if (requestId !== employeePickerRequestRef.current) {
+          return [];
+        }
+
         if (!result?.success) {
+          const message =
+            result?.message || "Failed to load employees under management.";
+
           setManagedEmployees([]);
+          setEmployeePickerError(message);
           return [];
         }
 
         const data = Array.isArray(result.data) ? result.data : [];
         setManagedEmployees(data);
+        setEmployeePickerError("");
 
         return data;
       } catch (error) {
         console.error("FETCH MANAGED EMPLOYEES ERROR:", error);
-        setManagedEmployees([]);
+
+        if (requestId === employeePickerRequestRef.current) {
+          setManagedEmployees([]);
+          setEmployeePickerError(
+            error?.response?.data?.message ||
+              error?.response?.data?.error ||
+              error?.message ||
+              "Failed to load employees under management.",
+          );
+        }
+
         return [];
       } finally {
-        setEmployeePickerLoading(false);
+        if (requestId === employeePickerRequestRef.current) {
+          setEmployeePickerLoading(false);
+        }
       }
     },
     [canCreateResignation],
@@ -1554,15 +1721,6 @@ export default function ResignationManagementPage() {
     fetchResignations();
   }, [fetchResignations]);
 
-  const handleOpenAttachments = useCallback((item) => {
-    if (!item) return;
-    setAttachmentResignation(item);
-  }, []);
-
-  const handleCloseAttachments = useCallback(() => {
-    setAttachmentResignation(null);
-  }, []);
-
   function forceUnlockPageScroll() {
     window.setTimeout(() => {
       document.body.style.overflow = "";
@@ -1619,6 +1777,7 @@ export default function ResignationManagementPage() {
 
     resetResignationForm();
     setEmployeePickerSearch("");
+    setEmployeePickerError("");
     setEmployeePickerOpen(false);
     setOpenResignationForm(true);
     fetchManagedEmployees("");
@@ -1629,9 +1788,41 @@ export default function ResignationManagementPage() {
 
     setOpenResignationForm(false);
     setEmployeePickerSearch("");
+    setEmployeePickerError("");
     setEmployeePickerOpen(false);
     resetResignationForm();
     forceUnlockPageScroll();
+  }
+
+  function clearSelectedEmployee() {
+    setResignationForm((prev) => ({
+      ...prev,
+      employeeSibsId: "",
+      employeeName: "",
+      department: "",
+      account: "",
+      uploadedFile: null,
+      profilePictureUrl: "",
+      profile_picture_url: "",
+      profileFilename: "",
+      profile_filename: "",
+      profilePicture: "",
+      profile_picture: "",
+      profileImage: "",
+      profile_image: "",
+    }));
+  }
+
+  function handleEmployeePickerSearchChange(value) {
+    const nextValue = String(value || "");
+
+    if (resignationForm.employeeSibsId) {
+      clearSelectedEmployee();
+    }
+
+    setEmployeePickerSearch(nextValue);
+    setEmployeePickerOpen(true);
+    fetchManagedEmployees(nextValue);
   }
 
   function handleSelectManagedEmployee(employee) {
@@ -1655,6 +1846,7 @@ export default function ResignationManagementPage() {
 
     setEmployeePickerOpen(false);
     setEmployeePickerSearch("");
+    setEmployeePickerError("");
   }
 
   function handleResignationChange(e) {
@@ -1683,23 +1875,74 @@ export default function ResignationManagementPage() {
       return "Please select the last working date.";
     }
 
-    if (!resignationForm.resignationType) {
-      return "Please select the resignation type.";
+    if (!["Formal", "Immediate"].includes(resignationForm.resignationType)) {
+      return "Please select a valid resignation type.";
+    }
+
+    if (!resignationForm.uploadedFile) {
+      return "Please attach the resignation email before submitting.";
+    }
+
+    const file = resignationForm.uploadedFile;
+    const allowedExtensions = new Set([
+      "pdf",
+      "doc",
+      "docx",
+      "jpg",
+      "jpeg",
+      "png",
+      "heic",
+      "heif",
+    ]);
+    const extension = String(file?.name || "")
+      .split(".")
+      .pop()
+      ?.toLowerCase();
+
+    if (!extension || !allowedExtensions.has(extension)) {
+      return "The email attachment must be PDF, DOC, DOCX, JPG, JPEG, PNG, HEIC, or HEIF.";
+    }
+
+    if (Number(file?.size || 0) > 15 * 1024 * 1024) {
+      return "The email attachment must not exceed 15 MB.";
     }
 
     if (!String(resignationForm.reason || "").trim()) {
       return "Please enter the resignation reason or email summary.";
     }
 
-    const resignationDate = new Date(resignationForm.resignationDate);
-    const lastWorkingDate = new Date(resignationForm.lastWorkingDate);
+    if (!String(resignationForm.remarks || "").trim()) {
+      return "Please enter TL / OM remarks before submitting.";
+    }
+
+    const resignationDate = new Date(`${resignationForm.resignationDate}T00:00:00`);
+    const lastWorkingDate = new Date(`${resignationForm.lastWorkingDate}T00:00:00`);
 
     if (
-      !Number.isNaN(resignationDate.getTime()) &&
-      !Number.isNaN(lastWorkingDate.getTime()) &&
-      lastWorkingDate < resignationDate
+      Number.isNaN(resignationDate.getTime()) ||
+      Number.isNaN(lastWorkingDate.getTime())
     ) {
+      return "Please provide valid resignation and last working dates.";
+    }
+
+    const dayDifference = Math.round(
+      (lastWorkingDate.getTime() - resignationDate.getTime()) /
+        (24 * 60 * 60 * 1000),
+    );
+
+    if (dayDifference < 0) {
       return "Last working date cannot be earlier than the resignation date.";
+    }
+
+    if (resignationForm.resignationType === "Formal" && dayDifference !== 30) {
+      return "Formal resignation must have a last working date exactly 30 days after the resignation date.";
+    }
+
+    if (
+      resignationForm.resignationType === "Immediate" &&
+      (dayDifference < 1 || dayDifference > 29)
+    ) {
+      return "Immediate resignation must have a last working date from 1 to 29 days after the resignation date.";
     }
 
     return "";
@@ -1707,6 +1950,8 @@ export default function ResignationManagementPage() {
 
   async function handleSubmitResignation(e) {
     e.preventDefault();
+
+    if (resignationSubmitting) return;
 
     if (!canCreateResignation) {
       openStatus({
@@ -1762,6 +2007,7 @@ export default function ResignationManagementPage() {
 
       setOpenResignationForm(false);
       setEmployeePickerSearch("");
+      setEmployeePickerError("");
       setEmployeePickerOpen(false);
       resetResignationForm();
 
@@ -1890,7 +2136,6 @@ export default function ResignationManagementPage() {
               hasActiveFilters={hasActiveFilters}
               onClearFilters={handleClearFilters}
               onView={setSelectedResignation}
-              onOpenAttachments={handleOpenAttachments}
             />
           </div>
         </div>
@@ -1902,11 +2147,11 @@ export default function ResignationManagementPage() {
         submitting={resignationSubmitting}
         managedEmployees={managedEmployees}
         employeePickerLoading={employeePickerLoading}
+        employeePickerError={employeePickerError}
         employeePickerSearch={employeePickerSearch}
         employeePickerOpen={employeePickerOpen}
         onEmployeePickerOpenChange={setEmployeePickerOpen}
-        onEmployeePickerSearchChange={setEmployeePickerSearch}
-        onSearchManagedEmployees={fetchManagedEmployees}
+        onEmployeePickerSearchChange={handleEmployeePickerSearchChange}
         onSelectManagedEmployee={handleSelectManagedEmployee}
         onClose={closeResignationFormModal}
         onChange={handleResignationChange}
@@ -1916,14 +2161,7 @@ export default function ResignationManagementPage() {
       <ViewResignationModal
         open={!!selectedResignation}
         item={selectedResignation}
-        onOpenAttachments={handleOpenAttachments}
         onClose={() => setSelectedResignation(null)}
-      />
-
-      <AttachmentsModal
-        open={!!attachmentResignation}
-        resignation={attachmentResignation}
-        onClose={handleCloseAttachments}
       />
 
       <StatusModal

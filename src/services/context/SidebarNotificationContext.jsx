@@ -10,6 +10,13 @@ import {
 
 import { useUser } from "./UserContext";
 import { getLeavesSummary } from "../../lib/axios/getLeaves";
+import { getCandidatePipelineCandidates } from "../../lib/axios/getCandidatePipeline";
+import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
+import {
+  buildCandidatePipelineNotifications,
+  buildHiringNeedsNotifications,
+  sortNotificationsByNewest,
+} from "../../lib/utils/notificationFeed";
 import {
   createSidebarNotificationState,
   getSidebarNotification,
@@ -47,52 +54,6 @@ const SEEDED_SIDEBAR_NOTIFICATIONS = [
   },
 ];
 
-const DEFAULT_SYSTEM_NOTIFICATIONS = [
-  {
-    id: "notif-interview-response",
-    category: "system",
-    type: "info",
-    title: "Candidate Interview Confirmed",
-    message: "POOCHII YENA LABUS responded and confirmed their Full Stack Developer interview.",
-    time: "25 mins ago",
-    timestamp: Date.now() - 25 * 60 * 1000,
-    actionLabel: "Open Pipeline",
-    actionPath: "/recruitment/candidate-pipeline",
-  },
-  {
-    id: "notif-onboarding-reqs",
-    category: "system",
-    type: "warning",
-    title: "Incomplete Onboarding Requirements",
-    message: "TOTODILE CROCONAW FERALIGATR has 2 missing onboarding requirements for Software Management.",
-    time: "1 hour ago",
-    timestamp: Date.now() - 60 * 60 * 1000,
-    actionLabel: "Review Profile",
-    actionPath: "/recruitment/onboarding",
-  },
-  {
-    id: "notif-requisition-approved",
-    category: "approvals",
-    type: "action",
-    title: "New Requisition Submitted",
-    message: "A new requisition request for Full Stack Developer was submitted for review.",
-    time: "3 hours ago",
-    timestamp: Date.now() - 3 * 60 * 60 * 1000,
-    actionLabel: "View Requisition",
-    actionPath: "/recruitment/hiring-needs",
-  },
-  {
-    id: "notif-attendance-sync",
-    category: "system",
-    type: "info",
-    title: "Biometric Attendance Synced",
-    message: "Daily biometric attendance synchronized successfully with 14 exceptions flagged.",
-    time: "5 hours ago",
-    timestamp: Date.now() - 5 * 60 * 60 * 1000,
-    actionLabel: "View Attendance",
-    actionPath: "/attendance",
-  },
-];
 
 function getUserNotificationId(user) {
   return (
@@ -150,6 +111,7 @@ export function SidebarNotificationProvider({ children }) {
   const [dismissedNotifIds, setDismissedNotifIds] = useState({});
   const [dynamicNotifications, setDynamicNotifications] = useState([]);
   const [leavePendingNotification, setLeavePendingNotification] = useState(null);
+  const [operationalNotifications, setOperationalNotifications] = useState([]);
 
   useEffect(() => {
     setLastSeen(readStorage(sidebarStorageKey));
@@ -196,8 +158,13 @@ export function SidebarNotificationProvider({ children }) {
           : `${pendingLeaves.toLocaleString("en-PH")} ${requestLabel} currently pending.`,
         time: "Current",
         timestamp: Date.now(),
-        actionLabel: canReview ? "Review Leaves" : "View Leaves",
+        actionLabel: "",
         actionPath: "/leaves",
+        actionState: {
+          leaveStatus: "Pending",
+          source: "pending-leave-notification",
+        },
+        clickableCard: true,
       });
     }
 
@@ -218,6 +185,85 @@ export function SidebarNotificationProvider({ children }) {
       cancelled = true;
       window.clearInterval(interval);
       window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [user, userNotificationId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshOperationalNotifications() {
+      if (!user) {
+        if (!cancelled) {
+          setOperationalNotifications([]);
+        }
+        return;
+      }
+
+      const [pipelineResult, hiringNeedsResult] =
+        await Promise.allSettled([
+          getCandidatePipelineCandidates({
+            page: 1,
+            limit: 500,
+          }),
+          getHiringNeeds(),
+        ]);
+
+      if (cancelled) return;
+
+      const pipelinePayload =
+        pipelineResult.status === "fulfilled"
+          ? pipelineResult.value
+          : null;
+
+      const hiringNeedsPayload =
+        hiringNeedsResult.status === "fulfilled"
+          ? hiringNeedsResult.value
+          : null;
+
+      setOperationalNotifications(
+        sortNotificationsByNewest([
+          ...buildCandidatePipelineNotifications(
+            pipelinePayload || {},
+          ),
+          ...buildHiringNeedsNotifications(
+            hiringNeedsPayload || {},
+          ),
+        ]),
+      );
+    }
+
+    refreshOperationalNotifications();
+
+    const interval = window.setInterval(
+      refreshOperationalNotifications,
+      60_000,
+    );
+
+    const refreshEvents = [
+      "ta-pipeline-candidates-updated",
+      "ta-talent-pool-updated",
+      "ta-hiring-needs-updated",
+    ];
+
+    const handleRefresh = () => {
+      refreshOperationalNotifications();
+    };
+
+    refreshEvents.forEach((eventName) => {
+      window.addEventListener(eventName, handleRefresh);
+    });
+
+    window.addEventListener("focus", handleRefresh);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+
+      refreshEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, handleRefresh);
+      });
+
+      window.removeEventListener("focus", handleRefresh);
     };
   }, [user, userNotificationId]);
 
@@ -284,7 +330,7 @@ export function SidebarNotificationProvider({ children }) {
   const markAllAsRead = useCallback(() => {
     const all = [
       ...(leavePendingNotification ? [leavePendingNotification] : []),
-      ...DEFAULT_SYSTEM_NOTIFICATIONS,
+      ...operationalNotifications,
       ...dynamicNotifications,
     ];
     const next = {};
@@ -293,7 +339,12 @@ export function SidebarNotificationProvider({ children }) {
     });
     setReadNotifIds(next);
     writeStorage(readNotifsStorageKey, next);
-  }, [dynamicNotifications, leavePendingNotification, readNotifsStorageKey]);
+  }, [
+    dynamicNotifications,
+    leavePendingNotification,
+    operationalNotifications,
+    readNotifsStorageKey,
+  ]);
 
   // Dismiss a system notification
   const dismissNotification = useCallback(
@@ -316,18 +367,24 @@ export function SidebarNotificationProvider({ children }) {
 
   // Compute merged system notifications list
   const notificationsList = useMemo(() => {
-    const combined = [
+    const combined = sortNotificationsByNewest([
       ...dynamicNotifications,
       ...(leavePendingNotification ? [leavePendingNotification] : []),
-      ...DEFAULT_SYSTEM_NOTIFICATIONS,
-    ];
+      ...operationalNotifications,
+    ]);
     return combined
       .filter((n) => !dismissedNotifIds[n.id])
       .map((n) => ({
         ...n,
         isRead: Boolean(readNotifIds[n.id]),
       }));
-  }, [dynamicNotifications, leavePendingNotification, dismissedNotifIds, readNotifIds]);
+  }, [
+    dynamicNotifications,
+    leavePendingNotification,
+    operationalNotifications,
+    dismissedNotifIds,
+    readNotifIds,
+  ]);
 
   // Total unread count
   const unreadCount = useMemo(
