@@ -31,7 +31,7 @@ function InfoBox({ label, value }) {
         {label}
       </p>
 
-      <div className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51] tabular-nums">{value ?? "—"}</div>
+      <div className="font-heading text-base 2xl:text-lg font-bold text-[#042C51] tabular-nums">{value ?? "—"}</div>
     </div>
   );
 }
@@ -69,10 +69,10 @@ export default function KPISnapshotModal({ open, week, records = [], onClose }) 
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="min-w-0">
-            <h2 className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+            <h2 className="sibs-modal-title truncate text-white">
               Weekly KPI Snapshot
             </h2>
-            <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
+            <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
               Weekly manpower requirement, OPS PRF, and leads needed.
             </p>
           </div>

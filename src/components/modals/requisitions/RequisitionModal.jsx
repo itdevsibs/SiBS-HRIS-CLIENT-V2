@@ -171,10 +171,10 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
       >
         <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="min-w-0">
-            <h2 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+            <h2 className="sibs-modal-title truncate text-white">
               Create Job Requisition
             </h2>
-            <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+            <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
               Fill in the requisition details and submit for approval
             </p>
           </div>
@@ -394,7 +394,7 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
 function Section({ title, children }) {
   return (
     <div>
-      <h2 className="mb-3 text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">{title}</h2>
+      <h3 className="sibs-modal-section-title mb-3 text-[#042C51]">{title}</h3>
       {children}
     </div>
   );

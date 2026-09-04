@@ -274,7 +274,7 @@ function MetricTile({
       </div>
 
       <p
-        className={`mt-1.5 truncate text-xl font-black leading-none ${accentClassName}`}
+        className={`mt-1.5 truncate font-heading text-xl 2xl:text-2xl font-bold tabular-nums leading-none ${accentClassName}`}
         title={typeof value === "string" ? value : undefined}
       >
         {value}
@@ -737,21 +737,21 @@ export default function SourceDetailsModal({
                   <div className="flex flex-wrap items-center gap-2">
                     <h2
                       id="source-performance-title"
-                      className="break-words text-sm sm:text-base font-extrabold tracking-tight text-white"
+                      className="sibs-modal-title truncate text-white"
                     >
                       {liveSource.source || "—"}
                     </h2>
 
                     <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${performance.className}`}
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide ${performance.className}`}
                     >
                       {performance.label}
                     </span>
                   </div>
 
-                  <p className="mt-0.5 flex flex-wrap items-center gap-2 sibs-text-xs font-medium text-slate-300">
+                  <p className="sibs-modal-subtitle mt-0.5 flex flex-wrap items-center gap-2 text-white/75 truncate sm:text-clip">
                     <span>Channel Sourcing Performance & Cost Metrics</span>
-                    <span className="text-slate-500">•</span>
+                    <span className="text-white/40">•</span>
                     <span>
                       {costEntries.length} expense log
                       {costEntries.length === 1 ? "" : "s"}
@@ -1081,14 +1081,14 @@ export default function SourceDetailsModal({
 
                   <h3
                     id="expense-form-title"
-                    className="mt-1 text-sm font-black text-white"
+                    className="sibs-modal-title mt-1 truncate text-white"
                   >
                     {expenseMode === "edit"
                       ? "Edit Expense Entry"
                       : "Add Expense Entry"}
                   </h3>
 
-                  <p className="mt-0.5 text-[10px] font-semibold text-slate-300">
+                  <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                     {sourceName}
                   </p>
                 </div>

@@ -39,7 +39,7 @@ const modalMeta = {
 };
 
 const inputClass =
-  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
+  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("en-PH", {
@@ -103,10 +103,10 @@ function ModalShell({ activeModal, onClose, generatedAt, children }) {
               <Icon size={16} />
             </span>
             <div className="min-w-0">
-              <h2 id="admin-dashboard-modal-title" className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+              <h2 id="admin-dashboard-modal-title" className="sibs-modal-title font-heading text-base sm:text-lg 2xl:text-xl font-bold tracking-tight text-white truncate">
                 {meta.title}
               </h2>
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle font-jakarta sibs-text-xs font-semibold text-white/75 mt-0.5 truncate">
                 {meta.subtitle}
               </p>
             </div>
@@ -126,7 +126,7 @@ function ModalShell({ activeModal, onClose, generatedAt, children }) {
           {children}
         </div>
 
-        <footer className="shrink-0 border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-2.5 2xl:py-3 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3] sm:px-6">
+        <footer className="shrink-0 border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-2.5 2xl:py-3 font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3] sm:px-6">
           Read-only dashboard records. {formatUpdatedAt(generatedAt)}.
         </footer>
       </section>
@@ -175,11 +175,16 @@ function SearchBox({ onSearch }) {
 
   return (
     <div className="relative">
+      <label htmlFor="admin-modal-search" className="sibs-field-label sr-only">
+        Search live records
+      </label>
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#667085]" />
       <input
+        id="admin-modal-search"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         placeholder="Search live records..."
+        aria-label="Search live records"
         className={`${inputClass} pl-9`}
       />
     </div>
@@ -193,7 +198,7 @@ function PaginationControls({ pagination, onPageChange, disabled }) {
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between font-jakarta">
-      <span className="sibs-text-xs font-semibold text-[#667085]">
+      <span className="font-jakarta sibs-text-xs font-semibold text-[#667085]">
         {formatNumber(total)} total record{total === 1 ? "" : "s"}
       </span>
       <div className="flex items-center gap-2">
@@ -201,18 +206,18 @@ function PaginationControls({ pagination, onPageChange, disabled }) {
           type="button"
           disabled={disabled || currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
-          className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40"
         >
           Previous
         </button>
-        <span className="min-w-20 text-center sibs-text-xs font-bold text-[#042C51]">
+        <span className="min-w-20 text-center font-jakarta sibs-text-xs font-bold text-[#042C51]">
           Page {currentPage} of {totalPages}
         </span>
         <button
           type="button"
           disabled={disabled || currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
-          className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 2xl:h-8.5 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40"
         >
           Next
         </button>
@@ -318,13 +323,13 @@ function AttendanceModal({ attendance }) {
         {cards.map(([label, value, className]) => (
           <div key={label} className={`rounded-xl border p-4 text-center ${className}`}>
             <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide">{label}</span>
-            <p className="mt-1 text-2xl font-extrabold tabular-nums">{formatNumber(value)}</p>
+            <p className="mt-1 font-heading text-2xl 2xl:text-3xl font-bold tabular-nums">{formatNumber(value)}</p>
           </div>
         ))}
       </div>
 
       <section className="rounded-xl border border-[#E6ECF2] p-4">
-        <h3 className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Shift Coverage Details</h3>
+        <h3 className="sibs-modal-section-title font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">Shift Coverage Details</h3>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {(attendance.shifts || []).length === 0 ? (
             <p className="sibs-text-xs font-semibold text-[#667085]">No shift attendance has been recorded today.</p>
@@ -332,7 +337,7 @@ function AttendanceModal({ attendance }) {
             attendance.shifts.map((shift) => (
               <div key={shift.label} className="flex items-center justify-between gap-3 border-b border-[#EEF2F6] py-2 sibs-text-xs">
                 <span className="text-[#667085]">{shift.label}</span>
-                <span className="font-extrabold text-[#042C51]">{formatNumber(shift.value)} Employees</span>
+                <span className="font-heading font-bold text-[#042C51]">{formatNumber(shift.value)} Employees</span>
               </div>
             ))
           )}

@@ -41,6 +41,7 @@ import {
 } from "../../lib/utils/employeeDashboardHelpers.js";
 import { useAdmin } from "../../services/context/AdminContext";
 import { useUser } from "../../services/context/UserContext";
+import { getDefaultDashboardPath } from "../../config/accessControl";
 
 const MANILA_TIME_ZONE = "Asia/Manila";
 
@@ -207,7 +208,7 @@ export default function EmployeeDashboardPage() {
     }
 
     if (ADMIN_ROLES.includes(user.role)) {
-      navigate("/dashboard/admin", { replace: true });
+      navigate(getDefaultDashboardPath(user), { replace: true });
       return;
     }
 

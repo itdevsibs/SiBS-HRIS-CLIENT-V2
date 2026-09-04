@@ -293,7 +293,7 @@ export default function ActionItemModal({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+                <h2 className="sibs-modal-title truncate text-white">
                   Add Action Item
                 </h2>
                 <span className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
@@ -301,7 +301,7 @@ export default function ActionItemModal({
                 </span>
               </div>
 
-              <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                 Add a weekly action item for {item.account || "—"} /{" "}
                 {item.cluster || "—"}.
               </p>
@@ -340,7 +340,7 @@ export default function ActionItemModal({
                   Leads Needed
                 </p>
 
-                <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                <p className="mt-1 font-heading text-base 2xl:text-lg font-bold tabular-nums text-sibs-primary-1">
                   {formatNumber(leadsNeeded)}
                 </p>
               </div>
@@ -350,7 +350,7 @@ export default function ActionItemModal({
                   Current Leads Interviewed
                 </p>
 
-                <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                <p className="mt-1 font-heading text-base 2xl:text-lg font-bold tabular-nums text-sibs-primary-1">
                   {formatNumber(currentLeadsInterviewed)}
                 </p>
               </div>

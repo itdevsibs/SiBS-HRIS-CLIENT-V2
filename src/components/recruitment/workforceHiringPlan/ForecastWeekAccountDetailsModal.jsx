@@ -403,13 +403,13 @@ export default function ForecastWeekAccountDetailsModal({
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xs sm:text-sm 2xl:text-base font-extrabold text-white">
-                  FORECAST WEEK DETAILS
+                <h2 className="sibs-modal-title truncate text-white">
+                  Forecast Week Details
                 </h2>
 
-                <span className="font-bold text-slate-400">|</span>
+                <span className="font-bold text-white/30">|</span>
 
-                <span className="sibs-text-micro font-bold text-slate-300">
+                <span className="sibs-text-micro font-bold text-white/70">
                   Account / Cluster Breakdown
                 </span>
 
@@ -418,16 +418,16 @@ export default function ForecastWeekAccountDetailsModal({
                 </span>
               </div>
 
-              <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono sibs-text-micro text-slate-300">
-                <span className="font-extrabold text-blue-300">
+              <div className="mt-0.5 flex flex-wrap items-center gap-2 sibs-modal-subtitle text-white/75 truncate sm:text-clip">
+                <span className="font-bold text-blue-300">
                   {forecastWeek?.label || "Selected forecast week"}
                 </span>
 
                 {forecastWeek?.forecastBasisStart &&
                 forecastWeek?.forecastBasisEnd ? (
                   <>
-                    <span className="text-slate-500">•</span>
-                    <span className="font-medium text-slate-300">
+                    <span className="text-white/40">•</span>
+                    <span className="text-white/75">
                       Forecast basis: {forecastWeek.forecastBasisStart} to{" "}
                       {forecastWeek.forecastBasisEnd}
                     </span>

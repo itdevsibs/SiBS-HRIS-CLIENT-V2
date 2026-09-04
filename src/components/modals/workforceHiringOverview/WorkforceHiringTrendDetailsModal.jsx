@@ -2380,7 +2380,7 @@ export default function WorkforceHiringTrendDetailsModal({
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-xs sm:text-sm 2xl:text-base font-extrabold text-white">
+                  <h2 className="sibs-modal-title truncate text-white">
                     {rangeLabel} Trend Details
                   </h2>
                   <span className="rounded-full bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wider text-white">
@@ -2388,7 +2388,7 @@ export default function WorkforceHiringTrendDetailsModal({
                   </span>
                 </div>
 
-                <p className="mt-0.5 max-w-4xl text-[9.5px] sm:text-[11px] font-semibold text-white/75">
+                <p className="sibs-modal-subtitle mt-0.5 max-w-4xl text-white/75 truncate sm:text-clip">
                   Inspect the selected trend range, operational filters, workforce trends, and detailed account performance.
                 </p>
               </div>
@@ -2594,7 +2594,7 @@ export default function WorkforceHiringTrendDetailsModal({
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-blue-900/70">
                         Absenteeism Average
                       </span>
-                      <strong className="mt-1 block font-jakarta text-xl font-black tabular-nums text-blue-700">
+                      <strong className="mt-1 block font-heading text-xl 2xl:text-2xl font-bold tabular-nums text-blue-700">
                         {formatPercent(displaySummary.absenteeismPercentage)}
                       </strong>
                       <p className="mt-1 text-[10px] font-semibold text-blue-700/70">
@@ -2606,7 +2606,7 @@ export default function WorkforceHiringTrendDetailsModal({
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-orange-900/70">
                         Attrition Average
                       </span>
-                      <strong className="mt-1 block font-jakarta text-xl font-black tabular-nums text-orange-700">
+                      <strong className="mt-1 block font-heading text-xl 2xl:text-2xl font-bold tabular-nums text-orange-700">
                         {formatPercent(displaySummary.attritionPercentage)}
                       </strong>
                       <p className="mt-1 text-[10px] font-semibold text-orange-700/70">
@@ -2629,7 +2629,7 @@ export default function WorkforceHiringTrendDetailsModal({
                         Buffer Average
                       </span>
                       <strong
-                        className={`mt-1 block font-jakarta text-xl font-black tabular-nums ${safeNumber(displaySummary.bufferPercentage) < 0
+                        className={`mt-1 block font-heading text-xl 2xl:text-2xl font-bold tabular-nums ${safeNumber(displaySummary.bufferPercentage) < 0
                           ? "text-rose-700"
                           : "text-emerald-700"
                           }`}

@@ -334,8 +334,8 @@ export default function ActionItemsDataBridge({ children }) {
   ]);
 
   useEffect(() => {
-    fetchHiringNeeds?.();
-  }, [fetchHiringNeeds]);
+    refreshLiveSources();
+  }, [refreshLiveSources]);
 
   useEffect(() => {
     function handleSourceRefresh() {

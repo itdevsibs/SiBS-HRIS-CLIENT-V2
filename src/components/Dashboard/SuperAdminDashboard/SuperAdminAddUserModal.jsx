@@ -17,13 +17,13 @@ const EMPTY_FORM = {
 function SelectField({ label, value, options, onChange }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <span className="sibs-field-label font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -81,8 +81,8 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
               <UserPlus size={16} />
             </span>
             <div className="min-w-0">
-              <h3 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">Add Admin User</h3>
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <h3 className="sibs-modal-title font-heading text-base sm:text-lg 2xl:text-xl font-bold tracking-tight text-white truncate">Add Admin User</h3>
+              <p className="sibs-modal-subtitle font-jakarta sibs-text-xs font-semibold text-white/75 mt-0.5 truncate">
                 Frontend account setup preview
               </p>
             </div>
@@ -97,10 +97,10 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col font-jakarta">
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar space-y-3">
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <span className="sibs-field-label font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
                 Full Name
               </span>
               <input
@@ -108,12 +108,12 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
                 value={form.name}
                 onChange={(event) => updateField("name", event.target.value)}
                 placeholder="e.g. Maria Santos"
-                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
               />
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <span className="sibs-field-label font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
                 Work Email
               </span>
               <input
@@ -122,7 +122,7 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
                 value={form.email}
                 onChange={(event) => updateField("email", event.target.value)}
                 placeholder="name@thesiblingssolutions.com"
-                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
               />
             </label>
 
@@ -134,13 +134,13 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
             />
 
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <span className="sibs-field-label font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
                 Department
               </span>
               <input
                 value={form.department}
                 onChange={(event) => updateField("department", event.target.value)}
-                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
               />
             </label>
 
@@ -156,13 +156,13 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
             >
               Save Admin Account
             </button>

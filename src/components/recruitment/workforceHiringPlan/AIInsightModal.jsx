@@ -132,7 +132,7 @@ export default function AIInsightModal({
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5 2xl:gap-2">
-                  <h2 className="text-xs sm:text-sm 2xl:text-base font-extrabold text-white">
+                  <h2 className="sibs-modal-title truncate text-white">
                     AI Workforce Intelligence Advisor
                   </h2>
 
@@ -141,7 +141,7 @@ export default function AIInsightModal({
                   </span>
                 </div>
 
-                <p className="mt-0.5 text-[9.5px] sm:text-[11px] font-semibold text-white/75">
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                   Automated capacity deficit modeling and batch scheduling recommendations.
                 </p>
               </div>

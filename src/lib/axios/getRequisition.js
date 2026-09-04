@@ -20,6 +20,21 @@ export async function getHiringManagers() {
   }
 }
 
+export async function getRequisitions(params = {}) {
+  try {
+    const res = await api.get("/api/requisitions", { params });
+    return res.data;
+  } catch (err) {
+    console.error("Axios getRequisitions API error:", err?.response?.status, err?.message);
+    return {
+      success: false,
+      status: err.response?.status || 500,
+      message: err?.message || "An error occurred",
+      data: [],
+    };
+  }
+}
+
 export async function submitRequisition(form) {
   try {
     const res = await api.post("/api/requisitions", form);

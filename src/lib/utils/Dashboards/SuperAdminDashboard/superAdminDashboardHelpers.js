@@ -7,7 +7,7 @@ export const SUPER_ADMIN_ROUTES = Object.freeze({
   jobDescriptions: "/recruitment/job-description",
   hiringNeeds: "/recruitment/hiring-needs",
   candidatePipeline: "/recruitment/candidate-pipeline",
-  reports: "/weekly-reports",
+  reports: "/recruitment/weekly-reports",
   accessSettings: "/settings/account-settings",
 });
 
@@ -19,14 +19,17 @@ export const ACCESS_LEVELS = Object.freeze([
   "5 - Manager",
   "6 - Executive",
   "7 - Super Admin",
+  "8 - Team Leaders",
+  "9 - WFM",
+  "10 - SOM",
 ]);
 
 export const ACCOUNT_GROUPS = Object.freeze([
-  "Verizon Tech",
-  "Comcast Support",
-  "Aetna Health",
+  "Software Management",
+  "Call Center Operations",
+  "Workforce Management",
+  "Management Team",
   "Internal HR Ops",
-  "Global WFM",
 ]);
 
 export const ACCESS_HIERARCHY = Object.freeze([
@@ -37,286 +40,98 @@ export const ACCESS_HIERARCHY = Object.freeze([
   ["5 - Manager", "Team & Approval Head"],
   ["6 - Executive", "Executive Reporting"],
   ["7 - Super Admin", "Full System Oversight"],
+  ["8 - Team Leaders", "Operations & Team Leads"],
+  ["9 - WFM", "Workforce Planning"],
+  ["10 - SOM", "Senior Operations"],
 ]);
 
-export const INITIAL_ADMIN_USERS = Object.freeze([
-  {
-    id: "ADM-001",
-    name: "Ralph Dulla",
-    email: "dulla13ralph@gmail.com",
-    accessLevel: "7 - Super Admin",
-    department: "Executive Tech",
-    accountGroup: "Internal HR Ops",
-    lastActive: "Today at 01:05",
-    status: "Active",
-  },
-  {
-    id: "ADM-002",
-    name: "Alena Batacan",
-    email: "alena.batacan@thesiblingssolutions.com",
-    accessLevel: "3 - HR Admin",
-    department: "People Operations",
-    accountGroup: "Verizon Tech",
-    lastActive: "Today at 00:45",
-    status: "Active",
-  },
-  {
-    id: "ADM-003",
-    name: "Marcus Vance",
-    email: "marcus.vance@thesiblingssolutions.com",
-    accessLevel: "1 - TA",
-    department: "Talent Acquisition",
-    accountGroup: "Comcast Support",
-    lastActive: "Yesterday at 18:20",
-    status: "Active",
-  },
-  {
-    id: "ADM-004",
-    name: "Samantha Reed",
-    email: "s.reed@thesiblingssolutions.com",
-    accessLevel: "4 - Finance",
-    department: "Finance & Payroll",
-    accountGroup: "Aetna Health",
-    lastActive: "Yesterday at 16:10",
-    status: "Active",
-  },
-  {
-    id: "ADM-005",
-    name: "David Chen",
-    email: "david.c@thesiblingssolutions.com",
-    accessLevel: "6 - Executive",
-    department: "Executive Leadership",
-    accountGroup: "Internal HR Ops",
-    lastActive: "3 days ago",
-    status: "Active",
-  },
-  {
-    id: "ADM-006",
-    name: "Patricia Miller",
-    email: "p.miller@thesiblingssolutions.com",
-    accessLevel: "5 - Manager",
-    department: "Technical Support",
-    accountGroup: "Verizon Tech",
-    lastActive: "Today at 00:12",
-    status: "Active",
-  },
-  {
-    id: "ADM-007",
-    name: "Robert Taylor",
-    email: "r.taylor@thesiblingssolutions.com",
-    accessLevel: "2 - HR",
-    department: "Employee Relations",
-    accountGroup: "Global WFM",
-    lastActive: "4 days ago",
-    status: "Pending Mapping",
-  },
-]);
+export function buildDynamicSnapshotCards({
+  metrics = {},
+  overview = null,
+  accountCount = 0,
+  adminCount = 0,
+} = {}) {
+  const employees = Number(metrics?.employeesCount || 0);
+  const departments = Number(metrics?.departmentsCount || 0);
+  const leaves = Number(metrics?.leavesCount || 0);
+  const approvals = Number(metrics?.pendingApprovals || 0);
+  const recruitment = Number(metrics?.recruitmentCount || 0);
+  const accounts = accountCount || 0;
+  const admins = adminCount || Number(metrics?.admins || 0);
 
-export const INITIAL_EXCEPTIONS = Object.freeze([
-  {
-    id: "EXC-101",
-    category: "Unmapped User",
-    title: "3 New Hires Missing Department / Account Mapping",
-    description:
-      "Employee records created in the Comcast account are missing cost center and manager assignments.",
-    severity: "High",
-    moduleTarget: "Employee Directory",
-    path: SUPER_ADMIN_ROUTES.employees,
-    assignedTo: "Alena Batacan",
-    daysPending: 3,
-  },
-  {
-    id: "EXC-102",
-    category: "Pending Resignation",
-    title: "Resignation Clearance Nearing Last Working Date",
-    description:
-      "Senior Agent John Doe resignation is effective in three days. Exit clearance is still pending manager signoff.",
-    severity: "High",
-    moduleTarget: "Resignation Management",
-    path: "/resignation",
-    assignedTo: "HR Operations",
-    daysPending: 9,
-  },
-  {
-    id: "EXC-103",
-    category: "Pending Leave",
-    title: "Maternity Leave Request Pending Approval Over Five Days",
-    description:
-      "A leave request has been waiting for Executive signoff for six days.",
-    severity: "Medium",
-    moduleTarget: "Leaves Management",
-    path: "/leaves",
-    assignedTo: "David Chen",
-    daysPending: 6,
-  },
-  {
-    id: "EXC-104",
-    category: "Attendance Flag",
-    title: "14 Timecard Biometric Variances Pending Review",
-    description:
-      "Night-shift timecards contain missing checkout punches that require Workforce validation.",
-    severity: "Medium",
-    moduleTarget: "Time & Attendance",
-    path: "/attendance",
-    assignedTo: "WFM Lead",
-    daysPending: 2,
-  },
-  {
-    id: "EXC-105",
-    category: "Stuck Approval",
-    title: "Job Requisition Awaiting Budget Signoff",
-    description:
-      "A DevOps Engineer requisition has been pending Finance budget clearance for eight days.",
-    severity: "High",
-    moduleTarget: "Action Items",
-    path: SUPER_ADMIN_ROUTES.approvals,
-    assignedTo: "Samantha Reed",
-    daysPending: 8,
-  },
-  {
-    id: "EXC-106",
-    category: "Recruitment Action",
-    title: "2 Candidate Offers Pending Acceptance Over Seven Days",
-    description:
-      "Offer letters were issued more than seven days ago without a recorded candidate response.",
-    severity: "Low",
-    moduleTarget: "Offers & Onboarding",
-    path: "/recruitment/offers",
-    assignedTo: "Marcus Vance",
-    daysPending: 7,
-  },
-]);
+  const now = new Date();
+  const monthName = now.toLocaleString("en-US", { month: "long" });
+  const year = now.getFullYear();
+  const day = now.getDate();
+  const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+  const payrollCycleText =
+    day <= 15
+      ? `${monthName} 1 – 15, ${year}`
+      : `${monthName} 16 – ${lastDay}, ${year}`;
 
-export const INITIAL_ACTIVITY_LOGS = Object.freeze([
-  {
-    id: "LOG-501",
-    timestamp: "2026-07-22 00:52",
-    actor: "dulla13ralph@gmail.com",
-    accessLevel: "7 - Super Admin",
-    module: "Access Governance",
-    action: "UPDATED_ADMIN_LEVEL",
-    details: "Updated Alena Batacan access level to 3 - HR Admin.",
-    status: "Success",
-  },
-  {
-    id: "LOG-502",
-    timestamp: "2026-07-21 23:14",
-    actor: "alena.batacan@thesiblingssolutions.com",
-    accessLevel: "3 - HR Admin",
-    module: "Employee Directory",
-    action: "UPDATED_EMPLOYEE_RECORD",
-    details: "Assigned department code TECH-SUPP to 12 new hires.",
-    status: "Success",
-  },
-  {
-    id: "LOG-503",
-    timestamp: "2026-07-21 21:40",
-    actor: "marcus.vance@thesiblingssolutions.com",
-    accessLevel: "1 - TA",
-    module: "Candidate Pipeline",
-    action: "ISSUED_OFFER_LETTER",
-    details: "Generated a job offer letter for candidate Jerome Miller.",
-    status: "Success",
-  },
-  {
-    id: "LOG-504",
-    timestamp: "2026-07-21 19:05",
-    actor: "s.reed@thesiblingssolutions.com",
-    accessLevel: "4 - Finance",
-    module: "Payroll",
-    action: "APPROVED_PAYROLL_RUN",
-    details: "Approved the bi-monthly payroll summary for Verizon Tech.",
-    status: "Success",
-  },
-  {
-    id: "LOG-505",
-    timestamp: "2026-07-21 17:30",
-    actor: "SYSTEM_VALIDATOR",
-    accessLevel: "System",
-    module: "Time & Attendance",
-    action: "FLAGGED_ATTENDANCE_MISMATCH",
-    details: "Identified 14 unverified biometric checkout records.",
-    status: "Flagged",
-  },
-]);
+  const attendanceRate =
+    overview?.metrics?.attendanceRate ??
+    (overview?.workforceKpi?.utilization || 98);
 
-export const SUMMARY_CARDS = Object.freeze([
-  {
-    label: "Core HR Scope",
-    value: "2,840 Active Staff",
-    details: "18 Departments • 14 Pending Leaves • 4 Resignations",
-    linkLabel: "Open HR Directory",
-    path: SUPER_ADMIN_ROUTES.employees,
-  },
-  {
-    label: "Talent Acquisition (TA)",
-    value: "142 Candidates",
-    details: "18 Requisitions • 85 Talent Pool • 8 Offers Pending",
-    linkLabel: "Open TA Pipeline",
-    path: SUPER_ADMIN_ROUTES.taDashboard,
-  },
-  {
-    label: "Operations Management (OM)",
-    value: "5 Client Accounts",
-    details: "12 Hiring Needs • 4 Recruiters • 84% Shift Capacity",
-    linkLabel: "Open OM Dashboard",
-    path: SUPER_ADMIN_ROUTES.omDashboard,
-  },
-  {
-    label: "Finance & Payroll",
-    value: "2 Payroll Cycles",
-    details: "Approved for July 2026 • 3 Pending Budget Requests",
-    linkLabel: "Open Payroll Module",
-    path: "/payroll",
-  },
-]);
-
-export const SNAPSHOT_CARDS = Object.freeze([
-  {
-    title: "Core HR & Employee Operations",
-    iconKey: "employees",
-    path: SUPER_ADMIN_ROUTES.employees,
-    metrics: [
-      ["Master Headcount", "2,840 Staff"],
-      ["Active Departments", "18 Depts"],
-      ["Pending Leaves", "14 Active"],
-      ["Resignation Queue", "4 Staff"],
-    ],
-  },
-  {
-    title: "Talent Acquisition & Sourcing",
-    iconKey: "recruitment",
-    path: SUPER_ADMIN_ROUTES.taDashboard,
-    metrics: [
-      ["Candidate Pipeline", "142 Candidates"],
-      ["Open Requisitions", "18 Positions"],
-      ["Offers Outstanding", "8 Issued"],
-      ["Active Onboarding", "15 In Progress"],
-    ],
-  },
-  {
-    title: "Operations Management (OM)",
-    iconKey: "operations",
-    path: SUPER_ADMIN_ROUTES.omDashboard,
-    metrics: [
-      ["Account Groups", "5 Client Accounts"],
-      ["Hiring Needs", "12 Requests"],
-      ["Recruiter Load", "4 Active TA Leads"],
-      ["Operation Capacity", "84% Staffed"],
-    ],
-  },
-  {
-    title: "Finance & Payroll Summary",
-    iconKey: "finance",
-    path: "/payroll",
-    metrics: [
-      ["Current Payroll Cycle", "July 16 - 31, 2026"],
-      ["Payroll Status", "Approved"],
-      ["Budget Requests", "3 Pending Clearance"],
-      ["Reports & Audits", "Monthly Summary Ready"],
-    ],
-  },
-]);
+  return [
+    {
+      title: "Core HR & Employee Operations",
+      iconKey: "employees",
+      path: SUPER_ADMIN_ROUTES.employees,
+      metrics: [
+        [
+          "Master Headcount",
+          employees > 0 ? `${employees.toLocaleString()} Staff` : "Live Directory",
+        ],
+        [
+          "Active Departments",
+          departments > 0 ? `${departments} Depts` : "Configured",
+        ],
+        ["Pending Leaves", `${leaves} Active`],
+        ["Access Governance", `${admins} Assigned`],
+      ],
+    },
+    {
+      title: "Talent Acquisition & Sourcing",
+      iconKey: "recruitment",
+      path: SUPER_ADMIN_ROUTES.taDashboard,
+      metrics: [
+        [
+          "Candidate Pipeline",
+          recruitment > 0 ? `${recruitment} Candidates` : "Live Pipeline",
+        ],
+        ["Open Requisitions", "Active"],
+        ["Weekly Reports", "Performance Ready"],
+        ["Talent Pool", "Sourcing Active"],
+      ],
+    },
+    {
+      title: "Operations Management (OM)",
+      iconKey: "operations",
+      path: SUPER_ADMIN_ROUTES.omDashboard,
+      metrics: [
+        [
+          "Account Groups",
+          accounts > 0 ? `${accounts} Client Accounts` : "Live Accounts",
+        ],
+        ["Recruiter Load", `${admins || 1} Active Leads`],
+        ["Operation Capacity", `${attendanceRate}% Staffed`],
+        ["Shift Coverage", "Real-Time Tracking"],
+      ],
+    },
+    {
+      title: "Finance & Payroll Summary",
+      iconKey: "finance",
+      path: SUPER_ADMIN_ROUTES.approvals || "/payroll",
+      metrics: [
+        ["Current Payroll Cycle", payrollCycleText],
+        ["Payroll Status", "Active Cycle"],
+        ["Approval Requests", `${approvals} Pending Clearance`],
+        ["Reports & Audits", "Audit Logs Ready"],
+      ],
+    },
+  ];
+}
 
 export function getUserDisplayName(user) {
   const values = [
@@ -343,15 +158,68 @@ export function getUserDisplayName(user) {
 }
 
 export function getStatusPillClass(status) {
-  if (status === "Active" || status === "Success") {
+  const s = String(status || "").trim().toLowerCase();
+  if (s === "active" || s === "success") {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
-  if (status === "Locked" || status === "Flagged") {
+  if (s === "locked" || s === "flagged" || s === "inactive") {
     return "border-rose-200 bg-rose-50 text-rose-700";
   }
 
   return "border-amber-200 bg-amber-50 text-amber-700";
+}
+
+export function formatRoleDisplayName(role = "") {
+  const r = String(role || "").trim().toLowerCase();
+  if (r === "ta") return "TA";
+  if (r === "hr") return "HR";
+  if (r === "hr_admin") return "HR Admin";
+  if (r === "wfm") return "WFM";
+  if (r === "som") return "SOM";
+  if (r === "super_admin" || r === "superadmin") return "Super Admin";
+  if (r === "team_leaders" || r === "team_leader") return "Team Leaders";
+  if (r === "manager") return "Manager";
+  if (r === "finance") return "Finance";
+  if (r === "executive") return "Executive";
+  if (r === "employee") return "Employee";
+
+  return r.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export function getAccessLevelClass(accessLevel) {
+  const str = String(accessLevel || "");
+  const lower = str.toLowerCase();
+
+  if (str.startsWith("7") || lower.includes("super_admin") || lower.includes("super admin")) {
+    return "bg-[#042C51] text-white border border-[#042C51]";
+  }
+  if (str.startsWith("6") || lower.includes("executive")) {
+    return "bg-purple-100 text-purple-800 border border-purple-200";
+  }
+  if (str.startsWith("5") || lower.includes("manager")) {
+    return "bg-sky-100 text-sky-800 border border-sky-200";
+  }
+  if (str.startsWith("4") || lower.includes("finance")) {
+    return "bg-amber-100 text-amber-800 border border-amber-200";
+  }
+  if (str.startsWith("3") || lower.includes("hr_admin") || lower.includes("hr admin")) {
+    return "bg-blue-100 text-blue-800 border border-blue-200";
+  }
+  if (str.startsWith("8") || lower.includes("team_leader") || lower.includes("team leaders")) {
+    return "bg-teal-100 text-teal-800 border border-teal-200";
+  }
+  if (str.startsWith("9") || lower.includes("wfm")) {
+    return "bg-indigo-100 text-indigo-800 border border-indigo-200";
+  }
+  if (str.startsWith("10") || lower.includes("som")) {
+    return "bg-emerald-100 text-emerald-800 border border-emerald-200";
+  }
+  if (str.startsWith("1") || lower.includes("ta")) {
+    return "bg-orange-100 text-[#FF5C28] border border-orange-200";
+  }
+
+  return "bg-slate-100 text-slate-700 border border-slate-200";
 }
 
 export function getSeverityPillClass(severity) {
@@ -364,18 +232,6 @@ export function getSeverityPillClass(severity) {
   }
 
   return "border-blue-200 bg-blue-50 text-blue-700";
-}
-
-export function getAccessLevelClass(accessLevel) {
-  if (String(accessLevel || "").startsWith("7")) {
-    return "bg-[#042C51] text-white";
-  }
-
-  if (String(accessLevel || "").startsWith("3")) {
-    return "bg-blue-100 text-blue-800";
-  }
-
-  return "bg-slate-100 text-slate-700";
 }
 
 function includesSearch(values, keyword) {
@@ -402,7 +258,10 @@ export function filterSuperAdminExceptions(items, search, moduleFilter) {
     );
 
     const matchesModule =
-      moduleFilter === "All Modules" || item.moduleTarget === moduleFilter;
+      !moduleFilter ||
+      moduleFilter === "All" ||
+      moduleFilter === "All Modules" ||
+      item.moduleTarget === moduleFilter;
 
     return matchesSearch && matchesModule;
   });
@@ -423,12 +282,20 @@ export function filterSuperAdminAdmins(
       keyword,
     );
     const matchesAccess =
+      !accessLevelFilter ||
+      accessLevelFilter === "All" ||
       accessLevelFilter === "All Access Levels" ||
       item.accessLevel === accessLevelFilter;
     const matchesAccount =
-      accountFilter === "All Accounts" || item.accountGroup === accountFilter;
+      !accountFilter ||
+      accountFilter === "All" ||
+      accountFilter === "All Accounts" ||
+      item.accountGroup === accountFilter;
     const matchesStatus =
-      statusFilter === "All Statuses" || item.status === statusFilter;
+      !statusFilter ||
+      statusFilter === "All" ||
+      statusFilter === "All Statuses" ||
+      item.status === statusFilter;
 
     return matchesSearch && matchesAccess && matchesAccount && matchesStatus;
   });
@@ -448,9 +315,15 @@ export function filterSuperAdminActivity(
       keyword,
     );
     const matchesModule =
-      moduleFilter === "All Modules" || item.module === moduleFilter;
+      !moduleFilter ||
+      moduleFilter === "All" ||
+      moduleFilter === "All Modules" ||
+      item.module === moduleFilter;
     const matchesStatus =
-      statusFilter === "All Statuses" || item.status === statusFilter;
+      !statusFilter ||
+      statusFilter === "All" ||
+      statusFilter === "All Statuses" ||
+      item.status === statusFilter;
 
     return matchesSearch && matchesModule && matchesStatus;
   });
@@ -478,3 +351,366 @@ export function paginateSuperAdminItems(items, page, limit) {
     limit: safeLimit,
   };
 }
+
+export function normalizeSuperAdminMetrics(overview = {}, extraData = {}) {
+  const employees = Number(
+    extraData?.employeeTotal ?? overview?.metrics?.employees ?? 0,
+  );
+  const departments = Number(
+    extraData?.departmentsTotal ?? overview?.metrics?.departments ?? 0,
+  );
+  const late = Number(overview?.attendance?.late || 0);
+  const absent = Number(overview?.attendance?.absent || 0);
+  const onLeave = Number(extraData?.leavesTotal ?? overview?.attendance?.onLeave ?? 0);
+  const attendanceFlags = late + absent;
+  const pendingApprovals = Number(
+    extraData?.approvalsTotal ??
+      overview?.notificationCounts?.pendingApprovals ??
+      overview?.notificationCounts?.approvals ??
+      0,
+  );
+  const recruitmentCount = Number(
+    extraData?.recruitmentTotal ?? overview?.metrics?.interviewsToday ?? 0,
+  );
+  const adminCount = Number(extraData?.adminCount ?? 7);
+
+  return {
+    employees: employees > 0 ? employees.toLocaleString() : "0",
+    employeesCount: employees,
+    departmentsCount: departments,
+    admins: String(adminCount),
+    attendanceFlags: String(attendanceFlags),
+    pendingApprovals: String(pendingApprovals),
+    leavesCount: String(onLeave),
+    recruitmentCount: String(recruitmentCount),
+  };
+}
+
+export function buildDynamicSummaryCards(metrics = {}) {
+  const empCount = metrics?.employees || "0";
+  const deptCount = metrics?.departmentsCount || 0;
+  const leavesCount = metrics?.leavesCount || "0";
+  const approvalsCount = metrics?.pendingApprovals || "0";
+  const recruitmentCount = metrics?.recruitmentCount || "0";
+
+  return [
+    {
+      label: "Core HR Scope",
+      value: `${empCount} Active Staff`,
+      details: `${deptCount} Departments • ${leavesCount} Pending Leaves • ${approvalsCount} Approvals`,
+      linkLabel: "Open HR Directory",
+      path: SUPER_ADMIN_ROUTES.employees,
+    },
+    {
+      label: "Talent Acquisition (TA)",
+      value: `${recruitmentCount} Active Pipeline`,
+      details: "Live Requisitions & Candidate Pipeline",
+      linkLabel: "Open TA Pipeline",
+      path: SUPER_ADMIN_ROUTES.taDashboard,
+    },
+    {
+      label: "Operations Management (OM)",
+      value: "Live Client Accounts",
+      details: "Department Staffing & Shift Capacity",
+      linkLabel: "Open OM Dashboard",
+      path: SUPER_ADMIN_ROUTES.omDashboard,
+    },
+    {
+      label: "Finance & Governance",
+      value: "System Governance",
+      details: `${approvalsCount} Cross-Module Approval Requests`,
+      linkLabel: "Open Approvals",
+      path: SUPER_ADMIN_ROUTES.approvals,
+    },
+  ];
+}
+
+export function deriveLiveExceptions({
+  employeeData = null,
+  approvalsData = null,
+  leavesData = null,
+  overviewData = null,
+} = {}) {
+  const exceptions = [];
+
+  // 1. Unmapped / Incomplete Employees
+  const employees = Array.isArray(employeeData?.data) ? employeeData.data : [];
+  const unmappedEmployees = employees.filter((emp) => {
+    const dept = emp.department || emp.departmentAccount;
+    const acct = emp.account || emp.accountGroup;
+    return !dept || !acct;
+  });
+
+  if (unmappedEmployees.length > 0) {
+    exceptions.push({
+      id: "EXC-LIVE-UNMAPPED",
+      category: "Unmapped User",
+      title: `${unmappedEmployees.length} Employee/s Missing Department or Account Mapping`,
+      description: "Employee record(s) in the directory require cost center and organizational account assignments.",
+      severity: "High",
+      moduleTarget: "Employee Directory",
+      path: SUPER_ADMIN_ROUTES.employees,
+      assignedTo: "HR Operations",
+      daysPending: 2,
+    });
+  }
+
+  // 2. Pending Leaves
+  const pendingLeavesCount =
+    leavesData?.pagination?.total ??
+    (Array.isArray(leavesData?.data)
+      ? leavesData.data.filter((lv) => lv.status === "Pending").length
+      : 0);
+
+  if (pendingLeavesCount > 0) {
+    exceptions.push({
+      id: "EXC-LIVE-LEAVES",
+      category: "Pending Leave",
+      title: `${pendingLeavesCount} Leave Request/s Awaiting Approval`,
+      description: "Employee leave requests are currently pending supervisor or management review.",
+      severity: pendingLeavesCount > 10 ? "High" : "Medium",
+      moduleTarget: "Leaves Management",
+      path: "/leaves",
+      assignedTo: "HR Admin",
+      daysPending: 3,
+    });
+  }
+
+  // 3. Pending Approvals
+  const pendingApprovalsCount =
+    approvalsData?.counts?.pending ??
+    approvalsData?.total ??
+    (Array.isArray(approvalsData?.data) ? approvalsData.data.length : 0);
+
+  if (pendingApprovalsCount > 0) {
+    exceptions.push({
+      id: "EXC-LIVE-APPROVALS",
+      category: "Stuck Approval",
+      title: `${pendingApprovalsCount} Workflow Approval Request/s Pending Review`,
+      description: "System approval requests for Job Descriptions, Hiring Needs, or Personnel Requisitions require signoff.",
+      severity: pendingApprovalsCount > 5 ? "High" : "Medium",
+      moduleTarget: "Approval Requests",
+      path: SUPER_ADMIN_ROUTES.approvals,
+      assignedTo: "Approver Desk",
+      daysPending: 4,
+    });
+  }
+
+  // 4. Resignations
+  const resignationCount = Number(overviewData?.resignationCount || 0);
+  if (resignationCount > 0) {
+    exceptions.push({
+      id: "EXC-LIVE-RESIGNATIONS",
+      category: "Pending Resignation",
+      title: `${resignationCount} Active Resignation Clearance/s in Progress`,
+      description: "Resignation records and exit clearance workflows are pending final management signoff.",
+      severity: "High",
+      moduleTarget: "Resignation Management",
+      path: "/resignation",
+      assignedTo: "HR Operations",
+      daysPending: 5,
+    });
+  }
+
+  // 5. Attendance Variances
+  const attendanceLate = Number(overviewData?.attendance?.late || 0);
+  const attendanceAbsent = Number(overviewData?.attendance?.absent || 0);
+  const totalAttendanceFlags = attendanceLate + attendanceAbsent;
+  if (totalAttendanceFlags > 0) {
+    exceptions.push({
+      id: "EXC-LIVE-ATTENDANCE",
+      category: "Attendance Variance",
+      title: `${totalAttendanceFlags} Timecard & Biometric Variances Pending Review`,
+      description: `${attendanceLate} late arrivals and ${attendanceAbsent} absences recorded in attendance logs requiring workforce validation.`,
+      severity: totalAttendanceFlags > 10 ? "High" : "Medium",
+      moduleTarget: "Time & Attendance",
+      path: "/attendance",
+      assignedTo: "WFM Lead",
+      daysPending: 1,
+    });
+  }
+
+  return exceptions;
+}
+
+export function detectActivityModule(action = "", details = "") {
+  const text = `${action} ${details}`.toLowerCase();
+
+  if (text.includes("requisition")) return "Job Requisitions";
+  if (text.includes("jd-") || text.includes("job description")) return "Job Descriptions";
+  if (
+    text.includes("interview") ||
+    text.includes("screen") ||
+    text.includes("candidate") ||
+    text.includes("assessment") ||
+    text.includes("pipeline")
+  ) {
+    return "Candidate Pipeline";
+  }
+  if (text.includes("offer") || text.includes("onboarding") || text.includes("nho")) {
+    return "Offers & Onboarding";
+  }
+  if (text.includes("leave")) return "Leaves Management";
+  if (text.includes("resign") || text.includes("clearance")) return "Resignation Management";
+  if (text.includes("attendance") || text.includes("timecard") || text.includes("biometric")) {
+    return "Time & Attendance";
+  }
+  if (text.includes("employee") || text.includes("hire") || text.includes("department")) {
+    return "Employee Directory";
+  }
+  if (text.includes("admin") || text.includes("access") || text.includes("role") || text.includes("user")) {
+    return "Access Governance";
+  }
+  if (text.includes("payroll") || text.includes("salary") || text.includes("bonus")) {
+    return "Payroll";
+  }
+
+  return "HRIS Operations";
+}
+
+function formatAuditTimestamp(rawTimestamp) {
+  if (!rawTimestamp || rawTimestamp === "Recently") {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+
+  const date = new Date(rawTimestamp);
+  if (Number.isNaN(date.getTime())) {
+    return String(rawTimestamp);
+  }
+
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function enrichActivityLogs(rawLogs = []) {
+  if (!Array.isArray(rawLogs)) return [];
+
+  return rawLogs.map((item, idx) => {
+    const action = item.action || item.actionTaken || "SYSTEM_EVENT";
+    const details = item.details || item.description || item.detail || "Activity recorded.";
+    const detectedModule = item.module && item.module !== "HRIS Operations"
+      ? item.module
+      : detectActivityModule(action, details);
+
+    return {
+      id: item.id || `LOG-LIVE-${idx}-${Date.now()}`,
+      timestamp: formatAuditTimestamp(item.timestamp || item.created_at || item.createdAt),
+      actor: item.actor || item.userName || item.user || "System",
+      accessLevel: item.accessLevel || item.role || "Admin",
+      module: detectedModule,
+      action: action,
+      details: details,
+      status: item.status || "Success",
+    };
+  });
+}
+
+export function exportActivityLogsToCsv(logs = []) {
+  if (!Array.isArray(logs) || logs.length === 0) {
+    return false;
+  }
+
+  const headers = ["Timestamp", "User Actor", "Access Level", "Module", "Action Taken", "Log Details", "Result Status"];
+
+  const escapeCsvValue = (val) => {
+    const stringVal = String(val ?? "");
+    if (stringVal.includes(",") || stringVal.includes('"') || stringVal.includes("\n")) {
+      return `"${stringVal.replace(/"/g, '""')}"`;
+    }
+    return stringVal;
+  };
+
+  const rows = logs.map((log) => [
+    escapeCsvValue(log.timestamp),
+    escapeCsvValue(log.actor),
+    escapeCsvValue(log.accessLevel),
+    escapeCsvValue(log.module),
+    escapeCsvValue(log.action),
+    escapeCsvValue(log.details),
+    escapeCsvValue(log.status),
+  ]);
+
+  const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\r\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const today = new Date().toISOString().slice(0, 10);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `sibs-hris-activity-log-${today}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  return true;
+}
+
+export function normalizeAssignedAdminUsers(users = []) {
+  if (!Array.isArray(users)) return [];
+
+  return users.map((user, idx) => {
+    const name =
+      user.employeeName ||
+      user.fullName ||
+      `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+      user.name ||
+      "User";
+    const email = user.email || "No email available";
+
+    const roleName = formatRoleDisplayName(user.role);
+    const accessLevelNumber = Number(user.adminAccess ?? user.admin_access ?? 7);
+    const accessLevel = `${accessLevelNumber} - ${roleName}`;
+
+    let department = "General";
+    if (Array.isArray(user.departments) && user.departments.length > 0) {
+      department = user.departments
+        .map((d) => d.name || d.departmentName || d.department || d)
+        .filter(Boolean)
+        .join(", ");
+    } else if (user.department) {
+      department = user.department;
+    }
+
+    let accountGroup = "All Accounts";
+    if (Array.isArray(user.assignedAccounts) && user.assignedAccounts.length > 0) {
+      accountGroup = user.assignedAccounts
+        .map((a) => a.name || a.accountName || a.account || a)
+        .filter(Boolean)
+        .join(", ");
+    } else if (user.account) {
+      accountGroup = user.account;
+    }
+
+    let lastActive = "Active";
+    if (user.updatedAt || user.updated_at) {
+      const d = new Date(user.updatedAt || user.updated_at);
+      if (!Number.isNaN(d.getTime())) {
+        lastActive = d.toLocaleDateString("en-PH", {
+          month: "short",
+          day: "numeric",
+        });
+      }
+    }
+
+    const rawStatus = user.status || "Active";
+    const status =
+      rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
+
+    return {
+      id: user.sibsId || user.sibs_id || user.id || `ADM-${idx + 1}`,
+      name,
+      email,
+      accessLevel,
+      department,
+      accountGroup,
+      lastActive,
+      status,
+    };
+  });
+}
+
+
+

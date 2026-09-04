@@ -83,11 +83,11 @@ function FormSection({
           })}
 
           <div className="min-w-0">
-            <h3 className="font-jakarta text-sm font-extrabold text-[#042C51]">
+            <h3 className="sibs-modal-section-title text-[#042C51]">
               {title}
             </h3>
 
-            <p className="mt-0.5 font-jakarta text-[10px] sm:text-xs font-semibold leading-relaxed text-[#667085]">
+            <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
               {subtitle}
             </p>
           </div>
@@ -2627,12 +2627,12 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <h2
                     id="add-hiring-needs-title"
-                    className="text-sm sm:text-base 2xl:text-lg font-extrabold text-white"
+                    className="sibs-modal-title truncate text-white"
                   >
                     New Personnel Requisition
                   </h2>
 
-                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] font-extrabold uppercase text-white">
+                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
                     {form.requestType === "downsize"
                       ? "Downsize"
                       : form.requestType === "requisition"
@@ -2641,7 +2641,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   </span>
                 </div>
 
-                <p className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-4 text-slate-300">
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
                   Create a Requisition or Downsize request and route it for approval.
                 </p>
               </div>

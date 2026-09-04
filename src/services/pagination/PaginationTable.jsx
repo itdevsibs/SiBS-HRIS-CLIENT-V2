@@ -283,7 +283,15 @@ export default function PaginationTable({
       return `${selectedValues.length} selected`;
     }
 
-    if (!filter?.value || filter.value === "All") {
+    if (
+      !filter?.value ||
+      filter.value === "All" ||
+      filter.value === filter.allLabel ||
+      filter.value === "All Modules" ||
+      filter.value === "All Accounts" ||
+      filter.value === "All Statuses" ||
+      filter.value === "All Access Levels"
+    ) {
       return filter?.allLabel || filter?.placeholder || "All";
     }
 
@@ -317,7 +325,16 @@ export default function PaginationTable({
   }
 
   function getFilteredDropdownOptions(filter) {
-    const options = Array.isArray(filter?.options) ? filter.options : [];
+    const rawOptions = Array.isArray(filter?.options) ? filter.options : [];
+    const options = filter.includeAll
+      ? rawOptions.filter((opt) => {
+          const val = String(getOptionValue(opt) ?? "").trim().toLowerCase();
+          const lbl = String(getOptionLabel(opt) ?? "").trim().toLowerCase();
+          const allLbl = String(filter.allLabel || "All").trim().toLowerCase();
+          return val !== "all" && val !== allLbl && lbl !== "all" && lbl !== allLbl;
+        })
+      : rawOptions;
+
     const keyword = String(dropdownSearch?.[filter.key] || "")
       .trim()
       .toLowerCase();
@@ -526,7 +543,13 @@ export default function PaginationTable({
                       className={`block w-full px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
                         (filter.multiple
                           ? selectedValues.length === 0
-                          : filter.value === "All")
+                          : (!filter.value ||
+                             filter.value === "All" ||
+                             filter.value === filter.allLabel ||
+                             filter.value === "All Modules" ||
+                             filter.value === "All Accounts" ||
+                             filter.value === "All Statuses" ||
+                             filter.value === "All Access Levels"))
                           ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
                           : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                       }`}

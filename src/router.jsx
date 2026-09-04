@@ -5,6 +5,8 @@ import NotFound from "@/pages/NotFound";
 import LoginPage from "./pages/login/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PageFallback from "@/components/ui/PageFallback";
+import { useUser } from "./services/context/UserContext";
+import { getDefaultDashboardPath } from "./config/accessControl";
 
 function lazyWithRetry(componentImport) {
   return lazy(async () => {
@@ -110,6 +112,12 @@ export function isPublicApplicationHostname(hostname) {
 
 function PrivateRoute({ children }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
+}
+
+function DashboardRedirect() {
+  const { user } = useUser();
+  const targetPath = getDefaultDashboardPath(user);
+  return <Navigate to={targetPath} replace />;
 }
 
 function PublicApplicationRoutes() {
@@ -247,6 +255,15 @@ function MainApplicationRoutes() {
       />
 
       {/* DASHBOARDS */}
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute>
+            <DashboardRedirect />
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/dashboard/super-admin"
         element={

@@ -62,7 +62,7 @@ export default function CandidateModalSummary({
         <div className="min-w-0 flex-1">
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <h3 className="truncate sibs-text-xs sm:sibs-text-sm font-extrabold text-[#101828]">
+              <h3 className="truncate font-heading text-sm sm:text-base 2xl:text-lg font-bold text-[#042C51]">
                 {candidateName}
               </h3>
               <p className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
@@ -71,7 +71,7 @@ export default function CandidateModalSummary({
             </div>
             {currentStage && (
               <span
-                className={`w-fit shrink-0 rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide ${statusClass}`}
+                className={`w-fit shrink-0 rounded-full border px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide ${statusClass}`}
               >
                 {currentStage}
               </span>
