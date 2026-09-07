@@ -277,10 +277,10 @@ export default function OutcomeModal({
               <Icon size={12} />
               Outcome Resolution
             </span>
-            <h2 className="mt-2 sibs-text-base font-extrabold text-white">
+            <h2 className="sibs-modal-title mt-2 text-white">
               {theme.title}
             </h2>
-            <p className="mt-0.5 sibs-text-xs font-semibold text-slate-300">
+            <p className="sibs-modal-subtitle mt-0.5 text-white/75">
               Resolve the candidate’s onboarding start outcome and required notes.
             </p>
           </div>
@@ -307,10 +307,10 @@ export default function OutcomeModal({
                   <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
                     Candidate
                   </p>
-                  <h3 className={`mt-1 sibs-text-sm font-extrabold ${theme.text}`}>
+                  <h3 className={`sibs-modal-section-title mt-1 ${theme.text}`}>
                     {record.candidateName}
                   </h3>
-                  <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                  <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
                     {record.roleTitle || "Not assigned"} • {record.account || "No account"}
                   </p>
                 </div>

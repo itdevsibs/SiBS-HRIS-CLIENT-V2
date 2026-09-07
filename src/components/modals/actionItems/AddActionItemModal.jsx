@@ -650,12 +650,12 @@ export default function AddActionItemModal() {
               <div className="min-w-0">
                 <h2
                   id="add-action-item-title"
-                  className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                  className="sibs-modal-title text-white"
                 >
                   Add Recruitment Action Item
                 </h2>
 
-                <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75">
                   Link a hiring gap to one accountable owner, deadline, risk
                   level, and follow-up action.
                 </p>
@@ -677,7 +677,7 @@ export default function AddActionItemModal() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
             <section className="flex min-w-0 flex-col rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-4 shadow-sm sm:p-5">
               <div className="mb-3 flex items-center justify-between border-b border-[#E9EEF4] pb-2.5">
-                <h3 className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.04em] text-[#042C51]">
+                <h3 className="flex items-center gap-1.5 sibs-modal-section-title text-[#042C51]">
                   <BriefcaseBusiness size={14} className="shrink-0 text-[#FF5C28]" />
                   Hiring Gap Source Record
                 </h3>
@@ -805,7 +805,7 @@ export default function AddActionItemModal() {
 
             <section className="flex min-w-0 flex-col rounded-xl border border-[#DDE5EE] bg-white p-4 shadow-sm sm:p-5">
               <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#E9EEF4] pb-3">
-                <h3 className="flex min-w-0 items-center gap-2 text-[11px] font-black uppercase tracking-[0.04em] text-[#042C51]">
+                <h3 className="flex min-w-0 items-center gap-2 sibs-modal-section-title text-[#042C51]">
                   <CheckCircle2
                     size={14}
                     className="shrink-0 text-[#FF5C28]"

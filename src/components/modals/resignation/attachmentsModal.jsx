@@ -248,12 +248,12 @@ export default function AttachmentsModal({
             <div className="min-w-0">
               <h2
                 id="resignation-attachments-title"
-                className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                className="sibs-modal-title truncate text-white"
               >
                 Resignation Attachments
               </h2>
 
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 {employeeName} · {sibsId || "No SIBS ID"}
               </p>
             </div>
@@ -303,11 +303,11 @@ export default function AttachmentsModal({
                 <Paperclip size={22} />
               </span>
 
-              <h3 className="mt-4 text-sm font-extrabold text-[#042C51]">
+              <h3 className="sibs-modal-section-title mt-4 text-[#042C51]">
                 No Attachments
               </h3>
 
-              <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-[#667085]">
+              <p className="sibs-modal-section-subtitle mt-2 max-w-sm leading-6 text-[#667085]">
                 No attachment was submitted for this resignation.
               </p>
             </div>
@@ -318,7 +318,7 @@ export default function AttachmentsModal({
           <button
             type="button"
             onClick={requestClose}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#042C51] px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
           >
             Close
           </button>

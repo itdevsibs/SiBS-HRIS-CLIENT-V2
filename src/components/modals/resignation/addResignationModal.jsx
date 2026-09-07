@@ -508,11 +508,11 @@ export default function AddResignationModal({
         <div className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta">
           <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
             <div className="min-w-0">
-              <h2 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+              <h2 className="sibs-modal-title truncate text-white">
                 {isEdit ? "Edit Resignation" : "Submit Resignation"}
               </h2>
 
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 {isEdit ? "Edit" : "Submit"} your resignation request details
               </p>
             </div>
@@ -932,7 +932,7 @@ export default function AddResignationModal({
             </div>
 
             <div className="px-6 pb-6 pt-1 text-center">
-              <h2 className="mx-auto max-w-[320px] text-xl font-bold leading-tight text-sibs-primary-1">
+              <h2 className="sibs-modal-title mx-auto max-w-[320px] leading-tight text-sibs-primary-1">
                 Important Notice Regarding Company Policy:
               </h2>
 

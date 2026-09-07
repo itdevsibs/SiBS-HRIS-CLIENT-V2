@@ -808,14 +808,14 @@ export default function AddFieldCard() {
             <div className="min-w-0">
               <h2
                 id="add-form-questions-title"
-                className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                className="sibs-modal-title truncate text-white"
               >
                 {editingFieldId
                   ? "Edit Form Question"
                   : "Add Form Questions"}
               </h2>
 
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 {editingFieldId
                   ? "Update the title, question, and input type."
                   : "Create one title and add one or more questions under it."}
@@ -905,11 +905,11 @@ export default function AddFieldCard() {
                 <section className="rounded-2xl border border-[#DCE4ED] bg-white p-5 shadow-[0_6px_18px_rgba(4,44,81,0.04)]">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="text-sm font-extrabold text-[#173B61]">
+                      <h3 className="sibs-modal-section-title text-[#173B61]">
                         Questions
                       </h3>
 
-                      <p className="mt-0.5 text-[11px] font-medium text-[#77899F]">
+                      <p className="sibs-modal-section-subtitle mt-0.5 text-[#77899F]">
                         Add multiple questions under the same title.
                       </p>
                     </div>

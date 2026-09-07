@@ -441,12 +441,12 @@ export default function ViewJobDescriptionDetailsModal({
 
               <h2
                 id="view-job-description-modal-title"
-                className="mt-0.5 min-w-0 break-words font-heading text-lg 2xl:text-2xl font-bold leading-tight text-[#042C51]"
+                className="sibs-modal-title mt-0.5 min-w-0 break-words text-[#042C51]"
               >
                 {jdTitle}
               </h2>
 
-              <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+              <p className="sibs-modal-subtitle mt-0.5 text-[#667085]">
                 {item.department || "—"} • {item.account || "—"}
               </p>
             </div>
@@ -589,16 +589,16 @@ export default function ViewJobDescriptionDetailsModal({
       {showEditedChanges && (
         <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex items-center justify-center px-4">
           <div
-            className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="sibs-modal-pop-in w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
               <div>
-                <h3 className="text-base font-extrabold text-[#101828]">
+                <h3 className="sibs-modal-title text-[#101828]">
                   Edited Changes
                 </h3>
 
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                <p className="sibs-modal-subtitle mt-1 text-sibs-tertiary-5">
                   Review the fields that will be saved as a new version.
                 </p>
               </div>

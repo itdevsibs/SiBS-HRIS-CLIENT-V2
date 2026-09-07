@@ -196,7 +196,7 @@ function Badge({ children, className = "" }) {
 function SectionHeading({ children }) {
   return (
     <div className="mb-3 flex items-center gap-3">
-      <h3 className="shrink-0 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#8A98B8]">
+      <h3 className="sibs-modal-section-title shrink-0">
         {children}
       </h3>
 
@@ -652,11 +652,11 @@ function LeaveDetailsModal({
             <div className="min-w-0">
               <h2
                 id="leave-details-title"
-                className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                className="sibs-modal-title truncate text-white"
               >
                 Leave Request & Ledger Audit
               </h2>
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 Detailed ledger breakdown, leave balances, and approval sign-off
               </p>
             </div>
@@ -682,7 +682,7 @@ function LeaveDetailsModal({
                 </div>
 
                 <div className="min-w-0">
-                  <h3 className="break-words text-xs 2xl:text-sm font-extrabold text-[#042C51]">
+                  <h3 className="sibs-modal-section-title break-words text-[#042C51]">
                     {item.gy_full_name ||
                       item.gy_username ||
                       "Unknown User"}
@@ -891,11 +891,11 @@ function LeaveDetailsModal({
                     />
 
                     <div className="min-w-0">
-                      <h3 className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#042C51]">
+                      <h3 className="sibs-modal-section-title text-[#042C51]">
                         Pending Approval Action
                       </h3>
 
-                      <p className="mt-0.5 sibs-text-micro font-semibold leading-tight text-[#667085]">
+                      <p className="sibs-modal-section-subtitle mt-0.5 leading-tight text-[#667085]">
                         {canRunApproval
                           ? "Sign off or reject this request with your configured administrative access."
                           : "This request is pending approval from an authorized leave approver."}
@@ -909,7 +909,7 @@ function LeaveDetailsModal({
                         type="button"
                         onClick={() => handleDecision("approve")}
                         disabled={busy}
-                        className="inline-flex h-8.5 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-8.5 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 font-jakarta sibs-text-xs font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {decisionAction === "approve" ? (
                           <Loader2
@@ -926,7 +926,7 @@ function LeaveDetailsModal({
                         type="button"
                         onClick={() => handleDecision("reject")}
                         disabled={busy}
-                        className="inline-flex h-8.5 items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-3.5 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-8.5 items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-3.5 font-jakarta sibs-text-xs font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {decisionAction === "reject" ? (
                           <Loader2

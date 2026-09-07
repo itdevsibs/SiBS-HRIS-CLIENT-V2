@@ -275,11 +275,11 @@ function SectionCard({ title, subtitle, icon: Icon = FileText, children }) {
             <Icon size={16} />
           </span>
           <div className="min-w-0">
-            <h3 className="text-sm font-extrabold uppercase tracking-[0.02em] text-[#07355F]">
+            <h3 className="sibs-modal-section-title">
               {title}
             </h3>
             {subtitle ? (
-              <p className="mt-0.5 text-[10px] font-semibold text-[#7B8DB3]">
+              <p className="sibs-modal-section-subtitle mt-0.5">
                 {subtitle}
               </p>
             ) : null}
@@ -736,28 +736,28 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#031A2D]/72 p-3 backdrop-blur-[3px] sm:p-5"
+      className="sibs-modal-blur fixed inset-0 z-[10000] flex items-center justify-center bg-[#031A2D]/72 p-3 font-jakarta backdrop-blur-[3px] sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-label="CHWCP request details"
       onMouseDown={(event) => event.stopPropagation()}
     >
       <div
-        className="flex max-h-[94vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-[#D6E1EA] bg-[#F6F8FB] shadow-[0_28px_80px_rgba(0,20,38,0.36)]"
+        className="flex max-h-[94vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-[#D6E1EA] bg-[#F6F8FB] shadow-[0_28px_80px_rgba(0,20,38,0.36)] font-jakarta"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#07355F] px-5 py-4 text-white sm:px-6">
+        <header className="shrink-0 bg-[#07355F] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+            <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+              <span className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
                 <FileText size={18} />
               </span>
 
               <div className="min-w-0">
-                <h2 className="truncate text-sm font-extrabold uppercase tracking-[0.02em] sm:text-base">
+                <h2 className="sibs-modal-title truncate text-white">
                   CHWCP REQUEST DETAILS - {displayFormType.toUpperCase()}
                 </h2>
-                <p className="mt-0.5 truncate text-[10px] font-semibold text-white/80 sm:text-[11px]">
+                <p className="sibs-modal-subtitle mt-0.5 truncate text-white/80">
                   Comprehensive health and compliance request record
                 </p>
               </div>
@@ -766,7 +766,7 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
               aria-label="Close CHWCP request details"
               title="Close"
             >
@@ -810,7 +810,7 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="break-words text-sm font-extrabold uppercase text-[#07355F] sm:text-base">
+                        <h3 className="sibs-modal-section-title break-words text-[#07355F]">
                           {safeText(summaryEmployee.employeeName)}
                         </h3>
 
@@ -875,7 +875,7 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
           <button
             type="button"
             onClick={onClose}
-            className="ml-auto inline-flex h-9 items-center justify-center rounded-lg border border-[#D7E2EC] bg-white px-5 text-xs font-extrabold text-[#07355F] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+            className="ml-auto inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7E2EC] bg-white px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-[#07355F] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
           >
             Close
           </button>

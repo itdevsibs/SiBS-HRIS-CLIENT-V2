@@ -16,15 +16,15 @@ export default function DocumentUploadModal({
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={onClose}
     >
       <div
-        className="sibs-modal-pop-in w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+        className="sibs-modal-pop-in w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl font-jakarta"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-3">
-          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          <h3 className="sibs-modal-title text-[#042C51]">
             Configure Upload
           </h3>
           <button
@@ -57,13 +57,13 @@ export default function DocumentUploadModal({
             <button
               type="button"
               onClick={onClose}
-              className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="h-9 rounded-xl bg-[#042C51] px-5 text-xs font-extrabold text-white"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#042C51] px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white transition hover:bg-[#073B6C]"
             >
               Add Document
             </button>

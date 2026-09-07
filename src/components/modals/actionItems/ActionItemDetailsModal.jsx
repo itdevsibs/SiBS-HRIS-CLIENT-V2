@@ -24,7 +24,7 @@ function SectionTitle({ icon: Icon, children, helper = "" }) {
   return (
     <div className="mb-3.5 flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-2.5 font-jakarta">
       <div className="min-w-0">
-        <h3 className="flex items-center gap-2 text-sm font-extrabold text-[#042C51]">
+        <h3 className="flex items-center gap-2 sibs-modal-section-title text-[#042C51]">
           {Icon ? (
             <span className="flex h-6 w-6 2xl:h-6.5 2xl:w-6.5 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-[#042C51]">
               <Icon size={14} className="shrink-0 text-[#FF5C28]" />
@@ -33,7 +33,7 @@ function SectionTitle({ icon: Icon, children, helper = "" }) {
           {children}
         </h3>
         {helper ? (
-          <p className="mt-0.5 text-[10px] font-semibold leading-4 text-[#667085] sm:text-xs sm:leading-5">
+          <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
             {helper}
           </p>
         ) : null}
@@ -163,13 +163,13 @@ export default function ActionItemDetailsModal({
 
                 <h2
                   id="action-item-details-title"
-                  className="mt-1 line-clamp-2 text-base sm:text-lg 2xl:text-xl font-extrabold text-white leading-tight"
+                  className="sibs-modal-title mt-1 line-clamp-2 text-white leading-tight"
                   title={item.actionItem || "Action Item Details"}
                 >
                   {item.actionItem || "Action Item Details"}
                 </h2>
 
-                <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
+                <p className="sibs-modal-subtitle mt-0.5 text-white/75">
                   Review the linked hiring gap, accountability, progress, and
                   execution history.
                 </p>

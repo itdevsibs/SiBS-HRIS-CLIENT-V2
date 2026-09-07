@@ -453,10 +453,10 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div>
-            <h2 className="text-base sm:text-lg 2xl:text-xl font-extrabold tracking-tight">
+            <h2 className="sibs-modal-title truncate text-white">
               Offer Details
             </h2>
-            <p className="mt-0.5 sibs-text-xs font-semibold text-white/75 2xl:text-sm">
+            <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
               Approval, evaluation results, and complete offer negotiation history.
             </p>
           </div>
@@ -481,7 +481,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
                       {offer.offerId}
                     </p>
-                    <h3 className="mt-1 text-lg 2xl:text-xl font-extrabold tracking-tight text-[#042C51]">
+                    <h3 className="mt-1 font-heading text-lg 2xl:text-xl font-bold tracking-tight text-[#042C51]">
                       {offer.candidateName}
                     </h3>
                     <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
@@ -501,7 +501,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
               {canSubmitRevision ? (
                 <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5 shadow-sm">
-                  <h3 className="sibs-text-sm font-extrabold text-amber-900">
+                  <h3 className="sibs-modal-section-title text-amber-900">
                     Candidate Requested Negotiation
                   </h3>
                   <p className="mt-2 rounded-lg border border-amber-200 bg-white p-3 sibs-text-xs font-semibold text-amber-900">
@@ -583,11 +583,11 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   <div>
                     <div className="flex items-center gap-2">
                       <History size={16} className="text-[#FF5C28]" />
-                      <h3 className="sibs-text-sm font-extrabold text-[#042C51]">
+                      <h3 className="sibs-modal-section-title text-[#042C51]">
                         Negotiation History
                       </h3>
                     </div>
-                    <p className="mt-0.5 sibs-text-xs font-semibold leading-relaxed text-[#667085]">
+                    <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
                       Current offer compared with the previous offer.
                     </p>
                   </div>
@@ -744,7 +744,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </section>
 
               <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 sm:p-5 shadow-sm">
-                <h3 className="sibs-text-sm font-extrabold text-[#042C51]">
+                <h3 className="sibs-modal-section-title text-[#042C51]">
                   Remarks
                 </h3>
                 <p className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5 sibs-text-xs font-semibold leading-relaxed text-[#344054]">
@@ -755,7 +755,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
             <aside className="space-y-4 2xl:space-y-5 lg:sticky lg:top-0 lg:self-start">
               <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 2xl:p-5">
-                <h3 className="sibs-text-sm font-extrabold text-[#042C51]">
+                <h3 className="sibs-modal-section-title text-[#042C51]">
                   Offer Summary
                 </h3>
 
@@ -836,10 +836,10 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </section>
 
               <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 2xl:p-5">
-                <h3 className="sibs-text-sm font-extrabold text-[#042C51]">
+                <h3 className="sibs-modal-section-title text-[#042C51]">
                   Evaluation Results
                 </h3>
-                <p className="mt-0.5 sibs-text-xs font-semibold leading-relaxed text-[#667085]">
+                <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
                   Scores carried forward from Candidate Pipeline.
                 </p>
 

@@ -32,12 +32,12 @@ export default function RevisionCommentModal({
           <div className="min-w-0">
             <h3
               id="add-revision-comment-title"
-              className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+              className="sibs-modal-title truncate text-white"
             >
               Add Revision Comment
             </h3>
 
-            <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+            <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
               {commentModal.sectionTitle}
             </p>
           </div>

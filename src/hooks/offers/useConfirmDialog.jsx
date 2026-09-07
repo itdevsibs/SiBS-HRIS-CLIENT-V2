@@ -31,15 +31,15 @@ export function useConfirmDialog() {
     const isDanger = config.variant === "danger";
 
     return (
-      <div className="fixed inset-0 z-[11000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4">
-        <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+      <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[11000] flex h-dvh items-center justify-center p-4">
+        <div className="sibs-modal-pop-in w-full max-w-md rounded-2xl bg-white p-5 shadow-xl font-jakarta">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-extrabold text-sibs-primary-1">
+              <h2 className="sibs-modal-title text-sibs-primary-1">
                 {config.title}
               </h2>
 
-              <p className="mt-2 text-sm font-semibold leading-6 text-[#475467]">
+              <p className="sibs-modal-subtitle mt-2 text-[#475467]">
                 {config.message}
               </p>
             </div>
@@ -57,7 +57,7 @@ export function useConfirmDialog() {
             <button
               type="button"
               onClick={() => close(false)}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC]"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-4 font-jakarta sibs-text-xs font-extrabold text-gray-600 transition hover:bg-[#F8FAFC]"
             >
               {config.cancelText}
             </button>
@@ -65,7 +65,7 @@ export function useConfirmDialog() {
             <button
               type="button"
               onClick={() => close(true)}
-              className={`inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+              className={`inline-flex h-10 items-center justify-center rounded-xl px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                 isDanger ? "bg-red-600" : "bg-sibs-primary-1"
               }`}
             >

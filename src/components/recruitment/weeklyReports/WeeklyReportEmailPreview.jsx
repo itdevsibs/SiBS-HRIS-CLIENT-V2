@@ -77,10 +77,10 @@ export default function WeeklyReportEmailPreview({
               <Mail size={16} />
             </span>
             <div className="min-w-0">
-              <h2 id="weekly-report-email-title" className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+              <h2 id="weekly-report-email-title" className="sibs-modal-title truncate text-white">
                 Management Email Digest
               </h2>
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 {report?.weekLabel || "Current Week"} · {report?.dateRange || ""}
               </p>
             </div>
