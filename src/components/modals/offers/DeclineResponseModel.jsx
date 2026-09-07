@@ -26,10 +26,10 @@ export default function DeclineResponseModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
           <div>
-            <h2 className="text-lg font-extrabold text-red-700">
+            <h2 className="sibs-modal-title truncate text-red-700">
               Candidate Declined Contract
             </h2>
-            <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
+            <p className="sibs-modal-subtitle mt-0.5 text-[#667085]">
               {offer.candidateName}
             </p>
           </div>

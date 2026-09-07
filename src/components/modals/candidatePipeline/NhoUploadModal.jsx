@@ -1703,7 +1703,7 @@ export default function NhoUploadModal({
               </section>
 
               <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-                <h3 className="text-lg font-extrabold text-[#101828]">
+                <h3 className="sibs-modal-section-title text-[#042C51]">
                   Pre-Employment Requirements
                 </h3>
 
@@ -1723,7 +1723,7 @@ export default function NhoUploadModal({
                       >
                         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex min-w-0 items-center gap-3">
-                            <h4 className="text-base font-extrabold text-sibs-primary-1">
+                            <h4 className="font-heading text-sm 2xl:text-base font-bold text-sibs-primary-1">
                               {group.title}
                             </h4>
 

@@ -110,11 +110,11 @@ export default function MyEmployeeProfilePictureModal({
             <div className="min-w-0">
               <h2
                 id="my-profile-picture-title"
-                className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                className="sibs-modal-title truncate text-white"
               >
                 {getFullName(employee) || "Employee Profile"}
               </h2>
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 SIBS ID: {getProfileSibsId(employee) || "N/A"} • Profile Picture
               </p>
             </div>
@@ -137,7 +137,7 @@ export default function MyEmployeeProfilePictureModal({
               <button
                 type="button"
                 disabled={uploading}
-                className={`mb-2 flex h-8.5 2xl:h-10 w-full items-center gap-2.5 rounded-lg px-3.5 2xl:px-4 text-left sibs-text-xs font-extrabold transition ${
+                className={`mb-2 flex h-8.5 2xl:h-10 w-full items-center gap-2.5 rounded-lg px-3.5 2xl:px-4 text-left font-jakarta sibs-text-xs font-extrabold transition ${
                   uploading
                     ? "bg-[#F8FAFC] text-[#042C51]"
                     : "bg-[#042C51] text-white"
@@ -153,7 +153,7 @@ export default function MyEmployeeProfilePictureModal({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className={`flex h-8.5 2xl:h-10 w-full items-center gap-2.5 rounded-lg px-3.5 2xl:px-4 text-left sibs-text-xs font-extrabold transition ${
+                    className={`flex h-8.5 2xl:h-10 w-full items-center gap-2.5 rounded-lg px-3.5 2xl:px-4 text-left font-jakarta sibs-text-xs font-extrabold transition ${
                       uploading
                         ? "bg-[#042C51] text-white"
                         : "bg-[#F8FAFC] text-[#042C51] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
@@ -186,10 +186,10 @@ export default function MyEmployeeProfilePictureModal({
                     <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-3xl bg-[#E9F0FC]">
                       <UploadCloud size={42} className="animate-pulse text-[#042C51]" />
                     </div>
-                    <h3 className="mt-4 text-base font-extrabold text-[#042C51]">
+                    <h3 className="sibs-modal-section-title mt-4 text-[#042C51]">
                       Uploading profile picture
                     </h3>
-                    <p className="mt-1 text-sm font-medium text-[#667085]">
+                    <p className="sibs-modal-section-subtitle mt-1 text-[#667085]">
                       Please wait while the new image is saved.
                     </p>
                   </div>
@@ -204,10 +204,10 @@ export default function MyEmployeeProfilePictureModal({
                     <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-3xl bg-[#E9F0FC] text-3xl font-extrabold text-[#042C51]">
                       {getEmployeeInitials(employee) || <User size={42} />}
                     </div>
-                    <h3 className="mt-4 text-base font-extrabold text-[#042C51]">
+                    <h3 className="sibs-modal-section-title mt-4 text-[#042C51]">
                       No profile picture
                     </h3>
-                    <p className="mt-1 text-sm font-medium text-[#667085]">
+                    <p className="sibs-modal-section-subtitle mt-1 text-[#667085]">
                       {canUpload
                         ? "Select Upload New to add a profile picture."
                         : "No profile picture is available for this employee."}

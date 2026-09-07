@@ -158,12 +158,12 @@ export default function AdminLoginModal() {
                 <div className="min-w-0">
                   <h2
                     id="admin-login-title"
-                    className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                    className="sibs-modal-title truncate text-white"
                   >
                     {targetAccessLabel} Login
                   </h2>
 
-                  <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
+                  <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                     Enter your password to access {targetAccessLabel} mode.
                   </p>
                 </div>

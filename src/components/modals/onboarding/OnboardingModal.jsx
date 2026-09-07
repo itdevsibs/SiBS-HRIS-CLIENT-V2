@@ -332,14 +332,14 @@ export function CreateOnboardingModal({
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="truncate sibs-text-base font-extrabold text-white">
+                <h2 className="sibs-modal-title truncate text-white">
                   Add Onboarding Record
                 </h2>
                 <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2.5 py-1 text-[8px] font-extrabold uppercase tracking-wide text-amber-200 sm:text-[9px]">
                   Pending Start
                 </span>
               </div>
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/65">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 Convert an accepted offer into an active onboarding tracking record.
               </p>
             </div>
@@ -367,10 +367,10 @@ export function CreateOnboardingModal({
                 <div className="mb-4 flex items-start justify-between gap-3 border-b border-[#EEF2F6] pb-3">
                   <div className="min-w-0">
                     <p className="sibs-kicker">Step 1</p>
-                    <h3 className="mt-0.5 sibs-text-sm font-extrabold text-[#042C51]">
+                    <h3 className="sibs-modal-section-title mt-0.5 text-[#042C51]">
                       Select Accepted Offer
                     </h3>
-                    <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                    <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
                       Only accepted offers that are not yet assigned to onboarding are listed.
                     </p>
                   </div>
@@ -410,10 +410,10 @@ export function CreateOnboardingModal({
                 <div className="mb-4 flex items-start justify-between gap-3 border-b border-[#EEF2F6] pb-3">
                   <div>
                     <p className="sibs-kicker">Step 2</p>
-                    <h3 className="mt-0.5 sibs-text-sm font-extrabold text-[#042C51]">
+                    <h3 className="sibs-modal-section-title mt-0.5 text-[#042C51]">
                       Start Details
                     </h3>
-                    <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                    <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
                       Set the expected start date and site before activating the record.
                     </p>
                   </div>
@@ -473,7 +473,7 @@ export function CreateOnboardingModal({
                     <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#FFB9A2]">
                       System Relationship
                     </p>
-                    <h3 className="mt-1 sibs-text-xs font-extrabold text-white">
+                    <h3 className="sibs-modal-section-title mt-1 text-white">
                       Accepted Offer → Onboarding
                     </h3>
                     <p className="mt-2 text-[10px] font-semibold leading-5 text-slate-200">
@@ -486,7 +486,7 @@ export function CreateOnboardingModal({
               <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={15} className="text-emerald-600" />
-                  <h3 className="sibs-text-xs font-extrabold text-[#042C51]">
+                  <h3 className="sibs-modal-section-title text-[#042C51]">
                     Default Initial Status
                   </h3>
                 </div>
@@ -535,7 +535,7 @@ export function CreateOnboardingModal({
                 type="submit"
                 form="create-onboarding-form"
                 disabled={saveDisabled}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus size={14} />
                 {isSubmitting ? "Saving..." : "Save Onboarding Record"}

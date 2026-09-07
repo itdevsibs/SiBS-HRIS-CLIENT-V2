@@ -43,6 +43,10 @@ import SuperAdminSnapshot from "../../../components/Dashboard/SuperAdminDashboar
 import SuperAdminActivity from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminActivity";
 import SuperAdminAddUserModal from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminAddUserModal";
 import SuperAdminToast from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminToast";
+import {
+  SuperAdminDashboardStatsSkeleton,
+  SuperAdminTabPanelSkeleton,
+} from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminDashboardSkeleton";
 
 const SUPER_ADMIN_ENTITY = "super-admin-dashboard";
 
@@ -77,6 +81,7 @@ export default function SuperAdminDashboardPage() {
   });
   const [notice, setNotice] = useState("");
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const accessLevel = filterValues?.accessLevel || "All Access Levels";
   const module = filterValues?.module || "All Modules";
@@ -84,7 +89,7 @@ export default function SuperAdminDashboardPage() {
   const status = filterValues?.status || "All Statuses";
 
   const fetchDashboardData = useCallback(
-    async ({ forceRefresh = false } = {}) => {
+    async ({ forceRefresh = false, completesInitialLoad = false } = {}) => {
       try {
         setLoading(true);
         const [
@@ -207,13 +212,16 @@ export default function SuperAdminDashboardPage() {
         console.error("Super Admin Dashboard fetch error:", err);
       } finally {
         setLoading(false);
+        if (completesInitialLoad) {
+          setIsInitialLoading(false);
+        }
       }
     },
     [setLoading],
   );
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData({ completesInitialLoad: true });
   }, [fetchDashboardData]);
 
   useRefetchOnFocus(fetchDashboardData);
@@ -445,8 +453,17 @@ export default function SuperAdminDashboardPage() {
     <div className="sibs-dashboard-shell">
       <Header />
 
-      <main className="sibs-dashboard-main-wide">
+      <main
+        className="sibs-dashboard-main-wide"
+        aria-busy={isInitialLoading}
+      >
         <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-1 flex-col space-y-4 2xl:space-y-5">
+          {isInitialLoading ? (
+            <span className="sr-only" role="status" aria-live="polite">
+              Loading Super Admin dashboard data.
+            </span>
+          ) : null}
+
           <SuperAdminDashboardHeader
             displayName={getUserDisplayName(user)}
             onAddUser={() => setIsAddAdminOpen(true)}
@@ -455,11 +472,15 @@ export default function SuperAdminDashboardPage() {
             isManualRefreshing={isManualRefreshing}
           />
 
-          <SuperAdminDashboardStats
-            adminCount={adminUsers.length}
-            liveMetrics={liveMetrics}
-            onMetricClick={handleMetricClick}
-          />
+          {isInitialLoading ? (
+            <SuperAdminDashboardStatsSkeleton />
+          ) : (
+            <SuperAdminDashboardStats
+              adminCount={adminUsers.length}
+              liveMetrics={liveMetrics}
+              onMetricClick={handleMetricClick}
+            />
+          )}
 
           <SuperAdminQuickActions
             onNavigate={navigate}
@@ -479,7 +500,11 @@ export default function SuperAdminDashboardPage() {
               role="tabpanel"
               className="sibs-page-card-in min-w-0 p-4 sm:p-5 lg:p-6"
             >
-              {activeTab === "overview" ? (
+              {isInitialLoading ? (
+                <SuperAdminTabPanelSkeleton activeTab={activeTab} />
+              ) : null}
+
+              {!isInitialLoading && activeTab === "overview" ? (
                 <SuperAdminOverview
                   cards={dynamicSummaryCards}
                   exceptionsCount={exceptions.length}
@@ -488,7 +513,7 @@ export default function SuperAdminDashboardPage() {
                 />
               ) : null}
 
-              {activeTab === "exceptions" ? (
+              {!isInitialLoading && activeTab === "exceptions" ? (
                 <SuperAdminExceptions
                   items={activePagination.items}
                   totalItems={filteredExceptions.length}
@@ -504,7 +529,7 @@ export default function SuperAdminDashboardPage() {
                 />
               ) : null}
 
-              {activeTab === "access_roles" ? (
+              {!isInitialLoading && activeTab === "access_roles" ? (
                 <SuperAdminAccessGovernance
                   admins={activePagination.items}
                   totalItems={filteredAdmins.length}
@@ -524,14 +549,14 @@ export default function SuperAdminDashboardPage() {
                 />
               ) : null}
 
-              {activeTab === "snapshot" ? (
+              {!isInitialLoading && activeTab === "snapshot" ? (
                 <SuperAdminSnapshot
                   cards={dynamicSnapshotCards}
                   onNavigate={navigate}
                 />
               ) : null}
 
-              {activeTab === "activity" ? (
+              {!isInitialLoading && activeTab === "activity" ? (
                 <SuperAdminActivity
                   items={activePagination.items}
                   totalItems={filteredLogs.length}

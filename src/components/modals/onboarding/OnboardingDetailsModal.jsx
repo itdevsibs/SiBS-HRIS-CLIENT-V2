@@ -127,10 +127,10 @@ export default function OnboardingDetailsModal({
               </span>
             </div>
 
-            <h2 className="mt-2 truncate sibs-text-base font-extrabold text-white">
+            <h2 className="sibs-modal-title mt-2 truncate text-white">
               {normalizedRecord.candidateName}
             </h2>
-            <p className="mt-0.5 truncate sibs-text-xs font-semibold text-slate-300">
+            <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
               {normalizedRecord.candidateEmail || "No email saved"} • {normalizedRecord.onboardingId || normalizedRecord.id}
             </p>
           </div>
@@ -152,10 +152,10 @@ export default function OnboardingDetailsModal({
                 <div className="flex flex-col gap-4 md:flex-row md:items-stretch md:justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="sibs-kicker">Candidate Assignment</p>
-                    <h3 className="mt-1 sibs-text-sm font-extrabold text-[#042C51]">
+                    <h3 className="sibs-modal-section-title mt-1 text-[#042C51]">
                       {normalizedRecord.roleTitle || "Not assigned"}
                     </h3>
-                    <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                    <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
                       {normalizedRecord.account || "No account"} • {normalizedRecord.location || "No location"}
                     </p>
 
@@ -195,10 +195,10 @@ export default function OnboardingDetailsModal({
                 <div className="mb-4 flex items-center gap-2 border-b border-[#EEF2F6] pb-3">
                   <Clock3 size={15} className="text-[#FF5C28]" />
                   <div>
-                    <h3 className="sibs-text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <h3 className="sibs-modal-section-title text-[#042C51]">
                       Onboarding Lifecycle
                     </h3>
-                    <p className="mt-0.5 text-[9px] font-semibold text-[#667085]">
+                    <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
                       Accepted offer through final start outcome.
                     </p>
                   </div>
@@ -250,7 +250,7 @@ export default function OnboardingDetailsModal({
               {(normalizedRecord.showStatus === "No Show" ||
                 normalizedRecord.showStatus === "Withdrawn") && (
                 <section className="rounded-2xl border border-amber-100 bg-amber-50 p-4 sm:p-5">
-                  <h3 className="sibs-text-xs font-extrabold uppercase tracking-wide text-amber-800">
+                  <h3 className="sibs-modal-section-title text-amber-800">
                     Candidate Experience Data
                   </h3>
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -277,7 +277,7 @@ export default function OnboardingDetailsModal({
               )}
 
               <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-                <h3 className="sibs-text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                <h3 className="sibs-modal-section-title text-[#042C51]">
                   Internal Remarks
                 </h3>
                 <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sibs-text-xs font-semibold leading-5 text-[#475467]">
@@ -288,7 +288,7 @@ export default function OnboardingDetailsModal({
 
             <aside className="space-y-4 xl:sticky xl:top-0 xl:self-start">
               <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
-                <h3 className="sibs-text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                <h3 className="sibs-modal-section-title text-[#042C51]">
                   Onboarding Summary
                 </h3>
                 <div className="mt-2">
@@ -311,10 +311,10 @@ export default function OnboardingDetailsModal({
 
               {!isFinal ? (
                 <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
-                  <h3 className="sibs-text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <h3 className="sibs-modal-section-title text-[#042C51]">
                     Update Outcome
                   </h3>
-                  <p className="mt-1 text-[9px] font-semibold leading-4 text-[#667085]">
+                  <p className="sibs-modal-section-subtitle mt-1 text-[#667085]">
                     Resolve the candidate’s final start status.
                   </p>
 
@@ -350,7 +350,7 @@ export default function OnboardingDetailsModal({
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
                     <div>
-                      <h3 className="sibs-text-xs font-extrabold text-emerald-800">
+                      <h3 className="sibs-modal-section-title text-emerald-800">
                         Outcome Finalized
                       </h3>
                       <p className="mt-1 text-[10px] font-semibold leading-5 text-emerald-700">
@@ -365,7 +365,7 @@ export default function OnboardingDetailsModal({
                 <div className="flex items-start gap-2.5">
                   <Info size={15} className="mt-0.5 shrink-0 text-[#FF5C28]" />
                   <div>
-                    <h3 className="sibs-text-xs font-extrabold text-[#042C51]">
+                    <h3 className="sibs-modal-section-title text-[#042C51]">
                       Onboarding Governance
                     </h3>
                     <p className="mt-1 text-[10px] font-semibold leading-5 text-[#475467]">

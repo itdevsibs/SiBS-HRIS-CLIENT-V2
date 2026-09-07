@@ -447,14 +447,14 @@ export default function AddExperienceModal({
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+                <h2 className="sibs-modal-title truncate text-white">
                   Log Candidate Experience Record
                 </h2>
                 <span className="hidden rounded-md border border-[#FF5C28]/35 bg-[#FF5C28]/15 px-2 py-0.5 text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wider text-[#FFB69E] sm:inline-flex">
                   TA Manual Entry
                 </span>
               </div>
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 Capture direct candidate feedback, ratings, and drop-off timeline
               </p>
             </div>
