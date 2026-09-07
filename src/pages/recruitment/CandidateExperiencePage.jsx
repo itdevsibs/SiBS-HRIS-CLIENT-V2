@@ -7,6 +7,11 @@ import React, {
 } from "react";
 import Header from "../../components/layout/Header";
 import {
+  PageHeaderHero,
+  TablePagination,
+  TableEmptyRow,
+} from "@/components/ui";
+import {
   Search,
   Eye,
   X,
@@ -1324,34 +1329,20 @@ export default function CandidateExperiencePage() {
         className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
       >
         <div className="mx-auto w-full max-w-[1700px] space-y-5">
-          <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6 mb-5">
-            <span className="sibs-top-accent" aria-hidden="true" />
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-[#042C51]">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
-                    Recruitment Setup
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Candidate Experience
-                </h1>
-
-                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
-                  Track drop-offs, offer declines, onboarding no-shows, withdrawals, candidate feedback, and experience ratings.
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+          <PageHeaderHero
+            kicker="Recruitment Setup"
+            title="Candidate Experience"
+            description="Track drop-offs, offer declines, onboarding no-shows, withdrawals, candidate feedback, and experience ratings."
+            className="mb-5"
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={handleRefresh}
                   disabled={isRefreshing}
                   title="Refresh Candidate Experience"
                   aria-label="Refresh Candidate Experience"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  className="sibs-btn-icon"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
@@ -1363,14 +1354,14 @@ export default function CandidateExperiencePage() {
                 <button
                   type="button"
                   onClick={handleOpenAddModal}
-                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98]"
+                  className="sibs-btn-primary"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                   Add Experience Record
                 </button>
-              </div>
-            </div>
-          </section>
+              </>
+            }
+          />
 
           <section
             className="sibs-profile-tab-panel rounded-xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5"
@@ -1761,66 +1752,25 @@ export default function CandidateExperiencePage() {
                           </tr>
                         ))
                       ) : (
-                        <tr>
-                          <td
-                            colSpan={10}
-                            className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                          >
-                            No candidate experience records found.
-                          </td>
-                        </tr>
+                        <TableEmptyRow
+                          colSpan={10}
+                          title="No candidate experience records found"
+                          description="Try adjusting your filters or search terms."
+                        />
                       )}
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <p className="text-sm font-semibold text-sibs-tertiary-5">
-                  Showing {showingFrom} to {showingTo} of{" "}
-                  {filteredRecords.length} candidate experience records
-                </p>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage <= 1}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-
-                  {Array.from({ length: totalPages }).map((_, index) => {
-                    const pageNumber = index + 1;
-                    const active = currentPage === pageNumber;
-
-                    return (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        onClick={() => handlePageChange(pageNumber)}
-                        className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
-                          active
-                            ? "bg-sibs-primary-1 text-white shadow-sm"
-                            : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage >= totalPages}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalRecords={filteredRecords.length}
+                loadedCount={pageRecords.length}
+                recordLabel="candidate experience records"
+                onPageChange={(nextPage) => handlePageChange(nextPage)}
+              />
             </div>
           </section>
 

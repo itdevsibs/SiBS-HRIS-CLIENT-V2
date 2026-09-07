@@ -919,8 +919,8 @@ export default function AddResignationModal({
       </div>
 
       {policyModalOpen && (
-        <div className="sibs-modal-blur fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
-          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
+        <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
+          <div className="sibs-modal-pop-in w-full max-w-lg rounded-3xl bg-white shadow-2xl font-jakarta">
             <div className="flex items-start justify-end px-5 pt-4">
               <button
                 type="button"

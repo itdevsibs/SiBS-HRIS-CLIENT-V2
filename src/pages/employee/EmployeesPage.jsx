@@ -16,6 +16,7 @@ import ChwcpTable from "../../components/tables/employees/ChwcpTable";
 import EmployeeTable from "../../components/tables/employees/EmployeeTable";
 import { getChwcpRequests } from "../../lib/axios/getChwcp";
 import { usePagination } from "@/services/context/PaginationContext";
+import { PageHeaderHero } from "@/components/ui";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 
@@ -291,43 +292,24 @@ export default function EmployeesPage() {
         className="sibs-dashboard-main-wide"
       >
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
-            style={getAnimationStyle(animationTiming.header)}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                    <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange animate-sibs-pulse" />
-                    Employee Directory View
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Employee Directory
-                </h1>
-
-                <p className="sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-                  Manage employee records and CHWCP compliance information.
-                </p>
-              </div>
-
+          <PageHeaderHero
+            kicker="Employee Directory View"
+            title="Employee Directory"
+            description="Manage employee records and CHWCP compliance information."
+            actions={
               <button
                 type="button"
                 onClick={handleSummaryRefresh}
                 disabled={summaryRefreshing}
                 title="Refresh employee directory summary"
-                className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+                className="sibs-btn-icon"
               >
                 <RefreshCcw
                   className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${summaryRefreshing ? "animate-spin text-sibs-orange" : ""}`}
                 />
               </button>
-            </div>
-          </section>
+            }
+          />
 
           <section
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"

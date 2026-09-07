@@ -21,7 +21,7 @@ export default function SuperAdminOverview({
           return (
             <article
               key={card.label}
-              className="group flex h-[104px] 2xl:h-[116px] flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 sm:p-3 2xl:p-3.5 transition-all hover:border-sibs-orange/40 hover:bg-sibs-cream-light shadow-2xs"
+              className="sibs-page-card-in group flex h-[104px] 2xl:h-[116px] flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 sm:p-3 2xl:p-3.5 transition-all hover:border-sibs-orange/40 hover:bg-sibs-cream-light shadow-2xs"
               style={{
                 animationDelay: `${index * 55}ms`,
                 animationFillMode: "both",

@@ -947,7 +947,7 @@ export default function ResignationModal({
     <>
       <div
         data-layout="employee-resignation-workflow-v5"
-        className={`fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-hidden bg-[#06294A]/75 p-2 font-jakarta backdrop-blur-sm sm:p-4 ${
+        className={`sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-hidden p-2 font-jakarta sm:p-4 ${
           isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
         }`}
       >
@@ -1447,7 +1447,7 @@ export default function ResignationModal({
       </div>
 
       {policyModalOpen && (
-        <div className="sibs-modal-backdrop-in fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/80 p-4 font-jakarta backdrop-blur-md">
+        <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10001] flex items-center justify-center p-4 font-jakarta">
           <section className="w-full max-w-md overflow-hidden rounded-[18px] border border-amber-200 bg-white shadow-2xl sibs-inner-modal-pop-in">
             <header className="flex items-start justify-between gap-3 border-b border-[#E6ECF2] px-5 py-4">
               <div className="flex min-w-0 items-start gap-3">
