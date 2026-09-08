@@ -1,4 +1,5 @@
 import { Activity, ChevronRight, RefreshCw } from "lucide-react";
+import { formatLogDetails } from "../../../lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers.js";
 
 const activityDotClass = {
   leave: "bg-amber-400",
@@ -80,7 +81,7 @@ export default function AdminDashboardActivity({
                 </p>
 
                 <p className="mt-0.5 sibs-text-micro leading-relaxed text-sibs-text-secondary">
-                  {activity.details}
+                  {formatLogDetails(activity.details)}
                 </p>
               </div>
 

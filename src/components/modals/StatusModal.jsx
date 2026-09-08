@@ -156,7 +156,7 @@ export default function StatusModal({
               <button
                 type="button"
                 onClick={() => onCancel?.()}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98]"
+                className="sibs-modal-btn-secondary"
               >
                 {cancelLabel}
               </button>
@@ -165,12 +165,12 @@ export default function StatusModal({
             <button
               type="button"
               onClick={isConfirm ? () => onConfirm?.() : handleClose}
-              className={`inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
+              className={`sibs-modal-btn-primary ${
                   isConfirm
                     ? confirmTone === "brand"
-                      ? "bg-[#042C51] hover:bg-[#073B6C]"
-                      : "bg-red-600 hover:bg-red-700"
-                    : "bg-[#FF5C28] hover:bg-[#e04d1c]"
+                      ? "!bg-[#042C51] hover:!bg-[#073B6C]"
+                      : "!bg-red-600 hover:!bg-red-700"
+                    : ""
               }`}
             >
               {isConfirm ? confirmLabel : "OK"}
@@ -222,7 +222,7 @@ export default function StatusModal({
                 <button
                   type="button"
                   onClick={() => onCancel?.()}
-                  className="inline-flex h-8.5 2xl:h-10 flex-1 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98]"
+                  className="sibs-modal-btn-secondary flex-1"
                 >
                   {cancelLabel}
                 </button>
@@ -231,12 +231,12 @@ export default function StatusModal({
               <button
                 type="button"
                 onClick={isConfirm ? () => onConfirm?.() : handleClose}
-                className={`inline-flex h-8.5 2xl:h-10 flex-1 items-center justify-center rounded-lg px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98] ${
+                className={`sibs-modal-btn-primary flex-1 ${
                 isConfirm
                   ? confirmTone === "brand"
-                    ? "bg-[#042C51] hover:bg-[#073B6C]"
-                    : "bg-red-600 hover:bg-red-700"
-                  : "bg-[#FF5C28] hover:bg-[#e04d1c]"
+                    ? "!bg-[#042C51] hover:!bg-[#073B6C]"
+                    : "!bg-red-600 hover:!bg-red-700"
+                  : ""
                 }`}
               >
                 {isConfirm ? confirmLabel : "OK"}

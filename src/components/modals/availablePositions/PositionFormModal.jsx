@@ -22,11 +22,9 @@ import DropdownField from "@/components/recruitment/availablePositions/DropdownF
 import RichTextEditor from "@/components/modals/jobDescription/RichTextEditor";
 import { formatDate } from "@/components/layout/FormatDateTime";
 
-const INPUT_CLASS =
-  "h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E4E7EC] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:hover:border-[#E4E7EC]";
+const INPUT_CLASS = "sibs-input";
 
-const TEXTAREA_CLASS =
-  "min-h-24 w-full resize-none rounded-lg 2xl:rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E4E7EC] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:hover:border-[#E4E7EC]";
+const TEXTAREA_CLASS = "sibs-modal-textarea";
 
 function normalizeText(value = "") {
   return String(value || "")
@@ -1028,7 +1026,7 @@ export default function PositionFormModal({
                       <button
                         type="submit"
                         disabled={isSaving}
-                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                        className="sibs-modal-btn-primary"
                       >
                         {isSaving ? (
                           <Loader2 size={13} className="animate-spin" />
@@ -1338,7 +1336,7 @@ export default function PositionFormModal({
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center rounded-lg border border-[#DCE6F1] bg-[#F2F6FA] px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#BFCFDE] hover:bg-[#EAF0F6] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+              className="sibs-modal-btn-secondary"
             >
               Close
             </button>

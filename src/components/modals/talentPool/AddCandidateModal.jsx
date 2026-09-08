@@ -4558,7 +4558,7 @@ export default function AddCandidateModal() {
                 onClick={closeAddCandidateModal}
                 disabled={isSaving}
                 aria-label="Close add candidate modal"
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="sibs-modal-close-btn"
               >
                 <X size={16} />
               </button>
@@ -5597,7 +5597,7 @@ export default function AddCandidateModal() {
                   type="button"
                   onClick={handlePreviousPage}
                   disabled={isSaving}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs disabled:cursor-not-allowed disabled:opacity-50"
+                  className="sibs-modal-btn-secondary gap-1.5"
                 >
                   <ChevronLeft size={15} />
                   Back
@@ -5608,7 +5608,7 @@ export default function AddCandidateModal() {
                 type="button"
                 onClick={handleResetCandidate}
                 disabled={isSaving}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-btn-secondary gap-1.5"
               >
                 <RotateCcw size={15} />
                 Reset
@@ -5619,7 +5619,7 @@ export default function AddCandidateModal() {
                 type="submit"
                 form="add-candidate-form"
                 disabled={isSaving || isLoadingApplicationQuestions || isApplicantNameGateLocked}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:bg-sibs-orange/90 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-btn-primary gap-1.5"
               >
                 {isSaving || isLoadingApplicationQuestions ? (
                   <Loader2 size={15} className="animate-spin" />

@@ -1,5 +1,5 @@
 import React from "react";
-import { ClipboardList, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
 import WorkforceHiringOverviewFilters from "../workforceHiringOverview/WorkforceHiringOverviewFilters";
@@ -20,13 +20,7 @@ export default function WorkforceHiringPlanHeader() {
 
   return (
     <PageHeaderHero
-      kicker={
-        <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
-          <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-          <ClipboardList className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" strokeWidth={2.2} />
-          Recruitment View
-        </span>
-      }
+      kicker="Recruitment View"
       title="Workforce Hiring Plan"
       description="Review weekly workforce requirements, forecasted hiring gaps, recruitment pipeline volume, attrition, and six-week hiring plans for the selected scope."
       actions={

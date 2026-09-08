@@ -85,7 +85,7 @@ function ConfirmationModal({
             type="button"
             onClick={onCancel}
             disabled={isSaving}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-[#F2F6FA] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+            className="sibs-modal-btn-secondary"
           >
             {cancelLabel}
           </button>
@@ -94,7 +94,7 @@ function ConfirmationModal({
             type="button"
             onClick={onConfirm}
             disabled={isSaving}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+            className="sibs-modal-btn-primary gap-2"
           >
             {isSaving ? (
               <Loader2

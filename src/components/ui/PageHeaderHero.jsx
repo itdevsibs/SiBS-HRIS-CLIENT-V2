@@ -19,12 +19,16 @@ export default function PageHeaderHero({
         <div className="min-w-0 space-y-1">
           {kicker ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
-                {pulse ? (
-                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                ) : null}
-                {kicker}
-              </span>
+              {React.isValidElement(kicker) ? (
+                kicker
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
+                  {pulse ? (
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
+                  ) : null}
+                  {kicker}
+                </span>
+              )}
             </div>
           ) : null}
 

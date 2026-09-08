@@ -1044,14 +1044,14 @@ export function AddActionItemModal({
           </div>
         </main>
 
-        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3 2xl:py-3.5 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={handleResetClick}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+              className="sibs-modal-btn-secondary gap-1.5"
             >
-              <RotateCcw size={17} />
+              <RotateCcw size={15} />
               Reset
             </button>
 
@@ -1059,16 +1059,16 @@ export function AddActionItemModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 active:scale-[0.98]"
+                className="sibs-modal-btn-secondary"
               >
                 Cancel
               </button>
 
               <button
                 type="submit"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+                className="sibs-modal-btn-primary gap-1.5"
               >
-                <Plus size={17} />
+                <Plus size={15} />
                 Save Action Item
               </button>
             </div>

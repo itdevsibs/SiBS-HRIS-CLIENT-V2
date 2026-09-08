@@ -90,7 +90,7 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            className="sibs-modal-close-btn"
             aria-label="Close add admin modal"
           >
             <X size={18} />
@@ -156,13 +156,13 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+              className="sibs-modal-btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
+              className="sibs-modal-btn-primary"
             >
               Save Admin Account
             </button>

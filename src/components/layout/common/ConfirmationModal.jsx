@@ -36,7 +36,7 @@ function ConfirmationModal({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-10 min-w-[88px] items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/15 active:translate-y-px"
+            className="sibs-modal-btn-secondary min-w-[88px]"
           >
             {cancelLabel}
           </button>
@@ -44,7 +44,7 @@ function ConfirmationModal({
           <button
             type="button"
             onClick={onConfirm}
-            className="inline-flex h-10 min-w-[104px] items-center justify-center rounded-lg bg-[#FF5C28] px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20 active:translate-y-px"
+            className="sibs-modal-btn-primary min-w-[104px]"
           >
             {confirmLabel}
           </button>

@@ -1419,7 +1419,7 @@ export default function ResignationModal({
                   type="button"
                   onClick={handleClose}
                   disabled={submitting || isClosing}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="sibs-modal-btn-secondary"
                 >
                   Cancel
                 </button>
@@ -1427,7 +1427,7 @@ export default function ResignationModal({
                 <button
                   type="submit"
                   disabled={submitting || isClosing}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-modal-btn-primary gap-2"
                 >
                   <span>
                     {submitting
