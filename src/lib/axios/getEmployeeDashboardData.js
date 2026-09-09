@@ -90,27 +90,6 @@ export async function getEmployeeDashboardSources({
       withCredentials: true,
       signal,
     }),
-    api.get("/api/kronos-attendance", {
-      params: {
-        page: 1,
-        limit: 10,
-        search: commonEmployeeSearch,
-        dateFrom: "",
-        dateTo: "",
-        department: "All",
-        account: "All",
-        includeDepartments: 0,
-        includeAccounts: 0,
-        _fresh: 1,
-        _ts: Date.now(),
-      },
-      headers: {
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-      },
-      withCredentials: true,
-      signal,
-    }),
     api.get("/api/employee-schedule", {
       params: {
         page: 1,
@@ -163,7 +142,6 @@ export async function getEmployeeDashboardSources({
 
   const [
     attendance,
-    kronosAttendance,
     schedule,
     leaves,
     leaveSummary,
@@ -173,10 +151,6 @@ export async function getEmployeeDashboardSources({
 
   const sourceResults = {
     attendance: unwrapSettled(attendance, "Attendance data is unavailable."),
-    kronosAttendance: unwrapSettled(
-      kronosAttendance,
-      "Kronos attendance data is unavailable.",
-    ),
     schedule: unwrapSettled(schedule, "Schedule data is unavailable."),
     leaves: unwrapSettled(leaves, "Leave records are unavailable."),
     leaveSummary: unwrapSettled(

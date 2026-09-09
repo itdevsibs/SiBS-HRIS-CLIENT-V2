@@ -312,6 +312,8 @@ export default function ActionItemsDataBridge({ children }) {
     "fetchList",
     "loadSources",
   ]);
+  const canRefreshSourcing =
+    sourcing?.canAccessSourcingAnalytics === true;
 
   const refreshWorkforceHiring = getFirstFunction(workforceHiring, [
     "refreshWorkforceHiring",
@@ -331,7 +333,7 @@ export default function ActionItemsDataBridge({ children }) {
       refreshCandidatePipeline,
       refreshOffers,
       refreshOnboarding,
-      refreshSourcing,
+      ...(canRefreshSourcing ? [refreshSourcing] : []),
       refreshWorkforceHiring,
     ].filter((callback) => typeof callback === "function");
 
@@ -343,6 +345,7 @@ export default function ActionItemsDataBridge({ children }) {
     refreshCandidatePipeline,
     refreshOffers,
     refreshOnboarding,
+    canRefreshSourcing,
     refreshSourcing,
     refreshWorkforceHiring,
     user,

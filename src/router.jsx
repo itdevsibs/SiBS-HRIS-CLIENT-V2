@@ -7,8 +7,6 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PageFallback from "@/components/ui/PageFallback";
 import { useUser } from "./services/context/UserContext";
 import { getDefaultDashboardPath } from "./config/accessControl";
-import SuperAdminDashboardPage from "./pages/dashboard/SuperAdmin/SuperAdminDashboardPage";
-import EmployeesPage from "./pages/employee/EmployeesPage";
 
 function lazyWithRetry(componentImport) {
   return lazy(async () => {
@@ -33,15 +31,16 @@ function lazyWithRetry(componentImport) {
 const AdminDashboardPage = lazyWithRetry(() => import("./pages/dashboard/HrAdmin/AdminDashboardPage"));
 const EmployeeDashboardPage = lazyWithRetry(() => import("./pages/dashboard/EmployeeDashboardPage"));
 const OMDashboardPage = lazyWithRetry(() => import("./pages/dashboard/OMDashboard/OMDashboardPage"));
+const SuperAdminDashboardPage = lazyWithRetry(() => import("./pages/dashboard/SuperAdmin/SuperAdminDashboardPage"));
 const TADashboardPage = lazyWithRetry(() => import("./pages/dashboard/TADashboard/TADashboardPage"));
 
 // Employees
 const EmployeeDataPage = lazyWithRetry(() => import("./pages/employee/EmployeeDataPage"));
+const EmployeesPage = lazyWithRetry(() => import("./pages/employee/EmployeesPage"));
 const ProfileUserPage = lazyWithRetry(() => import("./pages/profile/UserProfilePage"));
 
 // Core HR & Operations
 const AttendancePage = lazyWithRetry(() => import("./pages/attendance/AttendancePage"));
-const KronosAttendancePage = lazyWithRetry(() => import("./pages/kronos-attendance/KronosAttendancePage"));
 const LeavesPage = lazyWithRetry(() => import("./pages/leaves/LeavesPage"));
 const ResignationManagementPage = lazyWithRetry(() => import("./pages/resignation-management/ResignationManagementPage"));
 const RequisitionsPage = lazyWithRetry(() => import("./pages/requisitions/RequisitionPage"));
@@ -325,15 +324,6 @@ function MainApplicationRoutes() {
         element={
           <PrivateRoute>
             <AttendancePage />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
-        path="/kronos-attendance"
-        element={
-          <PrivateRoute>
-            <KronosAttendancePage />
           </PrivateRoute>
         }
       />
