@@ -1060,10 +1060,12 @@ function DraggableTableScroll({ children }) {
   const [isDragging, setIsDragging] = useState(false);
 
   function isInteractiveTarget(target) {
+    const interactiveTarget = target?.closest?.(
+      "button, a, input, select, textarea, [role='button'], [data-no-table-drag='true']",
+    );
+
     return Boolean(
-      target?.closest?.(
-        "button, a, input, select, textarea, [role='button'], [data-no-table-drag='true']",
-      ),
+      interactiveTarget && interactiveTarget.tagName !== "TR",
     );
   }
 
@@ -1113,6 +1115,13 @@ function DraggableTableScroll({ children }) {
     }, 0);
   }
 
+  function handleClickCapture(event) {
+    if (!dragStateRef.current.moved) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   return (
     <div className="mt-5 sibs-data-table-shell">
       <div
@@ -1121,6 +1130,7 @@ function DraggableTableScroll({ children }) {
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
+        onClickCapture={handleClickCapture}
         className={`max-h-[650px] select-none overflow-auto sibs-scrollbar ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
@@ -1135,7 +1145,7 @@ function DraggableTableScroll({ children }) {
 function LoadingRows() {
   return Array.from({ length: PAGE_LIMIT }).map((_, index) => (
     <tr key={index}>
-      <td colSpan={11} className="border-b border-[#E6ECF2] px-3 py-3">
+      <td colSpan={10} className="border-b border-[#E6ECF2] px-3 py-3">
         <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
       </td>
     </tr>
@@ -2074,9 +2084,172 @@ function DeleteAccessModal({ target, onClose, onDeleted, openStatus }) {
   );
 }
 
-function MobileUserCard({ user, onEdit, onDelete }) {
+function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
+  const accounts = target?.assignedAccounts || [];
+
   return (
-    <article className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+    <ModalShell
+      open={Boolean(target)}
+      variant="talentPool"
+      title="Employee Access Details"
+      description="Review the employee's assigned access before making changes."
+      onClose={onClose}
+      footer={
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            onClick={() => onDelete(target)}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-white px-5 text-sm font-extrabold text-red-700 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+          >
+            <Trash2 size={16} />
+            Delete Access
+          </button>
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/10"
+            >
+              Close
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onEdit(target)}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#042C51] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#042C51]/15 transition hover:bg-[#063D6F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#042C51]/20"
+            >
+              <Edit3 size={16} />
+              Edit Access
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <ProfileAvatar employee={target || {}} size="lg" />
+
+              <div className="min-w-0">
+                <p className="break-words text-base font-extrabold text-[#042C51]">
+                  {formatEmployeeName(target || {})}
+                </p>
+                <p className="mt-1 break-all text-xs font-semibold text-[#667085]">
+                  {target?.email || "No email available"}
+                </p>
+                <p className="mt-1 text-xs font-semibold text-[#8A98B8]">
+                  SIBS ID: {target?.sibsId || "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill status={target?.status} />
+              <RolePill role={target?.role} adminAccess={target?.adminAccess} />
+            </div>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 border-b border-[#E6ECF2] pb-3">
+            <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
+              Access Assignment
+            </p>
+            <p className="mt-1 text-xs font-semibold text-[#667085]">
+              Current access level, assigned accounts, and departments.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                Access Level
+              </p>
+              <div className="mt-2">
+                <RolePill role={target?.role} adminAccess={target?.adminAccess} />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                Status
+              </p>
+              <div className="mt-2">
+                <StatusPill status={target?.status} />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:col-span-2">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                Assigned Accounts
+              </p>
+              <div className="mt-2">
+                <AccountChips accounts={accounts} />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:col-span-2">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                Departments
+              </p>
+              <div className="mt-2">
+                <DepartmentChips accounts={accounts} limit={999} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 border-b border-[#E6ECF2] pb-3">
+            <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
+              Audit Information
+            </p>
+            <p className="mt-1 text-xs font-semibold text-[#667085]">
+              Creation and latest update details for this access record.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                Creator
+              </p>
+              <p className="mt-2 break-words text-xs font-extrabold text-[#344054]">
+                {getAuditDisplayValue(target || {}, "creator")}
+              </p>
+              <p className="mt-1 text-xs font-semibold text-[#667085]">
+                {formatDateTime(getAuditDateValue(target || {}, "created"))}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                Updater
+              </p>
+              <p className="mt-2 break-words text-xs font-extrabold text-[#344054]">
+                {getAuditDisplayValue(target || {}, "updater")}
+              </p>
+              <p className="mt-1 text-xs font-semibold text-[#667085]">
+                {formatDateTime(getAuditDateValue(target || {}, "updated"))}
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </ModalShell>
+  );
+}
+
+function MobileUserCard({ user, onOpen }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(user)}
+      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30"
+      aria-label={`Open access details for ${formatEmployeeName(user)}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           <ProfileAvatar employee={user} size="lg" />
@@ -2130,27 +2303,7 @@ function MobileUserCard({ user, onEdit, onDelete }) {
           {formatDateTime(getAuditDateValue(user, "updated"))}
         </p>
       </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => onEdit(user)}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-sibs-primary-1 transition hover:bg-blue-100"
-        >
-          <Edit3 size={15} />
-          Edit
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onDelete(user)}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-red-700 transition hover:bg-red-100"
-        >
-          <Trash2 size={15} />
-          Delete
-        </button>
-      </div>
-    </article>
+    </button>
   );
 }
 
@@ -2219,6 +2372,7 @@ export default function AccountSettingsPage() {
     mode: "add",
     user: null,
   });
+  const [detailsTarget, setDetailsTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -2502,8 +2656,26 @@ export default function AccountSettingsPage() {
     setAccessModal({ open: true, mode: "add", user: null });
   }
 
+  function openDetailsModal(selectedUser) {
+    setDetailsTarget(selectedUser);
+  }
+
+  function closeDetailsModal() {
+    setDetailsTarget(null);
+  }
+
   function openEditModal(selectedUser) {
     setAccessModal({ open: true, mode: "edit", user: selectedUser });
+  }
+
+  function openEditFromDetails(selectedUser) {
+    closeDetailsModal();
+    openEditModal(selectedUser);
+  }
+
+  function openDeleteFromDetails(selectedUser) {
+    closeDetailsModal();
+    setDeleteTarget(selectedUser);
   }
 
   function closeAccessModal() {
@@ -2730,8 +2902,7 @@ export default function AccountSettingsPage() {
                     <MobileUserCard
                       key={assignedUser.id}
                       user={assignedUser}
-                      onEdit={openEditModal}
-                      onDelete={setDeleteTarget}
+                      onOpen={openDetailsModal}
                     />
                   ))
                 ) : (
@@ -2746,13 +2917,12 @@ export default function AccountSettingsPage() {
                   <colgroup>
                     <col className="w-[5%]" />
                     <col className="w-[4%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[6%]" />
+                    <col className="w-[17%]" />
                     <col className="w-[7%]" />
-                    <col className="w-[13%]" />
-                    <col className="w-[13%]" />
-                    <col className="w-[9%]" />
                     <col className="w-[8%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[9%]" />
                     <col className="w-[9%]" />
                     <col className="w-[11%]" />
                   </colgroup>
@@ -2768,7 +2938,6 @@ export default function AccountSettingsPage() {
                       <th className="sibs-data-table-th">Creator</th>
                       <th className="sibs-data-table-th">Updater</th>
                       <th className="sibs-data-table-th">Created / Updated</th>
-                      <th className="sibs-data-table-th text-right">Actions</th>
                     </tr>
                   </thead>
 
@@ -2779,7 +2948,17 @@ export default function AccountSettingsPage() {
                       users.map((assignedUser, index) => (
                         <tr
                           key={assignedUser.id}
-                          className="sibs-data-table-row sibs-account-settings-row-reveal border-b border-[#E6ECF2]"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openDetailsModal(assignedUser)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              openDetailsModal(assignedUser);
+                            }
+                          }}
+                          aria-label={`Open access details for ${formatEmployeeName(assignedUser)}`}
+                          className="sibs-data-table-row sibs-account-settings-row-reveal cursor-pointer border-b border-[#E6ECF2] transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
                           style={{
                             animationDelay: `${Math.min(index, 10) * 36}ms`,
                           }}
@@ -2867,32 +3046,11 @@ export default function AccountSettingsPage() {
                             </p>
                           </td>
 
-                          <td className="sibs-data-table-td text-right">
-                            <div className="inline-flex flex-nowrap items-center justify-end gap-1">
-                              <button
-                                type="button"
-                                onClick={() => openEditModal(assignedUser)}
-                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2 text-[10px] font-bold text-sibs-primary-1 transition hover:bg-blue-100"
-                              >
-                                <Edit3 size={13} />
-                                Edit
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => setDeleteTarget(assignedUser)}
-                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-2 text-[10px] font-bold text-red-700 transition hover:bg-red-100"
-                              >
-                                <Trash2 size={13} />
-                                Delete
-                              </button>
-                            </div>
-                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={11}>
+                        <td colSpan={10}>
                           <EmptyState />
                         </td>
                       </tr>
@@ -2914,6 +3072,13 @@ export default function AccountSettingsPage() {
           </section>
         </div>
       </main>
+
+      <AccessDetailsModal
+        target={detailsTarget}
+        onClose={closeDetailsModal}
+        onEdit={openEditFromDetails}
+        onDelete={openDeleteFromDetails}
+      />
 
       <AccessModal
         open={accessModal.open}
