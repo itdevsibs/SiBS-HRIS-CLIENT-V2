@@ -16,6 +16,8 @@ import {
   buildSourceRows,
   buildSourcingTotals,
 } from "../../lib/utils/sourcing/sourcingCalculations";
+import { canAccessSourcingAnalytics } from "../../lib/utils/sourcing/sourcingAccess";
+import { useUser } from "./UserContext";
 
 const SourcingContext = createContext(null);
 
@@ -37,7 +39,17 @@ function getResponseArray(response, keys = []) {
   return [];
 }
 
+function getSkippedAccessResponse() {
+  return {
+    success: false,
+    skipped: true,
+    reason: "not-authorized",
+  };
+}
+
 export function SourcingProvider({ children }) {
+  const { user } = useUser() || {};
+
   const [publicSubmissions, setPublicSubmissions] = useState([]);
   const [costEntries, setCostEntries] = useState([]);
   const [sourcingOptions, setSourcingOptions] = useState([]);
@@ -48,6 +60,18 @@ export function SourcingProvider({ children }) {
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const canUseSourcingAnalytics = useMemo(
+    () => canAccessSourcingAnalytics(user),
+    [user],
+  );
+
+  const clearAnalyticsData = useCallback(() => {
+    setPublicSubmissions([]);
+    setCostEntries([]);
+    setSourcingOptions([]);
+    setCurrentPage(1);
+  }, []);
 
   const applyAnalyticsResponse = useCallback((response) => {
     const nextPublicSubmissions = getResponseArray(response, [
@@ -84,8 +108,15 @@ export function SourcingProvider({ children }) {
   }, []);
 
   const fetchList = useCallback(async () => {
-    setLoading(true);
     setError("");
+
+    if (!canUseSourcingAnalytics) {
+      setLoading(false);
+      clearAnalyticsData();
+      return getSkippedAccessResponse();
+    }
+
+    setLoading(true);
 
     try {
       const response = await getSourcingAnalyticsData();
@@ -104,10 +135,15 @@ export function SourcingProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [applyAnalyticsResponse]);
+  }, [applyAnalyticsResponse, canUseSourcingAnalytics, clearAnalyticsData]);
 
   const fetchSourcingOptions = useCallback(async () => {
     setError("");
+
+    if (!canUseSourcingAnalytics) {
+      setSourcingOptions([]);
+      return getSkippedAccessResponse();
+    }
 
     try {
       const response = await getSourcingOptionsApi();
@@ -130,7 +166,7 @@ export function SourcingProvider({ children }) {
 
       throw requestError;
     }
-  }, []);
+  }, [canUseSourcingAnalytics]);
 
   const createSourceCostEntry = useCallback(
     async (payload) => {
@@ -254,6 +290,7 @@ export function SourcingProvider({ children }) {
       loading,
       mutating,
       error,
+      canAccessSourcingAnalytics: canUseSourcingAnalytics,
 
       publicSubmissions,
       costEntries,
@@ -289,6 +326,7 @@ export function SourcingProvider({ children }) {
       loading,
       mutating,
       error,
+      canUseSourcingAnalytics,
       publicSubmissions,
       costEntries,
       sourcingOptions,
