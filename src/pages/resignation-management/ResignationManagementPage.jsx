@@ -74,6 +74,38 @@ const STATUS_OPTIONS = [
 const TYPE_OPTIONS = ["All", "Formal", "Immediate"];
 const PAGE_LIMIT = 15;
 
+const APPROVAL_PROCESS_ROUTES = [
+  {
+    key: "corporate",
+    title: "Corporate Process",
+    routeLabel: "OM / SOM",
+    description: "Corporate accounts",
+    stages: [
+      { stage: "1", approver: "Operations Manager", role: "Department Head" },
+      {
+        stage: "2",
+        approver: "Senior Operations Manager",
+        role: "Final Operations Approval",
+      },
+    ],
+  },
+  {
+    key: "non-corporate",
+    title: "Non-Corporate Process",
+    routeLabel: "TL / OM / SOM",
+    description: "Operational and non-corporate accounts",
+    stages: [
+      { stage: "1", approver: "Team Leader", role: "Direct Supervisor" },
+      { stage: "2", approver: "Operations Manager", role: "Department Head" },
+      {
+        stage: "3",
+        approver: "Senior Operations Manager",
+        role: "Final Operations Approval",
+      },
+    ],
+  },
+];
+
 
 function normalizeRoleKey(value) {
   return String(value || "")
@@ -416,40 +448,6 @@ function ProfileAvatar({ item, size = "md" }) {
   );
 }
 
-function isStageApproved(item, stage) {
-  if (stage === "tl") return Number(item?.tlIsApproved || 0) === 1;
-  if (stage === "om") return Number(item?.omIsApproved || 0) === 1;
-  if (stage === "som") return Number(item?.somIsApproved || 0) === 1;
-
-  return false;
-}
-
-function isStageDeclined(item, stage) {
-  if (stage === "tl") return Number(item?.tlIsDeclined || 0) === 1;
-  if (stage === "om") return Number(item?.omIsDeclined || 0) === 1;
-  if (stage === "som") return Number(item?.somIsDeclined || 0) === 1;
-
-  return false;
-}
-
-function getStageStatus(items, stage) {
-  if (!items.length) return "No Requests";
-
-  const approvedCount = items.filter((item) =>
-    isStageApproved(item, stage),
-  ).length;
-
-  const declinedCount = items.filter((item) =>
-    isStageDeclined(item, stage),
-  ).length;
-
-  if (declinedCount > 0) return "Has Declined";
-  if (approvedCount === items.length) return "Approved";
-  if (approvedCount > 0) return "In Progress";
-
-  return "Pending";
-}
-
 function getStatusClass(status) {
   switch (status) {
     case "Completed":
@@ -489,20 +487,6 @@ function renderStatusIcon(status, size = 12) {
   return <IconComponent size={size} />;
 }
 
-function getStageClass(status) {
-  switch (status) {
-    case "Approved":
-      return "border-emerald-100 bg-emerald-50 text-emerald-700";
-    case "In Progress":
-      return "border-blue-100 bg-blue-50 text-blue-700";
-    case "Has Declined":
-      return "border-red-100 bg-red-50 text-red-700";
-    case "No Requests":
-      return "border-slate-100 bg-slate-50 text-slate-600";
-    default:
-      return "border-amber-100 bg-amber-50 text-amber-700";
-  }
-}
 
 function ResignationSummaryCards({ stats, loading }) {
   const normalizedStats = {
@@ -634,7 +618,7 @@ function ResignationSummaryCards({ stats, loading }) {
   );
 }
 
-function ApprovalStageRow({ stage, approver, role, status }) {
+function ApprovalStageRow({ stage, approver, role }) {
   return (
     <tr className="border-b border-[#edf1f5] last:border-b-0">
       <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-semibold text-[#042C51]">
@@ -649,15 +633,6 @@ function ApprovalStageRow({ stage, approver, role, status }) {
         {role}
       </td>
 
-      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3">
-        <span
-          className={`inline-flex rounded-full border px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold ${getStageClass(
-            status,
-          )}`}
-        >
-          {status}
-        </span>
-      </td>
     </tr>
   );
 }
@@ -774,30 +749,6 @@ function ResignationAnalytics({ data = [], loading = false }) {
     };
   }, [data]);
 
-  const approvalStages = useMemo(
-    () => [
-      {
-        stage: "1",
-        approver: "Team Leader",
-        role: "Direct Supervisor",
-        status: getStageStatus(data, "tl"),
-      },
-      {
-        stage: "2",
-        approver: "Operations Manager",
-        role: "Department Head",
-        status: getStageStatus(data, "om"),
-      },
-      {
-        stage: "3",
-        approver: "Senior Operations Manager",
-        role: "Final Operations Approval",
-        status: getStageStatus(data, "som"),
-      },
-    ],
-    [data],
-  );
-
   return (
     <section className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[1.4fr_0.8fr]">
       <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-3.5 2xl:p-5`}>
@@ -869,39 +820,55 @@ function ResignationAnalytics({ data = [], loading = false }) {
         </div>
 
         <div className={`mt-7 overflow-hidden ${EDGE} border border-[#E6ECF2]`}>
-          <div className="flex items-center justify-between border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+          <div className="border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
             <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               Approval Stages
             </h3>
-
-            <p className="sibs-text-xs font-semibold text-[#667085]">
-              TL / OM / SOM
+            <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+              Reference approval flow for Corporate and Non-Corporate resignations.
             </p>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[680px] border-collapse">
-              <thead>
-                <tr className="bg-white text-left text-xs font-bold uppercase text-sibs-tertiary-5">
-                  <th className="px-4 py-3">Stage</th>
-                  <th className="px-4 py-3">Approver</th>
-                  <th className="px-4 py-3">Role</th>
-                  <th className="px-4 py-3">Status</th>
-                </tr>
-              </thead>
+          <div className="divide-y divide-[#E6ECF2]">
+            {APPROVAL_PROCESS_ROUTES.map((route) => (
+              <div key={route.key}>
+                <div className="flex items-center justify-between gap-3 border-b border-[#E6ECF2] bg-white px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="sibs-text-xs font-extrabold text-[#042C51]">
+                      {route.title}
+                    </p>
+                    <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
+                      {route.description}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-md border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1 sibs-text-micro font-bold text-[#52637A]">
+                    {route.routeLabel}
+                  </span>
+                </div>
 
-              <tbody>
-                {approvalStages.map((stage) => (
-                  <ApprovalStageRow
-                    key={stage.stage}
-                    stage={stage.stage}
-                    approver={stage.approver}
-                    role={stage.role}
-                    status={stage.status}
-                  />
-                ))}
-              </tbody>
-            </table>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px] border-collapse">
+                    <thead>
+                      <tr className="bg-white text-left text-xs font-bold uppercase text-sibs-tertiary-5">
+                        <th className="px-4 py-3">Stage</th>
+                        <th className="px-4 py-3">Approver</th>
+                        <th className="px-4 py-3">Role</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {route.stages.map((stage) => (
+                        <ApprovalStageRow
+                          key={`${route.key}-${stage.stage}`}
+                          stage={stage.stage}
+                          approver={stage.approver}
+                          role={stage.role}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
