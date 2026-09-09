@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { CalendarDays } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -37,7 +36,6 @@ export default function SchedulePage() {
     setDateRange,
   } = paginationContext;
 
-  const navigate = useNavigate();
   const restoredRef = useRef(false);
   const mainScrollRef = useRef(null);
 
@@ -104,11 +102,6 @@ export default function SchedulePage() {
       });
 
       if (!result?.success) {
-        if (result?.status === 401) {
-          navigate("/login", { replace: true });
-          return;
-        }
-
         setSchedule([]);
 
         setPagination({

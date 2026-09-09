@@ -140,6 +140,14 @@ export async function getEmployeeDashboardSources({
       withCredentials: true,
       signal,
     }),
+    api.get("/api/recruitment-settings/holidays", {
+      params: {
+        includeInactive: "0",
+        _t: Date.now(),
+      },
+      withCredentials: true,
+      signal,
+    }),
     employeeId
       ? api.get(`/api/employees/${encodeURIComponent(employeeId)}`, {
           withCredentials: true,
@@ -153,8 +161,15 @@ export async function getEmployeeDashboardSources({
         }),
   ];
 
-  const [attendance, kronosAttendance, schedule, leaves, leaveSummary, employee] =
-    await Promise.allSettled(requests);
+  const [
+    attendance,
+    kronosAttendance,
+    schedule,
+    leaves,
+    leaveSummary,
+    holidays,
+    employee,
+  ] = await Promise.allSettled(requests);
 
   const sourceResults = {
     attendance: unwrapSettled(attendance, "Attendance data is unavailable."),
@@ -167,6 +182,10 @@ export async function getEmployeeDashboardSources({
     leaveSummary: unwrapSettled(
       leaveSummary,
       "Leave balances are unavailable.",
+    ),
+    holidays: unwrapSettled(
+      holidays,
+      "Holiday calendar data is unavailable.",
     ),
     employee: unwrapSettled(employee, "Employee profile data is unavailable."),
   };

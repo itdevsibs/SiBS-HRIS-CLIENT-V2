@@ -10,7 +10,14 @@ import {
 
 import { useUser } from "./UserContext";
 import { getLeavesSummary } from "../../lib/axios/getLeaves";
+import { getCandidatePipelineCandidates } from "../../lib/axios/getCandidatePipeline";
+import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
 import { getAuditNotifications } from "../../lib/axios/getAuditNotifications";
+import {
+  buildCandidatePipelineNotifications,
+  buildHiringNeedsNotifications,
+  sortNotificationsByNewest,
+} from "../../lib/utils/notificationFeed";
 import {
   canUseAuditNotifications,
   formatAuditNotificationTime,
@@ -145,6 +152,7 @@ export function SidebarNotificationProvider({ children }) {
   const [dismissedNotifIds, setDismissedNotifIds] = useState({});
   const [dynamicNotifications, setDynamicNotifications] = useState([]);
   const [leavePendingNotification, setLeavePendingNotification] = useState(null);
+  const [operationalNotifications, setOperationalNotifications] = useState([]);
   const [auditNotifications, setAuditNotifications] = useState([]);
 
   useEffect(() => {
@@ -192,8 +200,13 @@ export function SidebarNotificationProvider({ children }) {
           : `${pendingLeaves.toLocaleString("en-PH")} ${requestLabel} currently pending.`,
         time: "Current",
         timestamp: Date.now(),
-        actionLabel: canReview ? "Review Leaves" : "View Leaves",
+        actionLabel: "",
         actionPath: "/leaves",
+        actionState: {
+          leaveStatus: "Pending",
+          source: "pending-leave-notification",
+        },
+        clickableCard: true,
       });
     }
 
@@ -220,6 +233,85 @@ export function SidebarNotificationProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
 
+    async function refreshOperationalNotifications() {
+      if (!user) {
+        if (!cancelled) {
+          setOperationalNotifications([]);
+        }
+        return;
+      }
+
+      const [pipelineResult, hiringNeedsResult] =
+        await Promise.allSettled([
+          getCandidatePipelineCandidates({
+            page: 1,
+            limit: 500,
+          }),
+          getHiringNeeds(),
+        ]);
+
+      if (cancelled) return;
+
+      const pipelinePayload =
+        pipelineResult.status === "fulfilled"
+          ? pipelineResult.value
+          : null;
+
+      const hiringNeedsPayload =
+        hiringNeedsResult.status === "fulfilled"
+          ? hiringNeedsResult.value
+          : null;
+
+      setOperationalNotifications(
+        sortNotificationsByNewest([
+          ...buildCandidatePipelineNotifications(
+            pipelinePayload || {},
+          ),
+          ...buildHiringNeedsNotifications(
+            hiringNeedsPayload || {},
+          ),
+        ]),
+      );
+    }
+
+    refreshOperationalNotifications();
+
+    const interval = window.setInterval(
+      refreshOperationalNotifications,
+      60_000,
+    );
+
+    const refreshEvents = [
+      "ta-pipeline-candidates-updated",
+      "ta-talent-pool-updated",
+      "ta-hiring-needs-updated",
+    ];
+
+    const handleRefresh = () => {
+      refreshOperationalNotifications();
+    };
+
+    refreshEvents.forEach((eventName) => {
+      window.addEventListener(eventName, handleRefresh);
+    });
+
+    window.addEventListener("focus", handleRefresh);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+
+      refreshEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, handleRefresh);
+      });
+
+      window.removeEventListener("focus", handleRefresh);
+    };
+  }, [user, userNotificationId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     async function refreshAuditNotifications() {
       if (!user) {
         if (!cancelled) setAuditNotifications([]);
@@ -233,13 +325,28 @@ export function SidebarNotificationProvider({ children }) {
 
       try {
         const payload = await getAuditNotifications({ limit: 20 });
+
         if (cancelled) return;
 
         const normalized = normalizeAuditNotificationsResponse(payload);
         const mapped = normalized.map((item) => {
           const isApproval =
-            ["approval-request", "hiring-needs", "job-description", "leaves"].includes(item.module) ||
-            ["APPROVE", "SUBMIT", "PENDING", "STATUS_CHANGE"].includes(item.action);
+            [
+              "approval-request",
+              "hiring-needs",
+              "job-description",
+              "leaves",
+            ].includes(item.module) ||
+            [
+              "APPROVE",
+              "SUBMIT",
+              "PENDING",
+              "STATUS_CHANGE",
+              "RESIGN_REVIEW",
+            ].includes(item.action);
+          const opensEmployeeResignationDetails =
+            ["resignation", "attrition"].includes(item.module) &&
+            item.targetPath === "/dashboard/employee";
 
           return {
             id: item.id || `audit-${item.auditLogId}`,
@@ -253,31 +360,62 @@ export function SidebarNotificationProvider({ children }) {
             title: item.title,
             message: item.message,
             time: formatAuditNotificationTime(item.occurredAt),
-            timestamp: item.occurredAt ? new Date(item.occurredAt).getTime() : Date.now(),
+            timestamp: item.occurredAt
+              ? new Date(item.occurredAt).getTime()
+              : Date.now(),
             actionLabel: getActionLabelByModule(item.module),
             actionPath: item.targetPath || "/approval-request",
+            ...(opensEmployeeResignationDetails
+              ? {
+                  actionState: {
+                    openResignationDetails: true,
+                    source: "resignation-notification",
+                  },
+                }
+              : {}),
           };
         });
 
         if (!cancelled) {
           setAuditNotifications(mapped);
         }
-      } catch (err) {
-        console.warn("[SidebarNotificationContext] live audit notifications failed:", err?.message);
-        if (!cancelled) setAuditNotifications([]);
+      } catch (error) {
+        console.warn(
+          "[SidebarNotificationContext] live audit notifications failed:",
+          error?.message,
+        );
+
+        if (!cancelled) {
+          setAuditNotifications([]);
+        }
       }
     }
 
     refreshAuditNotifications();
 
-    const interval = window.setInterval(refreshAuditNotifications, 60_000);
-    const handleFocus = () => refreshAuditNotifications();
-    window.addEventListener("focus", handleFocus);
+    const interval = window.setInterval(
+      refreshAuditNotifications,
+      60_000,
+    );
+
+    const handleRefresh = () => {
+      refreshAuditNotifications();
+    };
+
+    window.addEventListener("focus", handleRefresh);
+    window.addEventListener(
+      "sibs-audit-notifications-refresh",
+      handleRefresh,
+    );
 
     return () => {
       cancelled = true;
       window.clearInterval(interval);
-      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("focus", handleRefresh);
+      window.removeEventListener(
+        "sibs-audit-notifications-refresh",
+        handleRefresh,
+      );
     };
   }, [user]);
 
@@ -344,6 +482,7 @@ export function SidebarNotificationProvider({ children }) {
   const markAllAsRead = useCallback(() => {
     const all = [
       ...(leavePendingNotification ? [leavePendingNotification] : []),
+      ...operationalNotifications,
       ...auditNotifications,
       ...DEFAULT_SYSTEM_NOTIFICATIONS,
       ...dynamicNotifications,
@@ -354,7 +493,13 @@ export function SidebarNotificationProvider({ children }) {
     });
     setReadNotifIds(next);
     writeStorage(readNotifsStorageKey, next);
-  }, [dynamicNotifications, leavePendingNotification, auditNotifications, readNotifsStorageKey]);
+  }, [
+    dynamicNotifications,
+    leavePendingNotification,
+    operationalNotifications,
+    auditNotifications,
+    readNotifsStorageKey,
+  ]);
 
   // Dismiss a system notification
   const dismissNotification = useCallback(
@@ -377,19 +522,27 @@ export function SidebarNotificationProvider({ children }) {
 
   // Compute merged system notifications list
   const notificationsList = useMemo(() => {
-    const combined = [
+    const combined = sortNotificationsByNewest([
       ...dynamicNotifications,
       ...(leavePendingNotification ? [leavePendingNotification] : []),
+      ...operationalNotifications,
       ...auditNotifications,
       ...DEFAULT_SYSTEM_NOTIFICATIONS,
-    ];
+    ]);
     return combined
       .filter((n) => !dismissedNotifIds[n.id])
       .map((n) => ({
         ...n,
         isRead: Boolean(readNotifIds[n.id]),
       }));
-  }, [dynamicNotifications, leavePendingNotification, auditNotifications, dismissedNotifIds, readNotifIds]);
+  }, [
+    dynamicNotifications,
+    leavePendingNotification,
+    operationalNotifications,
+    auditNotifications,
+    dismissedNotifIds,
+    readNotifIds,
+  ]);
 
   // Total unread count
   const unreadCount = useMemo(

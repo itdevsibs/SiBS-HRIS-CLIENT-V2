@@ -13,6 +13,7 @@ import {
 
 import {
   cleanText,
+  formatLongDisplayDate,
   hasValue,
   toInputDate,
 } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
@@ -127,8 +128,9 @@ export function PersonalSection({
             />
             <ProfileFieldControl
               label="Birth Date"
-              type="date"
+              type="formatted-date"
               value={toInputDate(employee?.birthdate)}
+              displayValue={employee?.birthdate ? formatLongDisplayDate(employee?.birthdate) : ""}
               onChange={(value) => onChange("birthdate", value)}
               required
             />
@@ -183,7 +185,7 @@ export function PersonalSection({
             <ProfileReadField label="Last Name" value={employee?.lastName} />
             <ProfileReadField label="Name Extension (Jr/III)" value={employee?.nameExtension} />
             <ProfileReadField label="Preferred Name" value={employee?.preferredName} />
-            <ProfileReadField label="Birth Date" value={toInputDate(employee?.birthdate)} />
+            <ProfileReadField label="Birth Date" value={formatLongDisplayDate(employee?.birthdate)} />
             <ProfileReadField label="Place of Birth" value={employee?.placeOfBirth} />
             <ProfileReadField label="Gender" value={employee?.gender} />
             <ProfileReadField label="Civil Status" value={employee?.civilStatus} />

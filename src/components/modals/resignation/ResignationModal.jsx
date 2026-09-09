@@ -185,6 +185,12 @@ function getInitialForm() {
   };
 }
 
+function refreshAuditNotificationsNow() {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(new Event("sibs-audit-notifications-refresh"));
+}
+
 function AnimatedDropdown({ open, children, className = "", maxHeight = "" }) {
   return (
     <div
@@ -785,6 +791,7 @@ export default function ResignationModal({
       handleClose();
       refreshResignationList();
       await onSuccess?.();
+      refreshAuditNotificationsNow();
 
       showStatus({
         open: true,
@@ -883,6 +890,7 @@ export default function ResignationModal({
       handleClose();
       refreshResignationList();
       await onSuccess?.();
+      refreshAuditNotificationsNow();
 
       showStatus({
         open: true,

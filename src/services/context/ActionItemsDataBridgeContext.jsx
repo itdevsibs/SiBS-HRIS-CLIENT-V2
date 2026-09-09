@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useHiringNeeds } from "./HiringNeedsContext";
+import { useUser } from "./UserContext";
 import { useCandidatePipeline } from "./CandidatePipelineContext";
 import { useOffers } from "./OffersContext";
 import { useOnboarding } from "./OnboardingContext";
@@ -9,6 +10,7 @@ import { useWorkforceHiring } from "./WorkforceHiringContext";
 import { ActionItemsProvider } from "./ActionItemsContext";
 
 const SOURCE_REFRESH_EVENT = "ta-action-items-source-refresh-requested";
+const ACTION_ITEMS_ALLOWED_ACCESS = new Set([1, 2, 3, 6, 7]);
 
 function cleanArray(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
@@ -284,6 +286,7 @@ function getFirstFunction(source = {}, names = []) {
 }
 
 export default function ActionItemsDataBridge({ children }) {
+  const { user, loading: userLoading } = useUser() || {};
   const hiringNeeds = useHiringNeeds();
   const candidatePipeline = useCandidatePipeline();
   const offers = useOffers();
@@ -291,6 +294,12 @@ export default function ActionItemsDataBridge({ children }) {
   const sourcing = useSourcingAnalytics();
   const workforceHiring = useWorkforceHiring();
   const [bridgeVersion, setBridgeVersion] = useState(0);
+
+  const userAdminAccess = Number(
+    user?.adminAccess ?? user?.admin_access ?? 0,
+  );
+  const canLoadActionItems =
+    ACTION_ITEMS_ALLOWED_ACCESS.has(userAdminAccess);
 
   const fetchHiringNeeds = hiringNeeds?.fetchList;
   const refreshCandidatePipeline = candidatePipeline?.refreshCandidatePipeline;
@@ -313,6 +322,10 @@ export default function ActionItemsDataBridge({ children }) {
   ]);
 
   const refreshLiveSources = useCallback(async () => {
+    if (userLoading || !user || !canLoadActionItems) {
+      return;
+    }
+
     const refreshers = [
       fetchHiringNeeds,
       refreshCandidatePipeline,
@@ -325,12 +338,15 @@ export default function ActionItemsDataBridge({ children }) {
     await Promise.allSettled(refreshers.map((callback) => callback()));
     setBridgeVersion((value) => value + 1);
   }, [
+    canLoadActionItems,
     fetchHiringNeeds,
     refreshCandidatePipeline,
     refreshOffers,
     refreshOnboarding,
     refreshSourcing,
     refreshWorkforceHiring,
+    user,
+    userLoading,
   ]);
 
   useEffect(() => {

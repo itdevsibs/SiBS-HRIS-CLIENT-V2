@@ -211,9 +211,14 @@ api.interceptors.response.use(
       isPublicPath(pathname) ||
       shouldIgnoreAuthRedirect(requestUrl);
 
-    // A normal 403 can mean missing module permission; do not log out for it.
+    // A 401 is an API authorization error, not proof that the HRIS session
+    // itself expired. Preserve the current token/session and let the caller
+    // display the API error instead of forcing a logout or login redirect.
     if (status === 401 && !ignoreRedirect) {
-      void handleLogout(true);
+      console.warn(
+        "Unauthorized API response; keeping the current session:",
+        error?.response?.data?.message || error?.message,
+      );
     }
 
     return Promise.reject(error);

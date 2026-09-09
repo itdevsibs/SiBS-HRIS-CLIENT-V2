@@ -514,6 +514,7 @@ export default function Sidebar() {
         setSidebarNotification?.("jobDescriptionApprovals", null);
         setSidebarNotification?.("hiringNeedsApprovals", null);
         setSidebarNotification?.("availablePositionApprovals", null);
+        setSidebarNotification?.("resignationApprovals", null);
         setSidebarNotification?.("hiringNeedsUnlinkedJd", null);
         setSidebarNotification?.("availablePositionsUnlinkedJd", null);
         setSidebarNotification?.("approvalRequests", null);
@@ -540,6 +541,7 @@ export default function Sidebar() {
       const availablePositionsPending = Number(
         moduleCountByName["Available Positions"] || 0,
       );
+      const resignationPending = Number(moduleCountByName.Attrition || 0);
       const centralApprovalPending = ["Attrition", "Job Description"].reduce(
         (sum, moduleName) => sum + Number(moduleCountByName[moduleName] || 0),
         0,
@@ -580,6 +582,18 @@ export default function Sidebar() {
           : null,
       );
       setSidebarNotification?.(
+        "resignationApprovals",
+        resignationPending > 0
+          ? {
+              name: "Resignation Management",
+              count: resignationPending,
+              label: "NEW",
+              tone: "urgent",
+              title: `${resignationPending > 99 ? "99+" : resignationPending} resignation ${resignationPending === 1 ? "case" : "cases"} awaiting your approval`,
+            }
+          : null,
+      );
+      setSidebarNotification?.(
         "approvalRequests",
         centralApprovalPending > 0
           ? {
@@ -597,6 +611,7 @@ export default function Sidebar() {
       setSidebarNotification?.("jobDescriptionApprovals", null);
       setSidebarNotification?.("hiringNeedsApprovals", null);
       setSidebarNotification?.("availablePositionApprovals", null);
+      setSidebarNotification?.("resignationApprovals", null);
       setSidebarNotification?.("approvalRequests", null);
     }
   }, [setSidebarNotification, user]);
@@ -770,6 +785,7 @@ export default function Sidebar() {
         setSidebarNotification?.("jobDescriptionApprovals", null);
         setSidebarNotification?.("hiringNeedsApprovals", null);
         setSidebarNotification?.("availablePositionApprovals", null);
+        setSidebarNotification?.("resignationApprovals", null);
         setSidebarNotification?.("approvalRequests", null);
       }, 0);
 
@@ -885,6 +901,7 @@ export default function Sidebar() {
       icon: FileText,
       path: "/resignation",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7, 10],
+      notificationKey: "resignationApprovals",
     },
   ];
 

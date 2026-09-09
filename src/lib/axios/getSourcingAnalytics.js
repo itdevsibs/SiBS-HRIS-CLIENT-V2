@@ -367,7 +367,9 @@ export async function getSourcingAnalyticsData() {
 
     return normalizeAnalyticsPayload(response.data);
   } catch (error) {
-    console.error("GET SOURCING ANALYTICS ERROR:", error);
+    if (error?.response?.status !== 401) {
+      console.error("GET SOURCING ANALYTICS ERROR:", error);
+    }
 
     throw createApiError(
       error,

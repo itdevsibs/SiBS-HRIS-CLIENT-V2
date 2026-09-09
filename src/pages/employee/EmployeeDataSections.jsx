@@ -121,6 +121,20 @@ function formatDate(value) {
   });
 }
 
+function formatLongDate(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 
 function SectionHeader({ title, subtitle, icon: Icon, isEditing, onEdit }) {
   return (
@@ -751,7 +765,7 @@ export function PersonalSection({
             <ReadField label="Last Name" value={employee?.lastName} />
             <ReadField label="Name Extension (Jr/III)" value={employee?.nameExtension} />
             <ReadField label="Preferred Name" value={employee?.preferredName} />
-            <ReadField label="Birth Date" value={toInputDate(employee?.birthdate)} />
+            <ReadField label="Birth Date" value={formatLongDate(employee?.birthdate)} />
             <ReadField label="Place of Birth" value={employee?.placeOfBirth} />
             <ReadField label="Gender" value={employee?.gender} />
             <ReadField label="Civil Status" value={employee?.civilStatus} />

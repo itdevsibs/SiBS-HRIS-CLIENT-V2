@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   ArrowUpRight,
@@ -23,9 +23,11 @@ import {
 import Header from "../../components/layout/Header";
 import AdminLoginModal from "../../components/modals/AdminLoginModal";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
+import { ViewResignationModal } from "../../components/modals/resignation-management/ResignationManagementModal";
 import StatusModal from "../../components/modals/StatusModal";
 import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
 import { getEmployeeDashboardSources } from "../../lib/axios/getEmployeeDashboardData.js";
+import { getMyResignationStatus } from "../../lib/axios/getMyResignationStatus.js";
 import {
   cleanDashboardText,
   formatDashboardDate,
@@ -115,6 +117,36 @@ function getRequestStatusTone(status = "") {
   return "border-amber-200 bg-amber-50 text-amber-700";
 }
 
+function getResignationShortcutTone(status = "") {
+  const normalized = cleanDashboardText(status).toLowerCase();
+
+  if (normalized.includes("complete") || normalized.includes("approved")) {
+    return {
+      button: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100",
+      badge: "border-emerald-200 bg-white text-emerald-700",
+    };
+  }
+
+  if (normalized.includes("declin") || normalized.includes("reject")) {
+    return {
+      button: "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100",
+      badge: "border-rose-200 bg-white text-rose-700",
+    };
+  }
+
+  if (normalized.includes("notice")) {
+    return {
+      button: "border-indigo-200 bg-indigo-50 text-indigo-700 hover:border-indigo-300 hover:bg-indigo-100",
+      badge: "border-indigo-200 bg-white text-indigo-700",
+    };
+  }
+
+  return {
+    button: "border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300 hover:bg-amber-100",
+    badge: "border-amber-200 bg-white text-amber-700",
+  };
+}
+
 function getAnnouncementTone(category = "") {
   const normalized = cleanDashboardText(category).toLowerCase();
 
@@ -181,6 +213,7 @@ function DashboardLoadingState() {
 
 export default function EmployeeDashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading } = useUser();
   const { ADMIN_ROLES } = useAdmin();
 
@@ -192,6 +225,12 @@ export default function EmployeeDashboardPage() {
   const [dashboardDataLoading, setDashboardDataLoading] = useState(true);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [openResignation, setOpenResignation] = useState(false);
+  const [openResignationDetails, setOpenResignationDetails] = useState(false);
+  const [resignationStatusState, setResignationStatusState] = useState({
+    loading: true,
+    item: null,
+    error: "",
+  });
   const [statusModal, setStatusModal] = useState({
     open: false,
     type: "success",
@@ -224,6 +263,91 @@ export default function EmployeeDashboardPage() {
 
     return () => window.clearInterval(timer);
   }, []);
+
+  const refreshMyResignationStatus = useCallback(
+    async ({ showLoading = true } = {}) => {
+      if (!user || user.role !== "employee") {
+        setResignationStatusState({
+          loading: false,
+          item: null,
+          error: "",
+        });
+        return null;
+      }
+
+      if (showLoading) {
+        setResignationStatusState((current) => ({
+          ...current,
+          loading: true,
+          error: "",
+        }));
+      }
+
+      const result = await getMyResignationStatus();
+
+      if (!result?.success) {
+        setResignationStatusState({
+          loading: false,
+          item: null,
+          error:
+            result?.message ||
+            "Your resignation status could not be loaded right now.",
+        });
+        return null;
+      }
+
+      const latest =
+        result?.latest ||
+        (Array.isArray(result?.data) ? result.data[0] : null) ||
+        null;
+
+      setResignationStatusState({
+        loading: false,
+        item: latest,
+        error: "",
+      });
+
+      return latest;
+    },
+    [user],
+  );
+
+  useEffect(() => {
+    void refreshMyResignationStatus();
+  }, [refreshMyResignationStatus]);
+
+  useEffect(() => {
+    if (!location.state?.openResignationDetails) return;
+    if (resignationStatusState.loading) return;
+
+    if (resignationStatusState.item) {
+      setOpenResignationDetails(true);
+    } else if (resignationStatusState.error) {
+      setStatusModal({
+        open: true,
+        type: "error",
+        title: "Resignation Status Unavailable",
+        message: resignationStatusState.error,
+      });
+    }
+
+    const nextState = { ...(location.state || {}) };
+    delete nextState.openResignationDetails;
+    delete nextState.source;
+
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: Object.keys(nextState).length ? nextState : null,
+    });
+  }, [
+    location.pathname,
+    location.search,
+    location.state,
+    navigate,
+    resignationStatusState.error,
+    resignationStatusState.item,
+    resignationStatusState.loading,
+  ]);
 
   useEffect(() => {
     if (!selectedAnnouncement) return undefined;
@@ -435,8 +559,8 @@ export default function EmployeeDashboardPage() {
     [profileSource],
   );
   const holidays = useMemo(
-    () => getDashboardHolidays(profileSource),
-    [profileSource],
+    () => getDashboardHolidays(liveSources?.holidays, dashboardDateKey),
+    [liveSources?.holidays, dashboardDateKey],
   );
 
   if (loading || !user || user.role !== "employee") {
@@ -459,6 +583,13 @@ export default function EmployeeDashboardPage() {
     .filter(Boolean)
     .join(" • ");
 
+  const resignationRecord = resignationStatusState.item;
+  const resignationStatusLabel =
+    cleanDashboardText(resignationRecord?.status) || "For Approval";
+  const resignationShortcutTone = getResignationShortcutTone(
+    resignationStatusLabel,
+  );
+
   function openStatus(message, type = "success", title = "Action Complete") {
     setStatusModal({
       open: true,
@@ -470,6 +601,22 @@ export default function EmployeeDashboardPage() {
 
   function handleQuickAction(action) {
     if (action === "resignation") {
+      if (resignationStatusState.loading) return;
+
+      if (resignationStatusState.error) {
+        openStatus(
+          resignationStatusState.error,
+          "error",
+          "Resignation Status Unavailable",
+        );
+        return;
+      }
+
+      if (resignationRecord) {
+        setOpenResignationDetails(true);
+        return;
+      }
+
       setOpenResignation(true);
       return;
     }
@@ -882,17 +1029,64 @@ export default function EmployeeDashboardPage() {
                     />
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleQuickAction("resignation")}
-                    className="flex h-8 2xl:h-8.5 w-full items-center justify-between rounded-lg border border-rose-100 bg-rose-50 px-3 text-left text-[11px] 2xl:text-xs font-black text-rose-700 transition hover:border-rose-200 hover:bg-rose-100"
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      <UserRoundX size={14} />
-                      Submit Resignation
-                    </span>
-                    <ChevronRight size={14} />
-                  </button>
+                  {resignationStatusState.loading ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex h-8 2xl:h-8.5 w-full cursor-wait items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-left text-[11px] 2xl:text-xs font-black text-slate-500"
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock size={14} />
+                        Checking Resignation Status
+                      </span>
+                    </button>
+                  ) : resignationStatusState.error ? (
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAction("resignation")}
+                      className="flex h-8 2xl:h-8.5 w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 text-left text-[11px] 2xl:text-xs font-black text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
+                    >
+                      <span className="inline-flex min-w-0 items-center gap-1.5">
+                        <AlertCircle size={14} className="shrink-0" />
+                        <span className="truncate">
+                          Resignation Status Unavailable
+                        </span>
+                      </span>
+                      <ChevronRight size={14} className="shrink-0" />
+                    </button>
+                  ) : resignationRecord ? (
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAction("resignation")}
+                      className={`flex h-8 2xl:h-8.5 w-full items-center justify-between gap-2 rounded-lg border px-3 text-left text-[11px] 2xl:text-xs font-black transition ${resignationShortcutTone.button}`}
+                    >
+                      <span className="inline-flex min-w-0 items-center gap-1.5">
+                        <UserRoundX size={14} className="shrink-0" />
+                        <span className="truncate">Resignation Status</span>
+                      </span>
+
+                      <span className="inline-flex shrink-0 items-center gap-1.5">
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[8px] 2xl:text-[9px] font-black uppercase ${resignationShortcutTone.badge}`}
+                        >
+                          {resignationStatusLabel}
+                        </span>
+                        <ChevronRight size={14} />
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAction("resignation")}
+                      className="flex h-8 2xl:h-8.5 w-full items-center justify-between rounded-lg border border-rose-100 bg-rose-50 px-3 text-left text-[11px] 2xl:text-xs font-black text-rose-700 transition hover:border-rose-200 hover:bg-rose-100"
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        <UserRoundX size={14} />
+                        Submit Resignation
+                      </span>
+                      <ChevronRight size={14} />
+                    </button>
+                  )}
                 </div>
               </DashboardCard>
 
@@ -1099,8 +1293,8 @@ export default function EmployeeDashboardPage() {
                     <DashboardEmptyState
                       compact
                       icon={CalendarDays}
-                      title="No holiday calendar loaded"
-                      message="No holiday endpoint was provided. The calendar will remain empty until that source is connected."
+                      title="No upcoming holidays"
+                      message="There are no active holidays on or after today in the holiday calendar."
                     />
                   )}
                 </div>
@@ -1188,8 +1382,18 @@ export default function EmployeeDashboardPage() {
       <ResignationModal
         open={openResignation}
         onClose={() => setOpenResignation(false)}
-        onSuccess={() => setOpenResignation(false)}
+        onSuccess={async () => {
+          setOpenResignation(false);
+          await refreshMyResignationStatus({ showLoading: false });
+        }}
         setStatusModal={setStatusModal}
+      />
+
+      <ViewResignationModal
+        open={openResignationDetails}
+        item={resignationRecord}
+        currentUser={user}
+        onClose={() => setOpenResignationDetails(false)}
       />
 
       <StatusModal

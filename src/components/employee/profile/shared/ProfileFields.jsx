@@ -1,3 +1,5 @@
+import { CalendarDays } from "lucide-react";
+
 import { hasValue } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 
 export function ProfileReadField({
@@ -27,6 +29,7 @@ export function ProfileReadField({
 export function ProfileFieldControl({
   label,
   value,
+  displayValue,
   onChange,
   type = "text",
   options = [],
@@ -68,6 +71,33 @@ export function ProfileFieldControl({
             </option>
           ))}
         </select>
+      ) : type === "formatted-date" ? (
+        <div className="relative">
+          <input
+            type="date"
+            aria-label={label}
+            disabled={disabled}
+            value={value || ""}
+            onChange={(event) => onChange?.(event.target.value)}
+            className={`peer absolute inset-0 z-10 h-full w-full opacity-0 ${
+              disabled ? "cursor-not-allowed" : "cursor-pointer"
+            }`}
+          />
+          <div
+            className={`${common} flex h-8 2xl:h-9 items-center pr-9 peer-focus:border-sibs-navy peer-focus:bg-white peer-focus:ring-2 peer-focus:ring-sibs-navy/10 ${
+              disabled ? "cursor-not-allowed" : "cursor-pointer"
+            }`}
+          >
+            <span className={displayValue ? "text-sibs-secondary" : "text-sibs-faint"}>
+              {displayValue || placeholder || "Choose date"}
+            </span>
+          </div>
+          <CalendarDays
+            size={14}
+            aria-hidden="true"
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sibs-secondary"
+          />
+        </div>
       ) : (
         <input
           type={type}

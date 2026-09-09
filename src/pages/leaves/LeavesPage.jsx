@@ -168,6 +168,26 @@ function normalizeStatus(status) {
   return value;
 }
 
+function getRequestedLeaveStatusFromNavigationState(state = {}) {
+  const source = String(state?.source || "")
+    .trim()
+    .toLowerCase();
+
+  const requestedStatus = String(state?.leaveStatus || "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    source === "pending-leave-notification" &&
+    requestedStatus === "pending"
+  ) {
+    return "Pending";
+  }
+
+  return "";
+}
+
+
 function StatCard({
   title,
   value,
@@ -252,6 +272,8 @@ function StatCard({
 export default function LeavesPage() {
   const { user } = useUser();
   const { markNotificationSeen } = useSidebarNotifications() || {};
+  const location = useLocation();
+  const navigate = useNavigate();
   const mainScrollRef = useRef(null);
   const restoredRef = useRef(false);
 
@@ -259,7 +281,12 @@ export default function LeavesPage() {
   const [leaveSummary, setLeaveSummary] = useState(null);
   const [recordScope, setRecordScope] = useState("all");
 
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState(
+    () =>
+      getRequestedLeaveStatusFromNavigationState(
+        location.state,
+      ) || "All",
+  );
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
   const [departmentOptions, setDepartmentOptions] = useState([]);
@@ -445,10 +472,6 @@ export default function LeavesPage() {
           setSearch(parsed.search);
         }
 
-        if (typeof parsed.status === "string") {
-          setStatusFilter(parsed.status || "All");
-        }
-
         if (typeof parsed.department === "string") {
           setDepartmentFilter(parsed.department || "All");
         }
@@ -487,7 +510,6 @@ export default function LeavesPage() {
       JSON.stringify({
         search,
         page,
-        status: statusFilter,
         department: departmentFilter,
         account: accountFilter,
         dateFrom,
@@ -497,11 +519,37 @@ export default function LeavesPage() {
   }, [
     search,
     page,
-    statusFilter,
     departmentFilter,
     accountFilter,
     dateFrom,
     dateTo,
+  ]);
+
+  useEffect(() => {
+    const requestedStatus =
+      getRequestedLeaveStatusFromNavigationState(
+        location.state,
+      );
+
+    if (!requestedStatus) return;
+
+    setStatusFilter(requestedStatus);
+    setPage(1);
+
+    navigate(
+      `${location.pathname}${location.search}${location.hash}`,
+      {
+        replace: true,
+        state: null,
+      },
+    );
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    location.state,
+    navigate,
+    setPage,
   ]);
 
   useEffect(() => {
