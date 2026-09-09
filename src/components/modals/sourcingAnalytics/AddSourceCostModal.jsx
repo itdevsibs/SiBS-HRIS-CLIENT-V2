@@ -46,7 +46,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] ${className}`}
+      className={`sibs-input ${className}`}
     />
   );
 }
@@ -55,7 +55,7 @@ function TextArea({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-[80px] 2xl:min-h-[96px] w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] ${className}`}
+      className={`sibs-modal-textarea ${className}`}
     />
   );
 }
@@ -770,7 +770,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] disabled:cursor-not-allowed disabled:opacity-60"
+                className="sibs-modal-btn-primary"
               >
                 {isSubmitting ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -785,7 +785,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="inline-flex h-8.5 w-8.5 2xl:h-10 2xl:w-10 items-center justify-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-close-btn"
                 aria-label="Close source cost modal"
               >
                 <X size={16} />

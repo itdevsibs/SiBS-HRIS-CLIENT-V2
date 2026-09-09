@@ -20,7 +20,7 @@ export default function OfferApprovalSkeletonModal({
 
   return createPortal(
     <div
-      className="pointer-events-auto fixed inset-0 z-[12050] flex h-dvh items-center justify-center bg-slate-950/50 p-4 backdrop-blur-[2px]"
+      className="pointer-events-auto sibs-modal-backdrop-in fixed inset-0 z-[12050] flex h-dvh items-center justify-center bg-slate-950/50 p-4 backdrop-blur-[2px] font-jakarta"
       role="status"
       aria-live="polite"
       aria-busy="true"
@@ -28,7 +28,7 @@ export default function OfferApprovalSkeletonModal({
       onClick={(event) => event.stopPropagation()}
       onMouseDown={(event) => event.stopPropagation()}
     >
-      <div className="w-full max-w-[440px] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
+      <div className="sibs-modal-pop-in w-full max-w-[440px] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
         <div className="border-b border-[#E6ECF2] px-6 py-5">
           <div className="flex items-center gap-4">
             <SkeletonBlock className="h-12 w-12 shrink-0 rounded-full bg-emerald-100" />

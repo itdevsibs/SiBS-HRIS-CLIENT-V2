@@ -302,7 +302,7 @@ export default function NotificationDropdown() {
                           </span>
                         </div>
 
-                        <p className="mt-0.5 sibs-text-micro leading-relaxed text-sibs-text-secondary font-medium line-clamp-2">
+                        <p className="mt-0.5 sibs-text-micro leading-relaxed text-sibs-text-secondary font-medium line-clamp-3">
                           {notif.message}
                         </p>
 

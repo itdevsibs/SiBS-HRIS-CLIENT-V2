@@ -896,7 +896,7 @@ export default function UserModal({
           <button
             type="button"
             onClick={handleAnimatedClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            className="sibs-modal-close-btn"
             aria-label="Close modal"
           >
             <X size={18} />
@@ -908,22 +908,31 @@ export default function UserModal({
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
               <div className="space-y-4">
                 <div className="rounded-xl border border-red-200 bg-red-50 p-3 2xl:p-4">
-                  <p className="sibs-text-xs font-bold text-red-700">
-                    Are you sure you want to delete this user account?
-                  </p>
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
+                      <AlertTriangle size={18} />
+                    </span>
+
+                    <div>
+                      <h4 className="sibs-modal-section-title text-red-900">
+                        Confirm Deletion
+                      </h4>
+                      <p className="sibs-modal-section-subtitle mt-0.5 text-red-700">
+                        This action cannot be undone. The user will be
+                        permanently removed from the system.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <ReadOnlyField label="SiBS ID" value={selectedUser.sibsId} />
+                <div className="space-y-3">
                   <ReadOnlyField
-                    label="Employee ID"
-                    value={selectedUser.gyEmpId}
+                    label="Employee Name"
+                    value={selectedUser.employeeName}
                   />
-                  <ReadOnlyField label="Full Name" value={fullName} />
-                  <ReadOnlyField label="Email" value={selectedUser.email} />
                   <ReadOnlyField
-                    label="Assigned Accounts"
-                    value={assignedAccountsDisplay}
+                    label="Account Email"
+                    value={selectedUser.email}
                   />
                   <ReadOnlyField
                     label="Department"
@@ -939,7 +948,7 @@ export default function UserModal({
                   type="button"
                   onClick={handleAnimatedClose}
                   disabled={deleting || isClosing}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:opacity-50"
+                  className="sibs-modal-btn-secondary"
                 >
                   Cancel
                 </button>
@@ -948,7 +957,7 @@ export default function UserModal({
                   type="button"
                   onClick={onConfirmDelete}
                   disabled={deleting || isClosing}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-red-700 active:scale-[0.98] disabled:opacity-50"
+                  className="sibs-btn-danger"
                 >
                   {deleting ? "Deleting..." : "Delete User"}
                 </button>
@@ -1163,7 +1172,7 @@ export default function UserModal({
                   type="button"
                   onClick={handleAnimatedClose}
                   disabled={saving || isClosing}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:opacity-50"
+                  className="sibs-modal-btn-secondary"
                 >
                   Cancel
                 </button>
@@ -1171,7 +1180,7 @@ export default function UserModal({
                 <button
                   type="submit"
                   disabled={saving || isClosing}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:opacity-50"
+                  className="sibs-modal-btn-primary"
                 >
                   {saving ? "Saving..." : isEdit ? "Save Changes" : "Add User"}
                 </button>

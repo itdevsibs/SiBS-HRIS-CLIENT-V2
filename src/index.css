@@ -1272,6 +1272,100 @@
   .sibs-icon-box {
     @apply flex items-center justify-center rounded-xl bg-sibs-primary-1 text-white;
   }
+
+  /* =========================
+     GLOBAL BUTTON SYSTEM
+  ========================= */
+  .sibs-btn-primary {
+    @apply inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 text-[11.5px] 2xl:text-[12px] font-extrabold text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .sibs-btn-secondary {
+    @apply inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-sibs-border-subtle bg-white px-3.5 2xl:px-4 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .sibs-btn-icon {
+    @apply inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .sibs-btn-danger {
+    @apply inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-rose-600 px-3.5 2xl:px-4 text-[11.5px] 2xl:text-[12px] font-extrabold text-white shadow-xs transition hover:bg-rose-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  /* =========================
+     GLOBAL STATUS BADGES & CHIPS
+  ========================= */
+  .sibs-badge-success {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700;
+  }
+
+  .sibs-badge-warning {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-700;
+  }
+
+  .sibs-badge-danger {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-rose-700;
+  }
+
+  .sibs-badge-neutral {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-slate-700;
+  }
+
+  .sibs-badge-info {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy;
+  }
+
+  /* =========================
+     GLOBAL SELECT DROPDOWN
+  ========================= */
+  .sibs-dashboard-select {
+    @apply h-8.5 2xl:h-10 rounded-xl border border-sibs-border-subtle bg-white px-3 text-[11.5px] 2xl:text-[12px] font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-border focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7];
+  }
+
+  /* =========================
+     GLOBAL FORM INPUTS
+  ========================= */
+  .sibs-input {
+    @apply h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border-subtle bg-[#F8FAFC] px-3 font-jakarta text-[11.5px] 2xl:text-[12px] font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:opacity-60;
+  }
+
+  .sibs-input-search {
+    @apply h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border-subtle bg-[#F8FAFC] pl-9 pr-3 font-jakarta text-[11.5px] 2xl:text-[12px] font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:opacity-60;
+  }
+
+  /* =========================
+     GLOBAL MODAL BUTTONS
+  ========================= */
+  .sibs-modal-btn-primary {
+    @apply inline-flex h-9 2xl:h-10 items-center justify-center gap-2 rounded-xl bg-sibs-orange px-4 2xl:px-5 text-[11.5px] 2xl:text-[12px] font-extrabold text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .sibs-modal-btn-secondary {
+    @apply inline-flex h-9 2xl:h-10 items-center justify-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-4 2xl:px-5 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  /* =========================
+     GLOBAL TABLE PRIMITIVES
+  ========================= */
+  .sibs-table-shell {
+    @apply overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs;
+  }
+
+  .sibs-table-head {
+    @apply border-b border-[#E6ECF2] bg-[#F8FAFC];
+  }
+
+  .sibs-table-th {
+    @apply px-3 2xl:px-4 py-3 text-left font-jakarta text-[10.5px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy whitespace-nowrap;
+  }
+
+  .sibs-table-row {
+    @apply border-b border-[#F1F5F9] transition hover:bg-[#FFF7F3]/40;
+  }
+
+  .sibs-table-td {
+    @apply px-3 2xl:px-4 py-2.5 2xl:py-3 font-jakarta text-[11.5px] 2xl:text-[12px] text-sibs-navy align-middle;
+  }
 }
 
 /* =========================

@@ -5,7 +5,6 @@ import React, {
   useState,
 } from "react";
 import {
-  BarChart3,
   Plus,
   RefreshCw,
   Target,
@@ -22,6 +21,7 @@ import SourcingSummaryCards from "../../components/recruitment/sourcingAnalytics
 import AddSourceCostModal from "../../components/modals/sourcingAnalytics/AddSourceCostModal";
 import SourceDetailsModal from "../../components/modals/sourcingAnalytics/SourceDetailsModal";
 import StatusModal from "../../components/modals/StatusModal";
+import { PageHeaderHero } from "@/components/ui";
 
 export default function SourcingAnalyticsPage() {
   const mainRef = useRef(null);
@@ -118,41 +118,20 @@ export default function SourcingAnalyticsPage() {
         className="sibs-dashboard-main-wide"
       >
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative z-[30] overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    <BarChart3 className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" strokeWidth={2.2} />
-                    Recruitment View
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Sourcing Analytics
-                </h1>
-
-                <p className="max-w-3xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-                  Analyze applicant channels, conversion
-                  performance, sourcing cost, and recruitment
-                  channel viability.
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+          <PageHeaderHero
+            kicker="Recruitment View"
+            title="Sourcing Analytics"
+            description="Analyze applicant channels, conversion performance, sourcing cost, and recruitment channel viability."
+            className="relative z-[30]"
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={handleRefreshData}
                   disabled={refreshing}
                   aria-label="Refresh Sourcing Analytics"
                   title="Refresh Sourcing Analytics"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-sm transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-btn-icon"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
@@ -164,14 +143,14 @@ export default function SourcingAnalyticsPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddCostModal(true)}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-btn-primary"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   Add Source Cost Entry
                 </button>
-              </div>
-            </div>
-          </section>
+              </>
+            }
+          />
 
           <SourcingSummaryCards totals={totals} />
 

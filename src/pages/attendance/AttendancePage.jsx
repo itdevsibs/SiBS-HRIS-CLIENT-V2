@@ -5,6 +5,7 @@ import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
 import AttendanceTable from "../../components/tables/AttendanceTable";
 import { usePagination } from "../../services/context/PaginationContext";
+import { PageHeaderHero } from "@/components/ui";
 
 function getAnimationStyle(delay = 0) {
   return {
@@ -113,54 +114,37 @@ export default function AttendancePage() {
 
       <main ref={mainRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card font-jakarta relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
-            style={getAnimationStyle(0)}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                    <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange animate-sibs-pulse" />
-                    Core HR View
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  {pageTitle}
-                </h1>
-
-                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
-                  {isEmployee
-                    ? "Review your attendance records, clock-in and clock-out activity, breaks, and approved hours."
-                    : "Monitor employee clock-in and clock-out activity, breaks, work hours, and attendance approvals."}
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+          <PageHeaderHero
+            kicker="Core HR View"
+            title={pageTitle}
+            description={
+              isEmployee
+                ? "Review your attendance records, clock-in and clock-out activity, breaks, and approved hours."
+                : "Monitor employee clock-in and clock-out activity, breaks, work hours, and attendance approvals."
+            }
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={handleRefresh}
                   disabled={isRefreshing}
                   title="Refresh Attendance Data"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  className="sibs-btn-icon"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                      isRefreshing ? "animate-spin text-sibs-orange" : ""
                     }`}
                   />
                 </button>
 
-                <span className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs">
+                <span className="sibs-btn-primary pointer-events-none">
                   <Clock className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                   Attendance Records
                 </span>
-              </div>
-            </div>
-          </section>
+              </>
+            }
+          />
 
           {tableReady ? (
             <AttendanceTable />

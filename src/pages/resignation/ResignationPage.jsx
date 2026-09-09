@@ -4,9 +4,11 @@ import {
   FileText,
   CalendarDays,
   Clock3,
+  RefreshCw,
   Search,
   User,
 } from "lucide-react";
+import { PageHeaderHero, TableEmptyRow, StatusBadge } from "@/components/ui";
 // Sidebar provided by root layout
 import Header from "../../components/layout/Header";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
@@ -161,38 +163,22 @@ export default function ResignationPage() {
 
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-5">
-          <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6">
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    Core HR View
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  My Resignation Requests
-                </h1>
-
-                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
-                  View and manage your personal resignation requests and clearance status.
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+          <PageHeaderHero
+            kicker="Core HR View"
+            title="My Resignation Requests"
+            description="View and manage your personal resignation requests and clearance status."
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={loadResignations}
                   disabled={loading}
                   title="Refresh Resignations"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  className="sibs-btn-icon"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      loading ? "animate-spin text-[#FF5C28]" : ""
+                      loading ? "animate-spin text-sibs-orange" : ""
                     }`}
                   />
                 </button>
@@ -200,14 +186,14 @@ export default function ResignationPage() {
                 <button
                   type="button"
                   onClick={() => setOpenForm(true)}
-                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98]"
+                  className="sibs-btn-primary"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                   Submit Resignation
                 </button>
-              </div>
-            </div>
-          </section>
+              </>
+            }
+          />
 
         <ResignationModal
           open={openForm}
@@ -285,11 +271,11 @@ export default function ResignationPage() {
                     </td>
                   </tr>
                 ) : filteredResignations.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="p-6 text-center sibs-text-xs font-semibold text-[#667085]">
-                      No resignation records found
-                    </td>
-                  </tr>
+                  <TableEmptyRow
+                    colSpan={9}
+                    title="No resignation records found"
+                    description="Adjust search query or submit a new resignation request."
+                  />
                 ) : (
                   filteredResignations.map((item) => {
                     const fileUrl =
@@ -357,13 +343,7 @@ export default function ResignationPage() {
                         </td>
 
                         <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 sibs-text-micro font-extrabold ${getStatusClasses(
-                              item.status,
-                            )}`}
-                          >
-                            {item.status}
-                          </span>
+                          <StatusBadge status={item.status} />
                         </td>
                       </tr>
                     );

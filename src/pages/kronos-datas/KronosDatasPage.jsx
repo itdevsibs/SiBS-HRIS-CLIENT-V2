@@ -1,8 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Building2,
-  ChevronLeft,
-  ChevronRight,
   Database,
   RefreshCw,
   Search,
@@ -12,6 +10,7 @@ import {
 
 import Header from "../../components/layout/Header";
 import { getKronosDatas } from "../../lib/axios/getKronosDatas";
+import { PageHeaderHero, TablePagination, TableEmptyRow } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 const KRONOS_STATE_KEY = "kronosDatasPageState";
@@ -562,26 +561,6 @@ export default function KronosDatasPage() {
     });
   }
 
-  const pageStart =
-    pagination.total > 0
-      ? (pagination.currentPage - 1) * pagination.limit + 1
-      : 0;
-
-  const pageEnd = Math.min(
-    pagination.currentPage * pagination.limit,
-    pagination.total,
-  );
-
-  const pageNumbers = [];
-
-  for (
-    let item = Math.max(1, pagination.currentPage - 2);
-    item <= Math.min(pagination.totalPages, pagination.currentPage + 2);
-    item += 1
-  ) {
-    pageNumbers.push(item);
-  }
-
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <div className="shrink-0">
@@ -593,47 +572,36 @@ export default function KronosDatasPage() {
         className="sibs-dashboard-main-wide"
       >
         <div className="mx-auto w-full max-w-[1700px] space-y-5">
-          <section
-            className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6"
-            style={getAnimationStyle(animationTiming.header)}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    Core HR View
-                  </span>
-                  <span className="inline-flex w-max items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold text-sibs-navy">
-                    Production API
-                  </span>
-                </div>
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Kronos Datas
-                </h1>
-                <p className="sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-                  Production employee records loaded from the Kronos Datas API.
-                </p>
+          <PageHeaderHero
+            kicker={
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
+                  Core HR View
+                </span>
+                <span className="inline-flex w-max items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold text-sibs-navy">
+                  Production API
+                </span>
               </div>
-
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  disabled={loading}
-                  title="Refresh Kronos Datas"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-                >
-                  <RefreshCw
-                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      loading ? "animate-spin text-sibs-orange" : ""
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          </section>
+            }
+            title="Kronos Datas"
+            description="Production employee records loaded from the Kronos Datas API."
+            actions={
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={loading}
+                title="Refresh Kronos Datas"
+                className="sibs-btn-icon"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                    loading ? "animate-spin text-sibs-orange" : ""
+                  }`}
+                />
+              </button>
+            }
+          />
 
           <section
             className="sibs-profile-tab-panel"
@@ -977,80 +945,25 @@ export default function KronosDatasPage() {
                         );
                       })
                     ) : (
-                      <tr>
-                        <td
-                          colSpan={9}
-                          className="px-5 py-14 text-center sibs-text-xs font-medium text-slate-500"
-                        >
-                          No Kronos employee records found.
-                        </td>
-                      </tr>
+                      <TableEmptyRow
+                        colSpan={9}
+                        title="No Kronos employee records found"
+                        description="Adjust your search or filter parameters to see records."
+                      />
                     )}
                   </tbody>
                 </table>
               </div>
 
-              <div className="flex flex-col gap-3 border-t border-[#E6ECF2] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-medium text-slate-500">
-                  Showing{" "}
-                  <span className="font-extrabold text-slate-700">
-                    {pageStart}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-extrabold text-slate-700">
-                    {pageEnd}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-extrabold text-slate-700">
-                    {pagination.total}
-                  </span>{" "}
-                  records
-                </p>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(pagination.currentPage - 1)}
-                    disabled={loading || pagination.currentPage <= 1}
-                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={16} />
-                    Previous
-                  </button>
-
-                  {pageNumbers.map((pageNumber) => {
-                    const isActive = pageNumber === pagination.currentPage;
-
-                    return (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        onClick={() => handlePageChange(pageNumber)}
-                        disabled={loading || isActive}
-                        className={`h-9 min-w-9 rounded-lg px-3 text-sm font-bold transition disabled:cursor-default ${
-                          isActive
-                            ? "bg-sibs-primary-1 text-white"
-                            : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(pagination.currentPage + 1)}
-                    disabled={
-                      loading || pagination.currentPage >= pagination.totalPages
-                    }
-                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.total}
+                limit={pagination.limit}
+                loading={loading}
+                onPageChange={handlePageChange}
+                itemName="records"
+              />
             </div>
           </section>
         </div>

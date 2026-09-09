@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
+import { PageHeaderHero } from "@/components/ui";
 import {
   getJobDescriptionDropdowns,
   getJobDescriptions,
@@ -791,37 +792,17 @@ export default function JobDescriptionPage() {
         className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-7"
       >
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    <ClipboardList className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" strokeWidth={2.2} />
-                    Recruitment View
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Job Description
-                </h1>
-
-                <p className="max-w-2xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-                  Manage JD readiness for Existing, For Revision, and New Job Description requirements.
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+          <PageHeaderHero
+            kicker="Recruitment View"
+            title="Job Description"
+            description="Manage JD readiness for Existing, For Revision, and New Job Description requirements."
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={loadJobDescriptionRecords}
                   disabled={isRefreshing}
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-sm transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-btn-icon"
                   title="Refresh Job Descriptions"
                   aria-label="Refresh Job Descriptions"
                 >
@@ -835,14 +816,14 @@ export default function JobDescriptionPage() {
                 <button
                   type="button"
                   onClick={handleOpenCreateModal}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover focus:outline-none focus:ring-4 focus:ring-sibs-orange/20"
+                  className="sibs-btn-primary"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   New Job Description
                 </button>
-              </div>
-            </div>
-          </section>
+              </>
+            }
+          />
 
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-4">
             <StatCard

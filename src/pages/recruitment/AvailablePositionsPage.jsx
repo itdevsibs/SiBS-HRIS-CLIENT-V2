@@ -9,6 +9,7 @@ import React, {
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
 import StatusModal from "../../components/modals/StatusModal";
+import { PageHeaderHero } from "@/components/ui";
 import { Database, Plus, RefreshCw, RotateCcw } from "lucide-react";
 import {
   createAvailablePosition,
@@ -1743,39 +1744,20 @@ export default function AvailablePositionsPage() {
 
       <main ref={mainRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-5 sm:space-y-6">
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative z-[30] overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    Recruitment View
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Available Positions
-                </h1>
-
-                <p className="max-w-3xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-                  Manage canonical roles, organizational mapping, linked Job
-                  Descriptions, and applicant visibility.
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+          <PageHeaderHero
+            kicker="Recruitment View"
+            title="Available Positions"
+            description="Manage canonical roles, organizational mapping, linked Job Descriptions, and applicant visibility."
+            className="z-[30]"
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={handleRefresh}
                   disabled={isRefreshing || isSaving}
                   aria-label="Refresh available positions"
                   title="Refresh available positions"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-sm transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-btn-icon"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
@@ -1793,14 +1775,14 @@ export default function AvailablePositionsPage() {
                     !departmentOptions.length ||
                     !accountOptions.length
                   }
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-btn-primary"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   Add New Position
                 </button>
-              </div>
-            </div>
-          </section>
+              </>
+            }
+          />
 
           {loadError ? (
             <section className="rounded-xl border border-red-100 bg-red-50 p-3.5 2xl:p-4 text-xs font-bold text-red-700">

@@ -66,6 +66,8 @@ function getActionLabelByModule(module = "") {
   switch (module) {
     case "candidate-pipeline":
       return "Open Pipeline";
+    case "talent-pool":
+      return "View Talent Pool";
     case "onboarding":
       return "Review Onboarding";
     case "hiring-needs":
@@ -75,13 +77,20 @@ function getActionLabelByModule(module = "") {
     case "leaves":
       return "Review Leaves";
     case "resignation":
-    case "attrition":
-      return "View Resignation";
+    case "resignation-management":
+      return "Review Resignation";
+    case "approval-request":
+    case "approval-requests":
+      return "Review Approvals";
     case "job-description":
       return "View Job Description";
     case "employees":
     case "employee-profile":
       return "View Employee";
+    case "users":
+    case "account-settings":
+    case "assigned-accounts":
+      return "Manage Access";
     default:
       return "View Details";
   }

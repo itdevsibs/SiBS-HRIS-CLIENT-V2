@@ -12,6 +12,7 @@ import {
 
 import Header from "../../../components/layout/Header";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
+import { PageHeaderHero } from "@/components/ui";
 import { ApplicantLeadsProvider } from "../../../services/context/ApplicantLeadsContext";
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 
@@ -362,36 +363,18 @@ function TalentPoolPageContent() {
 
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5 2xl:space-y-6">
-          <section
-            className="sibs-page-header-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 2xl:p-6 font-jakarta shadow-sm"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-1 flex flex-col gap-3.5 sm:gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="min-w-0">
-                <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-sibs-canvas px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
-                  <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
-                  Recruitment View
-                </div>
-
-                <h1 className="font-heading mt-2 break-words text-xl sm:text-2xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Talent Pool / Candidate Database
-                </h1>
-
-                <p className="mt-0.5 max-w-3xl sibs-text-xs font-semibold leading-relaxed text-sibs-text-muted">
-                  Store reusable candidate master profiles, import leads from CSV,
-                  and move qualified candidates to the pipeline.
-                </p>
-              </div>
-
+          <PageHeaderHero
+            kicker="Recruitment View"
+            title="Talent Pool / Candidate Database"
+            description="Store reusable candidate master profiles, import leads from CSV, and move qualified candidates to the pipeline."
+            actions={
               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-1.5 2xl:gap-2 sm:justify-end xl:flex-nowrap shrink-0">
                 <button
                   type="button"
                   onClick={handleRefreshPage}
                   disabled={pageIsRefreshing}
                   aria-label="Refresh"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-btn-icon"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
@@ -403,25 +386,24 @@ function TalentPoolPageContent() {
                 <button
                   type="button"
                   onClick={openPublicForm}
-                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 w-full sm:w-auto whitespace-nowrap"
+                  className="sibs-btn-secondary w-full sm:w-auto"
                 >
                   <ExternalLink size={14} />
                   Public Form
                 </button>
 
-
                 <button
                   type="button"
                   onClick={openAddCandidateModal}
                   disabled={isSaving}
-                  className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-3 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 active:scale-[0.98] w-full sm:w-auto whitespace-nowrap"
+                  className="sibs-btn-primary w-full sm:w-auto"
                 >
                   <Plus size={15} />
                   Add Candidate
                 </button>
               </div>
-            </div>
-          </section>
+            }
+          />
 
           {loadError ? (
             <section

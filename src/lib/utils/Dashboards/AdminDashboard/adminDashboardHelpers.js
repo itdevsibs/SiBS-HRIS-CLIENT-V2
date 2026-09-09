@@ -1,3 +1,5 @@
+import { formatLogDetails } from "../SuperAdminDashboard/superAdminDashboardHelpers.js";
+
 export const EMPTY_OVERVIEW = Object.freeze({
   generatedAt: null,
   metrics: {
@@ -81,7 +83,10 @@ export function normalizeDashboardOverview(payload = {}) {
       absenteeismBuffer: numberOrZero(workforceKpi.absenteeismBuffer),
     },
     recentActivities: Array.isArray(data?.recentActivities)
-      ? data.recentActivities
+      ? data.recentActivities.map((act) => ({
+          ...act,
+          details: formatLogDetails(act?.details),
+        }))
       : [],
     notifications: Array.isArray(data?.notifications)
       ? data.notifications

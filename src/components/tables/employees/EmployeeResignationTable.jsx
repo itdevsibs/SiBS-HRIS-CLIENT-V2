@@ -234,13 +234,13 @@ function EditResignationModal({
 
   return createPortal(
     <div
-      className="sibs-modal-blur fixed inset-0 z-[99999] flex h-dvh items-center justify-center px-4 py-4"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex h-dvh items-center justify-center px-4 py-4"
       onClick={onClose}
     >
       <form
         onSubmit={onSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl font-jakarta"
       >
         <div className="border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-6 py-5">
           <div className="flex items-start justify-between gap-4">

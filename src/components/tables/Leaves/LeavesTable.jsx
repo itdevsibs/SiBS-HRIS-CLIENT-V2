@@ -13,6 +13,7 @@ import {
 
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
+import { TableEmptyRow } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 
@@ -1343,19 +1344,12 @@ export default function LeavesTable({
                       </tr>
                     ))
                   ) : (
-                    <tr>
-                      <td colSpan={12} className="p-12 text-center">
-                        <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-[#667085]">
-                          <CalendarDays size={34} className="text-[#C8D3DF]" />
-                          <p className="text-sm font-extrabold text-[#042C51]">
-                            No leave records found
-                          </p>
-                          <p className="text-xs font-semibold">
-                            Adjust the search, status, department, account, or date range filters.
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
+                    <TableEmptyRow
+                      colSpan={12}
+                      icon={CalendarDays}
+                      title="No leave records found"
+                      description="Adjust the search, status, department, account, or date range filters."
+                    />
                   )}
                 </tbody>
               </table>
