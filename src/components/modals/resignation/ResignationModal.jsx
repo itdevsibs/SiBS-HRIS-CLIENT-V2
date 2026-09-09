@@ -947,7 +947,7 @@ export default function ResignationModal({
     <>
       <div
         data-layout="employee-resignation-workflow-v5"
-        className={`fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-hidden bg-[#06294A]/75 p-2 font-jakarta backdrop-blur-sm sm:p-4 ${
+        className={`sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-hidden p-2 font-jakarta sm:p-4 ${
           isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
         }`}
       >
@@ -1419,7 +1419,7 @@ export default function ResignationModal({
                   type="button"
                   onClick={handleClose}
                   disabled={submitting || isClosing}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="sibs-modal-btn-secondary"
                 >
                   Cancel
                 </button>
@@ -1427,7 +1427,7 @@ export default function ResignationModal({
                 <button
                   type="submit"
                   disabled={submitting || isClosing}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-modal-btn-primary gap-2"
                 >
                   <span>
                     {submitting
@@ -1447,7 +1447,7 @@ export default function ResignationModal({
       </div>
 
       {policyModalOpen && (
-        <div className="sibs-modal-backdrop-in fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/80 p-4 font-jakarta backdrop-blur-md">
+        <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10001] flex items-center justify-center p-4 font-jakarta">
           <section className="w-full max-w-md overflow-hidden rounded-[18px] border border-amber-200 bg-white shadow-2xl sibs-inner-modal-pop-in">
             <header className="flex items-start justify-between gap-3 border-b border-[#E6ECF2] px-5 py-4">
               <div className="flex min-w-0 items-start gap-3">

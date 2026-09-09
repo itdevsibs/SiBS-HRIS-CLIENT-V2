@@ -608,13 +608,13 @@ function EventEditorModal({
 
   return (
     <div
-      className="absolute inset-0 z-[2] flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-[3px]"
+      className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-[3px] font-jakarta"
       onClick={onClose}
     >
       <form
         onSubmit={handleSubmit}
         onClick={(clickEvent) => clickEvent.stopPropagation()}
-        className="thin-scroll max-h-[82vh] w-full max-w-[660px] overflow-y-auto rounded-[18px] bg-white px-6 py-5 shadow-[0_24px_80px_rgba(2,30,56,0.38)]"
+        className="sibs-modal-pop-in thin-scroll max-h-[82vh] w-full max-w-[660px] overflow-y-auto rounded-[18px] bg-white px-6 py-5 shadow-[0_24px_80px_rgba(2,30,56,0.38)]"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-[#06325E]">

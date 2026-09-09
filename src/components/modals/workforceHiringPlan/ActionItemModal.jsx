@@ -271,7 +271,7 @@ export default function ActionItemModal({
 
   return (
     <div
-      className={`absolute inset-0 z-[30] overflow-hidden bg-black/30 ${
+      className={`absolute inset-0 z-[30] overflow-hidden bg-black/30 backdrop-blur-sm ${
         isClosing ? "sibs-action-backdrop-out" : "sibs-action-backdrop-in"
       }`}
     >

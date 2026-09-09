@@ -262,7 +262,7 @@ export default function AttachmentsModal({
           <button
             type="button"
             onClick={requestClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            className="sibs-modal-close-btn"
             aria-label="Close attachments modal"
           >
             <X size={18} />
@@ -318,7 +318,7 @@ export default function AttachmentsModal({
           <button
             type="button"
             onClick={requestClose}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#042C51] px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+            className="sibs-modal-btn-secondary"
           >
             Close
           </button>

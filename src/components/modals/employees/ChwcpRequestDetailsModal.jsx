@@ -736,14 +736,14 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
 
   return createPortal(
     <div
-      className="sibs-modal-blur fixed inset-0 z-[10000] flex items-center justify-center bg-[#031A2D]/72 p-3 font-jakarta backdrop-blur-[3px] sm:p-5"
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex items-center justify-center p-3 font-jakarta sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-label="CHWCP request details"
       onMouseDown={(event) => event.stopPropagation()}
     >
       <div
-        className="flex max-h-[94vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-[#D6E1EA] bg-[#F6F8FB] shadow-[0_28px_80px_rgba(0,20,38,0.36)] font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[94vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-[#D6E1EA] bg-[#F6F8FB] shadow-[0_28px_80px_rgba(0,20,38,0.36)] font-jakarta"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="shrink-0 bg-[#07355F] px-5 py-3 text-white sm:px-6 2xl:py-3.5">

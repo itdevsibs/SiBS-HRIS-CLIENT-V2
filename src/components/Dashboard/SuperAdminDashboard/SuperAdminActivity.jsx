@@ -1,7 +1,10 @@
 import { Download } from "lucide-react";
 
 import PaginationTable from "../../../services/pagination/PaginationTable";
-import { getStatusPillClass } from "../../../lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers.js";
+import {
+  formatLogDetails,
+  getStatusPillClass,
+} from "../../../lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers.js";
 
 export default function SuperAdminActivity({
   items,
@@ -100,7 +103,7 @@ export default function SuperAdminActivity({
                 </span>
               </div>
               <p className="mt-2.5 text-xs font-semibold leading-5 text-[#475467]">
-                {item.details}
+                {formatLogDetails(item.details)}
               </p>
               <p className="mt-2.5 text-[10px] font-semibold text-[#98A2B3]">
                 {item.timestamp}
@@ -155,7 +158,7 @@ export default function SuperAdminActivity({
                       {item.action}
                     </td>
                     <td className="max-w-[360px] px-3 2xl:px-4 py-2 2xl:py-2.5 text-sibs-text-secondary font-medium">
-                      {item.details}
+                      {formatLogDetails(item.details)}
                     </td>
                     <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                       <span

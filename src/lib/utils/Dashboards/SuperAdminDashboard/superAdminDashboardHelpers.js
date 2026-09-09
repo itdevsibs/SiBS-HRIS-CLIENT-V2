@@ -584,12 +584,82 @@ function formatAuditTimestamp(rawTimestamp) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+export function formatLogDate(dateVal) {
+  if (!dateVal) return null;
+  if (dateVal instanceof Date) {
+    if (Number.isNaN(dateVal.getTime())) return null;
+    return dateVal.toLocaleDateString("en-PH", {
+      timeZone: "Asia/Manila",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  const str = String(dateVal).trim();
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const d = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
+    return d.toLocaleDateString("en-PH", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  const d = new Date(str);
+  if (!Number.isNaN(d.getTime())) {
+    return d.toLocaleDateString("en-PH", {
+      timeZone: "Asia/Manila",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  return null;
+}
+
+export function formatLogDetails(text) {
+  if (typeof text !== "string" || !text.trim()) return text || "—";
+
+  // Check for '<date> to <date>' or '<date> – <date>' pattern
+  const rangeMatch = text.match(/^(.+?)\s+(?:to|–|-)\s+(.+?)$/i);
+  if (rangeMatch) {
+    const rawStart = rangeMatch[1].trim();
+    const rawEnd = rangeMatch[2].trim();
+    const d1 = formatLogDate(rawStart);
+    const d2 = formatLogDate(rawEnd);
+    if (d1 && d2) {
+      return d1 === d2 ? d1 : `${d1} to ${d2}`;
+    }
+  }
+
+  // Replace any verbose Date.toString() representations:
+  // e.g., 'Sun Sep 06 2026 00:00:00 GMT+0800 (Taiwan Standard Time)'
+  const verboseDateRegex =
+    /(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4}(?:\s+\d{2}:\d{2}:\d{2})?(?:\s+GMT[+-]\d{4})?(?:\s*\([^)]+\))?/g;
+  let formatted = text.replace(verboseDateRegex, (m) => formatLogDate(m) || m);
+
+  // If after replacement we have '<formattedDate> to <formattedDate>' where both match
+  const simplifiedRange = formatted.match(
+    /^([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})\s+(?:to|–|-)\s+([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})$/,
+  );
+  if (simplifiedRange && simplifiedRange[1] === simplifiedRange[2]) {
+    return simplifiedRange[1];
+  }
+
+  return formatted;
+}
+
 export function enrichActivityLogs(rawLogs = []) {
   if (!Array.isArray(rawLogs)) return [];
 
   return rawLogs.map((item, idx) => {
     const action = item.action || item.actionTaken || "SYSTEM_EVENT";
-    const details = item.details || item.description || item.detail || "Activity recorded.";
+    const details = formatLogDetails(
+      item.details || item.description || item.detail || "Activity recorded.",
+    );
     const detectedModule = item.module && item.module !== "HRIS Operations"
       ? item.module
       : detectActivityModule(action, details);

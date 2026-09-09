@@ -32,6 +32,7 @@ import {
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
 import { useUser } from "../../services/context/UserContext";
+import { PageHeaderHero, TablePagination } from "@/components/ui";
 import {
   createAccountSettingsUser,
   deleteAccountSettingsUser,
@@ -2562,41 +2563,21 @@ export default function AccountSettingsPage() {
 
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-5">
-          <section className="sibs-page-header-in sibs-card relative overflow-hidden p-5 sm:p-6">
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
-                    Account Settings View
-                  </span>
-
-                  <span className="inline-flex max-w-full rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
-                    Module: Settings
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Account Settings
-                </h1>
-
-                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
-                  Manage employee access levels, assigned accounts, and department access.
-                </p>
-              </div>
-
+          <PageHeaderHero
+            kicker="Account Settings View"
+            title="Account Settings"
+            description="Manage employee access levels, assigned accounts, and department access."
+            actions={
               <button
                 type="button"
                 onClick={openAddModal}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] sm:w-auto sm:text-sm"
+                className="sibs-btn-primary"
               >
-                <Plus size={17} />
+                <Plus size={16} />
                 Add User Access
               </button>
-            </div>
-          </section>
+            }
+          />
 
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {pageLoading ? (
@@ -2920,42 +2901,15 @@ export default function AccountSettingsPage() {
                 </table>
               </DraggableTableScroll>
 
-              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <p className="text-sm font-semibold text-sibs-tertiary-5">
-                  Showing {showingFrom} to {showingTo} of {pagination.total} assigned users
-                </p>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage <= 1 || isDataLoading}
-                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-[#667085] transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={15} />
-                    Previous
-                  </button>
-
-                  <span
-                    aria-current="page"
-                    className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-[#FF5C28] px-3 text-sm font-bold text-white shadow-sm"
-                  >
-                    {currentPage}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={
-                      currentPage >= pagination.totalPages || isDataLoading
-                    }
-                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-[#667085] transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                    <ChevronRight size={15} />
-                  </button>
-                </div>
-              </div>
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={pagination.totalPages}
+                totalRecords={pagination.total}
+                loadedCount={users.length}
+                recordLabel="assigned users"
+                onPageChange={(nextPage) => handlePageChange(nextPage)}
+                loading={isDataLoading}
+              />
             </div>
           </section>
         </div>

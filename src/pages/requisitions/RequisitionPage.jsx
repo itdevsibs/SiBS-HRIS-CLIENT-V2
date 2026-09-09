@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Search, MapPin, ChevronRight, RefreshCw, FileText, Loader2 } from "lucide-react";
 import Header from "../../components/layout/Header";
 import RequisitionModal from "../../components/modals/requisitions/RequisitionModal";
+import PageHeaderHero from "@/components/ui/PageHeaderHero";
+import StatusBadge from "@/components/ui/StatusBadge";
 import { getDepartments, getRequisitions } from "@/lib/axios/getRequisition";
 
 export default function RequisitionPage() {
@@ -106,52 +108,36 @@ export default function RequisitionPage() {
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
           {/* Header */}
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-            <div className="mt-0.5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    Requisition Desk
-                  </span>
-                </div>
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Job Requisitions
-                </h1>
-                <p className="sibs-text-sm font-semibold text-[#667085]">
-                  Manage personnel requisition requests, departmental requirements, and approval routing.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2.5">
+          <PageHeaderHero
+            kicker="Requisition Desk"
+            title="Job Requisitions"
+            description="Manage personnel requisition requests, departmental requirements, and approval routing."
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={handleManualRefresh}
                   disabled={isManualRefreshing}
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-sm transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-btn-icon"
                   title="Refresh Requisitions"
                 >
                   <RefreshCw
                     size={15}
-                    className={isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""}
+                    className={isManualRefreshing ? "animate-spin text-sibs-orange" : ""}
                   />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setOpenAddModal(true)}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
+                  className="sibs-btn-primary"
                 >
                   <Plus size={15} />
                   New Requisition
                 </button>
-              </div>
-            </div>
-          </section>
+              </>
+            }
+          />
 
           {/* Metric KPI Cards */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -177,14 +163,14 @@ export default function RequisitionPage() {
                 placeholder="Search by title, number, department..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="sibs-dashboard-input h-9 2xl:h-10 w-full rounded-xl border border-sibs-border bg-[#F8FAFC] pr-3 pl-9 sibs-text-xs font-medium text-sibs-navy placeholder:text-sibs-muted focus:border-sibs-navy focus:bg-white focus:outline-none"
+                className="sibs-dashboard-input pl-9"
               />
             </div>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 2xl:h-10 rounded-xl border border-sibs-border bg-white px-3 sibs-text-xs font-semibold text-sibs-navy focus:border-sibs-navy focus:outline-none"
+              className="sibs-dashboard-select"
             >
               <option value="All">All Statuses</option>
               <option value="Approved">Approved</option>
@@ -196,7 +182,7 @@ export default function RequisitionPage() {
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="h-9 2xl:h-10 rounded-xl border border-sibs-border bg-white px-3 sibs-text-xs font-semibold text-sibs-navy focus:border-sibs-navy focus:outline-none"
+              className="sibs-dashboard-select"
             >
               <option value="All">All Departments</option>
               {departments.map((dept) => {
@@ -224,23 +210,29 @@ export default function RequisitionPage() {
               <div className="flex h-48 flex-col items-center justify-center gap-2 text-center text-sibs-muted p-6">
                 <FileText size={32} className="text-sibs-muted/60" />
                 <p className="sibs-text-sm font-bold text-sibs-navy">No Requisitions Found</p>
-                <p className="sibs-text-xs text-[#667085]">
+                <p className="sibs-text-xs text-sibs-muted">
                   {search || statusFilter !== "All" || departmentFilter !== "All"
                     ? "Try adjusting your search or filters."
                     : "Create your first job requisition using the button above."}
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-[#E6ECF2]">
+              <div className="divide-y divide-sibs-border">
                 {filteredRequisitions.map((req, index) => {
                   const status = req.status || "Pending";
-                  const toneClass =
-                    statusTones[status] || "bg-slate-50 text-slate-700 border-slate-200";
+                  const badgeClass =
+                    status === "Approved"
+                      ? "sibs-badge-success"
+                      : status === "Rejected"
+                      ? "sibs-badge-danger"
+                      : status === "Draft"
+                      ? "sibs-badge-neutral"
+                      : "sibs-badge-warning";
 
                   return (
                     <div
                       key={req.id || `req-${index}`}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 2xl:p-5 transition hover:bg-[#F8FAFC]"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 2xl:p-5 transition hover:bg-sibs-surface"
                       style={{
                         animationDelay: `${index * 35}ms`,
                         animationFillMode: "both",
@@ -251,11 +243,7 @@ export default function RequisitionPage() {
                           <h2 className="sibs-text-sm font-bold text-sibs-navy">
                             {req.title || req.jobTitle || "Untitled Position"}
                           </h2>
-                          <span
-                            className={`inline-flex rounded-full border px-2 py-0.5 sibs-text-micro font-extrabold ${toneClass}`}
-                          >
-                            {status}
-                          </span>
+                          <StatusBadge status={status} />
                         </div>
 
                         <p className="sibs-text-xs font-medium text-[#667085]">

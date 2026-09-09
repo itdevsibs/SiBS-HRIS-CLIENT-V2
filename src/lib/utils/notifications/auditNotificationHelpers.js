@@ -50,28 +50,33 @@ export function normalizeAuditNotificationsResponse(payload = {}) {
   return rows
     .filter((item) => item && typeof item === "object")
     .map((item) => {
+      const actorSibsId = cleanText(item.actorSibsId || item.actor_sibs_id);
+      const actorEmployeeName = cleanText(
+        item.actorEmployeeName || item.actor_employee_name,
+      );
       const targetSibsId = cleanText(item.targetSibsId || item.target_sibs_id);
       const targetEmployeeName = cleanText(
         item.targetEmployeeName || item.target_employee_name,
       );
 
       return {
-      id: cleanText(item.id),
-      auditLogId: Number(item.auditLogId || 0),
-      module: cleanText(item.module),
-      tone: ["danger", "warning", "action", "info"].includes(item.tone)
-        ? item.tone
-        : "info",
-      title: cleanText(item.title) || "System Notification",
-      message: cleanText(item.message),
-      actorSibsId: cleanText(item.actorSibsId),
-      ...(targetSibsId ? { targetSibsId } : {}),
-      ...(targetEmployeeName ? { targetEmployeeName } : {}),
-      action: cleanText(item.action).toUpperCase(),
-      status: cleanText(item.status).toUpperCase(),
-      httpStatus: Number(item.httpStatus || 0),
-      occurredAt: cleanText(item.occurredAt),
-      targetPath: cleanText(item.targetPath) || null,
+        id: cleanText(item.id),
+        auditLogId: Number(item.auditLogId || 0),
+        module: cleanText(item.module),
+        tone: ["danger", "warning", "action", "info"].includes(item.tone)
+          ? item.tone
+          : "info",
+        title: cleanText(item.title) || "System Notification",
+        message: cleanText(item.message),
+        actorSibsId,
+        ...(actorEmployeeName ? { actorEmployeeName } : {}),
+        ...(targetSibsId ? { targetSibsId } : {}),
+        ...(targetEmployeeName ? { targetEmployeeName } : {}),
+        action: cleanText(item.action).toUpperCase(),
+        status: cleanText(item.status).toUpperCase(),
+        httpStatus: Number(item.httpStatus || 0),
+        occurredAt: cleanText(item.occurredAt),
+        targetPath: cleanText(item.targetPath) || null,
       };
     });
 }

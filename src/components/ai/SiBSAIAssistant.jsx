@@ -39,7 +39,7 @@ function InsightList({ title, items, icon, tone = "default" }) {
 
   return (
     <section className={`rounded-xl border px-3 py-3 ${toneClass}`}>
-      <div className="mb-2 flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.08em]">
+      <div className="mb-2 flex items-center gap-2 sibs-text-micro font-extrabold uppercase tracking-[0.08em]">
         <Icon size={14} />
         {title}
       </div>
@@ -48,7 +48,7 @@ function InsightList({ title, items, icon, tone = "default" }) {
         {items.map((item, index) => (
           <li
             key={`${title}-${index}`}
-            className="flex gap-2 text-[11px] font-semibold leading-5"
+            className="flex gap-2 sibs-text-xs font-semibold leading-5"
           >
             <span className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
             <span>{item}</span>
@@ -63,14 +63,14 @@ function AssistantMessage({ message }) {
   return (
     <div className="flex justify-start">
       <div className="max-w-[92%] space-y-3 rounded-2xl rounded-bl-md border border-[#E1E8F0] bg-white px-3.5 py-3 shadow-sm">
-        <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#667085]">
+        <div className="flex items-center gap-2 sibs-text-micro font-extrabold uppercase tracking-[0.08em] text-[#667085]">
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-[#042C51] text-white">
             <Bot size={13} />
           </span>
           SiBS AI
         </div>
 
-        <p className="whitespace-pre-wrap text-xs font-medium leading-6 text-[#24364B]">
+        <p className="whitespace-pre-wrap sibs-text-xs font-medium leading-6 text-[#24364B]">
           {message.content}
         </p>
 
@@ -93,7 +93,7 @@ function AssistantMessage({ message }) {
         />
 
         {message.toolsUsed?.length ? (
-          <p className="border-t border-[#EEF2F6] pt-2 text-[9px] font-semibold text-[#98A2B3]">
+          <p className="border-t border-[#EEF2F6] pt-2 sibs-text-micro font-semibold text-[#98A2B3]">
             Live HRIS data used: {message.toolsUsed.join(", ")}
           </p>
         ) : null}
@@ -105,7 +105,7 @@ function AssistantMessage({ message }) {
 function UserMessage({ message }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[86%] rounded-2xl rounded-br-md bg-[#FF5C28] px-3.5 py-2.5 text-xs font-semibold leading-5 text-white shadow-sm">
+      <div className="max-w-[86%] rounded-2xl rounded-br-md bg-[#FF5C28] px-3.5 py-2.5 sibs-text-xs font-semibold leading-5 text-white shadow-sm">
         {message.content}
       </div>
     </div>
@@ -243,7 +243,7 @@ export default function SiBSAIAssistant({ enabled = true }) {
         onClick={() => setOpen(true)}
         aria-label="Open Ask SiBS AI"
         aria-expanded={open}
-        className={`fixed bottom-5 right-5 z-[120] inline-flex items-center gap-2 rounded-2xl bg-[#042C51] px-4 py-3 text-xs font-extrabold text-white shadow-[0_14px_35px_rgba(4,44,81,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#0A3B67] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20 sm:bottom-6 sm:right-6 ${
+        className={`font-jakarta fixed bottom-5 right-5 z-[120] inline-flex items-center gap-2 rounded-2xl bg-[#042C51] px-4 py-3 sibs-text-xs font-extrabold text-white shadow-[0_14px_35px_rgba(4,44,81,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#0A3B67] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20 sm:bottom-6 sm:right-6 ${
           open ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
       >
@@ -271,7 +271,7 @@ export default function SiBSAIAssistant({ enabled = true }) {
 
         <aside
           aria-label="Ask SiBS AI"
-          className={`absolute inset-y-0 right-0 flex w-full max-w-[430px] flex-col border-l border-[#D7E0EA] bg-white shadow-[-18px_0_45px_rgba(4,44,81,0.2)] transition-transform duration-300 ease-out max-sm:max-w-none ${
+          className={`font-jakarta absolute inset-y-0 right-0 flex w-full max-w-[430px] flex-col border-l border-[#D7E0EA] bg-white shadow-[-18px_0_45px_rgba(4,44,81,0.2)] transition-transform duration-300 ease-out max-sm:max-w-none ${
             open ? "translate-x-0" : "translate-x-full"
           }`}
         >
@@ -284,12 +284,12 @@ export default function SiBSAIAssistant({ enabled = true }) {
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h2 className="truncate text-sm font-extrabold">Ask SiBS AI</h2>
-                    <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-emerald-200">
+                    <h2 className="truncate sibs-text-base font-extrabold">Ask SiBS AI</h2>
+                    <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-emerald-200">
                       Read only
                     </span>
                   </div>
-                  <p className="mt-0.5 truncate text-[10px] font-semibold text-white/65">
+                  <p className="mt-0.5 truncate sibs-text-micro font-semibold text-white/65">
                     Authorized HRIS insights and summaries
                   </p>
                 </div>
@@ -331,10 +331,10 @@ export default function SiBSAIAssistant({ enabled = true }) {
                       <MessageCircleMore size={18} />
                     </span>
                     <div>
-                      <h3 className="text-xs font-extrabold text-[#042C51]">
+                      <h3 className="sibs-text-xs font-extrabold text-[#042C51]">
                         Hi {welcomeName}, what can I help you understand?
                       </h3>
-                      <p className="mt-1 text-[11px] font-medium leading-5 text-[#667085]">
+                      <p className="mt-1 sibs-text-xs font-medium leading-5 text-[#667085]">
                         I can summarize authorized HRIS data using read-only tools based on your current access.
                       </p>
                     </div>
@@ -342,7 +342,7 @@ export default function SiBSAIAssistant({ enabled = true }) {
                 </section>
 
                 <section>
-                  <p className="mb-2 text-[9px] font-extrabold uppercase tracking-[0.1em] text-[#98A2B3]">
+                  <p className="mb-2 sibs-text-micro font-extrabold uppercase tracking-[0.1em] text-[#98A2B3]">
                     Try asking
                   </p>
                   <div className="grid gap-2">
@@ -352,7 +352,7 @@ export default function SiBSAIAssistant({ enabled = true }) {
                         type="button"
                         onClick={() => submitQuestion(prompt)}
                         disabled={submitting}
-                        className="rounded-xl border border-[#E1E8F0] bg-white px-3.5 py-3 text-left text-[11px] font-bold leading-5 text-[#344054] shadow-sm transition hover:border-[#FFB49B] hover:bg-[#FFF8F5] hover:text-[#042C51] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-xl border border-[#E1E8F0] bg-white px-3.5 py-3 text-left sibs-text-xs font-bold leading-5 text-[#344054] shadow-sm transition hover:border-[#FFB49B] hover:bg-[#FFF8F5] hover:text-[#042C51] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {prompt}
                       </button>
@@ -374,7 +374,7 @@ export default function SiBSAIAssistant({ enabled = true }) {
 
             {submitting ? (
               <div className="mt-3 flex justify-start">
-                <div className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-[#E1E8F0] bg-white px-3.5 py-3 text-[11px] font-semibold text-[#667085] shadow-sm">
+                <div className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-[#E1E8F0] bg-white px-3.5 py-3 sibs-text-xs font-semibold text-[#667085] shadow-sm">
                   <LoaderCircle size={15} className="animate-spin text-[#FF5C28]" />
                   SiBS AI is checking authorized HRIS data...
                 </div>
@@ -386,10 +386,10 @@ export default function SiBSAIAssistant({ enabled = true }) {
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="mt-0.5 shrink-0 text-red-600" size={15} />
                   <div>
-                    <p className="text-[11px] font-extrabold text-red-700">
+                    <p className="sibs-text-xs font-extrabold text-red-700">
                       SiBS AI could not complete that request
                     </p>
-                    <p className="mt-1 text-[10px] font-semibold leading-5 text-red-600">
+                    <p className="mt-1 sibs-text-micro font-semibold leading-5 text-red-600">
                       {error}
                     </p>
                   </div>
@@ -414,18 +414,18 @@ export default function SiBSAIAssistant({ enabled = true }) {
                 rows={2}
                 maxLength={4000}
                 placeholder="Ask about your authorized HRIS data..."
-                className="max-h-32 min-h-[52px] w-full resize-none bg-transparent px-2 py-1.5 text-xs font-medium leading-5 text-[#1D2939] outline-none placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:opacity-60"
+                className="max-h-32 min-h-[52px] w-full resize-none bg-transparent px-2 py-1.5 sibs-text-xs font-medium leading-5 text-[#1D2939] outline-none placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:opacity-60"
               />
 
               <div className="flex items-center justify-between gap-3 px-1 pb-0.5">
-                <span className="text-[9px] font-semibold text-[#98A2B3]">
+                <span className="sibs-text-micro font-semibold text-[#98A2B3]">
                   Enter to send · Shift+Enter for new line
                 </span>
                 <button
                   type="button"
                   onClick={() => void submitQuestion()}
                   disabled={!canSend}
-                  className="inline-flex h-9 min-w-9 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-3 text-[10px] font-extrabold text-white transition hover:bg-[#E94E1B] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
+                  className="inline-flex h-9 min-w-9 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-3 sibs-text-micro font-extrabold text-white transition hover:bg-[#E94E1B] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
                 >
                   {submitting ? (
                     <LoaderCircle size={14} className="animate-spin" />
@@ -437,7 +437,7 @@ export default function SiBSAIAssistant({ enabled = true }) {
               </div>
             </div>
 
-            <p className="mt-2 text-center text-[9px] font-semibold leading-4 text-[#98A2B3]">
+            <p className="mt-2 text-center sibs-text-micro font-semibold leading-4 text-[#98A2B3]">
               SiBS AI is advisory and read-only. Verify important employment decisions using official HRIS records.
             </p>
           </footer>

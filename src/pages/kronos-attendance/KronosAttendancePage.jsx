@@ -2,8 +2,6 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "re
 import {
   CalendarDays,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   CircleCheckBig,
   CircleX,
   Clock,
@@ -16,6 +14,7 @@ import {
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
 import { getKronosAttendance } from "../../lib/axios/getKronosAttendance";
+import { PageHeaderHero, TablePagination } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 const KRONOS_ATTENDANCE_STATE_KEY = "kronosAttendancePageState";
@@ -1304,21 +1303,6 @@ export default function KronosAttendancePage() {
     );
   }
 
-  const pageStart =
-    totalRecords > 0 ? (currentPage - 1) * pagination.limit + 1 : 0;
-
-  const pageEnd = Math.min(currentPage * pagination.limit, totalRecords);
-
-  const pageNumbers = [];
-
-  for (
-    let item = Math.max(1, currentPage - 2);
-    item <= Math.min(totalPages, currentPage + 2);
-    item += 1
-  ) {
-    pageNumbers.push(item);
-  }
-
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <div className="shrink-0">
@@ -1330,66 +1314,60 @@ export default function KronosAttendancePage() {
         className="sibs-dashboard-main-wide"
       >
         <div className="mx-auto w-full max-w-[1700px] space-y-5">
-          <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6">
-            <span className="sibs-top-accent" aria-hidden="true" />
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    Core HR View
+          <PageHeaderHero
+            kicker={
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
+                  Core HR View
+                </span>
+                <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
+                  Page {currentPage}
+                </Badge>
+                <Badge className="border-emerald-200 bg-emerald-50 text-emerald-600">
+                  Live 5s
+                </Badge>
+                {liveSyncing ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-sibs-tertiary-5">
+                    <RefreshCw size={13} className="animate-spin text-sibs-orange" />
+                    Syncing
                   </span>
-                  <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
-                    Page {currentPage}
-                  </Badge>
-                  <Badge className="border-emerald-200 bg-emerald-50 text-emerald-600">
-                    Live 5s
-                  </Badge>
-                  {liveSyncing ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-sibs-tertiary-5">
-                      <RefreshCw size={13} className="animate-spin text-[#FF5C28]" />
-                      Syncing
-                    </span>
-                  ) : null}
-                  {lastUpdatedAt ? (
-                    <span className="sibs-text-micro font-extrabold text-[#667085]">
-                      Updated{" "}
-                      {lastUpdatedAt.toLocaleTimeString("en-PH", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                        hour12: true,
-                      })}
-                    </span>
-                  ) : null}
-                </div>
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  {pageTitle}
-                </h1>
-                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
-                  {isEmployee
-                    ? "View your Kronos attendance records from the production API."
-                    : "View Kronos attendance records from the production API."}
-                </p>
+                ) : null}
+                {lastUpdatedAt ? (
+                  <span className="sibs-text-micro font-extrabold text-[#667085]">
+                    Updated{" "}
+                    {lastUpdatedAt.toLocaleTimeString("en-PH", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      hour12: true,
+                    })}
+                  </span>
+                ) : null}
               </div>
-
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  disabled={loading || liveSyncing}
-                  title="Refresh Kronos Attendance"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-                >
-                  <RefreshCw
-                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      loading || liveSyncing ? "animate-spin text-[#FF5C28]" : ""
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          </section>
+            }
+            title={pageTitle}
+            description={
+              isEmployee
+                ? "View your Kronos attendance records from the production API."
+                : "View Kronos attendance records from the production API."
+            }
+            actions={
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={loading || liveSyncing}
+                title="Refresh Kronos Attendance"
+                className="sibs-btn-icon"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                    loading || liveSyncing ? "animate-spin text-sibs-orange" : ""
+                  }`}
+                />
+              </button>
+            }
+          />
 
           <section
             className="sibs-page-card-in"
@@ -1894,65 +1872,15 @@ export default function KronosAttendancePage() {
                 )}
               </div>
 
-              <div className="mt-5 flex flex-col gap-3 border-t border-[#E6ECF2] pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-medium text-slate-500">
-                  Showing{" "}
-                  <span className="font-extrabold text-slate-700">
-                    {pageStart}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-extrabold text-slate-700">
-                    {pageEnd}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-extrabold text-slate-700">
-                    {totalRecords}
-                  </span>{" "}
-                  records
-                </p>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={loading || liveSyncing || !hasPreviousPage}
-                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={16} />
-                    Previous
-                  </button>
-
-                  {pageNumbers.map((pageNumber) => {
-                    const isActive = pageNumber === currentPage;
-
-                    return (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        onClick={() => handlePageChange(pageNumber)}
-                        disabled={loading || liveSyncing || isActive}
-                        className={`h-9 min-w-9 rounded-lg px-3 text-sm font-bold transition disabled:cursor-default ${
-                          isActive
-                            ? "bg-sibs-primary-1 text-white"
-                            : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={loading || liveSyncing || !hasNextPage}
-                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalRecords}
+                limit={pagination.limit}
+                loading={loading || liveSyncing}
+                onPageChange={handlePageChange}
+                itemName="records"
+              />
             </div>
           </section>
         </div>

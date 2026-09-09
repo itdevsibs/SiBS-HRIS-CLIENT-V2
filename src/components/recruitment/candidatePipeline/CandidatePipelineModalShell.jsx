@@ -25,7 +25,7 @@ export function CandidateModalPrimaryButton({
   return (
     <button
       {...props}
-      className={`inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg px-3.5 2xl:px-4 text-xs font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] ${variantClass} ${className}`}
+      className={`sibs-modal-btn-primary gap-2 ${variant !== "orange" ? variantClass : ""} ${className}`}
     >
       {icon}
       {children}
@@ -41,7 +41,7 @@ export function CandidateModalSecondaryButton({
   return (
     <button
       {...props}
-      className={`inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#042C51]/10 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] ${className}`}
+      className={`sibs-modal-btn-secondary gap-2 ${className}`}
     >
       {children}
     </button>
@@ -410,7 +410,7 @@ export default function CandidatePipelineModalShell({
                 type="button"
                 onClick={onClose}
                 disabled={closeDisabled}
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="sibs-modal-close-btn"
                 aria-label="Close modal"
               >
                 <X size={16} />

@@ -3221,10 +3221,10 @@ export default function ReviseJobDescriptionModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-[#F3F6FA] font-jakarta">
+    <div className="sibs-modal-backdrop-in fixed inset-0 z-[99999] bg-[#F3F6FA] font-jakarta">
       <form
         onSubmit={handleRevisionSubmit}
-        className="flex h-full min-h-0 flex-col"
+        className="sibs-page-card-in flex h-full min-h-0 flex-col"
       >
         <header
           ref={headerRef}

@@ -891,7 +891,7 @@ export default function AddResignationModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                className="sibs-modal-btn-secondary"
               >
                 Cancel
               </button>
@@ -900,7 +900,7 @@ export default function AddResignationModal({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-modal-btn-primary"
                 >
                   {submitting ? "Submitting..." : "Submit Resignation"}
                 </button>
@@ -908,7 +908,7 @@ export default function AddResignationModal({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-modal-btn-primary"
                 >
                   {submitting ? "Updating..." : "Update Resignation"}
                 </button>
@@ -919,8 +919,8 @@ export default function AddResignationModal({
       </div>
 
       {policyModalOpen && (
-        <div className="sibs-modal-blur fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
-          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
+        <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
+          <div className="sibs-modal-pop-in w-full max-w-lg rounded-3xl bg-white shadow-2xl font-jakarta">
             <div className="flex items-start justify-end px-5 pt-4">
               <button
                 type="button"

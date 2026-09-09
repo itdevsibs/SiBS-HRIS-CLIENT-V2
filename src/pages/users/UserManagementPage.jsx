@@ -18,6 +18,12 @@ import AdminLoginModal from "../../components/modals/AdminLoginModal";
 import UserModal from "../../components/modals/users/UserModal";
 import StatusModal from "../../components/modals/StatusModal";
 import { useUser } from "../../services/context/UserContext";
+import {
+  PageHeaderHero,
+  StatusBadge,
+  TablePagination,
+  TableEmptyRow,
+} from "@/components/ui";
 
 import {
   getUserAccess,
@@ -912,34 +918,18 @@ export default function UserManagementPage() {
 
         <main className="sibs-dashboard-main-wide">
           <div className="mx-auto w-full max-w-[1700px] space-y-5">
-            <section className="sibs-page-header-in sibs-card relative overflow-hidden p-4 font-jakarta 2xl:p-6">
-              <span className="sibs-top-accent" aria-hidden="true" />
-
-              <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
-                      <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                      Super Admin System Control
-                    </span>
-                  </div>
-
-                  <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                    User Management
-                  </h1>
-
-                  <p className="sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-                    Manage system user credentials, security roles, and administrative access permissions.
-                  </p>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+            <PageHeaderHero
+              kicker="Super Admin System Control"
+              title="User Management"
+              description="Manage system user credentials, security roles, and administrative access permissions."
+              actions={
+                <>
                   <button
                     type="button"
                     onClick={() => fetchManagementUsers(1, search)}
                     disabled={pageLoading}
                     title="Refresh Users"
-                    className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                    className="sibs-btn-icon"
                   >
                     <RefreshCw
                       className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
@@ -951,14 +941,14 @@ export default function UserManagementPage() {
                   <button
                     type="button"
                     onClick={openAddModal}
-                    className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98]"
+                    className="sibs-btn-primary"
                   >
                     <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                     Add User
                   </button>
-                </div>
-              </div>
-            </section>
+                </>
+              }
+            />
 
             <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <SummaryCard
@@ -998,12 +988,12 @@ export default function UserManagementPage() {
               />
             </section>
 
-          <div className="overflow-hidden rounded-xl border border-sibs-tertiary-9 bg-white shadow-sm">
-            <div className="border-b border-sibs-tertiary-9 p-4">
+          <div className="sibs-table-shell">
+            <div className="border-b border-[#E6ECF2] p-3 sm:p-4">
               <div className="relative w-full sm:max-w-sm">
                 <Search
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A98B8]"
                 />
 
                 <input
@@ -1011,7 +1001,7 @@ export default function UserManagementPage() {
                   placeholder="Search users..."
                   value={search}
                   onChange={handleSearchChange}
-                  className="w-full rounded-lg border border-sibs-tertiary-8 px-10 py-2 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+                  className="sibs-input-search"
                 />
               </div>
             </div>
@@ -1019,17 +1009,17 @@ export default function UserManagementPage() {
             <div className="hidden md:block">
               <div ref={tableScrollRef} className="max-h-[500px] overflow-auto">
                 <table className="w-full min-w-[1300px] text-sm">
-                  <thead className="sticky top-0 z-10 bg-[var(--sibs-tertiary-9)]">
+                  <thead className="sticky top-0 z-10 sibs-table-head">
                     <tr>
-                      <th className="p-3 text-left">SiBS ID</th>
-                      <th className="p-3 text-left">Full Name</th>
-                      <th className="p-3 text-left">Email</th>
-                      <th className="p-3 text-left">Role</th>
-                      <th className="p-3 text-left">Admin Access</th>
-                      <th className="p-3 text-left">Assigned Accounts</th>
-                      <th className="p-3 text-left">Department</th>
-                      <th className="p-3 text-left">Status</th>
-                      <th className="p-3 text-left">Actions</th>
+                      <th className="sibs-table-th">SiBS ID</th>
+                      <th className="sibs-table-th">Full Name</th>
+                      <th className="sibs-table-th">Email</th>
+                      <th className="sibs-table-th">Role</th>
+                      <th className="sibs-table-th">Admin Access</th>
+                      <th className="sibs-table-th">Assigned Accounts</th>
+                      <th className="sibs-table-th">Department</th>
+                      <th className="sibs-table-th">Status</th>
+                      <th className="sibs-table-th">Actions</th>
                     </tr>
                   </thead>
 
@@ -1038,20 +1028,17 @@ export default function UserManagementPage() {
                       <tr>
                         <td
                           colSpan="9"
-                          className="p-6 text-center text-gray-500"
+                          className="p-6 text-center text-sm font-semibold text-sibs-muted"
                         >
                           Loading users...
                         </td>
                       </tr>
                     ) : filteredUsers.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan="9"
-                          className="p-6 text-center text-gray-500"
-                        >
-                          No users found
-                        </td>
-                      </tr>
+                      <TableEmptyRow
+                        colSpan={9}
+                        title="No users found"
+                        description="No user accounts match your current keyword."
+                      />
                     ) : (
                       filteredUsers.map((item) => (
                         <UserTableRow
@@ -1072,15 +1059,17 @@ export default function UserManagementPage() {
 
             <div className="block md:hidden">
               {pageLoading ? (
-                <div className="p-6 text-center text-sm text-gray-500">
+                <div className="p-6 text-center text-sm font-semibold text-sibs-muted">
                   Loading users...
                 </div>
               ) : filteredUsers.length === 0 ? (
-                <div className="p-6 text-center text-sm text-gray-500">
-                  No users found
-                </div>
+                <TableEmptyRow
+                  colSpan={9}
+                  title="No users found"
+                  description="No user accounts match your current keyword."
+                />
               ) : (
-                <div className="divide-y divide-sibs-tertiary-9">
+                <div className="divide-y divide-[#F1F5F9]">
                   {filteredUsers.map((item) => (
                     <UserMobileCard
                       key={item.id}
@@ -1094,43 +1083,18 @@ export default function UserManagementPage() {
               )}
             </div>
 
-            <div className="flex flex-col gap-3 border-t border-sibs-tertiary-9 px-4 py-3 lg:grid lg:grid-cols-3 lg:items-center">
-              <p className="text-center text-sm text-sibs-tertiary-5 lg:text-left">
-                Showing page {pagination.page} of {pagination.totalPages}
-              </p>
-
-              <p className="text-center text-sm text-sibs-tertiary-5">
-                Total Users: {pagination.total || 0}
-              </p>
-
-              <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
-                <button
-                  type="button"
-                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={page === 1 || pageLoading}
-                  className="rounded-md border border-sibs-tertiary-8 px-3 py-1 text-sm disabled:opacity-50"
-                >
-                  Previous
-                </button>
-
-                <div className="hidden items-center gap-2 sm:flex">
-                  {renderPagination()}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPage((prev) =>
-                      Math.min(prev + 1, pagination.totalPages || 1)
-                    )
-                  }
-                  disabled={page === pagination.totalPages || pageLoading}
-                  className="rounded-md border border-sibs-tertiary-8 px-3 py-1 text-sm disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
+            <div className="px-4 pb-3">
+              <TablePagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalRecords={pagination.total}
+                loadedCount={filteredUsers.length}
+                recordLabel="users"
+                onPageChange={(nextPage) => setPage(nextPage)}
+                loading={pageLoading}
+              />
             </div>
+          </div>
           </div>
         </main>
 
@@ -1364,20 +1328,6 @@ function InfoRow({ label, value }) {
   );
 }
 
-function StatusBadge({ status }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${
-        status === "active"
-          ? "bg-green-100 text-green-700"
-          : "bg-red-100 text-red-700"
-      }`}
-    >
-      {status === "active" ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-      {status === "active" ? "Active" : "Inactive"}
-    </span>
-  );
-}
 
 function SummaryCard({ title, value, icon, tone = "navy", delay = 0 }) {
   const tones = {
