@@ -204,7 +204,7 @@ export default function EmploymentOfferPdfPreviewModal({
 
             <h3
               title={displayFilename}
-              className="truncate text-xs sm:text-sm 2xl:text-base font-extrabold text-white"
+              className="sibs-modal-title truncate text-white"
             >
               {displayFilename}
             </h3>

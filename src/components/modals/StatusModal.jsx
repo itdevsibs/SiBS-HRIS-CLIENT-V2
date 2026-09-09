@@ -140,13 +140,13 @@ export default function StatusModal({
                 )}
               </div>
 
-              <h3 className="break-words font-heading text-base 2xl:text-lg font-bold tracking-tight text-sibs-navy">
+              <h3 className="sibs-modal-title break-words text-sibs-navy">
                 {finalTitle}
               </h3>
             </div>
           </div>
 
-          <p className="mt-2 whitespace-pre-line font-jakarta sibs-text-xs font-semibold leading-relaxed text-[#475467]">
+          <p className="sibs-modal-subtitle mt-2 whitespace-pre-line text-[#475467]">
             {finalMessage}
           </p>
 
@@ -208,11 +208,11 @@ export default function StatusModal({
               )}
             </div>
 
-            <h2 className="font-heading text-lg 2xl:text-xl font-bold tracking-tight text-sibs-navy">
+            <h2 className="sibs-modal-title text-sibs-navy">
               {finalTitle}
             </h2>
 
-            <p className="mt-2 whitespace-pre-line font-jakarta sibs-text-xs font-medium leading-relaxed text-[#475467]">
+            <p className="sibs-modal-subtitle mt-2 whitespace-pre-line text-[#475467]">
               {finalMessage}
             </p>
 

@@ -1328,11 +1328,11 @@ export default function EmployeeDashboardPage() {
                 <div className="min-w-0">
                   <h2
                     id="dashboard-announcement-title"
-                    className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                    className="sibs-modal-title truncate text-white"
                   >
                     {selectedAnnouncement.category || "Company Announcement"}
                   </h2>
-                  <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+                  <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                     Official Employee Notice & Bulletin
                   </p>
                 </div>
@@ -1355,7 +1355,7 @@ export default function EmployeeDashboardPage() {
                   </span>
                   <span>By: {selectedAnnouncement.author}</span>
                 </div>
-                <h3 className="mt-2 text-sm sm:text-base font-extrabold leading-snug text-[#042C51]">
+                <h3 className="sibs-modal-section-title mt-2 leading-snug text-[#042C51]">
                   {selectedAnnouncement.title}
                 </h3>
               </div>

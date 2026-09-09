@@ -88,7 +88,7 @@ function CandidateJourney({ record }) {
 
   return (
     <section>
-      <h3 className="text-[10px] font-black uppercase tracking-wide text-[#637A9A]">
+      <h3 className="sibs-modal-section-title text-[#042C51]">
         STAGE TIMELINE CASCADE (CANDIDATE JOURNEY)
       </h3>
 
@@ -194,7 +194,7 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
                 </span>
               </div>
 
-              <h2 className="mt-1.5 truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+              <h2 className="sibs-modal-title mt-1.5 truncate text-white">
                 {record.candidateName || "Candidate Experience Details"}
               </h2>
 
@@ -244,7 +244,7 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
         <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-3.5 sm:p-4 2xl:p-5 sibs-scrollbar font-jakarta">
           <div className="space-y-3.5 2xl:space-y-4">
             <section className="rounded-xl border border-[#E6ECF2] bg-white p-3 2xl:p-4 shadow-sm">
-              <h3 className="text-[10px] 2xl:text-[11px] font-black uppercase tracking-wide text-[#042C51]">
+              <h3 className="sibs-modal-section-title text-[#042C51]">
                 EVENT & EXIT OVERVIEW
               </h3>
 
@@ -263,7 +263,7 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
 
             <section className="rounded-xl border border-orange-200 bg-[#FFF7F3] p-3.5 2xl:p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="inline-flex items-center gap-1.5 text-[10px] 2xl:text-[11px] font-black uppercase tracking-wide text-[#FF5C28]">
+                <h3 className="inline-flex items-center gap-1.5 sibs-modal-section-title text-[#FF5C28]">
                   <MessageSquareText size={14} />
                   CANDIDATE QUALITATIVE FEEDBACK (VOICE OF CANDIDATE)
                 </h3>

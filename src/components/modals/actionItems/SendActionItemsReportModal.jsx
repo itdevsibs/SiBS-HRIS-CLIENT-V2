@@ -209,10 +209,10 @@ export default function SendActionItemsReportModal() {
               <Mail size={16} />
             </div>
             <div className="min-w-0">
-              <h2 id="send-action-report-title" className="text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+              <h2 id="send-action-report-title" className="sibs-modal-title text-white">
                 Send Recruitment Report by Email &amp; PDF
               </h2>
-              <p className="mt-0.5 sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 text-white/75">
                 System sender: {SYSTEM_SENDER}. The email includes an HTML summary and the complete PDF report.
               </p>
             </div>
@@ -232,7 +232,7 @@ export default function SendActionItemsReportModal() {
           <div className="space-y-3.5 2xl:space-y-4 lg:col-span-5">
             <section className="rounded-xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between border-b border-[#E6ECF2] pb-2.5">
-                <h3 className="flex items-center gap-1.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                <h3 className="flex items-center gap-1.5 sibs-modal-section-title text-[#042C51]">
                   <Send size={13} className="text-[#FF5C28]" /> Email Dispatch Details
                 </h3>
                 <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold text-blue-700">{reportingScope.weekLabel}</span>

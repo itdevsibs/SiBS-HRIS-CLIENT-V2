@@ -2816,7 +2816,7 @@ function SectionMergeEditor({
       <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-extrabold text-[#101828]">
+            <h3 className="sibs-modal-section-title text-[#101828]">
               {section.label}
             </h3>
 
@@ -3253,7 +3253,7 @@ export default function ReviseJobDescriptionModal({
                   </span>
                 </div>
 
-                <h2 className="mt-2 truncate text-base 2xl:text-xl font-extrabold text-[#042C51]">
+                <h2 className="sibs-modal-title mt-2 truncate text-[#042C51]">
                   {activeItem.documentTitle ||
                     activeItem.document_title ||
                     activeItem.title ||
@@ -3262,7 +3262,7 @@ export default function ReviseJobDescriptionModal({
                     "Revise Job Description"}
                 </h2>
 
-                <p className="mt-0.5 text-[10px] sm:text-xs font-semibold text-[#667085]">
+                <p className="sibs-modal-subtitle mt-0.5 text-[#667085]">
                   Compare the current version with reviewer comments and write
                   the corrected version on the right.
                 </p>

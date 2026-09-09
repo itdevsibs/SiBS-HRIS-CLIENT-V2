@@ -1357,10 +1357,10 @@ function DisconnectCalendarConfirmModal({
             <LogOut className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-base font-black leading-tight">
+            <h3 className="sibs-modal-title leading-tight text-white">
               Disconnect Google Calendar?
             </h3>
-            <p className="mt-0.5 truncate text-xs font-semibold text-white/70">
+            <p className="sibs-modal-subtitle mt-0.5 truncate text-white/70">
               {googleCalendarEmail || "Google Calendar Sync"}
             </p>
           </div>
@@ -1822,11 +1822,11 @@ function GoogleCalendarAuthRequiredScreen({
           Google Calendar Access Required
         </div>
 
-        <h3 className="mt-3 2xl:mt-5 text-base sm:text-lg 2xl:text-xl font-black leading-tight text-[#042C51]">
+        <h3 className="sibs-modal-title mt-3 2xl:mt-5 text-[#042C51]">
           Connect Google Workspace
         </h3>
 
-        <p className="mx-auto mt-2 max-w-[360px] text-xs 2xl:text-sm font-semibold leading-relaxed text-[#667085]">
+        <p className="sibs-modal-subtitle mx-auto mt-2 max-w-[360px] leading-relaxed text-[#667085]">
           To view and synchronize live HR &amp; Talent Acquisition schedules, please
           authenticate with your organization's Google account.
         </p>
@@ -2455,7 +2455,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                 </span>
               </div>
 
-              <h2 className="mt-0.5 truncate text-sm sm:text-base 2xl:text-xl font-black leading-tight tracking-[-0.02em] text-white">
+              <h2 className="sibs-modal-title mt-0.5 truncate text-white">
                 HR &amp; Talent Acquisition Calendar
               </h2>
             </div>

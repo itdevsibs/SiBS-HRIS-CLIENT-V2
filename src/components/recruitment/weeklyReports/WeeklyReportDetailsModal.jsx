@@ -42,14 +42,14 @@ function SectionTitle({ icon: Icon, children, helper = "", iconColor = "text-[#F
   return (
     <div className="mb-2 flex items-start justify-between gap-2.5 border-b border-[#E6ECF2] pb-1.5 font-jakarta">
       <div className="min-w-0">
-        <h3 className="flex items-center gap-1.5 text-[11px] 2xl:text-xs font-black uppercase tracking-wider text-[#042C51]">
+        <h3 className="flex items-center gap-1.5 sibs-modal-section-title text-[#042C51]">
           <span className="flex h-5.5 w-5.5 2xl:h-6.5 2xl:w-6.5 shrink-0 items-center justify-center rounded-md 2xl:rounded-lg bg-[#E9F0FC] text-[#042C51] shadow-2xs">
             <Icon size={12} className={`shrink-0 ${iconColor}`} />
           </span>
           {children}
         </h3>
         {helper ? (
-          <p className="mt-0.5 text-[9px] 2xl:text-[10px] font-semibold leading-tight text-[#667085]">
+          <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
             {helper}
           </p>
         ) : null}
@@ -264,10 +264,10 @@ export default function WeeklyReportDetailsModal({
                   ) : null}
                 </div>
 
-                <h2 id="weekly-report-modal-title" className="mt-1.5 truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+                <h2 id="weekly-report-modal-title" className="sibs-modal-title mt-1.5 truncate text-white">
                   {report.weekLabel}
                 </h2>
-                <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+                <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                   Report ID: <strong className="font-mono text-white">{report.reportId}</strong>
                   <span className="mx-2 text-white/40">|</span>
                   Date Range: {report.dateRange}

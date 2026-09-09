@@ -21,12 +21,12 @@ function ConfirmationModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="border-b border-[#E6ECF2] bg-white px-5 py-4">
-          <h3 className="sibs-text-base font-extrabold text-[#042C51]">
+          <h3 className="sibs-modal-title text-[#042C51]">
             {title}
           </h3>
 
           {message && (
-            <p className="mt-1 sibs-text-sm font-semibold leading-6 text-[#667085]">
+            <p className="sibs-modal-subtitle mt-1 text-[#667085]">
               {message}
             </p>
           )}

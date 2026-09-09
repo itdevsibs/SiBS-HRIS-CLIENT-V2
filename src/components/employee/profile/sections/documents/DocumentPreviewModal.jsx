@@ -21,10 +21,10 @@ export default function DocumentPreviewModal({ document, onClose }) {
               <FolderLock size={16} />
             </span>
             <div className="min-w-0">
-              <h3 className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white">
+              <h3 className="sibs-modal-title truncate text-white">
                 Secure Document Preview
               </h3>
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 Employee Personnel File
               </p>
             </div>
@@ -45,7 +45,7 @@ export default function DocumentPreviewModal({ document, onClose }) {
               {getDocumentFileType(document?.name)}
             </span>
             <div className="min-w-0">
-              <h4 className="truncate sibs-text-sm font-extrabold text-[#042C51]">
+              <h4 className="sibs-modal-section-title truncate text-[#042C51]">
                 {document?.name}
               </h4>
               <span className="mt-1.5 inline-flex rounded-full bg-[#E9F0FC] px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]">

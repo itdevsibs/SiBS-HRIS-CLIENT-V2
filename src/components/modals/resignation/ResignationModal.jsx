@@ -977,14 +977,14 @@ export default function ResignationModal({
                 <div className="min-w-0">
                   <h2
                     id="employee-resignation-title"
-                    className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                    className="sibs-modal-title truncate text-white"
                   >
                     {isEdit
                       ? "Manage Resignation Application"
                       : "Employee Resignation Application"}
                   </h2>
 
-                  <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+                  <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                     Asia/Manila Timezone Aligned • SiBS Official HR Workflow
                   </p>
                 </div>
@@ -1464,10 +1464,10 @@ export default function ResignationModal({
                 </span>
 
                 <div>
-                  <h3 className="text-base font-extrabold text-[#0F172A]">
+                  <h3 className="sibs-modal-title text-[#0F172A]">
                     Immediate Resignation Policy
                   </h3>
-                  <p className="mt-0.5 text-[11px] font-semibold text-amber-700">
+                  <p className="sibs-modal-subtitle mt-0.5 text-amber-700">
                     Notice Period is Less than 30 Days
                   </p>
                 </div>

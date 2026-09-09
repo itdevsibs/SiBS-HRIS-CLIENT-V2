@@ -1148,11 +1148,11 @@ function EmptyState() {
         <UsersRound size={26} />
       </div>
 
-      <h3 className="mt-4 text-base font-extrabold text-sibs-primary-1">
+      <h3 className="sibs-modal-section-title mt-4 text-sibs-primary-1">
         No assigned users found
       </h3>
 
-      <p className="mt-1 max-w-md text-sm font-medium leading-6 text-sibs-tertiary-5">
+      <p className="sibs-modal-section-subtitle mt-1 max-w-md text-sibs-tertiary-5">
         Add an employee or adjust the search and filters to display account-access records.
       </p>
     </div>
@@ -1217,12 +1217,12 @@ function ModalShell({
               <div className="min-w-0">
                 <h2
                   id="account-settings-modal-title"
-                  className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+                  className="sibs-modal-title truncate text-white"
                 >
                   {title}
                 </h2>
                 {description ? (
-                  <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+                  <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                     {description}
                   </p>
                 ) : null}
@@ -1269,13 +1269,13 @@ function ModalShell({
           <div className="min-w-0">
             <h2
               id="account-settings-modal-title"
-              className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
+              className="sibs-modal-title truncate text-white"
             >
               {title}
             </h2>
 
             {description && (
-              <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
                 {description}
               </p>
             )}

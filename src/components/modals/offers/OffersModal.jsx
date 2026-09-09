@@ -155,11 +155,11 @@ export function CreateOfferModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
+            <h2 className="sibs-modal-title truncate text-sibs-primary-1">
               Create Offer
             </h2>
 
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+            <p className="sibs-modal-subtitle mt-0.5 text-sibs-tertiary-5">
               Create an offer from a candidate already moved to the Offered
               stage.
             </p>
@@ -179,7 +179,7 @@ export function CreateOfferModal({
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
             <div className="space-y-5">
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
+                <h3 className="sibs-modal-section-title mb-4 text-[#042C51]">
                   Candidate and Role Information
                 </h3>
 
@@ -287,7 +287,7 @@ export function CreateOfferModal({
               </div>
 
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
+                <h3 className="sibs-modal-section-title mb-4 text-[#042C51]">
                   Offer Details
                 </h3>
 
@@ -520,7 +520,7 @@ export function CreateOfferModal({
 
             <div className="space-y-5">
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <h3 className="text-sm font-bold text-sibs-primary-1">
+                <h3 className="sibs-modal-section-title text-sibs-primary-1">
                   How this connects to TA-HRIS
                 </h3>
 
@@ -534,7 +534,7 @@ export function CreateOfferModal({
               </div>
 
               <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-bold text-[#101828]">
+                <h3 className="sibs-modal-section-title text-[#042C51]">
                   Data Created
                 </h3>
 
@@ -629,7 +629,7 @@ export function CreateOfferModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-primary-1 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90 active:scale-[0.98]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#E94F1F] active:scale-[0.98]"
             >
               <Plus size={15} />
               Save Offer
