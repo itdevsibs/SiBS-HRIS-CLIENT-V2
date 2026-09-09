@@ -5,6 +5,19 @@ function toFiniteAccess(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function normalizeSessionRole(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function isEmployeeSession(user = {}) {
+  return [user?.role, user?.tokenType]
+    .map(normalizeSessionRole)
+    .includes("employee");
+}
+
 export function getSourcingAnalyticsAccessValues(user = {}) {
   if (!user || typeof user !== "object") return [];
 
@@ -36,6 +49,10 @@ export function getSourcingAnalyticsAccessValues(user = {}) {
 }
 
 export function canAccessSourcingAnalytics(user = {}) {
+  if (isEmployeeSession(user)) {
+    return false;
+  }
+
   return getSourcingAnalyticsAccessValues(user).some((access) =>
     SOURCING_ANALYTICS_ALLOWED_ACCESS.has(access),
   );
