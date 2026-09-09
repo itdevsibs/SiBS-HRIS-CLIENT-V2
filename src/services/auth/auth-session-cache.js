@@ -135,5 +135,8 @@ export function readCachedAuthSession(now = Date.now()) {
 
 export function shouldEndSessionAfterUserFetchError(error) {
   const status = Number(error?.response?.status || 0);
-  return status === 401 || status === 403;
+
+  // A 401 can be returned by an individual endpoint even while the cached
+  // HRIS session is still valid. Do not clear the token/session for it.
+  return status === 403;
 }

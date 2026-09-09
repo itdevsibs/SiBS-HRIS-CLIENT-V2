@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Clock3, Eye, Pencil } from "lucide-react";
 
 import { getMyAttritions } from "../../lib/axios/getAttrition";
@@ -372,14 +371,12 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
   } = paginationContext;
 
   const { user } = useUser();
-  const navigate = useNavigate();
 
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
 
   const setLoadingRef = useRef(setLoading);
   const setPaginationRef = useRef(setPagination);
-  const navigateRef = useRef(navigate);
 
   const dragStateRef = useRef({
     isDown: false,
@@ -422,8 +419,7 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
-    navigateRef.current = navigate;
-  }, [setLoading, setPagination, navigate]);
+  }, [setLoading, setPagination]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
@@ -457,11 +453,6 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
         if (cancelled) return;
 
         if (!result?.success) {
-          if (result?.status === 401) {
-            navigateRef.current("/login");
-            return;
-          }
-
           setAttritions([]);
           setPaginationRef.current?.({
             totalPages: 1,

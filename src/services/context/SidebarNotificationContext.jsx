@@ -74,6 +74,9 @@ function getActionLabelByModule(module = "") {
       return "View Attendance";
     case "leaves":
       return "Review Leaves";
+    case "resignation":
+    case "attrition":
+      return "View Resignation";
     case "job-description":
       return "View Job Description";
     case "employees":
@@ -325,9 +328,16 @@ export function SidebarNotificationProvider({ children }) {
               "job-description",
               "leaves",
             ].includes(item.module) ||
-            ["APPROVE", "SUBMIT", "PENDING", "STATUS_CHANGE"].includes(
-              item.action,
-            );
+            [
+              "APPROVE",
+              "SUBMIT",
+              "PENDING",
+              "STATUS_CHANGE",
+              "RESIGN_REVIEW",
+            ].includes(item.action);
+          const opensEmployeeResignationDetails =
+            ["resignation", "attrition"].includes(item.module) &&
+            item.targetPath === "/dashboard/employee";
 
           return {
             id: item.id || `audit-${item.auditLogId}`,
@@ -346,6 +356,14 @@ export function SidebarNotificationProvider({ children }) {
               : Date.now(),
             actionLabel: getActionLabelByModule(item.module),
             actionPath: item.targetPath || "/approval-request",
+            ...(opensEmployeeResignationDetails
+              ? {
+                  actionState: {
+                    openResignationDetails: true,
+                    source: "resignation-notification",
+                  },
+                }
+              : {}),
           };
         });
 
@@ -371,16 +389,24 @@ export function SidebarNotificationProvider({ children }) {
       60_000,
     );
 
-    const handleFocus = () => {
+    const handleRefresh = () => {
       refreshAuditNotifications();
     };
 
-    window.addEventListener("focus", handleFocus);
+    window.addEventListener("focus", handleRefresh);
+    window.addEventListener(
+      "sibs-audit-notifications-refresh",
+      handleRefresh,
+    );
 
     return () => {
       cancelled = true;
       window.clearInterval(interval);
-      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("focus", handleRefresh);
+      window.removeEventListener(
+        "sibs-audit-notifications-refresh",
+        handleRefresh,
+      );
     };
   }, [user]);
 

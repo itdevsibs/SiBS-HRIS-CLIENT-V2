@@ -544,6 +544,16 @@ export function UserProvider({ children }) {
             return false;
           }
 
+          const responseStatus = Number(error?.response?.status || 0);
+
+          if (responseStatus === 401) {
+            console.warn(
+              "Session refresh returned 401; keeping the current session:",
+              error?.response?.data || error?.message,
+            );
+            return false;
+          }
+
           if (shouldEndSessionAfterUserFetchError(error)) {
             await forceLogout();
             return false;

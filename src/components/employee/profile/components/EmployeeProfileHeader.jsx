@@ -1,3 +1,6 @@
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+
 import {
   Briefcase,
   CalendarCheck,
@@ -18,6 +21,65 @@ import {
   getRegularizationDate,
 } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 import EmployeeProfileAvatar from "./EmployeeProfileAvatar.jsx";
+
+
+function MoreActionsPortal({ open, anchorRef, children }) {
+  const [position, setPosition] = useState(null);
+
+  useEffect(() => {
+    if (!open || typeof window === "undefined") {
+      setPosition(null);
+      return undefined;
+    }
+
+    const updatePosition = () => {
+      const anchor = anchorRef.current;
+
+      if (!anchor) {
+        setPosition(null);
+        return;
+      }
+
+      const rect = anchor.getBoundingClientRect();
+
+      setPosition({
+        top: rect.bottom,
+        left: rect.right,
+      });
+    };
+
+    updatePosition();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, anchorRef]);
+
+  if (
+    !open ||
+    !position ||
+    typeof document === "undefined"
+  ) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      className="fixed z-[100000] h-0 w-0 overflow-visible"
+      style={{
+        top: position.top,
+        left: position.left,
+      }}
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
 
 function HeaderFact({ icon: Icon, children }) {
   if (!children) return null;
@@ -85,6 +147,7 @@ export default function EmployeeProfileHeader({
     employee?.gy_assignedloc,
   );
   const regularizationDate = getRegularizationDate(employee);
+  const moreButtonRef = useRef(null);
 
   return (
     <section className="sibs-page-header-in sibs-card relative overflow-hidden p-3.5 2xl:p-4">
@@ -185,6 +248,7 @@ export default function EmployeeProfileHeader({
 
           <div className="relative">
             <button
+              ref={moreButtonRef}
               type="button"
               onClick={onToggleMore}
               className="flex h-8 2xl:h-9 w-full items-center justify-center rounded-lg bg-slate-100 px-2 text-slate-600 transition hover:bg-slate-200 sm:w-8 2xl:sm:w-9"
@@ -194,13 +258,15 @@ export default function EmployeeProfileHeader({
               <MoreHorizontal size={16} className="2xl:h-[17px] 2xl:w-[17px]" />
             </button>
 
-            {moreOpen ? morePanel : null}
+            <MoreActionsPortal
+              open={moreOpen}
+              anchorRef={moreButtonRef}
+            >
+              {morePanel}
+            </MoreActionsPortal>
           </div>
         </div>
       </div>
     </section>
   );
 }
-
-
-

@@ -23,11 +23,20 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { formatDate } from "../../layout/FormatDateTime";
+import StatusModal from "../StatusModal";
+import { formatDate, formatDateTime } from "../../layout/FormatDateTime";
 import {
   convertHeicBlobToJpeg,
   isHeicFileName,
 } from "../../../lib/utils/heicBrowserPreview";
+import {
+  getResignationAttachmentPreviewKind,
+} from "../../../lib/utils/resignationAttachmentPreview";
+import {
+  buildResignationApprovalStages,
+  canUserActOnResignationStage,
+  getResignationApprovalRouteLabel,
+} from "../../../lib/utils/resignation/resignationApprovalProgress";
 
 const RESIGNATION_TYPES = ["Formal", "Immediate"];
 
@@ -580,6 +589,64 @@ function isPreviewableImageFileName(filename = "") {
   ].includes(ext);
 }
 
+function getAttachmentPreviewApiUrl(sibsId, filename) {
+  if (!sibsId || sibsId === "--" || !filename) return "";
+
+  return `${String(API_URL || "").replace(/\/$/, "")}/api/resignation-management/file-preview/${encodeURIComponent(
+    sibsId,
+  )}/${encodeURIComponent(filename)}`;
+}
+
+function isWordAttachmentFileName(filename = "") {
+  const extension =
+    String(filename || "")
+      .trim()
+      .split(".")
+      .pop()
+      ?.toLowerCase() || "";
+
+  return extension === "doc" || extension === "docx";
+}
+
+async function downloadAttachmentFile(fileUrl, fileName) {
+  if (!fileUrl) {
+    throw new Error("The attachment URL is not available.");
+  }
+
+  const response = await fetch(fileUrl, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    let message = "Unable to download this attachment.";
+
+    try {
+      const payload = await response.json();
+      message = payload?.message || message;
+    } catch {
+      // Keep the fallback message for non-JSON file responses.
+    }
+
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const downloadAnchor = document.createElement("a");
+
+  try {
+    downloadAnchor.href = objectUrl;
+    downloadAnchor.download = fileName || "resignation-attachment";
+    downloadAnchor.style.display = "none";
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+  } finally {
+    downloadAnchor.remove();
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 function FileTypeIcon({ filename }) {
   const ext = String(filename || "").split(".").pop()?.toLowerCase() || "";
 
@@ -1042,67 +1109,159 @@ function EmployeePickerField({
   onSelect,
 }) {
   const anchorRef = useRef(null);
+  const searchEditorRef = useRef(null);
+
+  function removeEmployeeSearchFocusDecoration(target) {
+    const element = target?.currentTarget || target;
+    const style = element?.style;
+
+    if (!style?.setProperty) return;
+
+    style.setProperty("border", "0", "important");
+    style.setProperty("border-width", "0", "important");
+    style.setProperty("border-style", "none", "important");
+    style.setProperty("border-color", "transparent", "important");
+    style.setProperty("outline", "0", "important");
+    style.setProperty("box-shadow", "none", "important");
+    style.setProperty("-webkit-box-shadow", "none", "important");
+    style.setProperty("background", "transparent", "important");
+  }
+
+  useEffect(() => {
+    if (!open || !searchEditorRef.current) return;
+
+    const editor = searchEditorRef.current;
+    const nextValue = String(search || "");
+
+    if (editor.textContent !== nextValue) {
+      editor.textContent = nextValue;
+    }
+  }, [open, search]);
+
+  useEffect(() => {
+    if (!open || !searchEditorRef.current) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      const editor = searchEditorRef.current;
+
+      if (!editor) return;
+
+      removeEmployeeSearchFocusDecoration(editor);
+      editor.focus({ preventScroll: true });
+      removeEmployeeSearchFocusDecoration(editor);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [open]);
 
   return (
     <div className="relative min-w-0">
+      <style>{`
+        .resignation-employee-search-editor {
+          min-width: 0;
+          flex: 1 1 0%;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          border: 0 !important;
+          outline: 0 !important;
+          box-shadow: none !important;
+          background: transparent !important;
+          caret-color: #042C51;
+        }
+
+        .resignation-employee-search-editor:focus,
+        .resignation-employee-search-editor:focus-visible,
+        .resignation-employee-search-editor:active {
+          border: 0 !important;
+          outline: 0 !important;
+          box-shadow: none !important;
+        }
+
+        .resignation-employee-search-editor:empty::before {
+          content: attr(data-placeholder);
+          color: #98A2B3;
+          pointer-events: none;
+        }
+      `}</style>
+
       <label className="mb-1.5 block font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
         {label}
       </label>
 
-      <button
-        ref={anchorRef}
-        type="button"
-        onClick={() => onOpenChange?.(!open)}
-        className={`flex ${FIELD_HEIGHT} w-full min-w-0 items-center justify-between gap-3 ${EDGE} ${FIELD_BORDER} px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${
-          open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
-        }`}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-      >
-        <span
-          className={`block min-w-0 flex-1 truncate whitespace-nowrap ${
-            selectedSibsId
-              ? "font-bold text-[#042C51]"
-              : "font-medium text-[#98A2B3]"
-          }`}
-          title={selectedSibsId || "Select employee under your management"}
-        >
-          {selectedSibsId || "Select employee under your management"}
-        </span>
+      <div ref={anchorRef} className="min-w-0">
+        {open ? (
+          <div
+            className={`flex ${FIELD_HEIGHT} w-full min-w-0 items-center gap-2 ${EDGE} ${FIELD_BORDER} border-[#FF5C28] bg-white px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold outline-none ring-4 ring-[#FF5C28]/10 transition`}
+          >
+            <Search
+              size={15}
+              className="shrink-0 text-[#98A2B3]"
+            />
 
-        <ChevronDown
-          size={16}
-          className={`shrink-0 text-[#042C51] transition-transform ${
-            open ? "rotate-180 text-[#FF5C28]" : ""
-          }`}
-        />
-      </button>
+            <div
+              ref={searchEditorRef}
+              role="searchbox"
+              tabIndex={0}
+              contentEditable
+              suppressContentEditableWarning
+              inputMode="search"
+              spellCheck={false}
+              data-placeholder="Search SIBS ID or employee name..."
+              onFocus={removeEmployeeSearchFocusDecoration}
+              onInput={(event) =>
+                onSearchChange?.(event.currentTarget.textContent || "")
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                }
+              }}
+              className="resignation-employee-search-editor font-jakarta sibs-text-xs font-semibold text-[#042C51]"
+              aria-label="Search employee"
+            />
+
+            <button
+              type="button"
+              onClick={() => onOpenChange?.(false)}
+              className="flex shrink-0 items-center justify-center text-[#FF5C28]"
+              aria-label="Close employee dropdown"
+            >
+              <ChevronDown size={16} className="rotate-180" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onOpenChange?.(true)}
+            className={`flex ${FIELD_HEIGHT} w-full min-w-0 items-center justify-between gap-3 ${EDGE} ${FIELD_BORDER} bg-[#F8FAFC] px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white`}
+            aria-expanded={open}
+            aria-haspopup="listbox"
+          >
+            <span
+              className={`block min-w-0 flex-1 truncate whitespace-nowrap ${
+                selectedSibsId
+                  ? "font-bold text-[#042C51]"
+                  : "font-medium text-[#98A2B3]"
+              }`}
+              title={selectedSibsId || "Select employee under your management"}
+            >
+              {selectedSibsId || "Select employee under your management"}
+            </span>
+
+            <ChevronDown
+              size={16}
+              className="shrink-0 text-[#042C51] transition-transform"
+            />
+          </button>
+        )}
+      </div>
 
       <EmployeeDropdownPortal
         open={open}
         anchorRef={anchorRef}
         onClose={() => onOpenChange?.(false)}
       >
-        <div className="sticky top-0 z-10 border-b border-[#E6ECF2] bg-white p-2.5 2xl:p-3">
-          <div className="relative">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
-            />
-
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => onSearchChange?.(event.target.value)}
-              placeholder="Search SIBS ID or employee name..."
-              autoComplete="off"
-              className="h-8.5 2xl:h-9 w-full rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] pl-9 pr-3 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-2 focus:ring-[#FF5C28]/10"
-            />
-          </div>
-        </div>
-
         <div
           className="max-h-[320px] overflow-y-auto py-1.5 sibs-scrollbar font-jakarta"
           role="listbox"
@@ -1683,6 +1842,7 @@ export function ResignationManagementModal({
   onClose,
   onChange,
   onSubmit,
+  showOperationsManagerApprovalFields = false,
 }) {
   if (!open) return null;
 
@@ -1926,12 +2086,12 @@ export function ResignationManagementModal({
                       onChange={onChange}
                       disabled={detailsDisabled}
                       className="hidden"
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,.heif,image/heic,image/heif"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.heic,.heif,image/heic,image/heif"
                     />
                   </label>
 
               <p className="mt-1 font-jakarta text-[9.5px] 2xl:text-[10px] font-semibold text-[#98A2B3]">
-                Accepted file types: .pdf, .doc, .docx, .jpg, .jpeg, .png, .heic
+                Accepted file types: .pdf, .doc, .docx, .xls, .xlsx, .csv, .jpg, .jpeg, .png, .heic
               </p>
             </div>
 
@@ -1945,15 +2105,91 @@ export function ResignationManagementModal({
                   disabled={detailsDisabled}
                 />
 
-                <FormTextarea
-                  label="TL / OM Remarks *"
-                  name="remarks"
-                  value={form?.remarks}
-                  onChange={onChange}
-                  rows={2}
-                  placeholder="Add remarks before sending the resignation request for approval."
-                  disabled={detailsDisabled}
-                />
+            {showOperationsManagerApprovalFields ? (
+              <section className="rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-3.5 2xl:p-4">
+                <div className="mb-3">
+                  <p className="font-jakarta sibs-text-xs font-extrabold text-[#042C51]">
+                    Operations Manager Approval
+                  </p>
+                  <p className="mt-1 font-jakarta text-[10px] font-semibold leading-4 text-[#667085]">
+                    These details will be saved as your approved Operations Manager stage when you submit the resignation.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <FormFieldLabel label="Personally Spoken? *" />
+                    <div className="grid grid-cols-2 gap-2">
+                      {["Yes", "No"].map((option) => (
+                        <button
+                          key={`om-spoken-${option}`}
+                          type="button"
+                          disabled={detailsDisabled}
+                          onClick={() =>
+                            emitChange("omPersonallySpoken", option)
+                          }
+                          className={`h-10 rounded-xl border text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                            form?.omPersonallySpoken === option
+                              ? "border-[#042C51] bg-[#EAF2FB] text-[#042C51]"
+                              : "border-[#D7DEE8] bg-white text-[#667085] hover:border-[#042C51]/40"
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <FormFieldLabel label="Employee Retained? *" />
+                    <div className="grid grid-cols-2 gap-2">
+                      {["Yes", "No"].map((option) => (
+                        <button
+                          key={`om-retained-${option}`}
+                          type="button"
+                          disabled={detailsDisabled}
+                          onClick={() =>
+                            emitChange("omEmployeeRetained", option)
+                          }
+                          className={`h-10 rounded-xl border text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                            form?.omEmployeeRetained === option
+                              ? "border-[#042C51] bg-[#EAF2FB] text-[#042C51]"
+                              : "border-[#D7DEE8] bg-white text-[#667085] hover:border-[#042C51]/40"
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  <FormTextarea
+                    label={`Action Taken${
+                      form?.omPersonallySpoken === "Yes" ? " *" : ""
+                    }`}
+                    name="omActionTaken"
+                    value={form?.omActionTaken || ""}
+                    onChange={onChange}
+                    rows={3}
+                    placeholder="Enter the action taken after speaking with the employee."
+                    disabled={detailsDisabled}
+                  />
+
+                  <FormTextarea
+                    label="Remarks"
+                    name="omRemarks"
+                    value={form?.omRemarks || ""}
+                    onChange={onChange}
+                    rows={3}
+                    placeholder="Add Operations Manager remarks."
+                    disabled={detailsDisabled}
+                  />
+                </div>
+              </section>
+            ) : null}
+
           </div>
         </div>
 
@@ -2112,9 +2348,9 @@ function formatProcessedTime(value, status) {
     return status === "Pending" ? "Pending decision" : "--";
   }
 
-  const formatted = formatDate(value);
+  const formatted = formatDateTime(value);
 
-  if (formatted && formatted !== "Invalid Date") {
+  if (formatted && formatted !== "N/A" && formatted !== "Invalid Date") {
     return formatted;
   }
 
@@ -2141,12 +2377,6 @@ function getStageDecision(item, stageKey, finalStatus) {
       "seniorOperationsManagerStatus",
       "senior_operations_manager_status",
     ],
-    hr: [
-      "hrStatus",
-      "hr_status",
-      "hrPartnerStatus",
-      "hr_partner_status",
-    ],
   };
 
   const approvedAliases = {
@@ -2157,7 +2387,6 @@ function getStageDecision(item, stageKey, finalStatus) {
       "som_is_approved",
       "seniorOperationsManagerIsApproved",
     ],
-    hr: ["hrIsApproved", "hr_is_approved", "hrPartnerIsApproved"],
   };
 
   const declinedAliases = {
@@ -2168,7 +2397,6 @@ function getStageDecision(item, stageKey, finalStatus) {
       "som_is_declined",
       "seniorOperationsManagerIsDeclined",
     ],
-    hr: ["hrIsDeclined", "hr_is_declined", "hrPartnerIsDeclined"],
   };
 
   const explicitStatus = getFirstValue(
@@ -2193,7 +2421,7 @@ function getStageDecision(item, stageKey, finalStatus) {
   if (isApproved) return "Approved";
 
   if (
-    stageKey === "hr" &&
+    stageKey === "som" &&
     (finalStatus === "Completed" || Number(item?.isCompleted || 0) === 1)
   ) {
     return "Approved";
@@ -2202,7 +2430,56 @@ function getStageDecision(item, stageKey, finalStatus) {
   return "Pending";
 }
 
+function toBooleanFlag(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+
+  return ["1", "true", "yes"].includes(
+    String(value || "").trim().toLowerCase(),
+  );
+}
+
+function shouldHideTeamLeader(item) {
+  return [
+    item?.hideTl,
+    item?.hide_tl,
+    item?.isCorporate,
+    item?.is_corporate,
+    item?.meta?.hideTl,
+    item?.meta?.hide_tl,
+    item?.raw?.hideTl,
+    item?.raw?.hide_tl,
+  ].some(toBooleanFlag);
+}
+
+function getApprovalStageKey(stage = {}) {
+  const value = String(
+    stage?.key ||
+      stage?.stageName ||
+      stage?.stage ||
+      stage?.role ||
+      stage?.id ||
+      "",
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, " ");
+
+  if (value === "tl" || value.includes("team leader")) return "tl";
+  if (value === "om" || value.includes("operations manager")) return "om";
+  if (value === "som" || value.includes("senior ops manager") || value.includes("senior operations manager")) return "som";
+
+  return value;
+}
+
 function buildApprovalStageRows(item) {
+  const hideTl = shouldHideTeamLeader(item);
+  const progressStages = buildResignationApprovalStages(item);
+  const activeStageKeys = new Set(progressStages.map((stage) => stage.key));
+  const progressStageMap = new Map(
+    progressStages.map((stage) => [stage.key, stage]),
+  );
+
   const suppliedStages = Array.isArray(item?.approvalStages)
     ? item.approvalStages
     : Array.isArray(item?.approval_stages)
@@ -2210,44 +2487,61 @@ function buildApprovalStageRows(item) {
       : [];
 
   if (suppliedStages.length > 0) {
-    return suppliedStages.map((stage, index) => {
-      const status = normalizeApprovalStageStatus(
-        stage?.status ||
-          stage?.approvalStatus ||
-          stage?.approval_status,
-      );
+    return suppliedStages
+      .filter((stage) => {
+        const stageKey = getApprovalStageKey(stage);
 
-      return {
-        id: String(
-          stage?.id ||
+        if (activeStageKeys.size > 0 && !activeStageKeys.has(stageKey)) {
+          return false;
+        }
+        if (hideTl && stageKey === "tl") return false;
+
+        return true;
+      })
+      .map((stage, index) => {
+        const stageKey = getApprovalStageKey(stage);
+        const progressStage = progressStageMap.get(stageKey);
+        const status = progressStage?.status || normalizeApprovalStageStatus(
+          stage?.status ||
+            stage?.approvalStatus ||
+            stage?.approval_status,
+        );
+
+        return {
+          id: String(
+            stage?.key ||
+              stage?.id ||
+              stage?.stageName ||
+              stage?.stage ||
+              `stage-${index}`,
+          ),
+          stage:
+            stage?.label ||
             stage?.stageName ||
             stage?.stage ||
-            `stage-${index}`,
-        ),
-        stage:
-          stage?.stageName ||
-          stage?.stage ||
-          stage?.role ||
-          `Approval Stage ${index + 1}`,
-        approver:
-          stage?.approver ||
-          stage?.approverName ||
-          stage?.approver_name ||
-          stage?.fullName ||
-          stage?.name ||
-          "Pending assignment",
-        status,
-        processedTime: formatProcessedTime(
-          stage?.updatedAt ||
-            stage?.updated_at ||
-            stage?.processedAt ||
-            stage?.processed_at ||
-            stage?.approvedAt ||
-            stage?.approved_at,
+            stage?.role ||
+            `Approval Stage ${index + 1}`,
+          approver:
+            stage?.approver ||
+            stage?.approverName ||
+            stage?.approver_name ||
+            stage?.fullName ||
+            stage?.name ||
+            progressStage?.approverName ||
+            progressStage?.approverId ||
+            "Pending assignment",
           status,
-        ),
-      };
-    });
+          processedTime: formatProcessedTime(
+            stage?.updatedAt ||
+              stage?.updated_at ||
+              stage?.processedAt ||
+              stage?.processed_at ||
+              stage?.approvedAt ||
+              stage?.approved_at,
+            status,
+          ),
+        };
+      });
   }
 
   const finalStatus = getResignationStatus(item);
@@ -2330,76 +2624,166 @@ function buildApprovalStageRows(item) {
         "som_approval_date",
       ],
     },
-    {
-      key: "hr",
-      stage: "HR Partner",
-      approverKeys: [
-        "hrFullName",
-        "hr_full_name",
-        "hrName",
-        "hr_name",
-        "hrApproverName",
-        "hr_approver_name",
-        "hrPartnerName",
-        "hr_partner_name",
-        "completedByName",
-        "completed_by_name",
-      ],
-      dateKeys: [
-        "hrProcessedAt",
-        "hr_processed_at",
-        "hrApprovedAt",
-        "hr_approved_at",
-        "hrUpdatedAt",
-        "hr_updated_at",
-        "completedAt",
-        "completed_at",
-      ],
-    },
   ];
 
   let priorStageDeclined = false;
 
-  return stageDefinitions.map((definition) => {
-    let status = getStageDecision(item, definition.key, finalStatus);
+  return stageDefinitions
+    .filter((definition) => {
+      if (activeStageKeys.size > 0) {
+        return activeStageKeys.has(definition.key);
+      }
 
-    if (priorStageDeclined && status === "Pending") {
-      status = "Cancelled";
-    }
+      return !hideTl || definition.key !== "tl";
+    })
+    .map((definition) => {
+      let status = getStageDecision(item, definition.key, finalStatus);
 
-    if (status === "Declined") {
-      priorStageDeclined = true;
-    }
+      if (priorStageDeclined && status === "Pending") {
+        status = "Cancelled";
+      }
 
-    const fallbackApprover =
-      definition.key === "tl"
-        ? getFirstValue(
-            item,
-            [
-              "supervisorName",
-              "supervisor_name",
-              "filedByName",
-              "filed_by_name",
-            ],
-            "Pending assignment",
-          )
-        : "Pending assignment";
+      if (status === "Declined") {
+        priorStageDeclined = true;
+      }
 
-    return {
-      id: definition.key,
-      stage: definition.stage,
-      approver: getFirstValue(
-        item,
-        definition.approverKeys,
-        fallbackApprover,
-      ),
-      status,
-      processedTime: formatProcessedTime(
-        getFirstValue(item, definition.dateKeys),
+      const fallbackApprover =
+        definition.key === "tl"
+          ? getFirstValue(
+              item,
+              [
+                "supervisorName",
+                "supervisor_name",
+                "filedByName",
+                "filed_by_name",
+              ],
+              "Pending assignment",
+            )
+          : "Pending assignment";
+
+      return {
+        id: definition.key,
+        stage: definition.stage,
+        approver: getFirstValue(
+          item,
+          definition.approverKeys,
+          fallbackApprover,
+        ),
         status,
-      ),
-    };
-  });
+        processedTime: formatProcessedTime(
+          getFirstValue(item, definition.dateKeys),
+          status,
+        ),
+      };
+    });
+}
+
+function ResignationApprovalProgress({
+  item,
+  approvalStages = [],
+  currentUser,
+  onStageClick,
+}) {
+  const progressStages = buildResignationApprovalStages(item);
+
+  if (!progressStages.length) return null;
+
+  const displayedStageMap = new Map(
+    approvalStages.map((stage) => [String(stage?.id || ""), stage]),
+  );
+
+  const progressClass = {
+    completed: "bg-[#16C55D]",
+    current: "bg-[#D9E53F]",
+    declined: "bg-rose-500",
+    pending: "bg-[#D9E2EC]",
+  };
+
+  const hasApprovalRecord = Boolean(
+    item?.attritionId || item?.attrition_id,
+  );
+
+  return (
+    <div className="mt-2 rounded-xl border border-[#E7ECF2] bg-[#F8FAFC] px-3 py-3 2xl:px-4 2xl:py-3.5">
+      <div
+        className="grid gap-1.5"
+        style={{
+          gridTemplateColumns: `repeat(${progressStages.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {progressStages.map((stage) => {
+          const viewable = hasApprovalRecord;
+          const editable = canUserActOnResignationStage(
+            item,
+            stage.key,
+            currentUser,
+          );
+
+          return (
+            <div
+              key={stage.key}
+              role={viewable ? "button" : undefined}
+              tabIndex={viewable ? 0 : undefined}
+              onClick={() => {
+                if (viewable) onStageClick?.(stage);
+              }}
+              onKeyDown={(event) => {
+                if (
+                  viewable &&
+                  (event.key === "Enter" || event.key === " ")
+                ) {
+                  event.preventDefault();
+                  onStageClick?.(stage);
+                }
+              }}
+              title={
+                viewable
+                  ? editable
+                    ? `Review ${stage.label} resignation approval`
+                    : `View ${stage.label} resignation approval details`
+                  : `${stage.label}: ${stage.status}`
+              }
+              className={`min-w-0 rounded-lg outline-none transition ${
+                viewable
+                  ? "cursor-pointer hover:bg-[#FFF0EB] focus:ring-2 focus:ring-[#FF5C28]/25"
+                  : ""
+              }`}
+            >
+              <div
+                className={`h-3 w-full rounded-full transition-colors duration-300 ${
+                  progressClass[stage.progressState] || progressClass.pending
+                }`}
+              />
+
+              <p className="mt-1.5 truncate text-center sibs-text-micro font-extrabold text-[#475467]">
+                {stage.label}
+              </p>
+
+              <p
+                className={`mt-0.5 truncate text-center text-[9px] font-bold ${
+                  stage.progressState === "current"
+                    ? "text-[#788300]"
+                    : stage.progressState === "declined"
+                      ? "text-rose-600"
+                      : stage.progressState === "completed"
+                        ? "text-emerald-700"
+                        : "text-[#98A2B3]"
+                }`}
+              >
+                {stage.status === "Pending" && stage.progressState === "current"
+                  ? editable
+                    ? "Current · Click to Review"
+                    : viewable
+                      ? "Current · Click to View"
+                      : "Current"
+                  : displayedStageMap.get(stage.key)?.status || stage.status}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function getAttachmentEntries(item) {
@@ -2487,21 +2871,26 @@ function getAttachmentEntries(item) {
   });
 }
 
-function ImageAttachmentPreviewModal({
+function AttachmentPreviewModal({
   open,
   fileName,
   fileUrl,
+  sibsId,
   onClose,
 }) {
   const objectUrlRef = useRef("");
+  const [activeSheetIndex, setActiveSheetIndex] = useState(0);
   const [state, setState] = useState({
     loading: false,
-    imageUrl: "",
+    kind: "",
+    objectUrl: "",
+    sheets: [],
+    truncated: false,
     error: "",
   });
 
   useEffect(() => {
-    if (!open || !fileUrl) return undefined;
+    if (!open || !fileName) return undefined;
 
     const controller = new AbortController();
     let cancelled = false;
@@ -2515,63 +2904,111 @@ function ImageAttachmentPreviewModal({
 
     async function loadPreview() {
       revokeCurrentObjectUrl();
+      setActiveSheetIndex(0);
+
+      const kind = getResignationAttachmentPreviewKind(fileName);
       setState({
         loading: true,
-        imageUrl: "",
+        kind,
+        objectUrl: "",
+        sheets: [],
+        truncated: false,
         error: "",
       });
 
       try {
-        const response = await fetch(fileUrl, {
+        if (kind === "unsupported") {
+          throw new Error("This file type does not support an in-system preview.");
+        }
+
+        if (kind === "image" || kind === "pdf") {
+          if (!fileUrl) {
+            throw new Error("The attachment URL is not available.");
+          }
+
+          const response = await fetch(fileUrl, {
+            method: "GET",
+            credentials: "include",
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            let message = "Unable to load this attachment.";
+
+            try {
+              const payload = await response.json();
+              message = payload?.message || message;
+            } catch {
+              // Keep the fallback for non-JSON file responses.
+            }
+
+            throw new Error(message);
+          }
+
+          const sourceBlob = await response.blob();
+          const previewBlob =
+            kind === "image" && isHeicFileName(fileName)
+              ? await convertHeicBlobToJpeg(sourceBlob)
+              : sourceBlob;
+
+          if (cancelled) return;
+
+          const objectUrl = URL.createObjectURL(previewBlob);
+          objectUrlRef.current = objectUrl;
+
+          setState((current) => ({
+            ...current,
+            loading: false,
+            objectUrl,
+          }));
+          return;
+        }
+
+        const previewUrl = getAttachmentPreviewApiUrl(sibsId, fileName);
+
+        if (!previewUrl) {
+          throw new Error("The attachment preview URL could not be created.");
+        }
+
+        const response = await fetch(previewUrl, {
           method: "GET",
           credentials: "include",
           signal: controller.signal,
         });
 
-        if (!response.ok) {
-          let message = "Unable to load this image.";
+        let payload = null;
 
-          try {
-            const payload = await response.json();
-            message = payload?.message || message;
-          } catch {
-            // Keep the formal fallback for non-JSON responses.
-          }
-
-          throw new Error(message);
+        try {
+          payload = await response.json();
+        } catch {
+          payload = null;
         }
 
-        const sourceBlob = await response.blob();
-        const previewBlob =
-          isHeicFileName(fileName)
-            ? await convertHeicBlobToJpeg(sourceBlob)
-            : sourceBlob;
+        if (!response.ok || !payload?.success) {
+          throw new Error(
+            payload?.message || "Unable to prepare this attachment preview.",
+          );
+        }
+
+        const preview = payload?.data || {};
 
         if (cancelled) return;
 
-        const objectUrl = URL.createObjectURL(previewBlob);
-        objectUrlRef.current = objectUrl;
-
-        setState({
+        setState((current) => ({
+          ...current,
           loading: false,
-          imageUrl: objectUrl,
-          error: "",
-        });
+          kind: preview?.kind || kind,
+          sheets: Array.isArray(preview?.sheets) ? preview.sheets : [],
+          truncated: Boolean(preview?.truncated),
+        }));
       } catch (error) {
-        if (
-          cancelled ||
-          error?.name === "AbortError"
-        ) {
-          return;
-        }
+        if (cancelled || error?.name === "AbortError") return;
 
-        setState({
+        setState((current) => ({
+          ...current,
           loading: false,
-          imageUrl: "",
-          error:
-            error?.message ||
-            "Unable to preview this image.",
-        });
+          error: error?.message || "Unable to preview this attachment.",
+        }));
       }
     }
 
@@ -2582,15 +3019,13 @@ function ImageAttachmentPreviewModal({
       controller.abort();
       revokeCurrentObjectUrl();
     };
-  }, [open, fileName, fileUrl]);
+  }, [open, fileName, fileUrl, sibsId]);
 
   useEffect(() => {
     if (!open) return undefined;
 
     function handleEscape(event) {
-      if (event.key === "Escape") {
-        onClose?.();
-      }
+      if (event.key === "Escape") onClose?.();
     }
 
     document.addEventListener("keydown", handleEscape);
@@ -2602,68 +3037,134 @@ function ImageAttachmentPreviewModal({
 
   if (!open) return null;
 
+  const activeSheet = state.sheets[activeSheetIndex] || state.sheets[0] || null;
+  const previewLabel =
+    state.kind === "pdf"
+      ? "PDF Preview"
+      : state.kind === "excel"
+        ? "Spreadsheet Preview"
+        : "Image Preview";
+
   return createPortal(
     <div
       className="fixed inset-0 z-[100020] flex items-center justify-center bg-black/75 p-4 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
-      aria-label={`Preview ${fileName || "image"}`}
+      aria-label={`Preview ${fileName || "attachment"}`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose?.();
-        }
+        if (event.target === event.currentTarget) onClose?.();
       }}
     >
-      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-white shadow-2xl">
+      <div className="flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-white shadow-2xl">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E7ECF2] bg-[#042C51] px-4 py-3 2xl:px-5 2xl:py-4">
           <div className="min-w-0">
             <p className="sibs-text-xs font-extrabold uppercase tracking-wide text-white/70">
-              Image Preview
+              {previewLabel}
             </p>
             <h3 className="mt-0.5 truncate sibs-text-sm 2xl:text-base font-extrabold text-white">
-              {fileName || "Image"}
+              {fileName || "Attachment"}
             </h3>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close image preview"
+            aria-label="Close attachment preview"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-white transition hover:bg-white/20"
           >
             <X size={18} />
           </button>
         </header>
 
-        <div className="flex min-h-[320px] flex-1 items-center justify-center overflow-auto bg-[#111827] p-4 2xl:p-6">
+        <div className="min-h-0 flex-1 overflow-auto bg-[#F5F7FA] p-3 2xl:p-5">
           {state.loading ? (
-            <div className="flex flex-col items-center gap-3 text-white">
+            <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-3 text-[#042C51]">
               <Loader2 size={32} className="animate-spin" />
-              <p className="sibs-text-xs font-bold">
-                {isHeicFileName(fileName)
-                  ? "Preparing HEIC image preview..."
-                  : "Preparing image preview..."}
-              </p>
+              <p className="sibs-text-xs font-bold">Preparing attachment preview...</p>
             </div>
           ) : state.error ? (
-            <div className="max-w-lg rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-center">
-              <AlertCircle
-                size={28}
-                className="mx-auto text-red-500"
-              />
-              <p className="mt-2 sibs-text-xs font-extrabold text-red-700">
-                Preview unavailable
-              </p>
-              <p className="mt-1 sibs-text-micro font-semibold leading-relaxed text-red-600">
-                {state.error}
-              </p>
+            <div className="flex h-full min-h-[320px] items-center justify-center">
+              <div className="max-w-lg rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-center">
+                <AlertCircle size={28} className="mx-auto text-red-500" />
+                <p className="mt-2 sibs-text-xs font-extrabold text-red-700">
+                  Preview unavailable
+                </p>
+                <p className="mt-1 sibs-text-micro font-semibold leading-relaxed text-red-600">
+                  {state.error}
+                </p>
+              </div>
             </div>
-          ) : state.imageUrl ? (
-            <img
-              src={state.imageUrl}
-              alt={fileName || "Resignation image preview"}
-              className="max-h-[76vh] max-w-full rounded-xl object-contain shadow-2xl"
+          ) : state.kind === "image" && state.objectUrl ? (
+            <div className="flex min-h-full items-center justify-center bg-[#111827] p-3">
+              <img
+                src={state.objectUrl}
+                alt={fileName || "Resignation image preview"}
+                className="max-h-[76vh] max-w-full rounded-xl object-contain shadow-2xl"
+              />
+            </div>
+          ) : state.kind === "pdf" && state.objectUrl ? (
+            <iframe
+              src={state.objectUrl}
+              title={fileName || "PDF preview"}
+              className="h-full min-h-[68vh] w-full rounded-xl border border-[#D9E2EC] bg-white"
             />
+          ) : state.kind === "excel" ? (
+            <div className="flex min-h-full flex-col gap-3">
+              {state.sheets.length > 1 ? (
+                <div className="flex flex-wrap gap-2 rounded-xl border border-[#D9E2EC] bg-white p-2">
+                  {state.sheets.map((sheet, index) => (
+                    <button
+                      key={`${sheet?.name || "Sheet"}-${index}`}
+                      type="button"
+                      onClick={() => setActiveSheetIndex(index)}
+                      className={`rounded-lg px-3 py-1.5 sibs-text-micro font-extrabold transition ${
+                        activeSheetIndex === index
+                          ? "bg-[#042C51] text-white"
+                          : "bg-[#F2F6FA] text-[#042C51] hover:bg-[#E8EEF5]"
+                      }`}
+                    >
+                      {sheet?.name || `Sheet ${index + 1}`}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-[#D9E2EC] bg-white shadow-sm sibs-scrollbar">
+                {activeSheet && Array.isArray(activeSheet.rows) && activeSheet.rows.length > 0 ? (
+                  <table className="min-w-full border-collapse text-left">
+                    <tbody>
+                      {activeSheet.rows.map((row, rowIndex) => (
+                        <tr
+                          key={`row-${rowIndex}`}
+                          className={rowIndex === 0 ? "bg-[#F8FAFC]" : "bg-white"}
+                        >
+                          {(Array.isArray(row) ? row : []).map((cell, cellIndex) => (
+                            <td
+                              key={`cell-${rowIndex}-${cellIndex}`}
+                              className={`whitespace-nowrap border-b border-r border-[#EEF2F6] px-3 py-2 sibs-text-micro text-[#344054] ${
+                                rowIndex === 0 ? "font-extrabold text-[#042C51]" : "font-semibold"
+                              }`}
+                            >
+                              {String(cell || "") || " "}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="flex min-h-[320px] items-center justify-center p-6 text-center sibs-text-xs font-semibold text-[#98A2B3]">
+                    No readable spreadsheet rows were found.
+                  </div>
+                )}
+              </div>
+
+              {(state.truncated || activeSheet?.truncated) ? (
+                <p className="sibs-text-micro font-semibold text-amber-700">
+                  Preview is limited for performance. The original file remains unchanged.
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </div>
       </div>
@@ -2672,15 +3173,437 @@ function ImageAttachmentPreviewModal({
   );
 }
 
-export function ViewResignationModal({ open, item, onClose }) {
-  const [imagePreview, setImagePreview] = useState({
+function ResignationStageApprovalModal({
+  open,
+  item,
+  stage,
+  onClose,
+  onSaved,
+  onResult,
+}) {
+  const [personallySpoken, setPersonallySpoken] = useState("");
+  const [employeeRetained, setEmployeeRetained] = useState("");
+  const [actionTaken, setActionTaken] = useState("");
+  const [remarks, setRemarks] = useState("");
+  const [submittingAction, setSubmittingAction] = useState("");
+  const [error, setError] = useState("");
+
+  const stageKey = String(stage?.key || stage?.id || "")
+    .trim()
+    .toLowerCase();
+
+  useEffect(() => {
+    if (!open || !item || !stageKey) return;
+
+    setPersonallySpoken(
+      String(
+        getFirstValue(
+          item,
+          [
+            `${stageKey}PersonallySpoken`,
+            `${stageKey}_personally_spoken`,
+          ],
+          "",
+        ),
+      ),
+    );
+    setEmployeeRetained(
+      String(
+        getFirstValue(
+          item,
+          [
+            `${stageKey}EmployeeRetained`,
+            `${stageKey}_employee_retained`,
+          ],
+          "",
+        ),
+      ),
+    );
+    setActionTaken(
+      String(
+        getFirstValue(
+          item,
+          [
+            `${stageKey}ActionTaken`,
+            `${stageKey}_action_taken`,
+          ],
+          "",
+        ),
+      ),
+    );
+    setRemarks(
+      String(
+        getFirstValue(
+          item,
+          [
+            `${stageKey}Remarks`,
+            `${stageKey}_remarks`,
+          ],
+          "",
+        ),
+      ),
+    );
+    setError("");
+    setSubmittingAction("");
+  }, [open, item, stageKey]);
+
+  if (!open || !item || !stage) return null;
+
+  const attritionId = item?.attritionId || item?.attrition_id;
+  const isBusy = Boolean(submittingAction);
+  const canEdit = Boolean(stage?.canEdit);
+  const isReadOnly = !canEdit;
+
+  function validateDecision(action) {
+    if (!personallySpoken) {
+      return "Please select whether you personally spoke with the employee.";
+    }
+
+    if (!employeeRetained) {
+      return "Please select whether the employee was retained.";
+    }
+
+    if (
+      personallySpoken === "Yes" &&
+      !String(actionTaken || "").trim()
+    ) {
+      return "Action Taken is required when Personally Spoken is Yes.";
+    }
+
+    if (action === "reject" && !String(remarks || "").trim()) {
+      return "Remarks are required when declining the resignation.";
+    }
+
+    return "";
+  }
+
+  function showDecisionError(message) {
+    const cleanMessage =
+      String(message || "").trim() ||
+      "Unable to update this resignation approval.";
+
+    setError("");
+    onResult?.({
+      type: "error",
+      title: "Unable to Update Resignation",
+      message: cleanMessage,
+    });
+  }
+
+  async function submitDecision(action) {
+    if (isBusy || !canEdit) return;
+
+    const validationError = validateDecision(action);
+
+    if (validationError) {
+      showDecisionError(validationError);
+      return;
+    }
+
+    if (!attritionId) {
+      showDecisionError(
+        "The linked attrition approval record was not found.",
+      );
+      return;
+    }
+
+    setSubmittingAction(action);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `${String(API_URL || "").replace(/\/$/, "")}/api/approval-requests/attrition/${encodeURIComponent(attritionId)}/${
+          action === "approve" ? "approve" : "reject"
+        }`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            module: "Attrition",
+            type: "Resignation",
+            requestType: "Resignation",
+            source: "attrition",
+            employeeSibsId: getEmployeeSibsId(item),
+            personallySpoken,
+            employeeRetained,
+            actionTaken: String(actionTaken || "").trim(),
+            remarks: String(remarks || "").trim(),
+          }),
+        },
+      );
+
+      let result = null;
+
+      try {
+        result = await response.json();
+      } catch {
+        result = null;
+      }
+
+      if (!response.ok || !result?.success) {
+        throw new Error(
+          result?.message ||
+            `Unable to ${action === "approve" ? "approve" : "decline"} this resignation.`,
+        );
+      }
+
+      onResult?.({
+        type: "success",
+        title:
+          action === "approve"
+            ? "Resignation Approved"
+            : "Resignation Declined",
+        message:
+          result?.message ||
+          (action === "approve"
+            ? "The resignation has been approved successfully."
+            : "The resignation has been declined successfully."),
+      });
+
+      try {
+        await onSaved?.(result);
+      } catch (refreshError) {
+        console.error(
+          "RESIGNATION APPROVAL REFRESH ERROR:",
+          refreshError,
+        );
+      }
+    } catch (submitError) {
+      showDecisionError(
+        submitError?.message ||
+          "Unable to update this resignation approval.",
+      );
+    } finally {
+      setSubmittingAction("");
+    }
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100030] flex items-center justify-center bg-black/65 p-3 backdrop-blur-sm sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="resignation-stage-approval-title"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isBusy) {
+          onClose?.();
+        }
+      }}
+    >
+      <section className="flex max-h-[92dvh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+          <div className="min-w-0">
+            <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-white/70">
+              Resignation Approval
+            </p>
+            <h3
+              id="resignation-stage-approval-title"
+              className="mt-0.5 truncate text-base font-extrabold text-white"
+            >
+              {stage.label || stage.stage || "Approval Stage"}
+            </h3>
+            {isReadOnly ? (
+              <p className="mt-0.5 sibs-text-micro font-bold text-white/65">
+                View Only
+              </p>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isBusy}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Close approval modal"
+          >
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sibs-scrollbar sm:px-6">
+          <div className="space-y-4">
+            <section className="grid grid-cols-1 gap-3 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4 sm:grid-cols-2">
+              <div className="min-w-0">
+                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                  Employee
+                </p>
+                <p className="mt-1 truncate sibs-text-xs font-extrabold text-[#042C51]">
+                  {getFullName(item)}
+                </p>
+              </div>
+
+              <div className="min-w-0">
+                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                  SIBS ID
+                </p>
+                <p className="mt-1 truncate sibs-text-xs font-extrabold text-[#042C51]">
+                  {getEmployeeSibsId(item)}
+                </p>
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <FormFieldLabel label="Personally Spoken? *" />
+                <div className="grid grid-cols-2 gap-2">
+                  {["Yes", "No"].map((option) => (
+                    <button
+                      key={`spoken-${option}`}
+                      type="button"
+                      disabled={isBusy || !canEdit}
+                      onClick={() => setPersonallySpoken(option)}
+                      className={`h-10 rounded-xl border text-xs font-extrabold transition ${
+                        personallySpoken === option
+                          ? "border-[#042C51] bg-[#EAF2FB] text-[#042C51]"
+                          : "border-[#D7DEE8] bg-white text-[#667085] hover:border-[#042C51]/40"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <FormFieldLabel label="Employee Retained? *" />
+                <div className="grid grid-cols-2 gap-2">
+                  {["Yes", "No"].map((option) => (
+                    <button
+                      key={`retained-${option}`}
+                      type="button"
+                      disabled={isBusy || !canEdit}
+                      onClick={() => setEmployeeRetained(option)}
+                      className={`h-10 rounded-xl border text-xs font-extrabold transition ${
+                        employeeRetained === option
+                          ? "border-[#042C51] bg-[#EAF2FB] text-[#042C51]"
+                          : "border-[#D7DEE8] bg-white text-[#667085] hover:border-[#042C51]/40"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <FormFieldLabel
+                label={`Action Taken${personallySpoken === "Yes" ? " *" : ""}`}
+              />
+              <textarea
+                value={actionTaken}
+                onChange={(event) => setActionTaken(event.target.value)}
+                disabled={isBusy || !canEdit}
+                rows={3}
+                placeholder={
+                  isReadOnly
+                    ? "No action taken recorded."
+                    : "Enter the action taken after speaking with the employee."
+                }
+                className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 py-2.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+            </div>
+
+            <div>
+              <FormFieldLabel label="Remarks" />
+              <textarea
+                value={remarks}
+                onChange={(event) => setRemarks(event.target.value)}
+                disabled={isBusy || !canEdit}
+                rows={3}
+                placeholder={
+                  isReadOnly
+                    ? "No remarks recorded."
+                    : "Add approval remarks. Remarks are required when declining."
+                }
+                className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 py-2.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+            </div>
+
+            {error ? (
+              <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+                <AlertCircle size={17} className="mt-0.5 shrink-0" />
+                <p className="sibs-text-xs font-semibold leading-5">{error}</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <footer className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 sm:px-6">
+          {canEdit ? (
+            <>
+              <button
+                type="button"
+                onClick={() => submitDecision("reject")}
+                disabled={isBusy}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 sibs-text-xs font-extrabold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submittingAction === "reject" ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <XCircle size={15} />
+                )}
+                Decline
+              </button>
+
+              <button
+                type="button"
+                onClick={() => submitDecision("approve")}
+                disabled={isBusy}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submittingAction === "approve" ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={15} />
+                )}
+                Approve
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-[#E4EAF1] px-4 sibs-text-xs font-extrabold text-[#23364D] transition hover:bg-[#D7E0EA]"
+            >
+              Close
+            </button>
+          )}
+        </footer>
+      </section>
+    </div>,
+    document.body,
+  );
+}
+
+export function ViewResignationModal({
+  open,
+  item,
+  currentUser,
+  onApprovalUpdated,
+  onClose,
+}) {
+  const [attachmentPreview, setAttachmentPreview] = useState({
     open: false,
     fileName: "",
     fileUrl: "",
   });
+  const [approvalStageModal, setApprovalStageModal] = useState({
+    open: false,
+    stage: null,
+  });
+  const [approvalResultStatus, setApprovalResultStatus] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
-  function closeImagePreview() {
-    setImagePreview({
+  function closeAttachmentPreview() {
+    setAttachmentPreview({
       open: false,
       fileName: "",
       fileUrl: "",
@@ -2689,10 +3612,20 @@ export function ViewResignationModal({ open, item, onClose }) {
 
   useEffect(() => {
     if (!open) {
-      setImagePreview({
+      setAttachmentPreview({
         open: false,
         fileName: "",
         fileUrl: "",
+      });
+      setApprovalStageModal({
+        open: false,
+        stage: null,
+      });
+      setApprovalResultStatus({
+        open: false,
+        type: "success",
+        title: "",
+        message: "",
       });
       return undefined;
     }
@@ -2715,7 +3648,57 @@ export function ViewResignationModal({ open, item, onClose }) {
     };
   }, [open, onClose]);
 
+  function handleApprovalResult(result = {}) {
+    setAttachmentPreview({
+      open: false,
+      fileName: "",
+      fileUrl: "",
+    });
+    setApprovalStageModal({
+      open: false,
+      stage: null,
+    });
+    setApprovalResultStatus({
+      open: true,
+      type: result?.type === "error" ? "error" : "success",
+      title:
+        String(result?.title || "").trim() ||
+        (result?.type === "error"
+          ? "Unable to Update Resignation"
+          : "Resignation Updated"),
+      message:
+        String(result?.message || "").trim() ||
+        (result?.type === "error"
+          ? "Unable to update this resignation approval."
+          : "The resignation approval was updated successfully."),
+    });
+  }
+
+  function closeApprovalResultStatus() {
+    setApprovalResultStatus({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+    onClose?.();
+  }
+
   if (!open || !item) return null;
+
+  if (approvalResultStatus.open) {
+    return (
+      <StatusModal
+        open
+        type={approvalResultStatus.type}
+        title={approvalResultStatus.title}
+        message={approvalResultStatus.message}
+        variant="center"
+        onClose={closeApprovalResultStatus}
+        lockScroll={false}
+      />
+    );
+  }
 
   const status = getResignationStatus(item);
   const statusLabel = getCaseStatusLabel(status);
@@ -2787,7 +3770,70 @@ export function ViewResignationModal({ open, item, onClose }) {
           : filedByName;
 
   const approvalStages = buildApprovalStageRows(item);
+  const approvalProgressStages = buildResignationApprovalStages(item);
+  const approvalRouteLabel = getResignationApprovalRouteLabel(
+    approvalProgressStages,
+  );
   const attachments = getAttachmentEntries(item);
+
+  const approvalProgressByKey = new Map(
+    approvalProgressStages.map((stage) => [stage.key, stage]),
+  );
+
+  function canViewApprovalStage(stage) {
+    const stageKey = String(stage?.id || stage?.key || "")
+      .trim()
+      .toLowerCase();
+
+    return (
+      Boolean(item?.attritionId || item?.attrition_id) &&
+      approvalProgressByKey.has(stageKey)
+    );
+  }
+
+  function canEditApprovalStage(stage) {
+    const stageKey = String(stage?.id || stage?.key || "")
+      .trim()
+      .toLowerCase();
+
+    return canUserActOnResignationStage(
+      item,
+      stageKey,
+      currentUser,
+    );
+  }
+
+  function openApprovalStage(stage) {
+    if (!canViewApprovalStage(stage)) return;
+
+    const stageKey = String(stage?.id || stage?.key || "")
+      .trim()
+      .toLowerCase();
+    const progressStage = approvalProgressByKey.get(stageKey);
+    const canEdit = canEditApprovalStage(stage);
+
+    setApprovalStageModal({
+      open: true,
+      stage: {
+        ...(progressStage || {}),
+        key: stageKey,
+        label:
+          progressStage?.label ||
+          stage?.stage ||
+          stage?.label ||
+          "Approval Stage",
+        canEdit,
+      },
+    });
+  }
+
+  async function handleApprovalSaved(result) {
+    await onApprovalUpdated?.({
+      resignationId: item?.id || item?.resignationId || item?.resignation_id,
+      attritionId: item?.attritionId || item?.attrition_id,
+      result,
+    });
+  }
 
   const employeeMeta = [
     employeeSibsId !== "--" ? employeeSibsId : "",
@@ -2928,13 +3974,27 @@ export function ViewResignationModal({ open, item, onClose }) {
             <section>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <h4 className="sibs-text-micro font-extrabold uppercase text-[#042C51]">
-                  Clearance &amp; Approval Routing Stages
+                  Approval Routing Stages
                 </h4>
 
                 <span className="sibs-text-micro font-extrabold uppercase text-[#7E8DA8]">
-                  SOP Alignment Routing: TL → OM → SOM → HR
+                  {approvalRouteLabel
+                    ? `SOP Alignment Routing: ${approvalRouteLabel}`
+                    : "Approval route pending assignment"}
                 </span>
               </div>
+
+              <ResignationApprovalProgress
+                item={item}
+                approvalStages={approvalStages}
+                currentUser={currentUser}
+                onStageClick={(stage) =>
+                  openApprovalStage({
+                    id: stage.key,
+                    stage: stage.label,
+                  })
+                }
+              />
 
               <div className="mt-1.5 2xl:mt-2 overflow-hidden rounded-xl border border-[#D9E2EC]">
                 <div className="overflow-x-auto">
@@ -2957,10 +4017,39 @@ export function ViewResignationModal({ open, item, onClose }) {
                     </thead>
 
                     <tbody>
-                      {approvalStages.map((stage) => (
+                      {approvalStages.map((stage) => {
+                        const viewable = canViewApprovalStage(stage);
+                        const editable = canEditApprovalStage(stage);
+
+                        return (
                         <tr
                           key={stage.id}
-                          className="border-b border-[#EEF2F6] last:border-b-0 hover:bg-[#FFF8F5]"
+                          role={viewable ? "button" : undefined}
+                          tabIndex={viewable ? 0 : undefined}
+                          title={
+                            viewable
+                              ? editable
+                                ? `Review ${stage.stage} resignation approval`
+                                : `View ${stage.stage} resignation approval details`
+                              : undefined
+                          }
+                          onClick={() => {
+                            if (viewable) openApprovalStage(stage);
+                          }}
+                          onKeyDown={(event) => {
+                            if (
+                              viewable &&
+                              (event.key === "Enter" || event.key === " ")
+                            ) {
+                              event.preventDefault();
+                              openApprovalStage(stage);
+                            }
+                          }}
+                          className={`border-b border-[#EEF2F6] last:border-b-0 transition ${
+                            viewable
+                              ? "cursor-pointer hover:bg-[#FFF0EB] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#FF5C28]/25"
+                              : "hover:bg-[#FFF8F5]"
+                          }`}
                         >
                           <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-xs font-extrabold text-[#042C51]">
                             {stage.stage}
@@ -2987,7 +4076,8 @@ export function ViewResignationModal({ open, item, onClose }) {
                             {stage.processedTime}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -3020,17 +4110,48 @@ export function ViewResignationModal({ open, item, onClose }) {
                       );
                     }
 
+                    if (isWordAttachmentFileName(attachment.name)) {
+                      return (
+                        <button
+                          key={attachment.id}
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await downloadAttachmentFile(
+                                attachment.url,
+                                attachment.name,
+                              );
+                            } catch (error) {
+                              console.error(
+                                "FAILED TO DOWNLOAD RESIGNATION ATTACHMENT:",
+                                error,
+                              );
+                            }
+                          }}
+                          title={`Download ${attachment.name}`}
+                          className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                        >
+                          <FileText
+                            size={14}
+                            className="shrink-0 text-[#7E8DA8]"
+                          />
+                          <span className="max-w-[240px] truncate">
+                            {attachment.name}
+                          </span>
+                        </button>
+                      );
+                    }
+
                     if (
-                      isPreviewableImageFileName(
-                        attachment.name,
-                      )
+                      getResignationAttachmentPreviewKind(attachment.name) !==
+                      "unsupported"
                     ) {
                       return (
                         <button
                           key={attachment.id}
                           type="button"
                           onClick={() =>
-                            setImagePreview({
+                            setAttachmentPreview({
                               open: true,
                               fileName: attachment.name,
                               fileUrl: attachment.url,
@@ -3096,11 +4217,26 @@ export function ViewResignationModal({ open, item, onClose }) {
           </button>
         </footer>
 
-        <ImageAttachmentPreviewModal
-          open={imagePreview.open}
-          fileName={imagePreview.fileName}
-          fileUrl={imagePreview.fileUrl}
-          onClose={closeImagePreview}
+        <AttachmentPreviewModal
+          open={attachmentPreview.open}
+          fileName={attachmentPreview.fileName}
+          fileUrl={attachmentPreview.fileUrl}
+          sibsId={employeeSibsId}
+          onClose={closeAttachmentPreview}
+        />
+
+        <ResignationStageApprovalModal
+          open={approvalStageModal.open}
+          item={item}
+          stage={approvalStageModal.stage}
+          onClose={() =>
+            setApprovalStageModal({
+              open: false,
+              stage: null,
+            })
+          }
+          onSaved={handleApprovalSaved}
+          onResult={handleApprovalResult}
         />
       </section>
     </div>,

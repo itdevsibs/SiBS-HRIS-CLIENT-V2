@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
 import {
   Search,
   CalendarDays,
@@ -932,7 +931,6 @@ export default function AttendanceTable() {
   const dateFrom = filterValues?.dateFrom || "";
   const dateTo = filterValues?.dateTo || "";
 
-  const navigate = useNavigate();
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
   const latestRequestIdRef = useRef(0);
@@ -948,7 +946,6 @@ export default function AttendanceTable() {
 
   const setLoadingRef = useRef(setLoading);
   const setPaginationRef = useRef(setPagination);
-  const navigateRef = useRef(navigate);
 
   const hrAdminView = isHrAdminUser(user);
   const superAdminView = isSuperAdminUser(user);
@@ -968,8 +965,7 @@ export default function AttendanceTable() {
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
-    navigateRef.current = navigate;
-  }, [setLoading, setPagination, navigate]);
+  }, [setLoading, setPagination]);
 
   const safePagination = pagination || {
     currentPage: page || 1,
@@ -1225,11 +1221,6 @@ export default function AttendanceTable() {
         if (cancelled || latestRequestIdRef.current !== requestId) return;
 
         if (!result?.success) {
-          if (result?.status === 401) {
-            navigateRef.current("/login");
-            return;
-          }
-
           setAttendance([]);
 
           setPaginationRef.current?.({

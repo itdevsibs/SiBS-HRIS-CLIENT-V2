@@ -716,23 +716,62 @@ export function getDashboardAnnouncements(user = {}) {
       ];
 }
 
-export function getDashboardHolidays(user = {}) {
-  return Array.isArray(user?.holidays) && user.holidays.length
-    ? user.holidays
-    : [
-        {
-          id: "hol-1",
-          name: "Ninoy Aquino Day",
-          type: "Special Non-Working Holiday",
-          date: "2026-08-21",
-          upcoming: true,
-        },
-        {
-          id: "hol-2",
-          name: "National Heroes Day",
-          type: "Regular Holiday",
-          date: "2026-08-31",
-          upcoming: true,
-        },
-      ];
+function getManilaDateKey(value = new Date()) {
+  const targetDate =
+    value instanceof Date && !Number.isNaN(value.getTime()) ? value : new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: MANILA_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(targetDate);
+  const record = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+
+  return `${record.year}-${record.month}-${record.day}`;
+}
+
+function normalizeDashboardHoliday(item = {}, index = 0) {
+  const date = firstValue(item?.date, item?.holidayDate, item?.holiday_date);
+  const isActive = item?.isActive ?? item?.is_active ?? true;
+
+  return {
+    id: firstValue(item?.id, item?.holidayId, item?.holiday_id, `holiday-${index}`),
+    name: firstValue(
+      item?.name,
+      item?.holidayName,
+      item?.holiday_name,
+      item?.title,
+      "Holiday",
+    ),
+    type: firstValue(item?.type, item?.holidayType, item?.holiday_type),
+    date: String(date || "").slice(0, 10),
+    isActive: Boolean(isActive),
+    upcoming: true,
+  };
+}
+
+export function getDashboardHolidays(source = {}, now = new Date()) {
+  const rows = Array.isArray(source)
+    ? source
+    : Array.isArray(source?.data)
+      ? source.data
+      : Array.isArray(source?.holidays)
+        ? source.holidays
+        : [];
+  const today = /^\d{4}-\d{2}-\d{2}$/.test(String(now || ""))
+    ? String(now)
+    : getManilaDateKey(now);
+
+  return rows
+    .map(normalizeDashboardHoliday)
+    .filter(
+      (holiday) =>
+        holiday.isActive &&
+        /^\d{4}-\d{2}-\d{2}$/.test(holiday.date) &&
+        holiday.date >= today,
+    )
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .slice(0, 5);
 }

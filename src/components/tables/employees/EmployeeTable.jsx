@@ -936,11 +936,6 @@ export default function EmployeeTable({
         if (cancelled) return;
 
         if (!result?.success) {
-          if (result?.status === 401) {
-            navigate("/login");
-            return;
-          }
-
           setEmployees([]);
           setPagination?.({
             currentPage: 1,

@@ -3,12 +3,19 @@ const ALLOWED_ROLES = new Set([
   "hr_admin",
   "hradmin",
   "manager",
+  "employee",
+  "team_leader",
+  "teamleader",
+  "tl",
+  "operations_manager",
+  "senior_operations_manager",
+  "som",
   "super_admin",
   "superadmin",
   "super_administrator",
 ]);
 
-const ALLOWED_ACCESS = new Set([2, 3, 5, 7]);
+const ALLOWED_ACCESS = new Set([2, 3, 5, 7, 8, 10]);
 
 function cleanText(value) {
   return String(value ?? "").trim();

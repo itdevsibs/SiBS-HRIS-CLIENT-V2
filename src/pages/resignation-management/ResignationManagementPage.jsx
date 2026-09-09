@@ -794,14 +794,8 @@ function ResignationAnalytics({ data = [], loading = false }) {
         role: "Final Operations Approval",
         status: getStageStatus(data, "som"),
       },
-      {
-        stage: "4",
-        approver: "HR / Admin",
-        role: "Clearance & Completion",
-        status: analytics.completed > 0 ? "In Progress" : "Pending",
-      },
     ],
-    [analytics.completed, data],
+    [data],
   );
 
   return (
@@ -815,7 +809,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
 
             <p className="sibs-text-xs font-semibold text-[#667085]">
               From employee email submission to TL/OM filing, approval request,
-              notice period, and HR/Admin completion.
+              notice period, and completion.
             </p>
           </div>
 
@@ -841,8 +835,8 @@ function ResignationAnalytics({ data = [], loading = false }) {
             <ResignationProcessStep
               number="2"
               icon={UserCheck}
-              title="Filed by TL / OM"
-              description="Supervisor applies resignation in the system."
+              title="Resignation Filed"
+              description="Authorized supervisor or manager files the resignation."
               done={analytics.total > 0}
             />
 
@@ -881,7 +875,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
             </h3>
 
             <p className="sibs-text-xs font-semibold text-[#667085]">
-              TL / OM / SOM / HR
+              TL / OM / SOM
             </p>
           </div>
 
@@ -1662,6 +1656,42 @@ export default function ResignationManagementPage() {
     user?.adminAccess || user?.admin_access || user?.admin_level || 0,
   );
 
+  const assignedAdminAccesses = Array.isArray(user?.assignedAccounts)
+    ? user.assignedAccounts
+        .map((account) =>
+          Number(
+            account?.adminAccess ??
+              account?.admin_access ??
+              account?.access ??
+              0,
+          ),
+        )
+        .filter((value) => Number.isFinite(value))
+    : [];
+
+  const operationsManagerRoleCandidates = [
+    userRole,
+    user?.position,
+    user?.positionName,
+    user?.position_name,
+    user?.jobTitle,
+    user?.job_title,
+    user?.designation,
+    user?.employeeRole,
+    user?.employee_role,
+  ]
+    .map(normalizeRoleKey)
+    .filter(Boolean);
+
+  const isOperationsManagerFiler =
+    userAdminAccess === 5 ||
+    assignedAdminAccesses.includes(5) ||
+    operationsManagerRoleCandidates.some((role) =>
+      ["manager", "operations_manager", "operationsmanager", "om"].includes(
+        role,
+      ),
+    );
+
   const isHrViewOnlyByUser =
     userRole === "hr" || userRole === "hr_admin" || userAdminAccess === 4;
 
@@ -1685,7 +1715,10 @@ export default function ResignationManagementPage() {
     lastWorkingDate: "",
     resignationType: "",
     reason: "",
-    remarks: "",
+    omPersonallySpoken: "",
+    omEmployeeRetained: "",
+    omActionTaken: "",
+    omRemarks: "",
     department: "",
     account: "",
     uploadedFile: null,
@@ -1878,6 +1911,25 @@ export default function ResignationManagementPage() {
     }
   }, []);
 
+  const handleResignationApprovalUpdated = useCallback(
+    async ({ resignationId } = {}) => {
+      const refreshed = await fetchResignations();
+
+      const updatedItem = refreshed.find((item) =>
+        String(
+          item?.id || item?.resignationId || item?.resignation_id || "",
+        ) === String(resignationId || ""),
+      );
+
+      if (updatedItem) {
+        setSelectedResignation(updatedItem);
+      }
+
+      return updatedItem || null;
+    },
+    [fetchResignations],
+  );
+
   useEffect(() => {
     fetchResignations();
   }, [fetchResignations]);
@@ -1963,6 +2015,10 @@ export default function ResignationManagementPage() {
       department: "",
       account: "",
       uploadedFile: null,
+      omPersonallySpoken: "",
+      omEmployeeRetained: "",
+      omActionTaken: "",
+      omRemarks: "",
       profilePictureUrl: "",
       profile_picture_url: "",
       profileFilename: "",
@@ -2049,6 +2105,9 @@ export default function ResignationManagementPage() {
       "pdf",
       "doc",
       "docx",
+      "xls",
+      "xlsx",
+      "csv",
       "jpg",
       "jpeg",
       "png",
@@ -2061,7 +2120,7 @@ export default function ResignationManagementPage() {
       ?.toLowerCase();
 
     if (!extension || !allowedExtensions.has(extension)) {
-      return "The email attachment must be PDF, DOC, DOCX, JPG, JPEG, PNG, HEIC, or HEIF.";
+      return "The email attachment must be PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, PNG, HEIC, or HEIF.";
     }
 
     if (Number(file?.size || 0) > 15 * 1024 * 1024) {
@@ -2072,8 +2131,21 @@ export default function ResignationManagementPage() {
       return "Please enter the resignation reason or email summary.";
     }
 
-    if (!String(resignationForm.remarks || "").trim()) {
-      return "Please enter TL / OM remarks before submitting.";
+    if (isOperationsManagerFiler) {
+      if (!["Yes", "No"].includes(resignationForm.omPersonallySpoken)) {
+        return "Please select whether you personally spoke with the employee.";
+      }
+
+      if (!["Yes", "No"].includes(resignationForm.omEmployeeRetained)) {
+        return "Please select whether the employee was retained.";
+      }
+
+      if (
+        resignationForm.omPersonallySpoken === "Yes" &&
+        !String(resignationForm.omActionTaken || "").trim()
+      ) {
+        return "Action Taken is required when Personally Spoken is Yes.";
+      }
     }
 
     const resignationDate = new Date(`${resignationForm.resignationDate}T00:00:00`);
@@ -2147,7 +2219,10 @@ export default function ResignationManagementPage() {
         lastWorkingDate: resignationForm.lastWorkingDate,
         resignationType: resignationForm.resignationType,
         reason: resignationForm.reason,
-        remarks: resignationForm.remarks,
+        omPersonallySpoken: resignationForm.omPersonallySpoken,
+        omEmployeeRetained: resignationForm.omEmployeeRetained,
+        omActionTaken: resignationForm.omActionTaken,
+        omRemarks: resignationForm.omRemarks,
         uploadedFile: resignationForm.uploadedFile || null,
       };
 
@@ -2317,11 +2392,14 @@ export default function ResignationManagementPage() {
         onClose={closeResignationFormModal}
         onChange={handleResignationChange}
         onSubmit={handleSubmitResignation}
+        showOperationsManagerApprovalFields={isOperationsManagerFiler}
       />
 
       <ViewResignationModal
         open={!!selectedResignation}
         item={selectedResignation}
+        currentUser={user}
+        onApprovalUpdated={handleResignationApprovalUpdated}
         onClose={() => setSelectedResignation(null)}
       />
 
