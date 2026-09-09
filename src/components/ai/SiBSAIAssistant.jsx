@@ -26,6 +26,13 @@ const SUGGESTED_PROMPTS = [
   "What is my schedule this week?",
 ];
 
+const DRAG_THRESHOLD = 6;
+const VIEWPORT_PADDING = 8;
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), Math.max(min, max));
+}
+
 function InsightList({ title, items, icon, tone = "default" }) {
   if (!items?.length) return null;
 
@@ -120,10 +127,14 @@ export default function SiBSAIAssistant({ enabled = true }) {
   const [conversationId, setConversationId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [triggerPosition, setTriggerPosition] = useState(null);
+  const [triggerDragging, setTriggerDragging] = useState(false);
 
   const triggerRef = useRef(null);
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
+  const dragStateRef = useRef(null);
+  const suppressTriggerClickRef = useRef(false);
 
   const visible = enabled && !userLoading && Boolean(user);
   const canSend = Boolean(question.trim()) && !submitting;
@@ -166,7 +177,134 @@ export default function SiBSAIAssistant({ enabled = true }) {
     });
   }, [messages, submitting, error, open]);
 
+  useEffect(() => {
+    function keepTriggerInsideViewport() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+
+      setTriggerPosition((current) => {
+        if (!current) return current;
+
+        const nextLeft = clamp(
+          current.left,
+          VIEWPORT_PADDING,
+          window.innerWidth - rect.width - VIEWPORT_PADDING,
+        );
+        const nextTop = clamp(
+          current.top,
+          VIEWPORT_PADDING,
+          window.innerHeight - rect.height - VIEWPORT_PADDING,
+        );
+
+        if (nextLeft === current.left && nextTop === current.top) {
+          return current;
+        }
+
+        return { left: nextLeft, top: nextTop };
+      });
+    }
+
+    window.addEventListener("resize", keepTriggerInsideViewport);
+
+    return () => {
+      window.removeEventListener("resize", keepTriggerInsideViewport);
+    };
+  }, []);
+
   if (!visible) return null;
+
+  function handleTriggerPointerDown(event) {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+      width: rect.width,
+      height: rect.height,
+      dragging: false,
+    };
+
+    suppressTriggerClickRef.current = false;
+    trigger.setPointerCapture?.(event.pointerId);
+  }
+
+  function handleTriggerPointerMove(event) {
+    const dragState = dragStateRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+    const distance = Math.hypot(deltaX, deltaY);
+
+    if (!dragState.dragging && distance < DRAG_THRESHOLD) return;
+
+    if (!dragState.dragging) {
+      dragState.dragging = true;
+      suppressTriggerClickRef.current = true;
+      setTriggerDragging(true);
+    }
+
+    event.preventDefault();
+
+    setTriggerPosition({
+      left: clamp(
+        dragState.startLeft + deltaX,
+        VIEWPORT_PADDING,
+        window.innerWidth - dragState.width - VIEWPORT_PADDING,
+      ),
+      top: clamp(
+        dragState.startTop + deltaY,
+        VIEWPORT_PADDING,
+        window.innerHeight - dragState.height - VIEWPORT_PADDING,
+      ),
+    });
+  }
+
+  function finishTriggerDrag(event, cancelled = false) {
+    const dragState = dragStateRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    suppressTriggerClickRef.current = cancelled
+      ? false
+      : Boolean(dragState.dragging);
+
+    const trigger = triggerRef.current;
+    if (trigger?.hasPointerCapture?.(event.pointerId)) {
+      trigger.releasePointerCapture(event.pointerId);
+    }
+
+    dragStateRef.current = null;
+    setTriggerDragging(false);
+  }
+
+  function handleTriggerPointerUp(event) {
+    finishTriggerDrag(event);
+  }
+
+  function handleTriggerPointerCancel(event) {
+    finishTriggerDrag(event, true);
+  }
+
+  function handleTriggerClick() {
+    if (suppressTriggerClickRef.current) {
+      suppressTriggerClickRef.current = false;
+      return;
+    }
+
+    setOpen(true);
+  }
 
   function handleClose() {
     setOpen(false);
@@ -240,12 +378,30 @@ export default function SiBSAIAssistant({ enabled = true }) {
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={handleTriggerClick}
+        onPointerDown={handleTriggerPointerDown}
+        onPointerMove={handleTriggerPointerMove}
+        onPointerUp={handleTriggerPointerUp}
+        onPointerCancel={handleTriggerPointerCancel}
         aria-label="Open Ask SiBS AI"
         aria-expanded={open}
-        className={`font-jakarta fixed bottom-5 right-5 z-[120] inline-flex items-center gap-2 rounded-2xl bg-[#042C51] px-4 py-3 sibs-text-xs font-extrabold text-white shadow-[0_14px_35px_rgba(4,44,81,0.28)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#0A3B67] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20 sm:bottom-6 sm:right-6 ${
-          open ? "pointer-events-none opacity-0" : "opacity-100"
-        }`}
+        style={
+          triggerPosition
+            ? {
+                left: `${triggerPosition.left}px`,
+                top: `${triggerPosition.top}px`,
+                right: "auto",
+                bottom: "auto",
+              }
+            : undefined
+        }
+        className={`font-jakarta fixed z-[120] inline-flex touch-none select-none items-center gap-2 rounded-2xl bg-[#042C51] px-4 py-3 sibs-text-xs font-extrabold text-white shadow-[0_14px_35px_rgba(4,44,81,0.28)] transition-[opacity,background-color,box-shadow,transform] duration-200 focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20 ${
+          triggerPosition ? "" : "bottom-5 right-5 sm:bottom-6 sm:right-6"
+        } ${
+          triggerDragging
+            ? "cursor-grabbing"
+            : "cursor-grab hover:-translate-y-0.5 hover:bg-[#0A3B67]"
+        } ${open ? "pointer-events-none opacity-0" : "opacity-100"}`}
       >
         <span className="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-[#FF5C28]">
           <Sparkles size={15} />

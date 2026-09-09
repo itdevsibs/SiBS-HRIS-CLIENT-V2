@@ -536,16 +536,30 @@ function formatCompactDate(value) {
 
   if (!raw) return "N/A";
 
-  const isoDate = raw.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
-  if (isoDate) return isoDate;
+  const dateOnlyMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+    const parsedDate = new Date(
+      Date.UTC(Number(year), Number(month) - 1, Number(day), 12),
+    );
+
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Manila",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(parsedDate);
+  }
 
   const parsedDate = new Date(raw);
   if (Number.isNaN(parsedDate.getTime())) return raw;
 
-  return new Intl.DateTimeFormat("en-CA", {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
     year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
   }).format(parsedDate);
 }
 
