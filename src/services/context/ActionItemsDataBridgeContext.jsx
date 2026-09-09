@@ -11,6 +11,30 @@ import { ActionItemsProvider } from "./ActionItemsContext";
 
 const SOURCE_REFRESH_EVENT = "ta-action-items-source-refresh-requested";
 const ACTION_ITEMS_ALLOWED_ACCESS = new Set([1, 2, 3, 6, 7]);
+const PUBLIC_ACTION_ITEMS_PATHS = [
+  "/",
+  "/login",
+  "/online-assessment",
+  "/apply",
+  "/recruitment/talent-pool/apply",
+  "/public/talent-pool/apply",
+  "/public/offer-response",
+  "/public/interview-date",
+  "/public/job-description",
+];
+
+function isPublicActionItemsPath(pathname = "") {
+  const normalizedPath = String(pathname || "/").trim() || "/";
+
+  return PUBLIC_ACTION_ITEMS_PATHS.some((publicPath) => {
+    if (publicPath === "/") return normalizedPath === "/";
+
+    return (
+      normalizedPath === publicPath ||
+      normalizedPath.startsWith(`${publicPath}/`)
+    );
+  });
+}
 
 function cleanArray(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
@@ -324,7 +348,11 @@ export default function ActionItemsDataBridge({ children }) {
   ]);
 
   const refreshLiveSources = useCallback(async () => {
-    if (userLoading || !user || !canLoadActionItems) {
+    const isPublicRoute =
+      typeof window !== "undefined" &&
+      isPublicActionItemsPath(window.location.pathname);
+
+    if (isPublicRoute || userLoading || !user || !canLoadActionItems) {
       return;
     }
 
