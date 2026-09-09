@@ -15,7 +15,9 @@ function lazyWithRetry(componentImport) {
     );
 
     try {
-      return await componentImport();
+      const importedModule = await componentImport();
+      window.sessionStorage.removeItem("sibs-page-has-been-force-refreshed");
+      return importedModule;
     } catch (error) {
       if (!pageHasAlreadyBeenForceRefreshed) {
         window.sessionStorage.setItem("sibs-page-has-been-force-refreshed", "true");
