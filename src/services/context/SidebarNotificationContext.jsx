@@ -19,6 +19,7 @@ import {
   sortNotificationsByNewest,
 } from "../../lib/utils/notificationFeed";
 import {
+  buildAuditNotificationActionState,
   canUseAuditNotifications,
   formatAuditNotificationTime,
   normalizeAuditNotificationsResponse,
@@ -344,9 +345,7 @@ export function SidebarNotificationProvider({ children }) {
               "STATUS_CHANGE",
               "RESIGN_REVIEW",
             ].includes(item.action);
-          const opensEmployeeResignationDetails =
-            ["resignation", "attrition"].includes(item.module) &&
-            item.targetPath === "/dashboard/employee";
+          const actionState = buildAuditNotificationActionState(item);
 
           return {
             id: item.id || `audit-${item.auditLogId}`,
@@ -365,14 +364,7 @@ export function SidebarNotificationProvider({ children }) {
               : Date.now(),
             actionLabel: getActionLabelByModule(item.module),
             actionPath: item.targetPath || "/approval-request",
-            ...(opensEmployeeResignationDetails
-              ? {
-                  actionState: {
-                    openResignationDetails: true,
-                    source: "resignation-notification",
-                  },
-                }
-              : {}),
+            ...(actionState ? { actionState } : {}),
           };
         });
 

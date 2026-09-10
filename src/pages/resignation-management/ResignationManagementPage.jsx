@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   CheckCircle2,
@@ -45,6 +46,7 @@ import {
   formatDate,
   getTodayDate,
 } from "../../components/layout/FormatDateTime";
+import { findResignationNotificationTarget } from "../../lib/utils/notifications/auditNotificationHelpers";
 
 const EDGE = "rounded-[10px]";
 const PANEL_BORDER = "border border-[#E1E7EF]";
@@ -1588,6 +1590,8 @@ function MobileMetric({ label, value }) {
 
 export default function ResignationManagementPage() {
   const { user } = useUser();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -1598,6 +1602,7 @@ export default function ResignationManagementPage() {
 
   const [resignations, setResignations] = useState([]);
   const [resignationLoading, setResignationLoading] = useState(false);
+  const [resignationsLoaded, setResignationsLoaded] = useState(false);
   const [selectedResignation, setSelectedResignation] = useState(null);
 
   const [managedEmployees, setManagedEmployees] = useState([]);
@@ -1875,6 +1880,7 @@ export default function ResignationManagementPage() {
       return [];
     } finally {
       setResignationLoading(false);
+      setResignationsLoaded(true);
     }
   }, []);
 
@@ -1900,6 +1906,52 @@ export default function ResignationManagementPage() {
   useEffect(() => {
     fetchResignations();
   }, [fetchResignations]);
+
+  useEffect(() => {
+    const navigationState = location.state;
+
+    if (
+      !navigationState?.openResignationDetails ||
+      navigationState?.source !== "resignation-review-notification" ||
+      resignationLoading ||
+      !resignationsLoaded
+    ) {
+      return;
+    }
+
+    const targetResignation = findResignationNotificationTarget(
+      resignations,
+      navigationState,
+    );
+
+    if (targetResignation) {
+      setSelectedResignation(targetResignation);
+    }
+
+    const remainingState = { ...navigationState };
+    delete remainingState.openResignationDetails;
+    delete remainingState.resignationId;
+    delete remainingState.employeeSibsId;
+    delete remainingState.employeeName;
+    delete remainingState.source;
+
+    navigate(
+      `${location.pathname}${location.search}${location.hash}`,
+      {
+        replace: true,
+        state: Object.keys(remainingState).length ? remainingState : null,
+      },
+    );
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    location.state,
+    navigate,
+    resignationLoading,
+    resignations,
+    resignationsLoaded,
+  ]);
 
   function forceUnlockPageScroll() {
     window.setTimeout(() => {

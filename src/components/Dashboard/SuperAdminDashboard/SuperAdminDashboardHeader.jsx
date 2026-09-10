@@ -1,5 +1,40 @@
 import { ArrowRight, RefreshCw, UserPlus, Users } from "lucide-react";
 
+import { useUser } from "@/services/context/UserContext";
+
+function cleanNamePart(value) {
+  return String(value ?? "").trim();
+}
+
+function getSuperAdminDisplayName(user = {}, fallback = "") {
+  const lastName = cleanNamePart(
+    user?.lastName ?? user?.last_name ?? user?.gy_emp_lname,
+  );
+  const firstName = cleanNamePart(
+    user?.firstName ?? user?.first_name ?? user?.gy_emp_fname,
+  );
+  const middleName = cleanNamePart(
+    user?.middleName ?? user?.middle_name ?? user?.gy_emp_mname,
+  );
+
+  if (lastName || firstName || middleName) {
+    const givenNames = [firstName, middleName].filter(Boolean).join(" ");
+
+    return [
+      lastName ? lastName.toUpperCase() : "",
+      givenNames ? givenNames.toUpperCase() : "",
+    ]
+      .filter(Boolean)
+      .join(lastName && givenNames ? ", " : "");
+  }
+
+  const cleanFallback = cleanNamePart(fallback);
+
+  return cleanFallback && !cleanFallback.includes("@")
+    ? cleanFallback
+    : "User";
+}
+
 export default function SuperAdminDashboardHeader({
   displayName,
   onAddUser,
@@ -7,6 +42,9 @@ export default function SuperAdminDashboardHeader({
   onRefresh,
   isManualRefreshing = false,
 }) {
+  const { user } = useUser() || {};
+  const resolvedDisplayName = getSuperAdminDisplayName(user, displayName);
+
   return (
     <section
       className="sibs-page-header-in sibs-page-card-in sibs-card font-jakarta relative overflow-hidden p-4 2xl:p-6"
@@ -29,7 +67,7 @@ export default function SuperAdminDashboardHeader({
 
           <p className="sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
             Welcome back,{" "}
-            <span className="font-extrabold text-sibs-navy">{displayName}</span>.
+            <span className="font-extrabold text-sibs-navy">{resolvedDisplayName}</span>.
             You have whole-system administrative permissions across all HRIS modules.
           </p>
         </div>
@@ -74,5 +112,3 @@ export default function SuperAdminDashboardHeader({
     </section>
   );
 }
-
-
