@@ -1399,7 +1399,6 @@ function ResignationTableCard({
                       <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Last Working Date</th>
                       <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Status</th>
                       <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[220px] whitespace-nowrap text-left">Reason</th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[170px] whitespace-nowrap text-center">Attachments</th>
                     </tr>
                   </thead>
 
@@ -1407,14 +1406,14 @@ function ResignationTableCard({
                     {loading ? (
                       Array.from({ length: 7 }).map((_, index) => (
                         <tr key={index}>
-                          <td colSpan={8} className="border-t border-[#EEF2F6] px-4 py-3.5">
+                          <td colSpan={7} className="border-t border-[#EEF2F6] px-4 py-3.5">
                             <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E9EEF5]" />
                           </td>
                         </tr>
                       ))
                     ) : pageData.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-5 py-16 text-center sibs-text-sm font-bold text-[#667085]">
+                        <td colSpan={7} className="px-5 py-16 text-center sibs-text-sm font-bold text-[#667085]">
                           No resignation records found.
                         </td>
                       </tr>
@@ -1424,7 +1423,6 @@ function ResignationTableCard({
                           key={item?.id || item?.resignationId || index}
                           item={item}
                           onView={() => onView(item)}
-                          onOpenAttachments={() => onOpenAttachments?.(item)}
                         />
                       ))
                     )}
@@ -1451,7 +1449,6 @@ function ResignationTableCard({
                       item={item}
                       index={index}
                       onView={() => onView(item)}
-                      onOpenAttachments={() => onOpenAttachments?.(item)}
                     />
                   ))}
                 </div>
@@ -1613,9 +1610,8 @@ function ResignationRow({ item, index = 0, onView }) {
   );
 }
 
-function ResignationMobileCard({ item, index = 0, onView, onOpenAttachments }) {
+function ResignationMobileCard({ item, index = 0, onView }) {
   const status = getResignationStatus(item);
-  const attachmentCount = getAttachmentCount(item);
   const reason = item?.reason || item?.remarks || "";
 
   return (
@@ -1656,20 +1652,6 @@ function ResignationMobileCard({ item, index = 0, onView, onOpenAttachments }) {
         </div>
       ) : null}
 
-      <div className="mt-3">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenAttachments?.();
-          }}
-          disabled={attachmentCount === 0}
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
-        >
-          <Paperclip size={14} />
-          {getAttachmentCountLabel(item)}
-        </button>
-      </div>
     </DataCard>
   );
 }

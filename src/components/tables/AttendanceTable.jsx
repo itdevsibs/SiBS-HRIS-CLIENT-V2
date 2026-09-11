@@ -17,6 +17,10 @@ import {
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate } from "@/components/layout/FormatDateTime";
 import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import {
+  sanitizeDisplayFullName,
+  sanitizeMiddleName,
+} from "../../lib/utils/employees/employeeNameDisplay.js";
 
 const PAGE_LIMIT = 15;
 const LATE_GRACE_MS = 60 * 1000;
@@ -836,27 +840,6 @@ function TimeIndicator({ value, label, tone = "neutral" }) {
   );
 }
 
-function MobileMetric({ label, value, tone = "navy" }) {
-  const valueTone = {
-    navy: "text-[#042C51]",
-    emerald: "text-emerald-600",
-    amber: "text-amber-600",
-    orange: "text-[#FF5C28]",
-    blue: "text-blue-600",
-  }[tone] || "text-[#042C51]";
-
-  return (
-    <div className="sibs-info-tile">
-      <p className="sibs-kicker">
-        {label}
-      </p>
-      <p className={`mt-1 text-xs font-extrabold tabular-nums ${valueTone}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
 function getLoginIndicator(item) {
   if (!item?.gy_tracker_login) {
     return { label: "No clock-in", tone: "neutral" };
@@ -1569,6 +1552,18 @@ export default function AttendanceTable() {
         </div>
 
         <div className="p-3 sm:p-5 2xl:p-6">
+          <div className="mt-3 block sm:hidden">
+            <button
+              type="button"
+              onClick={handleAttendanceSearchSubmit}
+              disabled={loading}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1D] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Search size={16} />
+              Apply Search
+            </button>
+          </div>
+
           <ResponsiveTableShell
             desktopContent={
               <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">

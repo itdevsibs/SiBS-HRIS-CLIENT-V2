@@ -2,6 +2,19 @@ import React from "react";
 import { ArrowRight, RefreshCw, UserPlus, Users } from "lucide-react";
 import { PageHeaderHero } from "@/components/ui";
 
+function getSafeDisplayName(value) {
+  if (typeof value === "string") {
+    const cleanValue = value.trim();
+    return cleanValue || "Super Admin";
+  }
+
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  return "Super Admin";
+}
+
 export default function SuperAdminDashboardHeader({
   displayName,
   onAddUser,
@@ -9,8 +22,7 @@ export default function SuperAdminDashboardHeader({
   onRefresh,
   isManualRefreshing = false,
 }) {
-  const { user } = useUser() || {};
-  const resolvedDisplayName = getSuperAdminDisplayName(user, displayName);
+  const safeDisplayName = getSafeDisplayName(displayName);
 
   return (
     <PageHeaderHero
@@ -19,7 +31,9 @@ export default function SuperAdminDashboardHeader({
       description={
         <>
           Welcome back,{" "}
-          <span className="font-extrabold text-sibs-navy">{displayName}</span>.
+          <span className="font-extrabold text-sibs-navy">
+            {safeDisplayName}
+          </span>.
           You have whole-system administrative permissions across all HRIS modules.
         </>
       }
