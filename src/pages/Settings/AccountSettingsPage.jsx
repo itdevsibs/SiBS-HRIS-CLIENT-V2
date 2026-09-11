@@ -1863,6 +1863,12 @@ function AccessModal({
 
       onClose();
       await onSaved();
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new Event("sibs-audit-notifications-refresh"),
+        );
+      }
     } catch (error) {
       openStatus(
         "error",

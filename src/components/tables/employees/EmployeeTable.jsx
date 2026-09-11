@@ -887,28 +887,11 @@ export default function EmployeeTable({
   }, [departmentOptions]);
 
   const accountDropdownOptions = useMemo(() => {
-    const backendOptions = (Array.isArray(accountOptions) ? accountOptions : [])
+    return (Array.isArray(accountOptions) ? accountOptions : [])
       .map(normalizeAccountOption)
-      .filter((option) => option.value && option.label);
-
-    const loadedOptions = employeeAccess?.isManager
-      ? []
-      : employees
-          .flatMap((employee) => getEmployeeAccounts(employee))
-          .filter((account) => account && account !== "Unassigned")
-          .map((account) => ({ label: account, value: account }));
-
-    const optionMap = new Map();
-
-    [...backendOptions, ...loadedOptions].forEach((option) => {
-      if (!option.value) return;
-      optionMap.set(option.value, option);
-    });
-
-    return [...optionMap.values()].sort((a, b) =>
-      String(a.label).localeCompare(String(b.label)),
-    );
-  }, [accountOptions, employeeAccess?.isManager, employees]);
+      .filter((option) => option.value && option.label)
+      .sort((a, b) => String(a.label).localeCompare(String(b.label)));
+  }, [accountOptions]);
 
   useEffect(() => {
     if (canRequestFilters) return;
