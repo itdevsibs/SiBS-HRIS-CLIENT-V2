@@ -16,13 +16,13 @@ function getSafeDisplayName(value) {
 }
 
 export default function SuperAdminDashboardHeader({
-  displayName,
+  displayName = "Super Admin",
   onAddUser,
   onOpenEmployees,
   onRefresh,
   isManualRefreshing = false,
 }) {
-  const safeDisplayName = getSafeDisplayName(displayName);
+  const headerDisplayName = displayName || "Super Admin";
 
   return (
     <PageHeaderHero
@@ -31,9 +31,7 @@ export default function SuperAdminDashboardHeader({
       description={
         <>
           Welcome back,{" "}
-          <span className="font-extrabold text-sibs-navy">
-            {safeDisplayName}
-          </span>.
+          <span className="font-extrabold text-sibs-navy">{headerDisplayName}</span>.
           You have whole-system administrative permissions across all HRIS modules.
         </>
       }
