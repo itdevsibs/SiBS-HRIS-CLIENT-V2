@@ -13,13 +13,10 @@ export default function DataCard({
   className = "",
   style,
   index = 0,
-  interactive,
   ...props
 }) {
-  const isClickable =
-    interactive !== undefined
-      ? Boolean(interactive && typeof onClick === "function")
-      : typeof onClick === "function";
+  const isClickable = typeof onClick === "function";
+  const isInteractive = interactive || isClickable;
 
   const handleKeyDown = isClickable
     ? (event) => {
