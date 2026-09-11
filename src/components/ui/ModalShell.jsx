@@ -76,7 +76,7 @@ export default function ModalShell({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
     >
       {/* Backdrop */}
       <div
@@ -87,7 +87,7 @@ export default function ModalShell({
 
       {/* Dialog container */}
       <div
-        className={`relative z-10 w-full ${maxWidth} overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-2xl sibs-modal-pop-in ${className}`}
+        className={`relative z-10 w-full ${maxWidth} max-sm:max-h-[92dvh] max-sm:rounded-b-none overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-2xl sibs-modal-pop-in ${className}`}
       >
         <span className="sibs-top-accent" aria-hidden="true" />
 

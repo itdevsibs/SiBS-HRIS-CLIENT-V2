@@ -368,35 +368,37 @@ function TalentPoolPageContent() {
             title="Talent Pool / Candidate Database"
             description="Store reusable candidate master profiles, import leads from CSV, and move qualified candidates to the pipeline."
             actions={
-              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-1.5 2xl:gap-2 sm:justify-end xl:flex-nowrap shrink-0">
-                <button
-                  type="button"
-                  onClick={handleRefreshPage}
-                  disabled={pageIsRefreshing}
-                  aria-label="Refresh"
-                  className="sibs-btn-icon"
-                >
-                  <RefreshCw
-                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      pageIsRefreshing ? "animate-spin text-sibs-orange" : ""
-                    }`}
-                  />
-                </button>
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                <div className="flex w-full items-center gap-2 sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleRefreshPage}
+                    disabled={pageIsRefreshing}
+                    aria-label="Refresh"
+                    className="sibs-btn-icon shrink-0"
+                  >
+                    <RefreshCw
+                      className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                        pageIsRefreshing ? "animate-spin text-sibs-orange" : ""
+                      }`}
+                    />
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={openPublicForm}
-                  className="sibs-btn-secondary w-full sm:w-auto"
-                >
-                  <ExternalLink size={14} />
-                  Public Form
-                </button>
+                  <button
+                    type="button"
+                    onClick={openPublicForm}
+                    className="sibs-btn-secondary flex-1 sm:flex-none sm:w-auto whitespace-nowrap"
+                  >
+                    <ExternalLink size={14} />
+                    Public Form
+                  </button>
+                </div>
 
                 <button
                   type="button"
                   onClick={openAddCandidateModal}
                   disabled={isSaving}
-                  className="sibs-btn-primary w-full sm:w-auto"
+                  className="sibs-btn-primary w-full sm:w-auto whitespace-nowrap"
                 >
                   <Plus size={15} />
                   Add Candidate
@@ -435,38 +437,38 @@ function TalentPoolPageContent() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
-              <TalentPoolTabs
-                activeTab={activeTab}
-                onChange={setActiveTab}
-                counts={tabCounts}
-              />
-
-              {activeTab === TALENT_POOL_TABS.DROP_OFF ? (
-                <div className="overflow-hidden rounded-b-xl border border-t-0 border-[#E6ECF2] bg-white p-4 sm:p-5">
-                  <DropOffListSection
-                    candidates={dropOffCandidates}
-                    isLoading={dropOffListLoading}
-                    loadError={dropOffListError}
-                    onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
-                  />
-                </div>
-              ) : activeTab === TALENT_POOL_TABS.LEADS_CONVERTED ? (
-                <TalentPoolTable
-                  candidates={convertedLeadCandidates}
-                  emptyTitle={activeTabCopy.title}
-                  emptyMessage={activeTabCopy.message}
-                  recordLabel="converted leads"
+            <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
+              <div className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+                <TalentPoolTabs
+                  activeTab={activeTab}
+                  onChange={setActiveTab}
+                  counts={tabCounts}
                 />
-              ) : (
-                <div className="relative z-[1]">
+
+                {activeTab === TALENT_POOL_TABS.DROP_OFF ? (
+                  <div className="p-4 sm:p-5">
+                    <DropOffListSection
+                      candidates={dropOffCandidates}
+                      isLoading={dropOffListLoading}
+                      loadError={dropOffListError}
+                      onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
+                    />
+                  </div>
+                ) : activeTab === TALENT_POOL_TABS.LEADS_CONVERTED ? (
+                  <TalentPoolTable
+                    candidates={convertedLeadCandidates}
+                    emptyTitle={activeTabCopy.title}
+                    emptyMessage={activeTabCopy.message}
+                    recordLabel="converted leads"
+                  />
+                ) : (
                   <TalentPoolTable
                     candidates={tabCandidates}
                     emptyTitle={activeTabCopy.title}
                     emptyMessage={activeTabCopy.message}
                   />
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </section>
 

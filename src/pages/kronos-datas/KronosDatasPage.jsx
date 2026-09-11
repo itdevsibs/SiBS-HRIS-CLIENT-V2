@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import { getKronosDatas } from "../../lib/axios/getKronosDatas";
-import { PageHeaderHero, TablePagination, TableEmptyRow } from "@/components/ui";
+import { PageHeaderHero, TablePagination, TableEmptyRow, DataCard, ResponsiveTableShell } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 const KRONOS_STATE_KEY = "kronosDatasPageState";
@@ -760,200 +759,185 @@ export default function KronosDatasPage() {
             ) : null}
 
             <div className="sibs-page-card-in font-jakarta" style={getAnimationStyle(60)}>
-              <div className="grid gap-3 p-4 lg:hidden">
-                {loading ? <MobileLoadingCards /> : null}
-
-                {!loading && records.length > 0
-                  ? records.map((employee, index) => {
-                      const rowNumber =
-                        (pagination.currentPage - 1) * pagination.limit +
-                        index +
-                        1;
-
-                      return (
-                        <article
-                          key={`mobile-${getEmployeeSibsId(employee)}-${rowNumber}`}
-                          className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-slate-400">
-                                #{rowNumber}
-                              </p>
-
-                              <h3 className="mt-1 truncate sibs-text-xs font-extrabold text-[#101828]">
-                                {formatFullName(employee) || "—"}
-                              </h3>
-
-                              <p className="mt-0.5 sibs-text-xs font-bold text-sibs-primary-1">
-                                {getEmployeeSibsId(employee)}
-                              </p>
-                            </div>
-
-                            <span className="inline-flex shrink-0 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 sibs-text-micro font-extrabold text-sibs-primary-1">
-                              {getEmployeeSite(employee)}
-                            </span>
-                          </div>
-
-                          <div className="mt-4 grid gap-2 sibs-text-xs">
-                            <div className="flex justify-between gap-3">
-                              <span className="font-bold text-slate-400">
-                                Email
-                              </span>
-                              <span className="text-right font-medium text-slate-700">
-                                {getEmployeeEmail(employee)}
-                              </span>
-                            </div>
-
-                            <div className="flex justify-between gap-3">
-                              <span className="font-bold text-slate-400">
-                                Contact Number
-                              </span>
-                              <span className="text-right font-medium text-slate-700">
-                                {getEmployeeContact(employee)}
-                              </span>
-                            </div>
-
-                            <div className="flex justify-between gap-3">
-                              <span className="font-bold text-slate-400">
-                                Department
-                              </span>
-                              <span className="text-right font-medium text-slate-700">
-                                {getEmployeeDepartment(employee)}
-                              </span>
-                            </div>
-
-                            <div className="flex justify-between gap-3">
-                              <span className="font-bold text-slate-400">
-                                Account
-                              </span>
-                              <span className="text-right font-medium text-slate-700">
-                                {getEmployeeAccount(employee)}
-                              </span>
-                            </div>
-
-                            <div className="flex justify-between gap-3">
-                              <span className="font-bold text-slate-400">
-                                Hire Date
-                              </span>
-                              <span className="text-right font-medium text-slate-700">
-                                {formatDate(getEmployeeHireDate(employee))}
-                              </span>
-                            </div>
-                          </div>
-                        </article>
-                      );
-                    })
-                  : null}
-
-                {!loading && records.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#D9E2EC] bg-white px-5 py-12 text-center sibs-text-xs font-medium text-slate-500">
-                    No Kronos employee records found.
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="hidden overflow-x-auto lg:block">
-                <table className="min-w-full divide-y divide-[#E6ECF2]">
-                  <thead className="bg-[#F8FAFC]">
-                    <tr>
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                        #
-                      </th>
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                        SIBS ID
-                      </th>
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                        Employee Name
-                      </th>
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                        Email
-                      </th>
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                        Contact Number
-                      </th>
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                        Department
-                      </th>
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                        Account
-                      </th>
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                        Site
-                      </th>
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                        Hire Date
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-[#EEF2F6] bg-white">
-                    {loading ? (
-                      <LoadingRows />
-                    ) : records.length > 0 ? (
-                      records.map((employee, index) => {
+              <ResponsiveTableShell
+                breakpoint="lg"
+                mobileContent={
+                  loading ? (
+                    <DataCard.Skeleton count={5} lines={3} />
+                  ) : records.length === 0 ? (
+                    <DataCard.Empty
+                      title="No Kronos Records Found"
+                      description="Adjust your search or filter parameters to see records."
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      {records.map((employee, index) => {
                         const rowNumber =
                           (pagination.currentPage - 1) * pagination.limit +
                           index +
                           1;
 
                         return (
-                          <tr
-                            key={`${getEmployeeSibsId(employee)}-${rowNumber}`}
-                            className="transition hover:bg-[#FFF8F5]"
+                          <DataCard
+                            key={`mobile-${getEmployeeSibsId(employee)}-${rowNumber}`}
+                            className="transition hover:border-sibs-orange/40 hover:shadow-md"
                           >
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-medium text-slate-500">
-                              {rowNumber}
-                            </td>
+                            <DataCard.Header
+                              title={formatFullName(employee) || "—"}
+                              subtitle={
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs font-bold text-sibs-orange tabular-nums">
+                                    {getEmployeeSibsId(employee)}
+                                  </span>
+                                  <span className="text-[11px] font-semibold text-slate-400">
+                                    #{rowNumber}
+                                  </span>
+                                </div>
+                              }
+                              badge={
+                                <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-sibs-primary-1">
+                                  {getEmployeeSite(employee)}
+                                </span>
+                              }
+                            />
 
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
-                              {getEmployeeSibsId(employee)}
-                            </td>
-
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
-                              <p className="m-0 max-w-[220px] truncate sibs-text-xs font-extrabold text-[#042C51]">
-                                {formatFullName(employee) || "—"}
-                              </p>
-                            </td>
-
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-medium text-slate-700">
-                              {getEmployeeEmail(employee)}
-                            </td>
-
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-medium text-slate-700">
-                              {getEmployeeContact(employee)}
-                            </td>
-
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
-                              {getEmployeeDepartment(employee)}
-                            </td>
-
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
-                              {getEmployeeAccount(employee)}
-                            </td>
-
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
-                              <span className="inline-flex rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-[#164E7A]">
-                                {getEmployeeSite(employee)}
+                            <DataCard.ContextRow>
+                              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                                {getEmployeeDepartment(employee)}
                               </span>
-                            </td>
+                              <span className="inline-flex items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-sibs-primary-1">
+                                {getEmployeeAccount(employee)}
+                              </span>
+                            </DataCard.ContextRow>
 
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#52637A]">
-                              {formatDate(getEmployeeHireDate(employee))}
-                            </td>
-                          </tr>
+                            <DataCard.Metrics cols={2}>
+                              <DataCard.MetricItem
+                                label="Email"
+                                value={getEmployeeEmail(employee)}
+                              />
+                              <DataCard.MetricItem
+                                label="Contact Number"
+                                value={getEmployeeContact(employee)}
+                              />
+                              <DataCard.MetricItem
+                                label="Hire Date"
+                                value={formatDate(getEmployeeHireDate(employee))}
+                              />
+                              <DataCard.MetricItem
+                                label="Site"
+                                value={getEmployeeSite(employee)}
+                              />
+                            </DataCard.Metrics>
+                          </DataCard>
                         );
-                      })
-                    ) : (
-                      <TableEmptyRow
-                        colSpan={9}
-                        title="No Kronos employee records found"
-                        description="Adjust your search or filter parameters to see records."
-                      />
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      })}
+                    </div>
+                  )
+                }
+                desktopContent={
+                  <div className="overflow-x-auto sibs-scrollbar">
+                    <table className="min-w-full divide-y divide-[#E6ECF2] bg-white text-left">
+                      <thead className="sticky top-0 z-10 bg-[#F5F7FA]">
+                        <tr className="text-xs font-extrabold uppercase tracking-wider text-[#174A7C]">
+                          <th className="px-3 2xl:px-4 py-3 text-left">
+                            #
+                          </th>
+                          <th className="px-3 2xl:px-4 py-3 text-left">
+                            SIBS ID
+                          </th>
+                          <th className="px-3 2xl:px-4 py-3 text-left">
+                            Employee Name
+                          </th>
+                          <th className="px-3 2xl:px-4 py-3 text-left">
+                            Email
+                          </th>
+                          <th className="px-3 2xl:px-4 py-3 text-left">
+                            Contact Number
+                          </th>
+                          <th className="px-3 2xl:px-4 py-3 text-left">
+                            Department
+                          </th>
+                          <th className="px-3 2xl:px-4 py-3 text-left">
+                            Account
+                          </th>
+                          <th className="px-3 2xl:px-4 py-3 text-left">
+                            Site
+                          </th>
+                          <th className="px-3 2xl:px-4 py-3 text-left">
+                            Hire Date
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody className="divide-y divide-[#EEF2F6] bg-white">
+                        {loading ? (
+                          <LoadingRows />
+                        ) : records.length > 0 ? (
+                          records.map((employee, index) => {
+                            const rowNumber =
+                              (pagination.currentPage - 1) * pagination.limit +
+                              index +
+                              1;
+
+                            return (
+                              <tr
+                                key={`${getEmployeeSibsId(employee)}-${rowNumber}`}
+                                className="transition hover:bg-[#FFF8F5]"
+                              >
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-medium text-slate-500">
+                                  {rowNumber}
+                                </td>
+
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
+                                  {getEmployeeSibsId(employee)}
+                                </td>
+
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5">
+                                  <p className="m-0 max-w-[220px] truncate sibs-text-xs font-extrabold text-[#042C51]">
+                                    {formatFullName(employee) || "—"}
+                                  </p>
+                                </td>
+
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-medium text-slate-700">
+                                  {getEmployeeEmail(employee)}
+                                </td>
+
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-medium text-slate-700">
+                                  {getEmployeeContact(employee)}
+                                </td>
+
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                                  {getEmployeeDepartment(employee)}
+                                </td>
+
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                                  {getEmployeeAccount(employee)}
+                                </td>
+
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5">
+                                  <span className="inline-flex rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-[#164E7A]">
+                                    {getEmployeeSite(employee)}
+                                  </span>
+                                </td>
+
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-semibold text-[#52637A]">
+                                  {formatDate(getEmployeeHireDate(employee))}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <TableEmptyRow
+                            colSpan={9}
+                            title="No Kronos employee records found"
+                            description="Adjust your search or filter parameters to see records."
+                          />
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              />
 
               <TablePagination
                 currentPage={pagination.currentPage}

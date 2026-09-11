@@ -13,8 +13,7 @@ import {
 
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
-import { getKronosAttendance } from "../../lib/axios/getKronosAttendance";
-import { PageHeaderHero, TablePagination } from "@/components/ui";
+import { PageHeaderHero, TablePagination, DataCard, ResponsiveTableShell } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 const KRONOS_ATTENDANCE_STATE_KEY = "kronosAttendancePageState";
@@ -1568,309 +1567,304 @@ export default function KronosAttendancePage() {
             ) : null}
 
             <div className="p-4 sm:p-6 font-jakarta">
-              <div className="hidden lg:block">
-                <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
-                  <div className="max-h-[580px] overflow-auto sibs-scrollbar">
-                    <table className="w-full min-w-[1480px] border-collapse bg-white">
-                      <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                        <tr>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            SIBS ID
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            Employee Name
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            Department
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            Account
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            Site
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            Tracker Date
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            Login
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            Start Break
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            End Break
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            Logout
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            WH
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            BH
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            OT
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            ATH
-                          </th>
-                          <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
+              <ResponsiveTableShell
+                breakpoint="lg"
+                mobileContent={
+                  loading ? (
+                    <DataCard.Skeleton count={5} lines={4} />
+                  ) : attendance.length === 0 ? (
+                    <DataCard.Empty
+                      title="No Attendance Records"
+                      description="No Kronos attendance records found."
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {attendance.map((item, index) => {
+                        const loginTime = formatTime(item.gy_tracker_login);
+                        const breakoutTime = formatTime(item.gy_tracker_breakout);
+                        const breakinTime = formatTime(item.gy_tracker_breakin);
+                        const logoutTime = formatTime(item.gy_tracker_logout);
 
-                      <tbody>
-                        {loading ? (
-                          Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                            <tr key={index}>
-                              <td
-                                colSpan={15}
-                                className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5"
-                              >
-                                <div className="h-5 w-full animate-pulse rounded bg-gray-200" />
-                              </td>
-                            </tr>
-                          ))
-                        ) : attendance.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={15}
-                              className="border-t border-[#f3f4f6] p-10 text-center sibs-text-sm font-bold text-gray-500"
-                            >
-                              No Kronos attendance records found.
-                            </td>
-                          </tr>
-                        ) : (
-                          attendance.map((item, index) => {
-                            const loginTime = formatTime(item.gy_tracker_login);
-                            const breakoutTime = formatTime(
-                              item.gy_tracker_breakout,
-                            );
-                            const breakinTime = formatTime(
-                              item.gy_tracker_breakin,
-                            );
-                            const logoutTime = formatTime(
-                              item.gy_tracker_logout,
-                            );
+                        return (
+                          <DataCard
+                            key={`${item.gy_tracker_id || item.gy_tracker_date || "mobile"}-${index}`}
+                            className="transition hover:border-sibs-orange/40 hover:shadow-md"
+                          >
+                            <DataCard.Header
+                              title={formatEmployeeName(item)}
+                              subtitle={
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs font-bold text-sibs-orange tabular-nums">
+                                    {item.gy_emp_code || "N/A"}
+                                  </span>
+                                  <span className="text-[11px] font-semibold text-slate-400">
+                                    {formatDate(item.gy_tracker_date)}
+                                  </span>
+                                </div>
+                              }
+                              badge={renderStatusBadge(item.gy_tracker_status)}
+                            />
 
-                            return (
-                              <tr
-                                key={`${
-                                  item.gy_tracker_id ||
-                                  item.gy_tracker_date ||
-                                  "row"
-                                }-${index}`}
-                                className="transition-all duration-200 hover:bg-[#FFF8F5]"
-                              >
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
-                                  {item.gy_emp_code || "—"}
-                                </td>
+                            <DataCard.ContextRow>
+                              <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                                {item.department || "No department"}
+                              </span>
+                              <span className="inline-flex items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-sibs-primary-1">
+                                {item.gy_emp_account || "No account"}
+                              </span>
+                              <span className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                {getAssignedSite(item)}
+                              </span>
+                            </DataCard.ContextRow>
 
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#042C51]">
-                                  {formatEmployeeName(item)}
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
-                                  {item.department || "—"}
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
-                                  {item.gy_emp_account || "—"}
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
-                                  {getAssignedSite(item)}
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
-                                  {formatDate(item.gy_tracker_date)}
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                            <DataCard.Metrics cols={2}>
+                              <DataCard.MetricItem
+                                label="Login"
+                                value={
                                   <TimeBadge
                                     value={loginTime}
-                                    className={getTimeBadgeClass(
-                                      loginTime,
-                                      item.login_status,
-                                    )}
+                                    className={getTimeBadgeClass(loginTime, item.login_status)}
                                   />
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
-                                  <TimeBadge
-                                    value={breakoutTime}
-                                    className={getTimeBadgeClass(
-                                      breakoutTime,
-                                      "",
-                                    )}
-                                  />
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
-                                  <TimeBadge
-                                    value={breakinTime}
-                                    className={getTimeBadgeClass(
-                                      breakinTime,
-                                      item.breakin_status,
-                                    )}
-                                  />
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                }
+                              />
+                              <DataCard.MetricItem
+                                label="Logout"
+                                value={
                                   <TimeBadge
                                     value={logoutTime}
-                                    className={getTimeBadgeClass(
-                                      logoutTime,
-                                      item.logout_status,
-                                    )}
+                                    className={getTimeBadgeClass(logoutTime, item.logout_status)}
                                   />
-                                </td>
+                                }
+                              />
+                              <DataCard.MetricItem
+                                label="Break Out"
+                                value={
+                                  <TimeBadge
+                                    value={breakoutTime}
+                                    className={getTimeBadgeClass(breakoutTime, "")}
+                                  />
+                                }
+                              />
+                              <DataCard.MetricItem
+                                label="Break In"
+                                value={
+                                  <TimeBadge
+                                    value={breakinTime}
+                                    className={getTimeBadgeClass(breakinTime, item.breakin_status)}
+                                  />
+                                }
+                              />
+                              <DataCard.MetricItem label="WH" value={getWorkHours(item)} />
+                              <DataCard.MetricItem label="BH" value={item.gy_tracker_bh ?? "—"} />
+                              <DataCard.MetricItem label="OT" value={item.gy_tracker_ot ?? "—"} />
+                              <DataCard.MetricItem label="ATH" value={item.gy_tracker_ath ?? "—"} />
+                            </DataCard.Metrics>
+                          </DataCard>
+                        );
+                      })}
+                    </div>
+                  )
+                }
+                desktopContent={
+                  <div>
+                    <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
+                      <div className="max-h-[580px] overflow-auto sibs-scrollbar">
+                        <table className="w-full min-w-[1480px] border-collapse bg-white">
+                          <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                            <tr>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                SIBS ID
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                Employee Name
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                Department
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                Account
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                Site
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                Tracker Date
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                Login
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                Start Break
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                End Break
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                Logout
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                WH
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                BH
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                OT
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                ATH
+                              </th>
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                                Status
+                              </th>
+                            </tr>
+                          </thead>
 
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold text-[#042C51] tabular-nums">
-                                  {getWorkHours(item)}
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
-                                  {item.gy_tracker_bh ?? "—"}
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
-                                  {item.gy_tracker_ot ?? "—"}
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
-                                  {item.gy_tracker_ath ?? "—"}
-                                </td>
-
-                                <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
-                                  {renderStatusBadge(item.gy_tracker_status)}
+                          <tbody>
+                            {loading ? (
+                              Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                                <tr key={index}>
+                                  <td
+                                    colSpan={15}
+                                    className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5"
+                                  >
+                                    <div className="h-5 w-full animate-pulse rounded bg-gray-200" />
+                                  </td>
+                                </tr>
+                              ))
+                            ) : attendance.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={15}
+                                  className="border-t border-[#f3f4f6] p-10 text-center sibs-text-sm font-bold text-gray-500"
+                                >
+                                  No Kronos attendance records found.
                                 </td>
                               </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
+                            ) : (
+                              attendance.map((item, index) => {
+                                const loginTime = formatTime(item.gy_tracker_login);
+                                const breakoutTime = formatTime(
+                                  item.gy_tracker_breakout,
+                                );
+                                const breakinTime = formatTime(
+                                  item.gy_tracker_breakin,
+                                );
+                                const logoutTime = formatTime(
+                                  item.gy_tracker_logout,
+                                );
+
+                                return (
+                                  <tr
+                                    key={`${
+                                      item.gy_tracker_id ||
+                                      item.gy_tracker_date ||
+                                      "row"
+                                    }-${index}`}
+                                    className="transition hover:bg-[#F8FAFC]"
+                                  >
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
+                                      {item.gy_emp_code || "—"}
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5">
+                                      <p className="m-0 max-w-[220px] truncate sibs-text-xs font-extrabold text-[#042C51]">
+                                        {formatEmployeeName(item)}
+                                      </p>
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                                      {item.department || "—"}
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                                      {item.gy_emp_account || "—"}
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5">
+                                      <span className="inline-flex rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-[#164E7A]">
+                                        {getAssignedSite(item)}
+                                      </span>
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#52637A]">
+                                      {formatDate(item.gy_tracker_date)}
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                      <TimeBadge
+                                        value={loginTime}
+                                        className={getTimeBadgeClass(
+                                          loginTime,
+                                          item.login_status,
+                                        )}
+                                      />
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                      <TimeBadge
+                                        value={breakoutTime}
+                                        className={getTimeBadgeClass(
+                                          breakoutTime,
+                                          "",
+                                        )}
+                                      />
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                      <TimeBadge
+                                        value={breakinTime}
+                                        className={getTimeBadgeClass(
+                                          breakinTime,
+                                          item.breakin_status,
+                                        )}
+                                      />
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                      <TimeBadge
+                                        value={logoutTime}
+                                        className={getTimeBadgeClass(
+                                          logoutTime,
+                                          item.logout_status,
+                                        )}
+                                      />
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold text-[#042C51] tabular-nums">
+                                      {getWorkHours(item)}
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
+                                      {item.gy_tracker_bh ?? "—"}
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
+                                      {item.gy_tracker_ot ?? "—"}
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
+                                      {item.gy_tracker_ath ?? "—"}
+                                    </td>
+
+                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                      {renderStatusBadge(item.gy_tracker_status)}
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+                      Scroll horizontally to view all Kronos attendance fields.
+                    </p>
                   </div>
-                </div>
-
-                <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-                  Scroll horizontally to view all Kronos attendance fields.
-                </p>
-              </div>
-
-              <div className="block lg:hidden">
-                {loading ? (
-                  <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
-                    Loading...
-                  </div>
-                ) : attendance.length === 0 ? (
-                  <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
-                    No Kronos attendance records found.
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {attendance.map((item, index) => {
-                      const loginTime = formatTime(item.gy_tracker_login);
-                      const breakoutTime = formatTime(item.gy_tracker_breakout);
-                      const breakinTime = formatTime(item.gy_tracker_breakin);
-                      const logoutTime = formatTime(item.gy_tracker_logout);
-
-                      return (
-                        <div
-                          key={`${
-                            item.gy_tracker_id ||
-                            item.gy_tracker_date ||
-                            "mobile"
-                          }-${index}`}
-                          className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="m-0 text-xs font-semibold text-sibs-tertiary-5">
-                                {item.gy_emp_code || "N/A"}
-                              </p>
-
-                              <h3 className="m-0 text-sm font-bold leading-tight text-sibs-primary-1">
-                                {formatEmployeeName(item)}
-                              </h3>
-
-                              <p className="mt-1 text-xs font-semibold text-[#344054]">
-                                {item.department || "No department"} /{" "}
-                                {item.gy_emp_account || "No account"} /{" "}
-                                {getAssignedSite(item)}
-                              </p>
-
-                              <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-                                {formatDate(item.gy_tracker_date)}
-                              </p>
-                            </div>
-
-                            <div className="shrink-0">
-                              {renderStatusBadge(item.gy_tracker_status)}
-                            </div>
-                          </div>
-
-                          <div className="mt-4 grid grid-cols-2 gap-3">
-                            <MobileMetric
-                              label="Login"
-                              value={loginTime}
-                              className={getTimeBadgeClass(
-                                loginTime,
-                                item.login_status,
-                              )}
-                            />
-
-                            <MobileMetric
-                              label="Logout"
-                              value={logoutTime}
-                              className={getTimeBadgeClass(
-                                logoutTime,
-                                item.logout_status,
-                              )}
-                            />
-
-                            <MobileMetric
-                              label="Start Break"
-                              value={breakoutTime}
-                              className={getTimeBadgeClass(breakoutTime, "")}
-                            />
-
-                            <MobileMetric
-                              label="End Break"
-                              value={breakinTime}
-                              className={getTimeBadgeClass(
-                                breakinTime,
-                                item.breakin_status,
-                              )}
-                            />
-
-                            <MobileMetric label="WH" value={getWorkHours(item)} />
-
-                            <MobileMetric
-                              label="BH"
-                              value={item.gy_tracker_bh ?? "—"}
-                            />
-
-                            <MobileMetric
-                              label="OT"
-                              value={item.gy_tracker_ot ?? "—"}
-                            />
-
-                            <MobileMetric
-                              label="ATH"
-                              value={item.gy_tracker_ath ?? "—"}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                }
+              />
 
               <TablePagination
                 currentPage={currentPage}

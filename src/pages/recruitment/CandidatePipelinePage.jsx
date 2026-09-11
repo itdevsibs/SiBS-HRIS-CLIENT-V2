@@ -34,6 +34,7 @@ import {
   filterDropOffCandidates,
   isDropOffCandidate,
 } from "../../lib/utils/recruitment/dropOffCandidates";
+import { PageHeaderHero } from "@/components/ui";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -743,49 +744,38 @@ export default function CandidatePipelinePage() {
 
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm sm:p-5 2xl:p-6 md:flex-row md:items-center"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
+          <PageHeaderHero
+            kicker="Recruitment Lifecycle"
+            title="Candidate Pipeline"
+            description="Stage-by-stage applicant progress engine. Review PRFs, issue online assessments, schedule interviews, process offers, and track onboarding conversions."
+            actions={
+              <>
+                <button
+                  type="button"
+                  onClick={handleRefreshPage}
+                  disabled={isLoading}
+                  title="Refresh pipeline data"
+                  aria-label="Refresh pipeline data"
+                  className="sibs-btn-icon"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      isLoading ? "animate-spin text-sibs-orange" : ""
+                    }`}
+                  />
+                </button>
 
-            <div className="mt-0.5 min-w-0">
-              <div className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
-                <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
-                Recruitment Lifecycle
-              </div>
-
-              <h1 className="font-heading mt-1 break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                Candidate Pipeline
-              </h1>
-
-              <p className="mt-0.5 max-w-3xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-                Stage-by-stage applicant progress engine. Review PRFs, issue online assessments, schedule interviews, process offers, and track onboarding conversions.
-              </p>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2.5">
-              <button
-                type="button"
-                onClick={handleRefreshPage}
-                disabled={isLoading}
-                title="Refresh pipeline data"
-                aria-label="Refresh pipeline data"
-                className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-sm outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${isLoading ? "animate-spin text-sibs-orange" : ""}`} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate("/recruitment/talent-pool")}
-                className="sibs-button-primary inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover active:scale-[0.98]"
-              >
-                <Users size={15} />
-                Sourced Talent Pool
-              </button>
-            </div>
-          </section>
+                <button
+                  type="button"
+                  onClick={() => navigate("/recruitment/talent-pool")}
+                  className="sibs-btn-primary max-sm:flex-1"
+                >
+                  <Users size={15} />
+                  Sourced Talent Pool
+                </button>
+              </>
+            }
+          />
 
           {loadError ? (
             <section
@@ -853,7 +843,7 @@ export default function CandidatePipelinePage() {
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-1 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1">
                   <button
                     type="button"
@@ -895,7 +885,7 @@ export default function CandidatePipelinePage() {
               </div>
 
               {pageView === "pipeline" ? (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
                     Sub-View:
                   </span>

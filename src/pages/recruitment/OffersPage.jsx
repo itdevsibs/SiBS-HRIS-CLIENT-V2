@@ -14,7 +14,6 @@ import OfferHeader from "../../components/recruitment/offers/OfferHeader";
 import OfferSummaryCards from "../../components/recruitment/offers/OfferSummaryCards";
 import OfferFilters from "../../components/recruitment/offers/OfferFilters";
 import OfferRecordsTable from "../../components/recruitment/offers/OfferRecordsTable";
-import OfferMobileCards from "../../components/recruitment/offers/OfferMobileCards";
 import OfferProcessRule from "../../components/recruitment/offers/OfferProcessRule";
 import OfferDetailsModal from "../../components/modals/offers/OfferDetailsModal";
 import StatusModal from "../../components/modals/StatusModal";
@@ -561,18 +560,6 @@ export default function OffersPage() {
                     : "No offered candidates found from Candidate Pipeline."
                 }
               />
-
-              <div className="p-4 sm:p-5 lg:hidden">
-                <OfferMobileCards
-                  offersOverride={visibleOffers}
-                  routeFilterActive={Boolean(routeCandidate)}
-                  emptyMessage={
-                    routeCandidate
-                      ? "No offer record was found for the selected candidate."
-                      : "No offered candidates found from Candidate Pipeline."
-                  }
-                />
-              </div>
             </div>
           </section>
 

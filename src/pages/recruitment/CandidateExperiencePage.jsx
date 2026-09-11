@@ -1346,7 +1346,7 @@ export default function CandidateExperiencePage() {
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      isRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                      isRefreshing ? "animate-spin text-sibs-orange" : ""
                     }`}
                   />
                 </button>
@@ -1354,7 +1354,7 @@ export default function CandidateExperiencePage() {
                 <button
                   type="button"
                   onClick={handleOpenAddModal}
-                  className="sibs-btn-primary"
+                  className="sibs-btn-primary max-sm:flex-1"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                   Add Experience Record
@@ -1767,7 +1767,7 @@ export default function CandidateExperiencePage() {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 totalRecords={filteredRecords.length}
-                loadedCount={pageRecords.length}
+                loadedCount={paginatedRecords.length}
                 recordLabel="candidate experience records"
                 onPageChange={(nextPage) => handlePageChange(nextPage)}
               />

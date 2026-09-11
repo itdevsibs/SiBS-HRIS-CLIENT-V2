@@ -4,6 +4,7 @@ import {
   ReceiptText,
   UserRound,
 } from "lucide-react";
+import { DataCard } from "@/components/ui";
 
 function formatCurrency(value) {
   const amount = Number(value || 0);
@@ -56,27 +57,6 @@ function getSourceStatusClass(source) {
   return "border-gray-200 bg-gray-50 text-gray-600";
 }
 
-function MetricTile({
-  label,
-  value,
-  valueClassName = "text-[#042C51]",
-}) {
-  return (
-    <div className="rounded-[10px] border border-[#EEF2F6] bg-[#F8FAFC] p-3">
-      <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-        {label}
-      </p>
-
-      <p
-        className={`mt-1 truncate text-xs font-extrabold ${valueClassName}`}
-        title={String(value)}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
 export default function SourcingAnalyticsMobileCard({
   source,
   onView,
@@ -87,88 +67,71 @@ export default function SourcingAnalyticsMobileCard({
       : "—";
 
   return (
-    <button
-      type="button"
+    <DataCard
+      interactive
       onClick={() => onView?.(source)}
-      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm outline-none transition hover:border-[#FF5C28]/35 hover:bg-[#FFFDFB] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40"
-      aria-label={`View sourcing channel ${
-        source?.source || ""
-      }`}
+      aria-label={`View sourcing channel ${source?.source || ""}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-extrabold leading-5 text-[#042C51]">
-            {source?.source || "—"}
-          </h3>
+      <DataCard.Header
+        title={source?.source || "—"}
+        subtitle={
+          <span className="flex items-center gap-1.5 truncate text-[10px] font-semibold text-[#667085]">
+            <ReceiptText size={12} className="shrink-0" />
+            {source?.costEntries?.length || 0} recorded cost entries
+          </span>
+        }
+        badge={
+          <span
+            className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-extrabold leading-none ${getSourceStatusClass(
+              source,
+            )}`}
+          >
+            {getSourceStatus(source)}
+          </span>
+        }
+      />
 
-          <p className="mt-1 flex items-center gap-1.5 truncate text-[10px] font-semibold text-[#667085]">
-            <ReceiptText size={12} />
-            {source?.costEntries?.length || 0} recorded
-            cost entries
-          </p>
-        </div>
-
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-extrabold leading-none ${getSourceStatusClass(
-            source,
-          )}`}
-        >
-          {getSourceStatus(source)}
-        </span>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <MetricTile
+      <DataCard.Metrics cols={4}>
+        <DataCard.MetricItem
           label="Applicants"
-          value={Number(
-            source?.volume || 0,
-          ).toLocaleString("en-PH")}
+          value={Number(source?.volume || 0).toLocaleString("en-PH")}
         />
-
-        <MetricTile
+        <DataCard.MetricItem
           label="Hired"
-          value={Number(
-            source?.hired || 0,
-          ).toLocaleString("en-PH")}
-          valueClassName="text-emerald-600"
+          value={Number(source?.hired || 0).toLocaleString("en-PH")}
+          valueClassName="text-emerald-600 font-extrabold"
         />
-
-        <MetricTile
+        <DataCard.MetricItem
           label="Source Cost"
           value={formatCurrency(source?.sourceCost)}
         />
-
-        <MetricTile
+        <DataCard.MetricItem
           label="Cost / Hire"
           value={costPerHire}
-          valueClassName="text-[#FF5C28]"
+          valueClassName="text-[#FF5C28] font-extrabold"
         />
-      </div>
+      </DataCard.Metrics>
 
-      <div className="mt-3 rounded-[10px] border border-[#EEF2F6] bg-white px-3 py-2.5">
+      <div className="mt-3 rounded-[10px] border border-[#EEF2F6] bg-white px-3 py-2">
         <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-          <UserRound size={12} />
+          <UserRound size={12} className="shrink-0" />
           Latest Applicant
         </p>
-
-        <p className="mt-1 truncate text-xs font-bold text-[#475467]">
+        <p className="mt-0.5 truncate text-xs font-bold text-[#475467]">
           {source?.latestCandidate || "—"}
         </p>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#EEF2F6] pt-3">
+      <DataCard.Footer>
         <p className="text-[10px] font-extrabold text-[#042C51]">
-          Conversion:{" "}
-          {Number(
-            source?.conversionRate || 0,
-          ).toFixed(1)}%
+          Conversion: {Number(source?.conversionRate || 0).toFixed(1)}%
         </p>
 
         <p className="flex items-center gap-1.5 text-[10px] font-semibold text-[#667085]">
-          <CalendarDays size={12} />
+          <CalendarDays size={12} className="shrink-0" />
           {formatDate(source?.lastActivity)}
         </p>
-      </div>
-    </button>
+      </DataCard.Footer>
+    </DataCard>
   );
 }

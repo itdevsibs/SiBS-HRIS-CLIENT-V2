@@ -14,9 +14,17 @@ export function useHeader() {
 
 const HeaderProvider = ({ children }) => {
   const [adminLogin, setAdminLogin] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
-    <HeaderContext.Provider value={{ adminLogin, setAdminLogin }}>
+    <HeaderContext.Provider
+      value={{
+        adminLogin,
+        setAdminLogin,
+        mobileSidebarOpen,
+        setMobileSidebarOpen,
+      }}
+    >
       {children}
     </HeaderContext.Provider>
   );

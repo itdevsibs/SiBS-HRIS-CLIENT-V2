@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Eye, Check, X, History, FileText } from "lucide-react";
 import { useOffers } from "../../../services/context/OffersContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
+import { ResponsiveTableShell } from "@/components/ui";
+import OfferMobileCards from "./OfferMobileCards";
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import {
   getLatestNegotiationSummary,
@@ -43,10 +45,10 @@ function EvaluationScoreLines({ offer }) {
         ["Final Interview", scores.finalInterview.display],
       ].map(([label, value]) => (
         <div key={label} className="flex min-w-0 items-center justify-between gap-3">
-          <span className="truncate text-[10px] font-bold text-[#667085]">
+          <span className="truncate text-[10px] font-bold text-sibs-muted">
             {label}
           </span>
-          <span className="shrink-0 text-[11px] font-extrabold text-[#042C51]">
+          <span className="shrink-0 text-[11px] font-extrabold tabular-nums text-sibs-navy">
             {value}
           </span>
         </div>
@@ -61,18 +63,18 @@ function NegotiationSummary({ offer, onViewHistory }) {
   return (
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="rounded-full border border-blue-100 bg-[#EAF2FB] px-2 py-0.5 text-[9px] font-extrabold uppercase text-[#042C51]">
+        <span className="rounded-full border border-blue-100 bg-[#EAF2FB] px-2 py-0.5 text-[9px] font-extrabold uppercase tabular-nums text-sibs-navy">
           Version {summary.versionNumber}
         </span>
 
-        <span className="truncate text-[10px] font-extrabold text-[#475467]">
+        <span className="truncate text-[10px] font-extrabold text-sibs-secondary">
           {summary.hasNegotiation ? summary.status : "Original Offer"}
         </span>
       </div>
 
       <p
         title={summary.remark || "No negotiation history"}
-        className="mt-1 line-clamp-2 text-[10px] font-semibold leading-4 text-[#667085]"
+        className="mt-1 line-clamp-2 text-[10px] font-semibold leading-4 text-sibs-muted"
       >
         {summary.remark || "No negotiation history"}
       </p>
@@ -80,7 +82,7 @@ function NegotiationSummary({ offer, onViewHistory }) {
       <button
         type="button"
         onClick={onViewHistory}
-        className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-extrabold text-[#042C51] transition hover:text-[#FF5C28]"
+        className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-extrabold text-sibs-navy transition hover:text-sibs-orange"
       >
         <History size={12} />
         View History
@@ -136,9 +138,16 @@ export default function OfferRecordsTable({
 
   return (
     <div className="p-3.5 font-jakarta sm:p-4 2xl:p-5">
-      <div className="hidden lg:block">
-        <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white">
-          <table className="w-full min-w-[1180px] table-fixed border-separate border-spacing-0 text-left">
+      <ResponsiveTableShell
+        mobileContent={
+          <OfferMobileCards
+            offersOverride={displayedOffers}
+            emptyMessage={emptyMessage}
+          />
+        }
+        desktopContent={
+          <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white">
+            <table className="w-full min-w-[1180px] table-fixed border-separate border-spacing-0 text-left">
             <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="sibs-data-table-head-row">
                 <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[18%] text-left">Candidate</th>
@@ -173,43 +182,43 @@ export default function OfferRecordsTable({
                       className="sibs-page-card-in cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25"
                       style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                     >
-                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                      <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <div className="min-w-0">
                           <p
                             title={offer.candidateName}
-                            className="min-w-0 truncate text-xs font-extrabold text-[#042C51]"
+                            className="min-w-0 truncate sibs-text-xs font-extrabold text-sibs-navy"
                           >
                             {offer.candidateName || "—"}
                           </p>
                           <p
                             title={`${offer.offerId || "—"} • ${offer.candidateId || "—"}`}
-                            className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]"
+                            className="mt-0.5 truncate text-[10px] 2xl:text-[10.5px] font-semibold tabular-nums text-sibs-muted"
                           >
                             {offer.offerId || "—"} • {offer.candidateId || "—"}
                           </p>
                         </div>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                      <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <p
                           title={offer.roleTitle}
-                          className="truncate text-xs font-bold text-[#344054]"
+                          className="truncate sibs-text-xs font-extrabold text-sibs-secondary"
                         >
                           {offer.roleTitle || "—"}
                         </p>
                         <p
                           title={offer.account}
-                          className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]"
+                          className="mt-0.5 truncate text-[10px] 2xl:text-[10.5px] font-semibold text-sibs-muted"
                         >
                           {offer.account || "—"}
                         </p>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                      <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <EvaluationScoreLines offer={offer} />
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                      <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <NegotiationSummary
                           offer={offer}
                           onViewHistory={(event) => {
@@ -219,7 +228,7 @@ export default function OfferRecordsTable({
                         />
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
+                      <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
                         <span
                           title={approvalStatus}
                           className={`mx-auto inline-flex h-7 max-w-[195px] items-center justify-center rounded-lg border px-2.5 text-center text-[10px] font-extrabold leading-none ${getStatusClass(
@@ -232,16 +241,16 @@ export default function OfferRecordsTable({
                         </span>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                      <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <p
                           title={offer.owner}
-                          className="truncate text-xs font-semibold text-[#344054]"
+                          className="truncate sibs-text-xs font-semibold text-sibs-secondary"
                         >
                           {offer.owner || "—"}
                         </p>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-3 2xl:px-4 py-2 2xl:py-2.5 text-right align-middle">
+                      <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-right align-middle">
                         <div
                           className="flex min-w-0 items-center justify-end gap-1.5"
                           onClick={(event) => event.stopPropagation()}
@@ -249,7 +258,7 @@ export default function OfferRecordsTable({
                           <button
                             type="button"
                             onClick={() => openOffer(offer)}
-                            className="inline-flex h-8 2xl:h-8.5 w-8 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                            className="inline-flex h-8 2xl:h-8.5 w-8 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-[#FFF8F5] hover:text-sibs-orange"
                             title="View offer details"
                           >
                             <Eye size={15} />
@@ -304,7 +313,8 @@ export default function OfferRecordsTable({
             </tbody>
           </table>
         </div>
-      </div>
+        }
+      />
 
       <PaginationTable
         showSearch={false}

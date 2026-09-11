@@ -13,7 +13,7 @@ import {
 
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
-import { TableEmptyRow } from "@/components/ui";
+import { TableEmptyRow, DataCard, ResponsiveTableShell } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 
@@ -626,7 +626,7 @@ function LeaveDetailsModal({
 
   return createPortal(
     <div
-      className={`sibs-modal-blur fixed inset-0 z-[999999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4 ${
+      className={`sibs-modal-blur fixed inset-0 z-[999999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4 max-sm:items-end max-sm:p-0 ${
         isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
       }`}
       onMouseDown={(event) => {
@@ -639,7 +639,7 @@ function LeaveDetailsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="leave-details-title"
-        className={`flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[700px] 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-white font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)] ${
+        className={`flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[700px] 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-white font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)] max-sm:max-h-[92dvh] max-sm:rounded-b-none ${
           isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
         }`}
         onMouseDown={(event) => event.stopPropagation()}
@@ -1189,20 +1189,10 @@ export default function LeavesTable({
           />
         </div>
 
-        <div className="p-4 sm:p-5 2xl:p-6 font-jakarta">
-          <div className="mt-3 block sm:hidden">
-            <button
-              type="button"
-              onClick={runSearch}
-              disabled={loading}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E64B1B] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Search size={16} />
-              Search Leave Records
-            </button>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+        <div className="p-3 sm:p-5 2xl:p-6 font-jakarta">
+          <ResponsiveTableShell
+            desktopContent={
+              <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
             <div
               ref={tableScrollRef}
               className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar"
@@ -1355,6 +1345,124 @@ export default function LeavesTable({
               </table>
             </div>
           </div>
+        }
+        mobileContent={
+          <div className="space-y-3">
+            {loading ? (
+              <DataCard.Skeleton count={4} />
+            ) : leaves.length > 0 ? (
+              leaves.map((item, index) => {
+                const normalizedStatus =
+                  item.normalizedStatus ||
+                  normalizeStatus(item.gy_leave_status);
+                const leaveType =
+                  item.leaveTypeLabel ||
+                  getLeaveTypeLabel(
+                    item.gy_leave_type,
+                    item.leave_type_label,
+                  );
+
+                return (
+                  <DataCard
+                    key={`mobile-card-${item.gy_leave_id}-${item.gy_user_id}`}
+                    onClick={() => setSelectedLeave(item)}
+                    index={index}
+                  >
+                    {/* Top Row: Avatar + Employee Name & SiBS ID + Status Badge */}
+                    <DataCard.Header
+                      avatar={<EmployeeAvatar employee={item} />}
+                      title={item.gy_full_name || item.gy_username || "—"}
+                      subtitle={
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[10px] font-extrabold text-[#FF5C28]">
+                            {item.gy_user_code || "—"}
+                          </span>
+                          {item.gy_emp_account && (
+                            <>
+                              <span className="text-[10px] text-slate-300">•</span>
+                              <span className="truncate text-[10px] font-bold uppercase text-[#164E7A]">
+                                {item.gy_emp_account}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      }
+                      badge={
+                        <Badge className={getStatusClass(item.gy_leave_status)}>
+                          {normalizedStatus}
+                        </Badge>
+                      }
+                    />
+
+                    {/* Middle Row: Leave Type & Dates Span */}
+                    <DataCard.ContextRow>
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span className="inline-flex items-center rounded border border-blue-200/60 bg-white px-2 py-0.5 text-[10px] font-bold text-[#164E7A] shadow-2xs">
+                          {leaveType}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-[#52637A]">
+                        <CalendarDays size={13} className="shrink-0 text-[#8A98B8]" />
+                        <span>
+                          {formatDate(item.gy_leave_date_from)}
+                          {item.gy_leave_date_to &&
+                          item.gy_leave_date_to !== item.gy_leave_date_from
+                            ? ` → ${formatDate(item.gy_leave_date_to)}`
+                            : ""}
+                        </span>
+                      </div>
+                    </DataCard.ContextRow>
+
+                    {/* Metric Pills Grid: Days | Credits | Plotted | Remaining */}
+                    <DataCard.Metrics cols={4}>
+                      <DataCard.MetricItem
+                        label="Days"
+                        value={formatNumber(item.gy_leave_day)}
+                        tone="default"
+                      />
+                      <DataCard.MetricItem
+                        label="Credits"
+                        value={formatNumber(item.leave_credit)}
+                        tone="secondary"
+                      />
+                      <DataCard.MetricItem
+                        label="Plotted"
+                        value={formatNumber(item.leave_plotted)}
+                        tone="amber"
+                      />
+                      <DataCard.MetricItem
+                        label="Remaining"
+                        value={formatNumber(item.leave_remaining)}
+                        tone="emerald"
+                      />
+                    </DataCard.Metrics>
+
+                    {/* Card Footer: Filed date + Details link hint */}
+                    <DataCard.Footer
+                      metadata={
+                        <>
+                          Filed:{" "}
+                          <strong className="text-[#52637A]">
+                            {formatDate(item.gy_leave_filed)}
+                          </strong>
+                        </>
+                      }
+                      actionLabel="Details"
+                    />
+                  </DataCard>
+                );
+              })
+            ) : (
+              <DataCard.Empty
+                icon={<CalendarDays size={22} />}
+                title="No leave records found"
+                description="Adjust the search, status, department, account, or date range filters."
+              />
+            )}
+          </div>
+        }
+      />
 
           <div className="mt-4 2xl:mt-5">
             <PaginationTable

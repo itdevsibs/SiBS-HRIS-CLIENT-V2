@@ -38,8 +38,7 @@ import { useUser } from "../../services/context/UserContext";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
-import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
-import { PageHeaderHero } from "@/components/ui";
+import { PageHeaderHero, DataCard, ResponsiveTableShell } from "@/components/ui";
 
 import {
   getApprovalRequestsByModule,
@@ -3262,13 +3261,34 @@ function ApprovalRequestTable({
             onView={onView}
           />
         ) : (
-          <>
-            {/* Desktop */}
-            <div className="hidden lg:block">
-              <div data-approval-table-scroll className="overflow-x-auto">
+          <ResponsiveTableShell
+            breakpoint="lg"
+            mobileContent={
+              loading ? (
+                <DataCard.Skeleton count={4} lines={4} />
+              ) : requests.length === 0 ? (
+                <DataCard.Empty
+                  title="No Approval Requests"
+                  description={`No approval requests found for ${activeModule}.`}
+                />
+              ) : (
+                <div className="space-y-3" data-approval-mobile-scroll>
+                  {requests.map((request) => (
+                    <ApprovalRequestMobileCard
+                      key={`${request.source || "request"}-${request.id}`}
+                      request={request}
+                      isWorkforceModule={isWorkforceModule}
+                      onView={() => onView(request)}
+                    />
+                  ))}
+                </div>
+              )
+            }
+            desktopContent={
+              <div data-approval-table-scroll className="overflow-x-auto sibs-scrollbar">
                 <table
                   className={`w-full ${
-                    isWorkforceModule ? "min-w-[1840px]" : "min-w-[1420px]"
+                    isWorkforceModule ? "min-w-[1520px]" : "min-w-[1280px]"
                   } border-separate border-spacing-0 overflow-hidden rounded-[14px] border border-[#D9E2EC] bg-white text-left`}
                 >
                   <thead>
@@ -3354,41 +3374,8 @@ function ApprovalRequestTable({
                   </tbody>
                 </table>
               </div>
-            </div>
-
-            {/* Mobile */}
-            <div className="block lg:hidden" data-approval-mobile-scroll>
-              {loading ? (
-                <div className="rounded-[14px] border border-[#D9E2EC] bg-white px-5 py-10 text-center shadow-sm">
-                  <Loader2
-                    size={30}
-                    className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-                  />
-
-                  <p className="text-sm font-bold text-gray-500">
-                    Loading approval requests...
-                  </p>
-                </div>
-              ) : requests.length === 0 ? (
-                <div className="rounded-[14px] border border-[#D9E2EC] bg-white px-5 py-10 text-center shadow-sm">
-                  <p className="text-sm font-bold text-gray-500">
-                    No approval requests found for {activeModule}.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {requests.map((request) => (
-                    <ApprovalRequestMobileCard
-                      key={`${request.source || "request"}-${request.id}`}
-                      request={request}
-                      isWorkforceModule={isWorkforceModule}
-                      onView={() => onView(request)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
+            }
+          />
         )}
 
         <PaginationTable
@@ -3950,36 +3937,34 @@ function ApprovalRequestMobileCard({ request, isWorkforceModule, onView }) {
   const requesterInfo = getRequesterDisplayInfo(request);
 
   return (
-    <button
-      type="button"
+    <DataCard
+      interactive
       onClick={onView}
-      className="w-full rounded-[14px] border border-[#D9E2EC] bg-white p-4 text-left shadow-sm transition hover:bg-[#F8FAFC]"
+      className="transition hover:border-sibs-orange/40 hover:shadow-md"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
-            {request.title || "--"}
-          </h3>
-
-          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+      <DataCard.Header
+        title={request.title || "--"}
+        subtitle={
+          <span className="font-mono text-xs font-bold text-sibs-primary-1">
             {request.id || "--"}
-          </p>
-        </div>
-
-        {!isWorkforceModule && (
-          <span
-            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-              status,
-            )}`}
-          >
-            <StatusIcon size={12} />
-            {status || "--"}
           </span>
-        )}
-      </div>
+        }
+        badge={
+          !isWorkforceModule ? (
+            <span
+              className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
+                status,
+              )}`}
+            >
+              <StatusIcon size={12} />
+              {status || "--"}
+            </span>
+          ) : null
+        }
+      />
 
       {isWorkforceModule && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 px-4 pt-1">
           <StatusBadge status={recruitmentSettingsStatus} />
           <StatusBadge
             status={updateHeadcountStatus || "No Request"}
@@ -3988,42 +3973,53 @@ function ApprovalRequestMobileCard({ request, isWorkforceModule, onView }) {
         </div>
       )}
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <MobileMetric label="Requester" value={requesterInfo.name} />
-        <MobileMetric label="SIBS ID" value={requesterInfo.sibsId} />
-        {isWorkforceModule && <MobileMetric label="Account" value={accountName} />}
+      <DataCard.ContextRow>
+        <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">
+          {isHiringNeeds
+            ? getHiringNeedsDepartmentDisplay(request)
+            : request.department || "General"}
+        </span>
+        <span className="inline-flex items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-sibs-primary-1">
+          {request.module || "Approval"}
+        </span>
+        <span
+          className={`inline-flex max-w-full rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getApprovalRequestDisplayTypeClass(
+            displayRequestType || requestType || request.type,
+          )}`}
+        >
+          <span className="truncate">{displayRequestType || requestType || request.type || "--"}</span>
+        </span>
+      </DataCard.ContextRow>
+
+      <DataCard.Metrics cols={2}>
+        <DataCard.MetricItem label="Requester" value={requesterInfo.name} />
+        <DataCard.MetricItem label="SIBS ID" value={requesterInfo.sibsId} />
+        {isWorkforceModule && <DataCard.MetricItem label="Account" value={accountName} />}
         {isHiringNeeds && (
-          <MobileMetric
+          <DataCard.MetricItem
             label="Headcount"
             value={getHiringNeedsHeadcountDisplay(request)}
           />
         )}
-        <MobileMetric
-          label="Department"
-          value={
-            isHiringNeeds
-              ? getHiringNeedsDepartmentDisplay(request)
-              : request.department
-          }
-        />
-        <MobileMetric label="Module" value={request.module} />
-        <MobileTypeMetric
-          label="Type"
-          value={displayRequestType || requestType || request.type}
-        />
-        <MobileMetric label="Priority" value={request.priority || "Normal"} />
-        <MobileMetric
+        <DataCard.MetricItem label="Priority" value={request.priority || "Normal"} />
+        <DataCard.MetricItem
           label="Date Requested"
           value={formatDate(request.dateRequested || request.requestDate)}
         />
-        <MobileMetric label="Approver" value={request.approver} />
-      </div>
+        <DataCard.MetricItem label="Approver" value={request.approver} />
+      </DataCard.Metrics>
 
-      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
-        <Eye size={16} />
-        View Details
-      </div>
-    </button>
+      <DataCard.Footer>
+        <button
+          type="button"
+          onClick={onView}
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-surface hover:text-sibs-orange active:scale-[0.98]"
+        >
+          <Eye size={16} />
+          View Details
+        </button>
+      </DataCard.Footer>
+    </DataCard>
   );
 }
 

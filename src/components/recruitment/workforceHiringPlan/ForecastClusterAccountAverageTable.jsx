@@ -19,6 +19,86 @@ import {
   WorkforceMetricWithPercent,
   getWorkforceValueColor,
 } from "./WorkforceHiringTablePrimitives";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
+
+function safeNumber(value) {
+  const numberValue = Number(value || 0);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function ClusterAccountMobileCard({ row }) {
+  const hiringNeeded = safeNumber(row.hiringNeeded);
+
+  return (
+    <DataCard>
+      <DataCard.Header
+        title={row.account || "Unnamed Account"}
+        subtitle={
+          <span className="inline-flex items-center gap-1.5 font-bold text-sibs-muted">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-sibs-orange" />
+            <span>{row.cluster || "No Cluster"}</span>
+          </span>
+        }
+        badge={
+          <span
+            className={`inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
+              hiringNeeded > 0
+                ? "border-rose-200 bg-rose-50 text-rose-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            Need: {formatOverviewNumber(hiringNeeded)}
+          </span>
+        }
+      />
+
+      <DataCard.Metrics cols={3}>
+        <DataCard.MetricItem
+          label="Req HC"
+          value={formatOverviewNumber(row.requiredHeadcount)}
+          tone="primary"
+        />
+        <DataCard.MetricItem
+          label="Actual HC"
+          value={formatOverviewNumber(row.actualHeadcount)}
+        />
+        <DataCard.MetricItem
+          label="Net Actual"
+          value={formatOverviewNumber(row.netActualHc)}
+          tone="primary"
+        />
+        <DataCard.MetricItem
+          label="Buffer %"
+          value={formatOverviewPercent(row.bufferPercentage)}
+        />
+        <DataCard.MetricItem
+          label="Hired / Rate"
+          value={`${formatOverviewNumber(row.hiredCount)} (${formatOverviewPercent(row.hiringRate)})`}
+          tone="orange"
+        />
+        <DataCard.MetricItem
+          label="Go Live"
+          value={formatOverviewNumber(row.goLive)}
+          tone="emerald"
+        />
+      </DataCard.Metrics>
+
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border pt-2 text-[10.5px] font-semibold text-sibs-muted">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <span>JO: <strong className="text-sibs-navy tabular-nums">{formatOverviewNumber(row.acceptedJo)}</strong></span>
+          <span>NHO: <strong className="text-sibs-navy tabular-nums">{formatOverviewNumber(row.nho)}</strong></span>
+          <span>FST: <strong className="text-sibs-navy tabular-nums">{formatOverviewNumber(row.fst)}</strong></span>
+          <span>PST: <strong className="text-sibs-navy tabular-nums">{formatOverviewNumber(row.pst)}</strong></span>
+          <span>Absent: <strong className="text-sibs-navy tabular-nums">{formatOverviewNumber(row.absenteeism)}</strong></span>
+          <span>Attr: <strong className="text-sibs-navy tabular-nums">{formatOverviewNumber(row.attrition)}</strong></span>
+        </div>
+        <span className="shrink-0 text-[10.5px] font-extrabold text-purple-700 tabular-nums">
+          Leads: {formatOverviewNumber(row.leadsToInterview)}
+        </span>
+      </div>
+    </DataCard>
+  );
+}
 
 function filterRows(rows = [], searchValue = "") {
   const keyword = String(searchValue || "")
@@ -90,14 +170,14 @@ export default function ForecastClusterAccountAverageTable({
               Details by Cluster / Account
             </h3>
 
-            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 sibs-text-micro font-extrabold text-[#52637A]">
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 sibs-text-micro font-extrabold text-sibs-muted">
               {loading
                 ? "Loading details..."
                 : `${filteredRows.length} of ${averageRows.length} accounts`}
             </span>
           </div>
 
-          <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+          <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
             Average workforce capacity, hiring demand, and pipeline volume per
             cluster and account across the complete forecast period.
           </p>
@@ -106,14 +186,14 @@ export default function ForecastClusterAccountAverageTable({
         <div className="group relative w-full lg:max-w-xs 2xl:max-w-sm">
           <Search
             size={15}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted transition-colors group-focus-within:text-sibs-orange"
           />
           <input
             type="text"
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
             placeholder="Search cluster or account..."
-            className="h-8.5 2xl:h-10 w-full rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-8.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+            className="h-8.5 2xl:h-10 w-full rounded-lg border border-sibs-border bg-sibs-canvas px-3 pl-8.5 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
           />
         </div>
       </div>
@@ -125,104 +205,129 @@ export default function ForecastClusterAccountAverageTable({
       ) : null}
 
       <div className="p-3.5 sm:p-4 2xl:p-5">
-        <div
-          ref={dragScrollRef}
-          onMouseDown={handleDragStart}
-          onMouseMove={handleDragMove}
-          onMouseUp={handleDragEnd}
-          onMouseLeave={handleDragEnd}
-          className={`sibs-data-table-shell !block max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
-            isDragging ? "cursor-grabbing" : "cursor-grab"
-          }`}
-        >
-          <table className="w-[2105px] min-w-[2105px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
-            <colgroup>
-              <col style={{ width: "150px" }} />
-              <col style={{ width: "190px" }} />
-              <col style={{ width: "115px" }} />
-              <col style={{ width: "105px" }} />
-              <col style={{ width: "95px" }} />
-              <col style={{ width: "125px" }} />
-              <col style={{ width: "115px" }} />
-              <col style={{ width: "135px" }} />
-              <col style={{ width: "135px" }} />
-              <col style={{ width: "125px" }} />
-              <col style={{ width: "110px" }} />
-              <col style={{ width: "105px" }} />
-              <col style={{ width: "105px" }} />
-              <col style={{ width: "95px" }} />
-              <col style={{ width: "115px" }} />
-              <col style={{ width: "120px" }} />
-              <col style={{ width: "170px" }} />
-            </colgroup>
+        <ResponsiveTableShell
+          mobileContent={
+            loading ? (
+              <DataCard.Skeleton count={6} lines={3} />
+            ) : !hasRows ? (
+              <DataCard.Empty
+                title="No accounts found"
+                description={
+                  averageRows.length > 0
+                    ? "No cluster or account matches your search."
+                    : "No account-level forecast rows are available for this forecast period."
+                }
+              />
+            ) : (
+              <div className="space-y-3">
+                {filteredRows.map((row, index) => (
+                  <ClusterAccountMobileCard
+                    key={`${row.cluster}-${row.account}-${index}`}
+                    row={row}
+                  />
+                ))}
+              </div>
+            )
+          }
+          desktopContent={
+            <div
+              ref={dragScrollRef}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              className={`sibs-data-table-shell !block max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
+                isDragging ? "cursor-grabbing" : "cursor-grab"
+              }`}
+            >
+              <table className="w-[2105px] min-w-[2105px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
+                <colgroup>
+                  <col style={{ width: "150px" }} />
+                  <col style={{ width: "190px" }} />
+                  <col style={{ width: "115px" }} />
+                  <col style={{ width: "105px" }} />
+                  <col style={{ width: "95px" }} />
+                  <col style={{ width: "125px" }} />
+                  <col style={{ width: "115px" }} />
+                  <col style={{ width: "135px" }} />
+                  <col style={{ width: "135px" }} />
+                  <col style={{ width: "125px" }} />
+                  <col style={{ width: "110px" }} />
+                  <col style={{ width: "105px" }} />
+                  <col style={{ width: "105px" }} />
+                  <col style={{ width: "95px" }} />
+                  <col style={{ width: "115px" }} />
+                  <col style={{ width: "120px" }} />
+                  <col style={{ width: "170px" }} />
+                </colgroup>
 
-            <thead className="sibs-data-table-head bg-[#F8FAFC]">
-              <tr className="sibs-data-table-head-row">
-                <WorkforceGroupHeaderTh
-                  rowSpan={2}
-                  className="!text-left"
-                >
-                  Cluster
-                </WorkforceGroupHeaderTh>
-                <WorkforceGroupHeaderTh
-                  rowSpan={2}
-                  className="!text-left"
-                >
-                  Account
-                </WorkforceGroupHeaderTh>
-                <WorkforceGroupHeaderTh colSpan={7}>
-                  Workforce Capacity &amp; Gap
-                </WorkforceGroupHeaderTh>
-                <WorkforceGroupHeaderTh colSpan={6}>
-                  Recruitment Pipeline
-                </WorkforceGroupHeaderTh>
-                <WorkforceGroupHeaderTh colSpan={2} className="border-r-0">
-                  Yield &amp; Demand
-                </WorkforceGroupHeaderTh>
-              </tr>
+                <thead className="sibs-data-table-head bg-sibs-canvas">
+                  <tr className="sibs-data-table-head-row">
+                    <WorkforceGroupHeaderTh
+                      rowSpan={2}
+                      className="!text-left"
+                    >
+                      Cluster
+                    </WorkforceGroupHeaderTh>
+                    <WorkforceGroupHeaderTh
+                      rowSpan={2}
+                      className="!text-left"
+                    >
+                      Account
+                    </WorkforceGroupHeaderTh>
+                    <WorkforceGroupHeaderTh colSpan={7}>
+                      Workforce Capacity &amp; Gap
+                    </WorkforceGroupHeaderTh>
+                    <WorkforceGroupHeaderTh colSpan={6}>
+                      Recruitment Pipeline
+                    </WorkforceGroupHeaderTh>
+                    <WorkforceGroupHeaderTh colSpan={2} className="border-r-0">
+                      Yield &amp; Demand
+                    </WorkforceGroupHeaderTh>
+                  </tr>
 
-              <tr className="sibs-data-table-head-row">
-                <WorkforceHeaderTh className="!text-center !font-black !text-[#042C51]">
-                  Required HC
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center">
-                  Actual HC
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center">
-                  Buffer %
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center">
-                  Absenteeism
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center">
-                  Attrition
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center !font-black !text-[#042C51]">
-                  Net Actual HC
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center !font-black !text-rose-600">
-                  Hiring Needed
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center !font-black !text-[#042C51]">
-                  Accepted JO
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center">NHO Count</WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center">FST Count</WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center">PST Count</WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center !font-black !text-emerald-700">
-                  Go Live
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center !font-black !text-[#042C51]">
-                  Hired Count
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="!text-center !font-black !text-[#FF5C28]">
-                  Hiring Rate
-                </WorkforceHeaderTh>
-                <WorkforceHeaderTh className="border-r-0 !text-center !font-black !text-purple-700">
-                  Leads to Interview
-                </WorkforceHeaderTh>
-              </tr>
-            </thead>
+                  <tr className="sibs-data-table-head-row">
+                    <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                      Required HC
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center">
+                      Actual HC
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center">
+                      Buffer %
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center">
+                      Absenteeism
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center">
+                      Attrition
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                      Net Actual HC
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center !font-black !text-rose-600">
+                      Hiring Needed
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                      Accepted JO
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center">NHO Count</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center">FST Count</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center">PST Count</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center !font-black !text-emerald-700">
+                      Go Live
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                      Hired Count
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!text-center !font-black !text-sibs-orange">
+                      Hiring Rate
+                    </WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="border-r-0 !text-center !font-black !text-purple-700">
+                      Leads to Interview
+                    </WorkforceHeaderTh>
+                  </tr>
+                </thead>
 
             <tbody className="bg-white font-jakarta font-medium">
               {hasRows ? (
@@ -247,7 +352,7 @@ export default function ForecastClusterAccountAverageTable({
                     <WorkforceBodyTd
                       align="left"
                       numeric={false}
-                      className="font-black text-[#042C51]"
+                      className="font-black text-sibs-navy"
                     >
                       <span
                         className="block max-w-[170px] truncate"
@@ -321,7 +426,7 @@ export default function ForecastClusterAccountAverageTable({
                       {formatOverviewNumber(row.hiredCount)}
                     </WorkforceBodyTd>
 
-                    <WorkforceBodyTd className="font-black text-[#FF5C28]">
+                    <WorkforceBodyTd className="font-black text-sibs-orange">
                       {formatOverviewPercent(row.hiringRate)}
                     </WorkforceBodyTd>
 
@@ -429,7 +534,7 @@ export default function ForecastClusterAccountAverageTable({
                     {formatOverviewNumber(totals.hiredCount)}
                   </WorkforceFooterTd>
 
-                  <WorkforceFooterTd className="font-black text-[#FF5C28]">
+                  <WorkforceFooterTd className="font-black text-sibs-orange">
                     {formatOverviewPercent(totals.hiringRate)}
                   </WorkforceFooterTd>
 
@@ -441,7 +546,9 @@ export default function ForecastClusterAccountAverageTable({
             ) : null}
           </table>
         </div>
-      </div>
-    </section>
+      }
+    />
+  </div>
+</section>
   );
 }

@@ -250,7 +250,7 @@ function StatCard({
           </p>
 
           <p
-            className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${currentTone.value}`}
+            className={`font-heading mt-1.5 2xl:mt-2 text-xl sm:text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${currentTone.value}`}
           >
             {value}
           </p>
@@ -767,7 +767,7 @@ export default function LeavesPage() {
                   />
                 </button>
 
-                <span className="sibs-btn-primary pointer-events-none">
+                <span className="sibs-btn-primary pointer-events-none max-sm:flex-1">
                   <UserRound className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                   {isPersonalView ? "Personal View" : "Administrative View"}
                 </span>

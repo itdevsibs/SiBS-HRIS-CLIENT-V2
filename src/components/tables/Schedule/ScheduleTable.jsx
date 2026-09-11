@@ -4,6 +4,7 @@ import { CalendarDays, Clock, Search } from "lucide-react";
 import { formatDate } from "@/components/layout/FormatDateTime";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 
@@ -135,7 +136,7 @@ function StatCard({
           </p>
 
           <p
-            className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${selectedTone.value}`}
+            className={`font-heading mt-1.5 2xl:mt-2 text-xl sm:text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${selectedTone.value}`}
           >
             {value}
           </p>
@@ -305,7 +306,7 @@ export default function ScheduleTable({
           className="sibs-profile-tab-panel"
           style={getAnimationStyle(60)}
         >
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3">
             <StatCard
               title="Loaded Schedules"
               value={loading ? "..." : pageStats.totalLoaded}
@@ -372,24 +373,14 @@ export default function ScheduleTable({
             />
           </div>
 
-          <div className="p-4 sm:p-5 2xl:p-6">
-            <div className="mt-3 block sm:hidden">
-              <button
-                type="button"
-                onClick={runSearch}
-                disabled={loading}
-                className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1D] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Search size={15} />
-                Apply Search
-              </button>
-            </div>
-
-            <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-              <div
-                ref={tableScrollRef}
-                className="max-h-[600px] 2xl:max-h-[650px] overflow-auto sibs-scrollbar"
-              >
+          <div className="p-3 sm:p-5 2xl:p-6">
+            <ResponsiveTableShell
+              desktopContent={
+                <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+                  <div
+                    ref={tableScrollRef}
+                    className="max-h-[600px] 2xl:max-h-[650px] overflow-auto sibs-scrollbar"
+                  >
                 <table className="w-full min-w-[980px] border-collapse bg-white text-left">
                   <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
                     <tr className="sibs-data-table-head-row">
@@ -473,8 +464,68 @@ export default function ScheduleTable({
                     )}
                   </tbody>
                 </table>
+                </div>
               </div>
-            </div>
+            }
+            mobileContent={
+              <div className="space-y-3">
+                {loading ? (
+                  <DataCard.Skeleton count={4} />
+                ) : schedule.length === 0 ? (
+                  <DataCard.Empty
+                    icon={<CalendarDays size={22} />}
+                    title="No schedule records found"
+                    description="Adjust the search or date range filters and try again."
+                  />
+                ) : (
+                  schedule.map((item, index) => (
+                    <DataCard
+                      key={`mobile-sched-${item.gy_sched_id || index}`}
+                      index={index}
+                    >
+                      <DataCard.Header
+                        avatar={
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#042C51]">
+                            <CalendarDays size={15} />
+                          </span>
+                        }
+                        title={formatDate(item.gy_sched_day)}
+                        subtitle={`Registered: ${formatDate(item.gy_sched_reg)}`}
+                        badge={
+                          <Badge className={getModeBadgeClass(item.gy_sched_mode)}>
+                            {formatMode(item.gy_sched_mode)}
+                          </Badge>
+                        }
+                      />
+
+                      <DataCard.Metrics cols={4}>
+                        <DataCard.MetricItem
+                          label="Login"
+                          value={formatTime(item.gy_sched_login)}
+                          tone="default"
+                        />
+                        <DataCard.MetricItem
+                          label="Break Out"
+                          value={formatTime(item.gy_sched_breakout)}
+                          tone="dim"
+                        />
+                        <DataCard.MetricItem
+                          label="Break In"
+                          value={formatTime(item.gy_sched_breakin)}
+                          tone="dim"
+                        />
+                        <DataCard.MetricItem
+                          label="Logout"
+                          value={formatTime(item.gy_sched_logout)}
+                          tone="default"
+                        />
+                      </DataCard.Metrics>
+                    </DataCard>
+                  ))
+                )}
+              </div>
+            }
+          />
 
             <div className="mt-4 2xl:mt-5">
               <PaginationTable

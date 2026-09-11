@@ -1,6 +1,7 @@
 import { RotateCcw } from "lucide-react";
 
 import PaginationTable from "../../../services/pagination/PaginationTable";
+import { DataCard, ResponsiveTableShell } from "../../ui";
 import { formatDate } from "../../../lib/utils/Dashboards/TADashboard/taDashboardHelpers.js";
 
 const STATUS_OPTIONS = [
@@ -68,62 +69,59 @@ function RiskBadge({ riskFlag }) {
 
 function RoleMobileCard({ role, onViewRole, delay = 0 }) {
   return (
-    <button
-      type="button"
+    <DataCard
+      interactive
       onClick={() => onViewRole(role)}
-      className="sibs-card sibs-page-card-in w-full p-4 text-left transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/30"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
       }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="break-words text-sm font-extrabold text-[#042C51]">
-            {role.roleTitle}
-          </h3>
-          <p className="mt-0.5 break-words text-xs font-semibold text-[#667085]">
-            {role.account}
-          </p>
-        </div>
-
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <StatusBadge status={role.status} />
-          <RiskBadge riskFlag={role.riskFlag} />
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        {[
-          ["Req.", role.req, "text-[#042C51]"],
-          ["Filled", role.filled, "text-emerald-600"],
-          ["Open", role.open, "text-[#FF5C28]"],
-        ].map(([label, value, tone]) => (
-          <div key={label} className="rounded-lg bg-[#F8FAFC] p-2.5">
-            <span className="block text-[10px] font-bold uppercase text-[#98A2B3]">
-              {label}
-            </span>
-            <span
-              className={`mt-1 block text-base font-extrabold tabular-nums ${tone}`}
-            >
-              {Number(value || 0)}
-            </span>
+      <DataCard.Header
+        title={role.roleTitle}
+        subtitle={role.account}
+        badge={
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <StatusBadge status={role.status} />
+            <RiskBadge riskFlag={role.riskFlag} />
           </div>
-        ))}
-      </div>
+        }
+      />
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold text-[#667085]">
+      <DataCard.Metrics cols={3}>
+        <DataCard.MetricItem
+          label="Req."
+          value={Number(role.req || 0)}
+          tone="navy"
+        />
+        <DataCard.MetricItem
+          label="Filled"
+          value={Number(role.filled || 0)}
+          tone="emerald"
+        />
+        <DataCard.MetricItem
+          label="Open"
+          value={Number(role.open || 0)}
+          tone="orange"
+        />
+      </DataCard.Metrics>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border pt-2.5 text-[10px] font-semibold text-sibs-muted">
+        <div>
+          <span>
+            Owner: <strong className="text-sibs-navy">{role.taOwner || "Unassigned"}</strong>
+          </span>
+          {role.dueDate ? (
+            <span className="ml-2 text-[#98A2B3]">
+              Due: <strong className="font-semibold text-[#536887]">{formatDate(role.dueDate)}</strong>
+            </span>
+          ) : null}
+        </div>
         <span>
-          Owner: <strong className="text-[#042C51]">{role.taOwner}</strong>
-        </span>
-        <span>
-          Aging:{" "}
-          <strong className="text-[#042C51]">
-            {Number(role.aging || 0)}d
-          </strong>
+          Aging: <strong className="text-sibs-navy">{Number(role.aging || 0)}d</strong>
         </span>
       </div>
-    </button>
+    </DataCard>
   );
 }
 
@@ -197,120 +195,124 @@ export default function TARoleHiringStatus({
       </div>
 
       <div className="flex flex-1 flex-col justify-between p-4 sm:p-5 2xl:p-6">
-        <div className="space-y-3 lg:hidden">
-          {loading ? (
-            <div className="sibs-empty-panel">Loading hiring roles...</div>
-          ) : roles.length === 0 ? (
-            <div className="sibs-empty-panel">
-              No roles match the current search and status filter.
-            </div>
-          ) : (
-            roles.map((role, index) => (
-              <RoleMobileCard
-                key={role.id || role.roleAccount}
-                role={role}
-                onViewRole={onViewRole}
-                delay={index * 40}
+        <ResponsiveTableShell
+          mobileView={
+            loading ? (
+              <DataCard.Skeleton count={4} lines={2} />
+            ) : roles.length === 0 ? (
+              <DataCard.Empty
+                title="No Hiring Roles Found"
+                description="No roles match the current search and status filter."
               />
-            ))
-          )}
-        </div>
-
-        <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white hidden lg:block">
-          <div className="max-h-[480px] overflow-auto sibs-scrollbar">
-            <table className="w-full min-w-[920px] border-collapse bg-white text-left text-xs">
-              <thead className="sibs-data-table-head">
-                <tr className="sibs-data-table-head-row">
-                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">
-                    Role / Account
-                  </th>
-                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Req.</th>
-                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Filled</th>
-                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Open</th>
-                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Due Date</th>
-                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Status</th>
-                  <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">TA Owner</th>
-                  <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Aging</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-[#E6ECF2]">
-                {loading ? (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="px-5 py-12 text-center font-semibold text-[#667085]"
-                    >
-                      Loading hiring roles...
-                    </td>
-                  </tr>
-                ) : roles.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="px-5 py-12 text-center font-semibold text-[#667085]"
-                    >
-                      No roles match the current search and status filter.
-                    </td>
-                  </tr>
-                ) : (
-                  roles.map((role, index) => (
-                    <tr
-                      key={role.id || role.roleAccount}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => onViewRole(role)}
-                      onKeyDown={(event) => {
-                        if (event.key !== "Enter" && event.key !== " ") return;
-                        event.preventDefault();
-                        onViewRole(role);
-                      }}
-                      className="sibs-data-table-row sibs-page-card-in"
-                      style={{
-                        animationDelay: `${index * 35}ms`,
-                        animationFillMode: "both",
-                      }}
-                      aria-label={`Open details for ${role.roleTitle}`}
-                    >
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                        <strong className="block text-xs font-extrabold leading-snug text-[#042C51]">
-                          {role.roleTitle}
-                        </strong>
-                        <span className="mt-0.5 block text-[11px] font-semibold leading-snug text-[#667085]">
-                          {role.account}
-                        </span>
-                      </td>
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#042C51]">
-                        {role.req}
-                      </td>
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-emerald-600">
-                        {role.filled}
-                      </td>
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#FF5C28]">
-                        {role.open}
-                      </td>
-                      <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-[#344054]">
-                        {formatDate(role.dueDate)}
-                      </td>
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
-                        <div className="flex flex-col items-start gap-1">
-                          <StatusBadge status={role.status} />
-                          <RiskBadge riskFlag={role.riskFlag} />
-                        </div>
-                      </td>
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-[#344054]">
-                        {role.taOwner}
-                      </td>
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#344054]">
-                        {role.aging}d
-                      </td>
+            ) : (
+              roles.map((role, index) => (
+                <RoleMobileCard
+                  key={role.id || role.roleAccount}
+                  role={role}
+                  onViewRole={onViewRole}
+                  delay={index * 40}
+                />
+              ))
+            )
+          }
+          desktopView={
+            <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+              <div className="max-h-[480px] overflow-auto sibs-scrollbar">
+                <table className="w-full min-w-[920px] border-collapse bg-white text-left text-xs">
+                  <thead className="sibs-data-table-head">
+                    <tr className="sibs-data-table-head-row">
+                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">
+                        Role / Account
+                      </th>
+                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Req.</th>
+                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Filled</th>
+                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Open</th>
+                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Due Date</th>
+                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Status</th>
+                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">TA Owner</th>
+                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Aging</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  </thead>
+
+                  <tbody className="divide-y divide-[#E6ECF2]">
+                    {loading ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          className="px-5 py-12 text-center font-semibold text-[#667085]"
+                        >
+                          Loading hiring roles...
+                        </td>
+                      </tr>
+                    ) : roles.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          className="px-5 py-12 text-center font-semibold text-[#667085]"
+                        >
+                          No roles match the current search and status filter.
+                        </td>
+                      </tr>
+                    ) : (
+                      roles.map((role, index) => (
+                        <tr
+                          key={role.id || role.roleAccount}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => onViewRole(role)}
+                          onKeyDown={(event) => {
+                            if (event.key !== "Enter" && event.key !== " ") return;
+                            event.preventDefault();
+                            onViewRole(role);
+                          }}
+                          className="sibs-data-table-row sibs-page-card-in"
+                          style={{
+                            animationDelay: `${index * 35}ms`,
+                            animationFillMode: "both",
+                          }}
+                          aria-label={`Open details for ${role.roleTitle}`}
+                        >
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                            <strong className="block text-xs font-extrabold leading-snug text-[#042C51]">
+                              {role.roleTitle}
+                            </strong>
+                            <span className="mt-0.5 block text-[11px] font-semibold leading-snug text-[#667085]">
+                              {role.account}
+                            </span>
+                          </td>
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#042C51]">
+                            {role.req}
+                          </td>
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-emerald-600">
+                            {role.filled}
+                          </td>
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#FF5C28]">
+                            {role.open}
+                          </td>
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-[#344054]">
+                            {formatDate(role.dueDate)}
+                          </td>
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
+                            <div className="flex flex-col items-start gap-1">
+                              <StatusBadge status={role.status} />
+                              <RiskBadge riskFlag={role.riskFlag} />
+                            </div>
+                          </td>
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-[#344054]">
+                            {role.taOwner}
+                          </td>
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#344054]">
+                            {role.aging}d
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        />
 
         <PaginationTable
           className="mt-4 border-0 bg-transparent p-0 shadow-none"

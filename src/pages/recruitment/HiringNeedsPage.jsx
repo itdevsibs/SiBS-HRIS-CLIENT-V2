@@ -18,6 +18,7 @@ import HiringNeedsTable from "../../components/recruitment/HiringNeeds/HiringNee
 import ViewHiringNeedsModal from "../../components/modals/hiringNeeds/ViewHiringNeedsModal";
 import AddHiringNeedsModal from "../../components/modals/hiringNeeds/AddHiringNeedsModal";
 import StatusModal from "../../components/modals/StatusModal";
+import { PageHeaderHero } from "@/components/ui";
 
 import { useHiringNeeds } from "../../services/context/HiringNeedsContext";
 import { useUser } from "../../services/context/UserContext";
@@ -434,38 +435,19 @@ export default function HiringNeedsPage() {
         className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-7"
       >
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 font-jakarta shadow-sm 2xl:p-6"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    Recruitment View
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Hiring Needs Intake
-                </h1>
-
-                <p className="max-w-3xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-                  Create, review, approve, and manage Personnel Requisition Forms across SIBS operational hubs.
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+          <PageHeaderHero
+            kicker="Recruitment View"
+            title="Hiring Needs Intake"
+            description="Create, review, approve, and manage Personnel Requisition Forms across SIBS operational hubs."
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={handleRefresh}
                   disabled={refreshing}
                   aria-label="Refresh Hiring Needs"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-sm transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
                   title="Refresh Hiring Needs"
+                  className="sibs-btn-icon"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
@@ -477,14 +459,14 @@ export default function HiringNeedsPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover focus:outline-none focus:ring-4 focus:ring-sibs-orange/20"
+                  className="sibs-btn-primary max-sm:flex-1"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   New Personnel Requisition
                 </button>
-              </div>
-            </div>
-          </section>
+              </>
+            }
+          />
 
           <HiringNeedsStats />
 
