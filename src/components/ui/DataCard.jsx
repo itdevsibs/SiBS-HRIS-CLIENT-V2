@@ -9,16 +9,14 @@ import { ChevronRight, FileQuestion } from "lucide-react";
 export default function DataCard({
   children,
   onClick,
+  interactive = false,
   className = "",
   style,
   index = 0,
-  interactive,
   ...props
 }) {
-  const isClickable =
-    interactive !== undefined
-      ? Boolean(interactive && typeof onClick === "function")
-      : typeof onClick === "function";
+  const isClickable = typeof onClick === "function";
+  const isInteractive = interactive || isClickable;
 
   const handleKeyDown = isClickable
     ? (event) => {
@@ -43,8 +41,10 @@ export default function DataCard({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       style={animationStyle}
-      className={`sibs-page-card-in group relative overflow-hidden rounded-xl border border-[#E6ECF2] bg-white p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:shadow-md ${
-        isClickable ? "cursor-pointer active:scale-[0.99]" : ""
+      className={`sibs-page-card-in group relative overflow-hidden rounded-xl border border-[#E6ECF2] bg-white p-3.5 shadow-xs transition-all duration-200 ${
+        isInteractive
+          ? "cursor-pointer hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:shadow-md active:scale-[0.99]"
+          : ""
       } ${className}`}
       {...props}
     >
@@ -164,11 +164,11 @@ function DataCardMetricItem({
       <p className="truncate text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
         {label}
       </p>
-      <p
+      <div
         className={`mt-0.5 truncate text-[11px] sm:text-xs font-extrabold tabular-nums ${selectedTone} ${valueClassName}`}
       >
         {value}
-      </p>
+      </div>
     </div>
   );
 }
@@ -244,12 +244,18 @@ function DataCardEmpty({
   action,
   className = "",
 }) {
+  const renderedIcon = React.isValidElement(icon)
+    ? icon
+    : icon
+      ? React.createElement(icon, { size: 22 })
+      : <FileQuestion size={22} />;
+
   return (
     <div
       className={`rounded-xl border border-[#E6ECF2] bg-white p-8 text-center shadow-xs ${className}`}
     >
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF0EB] text-[#FF5C28]">
-        {icon || <FileQuestion size={22} />}
+        {renderedIcon}
       </div>
       <h4 className="mt-3 font-heading text-sm font-bold text-[#042C51]">
         {title}
@@ -264,9 +270,46 @@ function DataCardEmpty({
   );
 }
 
+function DataCardSection({
+  label,
+  children,
+  className = "",
+  contentClassName = "",
+}) {
+  return (
+    <section
+      className={`mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 ${className}`}
+    >
+      {label ? (
+        <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+          {label}
+        </p>
+      ) : null}
+
+      <div className={`${label ? "mt-2" : ""} ${contentClassName}`}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function DataCardActions({ children, className = "" }) {
+  return (
+    <div
+      className={`mt-3 flex flex-col gap-2 border-t border-[#E6ECF2] pt-3 sm:flex-row ${className}`}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      {children}
+    </div>
+  );
+}
+
 // Compound component attachments
 DataCard.Header = DataCardHeader;
 DataCard.ContextRow = DataCardContextRow;
+DataCard.Section = DataCardSection;
+DataCard.Actions = DataCardActions;
 DataCard.Metrics = DataCardMetrics;
 DataCard.MetricItem = DataCardMetricItem;
 DataCard.Footer = DataCardFooter;

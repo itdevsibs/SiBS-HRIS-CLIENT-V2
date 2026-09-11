@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 
 import { getEmployee } from "@/lib/axios/getEmployee";
 import { useUser } from "@/services/context/UserContext";
+import { sanitizeDisplayFullName, sanitizeMiddleName } from "@/lib/utils/employees/employeeNameDisplay.js";
 import { usePagination } from "@/services/context/PaginationContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { DataCard, ResponsiveTableShell, StatusFilterTabs } from "@/components/ui";
@@ -196,10 +197,12 @@ function getNameParts(employee = {}) {
       employee.first_name,
       employee.gy_emp_fname,
     ),
-    middleName: getCleanValue(
-      employee.middleName,
-      employee.middle_name,
-      employee.gy_emp_mname,
+    middleName: sanitizeMiddleName(
+      getCleanValue(
+        employee.middleName,
+        employee.middle_name,
+        employee.gy_emp_mname,
+      ),
     ),
     lastName: getCleanValue(
       employee.lastName,
@@ -223,11 +226,13 @@ function getEmployeeName(employee = {}) {
   }
 
   return (
-    getCleanValue(
-      employee.fullName,
-      employee.full_name,
-      employee.gy_emp_fullname,
-      employee.name,
+    sanitizeDisplayFullName(
+      getCleanValue(
+        employee.fullName,
+        employee.full_name,
+        employee.gy_emp_fullname,
+        employee.name,
+      ),
     ) || "Unnamed Employee"
   );
 }
@@ -812,6 +817,7 @@ export default function EmployeeTable({
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
   const [employeeAccess, setEmployeeAccess] = useState(null);
+  const [searchRequestKey, setSearchRequestKey] = useState(0);
 
   const accountFilterKey = useMemo(
     () => accountFilters.join("||"),
@@ -828,8 +834,6 @@ export default function EmployeeTable({
     searchInput = "",
     setSearch,
     setSearchInput,
-    commitSearch,
-    handleSearchKeyDown,
     loading,
     setLoading,
     pagination,
@@ -994,6 +998,7 @@ export default function EmployeeTable({
     setLoading,
     setPagination,
     canRequestFilters,
+    searchRequestKey,
   ]);
 
   useEffect(() => {
@@ -1030,25 +1035,24 @@ export default function EmployeeTable({
   }
 
   function submitSearch() {
-    setPage?.(1);
+    const nextSearch = String(searchInput || "").trim();
+    const currentSearch = String(search || "").trim();
+    const currentPageNumber = Number(page || 1);
 
-    if (typeof commitSearch === "function") {
-      commitSearch();
+    if (nextSearch === currentSearch && currentPageNumber === 1) {
+      setSearchRequestKey((current) => current + 1);
       return;
     }
 
-    setSearch?.(searchInput);
+    setPage?.(1);
+    setSearch?.(nextSearch);
   }
 
   function handleEmployeeSearchKeyDown(event) {
-    if (typeof handleSearchKeyDown === "function") {
-      handleSearchKeyDown(event);
-    }
+    if (event.key !== "Enter") return;
 
-    if (event.key === "Enter") {
-      event.preventDefault();
-      submitSearch();
-    }
+    event.preventDefault();
+    submitSearch();
   }
 
   function resetToFirstPage() {

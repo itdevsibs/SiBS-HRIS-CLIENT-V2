@@ -2,6 +2,19 @@ import React from "react";
 import { ArrowRight, RefreshCw, UserPlus, Users } from "lucide-react";
 import { PageHeaderHero } from "@/components/ui";
 
+function getSafeDisplayName(value) {
+  if (typeof value === "string") {
+    const cleanValue = value.trim();
+    return cleanValue || "Super Admin";
+  }
+
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  return "Super Admin";
+}
+
 export default function SuperAdminDashboardHeader({
   displayName = "Super Admin",
   onAddUser,

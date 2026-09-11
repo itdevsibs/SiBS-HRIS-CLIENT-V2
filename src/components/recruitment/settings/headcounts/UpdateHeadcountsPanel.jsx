@@ -870,28 +870,28 @@ function UpdateHeadcountsPanel() {
                         </div>
                       </div>
 
-                      <DataCard.Metrics columns={2}>
-                        <DataCard.Metric
+                      <DataCard.Metrics cols={2}>
+                        <DataCard.MetricItem
                           label="Required Buffer"
                           value={formatHeadcountNumber(
                             metrics.requiredBufferHeadcount,
                             2,
                           )}
                         />
-                        <DataCard.Metric
+                        <DataCard.MetricItem
                           label="Buffer %"
                           value={formatHeadcountPercent(
                             metrics.requiredBufferPercent,
                           )}
                         />
-                        <DataCard.Metric
+                        <DataCard.MetricItem
                           label="Actual Buffer"
                           value={formatHeadcountNumber(metrics.actualBufferCount)}
                           valueClassName={getActualBufferClass(
                             metrics.actualBufferCount,
                           )}
                         />
-                        <DataCard.Metric
+                        <DataCard.MetricItem
                           label="Actual Buffer %"
                           value={formatHeadcountPercent(
                             metrics.actualBufferPercent,
@@ -900,22 +900,22 @@ function UpdateHeadcountsPanel() {
                             metrics.actualBufferPercent,
                           )}
                         />
-                        <DataCard.Metric
+                        <DataCard.MetricItem
                           label="OPS PRF"
                           value={formatHeadcountNumber(metrics.opsPrf)}
                         />
-                        <DataCard.Metric
+                        <DataCard.MetricItem
                           label="Hiring Rate"
                           value={formatHeadcountPercent(metrics.hiringRate)}
                         />
-                        <DataCard.Metric
+                        <DataCard.MetricItem
                           label="HC Needs"
                           value={formatHeadcountNumber(
                             metrics.actualHeadcountNeeds,
                             2,
                           )}
                         />
-                        <DataCard.Metric
+                        <DataCard.MetricItem
                           label="Leads"
                           value={formatHeadcountNumber(metrics.leadsToInterview)}
                         />
