@@ -32,6 +32,7 @@ import {
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
 import { useUser } from "../../services/context/UserContext";
+import { sanitizeDisplayFullName, sanitizeMiddleName } from "../../lib/utils/employees/employeeNameDisplay.js";
 import { PageHeaderHero, TablePagination } from "@/components/ui";
 import {
   createAccountSettingsUser,
@@ -139,10 +140,16 @@ function formatDateTime(value) {
 }
 
 function formatEmployeeName(employee = {}) {
-  const fullName = safeText(employee.fullName || employee.full_name);
+  const fullName = sanitizeDisplayFullName(
+    safeText(employee.fullName || employee.full_name),
+  );
   if (fullName) return fullName;
 
-  const name = [employee.firstName, employee.middleName, employee.lastName]
+  const name = [
+    employee.firstName,
+    sanitizeMiddleName(employee.middleName),
+    employee.lastName,
+  ]
     .map(safeText)
     .filter(Boolean)
     .join(" ");

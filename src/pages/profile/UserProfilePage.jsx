@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { HeartPulse } from "lucide-react";
+import { History } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
 import StatusModal from "../../components/modals/StatusModal";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
+import { ViewResignationModal } from "../../components/modals/resignation-management/ResignationManagementModal";
 import EmployeeProfileContent from "../../components/employee/profile/components/EmployeeProfileContent.jsx";
 import EmployeeProfileContextPanel from "../../components/employee/profile/components/EmployeeProfileContextPanel.jsx";
 import MyEmployeeProfileHeader from "../../components/employee/profile/components/EmployeeProfileHeader.jsx";
 import EmployeeProfileNavigation from "../../components/employee/profile/components/EmployeeProfileNavigation.jsx";
 import MyEmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
-import ChwcpCoverageSection from "../../components/employee/profile/components/ChwcpCoverageSection.jsx";
 
 import { useUser } from "../../services/context/UserContext";
 import { useResignationList } from "../../services/context/ResignationListContext";
@@ -24,6 +24,7 @@ import {
   getMyEmployeeProfilePicture,
   uploadMyEmployeeProfilePicture,
 } from "../../lib/axios/employeeProfile";
+import { getMyResignationStatus } from "../../lib/axios/getMyResignationStatus.js";
 import { buildChangedProfilePayload } from "../../lib/utils/employees/employeeProfilePayload.js";
 import {
   buildEmployeeProfileSectionPayload,
@@ -35,24 +36,25 @@ import {
   getActiveProfileLabel,
   getProfileSibsId,
 } from "../../lib/utils/employees/employeeProfileHelpers.js";
-import { buildEditableEmployee } from "../../lib/utils/employees/employeeProfileNormalizer.js";
+import { buildEditableEmployee as buildRawEditableEmployee } from "../../lib/utils/employees/employeeProfileNormalizer.js";
+import { sanitizeEmployeeNameFields } from "../../lib/utils/employees/employeeNameDisplay.js";
 import { PROFILE_TABS } from "../../lib/utils/employees/employeeProfileSchemas.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
+function buildEditableEmployee(employee) {
+  return sanitizeEmployeeNameFields(buildRawEditableEmployee(employee));
+}
+
 const HEADER_PROFILE_PICTURE_UPDATED_EVENT = "sibs:profile-picture-updated";
 
-const CHWCP_PROFILE_TAB = {
-  key: "chwcp",
-  label: "CHWCP",
-  icon: HeartPulse,
-};
+const EMPLOYEE_PROFILE_TABS = PROFILE_TABS.filter((tab) => tab.key !== "notes");
 
-const EMPLOYEE_PROFILE_TABS = PROFILE_TABS
-  .filter((tab) => tab.key !== "notes")
-  .flatMap((tab) =>
-    tab.key === "documents" ? [tab, CHWCP_PROFILE_TAB] : [tab],
-  );
+const RESIGNATION_HISTORY_TAB = {
+  key: "resignation-history",
+  label: "Resignation History",
+  icon: History,
+};
 
 const MY_PROFILE_QUICK_ACTIONS = [
   { label: "Request Profile Change", action: "request-change" },
@@ -60,6 +62,291 @@ const MY_PROFILE_QUICK_ACTIONS = [
   { label: "Review My Documents", target: "documents" },
   { label: "Submit Resignation", action: "resignation" },
 ];
+
+function cleanResignationText(value) {
+  return String(value ?? "").trim();
+}
+
+function getResignationCaseId(item = {}) {
+  return cleanResignationText(
+    item.resignationId || item.resignation_id || item.rawId || item.id,
+  ).replace(/^RES[-_:]/i, "") || "—";
+}
+
+function getResignationStatus(item = {}) {
+  return (
+    cleanResignationText(
+      item.status || item.resignationStatus || item.resignation_status,
+    ) || "Pending"
+  );
+}
+
+function getResignationReason(item = {}) {
+  const reason = cleanResignationText(
+    item.reason || item.resignationReason || item.resignation_reason,
+  );
+  const specifyOthers = cleanResignationText(
+    item.specifyOthers || item.specify_others || item.resignationSpecifyOthers,
+  );
+
+  if (/^other$/i.test(reason) && specifyOthers) return specifyOthers;
+  return reason || specifyOthers || "—";
+}
+
+function getResignationDateValue(item = {}) {
+  return (
+    item.resignationDate ||
+    item.resignation_date ||
+    item.dateRequested ||
+    item.requestDate ||
+    item.createdAt ||
+    item.created_at ||
+    ""
+  );
+}
+
+function getResignationLastWorkingDate(item = {}) {
+  return (
+    item.lastWorkingDate ||
+    item.last_working_date ||
+    item.resignationLastWorkingDate ||
+    ""
+  );
+}
+
+function formatResignationDate(value) {
+  if (!value) return "—";
+
+  const raw = String(value).trim();
+  const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = dateOnly
+    ? new Date(Date.UTC(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]), 12))
+    : new Date(raw);
+
+  if (Number.isNaN(date.getTime())) return raw;
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function getResignationStage(item = {}) {
+  const explicit = cleanResignationText(
+    item.currentApprover ||
+      item.current_approver ||
+      item.approver ||
+      item.currentStage ||
+      item.current_stage,
+  );
+
+  if (explicit && !/^assigned approver$/i.test(explicit)) return explicit;
+
+  const meta = item.meta || item.raw?.meta || item.raw || {};
+  const status = getResignationStatus(item).toLowerCase();
+
+  if (["completed", "approved"].includes(status)) return "Completed";
+  if (["declined", "rejected", "cancelled", "retained"].includes(status)) {
+    return "Closed";
+  }
+
+  if (Number(meta.somIsApproved || meta.som_is_approved || 0) === 1) {
+    return "Completed";
+  }
+
+  if (Number(meta.omIsApproved || meta.om_is_approved || 0) === 1) {
+    return "Senior Operations Manager";
+  }
+
+  const hasTeamLeader = Boolean(
+    cleanResignationText(meta.tlSibsId || meta.tl_sibs_id),
+  );
+  const teamLeaderApproved =
+    Number(meta.tlIsApproved || meta.tl_is_approved || 0) === 1;
+  const hideTeamLeader = Boolean(meta.hideTl || meta.hide_tl);
+
+  if (hasTeamLeader && !hideTeamLeader && !teamLeaderApproved) {
+    return "Team Leader";
+  }
+
+  return "Operations Manager";
+}
+
+function getResignationStatusClass(status = "") {
+  const normalized = String(status).trim().toLowerCase();
+
+  if (["completed", "approved"].includes(normalized)) {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (["declined", "rejected", "cancelled", "retained"].includes(normalized)) {
+    return "border-rose-200 bg-rose-50 text-rose-700";
+  }
+
+  if (normalized.includes("notice")) {
+    return "border-indigo-200 bg-indigo-50 text-indigo-700";
+  }
+
+  return "border-amber-200 bg-amber-50 text-amber-700";
+}
+
+function normalizeResignationHistory(result = {}) {
+  const records = Array.isArray(result?.data) ? result.data.filter(Boolean) : [];
+  const latest = result?.latest || null;
+  const source = records.length ? records : latest ? [latest] : [];
+
+  return [...source].sort((left, right) => {
+    const leftTime = new Date(
+      left?.createdAt || left?.created_at || getResignationDateValue(left) || 0,
+    ).getTime();
+    const rightTime = new Date(
+      right?.createdAt || right?.created_at || getResignationDateValue(right) || 0,
+    ).getTime();
+
+    if (Number.isFinite(rightTime) && Number.isFinite(leftTime) && rightTime !== leftTime) {
+      return rightTime - leftTime;
+    }
+
+    return Number(getResignationCaseId(right) || 0) - Number(getResignationCaseId(left) || 0);
+  });
+}
+
+function ResignationHistorySection({ items = [], onView }) {
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+        <p className="text-xs font-bold text-[#042C51]">
+          Resignation Application History
+        </p>
+        <p className="mt-1 text-[10px] font-semibold leading-4 text-[#667085]">
+          Review your previous and current resignation applications. Select a record to open the complete case details.
+        </p>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
+        <div className="hidden overflow-x-auto lg:block">
+          <table className="w-full min-w-[980px] border-collapse text-left">
+            <thead className="bg-[#F8FAFC]">
+              <tr className="border-b border-[#E6ECF2]">
+                {[
+                  "Case ID",
+                  "Filed Date",
+                  "Last Working Day",
+                  "Status",
+                  "Reason",
+                  "Approval Stage",
+                ].map((label) => (
+                  <th
+                    key={label}
+                    className="px-3 py-3 text-[10px] font-extrabold uppercase tracking-wide text-[#7B8DB3]"
+                  >
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#EEF2F6] bg-white">
+              {items.map((item, index) => {
+                const status = getResignationStatus(item);
+                return (
+                  <tr
+                    key={item?.id || item?.resignationId || `resignation-history-${index}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onView?.(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onView?.(item);
+                      }
+                    }}
+                    className="cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                  >
+                    <td className="px-3 py-3 text-xs font-extrabold text-[#FF5C28]">
+                      {getResignationCaseId(item)}
+                    </td>
+                    <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
+                      {formatResignationDate(getResignationDateValue(item))}
+                    </td>
+                    <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
+                      {formatResignationDate(getResignationLastWorkingDate(item))}
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold uppercase ${getResignationStatusClass(status)}`}>
+                        {status}
+                      </span>
+                    </td>
+                    <td className="max-w-[280px] px-3 py-3 text-xs font-semibold text-[#344054]">
+                      <span className="line-clamp-2">{getResignationReason(item)}</span>
+                    </td>
+                    <td className="px-3 py-3 text-xs font-bold text-[#042C51]">
+                      {getResignationStage(item)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="space-y-3 bg-[#F8FAFC] p-3 lg:hidden">
+          {items.map((item, index) => {
+            const status = getResignationStatus(item);
+            return (
+              <button
+                key={item?.id || item?.resignationId || `resignation-history-mobile-${index}`}
+                type="button"
+                onClick={() => onView?.(item)}
+                className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[#FF5C28]/30 hover:bg-[#FFF9F6]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                      Case ID
+                    </p>
+                    <p className="mt-1 text-sm font-extrabold text-[#FF5C28]">
+                      {getResignationCaseId(item)}
+                    </p>
+                  </div>
+                  <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold uppercase ${getResignationStatusClass(status)}`}>
+                    {status}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Filed</p>
+                    <p className="mt-1 font-semibold text-[#344054]">
+                      {formatResignationDate(getResignationDateValue(item))}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Last Working Day</p>
+                    <p className="mt-1 font-semibold text-[#344054]">
+                      {formatResignationDate(getResignationLastWorkingDate(item))}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 border-t border-[#EEF2F6] pt-3">
+                  <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Reason</p>
+                  <p className="mt-1 line-clamp-2 text-xs font-semibold text-[#344054]">
+                    {getResignationReason(item)}
+                  </p>
+                  <p className="mt-2 text-[10px] font-bold text-[#042C51]">
+                    Approval Stage: {getResignationStage(item)}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function mergeProfilePicture(employee, profilePictureUrl) {
   if (!employee || !profilePictureUrl) return employee;
@@ -90,6 +377,9 @@ export default function UserProfilePage() {
   const [openProfilePictureModal, setOpenProfilePictureModal] = useState(false);
   const [openProfileDropdown, setOpenProfileDropdown] = useState(false);
   const [openAddResignation, setOpenAddResignation] = useState(false);
+  const [selectedResignation, setSelectedResignation] = useState(null);
+  const [resignationHistory, setResignationHistory] = useState([]);
+  const [resignationHistoryLoading, setResignationHistoryLoading] = useState(true);
   const [statusModal, setStatusModal] = useState({
     open: false,
     type: "success",
@@ -99,27 +389,97 @@ export default function UserProfilePage() {
 
   const currentSibsId = getProfileSibsId(currentUser);
   const displayEmployee = isEditing ? draftEmployee || employee : employee;
-  // Employee-mode My Profile is read-only for every account, including
-  // HR/admin users who switched to the employee portal.
   const canEditDetails = false;
   const activePrimary = getActivePrimaryKey(activeTab);
   const activeSubTab = String(activeTab).includes(".")
     ? String(activeTab).split(".")[1]
     : "";
   const activeProfileLabel =
-    activePrimary === "chwcp"
-      ? { primary: "CHWCP", secondary: "Coverage" }
+    activePrimary === "resignation-history"
+      ? { primary: "Resignation History", secondary: "Application Records" }
       : getActiveProfileLabel(activeTab);
   const activeSectionSupportsSave =
     activePrimary === "personal" ||
     Boolean(getStructuredProfileSection(activePrimary));
 
-  const visibleTabs = useMemo(() => EMPLOYEE_PROFILE_TABS, []);
+  const visibleTabs = useMemo(() => {
+    if (resignationHistory.length === 0) return EMPLOYEE_PROFILE_TABS;
+
+    return EMPLOYEE_PROFILE_TABS.flatMap((tab) =>
+      tab.key === "documents" ? [tab, RESIGNATION_HISTORY_TAB] : [tab],
+    );
+  }, [resignationHistory.length]);
 
   useEffect(() => {
     if (!openEditResignationModal) return;
     setOpenAddResignation(true);
   }, [openEditResignationModal]);
+
+  async function refreshResignationHistory() {
+    if (!currentUser || !currentSibsId) {
+      setResignationHistory([]);
+      setResignationHistoryLoading(false);
+      return [];
+    }
+
+    setResignationHistoryLoading(true);
+
+    try {
+      const result = await getMyResignationStatus();
+      const history = result?.success ? normalizeResignationHistory(result) : [];
+      setResignationHistory(history);
+      return history;
+    } catch (error) {
+      console.error("Failed to load resignation history:", error);
+      setResignationHistory([]);
+      return [];
+    } finally {
+      setResignationHistoryLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHistory() {
+      if (!currentUser || !currentSibsId) {
+        if (!cancelled) {
+          setResignationHistory([]);
+          setResignationHistoryLoading(false);
+        }
+        return;
+      }
+
+      setResignationHistoryLoading(true);
+
+      try {
+        const result = await getMyResignationStatus();
+        if (cancelled) return;
+
+        setResignationHistory(
+          result?.success ? normalizeResignationHistory(result) : [],
+        );
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Failed to load resignation history:", error);
+        setResignationHistory([]);
+      } finally {
+        if (!cancelled) setResignationHistoryLoading(false);
+      }
+    }
+
+    void loadHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentSibsId, currentUser]);
+
+  useEffect(() => {
+    if (activeTab === RESIGNATION_HISTORY_TAB.key && resignationHistory.length === 0 && !resignationHistoryLoading) {
+      setActiveTab("personal.basic");
+    }
+  }, [activeTab, resignationHistory.length, resignationHistoryLoading]);
 
   useEffect(() => {
     if (userLoading) return undefined;
@@ -246,6 +606,13 @@ export default function UserProfilePage() {
     setOpenAddResignation(true);
   }
 
+  function openResignationDetails(item) {
+    if (!item) return;
+
+    setOpenProfileDropdown(false);
+    setSelectedResignation(item);
+  }
+
   function requestProfileChange() {
     setOpenProfileDropdown(false);
     showFeedback(
@@ -253,23 +620,6 @@ export default function UserProfilePage() {
       "success",
       "Request Profile Change",
     );
-  }
-
-  function handleContextAction(actionType) {
-    if (actionType === "request-change") {
-      requestProfileChange();
-      return;
-    }
-
-    if (actionType === "print") {
-      window.print();
-      return;
-    }
-
-    if (actionType === "resignation") {
-      openResignationModal();
-      return;
-    }
   }
 
   function startEditing() {
@@ -605,7 +955,7 @@ export default function UserProfilePage() {
       </div>
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden sibs-scrollbar bg-[#EEF2F6] px-3 py-4 sm:p-6">
-        <div className="mx-auto w-full max-w-[1700px] space-y-5">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-sm font-black text-[#042C51]">My Profile</h1>
@@ -660,6 +1010,7 @@ export default function UserProfilePage() {
                     <ProfileDropdown
                       openModal={openResignationModal}
                       openDropdown={setOpenProfileDropdown}
+                      onViewResignation={openResignationDetails}
                     />
                   </div>
                 }
@@ -674,19 +1025,19 @@ export default function UserProfilePage() {
               <div className="sibs-page-card-in grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_360px]">
                 <section
                   key={activeTab}
-                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-sibs-border bg-white p-5 shadow-xs"
+                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
                 >
-                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-sibs-border pb-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <h2 className="font-heading break-words text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+                      <h2 className="break-words text-sm font-black uppercase tracking-wider text-[#042C51]">
                         {activeProfileLabel.primary}
                         {activeProfileLabel.secondary
                           ? ` - ${activeProfileLabel.secondary}`
                           : ""}
                       </h2>
-                      <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
-                        {activePrimary === "chwcp"
-                          ? "Read-only CHWCP shared and personal coverage from the existing CHWCP data source."
+                      <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
+                        {activePrimary === "resignation-history"
+                          ? "Read-only resignation application history from the existing resignation workflow."
                           : isEditing
                             ? "Editable input mode. Save the profile to lock the current updates."
                             : "Official record values are shown from the existing employee data source."}
@@ -698,11 +1049,11 @@ export default function UserProfilePage() {
                         className={`h-2.5 w-2.5 rounded-full ${
                           isEditing
                             ? "animate-pulse bg-amber-400"
-                            : "bg-sibs-navy"
+                            : "bg-[#042C51]"
                         }`}
                       />
-                      <span className="font-heading text-xs font-bold text-sibs-muted tracking-tight">
-                        {activePrimary === "chwcp"
+                      <span className="text-[10px] font-bold uppercase text-slate-500">
+                        {activePrimary === "resignation-history"
                           ? "View Only"
                           : isEditing
                             ? "Modified Draft"
@@ -711,8 +1062,11 @@ export default function UserProfilePage() {
                     </div>
                   </div>
 
-                  {activePrimary === "chwcp" ? (
-                    <ChwcpCoverageSection />
+                  {activePrimary === "resignation-history" ? (
+                    <ResignationHistorySection
+                      items={resignationHistory}
+                      onView={openResignationDetails}
+                    />
                   ) : (
                     <EmployeeProfileContent
                       activePrimary={activePrimary}
@@ -724,7 +1078,7 @@ export default function UserProfilePage() {
 
                 <EmployeeProfileContextPanel
                   employee={employee}
-                  onNavigate={setActiveTab}
+                  onNavigate={handleTabChange}
                   onAction={handleContextAction}
                   showAuditTrail={false}
                   quickActions={MY_PROFILE_QUICK_ACTIONS}
@@ -748,8 +1102,18 @@ export default function UserProfilePage() {
       <ResignationModal
         open={Boolean(openAddResignation)}
         onClose={() => setOpenAddResignation(false)}
-        onSuccess={() => setOpenAddResignation(false)}
+        onSuccess={async () => {
+          await refreshResignationHistory();
+          setOpenAddResignation(false);
+        }}
         setStatusModal={setStatusModal}
+      />
+
+      <ViewResignationModal
+        open={Boolean(selectedResignation)}
+        item={selectedResignation}
+        currentUser={currentUser}
+        onClose={() => setSelectedResignation(null)}
       />
 
       <StatusModal

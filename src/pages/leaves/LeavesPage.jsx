@@ -5,8 +5,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../../components/layout/Header";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarDays,
   CheckCircle2,
@@ -17,15 +17,13 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { getLeaves, getLeavesSummary } from "@/lib/axios/getLeaves";
+import { getLeaves } from "@/lib/axios/getLeaves";
 import { useUser } from "../../services/context/UserContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { usePagination } from "@/services/context/PaginationContext";
 import LeavesTable from "@/components/tables/Leaves/LeavesTable";
-import { PageHeaderHero } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
-const LEAVES_STATE_KEY = "leavesPageState";
 
 function formatNumber(value) {
   if (value === "..." || value === null || value === undefined) return "...";
@@ -169,26 +167,6 @@ function normalizeStatus(status) {
   return value;
 }
 
-function getRequestedLeaveStatusFromNavigationState(state = {}) {
-  const source = String(state?.source || "")
-    .trim()
-    .toLowerCase();
-
-  const requestedStatus = String(state?.leaveStatus || "")
-    .trim()
-    .toLowerCase();
-
-  if (
-    source === "pending-leave-notification" &&
-    requestedStatus === "pending"
-  ) {
-    return "Pending";
-  }
-
-  return "";
-}
-
-
 function StatCard({
   title,
   value,
@@ -276,18 +254,14 @@ export default function LeavesPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const mainScrollRef = useRef(null);
-  const restoredRef = useRef(false);
+  const initializedRef = useRef(false);
+  const leavesRequestRef = useRef(0);
+  const [filtersReady, setFiltersReady] = useState(false);
 
   const [leaves, setLeaves] = useState([]);
-  const [leaveSummary, setLeaveSummary] = useState(null);
   const [recordScope, setRecordScope] = useState("all");
 
-  const [statusFilter, setStatusFilter] = useState(
-    () =>
-      getRequestedLeaveStatusFromNavigationState(
-        location.state,
-      ) || "All",
-  );
+  const [statusFilter, setStatusFilter] = useState("All");
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
   const [departmentOptions, setDepartmentOptions] = useState([]);
@@ -367,28 +341,29 @@ export default function LeavesPage() {
       scrollPageToTop("auto");
     }
 
+    const requestId = leavesRequestRef.current + 1;
+    leavesRequestRef.current = requestId;
+
     setLoading(true);
 
     try {
-      const [res, summaryRes] = await Promise.all([
-        getLeaves({
-          page: pageValue,
-          limit: PAGE_LIMIT,
-          search: searchValue,
-          status: statusValue,
-          department: showDepartmentFilter ? departmentValue : "All",
-          account: showAccountFilter ? accountValue : "All",
-          dateFrom: dateFromValue,
-          dateTo: dateToValue,
-          includeDepartments: showDepartmentFilter,
-          includeAccounts: showAccountFilter,
-        }),
-        getLeavesSummary(),
-      ]);
+      const res = await getLeaves({
+        page: pageValue,
+        limit: PAGE_LIMIT,
+        search: searchValue,
+        status: statusValue,
+        department: showDepartmentFilter ? departmentValue : "All",
+        account: showAccountFilter ? accountValue : "All",
+        dateFrom: dateFromValue,
+        dateTo: dateToValue,
+        includeDepartments: showDepartmentFilter,
+        includeAccounts: showAccountFilter,
+      });
 
-      if (summaryRes?.success && summaryRes?.data) {
-        setLeaveSummary(summaryRes.data);
-      }
+      // Ignore stale responses from an older search/filter request.
+      // This prevents a previous unfiltered request from overwriting the
+      // latest filtered search results when requests finish out of order.
+      if (leavesRequestRef.current !== requestId) return;
 
       if (res?.success && Array.isArray(res.data)) {
         setLeaves(res.data);
@@ -439,6 +414,8 @@ export default function LeavesPage() {
         });
       }
     } catch (err) {
+      if (leavesRequestRef.current !== requestId) return;
+
       console.error("FETCH LEAVES ERROR:", err);
 
       setLeaves([]);
@@ -451,110 +428,64 @@ export default function LeavesPage() {
         hasNextPage: false,
       });
     } finally {
-      setLoading(false);
+      if (leavesRequestRef.current === requestId) {
+        setLoading(false);
 
-      if (shouldScrollTop) {
-        scrollPageToTop("auto");
+        if (shouldScrollTop) {
+          scrollPageToTop("auto");
+        }
       }
     }
   }
 
   useEffect(() => {
-    if (restoredRef.current) return;
+    if (initializedRef.current) return;
+    initializedRef.current = true;
 
-    try {
-      const savedState = sessionStorage.getItem(LEAVES_STATE_KEY);
+    const notificationState =
+      location.state?.source === "pending-leave-notification"
+        ? location.state
+        : null;
+    const initialStatus =
+      String(notificationState?.leaveStatus || "").trim() || "All";
 
-      if (savedState) {
-        const parsed = JSON.parse(savedState);
-
-        if (typeof parsed.search === "string") {
-          setSearchInput(parsed.search);
-          setSearch(parsed.search);
-        }
-
-        if (typeof parsed.department === "string") {
-          setDepartmentFilter(parsed.department || "All");
-        }
-
-        if (typeof parsed.account === "string") {
-          setAccountFilter(parsed.account || "All");
-        }
-
-        if (typeof parsed.page === "number" && parsed.page > 0) {
-          setPage(parsed.page);
-        }
-
-        if (
-          typeof setDateRange === "function" &&
-          (typeof parsed.dateFrom === "string" ||
-            typeof parsed.dateTo === "string")
-        ) {
-          setDateRange({
-            dateFrom: parsed.dateFrom || "",
-            dateTo: parsed.dateTo || "",
-          });
-        }
-      }
-    } catch (err) {
-      console.error("Leaves state restore error:", err);
-    } finally {
-      restoredRef.current = true;
-    }
-  }, [setDateRange, setPage, setSearch, setSearchInput]);
-
-  useEffect(() => {
-    if (!restoredRef.current) return;
-
-    sessionStorage.setItem(
-      LEAVES_STATE_KEY,
-      JSON.stringify({
-        search,
-        page,
-        department: departmentFilter,
-        account: accountFilter,
-        dateFrom,
-        dateTo,
-      }),
-    );
-  }, [
-    search,
-    page,
-    departmentFilter,
-    accountFilter,
-    dateFrom,
-    dateTo,
-  ]);
-
-  useEffect(() => {
-    const requestedStatus =
-      getRequestedLeaveStatusFromNavigationState(
-        location.state,
-      );
-
-    if (!requestedStatus) return;
-
-    setStatusFilter(requestedStatus);
+    setFiltersReady(false);
+    setSearchInput("");
+    setSearch("");
     setPage(1);
+    setStatusFilter(initialStatus);
+    setDepartmentFilter("All");
+    setAccountFilter("All");
+    setAccountOptions([]);
 
-    navigate(
-      `${location.pathname}${location.search}${location.hash}`,
-      {
+    if (typeof setDateRange === "function") {
+      setDateRange({
+        dateFrom: "",
+        dateTo: "",
+      });
+    }
+
+    setFiltersReady(true);
+
+    if (notificationState) {
+      navigate(location.pathname, {
         replace: true,
         state: null,
-      },
-    );
+      });
+    }
   }, [
-    location.hash,
+    location.key,
     location.pathname,
-    location.search,
     location.state,
     navigate,
+    setDateRange,
     setPage,
+    setSearch,
+    setSearchInput,
   ]);
 
   useEffect(() => {
-    if (!restoredRef.current) return;
+    if (!filtersReady) return;
 
     fetchLeaves({
       pageValue: page,
@@ -575,6 +506,7 @@ export default function LeavesPage() {
     accountFilter,
     dateFrom,
     dateTo,
+    filtersReady,
   ]);
 
   function handleDepartmentSelect(departmentId) {
@@ -637,21 +569,21 @@ export default function LeavesPage() {
   }, [leaves]);
 
   const pageStats = useMemo(() => {
-    const pageTotalLeaves = paginatedLeaves.length;
+    const totalLeaves = paginatedLeaves.length;
 
-    const pageApprovedLeaves = paginatedLeaves.filter(
+    const approvedLeaves = paginatedLeaves.filter(
       (item) => item.normalizedStatus === "Approved",
     ).length;
 
-    const pagePendingLeaves = paginatedLeaves.filter(
+    const pendingLeaves = paginatedLeaves.filter(
       (item) => item.normalizedStatus === "Pending",
     ).length;
 
-    const pageRejectedLeaves = paginatedLeaves.filter(
+    const rejectedLeaves = paginatedLeaves.filter(
       (item) => item.normalizedStatus === "Rejected",
     ).length;
 
-    const pageTotalLeaveDays = paginatedLeaves.reduce(
+    const totalLeaveDays = paginatedLeaves.reduce(
       (sum, item) => sum + Number(item.gy_leave_day || 0),
       0,
     );
@@ -661,28 +593,15 @@ export default function LeavesPage() {
       0,
     );
 
-    const hasSummary =
-      leaveSummary && typeof leaveSummary === "object";
-
     return {
-      totalLeaves: hasSummary
-        ? Number(leaveSummary.totalLeaves || 0)
-        : pageTotalLeaves,
-      approvedLeaves: hasSummary
-        ? Number(leaveSummary.approvedLeaves || 0)
-        : pageApprovedLeaves,
-      pendingLeaves: hasSummary
-        ? Number(leaveSummary.pendingLeaves || 0)
-        : pagePendingLeaves,
-      rejectedLeaves: hasSummary
-        ? Number(leaveSummary.rejectedLeaves || 0)
-        : pageRejectedLeaves,
-      totalLeaveDays: hasSummary
-        ? Number(leaveSummary.totalLeaveDays || 0)
-        : pageTotalLeaveDays,
+      totalLeaves,
+      approvedLeaves,
+      pendingLeaves,
+      rejectedLeaves,
+      totalLeaveDays,
       totalRemaining,
     };
-  }, [leaveSummary, paginatedLeaves]);
+  }, [paginatedLeaves]);
 
   const isPersonalView = isEmployeeAccount || recordScope === "personal";
 
@@ -743,45 +662,62 @@ export default function LeavesPage() {
 
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-1 flex-col space-y-4 sm:space-y-5">
-          <PageHeaderHero
-            kicker="Core HR View"
-            title={isPersonalView ? "My Leaves" : "Leaves"}
-            description={
-              isPersonalView
-                ? "View your leave requests, credits, plotted leaves, and remaining balance."
-                : "Review employee leave requests, credits, plotted leaves, and remaining balances."
-            }
-            actions={
-              <>
+          <section
+            className="sibs-page-header-in sibs-page-card-in sibs-card font-jakarta relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
+          >
+            <span className="sibs-top-accent" aria-hidden="true" />
+
+            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
+                    Core HR View
+                  </span>
+                </div>
+
+                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
+                  {isPersonalView ? "My Leaves" : "Leaves"}
+                </h1>
+
+                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
+                  {isPersonalView
+                    ? "View your leave requests, credits, plotted leaves, and remaining balance."
+                    : "Review employee leave requests, credits, plotted leaves, and remaining balances."}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
                 <button
                   type="button"
                   onClick={handleManualRefresh}
                   disabled={isManualRefreshing || loading}
                   title="Refresh Leaves Data"
-                  className="sibs-btn-icon"
+                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      isManualRefreshing ? "animate-spin text-sibs-orange" : ""
+                      isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""
                     }`}
                   />
                 </button>
 
-                <span className="sibs-btn-primary pointer-events-none">
+                <span className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs">
                   <UserRound className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                   {isPersonalView ? "Personal View" : "Administrative View"}
                 </span>
-              </>
-            }
-          />
+              </div>
+            </div>
+          </section>
 
           <section
             className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
           >
             <StatCard
-              title="Total Leaves"
+              title="Loaded Leaves"
               value={loading ? "..." : formatNumber(pageStats.totalLeaves)}
-              description="Accessible leave requests"
+              description="Records loaded on this page"
               icon={FileText}
               tone="navy"
               delay={0}
@@ -815,9 +751,9 @@ export default function LeavesPage() {
             />
 
             <StatCard
-              title="Leave Days"
+              title="Page Leave Days"
               value={loading ? "..." : formatNumber(pageStats.totalLeaveDays)}
-              description="Accessible leave days"
+              description="Leave days on this page"
               icon={CalendarDays}
               tone="orange"
               delay={240}

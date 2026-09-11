@@ -39,6 +39,10 @@ import {
 import { useUser } from "../../services/context/UserContext";
 import { getEmployee } from "../../lib/axios/getEmployee";
 import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
+import {
+  sanitizeDisplayFullName,
+  sanitizeMiddleName,
+} from "../../lib/utils/employees/employeeNameDisplay.js";
 import UserDropdown from "./dropdown/UserDropdown";
 import NotificationDropdown from "./dropdown/NotificationDropdown";
 import HeaderCalendarModal from "./HeaderCalendarModal";
@@ -62,7 +66,6 @@ const ADMIN_ROLES = [
 const ALL_ADMIN_ACCESS = [1, 2, 3, 4, 5, 6, 7, 10];
 
 const HEADER_PROFILE_PICTURE_UPDATED_EVENT = "sibs:profile-picture-updated";
-
 
 const SEARCHABLE_MODULES = [
   {
@@ -486,13 +489,13 @@ function formatEmployeeName(employee) {
       employee?.gy_emp_fname,
     ),
   ).trim();
-  const middleName = String(
+  const middleName = sanitizeMiddleName(
     firstValue(
       employee?.middleName,
       employee?.middle_name,
       employee?.gy_emp_mname,
     ),
-  ).trim();
+  );
 
   if (lastName || firstName || middleName) {
     return `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
@@ -503,7 +506,7 @@ function formatEmployeeName(employee) {
       .toUpperCase();
   }
 
-  return String(
+  return sanitizeDisplayFullName(
     firstValue(
       employee?.fullName,
       employee?.full_name,
@@ -511,9 +514,7 @@ function formatEmployeeName(employee) {
       employee?.name,
       "Employee",
     ),
-  )
-    .trim()
-    .toUpperCase();
+  ).toUpperCase();
 }
 
 function getEmployeeInitials(employee) {
@@ -1272,11 +1273,7 @@ export default function Header() {
       .join("")
       .toUpperCase() || "U";
 
-  const formattedName = (
-    `${user?.lastName || ""}${user?.lastName ? ", " : ""}${
-      user?.firstName || ""
-    }${user?.middleName ? ` ${user.middleName}` : ""}`.trim() || "User"
-  ).toUpperCase();
+  const formattedName = formatEmployeeName(user || {}) || "USER";
 
   const showSearchPanel = searchOpen;
   const isQueryEmpty = !query.trim();

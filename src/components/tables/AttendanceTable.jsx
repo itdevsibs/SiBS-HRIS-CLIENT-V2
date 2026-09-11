@@ -16,6 +16,7 @@ import {
 } from "@/services/context/PaginationContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate } from "@/components/layout/FormatDateTime";
+import { sanitizeDisplayFullName, sanitizeMiddleName } from "../../lib/utils/employees/employeeNameDisplay.js";
 
 const PAGE_LIMIT = 15;
 const LATE_GRACE_MS = 60 * 1000;
@@ -249,7 +250,7 @@ function displayCappedWorkHours(item) {
 function formatEmployeeName(item) {
   const lastName = String(item?.gy_emp_lname || "").trim();
   const firstName = String(item?.gy_emp_fname || "").trim();
-  const middleName = String(item?.gy_emp_mname || "").trim();
+  const middleName = sanitizeMiddleName(item?.gy_emp_mname);
 
   if (lastName || firstName || middleName) {
     return `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
@@ -260,7 +261,7 @@ function formatEmployeeName(item) {
       .toUpperCase();
   }
 
-  return String(item?.gy_emp_fullname || "").trim().toUpperCase() || "—";
+  return sanitizeDisplayFullName(item?.gy_emp_fullname).toUpperCase() || "—";
 }
 
 function getCleanValue(...values) {
@@ -278,10 +279,12 @@ function getAvatarNameParts(item = {}) {
       item.first_name,
       item.gy_emp_fname,
     ),
-    middleName: getCleanValue(
-      item.middleName,
-      item.middle_name,
-      item.gy_emp_mname,
+    middleName: sanitizeMiddleName(
+      getCleanValue(
+        item.middleName,
+        item.middle_name,
+        item.gy_emp_mname,
+      ),
     ),
     lastName: getCleanValue(
       item.lastName,
@@ -305,11 +308,13 @@ function getAvatarEmployeeName(item = {}) {
   }
 
   return (
-    getCleanValue(
-      item.fullName,
-      item.full_name,
-      item.gy_emp_fullname,
-      item.name,
+    sanitizeDisplayFullName(
+      getCleanValue(
+        item.fullName,
+        item.full_name,
+        item.gy_emp_fullname,
+        item.name,
+      ),
     ) || "Unnamed Employee"
   );
 }
