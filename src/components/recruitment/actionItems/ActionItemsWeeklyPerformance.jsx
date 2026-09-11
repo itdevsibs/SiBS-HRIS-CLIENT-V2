@@ -1,6 +1,97 @@
 import React, { useRef, useState } from "react";
+import { AlertCircle } from "lucide-react";
 import { useActionItemsReport } from "../../../services/context/ActionItemsReportContext.jsx";
 import { WorkforceBodyTd } from "../workforceHiringPlan/WorkforceHiringTablePrimitives.jsx";
+
+function WeeklyPerformanceMobileCard({ row, index = 0 }) {
+  const isTargetMet = Number(row.hired || 0) >= Number(row.targetHires || 0);
+
+  return (
+    <article
+      className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-xs"
+      style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
+    >
+      <div className="flex items-start justify-between gap-2.5">
+        <div className="min-w-0">
+          <h3 className="break-words font-jakarta text-sm font-extrabold text-[#042C51]">
+            {row.account || "Unassigned Account"}
+          </h3>
+          <p className="mt-0.5 text-[10px] font-semibold uppercase text-[#667085]">
+            {row.role || "Unassigned Role"}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold text-blue-700">
+            {row.weekCovered}
+          </span>
+          {row.hasHistoricalData && row.progressVsPlan && (
+            <span
+              className={`inline-flex rounded px-2 py-0.5 text-[9px] font-extrabold ${
+                isTargetMet
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
+              }`}
+            >
+              {row.progressVsPlan}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {!row.hasHistoricalData ? (
+        <div className="mt-3 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-4 text-center text-xs font-semibold italic text-[#98A2B3]">
+          — No historical data for this period
+        </div>
+      ) : (
+        <>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              ["Target Hires", row.targetHires ?? "—", "text-[#042C51] font-bold"],
+              ["Hired", row.hired ?? "—", "text-emerald-700 font-black"],
+              ["Starting Pipeline", row.startingPipeline ?? "—", "text-[#042C51] font-bold"],
+              ["New Sourced", row.newSourced ?? "—", "text-blue-700 font-bold"],
+              ["Screened", row.screened ?? "—", "text-[#344054] font-semibold"],
+              ["Interviewed", row.interviewed ?? "—", "text-[#344054] font-semibold"],
+              ["Offers", row.offers ?? "—", "text-[#344054] font-semibold"],
+              ["Accepted", row.accepted ?? "—", "text-[#042C51] font-bold"],
+              ["Drop-offs", row.dropOffs ?? "—", "text-rose-600 font-bold"],
+              ["Ending Pipeline", row.endingPipeline ?? "—", "text-[#042C51] font-black"],
+            ].map(([label, value, valueClass]) => (
+              <div
+                key={label}
+                className="rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-2"
+              >
+                <p className="truncate text-[8px] font-extrabold uppercase text-[#98A2B3]">
+                  {label}
+                </p>
+                <p className={`mt-0.5 truncate text-xs tabular-nums ${valueClass}`}>
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {row.keyIssueLastWeek && (
+            <div className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50/50 p-2.5">
+              <div className="flex items-start gap-1.5">
+                <AlertCircle size={13} className="mt-0.5 shrink-0 text-amber-600" />
+                <div className="min-w-0">
+                  <p className="text-[8px] font-extrabold uppercase text-amber-700">
+                    Key Issue Last Week
+                  </p>
+                  <p className="mt-0.5 text-[10px] font-semibold leading-snug text-amber-900">
+                    {row.keyIssueLastWeek}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </article>
+  );
+}
 
 export default function ActionItemsWeeklyPerformance() {
   const {
@@ -53,7 +144,7 @@ export default function ActionItemsWeeklyPerformance() {
         </span>
       </header>
 
-      <div className="p-3.5 sm:p-4 2xl:p-5">
+      <div className="hidden p-3.5 sm:p-4 2xl:p-5 lg:block">
         <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
           <div
             ref={dragScrollRef}
@@ -196,6 +287,22 @@ export default function ActionItemsWeeklyPerformance() {
       </div>
     </div>
   </div>
+
+      <div className="space-y-3 p-3 lg:hidden">
+        {filteredWeeklyPerformanceRows.length ? (
+          filteredWeeklyPerformanceRows.map((row, index) => (
+            <WeeklyPerformanceMobileCard
+              key={row.id}
+              row={row}
+              index={index}
+            />
+          ))
+        ) : (
+          <div className="rounded-xl border border-dashed border-[#D9E2EC] p-8 text-center text-sm font-semibold text-[#98A2B3]">
+            No weekly performance rows match the current reporting scope.
+          </div>
+        )}
+      </div>
 </section>
   );
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { AlertCircle, LoaderCircle, UsersRound } from "lucide-react";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
@@ -175,27 +176,31 @@ export default function TalentPoolTable({
 
       {!isLoading && !loadError ? (
         <>
-          <div className="space-y-3 pt-3 lg:hidden">
-            {paginatedCandidates.length > 0 ? (
-              paginatedCandidates.map((candidate, index) => (
-                <TalentPoolMobileCard
-                  key={candidate.id || candidate.candidateId}
-                  candidate={candidate}
-                  index={index}
-                />
-              ))
-            ) : (
-              <TableState
-                icon={UsersRound}
-                title={emptyTitle}
-                message={emptyMessage}
-              />
-            )}
-          </div>
-
-          <div className="hidden lg:block">
-            <div className="overflow-x-auto rounded-b-xl border border-t-0 border-sibs-border bg-white">
-              <table className="w-full min-w-[980px] 2xl:min-w-[1060px] table-fixed border-separate border-spacing-0 text-left">
+          <div className="overflow-hidden bg-white">
+            <ResponsiveTableShell
+              mobileContent={
+                paginatedCandidates.length > 0 ? (
+                  <div className="space-y-3 p-3.5 sm:p-4">
+                    {paginatedCandidates.map((candidate, index) => (
+                      <TalentPoolMobileCard
+                        key={candidate.id || candidate.candidateId}
+                        candidate={candidate}
+                        index={index}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3.5 sm:p-4">
+                    <DataCard.Empty
+                      title={emptyTitle}
+                      description={emptyMessage}
+                    />
+                  </div>
+                )
+              }
+              desktopContent={
+                <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
+                  <table className="w-full min-w-[980px] 2xl:min-w-[1060px] table-fixed border-separate border-spacing-0 text-left">
                 <thead className="sibs-data-table-head">
                   <tr className="sibs-data-table-head-row">
                     <th className="sibs-data-table-th w-[23%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
@@ -313,13 +318,13 @@ export default function TalentPoolTable({
                                 <div className="mt-0.5 space-y-0.5">
                                   <p
                                     title={talentPoolId}
-                                    className="truncate font-mono text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted tracking-tight"
+                                    className="truncate font-mono text-[10px] 2xl:text-[10.5px] font-semibold tabular-nums text-sibs-muted tracking-tight"
                                   >
                                     Talent Pool ID: {talentPoolId || "—"}
                                   </p>
                                   <p
                                     title={leadId}
-                                    className="truncate font-mono text-[10px] 2xl:text-[11px] font-extrabold text-emerald-700 tracking-tight"
+                                    className="truncate font-mono text-[10px] 2xl:text-[10.5px] font-extrabold tabular-nums text-emerald-700 tracking-tight"
                                   >
                                     Lead ID: {leadId || "—"}
                                   </p>
@@ -327,7 +332,7 @@ export default function TalentPoolTable({
                               ) : (
                                 <p
                                   title={candidate.candidateId}
-                                  className="mt-0.5 truncate font-mono text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted tracking-tight"
+                                  className="mt-0.5 truncate font-mono text-[10px] 2xl:text-[10.5px] font-semibold tabular-nums text-sibs-muted tracking-tight"
                                 >
                                   Talent Pool ID: {candidate.candidateId || "—"}
                                 </p>
@@ -344,7 +349,7 @@ export default function TalentPoolTable({
                             </p>
                             <p
                               title={candidate.skillsLanguage || "—"}
-                              className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-medium text-sibs-text-muted"
+                              className="mt-0.5 truncate text-[10px] 2xl:text-[10.5px] font-medium text-sibs-muted"
                             >
                               Skills: {candidate.skillsLanguage || "—"}
                             </p>
@@ -359,7 +364,7 @@ export default function TalentPoolTable({
                             </p>
                             <p
                               title={finalAccount}
-                              className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-medium text-sibs-text-muted"
+                              className="mt-0.5 truncate text-[10px] 2xl:text-[10.5px] font-medium text-sibs-muted"
                             >
                               Final Account: {finalAccount}
                             </p>
@@ -381,7 +386,7 @@ export default function TalentPoolTable({
                           <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
                             <p
                               title={lastActivity}
-                              className="truncate sibs-text-xs font-semibold text-sibs-text-secondary whitespace-nowrap"
+                              className="truncate sibs-text-xs font-semibold tabular-nums text-sibs-secondary whitespace-nowrap"
                             >
                               {lastActivity}
                             </p>
@@ -392,7 +397,7 @@ export default function TalentPoolTable({
                   ) : (
                     <tr>
                       <td colSpan={5} className="px-5 py-12">
-                        <div className="flex flex-col items-center text-center text-[#667085]">
+                        <div className="flex flex-col items-center text-center text-sibs-muted">
                           <UsersRound className="h-6 w-6" />
                           <p className="mt-2 text-[13px] font-extrabold">
                             {emptyTitle}
@@ -407,7 +412,9 @@ export default function TalentPoolTable({
                 </tbody>
               </table>
             </div>
-          </div>
+          }
+        />
+      </div>
 
           <PaginationTable
             showSearch={false}

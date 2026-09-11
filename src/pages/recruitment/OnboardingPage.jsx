@@ -229,7 +229,7 @@ export default function OnboardingPage() {
             title="Onboarding"
             description="Track accepted offers through expected start, actual start, Show / No Show, pre-start withdrawal, and final True Hire conversion."
             actions={
-              <div className="flex shrink-0 flex-wrap items-center gap-2 2xl:gap-2.5">
+              <>
                 <button
                   type="button"
                   onClick={handleManualRefresh}
@@ -244,12 +244,12 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={setShowCreateModal}
-                  className="sibs-btn-primary"
+                  className="sibs-btn-primary max-sm:flex-1"
                 >
                   <Plus size={15} />
                   Add Onboarding Record
                 </button>
-              </div>
+              </>
             }
           />
 

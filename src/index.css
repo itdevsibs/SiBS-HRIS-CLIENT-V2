@@ -1249,6 +1249,15 @@
     @apply text-[10px] font-extrabold uppercase tracking-normal text-sibs-faint;
   }
 
+  /* Safe Area Utilities for iOS & Android Notches */
+  .sibs-safe-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  .sibs-safe-bottom {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
   .sibs-data-table-shell {
     @apply hidden overflow-hidden rounded-xl border border-sibs-border bg-white lg:block;
   }

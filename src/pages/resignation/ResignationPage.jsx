@@ -186,7 +186,7 @@ export default function ResignationPage() {
                 <button
                   type="button"
                   onClick={() => setOpenForm(true)}
-                  className="sibs-btn-primary"
+                  className="sibs-btn-primary max-sm:flex-1"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                   Submit Resignation
@@ -353,6 +353,7 @@ export default function ResignationPage() {
             </table>
           </div>
         </section>
+        </div>
       </main>
     </div>
   );

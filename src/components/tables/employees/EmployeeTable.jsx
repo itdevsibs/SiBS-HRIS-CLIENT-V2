@@ -16,6 +16,7 @@ import { useUser } from "@/services/context/UserContext";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "@/lib/utils/employees/employeeNameDisplay.js";
 import { usePagination } from "@/services/context/PaginationContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
+import { DataCard, ResponsiveTableShell, StatusFilterTabs } from "@/components/ui";
 
 const ENTITY = "employees";
 const PAGE_LIMIT = 15;
@@ -741,84 +742,57 @@ function MobileEmployeeCard({ employee, onOpen }) {
   const preferredName = getPreferredName(employee);
 
   return (
-    <button
-      type="button"
+    <DataCard
+      interactive
       onClick={() => onOpen(employee)}
-      className="sibs-card w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/30"
       aria-label={`Open employee profile for ${getEmployeeName(employee)}`}
     >
-      <div className="flex items-start gap-3">
-        <EmployeeAvatar employee={employee} size="lg" />
-
-        <div className="min-w-0 flex-1">
-          <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+      <DataCard.Header
+        avatar={<EmployeeAvatar employee={employee} size="md" />}
+        title={getEmployeeName(employee)}
+        subtitle={
+          getPosition(employee) || (preferredName ? `Preferred: ${preferredName}` : null)
+        }
+        badge={
+          <span className="rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-sibs-orange">
             {getSibsId(employee) || "N/A"}
           </span>
+        }
+      />
 
-          <h3 className="mt-1 break-words text-sm font-extrabold leading-tight text-[#042C51]">
-            {getEmployeeName(employee)}
-          </h3>
+      <DataCard.ContextRow>
+        <EmployeeAccountChips employee={employee} compact />
+        <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
+      </DataCard.ContextRow>
 
-          {preferredName ? (
-            <p className="mt-1 text-[11px] font-semibold text-[#667085]">
-              Preferred: {preferredName}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-            Account / Site
-          </p>
-          <div className="mt-2">
-            <EmployeeAccountChips employee={employee} />
-          </div>
-          <div className="mt-2">
-            <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <DataCard.Metrics cols={3}>
+        <div className="min-w-0">
+          <span className="block text-[9px] font-extrabold uppercase tracking-wider text-sibs-muted">
             Department
-          </p>
-          {getPosition(employee) ? (
-            <p className="mt-1 break-words text-xs font-extrabold text-[#042C51]">
-              {getPosition(employee)}
-            </p>
-          ) : null}
-
-          <div className="mt-1.5">
+          </span>
+          <div className="mt-1">
             <EmployeeDepartmentList employee={employee} compact />
           </div>
         </div>
+        <DataCard.MetricItem
+          label="Hired"
+          value={formatCompactDate(getHireDate(employee))}
+          tone="secondary"
+        />
+        <DataCard.MetricItem
+          label="HR Details"
+          value={`${getGender(employee)} · ${getCivilStatus(employee)}`}
+          tone="navy"
+        />
+      </DataCard.Metrics>
 
-        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-            Contact & Email
-          </p>
-          <div className="mt-1 space-y-1">
-            <DetailLine icon={Mail} breakAll>
-              {getEmail(employee)}
-            </DetailLine>
-            <DetailLine icon={Phone}>{getContact(employee)}</DetailLine>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-            HR Metadata
-          </p>
-          <div className="mt-1 space-y-1 text-[11px] font-semibold text-[#667085]">
-            <p>Gender: {getGender(employee)}</p>
-            <p>Civil: {getCivilStatus(employee)}</p>
-            <p>Hired: {formatCompactDate(getHireDate(employee))}</p>
-          </div>
-        </div>
+      <div className="mt-3 flex flex-col gap-1 border-t border-sibs-border pt-2.5">
+        <DetailLine icon={Mail} breakAll>
+          {getEmail(employee)}
+        </DetailLine>
+        <DetailLine icon={Phone}>{getContact(employee)}</DetailLine>
       </div>
-    </button>
+    </DataCard>
   );
 }
 
@@ -1207,222 +1181,193 @@ export default function EmployeeTable({
         />
       </div>
 
-      <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
-        {tabs.length > 1 ? (
-          <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
-            <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
-              {tabs.map((tab) => {
-                const TabIcon = tab.icon || UserRoundCheck;
-                const isActive = activeTab === tab.label;
+      <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
+        <div className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+          {tabs.length > 1 ? (
+            <StatusFilterTabs
+              tabs={tabs.map((tab) => ({
+                key: tab.label,
+                label: tab.label === "CHWCP" ? "CHWCP Requests" : tab.label,
+                icon: tab.icon || UserRoundCheck,
+                count: Number(tab.count || 0) > 0 ? tab.count : null,
+              }))}
+              activeValue={activeTab}
+              onChange={onTabChange}
+              layoutId="employeeDirectoryTabIndicator"
+            />
+          ) : null}
 
-                return (
-                  <button
-                    key={tab.label}
-                    type="button"
-                    onClick={() => onTabChange?.(tab.label)}
-                    className={`relative inline-flex h-10 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
-                      isActive
-                        ? "rounded-t-xl bg-white text-[#042C51]"
-                        : "text-[#667085] hover:text-[#042C51]"
-                    }`}
-                  >
-                    <TabIcon size={15} className="shrink-0" />
-                    <span className="truncate">
-                      {tab.label === "CHWCP" ? "CHWCP Requests" : tab.label}
-                    </span>
-
-                    {Number(tab.count || 0) > 0 ? (
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors ${
-                          isActive
-                            ? "bg-[#042C51] text-white"
-                            : "bg-slate-200 text-slate-600"
-                        }`}
-                      >
-                        {Number(tab.count).toLocaleString("en-PH")}
-                      </span>
-                    ) : null}
-
-                    {isActive ? (
-                      <Motion.div
-                        layoutId="employeeDirectoryTabIndicator"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
-                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                      />
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
-
-        <div ref={mobileScrollRef} className="lg:hidden">
-          {loading ? (
-            <EmptyState loading />
-          ) : employees.length === 0 ? (
-            <EmptyState loading={false} />
-          ) : (
-            <div className="space-y-3">
-              {employees.map((employee, index) => (
-                <div
-                  key={`${currentPage}-${
-                    getSibsId(employee) || `${getEmployeeName(employee)}-${index}`
-                  }`}
-                  className="sibs-employee-row-reveal"
-                  style={{
-                    animationDelay: `${Math.min(index, 10) * 36}ms`,
-                  }}
-                >
-                  <MobileEmployeeCard
-                    employee={employee}
-                    onOpen={goToEmployee}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div
-          className={`hidden overflow-hidden border border-[#E6ECF2] bg-white lg:block ${
-            tabs.length > 1 ? "rounded-b-xl border-t-0" : "rounded-xl"
-          }`}
-        >
-          <div ref={tableScrollRef} className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar">
-            <table className="w-full min-w-[1500px] table-fixed border-collapse text-left">
-              <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                <tr className="border-b border-[#E6ECF2]">
-                  <th scope="col" className="w-[7%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    SIBS ID
-                  </th>
-                  <th scope="col" className="w-[19%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    EMPLOYEE FULL NAME
-                  </th>
-                  <th scope="col" className="w-[16%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    ACCOUNT / SITE
-                  </th>
-                  <th scope="col" className="w-[20%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    DEPARTMENT
-                  </th>
-                  <th scope="col" className="w-[24%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    CONTACT & EMAIL
-                  </th>
-                  <th scope="col" className="w-[14%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    HR METADATA
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody
-                key={`${activeTab}-${currentPage}-${search}-${departmentFilter}-${accountFilterKey}`}
-                className="divide-y divide-[#EEF2F6]"
-              >
+          <ResponsiveTableShell
+            mobileContent={
+              <div ref={mobileScrollRef} className="p-3.5 sm:p-4">
                 {loading ? (
-                  Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                    <tr key={`employee-skeleton-${index}`}>
-                      <td colSpan={columns.length} className="px-3 2xl:px-4 py-3">
-                        <div className="h-6 w-full animate-sibs-pulse rounded bg-slate-100" />
-                      </td>
-                    </tr>
-                  ))
+                  <DataCard.Skeleton count={5} lines={3} />
                 ) : employees.length === 0 ? (
-                  <tr>
-                    <td colSpan={columns.length}>
-                      <EmptyState loading={false} />
-                    </td>
-                  </tr>
+                  <DataCard.Empty
+                    title="No employees found"
+                    description="Try adjusting your search or filters."
+                  />
                 ) : (
-                  employees.map((employee, index) => {
-                    const preferredName = getPreferredName(employee);
-
-                    return (
-                      <tr
-                        key={getSibsId(employee) || `${getEmployeeName(employee)}-${index}`}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => goToEmployee(employee)}
-                        onKeyDown={(event) => handleRowKeyDown(event, employee)}
-                        aria-label={`Open employee profile for ${getEmployeeName(employee)}`}
-                        className="group sibs-employee-row-reveal cursor-pointer bg-white transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                  <div className="space-y-3">
+                    {employees.map((employee, index) => (
+                      <div
+                        key={`${currentPage}-${
+                          getSibsId(employee) || `${getEmployeeName(employee)}-${index}`
+                        }`}
+                        className="sibs-employee-row-reveal"
                         style={{
                           animationDelay: `${Math.min(index, 10) * 36}ms`,
                         }}
                       >
-                        <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-xs font-extrabold text-[#FF5C28]">
-                          {getSibsId(employee) || "N/A"}
-                        </td>
+                        <MobileEmployeeCard
+                          employee={employee}
+                          onOpen={goToEmployee}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            }
+            desktopContent={
+              <div className="overflow-hidden bg-white">
+                <div ref={tableScrollRef} className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar">
+                <table className="w-full min-w-[1100px] table-fixed border-collapse text-left">
+                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                    <tr className="border-b border-[#E6ECF2]">
+                      <th scope="col" className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                        SIBS ID
+                      </th>
+                      <th scope="col" className="w-[24%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                        EMPLOYEE NAME
+                      </th>
+                      <th scope="col" className="w-[19%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                        ACCOUNT / SITE
+                      </th>
+                      <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                        DEPARTMENT
+                      </th>
+                      <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                        CONTACT & EMAIL
+                      </th>
+                      <th scope="col" className="w-[11%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                        HR METADATA
+                      </th>
+                    </tr>
+                  </thead>
 
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <EmployeeAvatar employee={employee} />
-
-                            <div className="min-w-0">
-                              <p className="break-words text-xs font-extrabold leading-tight text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
-                                {getEmployeeName(employee)}
-                              </p>
-
-                              {preferredName ? (
-                                <p className="mt-0.5 sibs-text-micro font-semibold text-[#8A98B8]">
-                                  Preferred: {preferredName}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                          <div className="min-w-0">
-                            <EmployeeAccountChips employee={employee} compact />
-
-                            <div className="mt-1 2xl:mt-1.5">
-                              <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                          <div className="min-w-0">
-                            {getPosition(employee) ? (
-                              <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
-                                {getPosition(employee)}
-                              </p>
-                            ) : null}
-
-                            <div className={getPosition(employee) ? "mt-1" : ""}>
-                              <EmployeeDepartmentList employee={employee} />
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                          <div className="w-full min-w-0 max-w-full space-y-0.5 2xl:space-y-1 overflow-hidden">
-                            <DetailLine icon={Mail} breakAll>
-                              {getEmail(employee)}
-                            </DetailLine>
-                            <DetailLine icon={Phone}>{getContact(employee)}</DetailLine>
-                          </div>
-                        </td>
-
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                          <div className="min-w-0 space-y-0.5 sibs-text-micro font-semibold leading-4 text-[#7B8DB3]">
-                            <p>Gender: {getGender(employee)}</p>
-                            <p>Civil: {getCivilStatus(employee)}</p>
-                            <p>
-                              Hired:{" "}
-                              <span className="font-extrabold text-[#536887]">
-                                {formatCompactDate(getHireDate(employee))}
-                              </span>
-                            </p>
-                          </div>
+                  <tbody
+                    key={`${activeTab}-${currentPage}-${search}-${departmentFilter}-${accountFilterKey}`}
+                    className="divide-y divide-[#EEF2F6]"
+                  >
+                    {loading ? (
+                      Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                        <tr key={`employee-skeleton-${index}`}>
+                          <td colSpan={columns.length} className="px-3 2xl:px-4 py-3">
+                            <div className="h-6 w-full animate-sibs-pulse rounded bg-slate-100" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : employees.length === 0 ? (
+                      <tr>
+                        <td colSpan={columns.length}>
+                          <EmptyState loading={false} />
                         </td>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                    ) : (
+                      employees.map((employee, index) => {
+                        const preferredName = getPreferredName(employee);
+
+                        return (
+                          <tr
+                            key={getSibsId(employee) || `${getEmployeeName(employee)}-${index}`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => goToEmployee(employee)}
+                            onKeyDown={(event) => handleRowKeyDown(event, employee)}
+                            aria-label={`Open employee profile for ${getEmployeeName(employee)}`}
+                            className="group sibs-employee-row-reveal cursor-pointer transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                            style={{
+                              animationDelay: `${Math.min(index, 10) * 36}ms`,
+                            }}
+                          >
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-[#FF5C28]">
+                              {getSibsId(employee) || "N/A"}
+                            </td>
+
+                            <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                              <div className="flex min-w-[200px] items-center gap-2.5 2xl:gap-3">
+                                <EmployeeAvatar employee={employee} />
+
+                                <div className="min-w-0">
+                                  <p className="break-words sibs-text-xs font-extrabold leading-tight text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
+                                    {getEmployeeName(employee)}
+                                  </p>
+
+                                  {preferredName ? (
+                                    <p className="mt-0.5 sibs-text-micro font-semibold text-[#8A98B8]">
+                                      Preferred: {preferredName}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                              <div className="min-w-[150px]">
+                                <EmployeeAccountChips employee={employee} compact />
+
+                                <div className="mt-1 2xl:mt-1.5">
+                                  <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                              <div className="min-w-[180px]">
+                                {getPosition(employee) ? (
+                                  <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                                    {getPosition(employee)}
+                                  </p>
+                                ) : null}
+
+                                <div className={getPosition(employee) ? "mt-1" : ""}>
+                                  <EmployeeDepartmentList employee={employee} />
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                              <div className="w-full min-w-0 max-w-full space-y-0.5 2xl:space-y-1 overflow-hidden">
+                                <DetailLine icon={Mail} breakAll>
+                                  {getEmail(employee)}
+                                </DetailLine>
+                                <DetailLine icon={Phone}>{getContact(employee)}</DetailLine>
+                              </div>
+                            </td>
+
+                            <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                              <div className="min-w-[120px] space-y-0.5 sibs-text-micro font-semibold leading-4 text-[#7B8DB3]">
+                                <p>Gender: {getGender(employee)}</p>
+                                <p>Civil: {getCivilStatus(employee)}</p>
+                                <p>
+                                  Hired:{" "}
+                                  <span className="font-extrabold text-[#536887]">
+                                    {formatCompactDate(getHireDate(employee))}
+                                  </span>
+                                </p>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        />
         </div>
       </div>
 

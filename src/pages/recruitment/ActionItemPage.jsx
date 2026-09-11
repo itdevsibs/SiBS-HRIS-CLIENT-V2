@@ -47,11 +47,27 @@ export default function ActionItemsPage() {
           </div>
 
           <section
-            className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+            className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
             style={{ animationDelay: "300ms" }}
           >
-            <ActionItemsFilters />
-            <ActionItemsTable />
+            <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
+              <div className="flex flex-col gap-0.5">
+                <h2 className="sibs-card-title">
+                  Action Items – JIT Delivery Focus Registry
+                </h2>
+                <p className="sibs-card-subtitle">
+                  Accountable actions linked to the current reporting scope. Open a record to review source details and progress.
+                </p>
+              </div>
+
+              <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+                <ActionItemsFilters />
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
+              <ActionItemsTable />
+            </div>
           </section>
 
           <ActionItemsRule />

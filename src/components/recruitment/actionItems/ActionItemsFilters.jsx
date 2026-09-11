@@ -1,45 +1,28 @@
-import React from "react";
+import React, { useMemo } from "react";
+import { Filter } from "lucide-react";
+
 import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
-import { Filter, Search } from "lucide-react";
 import { usePagination } from "../../../services/context/PaginationContext.jsx";
+import PaginationTable from "../../../services/pagination/PaginationTable.jsx";
 import {
   GAP_OPTIONS,
   MODULE_OPTIONS,
   RISK_OPTIONS,
   STATUS_OPTIONS,
 } from "../../../lib/utils/actionItems/actionItemsConstants.js";
-import ThemedDropdown from "../../layout/dropdown/ThemedDropdown.jsx";
 
 const ENTITY_KEY = "action-items";
 
-function FilterSelect({ label, filterKey, options }) {
-  const { filterValues, setFilter } = usePagination(ENTITY_KEY);
-  const currentValue = filterValues?.[filterKey] || options[0];
-
-  const formattedOptions = (options || []).map((opt) => ({
+function toOptions(options = []) {
+  return options.map((opt) => ({
+    id: opt,
     label: opt,
     value: opt,
   }));
-
-  return (
-    <div className="w-full min-w-0 flex-[1_1_130px] 2xl:flex-[1_1_160px]">
-      <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
-        {label}
-      </label>
-      <ThemedDropdown
-        value={currentValue}
-        options={formattedOptions}
-        onChange={(val) => setFilter(filterKey, val)}
-        searchable={false}
-        showPlaceholderOption={false}
-        className="w-full"
-      />
-    </div>
-  );
 }
 
 export default function ActionItemsFilters() {
-  const { ownerOptions } = useActionItems();
+  const { ownerOptions = [] } = useActionItems();
   const {
     searchInput,
     setSearchInput,
@@ -48,6 +31,12 @@ export default function ActionItemsFilters() {
     setFilter,
     filterValues,
   } = usePagination(ENTITY_KEY);
+
+  const formattedStatusOptions = useMemo(() => toOptions(STATUS_OPTIONS), []);
+  const formattedRiskOptions = useMemo(() => toOptions(RISK_OPTIONS), []);
+  const formattedModuleOptions = useMemo(() => toOptions(MODULE_OPTIONS), []);
+  const formattedGapOptions = useMemo(() => toOptions(GAP_OPTIONS), []);
+  const formattedOwnerOptions = useMemo(() => toOptions(ownerOptions), [ownerOptions]);
 
   const hasActiveFilters = Boolean(
     searchInput ||
@@ -68,47 +57,92 @@ export default function ActionItemsFilters() {
     setFilter("owner", "All Owners");
   }
 
+  function handleSearchKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitSearch();
+    }
+  }
+
   return (
-    <div className="bg-white font-jakarta">
-      <div className="flex flex-col gap-2.5 2xl:gap-3 overflow-visible xl:flex-row xl:items-end">
-        <div className="relative w-full min-w-0 xl:min-w-[240px] 2xl:xl:min-w-[280px] xl:flex-[1_1_300px] 2xl:xl:flex-[1_1_360px]">
-          <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
-            Search
-          </label>
-          <div className="group relative">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
-            />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && commitSearch()}
-              placeholder="Search action, role, account, owner..."
-              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 pl-9 sibs-text-xs font-semibold text-[#101828] outline-none transition focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/20"
-            />
-          </div>
-        </div>
-
-        <FilterSelect label="Status" filterKey="status" options={STATUS_OPTIONS} />
-        <FilterSelect label="Risk" filterKey="risk" options={RISK_OPTIONS} />
-        <FilterSelect label="Module" filterKey="module" options={MODULE_OPTIONS} />
-        <FilterSelect label="Gap" filterKey="gap" options={GAP_OPTIONS} />
-        <FilterSelect label="Owner" filterKey="owner" options={ownerOptions} />
-
-        <div className="flex w-full min-w-0 items-end xl:w-auto xl:flex-none">
-          <button
-            type="button"
-            onClick={handleClearAll}
-            disabled={!hasActiveFilters}
-            className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg 2xl:rounded-xl border border-[#D0D5DD] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
-          >
-            <Filter size={14} />
-            Clear
-          </button>
-        </div>
-      </div>
-    </div>
+    <PaginationTable
+      filterLayout="ta-inline"
+      showFilterPanel={false}
+      showFilterHeader={false}
+      showPagination={false}
+      searchValue={searchInput}
+      searchPlaceholder="Search action, role, account, owner..."
+      onSearchChange={setSearchInput}
+      onSearchKeyDown={handleSearchKeyDown}
+      className="border-0 bg-transparent p-0 shadow-none font-jakarta"
+      dropdownFilters={[
+        {
+          key: "status",
+          value: filterValues?.status || "All Status",
+          options: formattedStatusOptions,
+          onChange: (val) => setFilter("status", val),
+          includeAll: false,
+          allLabel: "All Status",
+          label: "Status",
+          placeholder: "All Status",
+          searchable: false,
+        },
+        {
+          key: "risk",
+          value: filterValues?.risk || "All Risk",
+          options: formattedRiskOptions,
+          onChange: (val) => setFilter("risk", val),
+          includeAll: false,
+          allLabel: "All Risk",
+          label: "Risk",
+          placeholder: "All Risk",
+          searchable: false,
+        },
+        {
+          key: "module",
+          value: filterValues?.module || "All Modules",
+          options: formattedModuleOptions,
+          onChange: (val) => setFilter("module", val),
+          includeAll: false,
+          allLabel: "All Modules",
+          label: "Module",
+          placeholder: "All Modules",
+          searchable: true,
+        },
+        {
+          key: "gap",
+          value: filterValues?.gap || "All Gaps",
+          options: formattedGapOptions,
+          onChange: (val) => setFilter("gap", val),
+          includeAll: false,
+          allLabel: "All Gaps",
+          label: "Gap",
+          placeholder: "All Gaps",
+          searchable: true,
+        },
+        {
+          key: "owner",
+          value: filterValues?.owner || "All Owners",
+          options: formattedOwnerOptions,
+          onChange: (val) => setFilter("owner", val),
+          includeAll: false,
+          allLabel: "All Owners",
+          label: "Owner",
+          placeholder: "All Owners",
+          searchable: true,
+        },
+      ]}
+      rightContent={
+        <button
+          type="button"
+          onClick={handleClearAll}
+          disabled={!hasActiveFilters}
+          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+        >
+          <Filter size={14} />
+          Clear
+        </button>
+      }
+    />
   );
 }

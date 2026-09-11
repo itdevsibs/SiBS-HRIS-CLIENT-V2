@@ -138,7 +138,7 @@ export default function AttendancePage() {
                   />
                 </button>
 
-                <span className="sibs-btn-primary pointer-events-none">
+                <span className="sibs-btn-primary pointer-events-none max-sm:flex-1">
                   <Clock className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                   Attendance Records
                 </span>

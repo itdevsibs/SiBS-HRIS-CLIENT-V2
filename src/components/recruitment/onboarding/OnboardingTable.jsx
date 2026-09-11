@@ -8,6 +8,7 @@ import { useOnboarding } from "../../../services/context/OnboardingContext";
 import { usePagination } from "../../../services/context/PaginationContext";
 import OnboardingMobileCardView from "./OnboardingMobileCardView";
 import PaginationTable from "../../../services/pagination/PaginationTable.jsx";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 
 const PAGE_SIZE = 8;
 
@@ -134,45 +135,54 @@ export default function OnboardingTable({ onView }) {
 
   return (
     <div className="relative z-[1] font-jakarta">
-      <div className="space-y-3 p-4 lg:hidden">
-        {loading ? (
-          <div className="sibs-empty-panel">Loading onboarding records...</div>
-        ) : paginatedData.length > 0 ? (
-          paginatedData.map((item, index) => (
-            <OnboardingMobileCardView
-              key={item.id || getOnboardingDisplayId(item)}
-              delay={index * 40}
-              record={{
-                ...item,
-                onboardingId: getOnboardingDisplayId(item),
-                candidateName: getRecordValue(item, "candidateName", "candidate_name"),
-                candidateEmail: getRecordValue(item, "candidateEmail", "candidate_email"),
-                roleTitle: getRecordValue(item, "roleTitle", "role_title"),
-                showStatus: getRecordValue(item, "showStatus", "show_status", "Pending"),
-                finalOutcome: getRecordValue(
-                  item,
-                  "finalOutcome",
-                  "final_outcome",
-                  "Pending Start",
-                ),
-              }}
-              onView={() => onView(item)}
-              formatDate={formatDate}
-              getShowStatusClass={getShowStatusClass}
-              getOutcomeClass={getOutcomeClass}
+      <ResponsiveTableShell
+        mobileContent={
+          loading ? (
+            <DataCard.Skeleton count={4} lines={3} />
+          ) : paginatedData.length > 0 ? (
+            <div className="space-y-3">
+              {paginatedData.map((item, index) => (
+                <OnboardingMobileCardView
+                  key={item.id || getOnboardingDisplayId(item)}
+                  delay={index * 40}
+                  record={{
+                    ...item,
+                    onboardingId: getOnboardingDisplayId(item),
+                    candidateName: getRecordValue(item, "candidateName", "candidate_name"),
+                    candidateEmail: getRecordValue(item, "candidateEmail", "candidate_email"),
+                    roleTitle: getRecordValue(item, "roleTitle", "role_title"),
+                    showStatus: getRecordValue(item, "showStatus", "show_status", "Pending"),
+                    acceptedOfferDate: getRecordValue(
+                      item,
+                      "acceptedOfferDate",
+                      "accepted_offer_date",
+                    ),
+                    finalOutcome: getRecordValue(
+                      item,
+                      "finalOutcome",
+                      "final_outcome",
+                      "Pending Start",
+                    ),
+                  }}
+                  onView={() => onView(item)}
+                  formatDate={formatDate}
+                  getShowStatusClass={getShowStatusClass}
+                  getOutcomeClass={getOutcomeClass}
+                />
+              ))}
+            </div>
+          ) : (
+            <DataCard.Empty
+              icon={<UserRoundCheck size={28} />}
+              title="No onboarding records found"
+              description="No onboarding records match the current search and filters."
             />
-          ))
-        ) : (
-          <div className="sibs-empty-panel">
-            <UserRoundCheck size={22} className="mx-auto mb-2 text-[#6B88A8]" />
-            No onboarding records match the current search and filters.
-          </div>
-        )}
-      </div>
-
-      <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:block">
-        <div className="overflow-x-auto sibs-scrollbar">
-          <table className="w-full min-w-[1020px] border-collapse bg-white">
+          )
+        }
+        desktopContent={
+          <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+            <div className="overflow-x-auto sibs-scrollbar">
+              <table className="w-full min-w-[1020px] border-collapse bg-white">
             <thead className="sibs-data-table-head">
               <tr className="sibs-data-table-head-row">
               {[
@@ -244,59 +254,61 @@ export default function OnboardingTable({ onView }) {
                     className="sibs-data-table-row sibs-page-card-in group transition-colors"
                     style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                   >
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 sibs-text-xs font-extrabold text-[#042C51]">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-sibs-navy">
                       <button
                         type="button"
                         onClick={() => onView(item)}
-                        className="font-extrabold text-[#042C51] transition hover:text-[#FF5C28]"
+                        className="font-extrabold tabular-nums text-sibs-navy transition hover:text-sibs-orange"
                       >
                         {getOnboardingDisplayId(item)}
                       </button>
                     </td>
 
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 sibs-text-xs">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs">
                       <div className="flex min-w-0 items-center gap-2.5">
-                        <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-full bg-[#042C51] sibs-text-micro font-extrabold text-white shadow-sm">
+                        <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-full bg-sibs-navy sibs-text-micro font-extrabold text-white shadow-sm">
                           {getInitials(candidateName)}
                         </span>
                         <div className="min-w-0">
-                          <p className="m-0 max-w-[210px] truncate font-extrabold text-[#042C51]">
+                          <p className="m-0 max-w-[210px] truncate font-extrabold text-sibs-navy">
                             {candidateName}
                           </p>
-                          <p className="mt-0.5 max-w-[210px] truncate sibs-text-micro font-semibold text-[#667085]">
+                          <p className="mt-0.5 max-w-[210px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-sibs-muted">
                             {candidateEmail || "No email saved"}
                           </p>
                         </div>
                       </div>
                     </td>
 
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 sibs-text-xs">
-                      <p className="max-w-[210px] truncate font-extrabold text-[#344054]">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs">
+                      <p className="max-w-[210px] truncate font-extrabold text-sibs-secondary">
                         {roleTitle}
                       </p>
-                      <span className="mt-0.5 inline-flex max-w-[210px] truncate rounded bg-[#E6ECF2] px-1.5 py-0.5 sibs-text-micro font-bold text-[#52637A]">
+                      <span className="mt-0.5 inline-flex max-w-[210px] truncate rounded bg-sibs-canvas px-1.5 py-0.5 text-[10px] 2xl:text-[10.5px] font-bold text-sibs-secondary">
                         {item.account || "No account"}
                       </span>
                     </td>
 
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold text-[#52637A]">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-semibold text-sibs-secondary">
                       <div className="flex items-center gap-1.5">
-                        <CalendarDays size={13} className="shrink-0 text-[#98A2B3]" />
-                        {formatDate(getRecordValue(item, "acceptedOfferDate", "accepted_offer_date"))}
+                        <CalendarDays size={13} className="shrink-0 text-sibs-faint" />
+                        <span className="tabular-nums">
+                          {formatDate(getRecordValue(item, "acceptedOfferDate", "accepted_offer_date"))}
+                        </span>
                       </div>
                     </td>
 
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 sibs-text-xs font-extrabold text-[#042C51]">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold tabular-nums text-sibs-navy">
                       {formatDate(getRecordValue(item, "expectedStartDate", "expected_start_date"))}
                     </td>
 
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold text-[#52637A]">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-semibold tabular-nums text-sibs-secondary">
                       {formatDate(getRecordValue(item, "actualStartDate", "actual_start_date"))}
                     </td>
 
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 text-center sibs-text-xs">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-center sibs-text-xs">
                       <span
-                        className={`inline-flex rounded-full border px-2.5 py-1 sibs-text-micro font-extrabold ${getShowStatusClass(
+                        className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getShowStatusClass(
                           showStatus,
                         )}`}
                       >
@@ -304,9 +316,9 @@ export default function OnboardingTable({ onView }) {
                       </span>
                     </td>
 
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 text-center sibs-text-xs">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-center sibs-text-xs">
                       <span
-                        className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 sibs-text-micro font-extrabold ${getOutcomeClass(
+                        className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getOutcomeClass(
                           finalOutcome,
                         )}`}
                       >
@@ -314,15 +326,15 @@ export default function OnboardingTable({ onView }) {
                       </span>
                     </td>
 
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-semibold text-sibs-secondary">
                       <span className="block max-w-[150px] truncate">{item.owner || "—"}</span>
                     </td>
 
-                    <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-2.5 text-right sibs-text-xs">
+                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-right sibs-text-xs">
                       <button
                         type="button"
                         onClick={() => onView(item)}
-                        className="inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-2.5 2xl:px-3 sibs-text-micro font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] active:scale-[0.98]"
+                        className="inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[10px] 2xl:text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-[#FFF7F3] hover:text-sibs-orange active:scale-[0.98]"
                       >
                         <Eye size={13} />
                         View Record
@@ -336,6 +348,8 @@ export default function OnboardingTable({ onView }) {
         </table>
         </div>
       </div>
+      }
+    />
 
       <div className="mt-2 font-jakarta">
         <PaginationTable

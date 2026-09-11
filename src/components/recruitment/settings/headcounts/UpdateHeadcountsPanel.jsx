@@ -38,6 +38,7 @@ import {
   inputClass,
 } from "./RecruitmentHeadcountPrimitives";
 import SettingsHeaderCapsules from "../SettingsHeaderCapsules";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 
 async function saveRequiredHeadcountOverride(item, requiredHeadcount) {
   const cleanRequiredHeadcount = Number(requiredHeadcount);
@@ -796,170 +797,168 @@ function UpdateHeadcountsPanel() {
           </div>
         </div>
 
-        <div>
-          <div className="space-y-3 px-4 pb-4 sm:px-5 sm:pb-5 lg:hidden">
-            {accountsLoading || weeksLoading ? (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                Loading recruitment headcount records...
-              </div>
-            ) : paginatedAccounts.length > 0 ? (
-              paginatedAccounts.map((item, index) => {
-                const metrics = getRecruitmentHeadcountMetrics(item);
-                const requiredInputValue =
-                  requiredDrafts[item.id] !== undefined
-                    ? requiredDrafts[item.id]
-                    : String(metrics.requiredHeadcount);
+        <ResponsiveTableShell
+          breakpoint="lg"
+          mobileView={
+            <div className="space-y-3 px-4 pb-4 sm:px-5 sm:pb-5">
+              {accountsLoading || weeksLoading ? (
+                <DataCard.Skeleton count={4} />
+              ) : paginatedAccounts.length > 0 ? (
+                paginatedAccounts.map((item, index) => {
+                  const metrics = getRecruitmentHeadcountMetrics(item);
+                  const requiredInputValue =
+                    requiredDrafts[item.id] !== undefined
+                      ? requiredDrafts[item.id]
+                      : String(metrics.requiredHeadcount);
 
-                const isSaving = savingRequiredId === item.id;
+                  const isSaving = savingRequiredId === item.id;
 
-                return (
-                  <div
-                    key={item.id || index}
-                    className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
-                    style={{ animationDelay: `${index * 60}ms` }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-sibs-primary-1">
-                          {item.cluster || "—"}
-                        </p>
+                  return (
+                    <DataCard
+                      key={item.id || index}
+                      style={{ animationDelay: `${index * 60}ms` }}
+                    >
+                      <DataCard.Header
+                        title={item.account || "—"}
+                        subtitle={item.cluster || "—"}
+                        badge={
+                          <StatusPill
+                            status={
+                              item.recruitmentSettingsStatus ||
+                              item.recruitment_settings_status ||
+                              "Kronos"
+                            }
+                            fallback="Kronos"
+                          />
+                        }
+                      />
 
-                        <h3 className="mt-1 text-sm font-bold text-[#101828]">
-                          {item.account || "—"}
-                        </h3>
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                            Required HC
+                          </span>
+                          {canEditRequiredHeadcount ? (
+                            <div className="mt-1">
+                              <input
+                                type="number"
+                                min="0"
+                                value={requiredInputValue}
+                                onChange={(e) =>
+                                  handleRequiredDraftChange(
+                                    item.id,
+                                    e.target.value,
+                                  )
+                                }
+                                className="h-10 w-full max-w-[140px] rounded-lg border border-[#D0D5DD] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                              />
+                            </div>
+                          ) : (
+                            <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                              {formatHeadcountNumber(metrics.requiredHeadcount)}
+                            </p>
+                          )}
+                        </div>
 
-                        <p className="mt-1 break-words text-xs font-semibold text-sibs-tertiary-5">
-                          HC Needs:{" "}
-                          {formatHeadcountNumber(
-                            metrics.actualHeadcountNeeds,
-                            2,
-                          )}{" "}
-                          / Leads:{" "}
-                          {formatHeadcountNumber(metrics.leadsToInterview)}
-                        </p>
+                        <div className="text-right">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                            Actual HC
+                          </span>
+                          <p className="mt-1 text-sm font-extrabold text-[#344054]">
+                            {formatHeadcountNumber(metrics.actualHeadcount)}
+                          </p>
+                        </div>
                       </div>
 
-                      <StatusPill
-                        status={
-                          item.recruitmentSettingsStatus ||
-                          item.recruitment_settings_status ||
-                          "Kronos"
-                        }
-                        fallback="Kronos"
-                      />
-                    </div>
+                      <DataCard.Metrics columns={2}>
+                        <DataCard.Metric
+                          label="Required Buffer"
+                          value={formatHeadcountNumber(
+                            metrics.requiredBufferHeadcount,
+                            2,
+                          )}
+                        />
+                        <DataCard.Metric
+                          label="Buffer %"
+                          value={formatHeadcountPercent(
+                            metrics.requiredBufferPercent,
+                          )}
+                        />
+                        <DataCard.Metric
+                          label="Actual Buffer"
+                          value={formatHeadcountNumber(metrics.actualBufferCount)}
+                          valueClassName={getActualBufferClass(
+                            metrics.actualBufferCount,
+                          )}
+                        />
+                        <DataCard.Metric
+                          label="Actual Buffer %"
+                          value={formatHeadcountPercent(
+                            metrics.actualBufferPercent,
+                          )}
+                          valueClassName={getActualBufferClass(
+                            metrics.actualBufferPercent,
+                          )}
+                        />
+                        <DataCard.Metric
+                          label="OPS PRF"
+                          value={formatHeadcountNumber(metrics.opsPrf)}
+                        />
+                        <DataCard.Metric
+                          label="Hiring Rate"
+                          value={formatHeadcountPercent(metrics.hiringRate)}
+                        />
+                        <DataCard.Metric
+                          label="HC Needs"
+                          value={formatHeadcountNumber(
+                            metrics.actualHeadcountNeeds,
+                            2,
+                          )}
+                        />
+                        <DataCard.Metric
+                          label="Leads"
+                          value={formatHeadcountNumber(metrics.leadsToInterview)}
+                        />
+                      </DataCard.Metrics>
 
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <RecruitmentHeadcountMobileMetric
-                        label="Required HC"
-                        value={
-                          canEditRequiredHeadcount ? (
-                            <input
-                              type="number"
-                              min="0"
-                              value={requiredInputValue}
-                              onChange={(e) =>
-                                handleRequiredDraftChange(
-                                  item.id,
-                                  e.target.value,
-                                )
-                              }
-                              className="h-9 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                            />
-                          ) : (
-                            formatHeadcountNumber(metrics.requiredHeadcount)
-                          )
-                        }
-                      />
+                      {item.statusNote ? (
+                        <DataCard.Section label="Status Note">
+                          <p className="text-xs font-semibold text-[#344054]">
+                            {item.statusNote}
+                          </p>
+                        </DataCard.Section>
+                      ) : null}
 
-                      <RecruitmentHeadcountMobileMetric
-                        label="Actual HC"
-                        value={formatHeadcountNumber(metrics.actualHeadcount)}
-                        valueClassName="text-[#344054]"
-                      />
-
-                      <RecruitmentHeadcountMobileMetric
-                        label="Required Buffer"
-                        value={formatHeadcountNumber(
-                          metrics.requiredBufferHeadcount,
-                          2,
-                        )}
-                      />
-
-                      <RecruitmentHeadcountMobileMetric
-                        label="Buffer %"
-                        value={formatHeadcountPercent(
-                          metrics.requiredBufferPercent,
-                        )}
-                        valueClassName="text-[#344054]"
-                      />
-
-                      <RecruitmentHeadcountMobileMetric
-                        label="Actual Buffer"
-                        value={formatHeadcountNumber(metrics.actualBufferCount)}
-                        valueClassName={getActualBufferClass(
-                          metrics.actualBufferCount,
-                        )}
-                      />
-
-                      <RecruitmentHeadcountMobileMetric
-                        label="Actual Buffer %"
-                        value={formatHeadcountPercent(
-                          metrics.actualBufferPercent,
-                        )}
-                        valueClassName={getActualBufferClass(
-                          metrics.actualBufferPercent,
-                        )}
-                      />
-
-                      <RecruitmentHeadcountMobileMetric
-                        label="OPS PRF"
-                        value={formatHeadcountNumber(metrics.opsPrf)}
-                      />
-
-                      <RecruitmentHeadcountMobileMetric
-                        label="Hiring Rate"
-                        value={formatHeadcountPercent(metrics.hiringRate)}
-                        valueClassName="text-[#344054]"
-                      />
-                    </div>
-
-                    <div className="mt-3 rounded-xl bg-[#F8FAFC] p-3">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                        Status Note
-                      </p>
-
-                      <p className="mt-1 line-clamp-3 text-xs font-semibold text-[#344054]">
-                        {item.statusNote || "—"}
-                      </p>
-                    </div>
-
-                    {canEditRequiredHeadcount && (
-                      <button
-                        type="button"
-                        onClick={() => handleSaveRequiredHeadcount(item)}
-                        disabled={isSaving || accountsLoading}
-                        className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 text-xs font-extrabold text-emerald-700 transition hover:border-emerald-200 hover:bg-emerald-100 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isSaving ? (
-                          <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                          <Save size={16} />
-                        )}
-                        Save Required Headcount
-                      </button>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                No recruitment headcount records found.
-              </div>
-            )}
-          </div>
-
-          <div className="hidden lg:block">
+                      {canEditRequiredHeadcount && (
+                        <DataCard.Actions>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveRequiredHeadcount(item)}
+                            disabled={isSaving || accountsLoading}
+                            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-extrabold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isSaving ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Save size={16} />
+                            )}
+                            Save Required Headcount
+                          </button>
+                        </DataCard.Actions>
+                      )}
+                    </DataCard>
+                  );
+                })
+              ) : (
+                <DataCard.Empty
+                  icon={UsersRound}
+                  title="No recruitment headcount records found"
+                  description="Adjust search or filters to see headcount data."
+                />
+              )}
+            </div>
+          }
+          desktopView={
             <div className="overflow-hidden bg-white px-4 py-4 sm:px-5 sm:pb-5">
               <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
                 <table className="w-full min-w-[1120px] border-collapse text-left">
@@ -1165,7 +1164,8 @@ function UpdateHeadcountsPanel() {
                 </table>
               </div>
             </div>
-          </div>
+          }
+        />
 
           <div className="flex flex-col justify-between gap-4 rounded-b-2xl border-t border-[#E6ECF2] bg-white px-4 py-4 sm:px-5 md:flex-row md:items-center">
             <p className="text-xs font-semibold text-sibs-tertiary-5">
@@ -1204,7 +1204,6 @@ function UpdateHeadcountsPanel() {
               </button>
             </div>
           </div>
-        </div>
       </section>
 
       <StatusModal

@@ -1,5 +1,6 @@
 import React from "react";
-import { CalendarDays, Eye, UserRound } from "lucide-react";
+import { CalendarDays, ChevronRight, Eye, Mail, UserRound } from "lucide-react";
+import { DataCard } from "@/components/ui";
 
 function getInitials(name = "") {
   const parts = String(name || "")
@@ -21,100 +22,125 @@ export default function OnboardingMobileCardView({
   getOutcomeClass,
   delay = 0,
 }) {
+  const candidateName = record.candidateName || "Candidate";
+  const onboardingId = record.onboardingId || record.id || "—";
+  const email = record.candidateEmail;
+  const owner = record.owner || "—";
+
   return (
-    <article
-      className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+    <DataCard
+      interactive
+      onClick={onView}
+      aria-label={`View onboarding record for ${candidateName}`}
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
+      className="font-jakarta"
     >
-      <button
-        type="button"
-        onClick={onView}
-        className="w-full p-3.5 text-left transition hover:bg-[#FFF9F6] active:bg-[#FFF4ED]"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full bg-[#042C51] sibs-text-micro font-extrabold text-white shadow-sm">
-              {getInitials(record.candidateName)}
+      <DataCard.Header
+        avatar={
+          <span className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-full bg-[#042C51] text-xs font-extrabold text-white shadow-sm">
+            {getInitials(candidateName)}
+          </span>
+        }
+        title={candidateName}
+        subtitle={
+          <div className="mt-0.5 space-y-0.5">
+            <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+              {onboardingId}
             </span>
-
-            <div className="min-w-0">
-              <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#6B88A8]">
-                {record.onboardingId || record.id}
+            {email ? (
+              <p className="flex items-center gap-1.5 truncate text-[11px] font-medium text-[#667085]">
+                <Mail size={11} className="shrink-0 text-[#98A2B3]" />
+                <span className="truncate">{email}</span>
               </p>
-              <h3 className="mt-0.5 truncate sibs-text-xs font-extrabold text-[#101828]">
-                {record.candidateName}
-              </h3>
-              <p className="mt-0.5 truncate sibs-text-micro font-semibold text-[#667085]">
-                {record.candidateEmail}
-              </p>
-            </div>
+            ) : null}
           </div>
+        }
+        badge={
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <span
+              className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${getShowStatusClass(
+                record.showStatus,
+              )}`}
+            >
+              {record.showStatus}
+            </span>
+            <span
+              className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${getOutcomeClass(
+                record.finalOutcome,
+              )}`}
+            >
+              {record.finalOutcome}
+            </span>
+          </div>
+        }
+      />
 
-          <Eye size={15} className="mt-1 shrink-0 text-[#FF5C28]" />
-        </div>
-
-        <div className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5">
-          <p className="truncate sibs-text-xs font-extrabold text-[#042C51]">
+      <DataCard.ContextRow>
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
+            Role Assignment
+          </p>
+          <p className="mt-0.5 truncate text-xs font-bold text-[#042C51]">
             {record.roleTitle || "Not assigned"}
           </p>
-          <p className="mt-0.5 truncate sibs-text-micro font-semibold text-[#667085]">
+        </div>
+        <div className="min-w-0 flex-1 border-l border-[#E6ECF2] pl-2.5">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
+            Account
+          </p>
+          <p className="mt-0.5 truncate text-xs font-semibold text-[#344054]">
             {record.account || "No account assigned"}
           </p>
         </div>
+      </DataCard.ContextRow>
 
-        <div className="mt-2.5 grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-[#E6ECF2] bg-white p-2.5">
-            <div className="flex items-center gap-1.5 text-[#98A2B3]">
-              <CalendarDays size={12} />
-              <p className="sibs-text-micro font-extrabold uppercase tracking-wide">
-                Expected Start
-              </p>
-            </div>
-            <p className="mt-1 sibs-text-micro font-extrabold text-[#344054]">
-              {formatDate(record.expectedStartDate)}
-            </p>
-          </div>
+      <DataCard.Metrics cols={3}>
+        <DataCard.MetricItem
+          label="Offer Accepted"
+          value={
+            <span className="inline-flex items-center gap-1">
+              <CalendarDays size={11} className="shrink-0 text-[#98A2B3]" />
+              <span>{formatDate(record.acceptedOfferDate)}</span>
+            </span>
+          }
+          valueClassName="text-xs font-bold text-[#042C51]"
+        />
+        <DataCard.MetricItem
+          label="Expected Start"
+          value={
+            <span className="inline-flex items-center gap-1">
+              <CalendarDays size={11} className="shrink-0 text-[#98A2B3]" />
+              <span>{formatDate(record.expectedStartDate)}</span>
+            </span>
+          }
+          valueClassName="text-xs font-bold text-[#042C51]"
+        />
+        <DataCard.MetricItem
+          label="Actual Start"
+          value={
+            <span className="inline-flex items-center gap-1">
+              <CalendarDays size={11} className="shrink-0 text-[#98A2B3]" />
+              <span>{formatDate(record.actualStartDate)}</span>
+            </span>
+          }
+          valueClassName="text-xs font-bold text-[#042C51]"
+        />
+      </DataCard.Metrics>
 
-          <div className="rounded-xl border border-[#E6ECF2] bg-white p-2.5">
-            <div className="flex items-center gap-1.5 text-[#98A2B3]">
-              <UserRound size={12} />
-              <p className="sibs-text-micro font-extrabold uppercase tracking-wide">
-                Actual Start
-              </p>
-            </div>
-            <p className="mt-1 sibs-text-micro font-extrabold text-[#344054]">
-              {formatDate(record.actualStartDate)}
-            </p>
-          </div>
-        </div>
+      <DataCard.Footer>
+        <div className="flex w-full items-center justify-between gap-2">
+          <p className="flex items-center gap-1 truncate text-[10px] font-semibold text-[#667085]">
+            <UserRound size={11} className="shrink-0 text-[#98A2B3]" />
+            <span className="truncate">TA Owner: {owner}</span>
+          </p>
 
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <span
-            className={`inline-flex rounded-full border px-2.5 py-1 sibs-text-micro font-extrabold ${getShowStatusClass(
-              record.showStatus,
-            )}`}
-          >
-            {record.showStatus}
+          <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-[#FF5C28] group-hover:underline">
+            <Eye size={12} />
+            View Record
+            <ChevronRight size={12} />
           </span>
-
-          <span
-            className={`inline-flex rounded-full border px-2.5 py-1 sibs-text-micro font-extrabold ${getOutcomeClass(
-              record.finalOutcome,
-            )}`}
-          >
-            {record.finalOutcome}
-          </span>
-
-          <span className="ml-auto truncate sibs-text-micro font-bold text-[#667085]">
-            Owner: {record.owner || "—"}
-          </span>
         </div>
-
-        <div className="mt-3 flex items-center justify-center gap-1.5 border-t border-[#EEF2F6] pt-2.5 sibs-text-micro font-extrabold text-[#042C51]">
-          <Eye size={13} className="text-[#FF5C28]" />
-          View Details
-        </div>
-      </button>
-    </article>
+      </DataCard.Footer>
+    </DataCard>
   );
 }

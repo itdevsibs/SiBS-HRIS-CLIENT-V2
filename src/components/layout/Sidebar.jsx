@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
+import { useHeader } from "../../services/context/HeaderContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
 import { getJobDescriptions } from "../../lib/axios/getJobDescription";
@@ -480,7 +481,10 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 1024 : false,
   );
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { mobileSidebarOpen, setMobileSidebarOpen } = useHeader();
+  const [localMobileOpen, setLocalMobileOpen] = useState(false);
+  const mobileOpen = mobileSidebarOpen !== undefined ? mobileSidebarOpen : localMobileOpen;
+  const setMobileOpen = setMobileSidebarOpen || setLocalMobileOpen;
 
   const [, setApprovalRequestNotificationCount] = useState(0);
   const jdApprovalRuleRevision = useApprovalRuleRevision("jobDescription");
@@ -1275,18 +1279,6 @@ export default function Sidebar() {
         />
       )}
 
-      <button
-        type="button"
-        onClick={() => setMobileOpen(true)}
-        className="fixed left-3.5 top-[18px] z-[75] flex h-9 w-9 items-center justify-center rounded-xl border border-[#083A69] bg-sibs-primary-1 text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] transition hover:bg-[#063560] active:scale-95 lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg sm:left-5 sm:top-[20px]"
-        aria-label="Open sidebar"
-      >
-        <Menu
-          size={18}
-          className="text-white max-[360px]:h-4 max-[360px]:w-4"
-        />
-      </button>
-
       <aside
         draggable={false}
         onDragStart={(event) => event.preventDefault()}
@@ -1349,7 +1341,7 @@ export default function Sidebar() {
           </div>
         ) : (
           <div
-            className={`no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-5 pt-3 2xl:pt-4 ${
+            className={`no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-5 pt-3 2xl:pt-4 sibs-safe-bottom ${
               !isMobile && collapsed
                 ? "space-y-3 px-0"
                 : "space-y-4 2xl:space-y-6 px-3"

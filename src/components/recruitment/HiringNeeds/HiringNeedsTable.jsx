@@ -11,6 +11,7 @@ import { usePagination } from "../../../services/context/PaginationContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import HiringNeedsMobileCard from "./HiringNeedsMobileCard";
 import StatusFilterTabs from "../StatusFilterTabs";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 import {
   getHiringNeedsDateOrWeek,
   getHiringNeedsDepartmentAccount,
@@ -201,8 +202,8 @@ export default function HiringNeedsTable({
   }
 
   return (
-    <div className="px-4 pb-4 pt-0 font-jakarta sm:px-5 sm:pb-5">
-      <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+    <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
+      <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
         <StatusFilterTabs
           tabs={visibleStatusTabs}
           activeValue={filterValues?.status || "All"}
@@ -210,229 +211,226 @@ export default function HiringNeedsTable({
           onChange={handleStatusTabChange}
         />
 
-        {/* Mobile cards */}
-        <div className="p-4 lg:hidden">
-          {loading ? (
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] py-12 text-center text-sm font-bold text-[#667085]">
-              Loading Hiring Needs records...
-            </div>
-          ) : paginatedData.length > 0 ? (
-            <div className="space-y-3">
-              {paginatedData.map((item, index) => (
-                <HiringNeedsMobileCard
-                  key={item.id || `${getHiringNeedsTitle(item)}-${index}`}
-                  item={item}
-                  onView={onView}
+        <ResponsiveTableShell
+          mobileContent={
+            loading ? (
+              <div className="p-3.5 sm:p-4">
+                <DataCard.Skeleton count={5} lines={3} />
+              </div>
+            ) : paginatedData.length > 0 ? (
+              <div className="space-y-3 p-3.5 sm:p-4">
+                {paginatedData.map((item, index) => (
+                  <HiringNeedsMobileCard
+                    key={item.id || `${getHiringNeedsTitle(item)}-${index}`}
+                    item={item}
+                    onView={onView}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-3.5 sm:p-4">
+                <DataCard.Empty
+                  title="No Personnel Requisitions Found"
+                  description="No records matched the active search and filters."
                 />
-              ))}
-            </div>
-          ) : (
-            <div className="sibs-empty-panel">
-              <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+              </div>
+            )
+          }
+          desktopContent={
+            <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
+              <table className="w-full min-w-[1180px] table-fixed border-collapse bg-white text-left text-xs">
+                <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
+                  <tr className="sibs-data-table-head-row">
+                    <th className="sibs-data-table-th w-[16%] text-left">
+                      Department / Account
+                    </th>
 
-              <p className="mt-3 text-sm font-extrabold text-[#042C51]">
-                No Personnel Requisitions Found
-              </p>
+                    <th className="sibs-data-table-th w-[19%] text-left">
+                      Job Description / Request
+                    </th>
 
-              <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                No records matched the active search and filters.
-              </p>
-            </div>
-          )}
-        </div>
+                    <th className="sibs-data-table-th w-[13%] text-left">
+                      Request Type
+                    </th>
 
-        {/* Desktop table */}
-        <div className="hidden overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar lg:block">
-          <table className="w-full min-w-[1180px] table-fixed border-collapse bg-white text-left text-xs">
-            <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
-              <tr className="sibs-data-table-head-row">
-                <th className="sibs-data-table-th w-[16%] text-left">
-                  Department / Account
-                </th>
+                    <th className="sibs-data-table-th w-[7%] text-center">
+                      Headcount
+                    </th>
 
-                <th className="sibs-data-table-th w-[19%] text-left">
-                  Job Description / Request
-                </th>
+                    <th className="sibs-data-table-th w-[13%] text-left">Reason</th>
 
-                <th className="sibs-data-table-th w-[13%] text-left">
-                  Request Type
-                </th>
+                    <th className="sibs-data-table-th w-[7%] text-left">
+                      Location / Site
+                    </th>
 
-                <th className="sibs-data-table-th w-[7%] text-center">
-                  Headcount
-                </th>
+                    <th className="sibs-data-table-th w-[7%] text-left">
+                      Date Needed / Week
+                    </th>
 
-                <th className="sibs-data-table-th w-[13%] text-left">Reason</th>
+                    <th className="sibs-data-table-th w-[9%] text-center">
+                      Approval Status
+                    </th>
 
-                <th className="sibs-data-table-th w-[7%] text-left">
-                  Location / Site
-                </th>
+                    <th className="sibs-data-table-th w-[9%] text-center">
+                      JD Link Status
+                    </th>
+                  </tr>
+                </thead>
 
-                <th className="sibs-data-table-th w-[7%] text-left">
-                  Date Needed / Week
-                </th>
+                <tbody
+                  key={filterValues?.status || "All"}
+                  className="divide-y divide-[#E6ECF2]"
+                >
+                  {loading ? (
+                    <tr>
+                      <td colSpan={9} className="px-5 py-14 text-center">
+                        <FileText className="mx-auto h-9 w-9 animate-pulse text-[#CBD5E1]" />
 
-                <th className="sibs-data-table-th w-[9%] text-center">
-                  Approval Status
-                </th>
-
-                <th className="sibs-data-table-th w-[9%] text-center">
-                  JD Link Status
-                </th>
-              </tr>
-            </thead>
-
-            <tbody
-              key={filterValues?.status || "All"}
-              className="divide-y divide-[#E6ECF2]"
-            >
-              {loading ? (
-                <tr>
-                  <td colSpan={9} className="px-5 py-14 text-center">
-                    <FileText className="mx-auto h-9 w-9 animate-pulse text-[#CBD5E1]" />
-
-                    <p className="mt-3 text-sm font-extrabold text-[#042C51]">
-                      Loading Personnel Requisitions
-                    </p>
-
-                    <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                      Fetching the current Hiring Needs records.
-                    </p>
-                  </td>
-                </tr>
-              ) : paginatedData.length > 0 ? (
-                paginatedData.map((item, index) => {
-                  const requestType = getHiringNeedsRequestType(item);
-
-                  const status = normalizeHiringNeedsStatus(
-                    item.approvalStatus || item.approval_status,
-                  );
-
-                  const title = getHiringNeedsTitle(item);
-                  const jdLinkStatus = getHiringNeedsJdLinkStatus(item);
-                  const unlinked = isHiringNeedUnlinkedFromJd(item);
-                  const linkNotApplicable = jdLinkStatus === "Not Applicable";
-
-                  return (
-                    <tr
-                      key={item.id || `${title}-${index}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => onView?.(item)}
-                      onKeyDown={(event) => handleRowKeyDown(event, item)}
-                      className={`sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/40 ${
-                        unlinked
-                          ? "bg-[#FFF4EF] hover:bg-[#FFE9E0] focus-visible:bg-[#FFE9E0]"
-                          : "hover:bg-[#F8FAFC] focus-visible:bg-[#F8FAFC]"
-                      }`}
-                      style={{
-                        animationDelay: `${index * 30}ms`,
-                        animationFillMode: "both",
-                      }}
-                      aria-label={`View Hiring Needs request ${item.id || ""}`}
-                    >
-                      <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
-                        <p
-                          className="max-w-[260px] truncate text-xs font-extrabold leading-5 text-[#042C51]"
-                          title={getHiringNeedsDepartmentAccount(item)}
-                        >
-                          {getHiringNeedsDepartmentAccount(item)}
-                        </p>
-                      </td>
-
-                      <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
-                        <p className="max-w-[320px] text-xs font-extrabold leading-5 text-[#042C51]">
-                          {title}
+                        <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                          Loading Personnel Requisitions
                         </p>
 
-                        <p className="mt-0.5 max-w-[320px] truncate text-[10px] font-semibold leading-4 text-[#98A2B3]">
-                          {getHiringNeedsSubtitle(item)}
+                        <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                          Fetching the current Hiring Needs records.
                         </p>
-                      </td>
-
-                      <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
-                        <span
-                          className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[9px] font-extrabold leading-none ${getHiringNeedsRequestTypeClass(
-                            requestType,
-                          )}`}
-                        >
-                          {requestType}
-                        </span>
-                      </td>
-
-                      <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
-                        <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-[#F2F6FA] px-2.5 py-1 text-xs font-extrabold leading-none tabular-nums text-[#042C51]">
-                          {getHiringNeedsHeadcount(item)}
-                        </span>
-                      </td>
-
-                      <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
-                        <p className="max-w-[220px] text-xs font-semibold leading-5 text-[#475467]">
-                          {getHiringNeedsReason(item)}
-                        </p>
-                      </td>
-
-                      <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-xs font-semibold text-[#475467] align-middle">
-                        {getHiringNeedsSite(item)}
-                      </td>
-
-                      <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-xs font-semibold tabular-nums text-[#475467] align-middle">
-                        {getHiringNeedsDateOrWeek(item)}
-                      </td>
-
-                      <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[9px] font-extrabold leading-none ${getHiringNeedsStatusClass(
-                            status,
-                          )}`}
-                        >
-                          {status}
-                        </span>
-                      </td>
-
-                      <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
-                        <span
-                          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[9px] font-extrabold leading-none ${
-                            unlinked
-                              ? "border-[#FFB39F] bg-[#FFE1D8] text-[#D92D20]"
-                              : linkNotApplicable
-                                ? "border-slate-200 bg-slate-50 text-slate-500"
-                              : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                          }`}
-                        >
-                          {unlinked ? (
-                            <AlertTriangle size={11} strokeWidth={2} />
-                          ) : linkNotApplicable ? (
-                            <MinusCircle size={11} strokeWidth={2} />
-                          ) : (
-                            <CheckCircle2 size={11} strokeWidth={2} />
-                          )}
-                          {jdLinkStatus}
-                        </span>
                       </td>
                     </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={9} className="px-5 py-14 text-center">
-                    <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+                  ) : paginatedData.length > 0 ? (
+                    paginatedData.map((item, index) => {
+                      const requestType = getHiringNeedsRequestType(item);
 
-                    <p className="mt-3 text-sm font-extrabold text-[#042C51]">
-                      No Personnel Requisitions Found
-                    </p>
+                      const status = normalizeHiringNeedsStatus(
+                        item.approvalStatus || item.approval_status,
+                      );
 
-                    <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                      No records matched the active search and filters.
-                    </p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                      const title = getHiringNeedsTitle(item);
+                      const jdLinkStatus = getHiringNeedsJdLinkStatus(item);
+                      const unlinked = isHiringNeedUnlinkedFromJd(item);
+                      const linkNotApplicable = jdLinkStatus === "Not Applicable";
 
-        <div className="px-4 pb-4">
+                      return (
+                        <tr
+                          key={item.id || `${title}-${index}`}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => onView?.(item)}
+                          onKeyDown={(event) => handleRowKeyDown(event, item)}
+                          className={`sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/40 ${
+                            unlinked
+                              ? "bg-[#FFF4EF] hover:bg-[#FFE9E0] focus-visible:bg-[#FFE9E0]"
+                              : "hover:bg-[#F8FAFC] focus-visible:bg-[#F8FAFC]"
+                          }`}
+                          style={{
+                            animationDelay: `${index * 30}ms`,
+                            animationFillMode: "both",
+                          }}
+                          aria-label={`View Hiring Needs request ${item.id || ""}`}
+                        >
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                            <p
+                              className="max-w-[260px] truncate sibs-text-xs font-extrabold leading-5 text-[#042C51]"
+                              title={getHiringNeedsDepartmentAccount(item)}
+                            >
+                              {getHiringNeedsDepartmentAccount(item)}
+                            </p>
+                          </td>
+
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                            <p className="max-w-[320px] sibs-text-xs font-extrabold leading-5 text-[#042C51]">
+                              {title}
+                            </p>
+
+                            <p className="mt-0.5 max-w-[320px] truncate text-[10px] 2xl:text-[11px] font-semibold leading-4 text-[#98A2B3]">
+                              {getHiringNeedsSubtitle(item)}
+                            </p>
+                          </td>
+
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                            <span
+                              className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[9px] font-extrabold leading-none ${getHiringNeedsRequestTypeClass(
+                                requestType,
+                              )}`}
+                            >
+                              {requestType}
+                            </span>
+                          </td>
+
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
+                            <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-[#F2F6FA] px-2.5 py-1 sibs-text-xs font-extrabold leading-none tabular-nums text-[#042C51]">
+                              {getHiringNeedsHeadcount(item)}
+                            </span>
+                          </td>
+
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                            <p className="max-w-[220px] sibs-text-xs font-semibold leading-5 text-[#475467]">
+                              {getHiringNeedsReason(item)}
+                            </p>
+                          </td>
+
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold text-[#475467] align-middle">
+                            {getHiringNeedsSite(item)}
+                          </td>
+
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                            {getHiringNeedsDateOrWeek(item)}
+                          </td>
+
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[9px] font-extrabold leading-none ${getHiringNeedsStatusClass(
+                                status,
+                              )}`}
+                            >
+                              {status}
+                            </span>
+                          </td>
+
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
+                            <span
+                              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[9px] font-extrabold leading-none ${
+                                unlinked
+                                  ? "border-[#FFB39F] bg-[#FFE1D8] text-[#D92D20]"
+                                  : linkNotApplicable
+                                    ? "border-slate-200 bg-slate-50 text-slate-500"
+                                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              }`}
+                            >
+                              {unlinked ? (
+                                <AlertTriangle size={11} strokeWidth={2} />
+                              ) : linkNotApplicable ? (
+                                <MinusCircle size={11} strokeWidth={2} />
+                              ) : (
+                                <CheckCircle2 size={11} strokeWidth={2} />
+                              )}
+                              {jdLinkStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={9} className="px-5 py-14 text-center">
+                        <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+
+                        <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                          No Personnel Requisitions Found
+                        </p>
+
+                        <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                          No records matched the active search and filters.
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          }
+        />
+      </div>
+
+      <div className="pt-3">
           <PaginationTable
             showSearch={false}
             showPagination
@@ -448,7 +446,6 @@ export default function HiringNeedsTable({
             className="border-0 bg-transparent p-0 shadow-none"
           />
         </div>
-      </div>
     </div>
   );
 }

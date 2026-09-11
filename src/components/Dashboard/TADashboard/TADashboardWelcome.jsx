@@ -20,7 +20,7 @@ export default function TADashboardWelcome({
         </>
       }
       actions={
-        <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+        <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5 max-sm:w-full">
           {onRefresh ? (
             <button
               type="button"
@@ -40,7 +40,7 @@ export default function TADashboardWelcome({
           <button
             type="button"
             onClick={onOpenHiringPlan}
-            className="sibs-btn-primary"
+            className="sibs-btn-primary max-sm:flex-1"
           >
             <FileSpreadsheet className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
             Hiring Plan View

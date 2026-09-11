@@ -33,20 +33,20 @@ export default function PageHeaderHero({
           ) : null}
 
           {title ? (
-            <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
+            <h1 className="font-heading break-words text-lg sm:text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
               {title}
             </h1>
           ) : null}
 
           {description ? (
-            <p className="max-w-4xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
+            <p className="max-w-4xl sibs-text-xs sm:sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
               {description}
             </p>
           ) : null}
         </div>
 
         {actions ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2 2xl:gap-2.5 self-start md:self-auto">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 2xl:gap-2.5 self-stretch sm:self-start md:self-auto max-sm:w-full">
             {actions}
           </div>
         ) : null}

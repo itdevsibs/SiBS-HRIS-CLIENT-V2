@@ -40,15 +40,17 @@ export default function ApplicantLeadsDirectory() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
-        <ApplicantLeadViewTabs />
-        {leadView === "channels" ? (
-          <div className="overflow-hidden rounded-b-xl border border-t-0 border-sibs-border bg-white">
-            <ApplicantLeadsChannelSources />
-          </div>
-        ) : (
-          <ApplicantLeadsTable />
-        )}
+      <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
+        <div className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+          <ApplicantLeadViewTabs />
+          {leadView === "channels" ? (
+            <div className="overflow-hidden bg-white">
+              <ApplicantLeadsChannelSources />
+            </div>
+          ) : (
+            <ApplicantLeadsTable />
+          )}
+        </div>
       </div>
     </section>
   );
