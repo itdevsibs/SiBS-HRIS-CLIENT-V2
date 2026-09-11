@@ -12,6 +12,7 @@ import {
 import TrendSvg from "../../recruitment/workforceHiringOverview/shared/TrendSvg";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import PaginationTable from "../../../services/pagination/PaginationTable";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 import {
   getWorkforceHiringPlanAccountTrends,
   getWorkforceHiringPlanSixWeekTable,
@@ -1363,6 +1364,142 @@ function getModalWorkforceRiskLevel(row = {}) {
   return "Healthy";
 }
 
+function TrendAccountMobileCard({ row }) {
+  const cluster = getRowText(row, ["cluster", "clusterName", "cluster_name"]);
+  const account = getRowText(row, ["account", "accountName", "account_name"]);
+
+  const requiredHeadcount = getRowNumber(row, [
+    "requiredHeadcount",
+    "required_headcount",
+  ]);
+  const actualHeadcount = getRowNumber(row, [
+    "actualHeadcount",
+    "actual_headcount",
+  ]);
+  const bufferPercent = getRowNumber(row, [
+    "bufferPercent",
+    "buffer_percent",
+    "bufferPercentage",
+    "buffer_percentage",
+    "actualBufferPercent",
+    "actual_buffer_percent",
+  ]);
+  const absenteeismCount = getRowNumber(row, [
+    "absenteeism",
+    "absenteeismCount",
+    "absenteeism_count",
+  ]);
+  const attritionCount = getRowNumber(row, [
+    "attrition",
+    "attritionPastCount",
+    "attrition_past_count",
+    "attritionCount",
+  ]);
+  const netActualHeadcount = getRowNumber(row, [
+    "netActualHc",
+    "netActualHeadcount",
+    "net_actual_headcount",
+  ]);
+  const hiringNeeded = getRowNumber(row, [
+    "hiringNeeded",
+    "hiring_needed",
+    "actualHeadcountNeeds",
+  ]);
+
+  const acceptedJo = getRowNumber(row, [
+    "acceptedJo",
+    "acceptedJO",
+    "accepted_jo",
+  ]);
+  const nhoCount = getRowNumber(row, ["nho", "nhoCount", "nho_count"]);
+  const fstCount = getRowNumber(row, ["fst", "fstCount", "fst_count"]);
+  const pstCount = getRowNumber(row, ["pst", "pstCount", "pst_count"]);
+  const goLive = getRowNumber(row, [
+    "goLive",
+    "go_live",
+    "projectedToBeEndorsed",
+    "projectedEndorsed",
+  ]);
+
+  const hiredCount = getRowNumber(
+    row,
+    ["hiredCount", "hired_count"],
+    fstCount,
+  );
+  const hiringRate = getRowNumber(row, [
+    "hiringRate",
+    "hiring_rate",
+    "hiringPlanPercent",
+  ]);
+
+  return (
+    <DataCard>
+      <DataCard.Header
+        title={account || "Unnamed Account"}
+        subtitle={
+          <span className="inline-flex items-center gap-1.5 font-bold text-sibs-muted">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-sibs-orange" />
+            <span>{cluster || "No Cluster"}</span>
+          </span>
+        }
+        badge={
+          <span
+            className={`inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold tabular-nums ${
+              hiringNeeded > 0
+                ? "border-rose-200 bg-rose-50 text-rose-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            Need: {formatNumber(hiringNeeded)}
+          </span>
+        }
+      />
+
+      <DataCard.Metrics cols={3}>
+        <DataCard.MetricItem
+          label="Req HC"
+          value={formatNumber(requiredHeadcount)}
+          tone="primary"
+        />
+        <DataCard.MetricItem
+          label="Actual HC"
+          value={formatNumber(actualHeadcount)}
+        />
+        <DataCard.MetricItem
+          label="Net Actual"
+          value={formatNumber(netActualHeadcount)}
+          tone="primary"
+        />
+        <DataCard.MetricItem
+          label="Buffer %"
+          value={formatPercent(bufferPercent)}
+        />
+        <DataCard.MetricItem
+          label="Hired / Rate"
+          value={`${formatNumber(hiredCount)} (${formatPercent(hiringRate)})`}
+          tone="orange"
+        />
+        <DataCard.MetricItem
+          label="Go Live"
+          value={formatNumber(goLive)}
+          tone="emerald"
+        />
+      </DataCard.Metrics>
+
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border pt-2 text-[10.5px] font-semibold text-sibs-muted">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <span>JO: <strong className="text-sibs-navy tabular-nums">{formatNumber(acceptedJo)}</strong></span>
+          <span>NHO: <strong className="text-sibs-navy tabular-nums">{formatNumber(nhoCount)}</strong></span>
+          <span>FST: <strong className="text-sibs-navy tabular-nums">{formatNumber(fstCount)}</strong></span>
+          <span>PST: <strong className="text-sibs-navy tabular-nums">{formatNumber(pstCount)}</strong></span>
+          <span>Abs: <strong className="text-sibs-navy tabular-nums">{formatNumber(absenteeismCount)}</strong></span>
+          <span>Attr: <strong className="text-sibs-navy tabular-nums">{formatNumber(attritionCount)}</strong></span>
+        </div>
+      </div>
+    </DataCard>
+  );
+}
+
 function SixWeekDetailedPerformanceTable({
   rows = [],
   loading = false,
@@ -1470,8 +1607,8 @@ function SixWeekDetailedPerformanceTable({
     selectedRisk !== "All Risks";
 
   return (
-    <section className="sibs-page-card-in sibs-card mt-4 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+    <section className="sibs-page-card-in sibs-card mt-4 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+      <div className="border-b border-sibs-border p-4 sm:p-5">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0">
             <h3 className="sibs-section-title">
@@ -1482,8 +1619,8 @@ function SixWeekDetailedPerformanceTable({
             </p>
           </div>
 
-          <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-            <GripHorizontal className="h-3.5 w-3.5 text-[#FF5C28]" />
+          <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-sibs-border bg-sibs-canvas px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+            <GripHorizontal className="h-3.5 w-3.5 text-sibs-orange" />
             Drag horizontally to inspect all columns
           </span>
         </div>
@@ -1529,7 +1666,7 @@ function SixWeekDetailedPerformanceTable({
           rightContentClassName="flex w-full items-end xl:w-auto xl:flex-none"
           rightContent={
             <div className="flex h-10 items-center gap-2">
-              <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-3 py-1.5 text-[10px] font-extrabold text-[#042C51]">
+              <span className="rounded-full border border-sibs-border bg-sibs-canvas px-3 py-1.5 text-[10px] font-extrabold text-sibs-navy">
                 {loading ? "Loading..." : `${filteredRows.length} account rows`}
               </span>
 
@@ -1537,7 +1674,7 @@ function SixWeekDetailedPerformanceTable({
                 <button
                   type="button"
                   onClick={clearAllFilters}
-                  className="h-9 rounded-lg border border-[#D6E0EA] bg-white px-3 text-[10px] font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  className="h-9 rounded-lg border border-sibs-border bg-white px-3 text-[10px] font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange"
                 >
                   Clear
                 </button>
@@ -1554,8 +1691,33 @@ function SixWeekDetailedPerformanceTable({
           </div>
         ) : null}
 
-        <DraggableXScroll className="mt-4 border-slate-200 bg-white shadow-sm">
-          <table className="w-full min-w-[2600px] border-collapse text-left">
+        <ResponsiveTableShell
+          mobileContent={
+            loading ? (
+              <DataCard.Skeleton count={5} lines={3} />
+            ) : !hasRows ? (
+              <DataCard.Empty
+                title="No account records found"
+                description={
+                  filteredRows.length === 0 && search
+                    ? "No account or cluster matches your search."
+                    : `No ${rangeLabel.toLowerCase()} detailed account rows available.`
+                }
+              />
+            ) : (
+              <div className="space-y-3">
+                {filteredRows.map((row, index) => (
+                  <TrendAccountMobileCard
+                    key={`${getRowClusterValue(row)}-${getRowAccountValue(row)}-${index}`}
+                    row={row}
+                  />
+                ))}
+              </div>
+            )
+          }
+          desktopContent={
+            <DraggableXScroll className="mt-4 border-slate-200 bg-white shadow-sm">
+              <table className="w-full min-w-[2600px] border-collapse text-left">
             <thead>
               <tr>
                 <DetailTh
@@ -1924,10 +2086,10 @@ function SixWeekDetailedPerformanceTable({
 
             {hasRows ? (
               <tfoot>
-                <tr className="border-t-2 border-slate-300 bg-[#EBF3FA] font-black text-[#042C51]">
+                <tr className="border-t-2 border-slate-300 bg-sibs-surface font-black text-sibs-navy">
                   <DetailTd
                     colSpan={2}
-                    className="border-r border-slate-300 text-left font-sans text-xs font-black uppercase tracking-wider text-[#042C51]"
+                    className="border-r border-slate-300 text-left font-sans text-xs font-black uppercase tracking-wider text-sibs-navy"
                   >
                     TOTAL / AVERAGE
                   </DetailTd>
@@ -2007,8 +2169,10 @@ function SixWeekDetailedPerformanceTable({
             ) : null}
           </table>
         </DraggableXScroll>
-      </div>
-    </section>
+      }
+    />
+  </div>
+</section>
   );
 }
 

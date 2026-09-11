@@ -32,7 +32,12 @@ import {
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
 import { useUser } from "../../services/context/UserContext";
-import { PageHeaderHero, TablePagination } from "@/components/ui";
+import {
+  DataCard,
+  PageHeaderHero,
+  ResponsiveTableShell,
+  TablePagination,
+} from "@/components/ui";
 import {
   createAccountSettingsUser,
   deleteAccountSettingsUser,
@@ -2094,222 +2099,75 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
   const accounts = target?.assignedAccounts || [];
 
   return (
-    <ModalShell
-      open={Boolean(target)}
-      variant="talentPool"
-      title="Employee Access Details"
-      description="Review the employee's assigned access before making changes."
-      onClose={onClose}
-      footer={
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <button
-            type="button"
-            onClick={() => onDelete(target)}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-white px-5 text-sm font-extrabold text-red-700 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
-          >
-            <Trash2 size={16} />
-            Delete Access
-          </button>
+    <DataCard>
+      <DataCard.Header
+        avatar={<ProfileAvatar employee={user} size="lg" />}
+        title={formatEmployeeName(user)}
+        subtitle={user.email || "No email"}
+        badge={<StatusPill status={user.status} />}
+      />
 
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/10"
-            >
-              Close
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onEdit(target)}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#042C51] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#042C51]/15 transition hover:bg-[#063D6F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#042C51]/20"
-            >
-              <Edit3 size={16} />
-              Edit Access
-            </button>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+        <div>
+          <span className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+            SIBS ID
+          </span>
+          <p className="text-xs font-extrabold text-sibs-primary-1">
+            {user.sibsId || "—"}
+          </p>
         </div>
-      }
-    >
-      <div className="space-y-4">
-        <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex min-w-0 items-start gap-3">
-              <ProfileAvatar employee={target || {}} size="lg" />
-
-              <div className="min-w-0">
-                <p className="break-words text-base font-extrabold text-[#042C51]">
-                  {formatEmployeeName(target || {})}
-                </p>
-                <p className="mt-1 break-all text-xs font-semibold text-[#667085]">
-                  {target?.email || "No email available"}
-                </p>
-                <p className="mt-1 text-xs font-semibold text-[#8A98B8]">
-                  SIBS ID: {target?.sibsId || "—"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusPill status={target?.status} />
-              <RolePill role={target?.role} adminAccess={target?.adminAccess} />
-            </div>
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4 border-b border-[#E6ECF2] pb-3">
-            <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
-              Access Assignment
-            </p>
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
-              Current access level, assigned accounts, and departments.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
-                Access Level
-              </p>
-              <div className="mt-2">
-                <RolePill role={target?.role} adminAccess={target?.adminAccess} />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
-                Status
-              </p>
-              <div className="mt-2">
-                <StatusPill status={target?.status} />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:col-span-2">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
-                Assigned Accounts
-              </p>
-              <div className="mt-2">
-                <AccountChips accounts={accounts} />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:col-span-2">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
-                Departments
-              </p>
-              <div className="mt-2">
-                <DepartmentChips accounts={accounts} limit={999} />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4 border-b border-[#E6ECF2] pb-3">
-            <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
-              Audit Information
-            </p>
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
-              Creation and latest update details for this access record.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
-                Creator
-              </p>
-              <p className="mt-2 break-words text-xs font-extrabold text-[#344054]">
-                {getAuditDisplayValue(target || {}, "creator")}
-              </p>
-              <p className="mt-1 text-xs font-semibold text-[#667085]">
-                {formatDateTime(getAuditDateValue(target || {}, "created"))}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
-                Updater
-              </p>
-              <p className="mt-2 break-words text-xs font-extrabold text-[#344054]">
-                {getAuditDisplayValue(target || {}, "updater")}
-              </p>
-              <p className="mt-1 text-xs font-semibold text-[#667085]">
-                {formatDateTime(getAuditDateValue(target || {}, "updated"))}
-              </p>
-            </div>
-          </div>
-        </section>
-      </div>
-    </ModalShell>
-  );
-}
-
-function MobileUserCard({ user, onOpen }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(user)}
-      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30"
-      aria-label={`Open access details for ${formatEmployeeName(user)}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <ProfileAvatar employee={user} size="lg" />
-
-          <div className="min-w-0">
-            <h3 className="truncate text-sm font-extrabold text-sibs-primary-1">
-              {formatEmployeeName(user)}
-            </h3>
-            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-              {user.email || "No email"}
-            </p>
-          </div>
-        </div>
-
-        <StatusPill status={user.status} />
-      </div>
-
-      <div className="mt-4 rounded-xl bg-[#F8FAFC] p-3">
-        <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-          SIBS ID
-        </p>
-        <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-          {user.sibsId || "—"}
-        </p>
-      </div>
-
-      <div className="mt-3">
-        <RolePill role={user.role} adminAccess={user.adminAccess} />
-      </div>
-
-      <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-        <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-          Assigned Accounts
-        </p>
-        <div className="mt-2">
-          <AccountChips accounts={user.assignedAccounts} />
+        <div>
+          <RolePill role={user.role} adminAccess={user.adminAccess} />
         </div>
       </div>
 
-      <div className="mt-3 rounded-xl border border-[#E6ECF2] bg-white p-3">
-        <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-          Audit
-        </p>
-        <p className="mt-2 text-xs font-semibold leading-5 text-[#344054]">
-          Creator: {getAuditDisplayValue(user, "creator")}
-        </p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-[#344054]">
-          Updater: {getAuditDisplayValue(user, "updater")}
-        </p>
-        <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-          {formatDateTime(getAuditDateValue(user, "updated"))}
-        </p>
-      </div>
-    </button>
+      <DataCard.Section label="Assigned Accounts">
+        <AccountChips accounts={user.assignedAccounts} />
+      </DataCard.Section>
+
+      <DataCard.Section label="Department">
+        <DepartmentChips accounts={user.assignedAccounts} limit={5} />
+      </DataCard.Section>
+
+      <DataCard.Section label="Audit Trail">
+        <div className="space-y-1 text-xs text-[#344054]">
+          <p>
+            <span className="font-semibold text-sibs-tertiary-5">Creator:</span>{" "}
+            {getAuditDisplayValue(user, "creator")}{" "}
+            <span className="text-[11px] text-sibs-tertiary-5">
+              ({formatDateTime(getAuditDateValue(user, "created"))})
+            </span>
+          </p>
+          <p>
+            <span className="font-semibold text-sibs-tertiary-5">Updater:</span>{" "}
+            {getAuditDisplayValue(user, "updater")}{" "}
+            <span className="text-[11px] text-sibs-tertiary-5">
+              ({formatDateTime(getAuditDateValue(user, "updated"))})
+            </span>
+          </p>
+        </div>
+      </DataCard.Section>
+
+      <DataCard.Actions>
+        <button
+          type="button"
+          onClick={() => onEdit(user)}
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 text-xs font-bold text-sibs-primary-1 transition hover:bg-blue-100 active:scale-[0.98]"
+        >
+          <Edit3 size={15} />
+          Edit Access
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onDelete(user)}
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 text-xs font-bold text-red-700 transition hover:bg-red-100 active:scale-[0.98]"
+        >
+          <Trash2 size={15} />
+          Delete
+        </button>
+      </DataCard.Actions>
+    </DataCard>
   );
 }
 
@@ -2749,7 +2607,7 @@ export default function AccountSettingsPage() {
               <button
                 type="button"
                 onClick={openAddModal}
-                className="sibs-btn-primary"
+                className="sibs-btn-primary max-sm:w-full"
               >
                 <Plus size={16} />
                 Add User Access
@@ -2895,31 +2753,33 @@ export default function AccountSettingsPage() {
                 </button>
               </div>
 
-              <div className="mt-5 space-y-3 lg:hidden">
-                {isDataLoading ? (
-                  Array.from({ length: 4 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="h-72 animate-sibs-pulse rounded-2xl border border-[#E6ECF2] bg-white"
-                    />
-                  ))
-                ) : users.length ? (
-                  users.map((assignedUser) => (
-                    <MobileUserCard
-                      key={assignedUser.id}
-                      user={assignedUser}
-                      onOpen={openDetailsModal}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-2xl border border-[#E6ECF2] bg-white">
-                    <EmptyState />
+              <ResponsiveTableShell
+                breakpoint="lg"
+                mobileView={
+                  <div className="mt-5 space-y-3">
+                    {isDataLoading ? (
+                      <DataCard.Skeleton count={4} />
+                    ) : users.length ? (
+                      users.map((assignedUser) => (
+                        <MobileUserCard
+                          key={assignedUser.id}
+                          user={assignedUser}
+                          onEdit={openEditModal}
+                          onDelete={setDeleteTarget}
+                        />
+                      ))
+                    ) : (
+                      <DataCard.Empty
+                        icon={UsersRound}
+                        title="No assigned users found"
+                        description="Add an employee or adjust the search and filters to display account-access records."
+                      />
+                    )}
                   </div>
-                )}
-              </div>
-
-              <DraggableTableScroll>
-                <table className="w-full table-fixed border-collapse bg-white text-left">
+                }
+                desktopView={
+                  <DraggableTableScroll>
+                    <table className="w-full table-fixed border-collapse bg-white text-left">
                   <colgroup>
                     <col className="w-[5%]" />
                     <col className="w-[4%]" />
@@ -3064,6 +2924,8 @@ export default function AccountSettingsPage() {
                   </tbody>
                 </table>
               </DraggableTableScroll>
+            }
+          />
 
               <TablePagination
                 currentPage={currentPage}

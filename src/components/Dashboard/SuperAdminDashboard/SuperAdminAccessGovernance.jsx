@@ -1,6 +1,7 @@
 import { Lock, Plus } from "lucide-react";
 
 import PaginationTable from "../../../services/pagination/PaginationTable";
+import { DataCard, ResponsiveTableShell } from "../../ui";
 import {
   ACCESS_HIERARCHY,
   getAccessLevelClass,
@@ -137,153 +138,164 @@ export default function SuperAdminAccessGovernance({
         />
       </div>
 
-      <div className="space-y-3 lg:hidden">
-        {admins.length > 0 ? (
-          admins.map((item, index) => (
-            <article
-              key={item.id}
-              className="sibs-card sibs-page-card-in p-3.5 sm:p-4"
-              style={{
-                animationDelay: `${index * 40}ms`,
-                animationFillMode: "both",
-              }}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="break-words text-sm font-extrabold text-[#042C51]">
-                    {item.name}
-                  </p>
-                  <p className="mt-0.5 break-all text-[10px] font-semibold text-[#98A2B3]">
-                    {item.email}
-                  </p>
-                </div>
-                <span
-                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold capitalize ${getStatusPillClass(
-                    item.status,
-                  )}`}
-                >
-                  {item.status}
-                </span>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-lg bg-[#F8FAFC] p-2">
-                  <span className="text-[9px] font-bold uppercase text-[#98A2B3]">
-                    Access
-                  </span>
-                  <p className="mt-0.5 font-extrabold text-[#042C51]">
-                    {item.accessLevel}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-[#F8FAFC] p-2">
-                  <span className="text-[9px] font-bold uppercase text-[#98A2B3]">
-                    Account
-                  </span>
-                  <p className="mt-0.5 font-extrabold text-[#042C51]">
-                    {item.accountGroup}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => onEditAccess(item)}
-                className="mt-3 inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg bg-[#F2F6FA] px-3 text-[10px] font-extrabold text-[#042C51] hover:bg-[#E6ECF2]"
+      <ResponsiveTableShell
+        mobileView={
+          admins.length > 0 ? (
+            admins.map((item, index) => (
+              <DataCard
+                key={item.id}
+                interactive={false}
+                style={{
+                  animationDelay: `${index * 40}ms`,
+                  animationFillMode: "both",
+                }}
               >
-                Edit Access
-              </button>
-            </article>
-          ))
-        ) : (
-          <div className="sibs-empty-panel">No admin users match the active filters.</div>
-        )}
-      </div>
+                <DataCard.Header
+                  title={item.name}
+                  subtitle={item.email}
+                  badge={
+                    <span
+                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold capitalize ${getStatusPillClass(
+                        item.status,
+                      )}`}
+                    >
+                      {item.status}
+                    </span>
+                  }
+                />
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white hidden lg:block">
-        <div className="max-h-[520px] overflow-auto sibs-scrollbar">
-          <table className="w-full min-w-[1020px] table-fixed border-collapse bg-white text-left text-xs">
-            <colgroup>
-              <col className="w-[19%]" />
-              <col className="w-[14%]" />
-              <col className="w-[18%]" />
-              <col className="w-[23%]" />
-              <col className="w-[9%]" />
-              <col className="w-[8%]" />
-              <col className="w-[9%]" />
-            </colgroup>
-            <thead className="sibs-data-table-head">
-              <tr className="sibs-data-table-head-row">
-                <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Name & Email</th>
-                <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Access Level</th>
-                <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Department</th>
-                <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Account Group</th>
-                <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Last Active</th>
-                <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Status</th>
-                <th className="sibs-data-table-th text-right px-3 2xl:px-4 py-2.5 2xl:py-3">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#EEF2F6]">
-              {admins.length > 0 ? (
-                admins.map((item, index) => (
-                  <tr
-                    key={item.id}
-                    className="sibs-data-table-row sibs-page-card-in"
-                    style={{
-                      animationDelay: `${index * 35}ms`,
-                      animationFillMode: "both",
+                <DataCard.Metrics cols={2}>
+                  <DataCard.MetricItem
+                    label="Access Level"
+                    value={item.accessLevel}
+                    tone="orange"
+                  />
+                  <DataCard.MetricItem
+                    label="Account Group"
+                    value={item.accountGroup}
+                    tone="navy"
+                  />
+                </DataCard.Metrics>
+
+                <div className="mt-3 flex items-center justify-between border-t border-sibs-border pt-2.5 text-[10px] font-semibold text-sibs-muted">
+                  <div className="flex flex-col">
+                    <span>
+                      Dept: <strong className="text-sibs-navy">{item.department || "—"}</strong>
+                    </span>
+                    <span className="text-[9.5px] text-[#98A2B3]">
+                      Last active: {item.lastActive || "—"}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditAccess(item);
                     }}
+                    className="inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg bg-sibs-surface border border-sibs-border px-3 text-[10px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                   >
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
-                      <p className="font-extrabold text-[#042C51] truncate">{item.name}</p>
-                      <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3] truncate">
-                        {item.email}
-                      </p>
-                    </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
-                      <span
-                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-[9.5px] 2xl:text-[10px] font-extrabold ${getAccessLevelClass(
-                          item.accessLevel,
-                        )}`}
-                      >
-                        {item.accessLevel}
-                      </span>
-                    </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-semibold text-[#344054] truncate">
-                      {item.department}
-                    </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[#667085] truncate">{item.accountGroup}</td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] text-[#98A2B3] whitespace-nowrap">
-                      {item.lastActive}
-                    </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
-                      <span
-                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[9.5px] 2xl:text-[10px] font-extrabold capitalize ${getStatusPillClass(
-                          item.status,
-                        )}`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onEditAccess(item)}
-                        className="inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-[10px] 2xl:text-[11px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
-                      >
-                        Edit Access
-                      </button>
-                    </td>
+                    Edit Access
+                  </button>
+                </div>
+              </DataCard>
+            ))
+          ) : (
+            <DataCard.Empty
+              title="No Admin Users Found"
+              description="No admin users match the active filters."
+            />
+          )
+        }
+        desktopView={
+          <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+            <div className="max-h-[520px] overflow-auto sibs-scrollbar">
+              <table className="w-full min-w-[1020px] table-fixed border-collapse bg-white text-left text-xs">
+                <colgroup>
+                  <col className="w-[19%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[23%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[9%]" />
+                </colgroup>
+                <thead className="sibs-data-table-head">
+                  <tr className="sibs-data-table-head-row">
+                    <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Name & Email</th>
+                    <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Access Level</th>
+                    <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Department</th>
+                    <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Account Group</th>
+                    <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Last Active</th>
+                    <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Status</th>
+                    <th className="sibs-data-table-th text-right px-3 2xl:px-4 py-2.5 2xl:py-3">Action</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-xs font-bold text-[#667085]">
-                    No admin users match the active filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody className="divide-y divide-[#EEF2F6]">
+                  {admins.length > 0 ? (
+                    admins.map((item, index) => (
+                      <tr
+                        key={item.id}
+                        className="sibs-data-table-row sibs-page-card-in"
+                        style={{
+                          animationDelay: `${index * 35}ms`,
+                          animationFillMode: "both",
+                        }}
+                      >
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
+                          <p className="font-extrabold text-[#042C51] truncate">{item.name}</p>
+                          <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3] truncate">
+                            {item.email}
+                          </p>
+                        </td>
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
+                          <span
+                            className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1 text-[9.5px] 2xl:text-[10px] font-extrabold ${getAccessLevelClass(
+                              item.accessLevel,
+                            )}`}
+                          >
+                            {item.accessLevel}
+                          </span>
+                        </td>
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-semibold text-[#344054] truncate">
+                          {item.department}
+                        </td>
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[#667085] truncate">{item.accountGroup}</td>
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] text-[#98A2B3] whitespace-nowrap">
+                          {item.lastActive}
+                        </td>
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
+                          <span
+                            className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[9.5px] 2xl:text-[10px] font-extrabold capitalize ${getStatusPillClass(
+                              item.status,
+                            )}`}
+                          >
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => onEditAccess(item)}
+                            className="inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-[10px] 2xl:text-[11px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                          >
+                            Edit Access
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-10 text-center text-xs font-bold text-[#667085]">
+                        No admin users match the active filters.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      />
 
       <PaginationTable
         className="border-0 bg-transparent p-0 shadow-none"

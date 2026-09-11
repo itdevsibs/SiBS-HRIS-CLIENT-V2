@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 
 import { usePagination } from "../../../services/context/PaginationContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
+import { DataCard, ResponsiveTableShell, StatusFilterTabs } from "@/components/ui";
 
 const JOB_DESCRIPTION_ENTITY = "job-descriptions";
 const PAGE_LIMIT = 15;
@@ -394,100 +395,56 @@ MOBILE CARD
 
 function JobDescriptionMobileCard({ item, onView }) {
   const status = getRealJdStatus(item);
-
   const roleTitle = getRoleTitle(item) || "Untitled Job Description";
-
   const documentTitle = getDocumentTitle(item) || getJdCode(item) || "--";
-
   const department = getDepartment(item) || "--";
-
   const account = getAccount(item) || "--";
-
   const linkedHiringNeed = getLinkedHiringNeed(item) || "--";
-
   const supervisoryLevel = getSupervisoryLevel(item) || "--";
-
   const version = getVersion(item) || "--";
 
   return (
-    <article
-      role="button"
-      tabIndex={0}
-      onClick={() => onView(item)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onView(item);
+    <DataCard interactive onClick={() => onView(item)}>
+      <DataCard.Header
+        title={roleTitle}
+        subtitle={
+          <span className="truncate font-semibold text-[#98A2B3]">
+            {documentTitle}
+          </span>
         }
-      }}
-      className="cursor-pointer rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:border-[#FF5C28]/35 hover:bg-[#FFFDFC]"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-start gap-2">
-            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
+        badge={<JdStatusBadge status={status} />}
+      />
 
-            <div className="min-w-0">
-              <h3 className="text-sm font-extrabold leading-5 text-[#042C51]">
-                {roleTitle}
-              </h3>
+      <DataCard.ContextRow>
+        <span className="text-[11px] font-extrabold text-[#042C51]">{department}</span>
+        <span className="text-[11px] font-semibold text-[#667085]">{account}</span>
+      </DataCard.ContextRow>
 
-              <p className="mt-0.5 break-all text-[10px] font-semibold text-[#98A2B3]">
-                {documentTitle}
-              </p>
-            </div>
-          </div>
+      <DataCard.Metrics cols={3}>
+        <DataCard.MetricItem
+          label="Supervisory"
+          value={supervisoryLevel}
+        />
+        <DataCard.MetricItem
+          label="Version"
+          value={version}
+        />
+        <DataCard.MetricItem
+          label="Date"
+          value={formatDate(getDateValue(item))}
+        />
+      </DataCard.Metrics>
+
+      <DataCard.Footer>
+        <div className="truncate text-[10.5px] font-semibold text-[#667085]">
+          <span className="font-extrabold text-[#042C51]">Linked PRF:</span>{" "}
+          <span>{linkedHiringNeed}</span>
         </div>
-
-        <JdStatusBadge status={status} />
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[9px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
-            Department / Account
-          </p>
-
-          <p className="mt-1 text-xs font-extrabold text-[#042C51]">
-            {department}
-          </p>
-
-          <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
-            {account}
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[9px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
-            Date / Version
-          </p>
-
-          <p className="mt-1 text-xs font-extrabold text-[#042C51]">
-            {version}
-          </p>
-
-          <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
-            {formatDate(getDateValue(item))}
-          </p>
-        </div>
-      </div>
-
-      <dl className="mt-3 space-y-2 text-[10px] font-semibold text-[#667085]">
-        <div>
-          <dt className="inline font-extrabold text-[#042C51]">
-            Linked Hiring Need:
-          </dt>{" "}
-          <dd className="inline">{linkedHiringNeed}</dd>
-        </div>
-
-        <div>
-          <dt className="inline font-extrabold text-[#042C51]">
-            Supervisory Level:
-          </dt>{" "}
-          <dd className="inline">{supervisoryLevel}</dd>
-        </div>
-      </dl>
-    </article>
+        <span className="shrink-0 text-[10px] font-extrabold uppercase text-sibs-orange">
+          View Details →
+        </span>
+      </DataCard.Footer>
+    </DataCard>
   );
 }
 
@@ -843,242 +800,198 @@ export default function JobDescriptionTable({
           {/* =================================================
               STATUS TABS
           ================================================= */}
-
-          <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
-            {visibleStatusTabs.map((tab) => {
-              const active = selectedStatusTab === tab.key;
-
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => updateFilter(setSelectedStatusTab, tab.key)}
-                  className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-2 px-3.5 2xl:px-4 sibs-text-micro font-extrabold uppercase tracking-normal transition-colors ${
-                    active
-                      ? "rounded-t-xl bg-white text-[#042C51]"
-                      : "text-[#667085] hover:text-[#042C51]"
-                  }`}
-                >
-                  {tab.label}
-
-                  {tab.key === "approval" ? (
-                    <span
-                      className={[
-                        "rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors",
-                        active
-                          ? "bg-red-600 text-white"
-                          : "bg-red-100 text-red-700",
-                      ].join(" ")}
-                    >
-                      {statusCounts.approval || 0}
-                    </span>
-                  ) : null}
-
-                  {active ? (
-                    <motion.div
-                      layoutId="jdActiveTabIndicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
-                      transition={{
-                        type: "spring",
-                        stiffness: 380,
-                        damping: 30,
-                      }}
-                    />
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
+          <StatusFilterTabs
+            tabs={visibleStatusTabs}
+            activeValue={selectedStatusTab}
+            counts={statusCounts}
+            onChange={(tabKey) => updateFilter(setSelectedStatusTab, tabKey)}
+            layoutId="jdActiveTabIndicator"
+          />
 
           {/* =================================================
               MOBILE
           ================================================= */}
 
-          <div className="p-4 lg:hidden">
-            {paginatedList.length > 0 ? (
-              <div className="space-y-3">
-                {paginatedList.map((item) => (
-                  <JobDescriptionMobileCard
-                    key={getRecordId(item) || getRoleTitle(item)}
-                    item={item}
-                    onView={handleOpenFullPageView}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-5 py-10 text-center">
-                <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
-
-                <p className="mt-3 text-sm font-extrabold text-[#042C51]">
-                  No Job Descriptions Found
-                </p>
-
-                <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                  No records matched the active search, filters, and status tab.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="mt-4 rounded-lg bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
-                >
-                  Reset Search & Filters
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* =================================================
-              DESKTOP
-          ================================================= */}
-
-          <div className="hidden overflow-x-auto lg:block">
-            <table className="w-full min-w-[1180px] table-fixed border-collapse text-left text-xs">
-              <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
-                <tr className="sibs-data-table-head-row">
-                  <th className="sibs-data-table-th w-[32%] text-left">
-                    Role & Document Title
-                  </th>
-
-                  <th className="sibs-data-table-th w-[26%] text-left">
-                    Department / Account
-                  </th>
-
-                  <th className="sibs-data-table-th w-[18%] text-left">
-                    Supervisory Level
-                  </th>
-
-                  <th className="sibs-data-table-th w-[12%] text-left">
-                    Status
-                  </th>
-
-                  <th className="sibs-data-table-th w-[12%] text-left">
-                    Date & Version
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody
-                key={selectedStatusTab}
-                className="divide-y divide-[#E6ECF2]"
-              >
-                {paginatedList.length > 0 ? (
-                  paginatedList.map((item, index) => {
-                    const status = getRealJdStatus(item);
-
-                    const roleTitle =
-                      getRoleTitle(item) || "Untitled Job Description";
-
-                    const documentTitle =
-                      getDocumentTitle(item) || getJdCode(item) || "--";
-
-                    return (
-                      <tr
-                        key={
-                          getRecordId(item) || `${roleTitle}-${documentTitle}`
-                        }
-                        onClick={() => handleOpenFullPageView(item)}
-                        className="sibs-data-table-row sibs-page-card-in cursor-pointer hover:bg-[#FFFDFC]"
-                        style={{
-                          animationDelay: `${index * 30}ms`,
-                          animationFillMode: "both",
-                        }}
-                      >
-                        {/* ROLE / DOCUMENT */}
-
-                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3">
-                          <div className="flex items-start gap-2">
-                            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
-
-                            <div className="min-w-0">
-                              <p
-                                title={documentTitle}
-                                className="max-w-[340px] truncate text-xs font-extrabold leading-5 text-[#042C51]"
-                              >
-                                {documentTitle}
-                              </p>
-
-                              <p
-                                title={roleTitle}
-                                className="mt-0.5 max-w-[340px] truncate sibs-text-micro font-semibold text-[#98A2B3]"
-                              >
-                                {roleTitle}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* DEPARTMENT / ACCOUNT */}
-
-                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3">
-                          <p
-                            title={getDepartment(item) || ""}
-                            className="truncate text-xs font-extrabold text-[#042C51]"
-                          >
-                            {getDepartment(item) || "--"}
-                          </p>
-
-                          <p
-                            title={getAccount(item) || ""}
-                            className="mt-0.5 truncate sibs-text-micro font-semibold text-[#667085]"
-                          >
-                            {getAccount(item) || "--"}
-                          </p>
-                        </td>
-
-                        {/* SUPERVISORY */}
-
-                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3 text-xs font-semibold text-[#475467]">
-                          {getSupervisoryLevel(item) || "--"}
-                        </td>
-
-                        {/* STATUS */}
-
-                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3">
-                          <JdStatusBadge status={status} />
-                        </td>
-
-                        {/* DATE / VERSION */}
-
-                        <td className="px-2.5 py-2 2xl:px-4 2xl:py-3">
-                          <p className="text-xs font-extrabold text-[#042C51]">
-                            {getVersion(item) || "--"}
-                          </p>
-
-                          <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3]">
-                            {formatDate(getDateValue(item))}
-                          </p>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-5 py-14 text-center">
-                      <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
-
-                      <p className="mt-3 text-sm font-extrabold text-[#042C51]">
-                        No Job Descriptions Found
-                      </p>
-
-                      <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                        No records matched the active search, filters, and
-                        status tab.
-                      </p>
-
+          <ResponsiveTableShell
+            mobileContent={
+              paginatedList.length > 0 ? (
+                <div className="space-y-3 p-3.5 sm:p-4">
+                  {paginatedList.map((item) => (
+                    <JobDescriptionMobileCard
+                      key={getRecordId(item) || getRoleTitle(item)}
+                      item={item}
+                      onView={handleOpenFullPageView}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3.5 sm:p-4">
+                  <DataCard.Empty
+                    title="No Job Descriptions Found"
+                    description="No records matched the active search, filters, and status tab."
+                    action={
                       <button
                         type="button"
                         onClick={handleResetFilters}
-                        className="mt-4 rounded-lg bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
+                        className="rounded-lg bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
                       >
                         Reset Search & Filters
                       </button>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                    }
+                  />
+                </div>
+              )
+            }
+            desktopContent={
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1180px] table-fixed border-collapse text-left text-xs">
+                  <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
+                    <tr className="sibs-data-table-head-row">
+                      <th className="sibs-data-table-th w-[32%] text-left">
+                        Role & Document Title
+                      </th>
+
+                      <th className="sibs-data-table-th w-[26%] text-left">
+                        Department / Account
+                      </th>
+
+                      <th className="sibs-data-table-th w-[18%] text-left">
+                        Supervisory Level
+                      </th>
+
+                      <th className="sibs-data-table-th w-[12%] text-left">
+                        Status
+                      </th>
+
+                      <th className="sibs-data-table-th w-[12%] text-left">
+                        Date & Version
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody
+                    key={selectedStatusTab}
+                    className="divide-y divide-[#E6ECF2]"
+                  >
+                    {paginatedList.length > 0 ? (
+                      paginatedList.map((item, index) => {
+                        const status = getRealJdStatus(item);
+
+                        const roleTitle =
+                          getRoleTitle(item) || "Untitled Job Description";
+
+                        const documentTitle =
+                          getDocumentTitle(item) || getJdCode(item) || "--";
+
+                        return (
+                          <tr
+                            key={
+                              getRecordId(item) || `${roleTitle}-${documentTitle}`
+                            }
+                            onClick={() => handleOpenFullPageView(item)}
+                            className="sibs-data-table-row sibs-page-card-in cursor-pointer hover:bg-[#FFFDFC]"
+                            style={{
+                              animationDelay: `${index * 30}ms`,
+                              animationFillMode: "both",
+                            }}
+                          >
+                            {/* ROLE / DOCUMENT */}
+
+                            <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                              <div className="flex items-start gap-2">
+                                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
+
+                                <div className="min-w-0">
+                                  <p
+                                    title={documentTitle}
+                                    className="max-w-[340px] truncate sibs-text-xs font-extrabold leading-5 text-[#042C51]"
+                                  >
+                                    {documentTitle}
+                                  </p>
+
+                                  <p
+                                    title={roleTitle}
+                                    className="mt-0.5 max-w-[340px] truncate sibs-text-micro font-semibold text-[#98A2B3]"
+                                  >
+                                    {roleTitle}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* DEPARTMENT / ACCOUNT */}
+
+                            <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                              <p
+                                title={getDepartment(item) || ""}
+                                className="truncate sibs-text-xs font-extrabold text-[#042C51]"
+                              >
+                                {getDepartment(item) || "--"}
+                              </p>
+
+                              <p
+                                title={getAccount(item) || ""}
+                                className="mt-0.5 truncate sibs-text-micro font-semibold text-[#667085]"
+                              >
+                                {getAccount(item) || "--"}
+                              </p>
+                            </td>
+
+                            {/* SUPERVISORY */}
+
+                            <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold text-[#475467] align-middle">
+                              {getSupervisoryLevel(item) || "--"}
+                            </td>
+
+                            {/* STATUS */}
+
+                            <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                              <JdStatusBadge status={status} />
+                            </td>
+
+                            {/* DATE / VERSION */}
+
+                            <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                              <p className="sibs-text-xs font-extrabold tabular-nums text-[#042C51]">
+                                {getVersion(item) || "--"}
+                              </p>
+
+                              <p className="mt-0.5 text-[10px] 2xl:text-[10.5px] font-semibold tabular-nums text-[#98A2B3]">
+                                {formatDate(getDateValue(item))}
+                              </p>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-5 py-14 text-center">
+                          <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+
+                          <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                            No Job Descriptions Found
+                          </p>
+
+                          <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                            No records matched the active search, filters, and
+                            status tab.
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={handleResetFilters}
+                            className="mt-4 rounded-lg bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
+                          >
+                            Reset Search & Filters
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            }
+          />
         </div>
 
         {/* =================================================

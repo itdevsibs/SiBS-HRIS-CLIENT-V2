@@ -16,6 +16,7 @@ import {
 } from "@/services/context/PaginationContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate } from "@/components/layout/FormatDateTime";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 const LATE_GRACE_MS = 60 * 1000;
@@ -1563,20 +1564,10 @@ export default function AttendanceTable() {
           />
         </div>
 
-        <div className="p-4 sm:p-5 2xl:p-6">
-          <div className="mt-3 block sm:hidden">
-            <button
-              type="button"
-              onClick={handleAttendanceSearchSubmit}
-              disabled={loading}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1D] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Search size={16} />
-              Apply Search
-            </button>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white hidden lg:block">
+        <div className="p-3 sm:p-5 2xl:p-6">
+          <ResponsiveTableShell
+            desktopContent={
+              <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
             <div
               ref={tableScrollRef}
               onMouseDown={handleDragStart}
@@ -1808,129 +1799,124 @@ export default function AttendanceTable() {
                 </table>
               </div>
             </div>
-
-          <div className="lg:hidden">
-            <div ref={mobileScrollRef} className="max-h-[650px] overflow-y-auto">
+          }
+          mobileContent={
+            <div ref={mobileScrollRef} className="max-h-[650px] overflow-y-auto space-y-3">
               {loading ? (
-                <div className="sibs-empty-panel">
-                  Loading attendance records...
-                </div>
+                <DataCard.Skeleton count={4} />
               ) : attendance.length === 0 ? (
-                <div className="sibs-empty-panel">
-                  No attendance records found.
-                </div>
+                <DataCard.Empty
+                  icon={<CalendarDays size={22} />}
+                  title="No attendance records found"
+                  description="Adjust your search, department, account, or date range filters."
+                />
               ) : (
-                <div
-                  key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilterKey}`}
-                  className="space-y-3"
-                >
-                  {attendance.map((item, index) => {
-                    const employeeName = formatEmployeeName(item);
-                    const loginTime = formatTime(item.gy_tracker_login);
-                    const breakoutTime = formatTime(item.gy_tracker_breakout);
-                    const breakinTime = formatTime(item.gy_tracker_breakin);
-                    const logoutTime = formatTime(item.gy_tracker_logout);
-                    const loginIndicator = getLoginIndicator(item);
-                    const managerOwnRowCompleted =
-                      managerView &&
-                      isOwnAttendanceRow(item, user) &&
-                      getComputedWorkHours(item) >= 8;
-                    const logoutIndicator = managerOwnRowCompleted
-                      ? { label: "Full shift", tone: "success" }
-                      : getLogoutIndicator(item);
-                    const ot = getNumberValue(item.gy_tracker_ot);
-                    const ath = getNumberValue(item.gy_tracker_ath);
+                attendance.map((item, index) => {
+                  const employeeName = formatEmployeeName(item);
+                  const loginTime = formatTime(item.gy_tracker_login);
+                  const breakoutTime = formatTime(item.gy_tracker_breakout);
+                  const breakinTime = formatTime(item.gy_tracker_breakin);
+                  const logoutTime = formatTime(item.gy_tracker_logout);
+                  const loginIndicator = getLoginIndicator(item);
+                  const managerOwnRowCompleted =
+                    managerView &&
+                    isOwnAttendanceRow(item, user) &&
+                    getComputedWorkHours(item) >= 8;
+                  const logoutIndicator = managerOwnRowCompleted
+                    ? { label: "Full shift", tone: "success" }
+                    : getLogoutIndicator(item);
+                  const ot = getNumberValue(item.gy_tracker_ot);
+                  const ath = getNumberValue(item.gy_tracker_ath);
 
-                    return (
-                      <article
-                        key={`${
-                          item.gy_tracker_id || item.gy_tracker_date || "mobile"
-                        }-${index}`}
-                        className="sibs-card rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 items-start gap-3">
-                            {adminView ? (
-                              <AttendanceEmployeeAvatar
-                                item={item}
-                                employeeName={employeeName}
-                                className="h-11 w-11"
-                              />
-                            ) : null}
+                  return (
+                    <DataCard
+                      key={`${
+                        item.gy_tracker_id || item.gy_tracker_date || "mobile"
+                      }-${index}`}
+                      index={index}
+                    >
+                      <DataCard.Header
+                        avatar={
+                          adminView ? (
+                            <AttendanceEmployeeAvatar
+                              item={item}
+                              employeeName={employeeName}
+                              className="h-9 w-9"
+                            />
+                          ) : (
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#042C51]">
+                              <CalendarDays size={15} />
+                            </span>
+                          )
+                        }
+                        kicker={adminView ? item.gy_emp_code || "N/A" : undefined}
+                        title={adminView ? employeeName : formatDate(item.gy_tracker_date)}
+                        subtitle={
+                          adminView ? (
+                            <p className="font-semibold text-sibs-navy">
+                              {formatDate(item.gy_tracker_date)}
+                            </p>
+                          ) : null
+                        }
+                        badge={renderStatusBadge(item.gy_tracker_status)}
+                      />
 
-                            <div className="min-w-0">
-                              {adminView ? (
-                                <span className="text-[10px] font-extrabold uppercase text-[#FF5C28]">
-                                  {item.gy_emp_code || "N/A"}
-                                </span>
-                              ) : null}
-
-                              <h3 className="mt-1 break-words text-sm font-extrabold leading-tight text-[#042C51]">
-                                {adminView
-                                  ? employeeName
-                                  : formatDate(item.gy_tracker_date)}
-                              </h3>
-
-                              {attendanceFiltersView ? (
-                                <p className="mt-1 text-[11px] font-semibold leading-4 text-[#667085]">
-                                  {item.department || "No department"} /{" "}
-                                  {item.gy_emp_account || "No account"} /{" "}
-                                  {getAssignedSite(item)}
-                                </p>
-                              ) : null}
-
-                              {adminView ? (
-                                <p className="mt-1 text-[10px] font-semibold text-[#8A98B8]">
-                                  {formatDate(item.gy_tracker_date)}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-
-                          <div className="shrink-0">
-                            {renderStatusBadge(item.gy_tracker_status)}
-                          </div>
+                      {(item.department || item.gy_emp_account || (getAssignedSite(item) && getAssignedSite(item) !== "—")) ? (
+                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-[#F0F4F8] pt-2">
+                          {item.department ? (
+                            <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                              {item.department}
+                            </span>
+                          ) : null}
+                          {item.gy_emp_account ? (
+                            <span className="inline-flex items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-sibs-primary-1">
+                              {item.gy_emp_account}
+                            </span>
+                          ) : null}
+                          {getAssignedSite(item) && getAssignedSite(item) !== "—" ? (
+                            <span className="inline-flex items-center rounded-md border border-teal-100 bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700">
+                              {getAssignedSite(item)}
+                            </span>
+                          ) : null}
                         </div>
+                      ) : null}
 
-                        <div className="mt-4 grid grid-cols-2 gap-3">
-                          <MobileMetric
-                            label="Login"
-                            value={`${loginTime} · ${loginIndicator.label}`}
-                            tone={loginIndicator.tone === "danger" ? "amber" : "emerald"}
-                          />
-                          <MobileMetric
-                            label="Logout"
-                            value={`${logoutTime} · ${logoutIndicator.label}`}
-                            tone={logoutIndicator.tone === "warning" ? "amber" : "emerald"}
-                          />
-                          <MobileMetric label="Start Break" value={breakoutTime} />
-                          <MobileMetric label="End Break" value={breakinTime} />
-                          <MobileMetric
-                            label="WH"
-                            value={displayCappedWorkHours(item)}
-                          />
-                          <MobileMetric
-                            label="BH"
-                            value={item.gy_tracker_bh ?? "—"}
-                          />
-                          <MobileMetric
-                            label="OT"
-                            value={ot > 0 ? `+${formatNumber(ot)}` : "—"}
-                            tone="blue"
-                          />
-                          <MobileMetric
-                            label="ATH"
-                            value={ath > 0 ? formatNumber(ath) : "—"}
-                            tone="orange"
-                          />
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
+                      <DataCard.Metrics cols={4}>
+                        <DataCard.MetricItem
+                          label="Login"
+                          value={loginTime}
+                          tone={loginIndicator.tone === "danger" ? "amber" : "emerald"}
+                        />
+                        <DataCard.MetricItem
+                          label="Logout"
+                          value={logoutTime}
+                          tone={logoutIndicator.tone === "warning" ? "amber" : "emerald"}
+                        />
+                        <DataCard.MetricItem
+                          label="WH"
+                          value={displayCappedWorkHours(item)}
+                          tone="default"
+                        />
+                        <DataCard.MetricItem
+                          label="BH"
+                          value={item.gy_tracker_bh ?? "—"}
+                          tone="secondary"
+                        />
+                      </DataCard.Metrics>
+
+                      <div className="mt-2 grid grid-cols-4 divide-x divide-[#E6ECF2] rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] py-1.5 text-center">
+                        <DataCard.MetricItem label="Break Out" value={breakoutTime} tone="dim" />
+                        <DataCard.MetricItem label="Break In" value={breakinTime} tone="dim" />
+                        <DataCard.MetricItem label="OT" value={ot > 0 ? `+${formatNumber(ot)}` : "—"} tone="blue" />
+                        <DataCard.MetricItem label="ATH" value={ath > 0 ? formatNumber(ath) : "—"} tone="orange" />
+                      </div>
+                    </DataCard>
+                  );
+                })
               )}
             </div>
-          </div>
+          }
+        />
 
           <div className="mt-5">
             <PaginationTable

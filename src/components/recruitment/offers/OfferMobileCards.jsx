@@ -1,5 +1,6 @@
-import { Check, Eye, History, X } from "lucide-react";
-
+import React from "react";
+import { Check, Eye, History, UserRound, X } from "lucide-react";
+import { DataCard } from "@/components/ui";
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import {
   getLatestNegotiationSummary,
@@ -36,14 +37,15 @@ export default function OfferMobileCards({
 
   if (!displayedOffers.length) {
     return (
-      <div className="rounded-2xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-4 py-10 text-center text-sm font-bold text-[#667085] lg:hidden">
-        {emptyMessage}
-      </div>
+      <DataCard.Empty
+        title="No offer records found"
+        description={emptyMessage}
+      />
     );
   }
 
   return (
-    <div className="space-y-3 lg:hidden">
+    <div className="space-y-3 font-jakarta">
       {displayedOffers.map((offer, index) => {
         const approvalStatus = getOfferApprovalStatus
           ? getOfferApprovalStatus(offer)
@@ -56,140 +58,156 @@ export default function OfferMobileCards({
         const negotiation = getLatestNegotiationSummary(offer);
 
         return (
-          <article
+          <DataCard
             key={`mobile-${offer.offerId}-${offer.candidateApplicationId}-${offer.id}`}
-            className="sibs-page-card-in rounded-2xl border border-[#D9E2EC] bg-white p-3.5 shadow-sm sm:p-4"
-            style={{ animationDelay: `${index * 40}ms`, animationFillMode: "both" }}
+            interactive
+            onClick={() => openOffer(offer)}
+            aria-label={`View offer for ${offer.candidateName || "candidate"}`}
+            style={{
+              animationDelay: `${index * 35}ms`,
+              animationFillMode: "both",
+            }}
+            className="font-jakarta"
           >
-            <button
-              type="button"
-              onClick={() => openOffer(offer)}
-              className="block w-full text-left"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="break-words font-jakarta text-sm font-extrabold text-[#042C51]">
-                    {offer.candidateName || "—"}
-                  </p>
-                  <p className="mt-0.5 break-words font-jakarta text-[10px] font-semibold text-[#667085]">
-                    {offer.offerId || "—"} • {offer.candidateId || "—"}
-                  </p>
+            <DataCard.Header
+              title={offer.candidateName || "—"}
+              subtitle={
+                <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                  <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+                    {offer.offerId || "—"}
+                  </span>
+                  {offer.candidateId && (
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
+                      {offer.candidateId}
+                    </span>
+                  )}
                 </div>
-
+              }
+              badge={
                 <span
-                  className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(
+                  className={`inline-flex shrink-0 items-center justify-center rounded-lg border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(
                     approvalStatus,
                   )}`}
                 >
                   {approvalStatus}
                 </span>
-              </div>
-            </button>
+              }
+            />
 
-            <div className="mt-3 grid grid-cols-1 gap-2.5 rounded-xl bg-[#F8FAFC] p-3 sm:grid-cols-2">
-              <div>
-                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
+            <DataCard.ContextRow>
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
                   Final Role / Account
                 </p>
-                <p className="mt-0.5 break-words font-jakarta text-xs font-extrabold text-[#042C51]">
+                <p className="mt-0.5 truncate text-xs font-bold text-[#042C51]">
                   {offer.roleTitle || "—"}
                 </p>
-                <p className="mt-0.5 break-words font-jakarta text-[10px] font-semibold text-[#667085]">
+                <p className="truncate text-[11px] font-semibold text-[#667085]">
                   {offer.account || "—"}
                 </p>
               </div>
-
-              <div>
-                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
+              <div className="min-w-0 flex-1 border-l border-[#E6ECF2] pl-2.5">
+                <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
                   Owner
                 </p>
-                <p className="mt-0.5 break-words font-jakarta text-xs font-bold text-[#042C51]">
-                  {offer.owner || "—"}
+                <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-bold text-[#042C51]">
+                  <UserRound size={11} className="shrink-0 text-[#98A2B3]" />
+                  <span className="truncate">{offer.owner || "—"}</span>
                 </p>
               </div>
-            </div>
+            </DataCard.ContextRow>
 
-            <section className="mt-3 rounded-xl border border-[#E6ECF2] bg-white p-3">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-                Evaluation Scores
-              </p>
-              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {[
-                  ["Assessment", scores.assessment.display],
-                  ["Job Evaluation", scores.jobEvaluation.display],
-                  ["Final Interview", scores.finalInterview.display],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-lg bg-[#F8FAFC] p-2.5">
-                    <p className="text-[10px] font-bold text-[#667085]">
-                      {label}
-                    </p>
-                    <p className="mt-1 text-xs font-extrabold text-[#042C51]">
-                      {value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <DataCard.Metrics cols={3}>
+              <DataCard.MetricItem
+                label="Assessment"
+                value={scores.assessment.display}
+                valueClassName="text-xs font-extrabold text-[#042C51]"
+              />
+              <DataCard.MetricItem
+                label="Job Eval"
+                value={scores.jobEvaluation.display}
+                valueClassName="text-xs font-extrabold text-[#042C51]"
+              />
+              <DataCard.MetricItem
+                label="Interview"
+                value={scores.finalInterview.display}
+                valueClassName="text-xs font-extrabold text-[#042C51]"
+              />
+            </DataCard.Metrics>
 
-            <section className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            <div className="mt-2.5 rounded-xl border border-blue-100 bg-blue-50/70 p-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]">
                   Negotiation
-                </p>
-                <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold text-sibs-primary-1">
+                </span>
+                <span className="rounded-full bg-white px-2 py-0.5 text-[9px] font-extrabold text-[#042C51] shadow-2xs">
                   Version {negotiation.versionNumber}
                 </span>
               </div>
-              <p className="mt-2 text-xs font-bold text-[#475467]">
+              <p className="mt-1 text-[11px] font-bold text-[#344054]">
                 {negotiation.hasNegotiation
                   ? negotiation.status
                   : "Original Offer"}
               </p>
-              <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-[#667085]">
-                {negotiation.remark || "No negotiation history"}
-              </p>
+              {negotiation.remark && (
+                <p className="mt-0.5 line-clamp-2 text-[10px] font-medium text-[#667085]">
+                  {negotiation.remark}
+                </p>
+              )}
               <button
                 type="button"
-                onClick={() => openOffer(offer, "negotiation-history")}
-                className="mt-2 inline-flex h-9 items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 text-xs font-extrabold text-sibs-primary-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openOffer(offer, "negotiation-history");
+                }}
+                className="mt-2 inline-flex h-7.5 items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-2.5 text-[10px] font-extrabold text-[#042C51] transition hover:bg-blue-50 active:scale-95"
               >
-                <History size={14} />
+                <History size={12} className="text-[#FF5C28]" />
                 View History
               </button>
-            </section>
-
-            <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => openOffer(offer)}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-              >
-                <Eye size={16} />
-                View
-              </button>
-
-              {approvalStatus === "For Review" && authorized ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleApproval?.(offer, "Rejected")}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600"
-                  >
-                    <X size={15} />
-                    Decline
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApproval?.(offer, "Approved")}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-extrabold text-white"
-                  >
-                    <Check size={15} />
-                    Approve
-                  </button>
-                </>
-              ) : null}
             </div>
-          </article>
+
+            <DataCard.Footer>
+              <div className="flex w-full items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openOffer(offer);
+                  }}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3 text-[11px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF9F6] hover:text-[#FF5C28] active:scale-95"
+                >
+                  <Eye size={13} />
+                  View Details
+                </button>
+
+                {approvalStatus === "For Review" && authorized ? (
+                  <div
+                    className="flex items-center gap-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleApproval?.(offer, "Rejected")}
+                      className="inline-flex h-8 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 text-[10px] font-extrabold text-red-600 transition hover:bg-red-100 active:scale-95"
+                    >
+                      <X size={13} />
+                      Decline
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApproval?.(offer, "Approved")}
+                      className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#042C51] px-2.5 text-[10px] font-extrabold text-white transition hover:bg-[#063b6d] active:scale-95"
+                    >
+                      <Check size={13} />
+                      Approve
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </DataCard.Footer>
+          </DataCard>
         );
       })}
     </div>

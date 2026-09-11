@@ -1,6 +1,11 @@
-import { ArrowUpRight } from "lucide-react";
+import React from "react";
+import { ArrowUpRight, CalendarDays, ExternalLink, Mail, MapPin } from "lucide-react";
+import { DataCard } from "@/components/ui";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
-import { getStatusClass } from "../../../lib/utils/talentPool/talentPoolHelpers";
+import {
+  formatDate,
+  getStatusClass,
+} from "../../../lib/utils/talentPool/talentPoolHelpers";
 import { isUnder18Candidate } from "../../../lib/utils/talentPool/talentPoolTabs";
 
 function getTalentPoolStatusLabel(status = "") {
@@ -26,6 +31,10 @@ function getTalentPoolStatusClass(status = "") {
   return getStatusClass(status);
 }
 
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
 export default function TalentPoolMobileCard({ candidate, index = 0 }) {
   const { setSelectedCandidate } = useTalentPool();
 
@@ -41,90 +50,138 @@ export default function TalentPoolMobileCard({ candidate, index = 0 }) {
   const position =
     candidate.openPosition || candidate.roleCapability || "—";
   const location = candidate.applyingLocation || "—";
-  const finalAccount =
-    candidate.currentAppliedAccount || "";
+  const finalAccount = candidate.currentAppliedAccount || "";
+  const candidateId =
+    candidate.candidateId ||
+    candidate.candidate_id ||
+    candidate.publicTalentPoolId ||
+    candidate.public_talent_pool_id ||
+    "Candidate";
+
+  const leadId = cleanText(
+    candidate.leadId ||
+      candidate.lead_id ||
+      candidate.applicantLeadId ||
+      candidate.applicant_lead_id ||
+      candidate.sourceLeadId ||
+      candidate.source_lead_id,
+  );
+
+  const lastActivityDate = formatDate(
+    candidate.lastPipelineUpdate || candidate.lastActivity,
+  );
+
+  const contactInfo = cleanText(candidate.email || candidate.contactNumber, "");
 
   return (
-    <button
-      type="button"
+    <DataCard
+      interactive
       onClick={() => setSelectedCandidate(candidate)}
-      className="sibs-page-card-in group w-full rounded-2xl border border-sibs-border bg-white p-3.5 2xl:p-4 text-left font-jakarta shadow-sm outline-none transition hover:border-sibs-orange/40 hover:bg-[#FFF8F5] hover:shadow-md focus-visible:ring-2 focus-visible:ring-sibs-orange/25 active:scale-[0.995]"
+      aria-label={`View candidate ${candidate.name || "profile"}`}
       style={{
-        animationDelay: `${index * 40}ms`,
+        animationDelay: `${index * 30}ms`,
         animationFillMode: "both",
       }}
-      aria-label={`View candidate ${candidate.name || "profile"}`}
+      className="font-jakarta"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[10px] font-extrabold uppercase tracking-normal text-sibs-orange">
-            {candidate.candidateId || "Candidate"}
-          </p>
-
-          <h3 className="mt-0.5 truncate sibs-text-xs font-extrabold leading-5 text-sibs-navy">
-            {candidate.name || "—"}
-          </h3>
-
-          <p className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted">
-            {candidate.email || candidate.contactNumber || "—"}
-          </p>
-        </div>
-
-        <span
-          title={displayStatus}
-          className={`inline-flex max-w-[150px] shrink-0 items-center justify-center rounded-lg border px-2 py-0.5 2xl:py-1 text-center text-[10px] font-extrabold leading-4 ${getTalentPoolStatusClass(
-            displayStatus,
-          )}`}
-        >
-          <span className="line-clamp-2 break-words">
-            {getTalentPoolStatusLabel(displayStatus)}
+      <DataCard.Header
+        title={candidate.name || "—"}
+        subtitle={
+          <div className="mt-0.5 space-y-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
+                {candidateId}
+              </span>
+              {leadId && (
+                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-text-muted">
+                  Lead: {leadId}
+                </span>
+              )}
+            </div>
+            {contactInfo ? (
+              <p className="flex items-center gap-1.5 truncate text-[11px] font-medium text-sibs-text-muted">
+                <Mail size={11} className="shrink-0 text-sibs-text-faint" />
+                <span className="truncate">{contactInfo}</span>
+              </p>
+            ) : null}
+          </div>
+        }
+        badge={
+          <span
+            title={displayStatus}
+            className={`inline-flex max-w-[150px] shrink-0 items-center justify-center rounded-lg border px-2.5 py-1 text-center text-[10px] font-extrabold leading-4 ${getTalentPoolStatusClass(
+              displayStatus,
+            )}`}
+          >
+            <span className="line-clamp-2 break-words">
+              {getTalentPoolStatusLabel(displayStatus)}
+            </span>
           </span>
-        </span>
-      </div>
+        }
+      />
 
-      <div className="mt-2.5 2xl:mt-3 grid grid-cols-2 gap-2">
-        <div className="min-w-0 rounded-lg border border-sibs-border bg-sibs-canvas p-2.5 2xl:p-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-text-muted">
-            Position
+      <div className="mt-2.5 grid grid-cols-2 gap-2">
+        <div className="min-w-0 rounded-lg border border-sibs-border bg-sibs-canvas px-2.5 py-2">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-text-faint">
+            Applied Position
           </p>
-          <p className="mt-0.5 line-clamp-2 sibs-text-xs font-bold leading-4 text-sibs-text-secondary">
+          <p className="mt-0.5 truncate text-xs font-bold text-sibs-navy" title={position}>
             {position}
           </p>
         </div>
 
-        <div className="min-w-0 rounded-lg border border-sibs-border bg-sibs-canvas p-2.5 2xl:p-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-text-muted">
-            Location
+        <div className="min-w-0 rounded-lg border border-sibs-border bg-sibs-canvas px-2.5 py-2">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-text-faint">
+            Preferred Location
           </p>
-          <p className="mt-0.5 line-clamp-2 sibs-text-xs font-bold leading-4 text-sibs-text-secondary">
-            {location}
+          <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-semibold text-sibs-text-secondary" title={location}>
+            <MapPin size={11} className="shrink-0 text-sibs-text-faint" />
+            <span className="truncate">{location}</span>
           </p>
         </div>
       </div>
 
-      <div className="mt-2.5 2xl:mt-3 flex items-end justify-between gap-3 border-t border-sibs-border pt-2.5 2xl:pt-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap gap-1.5">
-            <span className="inline-flex max-w-full truncate rounded-md border border-sibs-border bg-sibs-canvas px-2 py-0.5 text-[10px] font-bold text-sibs-text-muted">
-              {candidate.source || "Source not specified"}
-            </span>
-
-            {candidate.isPublicSubmission ? (
-              <span className="inline-flex rounded-md border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700">
-                Public
-              </span>
-            ) : null}
-          </div>
-
-          <p className="mt-1.5 truncate text-[10px] font-semibold text-sibs-text-muted">
-            Final account: <span className="font-extrabold text-sibs-navy">{finalAccount}</span>
-          </p>
+      {candidate.skillsLanguage ? (
+        <div className="mt-2 flex items-center gap-1.5 rounded-md border border-sibs-border bg-slate-50/80 px-2.5 py-1 text-[10.5px] font-semibold text-sibs-text-secondary">
+          <span className="font-extrabold text-sibs-navy">Skills:</span>
+          <span className="truncate">{candidate.skillsLanguage}</span>
         </div>
+      ) : null}
 
-        <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-cream text-sibs-navy transition group-hover:bg-sibs-orange group-hover:text-white">
-          <ArrowUpRight size={14} />
-        </span>
-      </div>
-    </button>
+      <DataCard.Metrics cols={2}>
+        <DataCard.MetricItem
+          label="Final Account"
+          value={finalAccount || "—"}
+          valueClassName="text-xs font-bold text-sibs-navy"
+        />
+        <DataCard.MetricItem
+          label="Source"
+          value={
+            <div className="flex items-center justify-center gap-1">
+              <span className="truncate">{candidate.source || "Not specified"}</span>
+              {candidate.isPublicSubmission ? (
+                <span className="inline-flex items-center rounded border border-purple-200 bg-purple-50 px-1 py-0.2 text-[9px] font-extrabold text-purple-700">
+                  Public
+                </span>
+              ) : null}
+            </div>
+          }
+          valueClassName="text-xs font-bold text-sibs-navy"
+        />
+      </DataCard.Metrics>
+
+      <DataCard.Footer>
+        <div className="flex w-full items-center justify-between gap-2">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold text-[#667085]">
+            <CalendarDays size={12} className="shrink-0 text-[#98A2B3]" />
+            Activity: {lastActivityDate}
+          </p>
+
+          <span className="flex h-6.5 w-6.5 items-center justify-center rounded-lg bg-sibs-cream text-sibs-navy transition group-hover:bg-sibs-orange group-hover:text-white">
+            <ArrowUpRight size={13} />
+          </span>
+        </div>
+      </DataCard.Footer>
+    </DataCard>
   );
 }

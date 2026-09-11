@@ -143,7 +143,7 @@ export default function SourcingAnalyticsPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddCostModal(true)}
-                  className="sibs-btn-primary"
+                  className="sibs-btn-primary max-sm:flex-1"
                 >
                   <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   Add Source Cost Entry

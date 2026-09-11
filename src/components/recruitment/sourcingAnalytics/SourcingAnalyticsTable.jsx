@@ -3,6 +3,7 @@ import React, {
   useMemo,
 } from "react";
 import { Compass } from "lucide-react";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 
 import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
 import { usePagination } from "../../../services/context/PaginationContext";
@@ -226,93 +227,82 @@ export default function SourcingAnalyticsTable({
   }
 
   return (
-    <div className="px-4 pb-4 pt-0 font-jakarta sm:px-5 sm:pb-5">
-      <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-        <div className="p-4 lg:hidden">
-          {loading ? (
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] py-12 text-center text-sm font-bold text-[#667085]">
-              Loading sourcing channels...
-            </div>
+    <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
+      <ResponsiveTableShell
+        mobileContent={
+          loading ? (
+            <DataCard.Skeleton count={4} lines={3} />
           ) : paginatedData.length > 0 ? (
             <div className="space-y-3">
-              {paginatedData.map(
-                (source, index) => (
-                  <SourcingAnalyticsMobileCard
-                    key={
-                      source?.id ||
-                      `${source?.source}-${index}`
-                    }
-                    source={source}
-                    onView={onView}
-                  />
-                ),
-              )}
+              {paginatedData.map((source, index) => (
+                <SourcingAnalyticsMobileCard
+                  key={
+                    source?.id ||
+                    `${source?.source}-${index}`
+                  }
+                  source={source}
+                  onView={onView}
+                />
+              ))}
             </div>
           ) : (
-            <div className="sibs-empty-panel">
-              <Compass className="mx-auto h-9 w-9 text-[#CBD5E1]" />
-
-              <p className="mt-3 text-sm font-extrabold text-[#042C51]">
-                No Sourcing Channels Found
-              </p>
-
-              <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                No records matched the active search
-                and filters.
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="hidden overflow-x-auto lg:block max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
-          <table className="w-full min-w-[1450px] border-collapse bg-white text-left text-xs">
+            <DataCard.Empty
+              title="No Sourcing Channels Found"
+              description="No records matched the active search and filters."
+            />
+          )
+        }
+        desktopContent={
+          <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+            <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
+              <table className="w-full min-w-[1450px] border-collapse bg-white text-left text-xs">
             <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="sibs-data-table-head-row">
-                <th className="sibs-data-table-th text-left">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Source Channel
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Source Cost
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Cost Entries
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Applicants
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Screened
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Interviewed
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Offered
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Hired
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Conversion
                 </th>
 
-                <th className="sibs-data-table-th text-center">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Cost / Hire
                 </th>
 
-                <th className="sibs-data-table-th text-left">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Latest Applicant
                 </th>
 
-                <th className="sibs-data-table-th text-left">
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Last Activity
                 </th>
               </tr>
@@ -366,7 +356,7 @@ export default function SourcingAnalyticsTable({
                     >
                       <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <p
-                          className="max-w-[280px] truncate text-xs font-extrabold leading-5 text-[#042C51]"
+                          className="max-w-[280px] truncate sibs-text-xs font-extrabold text-sibs-navy"
                           title={source?.source || ""}
                         >
                           {source?.source || "—"}
@@ -381,51 +371,51 @@ export default function SourcingAnalyticsTable({
                         </span>
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-[#042C51] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-sibs-navy align-middle">
                         {formatCurrency(
                           source?.sourceCost,
                         )}
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-bold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-bold tabular-nums text-sibs-secondary align-middle">
                         {source?.costEntries?.length || 0}
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-[#042C51] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-sibs-navy align-middle">
                         {source?.volume || 0}
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold tabular-nums text-sibs-secondary align-middle">
                         {source?.screened || 0}
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold tabular-nums text-sibs-secondary align-middle">
                         {source?.interviewed || 0}
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold tabular-nums text-sibs-secondary align-middle">
                         {source?.offered || 0}
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-emerald-600 align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-emerald-600 align-middle">
                         {source?.hired || 0}
                       </td>
 
                       <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
-                        <span className="inline-flex rounded-lg bg-[#F2F6FA] px-2 py-0.5 text-[10px] font-extrabold tabular-nums text-[#042C51]">
+                        <span className="inline-flex rounded-lg bg-sibs-canvas px-2 py-0.5 text-[10px] 2xl:text-[10.5px] font-extrabold tabular-nums text-sibs-navy">
                           {Number(
                             source?.conversionRate || 0,
                           ).toFixed(1)}%
                         </span>
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-xs font-extrabold tabular-nums text-[#FF5C28] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-sibs-orange align-middle">
                         {formatCostPerHire(source)}
                       </td>
 
                       <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <p
-                          className="max-w-[190px] truncate text-xs font-semibold text-[#475467]"
+                          className="max-w-[190px] truncate sibs-text-xs font-semibold text-sibs-secondary"
                           title={
                             source?.latestCandidate || ""
                           }
@@ -434,7 +424,7 @@ export default function SourcingAnalyticsTable({
                         </p>
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold tabular-nums text-sibs-secondary align-middle">
                         {formatDate(
                           source?.lastActivity,
                         )}
@@ -448,13 +438,13 @@ export default function SourcingAnalyticsTable({
                     colSpan={12}
                     className="px-5 py-14 text-center"
                   >
-                    <Compass className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+                    <Compass className="mx-auto h-9 w-9 text-slate-300" />
 
-                    <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                    <p className="mt-3 text-sm font-extrabold text-sibs-navy">
                       No Sourcing Channels Found
                     </p>
 
-                    <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                    <p className="mt-1 text-xs font-semibold text-sibs-faint">
                       No records matched the active
                       search and filters.
                     </p>
@@ -464,23 +454,25 @@ export default function SourcingAnalyticsTable({
             </tbody>
           </table>
         </div>
+      </div>
+      }
+    />
 
-        <div className="px-4 pb-4">
-          <PaginationTable
-            showSearch={false}
-            showPagination
-            showCount
-            loading={loading}
-            currentPage={safeCurrentPage}
-            totalPages={totalPages}
-            loadedCount={paginatedData.length}
-            totalRecords={filteredList.length}
-            recordLabel="sourcing channels"
-            onPrevious={handlePreviousPage}
-            onNext={handleNextPage}
-            className="border-0 bg-transparent p-0 shadow-none"
-          />
-        </div>
+      <div className="pt-3">
+        <PaginationTable
+          showSearch={false}
+          showPagination
+          showCount
+          loading={loading}
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          loadedCount={paginatedData.length}
+          totalRecords={filteredList.length}
+          recordLabel="sourcing channels"
+          onPrevious={handlePreviousPage}
+          onNext={handleNextPage}
+          className="border-0 bg-transparent p-0 shadow-none"
+        />
       </div>
     </div>
   );

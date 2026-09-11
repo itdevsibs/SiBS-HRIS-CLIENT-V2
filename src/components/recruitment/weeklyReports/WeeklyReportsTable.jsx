@@ -1,6 +1,7 @@
+import React from "react";
 import { AlertTriangle, CheckSquare, Eye } from "lucide-react";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 import WeeklyReportMobileCard from "./WeeklyReportMobileCard.jsx";
-
 
 function getReportStatusClass(status) {
   if (status === "Generated") return "border-amber-200 bg-amber-50 text-amber-700";
@@ -24,33 +25,39 @@ export default function WeeklyReportsTable({ reports, onView }) {
   const safeReports = Array.isArray(reports) ? reports : [];
 
   return (
-    <>
-      <div className="space-y-3 lg:hidden">
-        {safeReports.length > 0 ? (
-          safeReports.map((report, index) => (
-            <WeeklyReportMobileCard
-              key={report.reportId}
-              report={report}
-              onView={() => onView(report)}
-              delay={index * 45}
+    <ResponsiveTableShell
+      mobileContent={
+        <div className="space-y-3 font-jakarta">
+          {safeReports.length > 0 ? (
+            safeReports.map((report, index) => (
+              <WeeklyReportMobileCard
+                key={report.reportId}
+                report={report}
+                index={index}
+                onView={() => onView(report)}
+              />
+            ))
+          ) : (
+            <DataCard.Empty
+              title="No weekly reports found"
+              hint="No weekly performance report entries match the selected filters."
             />
-          ))
-        ) : (
-          <div className="sibs-empty-panel">No weekly reports found.</div>
-        )}
-      </div>
+          )}
+        </div>
+      }
+      desktopContent={
+        <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+          <div className="overflow-x-auto sibs-scrollbar">
+            <table className="w-full min-w-[1020px] border-collapse bg-white">
+              <thead className="sibs-data-table-head">
+                <tr className="sibs-data-table-head-row">
 
-      <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:block">
-        <div className="overflow-x-auto sibs-scrollbar">
-          <table className="w-full min-w-[1020px] border-collapse bg-white">
-            <thead className="sibs-data-table-head">
-              <tr className="sibs-data-table-head-row">
-                <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-left">Week & Date Range</th>
-                <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-left">Report ID & Author</th>
-                <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">Requirement vs. Filled</th>
-                <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">Status</th>
-                <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-center">Action Items & Alerts</th>
-                <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 whitespace-nowrap text-right">Actions</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 whitespace-nowrap text-left text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">Week & Date Range</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 whitespace-nowrap text-left text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">Report ID & Author</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 whitespace-nowrap text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">Requirement vs. Filled</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 whitespace-nowrap text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">Status</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 whitespace-nowrap text-center text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">Action Items & Alerts</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 whitespace-nowrap text-right text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">Actions</th>
               </tr>
             </thead>
 
@@ -75,42 +82,42 @@ export default function WeeklyReportsTable({ reports, onView }) {
                       className="sibs-data-table-row sibs-page-card-in group transition-colors"
                       style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                     >
-                      <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-extrabold text-[#042C51]">
-                        <p className="font-extrabold text-[#042C51]">{report.weekLabel}</p>
-                        <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">{report.dateRange}</p>
+                      <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-sibs-navy">
+                        <p className="font-extrabold text-sibs-navy">{report.weekLabel}</p>
+                        <p className="mt-0.5 text-[10px] 2xl:text-[10.5px] font-semibold tabular-nums text-sibs-muted">{report.dateRange}</p>
                       </td>
 
-                      <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 sibs-text-xs font-semibold text-[#344054]">
-                        <p className="font-mono font-extrabold text-[#042C51]">{report.reportId}</p>
-                        <p className="mt-0.5 max-w-[220px] truncate sibs-text-micro font-semibold text-[#667085]">
+                      <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-semibold text-sibs-secondary">
+                        <p className="font-mono font-extrabold tabular-nums text-sibs-navy">{report.reportId}</p>
+                        <p className="mt-0.5 max-w-[220px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-sibs-muted">
                           {report.generatedBy || "System"}
                         </p>
                       </td>
 
-                      <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs font-extrabold">
-                        <div className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1 sibs-text-micro font-extrabold">
+                      <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-center sibs-text-xs font-extrabold">
+                        <div className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2 py-1 text-[10px] 2xl:text-[10.5px] font-extrabold tabular-nums">
                           <span className="text-emerald-700">{toNumber(report.totalFilled)}</span>
-                          <span className="text-[#98A2B3]">/</span>
-                          <span className="text-[#042C51]">{toNumber(report.totalRequirement)}</span>
-                          <span className="ml-1 text-[#667085]">({fulfillment}%)</span>
+                          <span className="text-sibs-faint">/</span>
+                          <span className="text-sibs-navy">{toNumber(report.totalRequirement)}</span>
+                          <span className="ml-1 text-sibs-muted">({fulfillment}%)</span>
                         </div>
                       </td>
 
-                      <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs">
-                        <span className={`inline-flex rounded-full border px-2.5 py-1 sibs-text-micro font-extrabold uppercase ${getReportStatusClass(report.status)}`}>
+                      <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-center sibs-text-xs">
+                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold uppercase ${getReportStatusClass(report.status)}`}>
                           {report.status}
                         </span>
                       </td>
 
-                      <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-xs">
+                      <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-center sibs-text-xs">
                         <div className="flex items-center justify-center gap-1.5">
-                          <span className="inline-flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-2 py-0.5 sibs-text-micro font-extrabold text-orange-700">
-                            <CheckSquare size={12} className="text-[#FF5C28]" />
+                          <span className="inline-flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-2 py-0.5 text-[9px] font-extrabold tabular-nums text-orange-700">
+                            <CheckSquare size={12} className="text-sibs-orange" />
                             {actionCount} Tasks
                           </span>
 
                           {alertCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-0.5 sibs-text-micro font-extrabold text-red-700">
+                            <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[9px] font-extrabold tabular-nums text-red-700">
                               <AlertTriangle size={12} />
                               {alertCount} Alerts
                             </span>
@@ -118,14 +125,14 @@ export default function WeeklyReportsTable({ reports, onView }) {
                         </div>
                       </td>
 
-                      <td className="whitespace-nowrap px-2.5 py-1.5 2xl:px-4 2xl:py-3.5 text-right sibs-text-xs">
+                      <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-right sibs-text-xs">
                         <button
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation();
                             onView(report);
                           }}
-                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-micro font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] active:scale-[0.98]"
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-3 text-[10px] 2xl:text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-[#FFF7F3] hover:text-sibs-orange active:scale-[0.98]"
                         >
                           <Eye size={13} />
                           View Details
@@ -136,7 +143,7 @@ export default function WeeklyReportsTable({ reports, onView }) {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center sibs-text-xs font-bold text-[#98A2B3]">
+                  <td colSpan={6} className="px-5 py-12 text-center sibs-text-xs font-bold text-sibs-faint">
                     No weekly performance report entries match the selected filters.
                   </td>
                 </tr>
@@ -145,6 +152,8 @@ export default function WeeklyReportsTable({ reports, onView }) {
           </table>
         </div>
       </div>
-    </>
+    }
+  />
   );
 }
+

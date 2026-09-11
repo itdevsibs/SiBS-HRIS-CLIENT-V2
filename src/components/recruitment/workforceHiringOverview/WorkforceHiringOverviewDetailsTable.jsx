@@ -9,6 +9,7 @@ import { CalendarDays, ChevronDown, ChevronRight, ChevronUp, GripHorizontal } fr
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import { usePagination } from "../../../services/context/PaginationContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 import {
   formatOverviewNumber,
   formatOverviewPercent,
@@ -1109,6 +1110,129 @@ function PerformanceCells({ row, summary = false }) {
   );
 }
 
+function HistoryWeekMobileCard({
+  week,
+  isCurrentWeek,
+  isActiveWeek,
+  selectedPeriod,
+}) {
+  const hiringNeeded = toNumber(week.hiringNeeded);
+
+  return (
+    <div
+      className={`rounded-xl border p-3 transition-colors ${
+        isActiveWeek
+          ? "border-sibs-orange/50 bg-sibs-orange/[0.04] shadow-xs"
+          : "border-sibs-border bg-white"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="font-heading text-xs font-black text-sibs-navy">
+            {week.period}
+          </span>
+          {isActiveWeek && (
+            <span className="rounded bg-sibs-navy px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-wide text-white">
+              {selectedPeriod === ALL_SIX_WEEKS && isCurrentWeek
+                ? "Current"
+                : "Selected"}
+            </span>
+          )}
+        </div>
+
+        <span
+          className={`inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-[9.5px] font-extrabold tabular-nums ${
+            hiringNeeded > 0
+              ? "border-rose-200 bg-rose-50 text-rose-700"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+          }`}
+        >
+          Need: {formatOverviewNumber(hiringNeeded)}
+        </span>
+      </div>
+
+      <div className="mt-2 grid grid-cols-4 gap-1 rounded-lg bg-sibs-canvas px-2.5 py-2 text-center">
+        <div>
+          <span className="block text-[9px] font-bold uppercase tracking-wider text-sibs-muted">
+            Req
+          </span>
+          <strong className="text-[11.5px] font-black tabular-nums text-sibs-navy">
+            {formatOverviewNumber(week.requiredHeadcount)}
+          </strong>
+        </div>
+        <div>
+          <span className="block text-[9px] font-bold uppercase tracking-wider text-sibs-muted">
+            Act
+          </span>
+          <strong className="text-[11.5px] font-black tabular-nums text-sibs-navy">
+            {formatOverviewNumber(week.actualHeadcount)}
+          </strong>
+        </div>
+        <div>
+          <span className="block text-[9px] font-bold uppercase tracking-wider text-sibs-muted">
+            Net
+          </span>
+          <strong className="text-[11.5px] font-black tabular-nums text-sibs-navy">
+            {formatOverviewNumber(week.netActualHc)}
+          </strong>
+        </div>
+        <div>
+          <span className="block text-[9px] font-bold uppercase tracking-wider text-sibs-muted">
+            Buffer
+          </span>
+          <strong
+            className={`text-[11.5px] font-black tabular-nums ${getBufferColor(
+              week.bufferPercentage,
+            )}`}
+          >
+            {formatOverviewPercent(week.bufferPercentage)}
+          </strong>
+        </div>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10.5px] font-semibold text-sibs-muted">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span>
+            Abs:{" "}
+            <strong className="text-sibs-navy tabular-nums">
+              {formatOverviewNumber(week.absenteeism)}
+            </strong>
+          </span>
+          <span>
+            Attr:{" "}
+            <strong className="text-sibs-navy tabular-nums">
+              {formatOverviewNumber(week.attrition)}
+            </strong>
+          </span>
+          <span>
+            JO:{" "}
+            <strong className="text-sibs-navy tabular-nums">
+              {formatOverviewNumber(week.acceptedJo)}
+            </strong>
+          </span>
+          <span>
+            Live:{" "}
+            <strong className="text-emerald-700 tabular-nums">
+              {formatOverviewNumber(week.goLive)}
+            </strong>
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span>
+            Hired:{" "}
+            <strong className="font-black text-sibs-navy tabular-nums">
+              {formatOverviewNumber(week.hiredCount)}
+            </strong>
+          </span>
+          <span className="font-extrabold text-sibs-orange tabular-nums">
+            ({formatOverviewPercent(week.hiringRate)})
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ExpandedHistory({ row, selectedWeekNumber, selectedPeriod }) {
   const history = useMemo(
     () => getSixWeekHistory(row, selectedWeekNumber),
@@ -1136,42 +1260,22 @@ function ExpandedHistory({ row, selectedWeekNumber, selectedPeriod }) {
 
   return (
     <div className="space-y-4 whitespace-normal">
-      <div className="flex flex-col gap-2 border-b border-[#DDE5EE] pb-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 border-b border-sibs-border pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2">
-          <CalendarDays className="h-4 w-4 shrink-0 text-[#FF5C28]" />
-          <h4 className="truncate text-[11px] font-black uppercase tracking-wide text-[#042C51]">
+          <CalendarDays className="h-4 w-4 shrink-0 text-sibs-orange" />
+          <h4 className="truncate text-[11px] font-black uppercase tracking-wide text-sibs-navy">
             6-Week Historical Performance Breakdown — {row.account} ({row.cluster})
           </h4>
         </div>
 
-        <span className="w-fit rounded-full bg-[#042C51] px-3 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white">
+        <span className="w-fit rounded-full bg-sibs-navy px-3 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white">
           {firstWeek.period} – {currentWeek.period}
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white shadow-sm">
-        <table className="w-full min-w-[1580px] border-collapse font-jakarta">
-          <thead>
-            <tr>
-              <HistoryTh className="text-left">Week Period</HistoryTh>
-              <HistoryTh>Req HC</HistoryTh>
-              <HistoryTh>Act HC</HistoryTh>
-              <HistoryTh>Buffer %</HistoryTh>
-              <HistoryTh>Abs Count (%)</HistoryTh>
-              <HistoryTh>Att Count (%)</HistoryTh>
-              <HistoryTh>Net Actual</HistoryTh>
-              <HistoryTh>Hiring Needed</HistoryTh>
-              <HistoryTh>Accepted JO</HistoryTh>
-              <HistoryTh>NHO</HistoryTh>
-              <HistoryTh>FST</HistoryTh>
-              <HistoryTh>PST</HistoryTh>
-              <HistoryTh>Go Live</HistoryTh>
-              <HistoryTh>Hired Count</HistoryTh>
-              <HistoryTh>Yield Rate %</HistoryTh>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-[#E6ECF2]">
+      <ResponsiveTableShell
+        mobileContent={
+          <div className="space-y-2.5">
             {history.map((week, index) => {
               const isCurrentWeek = index === history.length - 1;
               const isActiveWeek =
@@ -1179,70 +1283,114 @@ function ExpandedHistory({ row, selectedWeekNumber, selectedPeriod }) {
                 getPeriodWeekNumber(activeHistoryPeriod);
 
               return (
-                <tr
+                <HistoryWeekMobileCard
                   key={`${row.account}-${week.period}-${index}`}
-                  className={
-                    isActiveWeek
-                      ? "bg-[#EAF2FB] font-extrabold"
-                      : "bg-white hover:bg-[#F8FAFC]"
-                  }
-                >
-                  <HistoryTd className="text-left font-extrabold text-[#042C51]">
-                    <div className="flex items-center justify-between gap-3">
-                      <span>{week.period}</span>
-                      {isActiveWeek ? (
-                        <span className="rounded bg-[#042C51] px-1.5 py-0.5 text-[8px] font-black uppercase text-white">
-                          {selectedPeriod === ALL_SIX_WEEKS && isCurrentWeek
-                            ? "Current"
-                            : "Selected"}
-                        </span>
-                      ) : null}
-                    </div>
-                  </HistoryTd>
-                  <HistoryTd>{formatOverviewNumber(week.requiredHeadcount)}</HistoryTd>
-                  <HistoryTd>{formatOverviewNumber(week.actualHeadcount)}</HistoryTd>
-                  <HistoryTd className={`font-extrabold ${getBufferColor(week.bufferPercentage)}`}>
-                    {formatOverviewPercent(week.bufferPercentage)}
-                  </HistoryTd>
-                  <HistoryTd>
-                    {formatOverviewNumber(week.absenteeism)} ({formatOverviewPercent(week.absenteeismPercentage)})
-                  </HistoryTd>
-                  <HistoryTd>
-                    {formatOverviewNumber(week.attrition)} ({formatOverviewPercent(week.attritionPercentage)})
-                  </HistoryTd>
-                  <HistoryTd className="font-extrabold text-[#042C51]">
-                    {formatOverviewNumber(week.netActualHc)}
-                  </HistoryTd>
-                  <HistoryTd className={`font-extrabold ${getHiringNeededColor(week.hiringNeeded)}`}>
-                    {formatOverviewNumber(week.hiringNeeded)}
-                  </HistoryTd>
-                  <HistoryTd>{formatOverviewNumber(week.acceptedJo)}</HistoryTd>
-                  <HistoryTd>{formatOverviewNumber(week.nho)}</HistoryTd>
-                  <HistoryTd>{formatOverviewNumber(week.fst)}</HistoryTd>
-                  <HistoryTd>{formatOverviewNumber(week.pst)}</HistoryTd>
-                  <HistoryTd className="font-extrabold text-emerald-700">
-                    {formatOverviewNumber(week.goLive)}
-                  </HistoryTd>
-                  <HistoryTd className="font-extrabold text-[#042C51]">
-                    {formatOverviewNumber(week.hiredCount)}
-                  </HistoryTd>
-                  <HistoryTd className="font-extrabold text-[#FF5C28]">
-                    {formatOverviewPercent(week.hiringRate)}
-                  </HistoryTd>
-                </tr>
+                  week={week}
+                  isCurrentWeek={isCurrentWeek}
+                  isActiveWeek={isActiveWeek}
+                  selectedPeriod={selectedPeriod}
+                />
               );
             })}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        }
+        desktopContent={
+          <div className="overflow-x-auto rounded-xl border border-sibs-border bg-white shadow-sm">
+            <table className="w-full min-w-[1580px] border-collapse font-jakarta">
+              <thead>
+                <tr>
+                  <HistoryTh className="text-left">Week Period</HistoryTh>
+                  <HistoryTh>Req HC</HistoryTh>
+                  <HistoryTh>Act HC</HistoryTh>
+                  <HistoryTh>Buffer %</HistoryTh>
+                  <HistoryTh>Abs Count (%)</HistoryTh>
+                  <HistoryTh>Att Count (%)</HistoryTh>
+                  <HistoryTh>Net Actual</HistoryTh>
+                  <HistoryTh>Hiring Needed</HistoryTh>
+                  <HistoryTh>Accepted JO</HistoryTh>
+                  <HistoryTh>NHO</HistoryTh>
+                  <HistoryTh>FST</HistoryTh>
+                  <HistoryTh>PST</HistoryTh>
+                  <HistoryTh>Go Live</HistoryTh>
+                  <HistoryTh>Hired Count</HistoryTh>
+                  <HistoryTh>Yield Rate %</HistoryTh>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-sibs-border">
+                {history.map((week, index) => {
+                  const isCurrentWeek = index === history.length - 1;
+                  const isActiveWeek =
+                    getPeriodWeekNumber(week.period) ===
+                    getPeriodWeekNumber(activeHistoryPeriod);
+
+                  return (
+                    <tr
+                      key={`${row.account}-${week.period}-${index}`}
+                      className={
+                        isActiveWeek
+                          ? "bg-sibs-surface font-extrabold"
+                          : "bg-white hover:bg-sibs-canvas"
+                      }
+                    >
+                      <HistoryTd className="text-left font-extrabold text-sibs-navy">
+                        <div className="flex items-center justify-between gap-3">
+                          <span>{week.period}</span>
+                          {isActiveWeek ? (
+                            <span className="rounded bg-sibs-navy px-1.5 py-0.5 text-[8px] font-black uppercase text-white">
+                              {selectedPeriod === ALL_SIX_WEEKS && isCurrentWeek
+                                ? "Current"
+                                : "Selected"}
+                            </span>
+                          ) : null}
+                        </div>
+                      </HistoryTd>
+                      <HistoryTd>{formatOverviewNumber(week.requiredHeadcount)}</HistoryTd>
+                      <HistoryTd>{formatOverviewNumber(week.actualHeadcount)}</HistoryTd>
+                      <HistoryTd className={`font-extrabold ${getBufferColor(week.bufferPercentage)}`}>
+                        {formatOverviewPercent(week.bufferPercentage)}
+                      </HistoryTd>
+                      <HistoryTd>
+                        {formatOverviewNumber(week.absenteeism)} ({formatOverviewPercent(week.absenteeismPercentage)})
+                      </HistoryTd>
+                      <HistoryTd>
+                        {formatOverviewNumber(week.attrition)} ({formatOverviewPercent(week.attritionPercentage)})
+                      </HistoryTd>
+                      <HistoryTd className="font-extrabold text-sibs-navy">
+                        {formatOverviewNumber(week.netActualHc)}
+                      </HistoryTd>
+                      <HistoryTd className={`font-extrabold ${getHiringNeededColor(week.hiringNeeded)}`}>
+                        {formatOverviewNumber(week.hiringNeeded)}
+                      </HistoryTd>
+                      <HistoryTd>{formatOverviewNumber(week.acceptedJo)}</HistoryTd>
+                      <HistoryTd>{formatOverviewNumber(week.nho)}</HistoryTd>
+                      <HistoryTd>{formatOverviewNumber(week.fst)}</HistoryTd>
+                      <HistoryTd>{formatOverviewNumber(week.pst)}</HistoryTd>
+                      <HistoryTd className="font-extrabold text-emerald-700">
+                        {formatOverviewNumber(week.goLive)}
+                      </HistoryTd>
+                      <HistoryTd className="font-extrabold text-sibs-navy">
+                        {formatOverviewNumber(week.hiredCount)}
+                      </HistoryTd>
+                      <HistoryTd className="font-extrabold text-sibs-orange">
+                        {formatOverviewPercent(week.hiringRate)}
+                      </HistoryTd>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <article className="rounded-xl border border-[#DDE5EE] bg-white px-3 py-3 shadow-sm">
-          <p className="text-[9px] font-black uppercase tracking-wide text-[#98A2B3]">
+        <article className="rounded-xl border border-sibs-border bg-white px-3 py-3 shadow-sm">
+          <p className="text-[9px] font-black uppercase tracking-wide text-sibs-muted">
             6-Week Headcount Ramp
           </p>
           <div className="mt-1.5 flex items-end justify-between gap-3">
-            <strong className="text-sm font-black tabular-nums text-[#042C51]">
+            <strong className="text-sm font-black tabular-nums text-sibs-navy">
               {formatOverviewNumber(firstWeek.actualHeadcount)} → {formatOverviewNumber(currentWeek.actualHeadcount)}
             </strong>
             <span className={`text-[10px] font-extrabold tabular-nums ${headcountRamp >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
@@ -1251,22 +1399,22 @@ function ExpandedHistory({ row, selectedWeekNumber, selectedPeriod }) {
           </div>
         </article>
 
-        <article className="rounded-xl border border-[#DDE5EE] bg-white px-3 py-3 shadow-sm">
-          <p className="text-[9px] font-black uppercase tracking-wide text-[#98A2B3]">
+        <article className="rounded-xl border border-sibs-border bg-white px-3 py-3 shadow-sm">
+          <p className="text-[9px] font-black uppercase tracking-wide text-sibs-muted">
             6-Week Cumulative Hires
           </p>
           <div className="mt-1.5 flex items-end justify-between gap-3">
-            <strong className="text-sm font-black tabular-nums text-[#FF5C28]">
+            <strong className="text-sm font-black tabular-nums text-sibs-orange">
               {formatOverviewNumber(cumulativeHires)} hired
             </strong>
-            <span className="text-[10px] font-extrabold tabular-nums text-[#667085]">
+            <span className="text-[10px] font-extrabold tabular-nums text-sibs-muted">
               {formatOverviewNumber(cumulativeGoLive)} deployed
             </span>
           </div>
         </article>
 
-        <article className="rounded-xl border border-[#DDE5EE] bg-white px-3 py-3 shadow-sm">
-          <p className="text-[9px] font-black uppercase tracking-wide text-[#98A2B3]">
+        <article className="rounded-xl border border-sibs-border bg-white px-3 py-3 shadow-sm">
+          <p className="text-[9px] font-black uppercase tracking-wide text-sibs-muted">
             6-Week Buffer Trajectory
           </p>
           <div className="mt-1.5 flex items-end justify-between gap-3">
@@ -1283,6 +1431,110 @@ function ExpandedHistory({ row, selectedWeekNumber, selectedPeriod }) {
   );
 }
 
+function WorkforceAccountMobileCard({
+  row,
+  isExpanded,
+  onToggleExpand,
+  activePeriod,
+  normalizedSelectedWeekNumber,
+}) {
+  const riskLabel = getWorkforceRiskLevel(row) || "Healthy";
+  const hiringNeeded = Number(row.hiringNeeded || 0);
+
+  return (
+    <DataCard interactive onClick={onToggleExpand}>
+      <DataCard.Header
+        title={row.account}
+        subtitle={
+          <span className="inline-flex items-center gap-1.5 text-xs text-sibs-muted">
+            <span className="font-extrabold text-sibs-navy">{row.cluster}</span>
+          </span>
+        }
+        badge={
+          <span
+            className={`inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getRiskBadgeClasses(
+              riskLabel,
+            )}`}
+          >
+            {riskLabel}
+          </span>
+        }
+      />
+
+      <DataCard.ContextRow>
+        <span className="text-[11px] font-bold text-sibs-navy">
+          Planned: <span className="tabular-nums font-black">{formatOverviewNumber(row.requiredHeadcount ?? row.plannedHeadcount)}</span>
+        </span>
+        <span className="text-[11px] font-bold text-sibs-navy">
+          Actual: <span className="tabular-nums font-black">{formatOverviewNumber(row.actualHeadcount)}</span>
+        </span>
+        <span className="text-[11px] font-bold text-sibs-navy">
+          Net Actual: <span className="tabular-nums font-black">{formatOverviewNumber(row.netActualHc ?? row.netActual)}</span>
+        </span>
+        <span
+          className={`text-[11px] font-bold tabular-nums ${
+            hiringNeeded > 0 ? "font-black text-rose-600" : "text-emerald-700"
+          }`}
+        >
+          Need: {formatOverviewNumber(hiringNeeded)}
+        </span>
+      </DataCard.ContextRow>
+
+      <DataCard.Metrics cols={4}>
+        <DataCard.MetricItem
+          label="Buffer"
+          value={formatOverviewPercent(row.bufferPercentage)}
+        />
+        <DataCard.MetricItem
+          label="ABS %"
+          value={formatOverviewPercent(row.absenteeismPercentage ?? row.absenteeismRate)}
+        />
+        <DataCard.MetricItem
+          label="ATT %"
+          value={formatOverviewPercent(row.attritionPercentage ?? row.attritionRate)}
+        />
+        <DataCard.MetricItem
+          label="Hiring Rate"
+          value={formatOverviewPercent(row.hiringRate)}
+          tone="primary"
+        />
+      </DataCard.Metrics>
+
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border pt-2">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10.5px] font-semibold text-sibs-muted">
+          <span>JO: <strong className="text-sibs-navy">{formatOverviewNumber(row.acceptedJo)}</strong></span>
+          <span>NHO: <strong className="text-sibs-navy">{formatOverviewNumber(row.nho)}</strong></span>
+          <span>FST: <strong className="text-sibs-navy">{formatOverviewNumber(row.fst)}</strong></span>
+          <span>PST: <strong className="text-sibs-navy">{formatOverviewNumber(row.pst)}</strong></span>
+          <span>Go Live: <strong className="text-emerald-700">{formatOverviewNumber(row.goLive)}</strong></span>
+          <span>Hired: <strong className="font-black text-sibs-navy">{formatOverviewNumber(row.hiredCount)}</strong></span>
+        </div>
+
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleExpand();
+          }}
+          className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-extrabold uppercase text-sibs-orange transition hover:bg-orange-50"
+        >
+          <span>{isExpanded ? "Hide History" : "6-Wk Trend"}</span>
+          {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-3 border-t border-sibs-border pt-3">
+          <ExpandedHistory
+            row={row}
+            selectedWeekNumber={normalizedSelectedWeekNumber}
+            selectedPeriod={activePeriod}
+          />
+        </div>
+      )}
+    </DataCard>
+  );
+}
 
 export default function WorkforceHiringOverviewDetailsTable() {
   const workforceView = useWorkforceHiringView();
@@ -1565,289 +1817,295 @@ export default function WorkforceHiringOverviewDetailsTable() {
       </div>
 
       <div className="p-3 sm:p-4">
-        <div className="sibs-data-table-shell !block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div
-            ref={dragScrollRef}
-            className={`overflow-x-auto sibs-scrollbar ${
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            }`}
-            onMouseDown={handleDragStart}
-            onMouseMove={handleDragMove}
-            onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
-          >
-            <table className="w-[2500px] min-w-[2500px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
-              <colgroup>
-                <col style={{ width: "40px" }} />
-                <col style={{ width: "120px" }} />
-                <col style={{ width: "150px" }} />
+        <ResponsiveTableShell
+          mobileContent={
+            sortedRows.length === 0 ? (
+              <DataCard.Empty
+                title="No account records found"
+                description="No account records match the current period, search, and filters."
+              />
+            ) : (
+              <div className="space-y-3">
+                {sortedRows.map((row, index) => {
+                  const rowKey = getRowKey(row, index);
+                  const isExpanded = Boolean(expandedRows[rowKey]);
 
-                <col style={{ width: "95px" }} />
-                <col style={{ width: "90px" }} />
-                <col style={{ width: "85px" }} />
-                <col style={{ width: "95px" }} />
-                <col style={{ width: "105px" }} />
-
-                <col style={{ width: "90px" }} />
-                <col style={{ width: "75px" }} />
-                <col style={{ width: "85px" }} />
-                <col style={{ width: "75px" }} />
-
-                <col style={{ width: "95px" }} />
-                <col style={{ width: "85px" }} />
-                <col style={{ width: "85px" }} />
-                <col style={{ width: "85px" }} />
-                <col style={{ width: "80px" }} />
-
-                <col style={{ width: "165px" }} />
-                <col style={{ width: "165px" }} />
-                <col style={{ width: "165px" }} />
-                <col style={{ width: "185px" }} />
-
-                <col style={{ width: "100px" }} />
-                <col style={{ width: "105px" }} />
-                <col style={{ width: "110px" }} />
-              </colgroup>
-
-              <thead className="sibs-data-table-head bg-[#F8FAFC] text-sibs-primary-1">
-                <tr className="sibs-data-table-head-row border-slate-200">
-                  <HeaderTh colSpan={3} group className="!border-r-slate-200">
-                    1. Identification &amp; Scope
-                  </HeaderTh>
-
-                  <HeaderTh colSpan={5} group className="!border-r-slate-200">
-                    2. Capacity &amp; Buffer Metrics
-                  </HeaderTh>
-
-                  <HeaderTh colSpan={4} group className="!border-r-slate-200">
-                    {lossGroupTitle}
-                  </HeaderTh>
-
-                  <HeaderTh colSpan={5} group className="!border-r-slate-200">
-                    4. Post-Offer Funnel Counts
-                  </HeaderTh>
-
-                  <HeaderTh colSpan={4} group className="!border-r-slate-200">
-                    5. Stage Conversion &amp; Retention
-                  </HeaderTh>
-
-                  <HeaderTh colSpan={3} group>
-                    6. Yield &amp; Risk Audit
-                  </HeaderTh>
-                </tr>
-
-                <tr className="sibs-data-table-head-row border-slate-200">
-                  <HeaderTh className="!w-8 !text-center">#</HeaderTh>
-
-                  <HeaderTh className="!text-left">
-                    <SortHeaderButton
-                      label="Cluster"
-                      active={sortConfig.key === "cluster"}
-                      direction={sortConfig.direction}
-                      onClick={() => handleSort("cluster")}
+                  return (
+                    <WorkforceAccountMobileCard
+                      key={`mobile-${rowKey}`}
+                      row={row}
+                      isExpanded={isExpanded}
+                      onToggleExpand={() => toggleExpandedRow(rowKey)}
+                      activePeriod={activePeriod}
+                      normalizedSelectedWeekNumber={normalizedSelectedWeekNumber}
                     />
-                  </HeaderTh>
+                  );
+                })}
+              </div>
+            )
+          }
+          desktopContent={
+            <div className="sibs-data-table-shell !block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div
+                ref={dragScrollRef}
+                className={`overflow-x-auto sibs-scrollbar ${
+                  isDragging ? "cursor-grabbing" : "cursor-grab"
+                }`}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+              >
+                <table className="w-[2500px] min-w-[2500px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
+                  <colgroup>
+                    <col style={{ width: "40px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "150px" }} />
 
-                  <HeaderTh className="!text-left">
-                    <SortHeaderButton
-                      label="Account"
-                      active={sortConfig.key === "account"}
-                      direction={sortConfig.direction}
-                      onClick={() => handleSort("account")}
-                    />
-                  </HeaderTh>
+                    <col style={{ width: "95px" }} />
+                    <col style={{ width: "90px" }} />
+                    <col style={{ width: "85px" }} />
+                    <col style={{ width: "95px" }} />
+                    <col style={{ width: "105px" }} />
 
-                  <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
-                    <SortHeaderButton
-                      label="Required HC"
-                      active={sortConfig.key === "requiredHeadcount"}
-                      direction={sortConfig.direction}
-                      onClick={() => handleSort("requiredHeadcount")}
-                      align="right"
-                      className="font-black text-sibs-primary-1"
-                    />
-                  </HeaderTh>
+                    <col style={{ width: "90px" }} />
+                    <col style={{ width: "75px" }} />
+                    <col style={{ width: "85px" }} />
+                    <col style={{ width: "75px" }} />
 
-                  <HeaderTh className="!text-right">Actual HC</HeaderTh>
-                  <HeaderTh className="!text-right">Buffer %</HeaderTh>
+                    <col style={{ width: "95px" }} />
+                    <col style={{ width: "85px" }} />
+                    <col style={{ width: "85px" }} />
+                    <col style={{ width: "85px" }} />
+                    <col style={{ width: "80px" }} />
 
-                  <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
-                    Net Actual
-                  </HeaderTh>
+                    <col style={{ width: "155px" }} />
+                    <col style={{ width: "155px" }} />
+                    <col style={{ width: "155px" }} />
+                    <col style={{ width: "155px" }} />
 
-                  <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-rose-600">
-                    Hiring Needed
-                  </HeaderTh>
+                    <col style={{ width: "90px" }} />
+                    <col style={{ width: "90px" }} />
+                    <col style={{ width: "110px" }} />
+                  </colgroup>
 
-                  <HeaderTh className="!text-right">Absenteeism</HeaderTh>
+                  <thead className="bg-[#F8FAFC] font-jakarta">
+                    <tr className="border-b border-slate-200 text-slate-600 font-extrabold text-[10px] tracking-wider uppercase">
+                      <HeaderTh className="!text-center">#</HeaderTh>
+                      <HeaderTh sortable sortKey="cluster">Cluster</HeaderTh>
+                      <HeaderTh sortable sortKey="account">Account</HeaderTh>
 
-                  <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
-                    ABS %
-                  </HeaderTh>
+                      <HeaderTh colSpan={5} className="!text-center !bg-slate-100/70 !border-r-slate-200">
+                        Workforce Capacity
+                      </HeaderTh>
 
-                  <HeaderTh className="!text-right">Attrition</HeaderTh>
+                      <HeaderTh colSpan={4} className="!text-center !bg-slate-100/70 !border-r-slate-200">
+                        Shrinkage & Attrition
+                      </HeaderTh>
 
-                  <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-sibs-primary-1">
-                    ATT %
-                  </HeaderTh>
+                      <HeaderTh colSpan={5} className="!text-center !bg-slate-100/70 !border-r-slate-200">
+                        Hiring Funnel Milestones
+                      </HeaderTh>
 
-                  <HeaderTh className="!text-right">Accepted JO</HeaderTh>
-                  <HeaderTh className="!text-right">NHO Count</HeaderTh>
-                  <HeaderTh className="!text-right">FST Count</HeaderTh>
-                  <HeaderTh className="!text-right">PST Count</HeaderTh>
+                      <HeaderTh colSpan={4} className="!text-center !bg-slate-100/70 !border-r-slate-200">
+                        Pipeline Conversion & Retention
+                      </HeaderTh>
 
-                  <HeaderTh className="!border-r-slate-200 !text-right">
-                    Go Live
-                  </HeaderTh>
+                      <HeaderTh colSpan={3} className="!text-center !bg-slate-100/70">
+                        Fulfillment Summary
+                      </HeaderTh>
+                    </tr>
 
-                  <HeaderTh>JO → NHO (Drop / Ret%)</HeaderTh>
-                  <HeaderTh>NHO → FST (Drop / Ret%)</HeaderTh>
-                  <HeaderTh>FST → PST (Drop / Ret%)</HeaderTh>
+                    <tr className="border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                      <HeaderTh className="!text-center">
+                        <GripHorizontal className="w-3.5 h-3.5 mx-auto text-slate-400" />
+                      </HeaderTh>
+                      <HeaderTh sortable sortKey="cluster">Cluster Group</HeaderTh>
+                      <HeaderTh sortable sortKey="account">Account Name</HeaderTh>
 
-                  <HeaderTh className="!border-r-slate-200">
-                    PST → Go Live (Drop / Ret%)
-                  </HeaderTh>
+                      <HeaderTh className="!text-right">Planned HC</HeaderTh>
+                      <HeaderTh className="!text-right">Actual HC</HeaderTh>
+                      <HeaderTh className="!text-right">Buffer %</HeaderTh>
 
-                  <HeaderTh className="!text-right">Hired Count</HeaderTh>
-                  <HeaderTh className="!text-right">Hiring Rate %</HeaderTh>
-                  <HeaderTh>Hiring Risk</HeaderTh>
-                </tr>
-              </thead>
+                      <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
+                        Net Actual
+                      </HeaderTh>
 
-              <tbody className="bg-white font-jakarta font-medium">
-                {sortedRows.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={TABLE_COLUMN_COUNT}
-                      className="sibs-empty-panel border-0 px-6 py-12"
-                    >
-                      No account records match the current period, search, and filters.
-                    </td>
-                  </tr>
-                ) : (
-                  sortedRows.map((row, index) => {
-                    const rowKey = getRowKey(row, index);
-                    const isExpanded = Boolean(expandedRows[rowKey]);
-                    const hasBeenOpened = Object.prototype.hasOwnProperty.call(
-                      expandedRows,
-                      rowKey,
-                    );
-                    const detailsPanelId = `workforce-history-${index}-${String(
-                      rowKey,
-                    ).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+                      <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-rose-600">
+                        Hiring Needed
+                      </HeaderTh>
 
-                    return (
-                      <Fragment key={rowKey}>
-                        <tr
-                          className={`border-b border-[#E6ECF2] transition-colors cursor-pointer text-xs ${
-                            isExpanded ? "bg-amber-50/60" : "hover:bg-slate-50/80"
-                          }`}
+                      <HeaderTh className="!text-right">Absenteeism</HeaderTh>
+
+                      <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
+                        ABS %
+                      </HeaderTh>
+
+                      <HeaderTh className="!text-right">Attrition</HeaderTh>
+
+                      <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-sibs-primary-1">
+                        ATT %
+                      </HeaderTh>
+
+                      <HeaderTh className="!text-right">Accepted JO</HeaderTh>
+                      <HeaderTh className="!text-right">NHO Count</HeaderTh>
+                      <HeaderTh className="!text-right">FST Count</HeaderTh>
+                      <HeaderTh className="!text-right">PST Count</HeaderTh>
+
+                      <HeaderTh className="!border-r-slate-200 !text-right">
+                        Go Live
+                      </HeaderTh>
+
+                      <HeaderTh>JO → NHO (Drop / Ret%)</HeaderTh>
+                      <HeaderTh>NHO → FST (Drop / Ret%)</HeaderTh>
+                      <HeaderTh>FST → PST (Drop / Ret%)</HeaderTh>
+
+                      <HeaderTh className="!border-r-slate-200">
+                        PST → Go Live (Drop / Ret%)
+                      </HeaderTh>
+
+                      <HeaderTh className="!text-right">Hired Count</HeaderTh>
+                      <HeaderTh className="!text-right">Hiring Rate %</HeaderTh>
+                      <HeaderTh>Hiring Risk</HeaderTh>
+                    </tr>
+                  </thead>
+
+                  <tbody className="bg-white font-jakarta font-medium">
+                    {sortedRows.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={TABLE_COLUMN_COUNT}
+                          className="sibs-empty-panel border-0 px-6 py-12"
                         >
-                          <BodyTd
-                            align="center"
-                            numeric={false}
-                            className="!px-2 !py-2.5"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => toggleExpandedRow(rowKey)}
-                              onMouseDown={(event) => event.stopPropagation()}
-                              className="p-1 rounded text-slate-500 transition-colors hover:bg-slate-200"
-                              aria-expanded={isExpanded}
-                              aria-controls={detailsPanelId}
-                              aria-label={`${isExpanded ? "Collapse" : "Expand"} ${row.account} six-week history`}
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="w-3.5 h-3.5" />
-                              ) : (
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </BodyTd>
+                          No account records match the current period, search, and filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      sortedRows.map((row, index) => {
+                        const rowKey = getRowKey(row, index);
+                        const isExpanded = Boolean(expandedRows[rowKey]);
+                        const hasBeenOpened = Object.prototype.hasOwnProperty.call(
+                          expandedRows,
+                          rowKey,
+                        );
+                        const detailsPanelId = `workforce-history-${index}-${String(
+                          rowKey,
+                        ).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
-                          <BodyTd
-                            align="left"
-                            numeric={false}
-                            className="font-normal text-slate-500"
-                          >
-                            <span
-                              className="block max-w-[105px] truncate font-normal text-slate-500"
-                              title={row.cluster}
-                            >
-                              {row.cluster}
-                            </span>
-                          </BodyTd>
-
-                          <BodyTd
-                            align="left"
-                            numeric={false}
-                            className={BOLD_NUMBER_CLASS}
-                          >
-                            <span
-                              className="block max-w-[135px] truncate !font-black !text-[#042C51]"
-                              title={row.account}
-                            >
-                              {row.account}
-                            </span>
-                          </BodyTd>
-
-                          <PerformanceCells row={row} />
-                        </tr>
-
-                        <tr aria-hidden={!isExpanded}>
-                          <td
-                            colSpan={TABLE_COLUMN_COUNT}
-                            className="border-0 bg-white p-0"
-                          >
-                            <div
-                              className={`sibs-animated-dropdown ${
-                                isExpanded ? "open" : "closed"
+                        return (
+                          <Fragment key={rowKey}>
+                            <tr
+                              className={`border-b border-[#E6ECF2] transition-colors cursor-pointer text-xs ${
+                                isExpanded ? "bg-amber-50/60" : "hover:bg-slate-50/80"
                               }`}
                             >
-                              <div className="sibs-animated-dropdown-inner">
-                                <div
-                                  id={detailsPanelId}
-                                  role="region"
-                                  aria-label={`${row.account} six-week history`}
-                                  className="sibs-animated-dropdown-box !rounded-none !border-x !border-b !border-t-0 !border-slate-200 !border-l-4 !border-l-sibs-primary-2 !bg-white !p-4 !shadow-none"
+                              <BodyTd
+                                align="center"
+                                numeric={false}
+                                className="!px-2 !py-2.5"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpandedRow(rowKey)}
+                                  onMouseDown={(event) => event.stopPropagation()}
+                                  className="p-1 rounded text-slate-500 transition-colors hover:bg-slate-200"
+                                  aria-expanded={isExpanded}
+                                  aria-controls={detailsPanelId}
+                                  aria-label={`${isExpanded ? "Collapse" : "Expand"} ${row.account} six-week history`}
                                 >
-                                  {hasBeenOpened ? (
-                                    <ExpandedHistory
-                                      row={row}
-                                      selectedWeekNumber={normalizedSelectedWeekNumber}
-                                      selectedPeriod={activePeriod}
-                                    />
-                                  ) : null}
+                                  {isExpanded ? (
+                                    <ChevronDown className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </BodyTd>
+
+                              <BodyTd
+                                align="left"
+                                numeric={false}
+                                className="font-normal text-slate-500"
+                              >
+                                <span
+                                  className="block max-w-[105px] truncate font-normal text-slate-500"
+                                  title={row.cluster}
+                                >
+                                  {row.cluster}
+                                </span>
+                              </BodyTd>
+
+                              <BodyTd
+                                align="left"
+                                numeric={false}
+                                className={BOLD_NUMBER_CLASS}
+                              >
+                                <span
+                                  className="block max-w-[135px] truncate !font-black !text-[#042C51]"
+                                  title={row.account}
+                                >
+                                  {row.account}
+                                </span>
+                              </BodyTd>
+
+                              <PerformanceCells row={row} />
+                            </tr>
+
+                            <tr aria-hidden={!isExpanded}>
+                              <td
+                                colSpan={TABLE_COLUMN_COUNT}
+                                className="border-0 bg-white p-0"
+                              >
+                                <div
+                                  className={`sibs-animated-dropdown ${
+                                    isExpanded ? "open" : "closed"
+                                  }`}
+                                >
+                                  <div className="sibs-animated-dropdown-inner">
+                                    <div
+                                      id={detailsPanelId}
+                                      role="region"
+                                      aria-label={`${row.account} six-week history`}
+                                      className="sibs-animated-dropdown-box !rounded-none !border-x !border-b !border-t-0 !border-slate-200 !border-l-4 !border-l-sibs-primary-2 !bg-white !p-4 !shadow-none"
+                                    >
+                                      {hasBeenOpened ? (
+                                        <ExpandedHistory
+                                          row={row}
+                                          selectedWeekNumber={normalizedSelectedWeekNumber}
+                                          selectedPeriod={activePeriod}
+                                        />
+                                      ) : null}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      </Fragment>
-                    );
-                  })
-                )}
-              </tbody>
+                              </td>
+                            </tr>
+                          </Fragment>
+                        );
+                      })
+                    )}
+                  </tbody>
 
-              {sortedRows.length > 0 ? (
-                <tfoot>
-                  <tr className="border-t-2 border-slate-300 bg-[#EBF3FA] font-black text-sibs-primary-1">
-                    <BodyTd
-                      colSpan={3}
-                      align="left"
-                      numeric={false}
-                      className="font-extrabold uppercase text-sibs-primary-1 !border-r-slate-200"
-                    >
-                      Total / Average ({sortedRows.length} Accounts)
-                    </BodyTd>
+                  {sortedRows.length > 0 ? (
+                    <tfoot>
+                      <tr className="border-t-2 border-slate-300 bg-[#EBF3FA] font-black text-sibs-primary-1">
+                        <BodyTd
+                          colSpan={3}
+                          align="left"
+                          numeric={false}
+                          className="font-extrabold uppercase text-sibs-primary-1 !border-r-slate-200"
+                        >
+                          Total / Average ({sortedRows.length} Accounts)
+                        </BodyTd>
 
-                    <PerformanceCells row={activeTotals} summary />
-                  </tr>
-                </tfoot>
-              ) : null}
-            </table>
-          </div>
-        </div>
+                        <PerformanceCells row={activeTotals} summary />
+                      </tr>
+                    </tfoot>
+                  ) : null}
+                </table>
+              </div>
+            </div>
+          }
+        />
       </div>
     </section>
   );

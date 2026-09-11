@@ -47,20 +47,20 @@ export default function OMRequirementProgress({ roles = [], delay = 0 }) {
                 key={role.id || role.roleAccount}
                 className="rounded-lg border border-[#DDE5EE] bg-white px-3.5 py-3 shadow-2xs transition hover:border-[#FF5C28]/40 hover:shadow-xs"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-extrabold text-[#042C51]">
+                <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap sm:gap-3">
+                  <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-extrabold text-sibs-navy">
                     <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} />
                     <span className="truncate">{role.roleTitle}</span>
-                    <span className="truncate font-semibold text-[#98A2B3]">
+                    <span className="truncate font-semibold text-sibs-muted">
                       ({role.department || role.account})
                     </span>
                   </span>
 
-                  <span className="shrink-0 text-xs font-extrabold text-[#344054]">
-                    <b className="text-[#042C51]">{role.filled}</b>
-                    <span className="mx-1 text-[#98A2B3]">/</span>
-                    <b className="text-[#667085]">{role.req}</b>
-                    <span className="ml-1.5 rounded-md border border-[#E6ECF2] bg-[#F8FAFC] px-1.5 py-0.5 sibs-text-micro font-extrabold tabular-nums text-[#FF5C28]">
+                  <span className="shrink-0 text-xs font-extrabold text-sibs-navy">
+                    <b>{role.filled}</b>
+                    <span className="mx-1 text-sibs-muted">/</span>
+                    <b className="text-sibs-muted">{role.req}</b>
+                    <span className="ml-1.5 rounded-md border border-sibs-border bg-sibs-surface px-1.5 py-0.5 sibs-text-micro font-extrabold tabular-nums text-sibs-orange">
                       {percentage}%
                     </span>
                   </span>

@@ -14,6 +14,7 @@ import {
 import { getJobDescriptionApprovalRequests } from "../../../lib/axios/getApprovalRequest";
 import { usePagination } from "../../../services/context/PaginationContext";
 import TableFooter from "../footer/TableFooter";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
 
 const JOB_DESCRIPTION_REQUEST_ENTITY = "job-description-approval-requests";
 
@@ -114,90 +115,69 @@ function getRawValue(request, key, fallback = "") {
 function JobDescriptionMobileCard({ request, onView }) {
   const rawStatus = getRawValue(request, "jdStatus", request.status);
   const normalizedStatus = normalizeStatus(request.status || rawStatus);
+  const StatusIcon = getStatusIcon(normalizedStatus);
 
   return (
-    <button
-      type="button"
-      onClick={() => onView?.(request)}
-      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate text-sm font-extrabold text-[#101828]">
-            {safeText(request.title)}
-          </h3>
-
-          <p className="mt-1 truncate text-xs font-semibold text-sibs-primary-1">
+    <DataCard interactive onClick={() => onView?.(request)}>
+      <DataCard.Header
+        icon={<FileText className="h-4 w-4 text-[#FF5C28]" />}
+        title={safeText(request.title)}
+        subtitle={
+          <span className="truncate font-semibold text-sibs-primary-1">
             {safeText(getRawValue(request, "jdCode", request.id))}
-          </p>
-        </div>
+          </span>
+        }
+        badge={
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusClass(
+              normalizedStatus,
+            )}`}
+          >
+            <StatusIcon size={11} />
+            {normalizedStatus}
+          </span>
+        }
+      />
 
-        <span
-          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            normalizedStatus,
-          )}`}
-        >
-          {normalizedStatus}
+      <DataCard.ContextRow>
+        <span className="text-[11px] font-extrabold text-[#042C51]">
+          {request.department || getRawValue(request, "department") || "—"}
         </span>
-      </div>
+        {getRawValue(request, "linkedHiringRequirement") && (
+          <span className="text-[11px] font-semibold text-[#667085]">
+            PRF: {getRawValue(request, "linkedHiringRequirement")}
+          </span>
+        )}
+      </DataCard.ContextRow>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <MobileMetric
-          label="Requested By"
-          value={request.requester || request.employeeSibsId}
+      <DataCard.Metrics cols={3}>
+        <DataCard.MetricItem
+          label="Requester"
+          value={request.requester || request.employeeSibsId || "—"}
         />
-
-        <MobileMetric
+        <DataCard.MetricItem
           label="Owner"
-          value={getRawValue(request, "ownerSibsId", request.approver)}
+          value={getRawValue(request, "ownerSibsId", request.approver) || "—"}
         />
-
-        <MobileMetric
-          label="Date Requested"
+        <DataCard.MetricItem
+          label="Date"
           value={formatDate(request.dateRequested || request.requestDate)}
         />
+      </DataCard.Metrics>
 
-        <MobileMetric
-          label="Department"
-          value={request.department || getRawValue(request, "department")}
-        />
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
+      <DataCard.Footer>
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getJdStatusClass(
+          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getJdStatusClass(
             rawStatus,
           )}`}
         >
           {safeText(rawStatus)}
         </span>
-
-        {getRawValue(request, "linkedHiringRequirement") && (
-          <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]">
-            HR: {getRawValue(request, "linkedHiringRequirement")}
-          </span>
-        )}
-      </div>
-
-      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
-        <Eye size={16} />
-        View Details
-      </div>
-    </button>
-  );
-}
-
-function MobileMetric({ label, value }) {
-  return (
-    <div className="rounded-xl bg-[#F8FAFC] p-3">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-        {label}
-      </p>
-
-      <p className="mt-1 truncate text-sm font-extrabold text-sibs-primary-1">
-        {safeText(value)}
-      </p>
-    </div>
+        <span className="shrink-0 text-[10px] font-extrabold uppercase text-sibs-orange">
+          View Details →
+        </span>
+      </DataCard.Footer>
+    </DataCard>
   );
 }
 
@@ -261,208 +241,15 @@ const JobDescriptionRequestTable = ({ onView }) => {
   return (
     <div className="flex h-[calc(100dvh-360px)] min-h-[520px] flex-col overflow-hidden">
       <div className="min-h-0 flex-1">
-        <div className="hidden h-full lg:block">
-          <div className="h-full overflow-auto sibs-scrollbar">
-            <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th className="w-[24%] px-5 py-4 text-left align-middle first:rounded-tl-2xl">
-                    Job Description
-                  </th>
-
-                  <th className="w-[11%] px-4 py-4 text-center align-middle">
-                    JD Code
-                  </th>
-
-                  <th className="w-[29%] px-5 py-4 text-left align-middle">
-                    Requested By
-                  </th>
-
-                  <th className="w-[13%] px-4 py-4 text-center align-middle">
-                    Date Requested
-                  </th>
-
-                  <th className="w-[11%] px-4 py-4 text-center align-middle">
-                    JD Status
-                  </th>
-
-                  <th className="w-[12%] px-5 py-4 text-center align-middle last:rounded-tr-2xl">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                    >
-                      <Loader2
-                        size={28}
-                        className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-                      />
-                      Loading Job Description approval requests...
-                    </td>
-                  </tr>
-                ) : requests.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                    >
-                      No approval requests found for Job Description.
-                    </td>
-                  </tr>
-                ) : (
-                  requests.map((request) => {
-                    const rawStatus = getRawValue(
-                      request,
-                      "jdStatus",
-                      request.status,
-                    );
-
-                    const normalizedStatus = normalizeStatus(
-                      request.status || rawStatus,
-                    );
-
-                    const StatusIcon = getStatusIcon(normalizedStatus);
-
-                    return (
-                      <tr
-                        key={`${request.source || "job-description"}-${
-                          request.id || request.rawId
-                        }`}
-                        className="transition hover:bg-[#FAFBFC]"
-                      >
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
-                          <div className="min-w-0">
-                            <p
-                              title={request.title}
-                              className="max-w-[260px] truncate text-sm font-extrabold text-[#101828]"
-                            >
-                              {safeText(request.title)}
-                            </p>
-
-                            <p
-                              title={getRawValue(
-                                request,
-                                "linkedHiringRequirement",
-                              )}
-                              className="mt-1 max-w-[260px] truncate text-xs font-semibold text-sibs-tertiary-5"
-                            >
-                              Linked Hiring Requirement:{" "}
-                              {safeText(
-                                getRawValue(request, "linkedHiringRequirement"),
-                              )}
-                            </p>
-                          </div>
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
-                          <span className="mx-auto inline-flex max-w-full items-center justify-center truncate rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
-                            {safeText(
-                              getRawValue(request, "jdCode", request.id),
-                            )}
-                          </span>
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
-                          <div className="min-w-0">
-                            <p
-                              title={
-                                request.requester || request.employeeSibsId
-                              }
-                              className="truncate text-sm font-bold text-[#344054]"
-                            >
-                              {safeText(
-                                request.requester || request.employeeSibsId,
-                              )}
-                            </p>
-
-                            <p
-                              title={
-                                request.createdBy ||
-                                getRawValue(
-                                  request,
-                                  "createdBy",
-                                  request.employeeSibsId,
-                                )
-                              }
-                              className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5"
-                            >
-                              Created by:{" "}
-                              {safeText(
-                                request.createdBy ||
-                                  getRawValue(
-                                    request,
-                                    "createdBy",
-                                    request.employeeSibsId,
-                                  ),
-                              )}
-                            </p>
-                          </div>
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
-                          <p
-                            title={formatDate(
-                              request.dateRequested || request.requestDate,
-                            )}
-                            className="truncate text-sm font-bold text-[#344054]"
-                          >
-                            {formatDate(
-                              request.dateRequested || request.requestDate,
-                            )}
-                          </p>
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
-                          <span
-                            title={normalizedStatus}
-                            className={`mx-auto inline-flex max-w-full items-center justify-center gap-1.5 truncate rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                              normalizedStatus,
-                            )}`}
-                          >
-                            <StatusIcon size={13} className="shrink-0" />
-                            <span className="truncate">{normalizedStatus}</span>
-                          </span>
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
-                          <button
-                            type="button"
-                            onClick={() => onView?.(request)}
-                            className="mx-auto inline-flex h-10 min-w-[104px] items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
-                          >
-                            <Eye size={16} />
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="block h-full lg:hidden">
-          <div className="h-full overflow-y-auto sibs-scrollbar">
-            {loading ? (
-              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
-                <Loader2
-                  size={28}
-                  className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-                />
-                Loading Job Description approval requests...
-              </div>
+        <ResponsiveTableShell
+          mobileContent={
+            loading ? (
+              <DataCard.Skeleton count={4} lines={3} />
             ) : requests.length === 0 ? (
-              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
-                No approval requests found for Job Description.
-              </div>
+              <DataCard.Empty
+                title="No Job Description Requests"
+                description="No approval requests found for Job Description."
+              />
             ) : (
               <div className="space-y-3">
                 {requests.map((request) => (
@@ -475,9 +262,216 @@ const JobDescriptionRequestTable = ({ onView }) => {
                   />
                 ))}
               </div>
-            )}
-          </div>
-        </div>
+            )
+          }
+          desktopContent={
+            <div className="h-full overflow-auto sibs-scrollbar">
+              <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                    <th className="w-[24%] px-5 py-4 text-left align-middle first:rounded-tl-2xl">
+                      Job Description
+                    </th>
+
+                    <th className="w-[11%] px-4 py-4 text-center align-middle">
+                      JD Code
+                    </th>
+
+                    <th className="w-[29%] px-5 py-4 text-left align-middle">
+                      Requested By
+                    </th>
+
+                    <th className="w-[13%] px-4 py-4 text-center align-middle">
+                      Date Requested
+                    </th>
+
+                    <th className="w-[11%] px-4 py-4 text-center align-middle">
+                      JD Status
+                    </th>
+
+                    <th className="w-[12%] px-5 py-4 text-center align-middle last:rounded-tr-2xl">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      >
+                        <Loader2
+                          size={28}
+                          className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+                        />
+                        Loading Job Description approval requests...
+                      </td>
+                    </tr>
+                  ) : requests.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      >
+                        No approval requests found for Job Description.
+                      </td>
+                    </tr>
+                  ) : (
+                    requests.map((request) => {
+                      const rawStatus = getRawValue(
+                        request,
+                        "jdStatus",
+                        request.status,
+                      );
+                      const normalizedStatus = normalizeStatus(
+                        request.status || rawStatus,
+                      );
+                      const StatusIcon = getStatusIcon(normalizedStatus);
+
+                      return (
+                        <tr
+                          key={`${request.source || "job-description"}-${
+                            request.id || request.rawId
+                          }`}
+                          className="transition-colors hover:bg-[#F8FAFC]"
+                        >
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-sibs-primary-1">
+                                <FileText size={18} />
+                              </div>
+
+                              <div className="min-w-0">
+                                <p
+                                  title={safeText(request.title)}
+                                  className="truncate text-sm font-bold text-[#101828]"
+                                >
+                                  {safeText(request.title)}
+                                </p>
+
+                                <div className="mt-1 flex flex-wrap gap-2">
+                                  <span
+                                    title={safeText(rawStatus)}
+                                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-bold ${getJdStatusClass(
+                                      rawStatus,
+                                    )}`}
+                                  >
+                                    {safeText(rawStatus)}
+                                  </span>
+
+                                  {getRawValue(
+                                    request,
+                                    "linkedHiringRequirement",
+                                  ) && (
+                                    <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-0.5 text-xs font-bold text-[#344054]">
+                                      HR:{" "}
+                                      {getRawValue(
+                                        request,
+                                        "linkedHiringRequirement",
+                                      )}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
+                            <span
+                              title={safeText(
+                                getRawValue(request, "jdCode", request.id),
+                              )}
+                              className="inline-flex rounded-lg bg-[#F8FAFC] px-2.5 py-1 text-xs font-extrabold text-sibs-primary-1"
+                            >
+                              {safeText(
+                                getRawValue(request, "jdCode", request.id),
+                              )}
+                            </span>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
+                            <div className="min-w-0">
+                              <p
+                                title={safeText(
+                                  request.requester || request.employeeSibsId,
+                                )}
+                                className="truncate text-sm font-bold text-[#101828]"
+                              >
+                                {safeText(
+                                  request.requester || request.employeeSibsId,
+                                )}
+                              </p>
+
+                              <p
+                                title={
+                                  request.createdBy ||
+                                  getRawValue(
+                                    request,
+                                    "createdBy",
+                                    request.employeeSibsId,
+                                  )
+                                }
+                                className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5"
+                              >
+                                Created by:{" "}
+                                {safeText(
+                                  request.createdBy ||
+                                    getRawValue(
+                                      request,
+                                      "createdBy",
+                                      request.employeeSibsId,
+                                    ),
+                                )}
+                              </p>
+                            </div>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
+                            <p
+                              title={formatDate(
+                                request.dateRequested || request.requestDate,
+                              )}
+                              className="truncate text-sm font-bold text-[#344054]"
+                            >
+                              {formatDate(
+                                request.dateRequested || request.requestDate,
+                              )}
+                            </p>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
+                            <span
+                              title={normalizedStatus}
+                              className={`mx-auto inline-flex max-w-full items-center justify-center gap-1.5 truncate rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                                normalizedStatus,
+                              )}`}
+                            >
+                              <StatusIcon size={13} className="shrink-0" />
+                              <span className="truncate">{normalizedStatus}</span>
+                            </span>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
+                            <button
+                              type="button"
+                              onClick={() => onView?.(request)}
+                              className="mx-auto inline-flex h-10 min-w-[104px] items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                            >
+                              <Eye size={16} />
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          }
+        />
       </div>
 
       <TableFooter

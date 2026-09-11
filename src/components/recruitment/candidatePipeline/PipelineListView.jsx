@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import CandidateAvatar from "./CandidateAvatar";
 import PipelineStageTabs, { PIPELINE_STAGE_TABS } from "./PipelineStageTabs";
+import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import PipelineMobileCard from "./PipelineMobileCard";
 
 function getCandidateActions(candidate) {
   const currentStage = candidate.currentStage || candidate.stage || "";
@@ -222,7 +224,7 @@ const PipelineListView = ({
 
   return (
     <div
-      className="sibs-page-card-in flex min-h-full flex-1 flex-col space-y-0"
+      className="sibs-page-card-in flex min-h-full flex-1 flex-col space-y-0 overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs"
       style={{ animationDelay: "240ms", animationFillMode: "both" }}
     >
       <PipelineStageTabs
@@ -231,137 +233,36 @@ const PipelineListView = ({
         counts={tabCounts}
       />
 
-      <div className="rounded-b-2xl border border-[#E6ECF2] bg-white p-4 shadow-xs sm:p-5 2xl:p-6">
+      <div className="p-4 sm:p-5 2xl:p-6">
         {!visibleCandidates.length ? (
-          <div className="sibs-empty-panel">
-            <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-center text-[#667085]">
-              <UsersRound size={34} className="text-[#C8D3DF]" />
-              <p className="text-sm font-extrabold text-[#042C51]">
-                No candidates found in {selectedTab}
-              </p>
-              <p className="text-xs font-semibold">
-                There are currently no candidate records matching the selected stage and search filters.
-              </p>
-            </div>
-          </div>
+          <DataCard.Empty
+            icon={<UsersRound size={28} />}
+            title={`No candidates found in ${selectedTab}`}
+            description="There are currently no candidate records matching the selected stage and search filters."
+          />
         ) : (
-          <>
-            {/* Mobile Card List View */}
-            <div className="space-y-3 lg:hidden">
-              {visibleCandidates.map((candidate, index) => {
-                const currentStage = candidate.currentStage || candidate.stage || "Initial Screening";
-                const interviewStatus = getDisplayInterviewStatus(candidate);
-
-                return (
-                  <article
+          <ResponsiveTableShell
+            mobileContent={
+              <div className="space-y-3">
+                {visibleCandidates.map((candidate, index) => (
+                  <PipelineMobileCard
                     key={candidate.id || `${candidate.name}-${index}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openCandidate(candidate)}
-                    onKeyDown={(event) => handleRowKeyDown(event, candidate)}
-                    className="sibs-page-card-in cursor-pointer rounded-2xl border border-[#D7DEE8] bg-white p-4 shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#FF5C28]/25"
-                    style={{
-                      animationDelay: `${index * 40}ms`,
-                      animationFillMode: "both",
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <CandidateAvatar candidate={candidate} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate sibs-text-sm font-extrabold text-[#042C51]">
-                          {candidate.name}
-                        </p>
-                        <p className="mt-0.5 truncate sibs-text-xs font-semibold text-[#667085]">
-                          {candidate.email || "No email saved"}
-                        </p>
-                        <p className="mt-1 font-mono text-[9px] font-bold text-[#98A2B3]">
-                          {candidate.candidateId ||
-                            candidate.candidateApplicationId ||
-                            "—"}
-                        </p>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-extrabold ${getStageClass(
-                          currentStage,
-                        )}`}
-                      >
-                        {currentStage}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <div className="sibs-info-tile">
-                        <p className="sibs-kicker">Position</p>
-                        <p className="mt-1 truncate text-[11px] font-extrabold text-[#042C51]">
-                          {getRoleTitle(candidate.roleAccount) ||
-                            ""}
-                        </p>
-                      </div>
-                      <div className="sibs-info-tile">
-                        <p className="sibs-kicker">Account</p>
-                        <p className="mt-1 truncate text-[11px] font-extrabold text-[#042C51]">
-                          {getAccount(candidate.roleAccount) ||
-                            ""}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      <span
-                        className={`rounded-full border px-2 py-1 text-[9px] font-extrabold ${getPrfStatusClass(
-                          candidate.prfStatus || "Review",
-                        )}`}
-                      >
-                        PRF: {candidate.prfStatus || "Review"}
-                      </span>
-                      <span
-                        className={`rounded-full border px-2 py-1 text-[9px] font-extrabold ${
-                          candidate.assessmentResult
-                            ? getAssessmentResultClass(
-                                candidate.assessmentResult,
-                              )
-                            : getAssessmentStatusClass(
-                                candidate.assessmentStatus || "Not Take",
-                              )
-                        }`}
-                      >
-                        {candidate.assessmentResult ||
-                          candidate.assessmentStatus ||
-                          "Not Take"}
-                      </span>
-                      <span
-                        className={`rounded-full border px-2 py-1 text-[9px] font-extrabold ${getInterviewStatusClass(
-                          interviewStatus,
-                        )}`}
-                      >
-                        {interviewStatus || "—"}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#EEF2F6] pt-3">
-                      <p className="truncate text-[10px] font-semibold text-[#667085]">
-                        {candidate.taOwner ||
-                          candidate.owner ||
-                          "Unassigned owner"}
-                      </p>
-                      <PipelineActionButtons
-                        candidate={candidate}
-                        onOpenMoveModal={onOpenMoveModal}
-                        onOpenAssessmentModal={onOpenAssessmentModal}
-                        onOpenScheduleModal={onOpenScheduleModal}
-                        onCancelInterview={onCancelInterview}
-                        onCompleteInterview={onCompleteInterview}
-                      />
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-
-            {/* Desktop Table View */}
-            <div className="sibs-data-table-shell hidden lg:block overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-              <div className="overflow-x-auto sibs-scrollbar">
-                <table className="w-full min-w-[1080px] 2xl:min-w-[1180px] border-collapse">
+                    candidate={candidate}
+                    index={index}
+                    onViewCandidate={openCandidate}
+                    onOpenMoveModal={onOpenMoveModal}
+                    onOpenAssessmentModal={onOpenAssessmentModal}
+                    onOpenScheduleModal={onOpenScheduleModal}
+                    onCancelInterview={onCancelInterview}
+                    onCompleteInterview={onCompleteInterview}
+                  />
+                ))}
+              </div>
+            }
+            desktopContent={
+              <div className="sibs-data-table-shell overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+                <div className="overflow-x-auto sibs-scrollbar">
+                  <table className="w-full min-w-[1080px] 2xl:min-w-[1180px] border-collapse">
                   <thead className="sibs-data-table-head bg-[#F8FAFC]">
                     <tr className="sibs-data-table-head-row">
                       {[
@@ -519,7 +420,8 @@ const PipelineListView = ({
                 </table>
               </div>
             </div>
-          </>
+            }
+          />
         )}
       </div>
     </div>

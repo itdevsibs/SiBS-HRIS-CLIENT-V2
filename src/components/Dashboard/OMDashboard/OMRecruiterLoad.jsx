@@ -20,35 +20,35 @@ export default function OMRecruiterLoad({ recruiters = [], delay = 0 }) {
 
   return (
     <aside
-      className="sibs-page-card-in sibs-card font-jakarta flex h-full w-full flex-col justify-between rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
+      className="sibs-page-card-in sibs-card font-jakarta flex h-full w-full flex-col justify-between rounded-2xl border border-sibs-border bg-white p-4 shadow-sm 2xl:p-6"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div>
         <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           Recruiter Load
         </h3>
-        <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+        <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
           Active accessible roles versus recruiter output
         </p>
       </div>
 
-      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3 overflow-y-auto sibs-scrollbar">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl border border-sibs-border bg-sibs-surface p-3 overflow-y-auto sibs-scrollbar">
         {recruiters.length === 0 ? (
-          <div className="sibs-empty-panel rounded-xl border border-dashed border-[#D6E0EA] bg-white px-5 py-10 text-center text-xs font-bold text-[#667085]">
+          <div className="sibs-empty-panel rounded-xl border border-dashed border-sibs-border bg-white px-5 py-10 text-center text-xs font-bold text-sibs-muted">
             No recruiter ownership data is available.
           </div>
         ) : (
           recruiters.map((row) => (
             <article
               key={row.name}
-              className="rounded-lg border border-[#DDE5EE] bg-white p-3.5 shadow-2xs transition hover:border-[#FF5C28]/40 hover:shadow-xs"
+              className="rounded-lg border border-sibs-border bg-white p-3.5 shadow-2xs transition hover:border-sibs-orange/40 hover:shadow-xs"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <strong className="block truncate text-xs 2xl:text-sm font-extrabold text-[#042C51]">
+                  <strong className="block truncate text-xs 2xl:text-sm font-extrabold text-sibs-navy">
                     {row.name}
                   </strong>
-                  <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
+                  <p className="mt-0.5 sibs-text-micro font-semibold text-sibs-muted">
                     {row.activeRoles} active roles handled
                   </p>
                 </div>
@@ -62,14 +62,14 @@ export default function OMRecruiterLoad({ recruiters = [], delay = 0 }) {
                 </span>
               </div>
 
-              <div className="mt-2.5 grid grid-cols-3 border-t border-[#EEF2F6] pt-2.5 text-center">
+              <div className="mt-2.5 grid grid-cols-3 border-t border-sibs-border pt-2.5 text-center">
                 {[
-                  ["Sourced", row.output.sourced, "text-[#042C51]"],
-                  ["Interviewed", row.output.interviewed, "text-[#042C51]"],
+                  ["Sourced", row.output.sourced, "text-sibs-navy"],
+                  ["Interviewed", row.output.interviewed, "text-sibs-navy"],
                   ["Hired", row.output.hired, "text-emerald-600"],
                 ].map(([label, value, tone]) => (
                   <div key={label}>
-                    <span className="block sibs-text-micro font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    <span className="block sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
                       {label}
                     </span>
                     <p className={`mt-0.5 text-xs 2xl:text-sm font-extrabold tabular-nums ${tone}`}>
@@ -85,21 +85,21 @@ export default function OMRecruiterLoad({ recruiters = [], delay = 0 }) {
 
       <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/70 px-3.5 py-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-[#042C51]">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-sibs-navy">
             <UsersRound className="h-3.5 w-3.5 text-indigo-700" />
           </span>
           <div>
             <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-indigo-900">
               Active TA Team
             </p>
-            <p className="sibs-text-xs font-black text-[#042C51]">
+            <p className="sibs-text-xs font-black text-sibs-navy">
               Total Capacity
             </p>
           </div>
         </div>
 
         <div className="text-right">
-          <span className="block text-base font-black leading-none text-[#042C51]">
+          <span className="font-heading block text-base 2xl:text-lg font-bold leading-none tabular-nums text-sibs-navy">
             {recruiters.length} Recruiters
           </span>
           <span className="mt-1 block sibs-text-micro font-bold text-indigo-700">

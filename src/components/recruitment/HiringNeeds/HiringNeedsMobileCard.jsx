@@ -1,16 +1,23 @@
 import React from "react";
 import { AlertTriangle, CheckCircle2, MinusCircle } from "lucide-react";
+import { DataCard } from "@/components/ui";
 import {
+  getHiringNeedsDateOrWeek,
   getHiringNeedsJdLinkStatus,
+  getHiringNeedsRequestType,
   isHiringNeedUnlinkedFromJd,
 } from "../../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 
 function getStatusClass(status) {
   switch (status) {
-    case "Approved": return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "Not Approved": return "border-red-200 bg-red-50 text-red-700";
-    case "For Approval": return "border-amber-200 bg-amber-50 text-amber-700";
-    default: return "border-gray-200 bg-gray-50 text-gray-600";
+    case "Approved":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "Not Approved":
+      return "border-red-200 bg-red-50 text-red-700";
+    case "For Approval":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    default:
+      return "border-gray-200 bg-gray-50 text-gray-600";
   }
 }
 
@@ -18,55 +25,80 @@ export default function HiringNeedsMobileCard({ item, onView }) {
   const unlinked = isHiringNeedUnlinkedFromJd(item);
   const jdLinkStatus = getHiringNeedsJdLinkStatus(item);
   const linkNotApplicable = jdLinkStatus === "Not Applicable";
+  const requestType = getHiringNeedsRequestType(item);
+  const dateOrWeek = getHiringNeedsDateOrWeek(item);
 
   return (
-    <button
-      type="button"
+    <DataCard
+      interactive
       onClick={() => onView(item)}
-      className={`w-full rounded-2xl border p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 ${
-        unlinked
-          ? "border-[#FFD1C4] bg-[#FFF4EF] hover:bg-[#FFE9E0]"
-          : "border-[#E6ECF2] bg-white hover:bg-[#F8FAFC]"
-      }`}
+      className={unlinked ? "border-[#FFD1C4] bg-[#FFF8F5]" : ""}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-sibs-primary-1">{item.id}</p>
-          <h3 className="mt-1 text-sm font-bold text-[#101828] truncate">
-            {item.positionTitle}
-          </h3>
-          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5 truncate">
+      <DataCard.Header
+        title={item.positionTitle || "Untitled Position"}
+        subtitle={
+          <span className="truncate">
+            <span className="font-extrabold text-[#FF5C28]">{item.id}</span> ·{" "}
             {item.departmentAccount}
+          </span>
+        }
+        badge={
+          <span
+            className={`inline-flex shrink-0 items-center justify-center rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(
+              item.approvalStatus,
+            )}`}
+          >
+            {item.approvalStatus}
+          </span>
+        }
+      />
+
+      <DataCard.ContextRow>
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-[#F8FAFC] px-2 py-0.5 text-[9px] font-extrabold leading-none text-[#042C51]">
+          {requestType}
+        </span>
+        <span className="text-[11px] font-semibold text-[#667085]">
+          {item.locationSite || "—"}
+        </span>
+        {dateOrWeek && (
+          <span className="text-[11px] font-semibold text-[#667085]">
+            Target: {dateOrWeek}
+          </span>
+        )}
+      </DataCard.ContextRow>
+
+      <DataCard.Metrics cols={3}>
+        <DataCard.MetricItem
+          label="Headcount"
+          value={item.headcount || 0}
+          tone="primary"
+        />
+        <DataCard.MetricItem label="Request Type" value={requestType} />
+        <DataCard.MetricItem
+          label="Site"
+          value={item.locationSite || "—"}
+        />
+      </DataCard.Metrics>
+
+      {item.reasonForHiring ? (
+        <div className="mt-2.5 rounded-lg border border-slate-100 bg-[#F8FAFC] px-2.5 py-1.5 text-left">
+          <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
+            Reason
+          </p>
+          <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-[#344054]">
+            {item.reasonForHiring}
           </p>
         </div>
-        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(item.approvalStatus)}`}>
-          {item.approvalStatus}
-        </span>
-      </div>
+      ) : null}
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">Headcount</p>
-          <p className="mt-1 text-xs font-extrabold text-sibs-primary-1">{item.headcount}</p>
-        </div>
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">Location</p>
-          <p className="mt-1 text-xs font-bold text-[#344054] truncate">{item.locationSite}</p>
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center justify-between">
-         <p className="text-[11px] font-bold text-sibs-tertiary-5 italic">
-           Reason: {item.reasonForHiring}
-         </p>
-
+      <DataCard.Footer>
         <span
-          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-extrabold ${
+          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${
             unlinked
               ? "border-[#FFB39F] bg-[#FFE1D8] text-[#D92D20]"
               : linkNotApplicable
                 ? "border-slate-200 bg-slate-50 text-slate-500"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
           }`}
         >
           {unlinked ? (
@@ -78,7 +110,11 @@ export default function HiringNeedsMobileCard({ item, onView }) {
           )}
           {jdLinkStatus}
         </span>
-      </div>
-    </button>
+
+        <span className="shrink-0 text-[10px] font-extrabold uppercase text-sibs-orange">
+          View Details →
+        </span>
+      </DataCard.Footer>
+    </DataCard>
   );
 }

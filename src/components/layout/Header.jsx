@@ -20,6 +20,7 @@ import {
   Loader2,
   Mail,
   MapPin,
+  Menu,
   PieChart,
   Search,
   Table2,
@@ -37,6 +38,7 @@ import {
 } from "react";
 
 import { useUser } from "../../services/context/UserContext";
+import { useHeader } from "../../services/context/HeaderContext";
 import { getEmployee } from "../../lib/axios/getEmployee";
 import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
 import UserDropdown from "./dropdown/UserDropdown";
@@ -896,6 +898,7 @@ const QUICK_SEARCH_CATEGORIES = [
 
 export default function Header() {
   const { user, loading } = useUser();
+  const { setMobileSidebarOpen } = useHeader();
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
@@ -1288,8 +1291,21 @@ export default function Header() {
     (!employeeSearchAllowed || query.trim().length >= 2);
 
   return (
-    <header className="relative z-[70] flex h-[74px] 2xl:h-[86px] shrink-0 items-center border-b border-[#D7E0E9] bg-[#FAFCFF] px-2 font-jakarta shadow-sm sm:px-5 2xl:px-6">
-      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-1.5 pl-14 sm:pl-11 lg:gap-3 2xl:gap-4 lg:pl-0">
+    <header className="sticky top-0 z-[70] flex h-[74px] 2xl:h-[86px] shrink-0 items-center border-b border-[#D7E0E9] bg-[#FAFCFF] px-2.5 font-jakarta shadow-xs sm:px-5 2xl:px-6">
+      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-2 sm:gap-3 2xl:gap-4">
+        {/* Mobile Hamburger Button - inside header so it always stays aligned */}
+        <button
+          type="button"
+          onClick={() => setMobileSidebarOpen?.(true)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#083A69] bg-sibs-primary-1 text-white shadow-xs transition hover:bg-[#063560] active:scale-95 lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg"
+          aria-label="Open sidebar"
+        >
+          <Menu
+            size={18}
+            className="text-white max-[360px]:h-4 max-[360px]:w-4"
+          />
+        </button>
+
         <div
           ref={searchRootRef}
           className="relative z-[10000] min-w-[118px] flex-[1_1_auto] lg:max-w-[460px] 2xl:max-w-[560px]"

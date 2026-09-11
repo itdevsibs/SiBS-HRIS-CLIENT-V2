@@ -173,16 +173,16 @@ export default function ActionItemsTable() {
                           {systemGenerated ? "System" : "Manual"}
                         </span>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs font-extrabold leading-5 text-[#042C51]" title={item.actionItem}>{item.actionItem}</p>
+                      <p className="mt-1 line-clamp-2 sibs-text-xs font-extrabold leading-5 text-[#042C51]" title={item.actionItem}>{item.actionItem}</p>
                     </td>
                     <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
-                      <p className="text-xs font-extrabold text-[#042C51]">{item.account || "—"}</p>
+                      <p className="sibs-text-xs font-extrabold text-[#042C51]">{item.account || "—"}</p>
                       <p className="mt-0.5 text-[10px] font-semibold uppercase text-[#667085]">{item.roleTitle || item.roleAccount || "—"}</p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle text-xs font-bold text-[#042C51]">{item.owner || "—"}</td>
+                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle sibs-text-xs font-bold text-[#042C51]">{item.owner || "—"}</td>
                     <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
-                      <p className="text-xs font-extrabold text-[#042C51]">{formatDate(item.deadline)}</p>
-                      <p className="mt-0.5 text-[9px] font-extrabold text-[#667085]">
+                      <p className="sibs-text-xs font-extrabold tabular-nums text-[#042C51]">{formatDate(item.deadline)}</p>
+                      <p className="mt-0.5 text-[9px] font-extrabold tabular-nums text-[#667085]">
                         {item.status === "Completed"
                           ? `Completed${item.completedDate ? ` ${formatDate(item.completedDate)}` : ""}`
                           : getDaysLeft(item.deadline)}
@@ -195,7 +195,7 @@ export default function ActionItemsTable() {
                       <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getRiskClass(item.riskLevel)}`}>{item.riskLevel}</span>
                     </td>
                     <td className="max-w-[300px] border-r border-[#E6ECF2] px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
-                      <p className="line-clamp-2 text-xs font-semibold leading-4 text-[#667085]" title={item.remarks}>{item.remarks || "No remarks logged"}</p>
+                      <p className="line-clamp-2 sibs-text-xs font-semibold leading-4 text-[#667085]" title={item.remarks}>{item.remarks || "No remarks logged"}</p>
                     </td>
                     <td className="px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 text-right" onClick={(event) => event.stopPropagation()}>
                       <div className="flex justify-end gap-1.5">

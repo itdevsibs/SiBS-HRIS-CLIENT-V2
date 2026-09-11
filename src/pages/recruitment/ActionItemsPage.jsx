@@ -29,21 +29,25 @@ function ActionItemsContent() {
       <ActionItemsCurrentStatus />
 
       <section
-        className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm font-jakarta"
+        className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
         style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
-        <header className="flex flex-col gap-2 border-b border-sibs-border bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="sibs-section-title">
+        <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="sibs-card-title">
               Action Items – JIT Delivery Focus Registry
             </h2>
-            <p className="sibs-section-subtitle">
+            <p className="sibs-card-subtitle">
               Accountable actions linked to the current reporting scope. Open a record to review source details and progress.
             </p>
           </div>
-        </header>
-        <div className="p-4 sm:p-5 font-jakarta space-y-4">
-          <ActionItemsFilters />
+
+          <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+            <ActionItemsFilters />
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
           <ActionItemsTable />
         </div>
       </section>

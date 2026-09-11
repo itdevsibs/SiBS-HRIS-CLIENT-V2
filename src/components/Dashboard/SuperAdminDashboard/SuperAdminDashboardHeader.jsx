@@ -1,39 +1,6 @@
+import React from "react";
 import { ArrowRight, RefreshCw, UserPlus, Users } from "lucide-react";
-
-import { useUser } from "@/services/context/UserContext";
-
-function cleanNamePart(value) {
-  return String(value ?? "").trim();
-}
-
-function getSuperAdminDisplayName(user = {}, fallback = "") {
-  const lastName = cleanNamePart(
-    user?.lastName ?? user?.last_name ?? user?.gy_emp_lname,
-  );
-  const firstName = cleanNamePart(
-    user?.firstName ?? user?.first_name ?? user?.gy_emp_fname,
-  );
-  const middleName = cleanNamePart(
-    user?.middleName ?? user?.middle_name ?? user?.gy_emp_mname,
-  );
-
-  if (lastName || firstName || middleName) {
-    const givenNames = [firstName, middleName].filter(Boolean).join(" ");
-
-    return [
-      lastName ? lastName.toUpperCase() : "",
-      givenNames ? givenNames.toUpperCase() : "",
-    ]
-      .filter(Boolean)
-      .join(lastName && givenNames ? ", " : "");
-  }
-
-  const cleanFallback = cleanNamePart(fallback);
-
-  return cleanFallback && !cleanFallback.includes("@")
-    ? cleanFallback
-    : "User";
-}
+import { PageHeaderHero } from "@/components/ui";
 
 export default function SuperAdminDashboardHeader({
   displayName,
@@ -46,40 +13,25 @@ export default function SuperAdminDashboardHeader({
   const resolvedDisplayName = getSuperAdminDisplayName(user, displayName);
 
   return (
-    <section
-      className="sibs-page-header-in sibs-page-card-in sibs-card font-jakarta relative overflow-hidden p-4 2xl:p-6"
-      style={{ animationDelay: "0ms", animationFillMode: "both" }}
-    >
-      <span className="sibs-top-accent" aria-hidden="true" />
-
-      <div className="mt-0.5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1 lg:pr-4 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-              <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-              Super Admin Operations View
-            </span>
-          </div>
-
-          <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-            Whole-System HRIS Operations &amp; Governance
-          </h1>
-
-          <p className="sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-            Welcome back,{" "}
-            <span className="font-extrabold text-sibs-navy">{resolvedDisplayName}</span>.
-            You have whole-system administrative permissions across all HRIS modules.
-          </p>
-        </div>
-
-        <div className="flex shrink-0 flex-wrap items-center gap-2 2xl:gap-2.5 lg:flex-nowrap">
+    <PageHeaderHero
+      kicker="Super Admin Operations View"
+      title="Whole-System HRIS Operations & Governance"
+      description={
+        <>
+          Welcome back,{" "}
+          <span className="font-extrabold text-sibs-navy">{displayName}</span>.
+          You have whole-system administrative permissions across all HRIS modules.
+        </>
+      }
+      actions={
+        <>
           {onRefresh ? (
             <button
               type="button"
               onClick={onRefresh}
               disabled={isManualRefreshing}
               title="Refresh Dashboard Data"
-              className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+              className="sibs-btn-icon"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
@@ -92,7 +44,7 @@ export default function SuperAdminDashboardHeader({
           <button
             type="button"
             onClick={onAddUser}
-            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream hover:text-sibs-navy active:scale-[0.98]"
+            className="sibs-btn-secondary max-sm:flex-1"
           >
             <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-orange" />
             Add Admin / User
@@ -101,14 +53,14 @@ export default function SuperAdminDashboardHeader({
           <button
             type="button"
             onClick={onOpenEmployees}
-            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98]"
+            className="sibs-btn-primary max-sm:w-full"
           >
             <Users className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
             Launch Employee Directory
             <ArrowRight className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" />
           </button>
-        </div>
-      </div>
-    </section>
+        </>
+      }
+    />
   );
 }

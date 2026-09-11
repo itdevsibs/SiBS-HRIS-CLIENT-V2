@@ -11,6 +11,7 @@ import {
 import PaginationTable from "@/services/pagination/PaginationTable";
 import ChwcpRequestDetailsModal from "../../modals/employees/ChwcpRequestDetailsModal";
 import { getChwcpRequests } from "../../../lib/axios/getChwcp";
+import { DataCard, ResponsiveTableShell, StatusFilterTabs } from "@/components/ui";
 
 const DEFAULT_LIMIT = 25;
 const STAGE_OPTIONS = [
@@ -438,6 +439,87 @@ function StatusProgress({ row }) {
   );
 }
 
+function ChwcpMobileCard({ row, onOpen }) {
+  const progress = getProgressState(row.stageKey);
+
+  return (
+    <DataCard
+      interactive
+      onClick={() => onOpen(row)}
+      aria-label={`Open ${safeText(row.formType)} request for ${safeText(row.employeeName)}`}
+    >
+      <DataCard.Header
+        avatar={<EmployeeAvatar employee={row} />}
+        title={safeText(row.employeeName)}
+        subtitle={
+          <span className="text-[10px] font-extrabold text-[#FF5C28]">
+            {safeText(row.sibsId)}
+          </span>
+        }
+        badge={
+          <span
+            className={`inline-flex max-w-full items-center justify-center rounded-full border px-2 py-0.5 text-center text-[9px] font-extrabold leading-tight ${statusBadgeClass(
+              row.stageKey,
+            )}`}
+          >
+            <span className="truncate">{safeText(row.status)}</span>
+          </span>
+        }
+      />
+
+      <DataCard.ContextRow>
+        <div className="flex flex-wrap gap-1.5">
+          {getEmployeeAccounts(row).map((account) => (
+            <span
+              key={account}
+              className="inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]"
+            >
+              <span className="whitespace-normal break-words">{account}</span>
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 text-[10px] font-semibold text-[#667085]">
+          <MapPin size={12} className="shrink-0 text-[#98A2B3]" />
+          <span className="break-words">{safeText(row.site)}</span>
+        </div>
+      </DataCard.ContextRow>
+
+      <DataCard.Metrics cols={2}>
+        <DataCard.MetricItem
+          label="Form Type"
+          value={safeText(row.formType)}
+        />
+        <DataCard.MetricItem
+          label="Service"
+          value={safeText(row.service)}
+          tone="secondary"
+        />
+      </DataCard.Metrics>
+
+      <div className="mt-2 flex flex-col gap-1 border-t border-slate-100 pt-2">
+        <div className="text-[10px] font-semibold text-[#667085]">
+          <span className="font-bold text-[#042C51]">Department: </span>
+          {getEmployeeDepartments(row).join(", ") || "N/A"}
+        </div>
+      </div>
+
+      <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] font-semibold text-[#667085]">
+        <span className="text-[11px] text-[#536887]">
+          {formatRequestDate(row.requestDate)}
+        </span>
+        <div className="flex w-20 items-center gap-1" aria-label={row.status}>
+          {progress.map((state, index) => (
+            <span
+              key={`${row.requestId}-${index}`}
+              className={`h-1.5 w-full rounded-full ${progressClass(state)}`}
+            />
+          ))}
+        </div>
+      </div>
+    </DataCard>
+  );
+}
+
 function LoadingRows() {
   return Array.from({ length: 6 }).map((_, index) => (
     <tr key={`chwcp-loading-${index}`}>
@@ -695,227 +777,236 @@ export default function ChwcpTable({
         />
       </div>
 
-      <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
-        {tabs.length > 1 ? (
-          <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
-            <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 sibs-scrollbar sm:px-4">
-              {tabs.map((tab) => {
-                const TabIcon = tab.icon || UserRoundCheck;
-                const isActive = activeTab === tab.label;
+      <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
+        <div className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+          {tabs.length > 1 ? (
+            <StatusFilterTabs
+              tabs={tabs.map((tab) => ({
+                key: tab.label,
+                label: tab.label === "CHWCP" ? "CHWCP Requests" : tab.label,
+                icon: tab.icon || UserRoundCheck,
+                count: Number(tab.count || 0) > 0 ? Number(tab.count).toLocaleString("en-PH") : null,
+              }))}
+              activeValue={activeTab}
+              onChange={onTabChange}
+              layoutId="employeeDirectoryTabIndicator"
+            />
+          ) : null}
 
-                return (
-                  <button
-                    key={tab.label}
-                    type="button"
-                    onClick={() => onTabChange?.(tab.label)}
-                    className={`relative inline-flex h-10 shrink-0 items-center gap-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition-colors ${
-                      isActive
-                        ? "rounded-t-xl bg-white text-[#042C51]"
-                        : "text-[#667085] hover:text-[#042C51]"
-                    }`}
-                  >
-                    <TabIcon size={15} className="shrink-0" />
-                    <span className="truncate">
-                      {tab.label === "CHWCP" ? "CHWCP Requests" : tab.label}
-                    </span>
-
-                    {Number(tab.count || 0) > 0 ? (
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums transition-colors ${
-                          isActive
-                            ? "bg-[#042C51] text-white"
-                            : "bg-slate-200 text-slate-600"
-                        }`}
-                      >
-                        {Number(tab.count).toLocaleString("en-PH")}
-                      </span>
-                    ) : null}
-
-                    {isActive ? (
-                      <motion.div
-                        layoutId="employeeDirectoryTabIndicator"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5C28]"
-                        transition={{
-                          type: "spring",
-                          stiffness: 380,
-                          damping: 30,
-                        }}
-                      />
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
-
-        <div
-          className={`overflow-hidden border border-[#E6ECF2] bg-white ${
-            tabs.length > 1 ? "rounded-b-xl border-t-0" : "rounded-xl"
-          }`}
-        >
-          <div
-            ref={tableScrollRef}
-            className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar"
-          >
-            <table className="w-full min-w-[1500px] table-fixed border-collapse text-left">
-              <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                <tr className="border-b border-[#E6ECF2]">
-                  <th className="w-[7%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    SIBS ID
-                  </th>
-                  <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    EMPLOYEE FULL NAME
-                  </th>
-                  <th className="w-[14%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    ACCOUNT / SITE
-                  </th>
-                  <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    DEPARTMENT
-                  </th>
-                  <th className="w-[8%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    FORM TYPE
-                  </th>
-                  <th className="w-[17%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
-                    SERVICE
-                  </th>
-                  <th className="w-[16%] pl-3 pr-6 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:pl-4 2xl:pr-8 2xl:py-3">
-                    REQUEST DATE
-                  </th>
-                  <th className="w-[12%] pl-5 pr-3 py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:pl-6 2xl:pr-4 2xl:py-3">
-                    STATUS
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody
-                key={`${currentPage}-${search}-${stage}`}
-                className="divide-y divide-[#EEF2F6]"
-              >
+          <ResponsiveTableShell
+            mobileContent={
+              <div className="p-3.5 sm:p-4">
                 {loading ? (
-                  <LoadingRows />
+                  <DataCard.Skeleton count={5} lines={3} />
                 ) : error ? (
-                  <tr>
-                    <td colSpan={8} className="px-5 py-14 text-center">
-                      <p className="text-sm font-extrabold text-red-600">
-                        Unable to load CHWCP requests
-                      </p>
-                      <p className="mx-auto mt-1 max-w-xl text-xs font-semibold text-[#667085]">
-                        {error}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => loadRows()}
-                        className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#0A3B68] active:scale-[0.98]"
-                      >
-                        <RefreshCcw size={14} />
-                        Retry
-                      </button>
-                    </td>
-                  </tr>
-                ) : rows.length ? (
-                  rows.map((row, index) => (
-                    <tr
-                      key={row.requestId}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openRequestDetails(row)}
-                      onKeyDown={(event) => handleRequestRowKeyDown(event, row)}
-                      aria-label={`Open ${safeText(row.formType)} request for ${safeText(row.employeeName)}`}
-                      className="group sibs-employee-row-reveal cursor-pointer bg-white transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
-                      style={{
-                        animationDelay: `${Math.min(index, 10) * 36}ms`,
-                      }}
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+                    <p className="text-sm font-extrabold text-red-600">
+                      Unable to load CHWCP requests
+                    </p>
+                    <p className="mx-auto mt-1 max-w-xl text-xs font-semibold text-[#667085]">
+                      {error}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => loadRows()}
+                      className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#0A3B68] active:scale-[0.98]"
                     >
-                      <td className="whitespace-nowrap px-3 py-2 align-middle text-xs font-extrabold text-[#FF5C28] 2xl:px-4 2xl:py-2.5">
-                        {safeText(row.sibsId)}
-                      </td>
-
-                      <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <EmployeeAvatar employee={row} />
-
-                          <p className="min-w-0 break-words text-xs font-extrabold leading-tight text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
-                            {safeText(row.employeeName)}
-                          </p>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
-                        <div className="flex flex-wrap gap-1.5">
-                          {getEmployeeAccounts(row).map((account) => (
-                            <span
-                              key={account}
-                              title={account}
-                              className="inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]"
-                            >
-                              <span className="whitespace-normal break-words">
-                                {account}
-                              </span>
-                            </span>
-                          ))}
-                        </div>
-
-                        <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#667085]">
-                          <MapPin size={12} className="shrink-0 text-[#98A2B3]" />
-                          <span className="break-words">{safeText(row.site)}</span>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
-                        <div className="flex flex-col gap-1">
-                          {getEmployeeDepartments(row).map((department) => (
-                            <div
-                              key={department}
-                              className="flex min-w-0 items-start gap-1.5"
-                            >
-                              <span
-                                aria-hidden="true"
-                                className="shrink-0 text-xs font-extrabold leading-tight text-[#667085]"
-                              >
-                                •
-                              </span>
-                              <span className="min-w-0 break-words text-xs font-extrabold leading-tight text-[#042C51]">
-                                {department}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-2 align-middle text-xs font-semibold text-[#344054] 2xl:px-4 2xl:py-2.5">
-                        {safeText(row.formType)}
-                      </td>
-
-                      <td className="px-3 py-2 align-middle text-xs font-semibold leading-snug text-[#344054] 2xl:px-4 2xl:py-2.5">
-                        {safeText(row.service)}
-                      </td>
-
-                      <td className="whitespace-nowrap pl-3 pr-6 py-2 align-middle text-[11px] font-semibold text-[#536887] 2xl:pl-4 2xl:pr-8 2xl:py-2.5">
-                        {formatRequestDate(row.requestDate)}
-                      </td>
-
-                      <td className="pl-5 pr-3 py-2 align-middle 2xl:pl-6 2xl:pr-4 2xl:py-2.5">
-                        <StatusProgress row={row} />
-                      </td>
-                    </tr>
-                  ))
+                      <RefreshCcw size={14} />
+                      Retry
+                    </button>
+                  </div>
+                ) : rows.length === 0 ? (
+                  <DataCard.Empty
+                    title="No CHWCP requests found"
+                    description="No request matches the current search and workflow filter."
+                  />
                 ) : (
-                  <tr>
-                    <td colSpan={8} className="px-5 py-16 text-center">
-                      <FileCheck2 size={34} className="mx-auto text-[#C6D3E1]" />
-                      <p className="mt-3 text-sm font-extrabold text-[#042C51]">
-                        No CHWCP requests found
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                        No request matches the current search and workflow filter.
-                      </p>
-                    </td>
-                  </tr>
+                  <div className="space-y-3">
+                    {rows.map((row, index) => (
+                      <div
+                        key={row.requestId}
+                        className="sibs-employee-row-reveal"
+                        style={{
+                          animationDelay: `${Math.min(index, 10) * 36}ms`,
+                        }}
+                      >
+                        <ChwcpMobileCard
+                          row={row}
+                          onOpen={openRequestDetails}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            }
+            desktopContent={
+              <div className="overflow-hidden bg-white">
+              <div
+                ref={tableScrollRef}
+                className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar"
+              >
+                <table className="w-full min-w-[1500px] table-fixed border-collapse text-left">
+                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                    <tr className="border-b border-[#E6ECF2]">
+                      <th className="w-[7%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                        SIBS ID
+                      </th>
+                      <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                        EMPLOYEE FULL NAME
+                      </th>
+                      <th className="w-[14%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                        ACCOUNT / SITE
+                      </th>
+                      <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                        DEPARTMENT
+                      </th>
+                      <th className="w-[8%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                        FORM TYPE
+                      </th>
+                      <th className="w-[17%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                        SERVICE
+                      </th>
+                      <th className="w-[16%] pl-3 pr-6 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:pl-4 2xl:pr-8 2xl:py-3">
+                        REQUEST DATE
+                      </th>
+                      <th className="w-[12%] pl-5 pr-3 py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:pl-6 2xl:pr-4 2xl:py-3">
+                        STATUS
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody
+                    key={`${currentPage}-${search}-${stage}`}
+                    className="divide-y divide-[#EEF2F6]"
+                  >
+                    {loading ? (
+                      <LoadingRows />
+                    ) : error ? (
+                      <tr>
+                        <td colSpan={8} className="px-5 py-14 text-center">
+                          <p className="text-sm font-extrabold text-red-600">
+                            Unable to load CHWCP requests
+                          </p>
+                          <p className="mx-auto mt-1 max-w-xl text-xs font-semibold text-[#667085]">
+                            {error}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => loadRows()}
+                            className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#0A3B68] active:scale-[0.98]"
+                          >
+                            <RefreshCcw size={14} />
+                            Retry
+                          </button>
+                        </td>
+                      </tr>
+                    ) : rows.length ? (
+                      rows.map((row, index) => (
+                        <tr
+                          key={row.requestId}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openRequestDetails(row)}
+                          onKeyDown={(event) => handleRequestRowKeyDown(event, row)}
+                          aria-label={`Open ${safeText(row.formType)} request for ${safeText(row.employeeName)}`}
+                          className="group sibs-employee-row-reveal cursor-pointer bg-white transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                          style={{
+                            animationDelay: `${Math.min(index, 10) * 36}ms`,
+                          }}
+                        >
+                          <td className="whitespace-nowrap px-3 py-2 align-middle text-xs font-extrabold text-[#FF5C28] 2xl:px-4 2xl:py-2.5">
+                            {safeText(row.sibsId)}
+                          </td>
+
+                          <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <EmployeeAvatar employee={row} />
+
+                              <p className="min-w-0 break-words text-xs font-extrabold leading-tight text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
+                                {safeText(row.employeeName)}
+                              </p>
+                            </div>
+                          </td>
+
+                          <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                            <div className="flex flex-wrap gap-1.5">
+                              {getEmployeeAccounts(row).map((account) => (
+                                <span
+                                  key={account}
+                                  title={account}
+                                  className="inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]"
+                                >
+                                  <span className="whitespace-normal break-words">
+                                    {account}
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+
+                            <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#667085]">
+                              <MapPin size={12} className="shrink-0 text-[#98A2B3]" />
+                              <span className="break-words">{safeText(row.site)}</span>
+                            </div>
+                          </td>
+
+                          <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                            <div className="flex flex-col gap-1">
+                              {getEmployeeDepartments(row).map((department) => (
+                                <div
+                                  key={department}
+                                  className="flex min-w-0 items-start gap-1.5"
+                                >
+                                  <span
+                                    aria-hidden="true"
+                                    className="shrink-0 text-xs font-extrabold leading-tight text-[#667085]"
+                                  >
+                                    •
+                                  </span>
+                                  <span className="min-w-0 break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                                    {department}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+
+                          <td className="px-3 py-2 align-middle text-xs font-semibold text-[#344054] 2xl:px-4 2xl:py-2.5">
+                            {safeText(row.formType)}
+                          </td>
+
+                          <td className="px-3 py-2 align-middle text-xs font-semibold leading-snug text-[#344054] 2xl:px-4 2xl:py-2.5">
+                            {safeText(row.service)}
+                          </td>
+
+                          <td className="whitespace-nowrap pl-3 pr-6 py-2 align-middle text-[11px] font-semibold text-[#536887] 2xl:pl-4 2xl:pr-8 2xl:py-2.5">
+                            {formatRequestDate(row.requestDate)}
+                          </td>
+
+                          <td className="pl-5 pr-3 py-2 align-middle 2xl:pl-6 2xl:pr-4 2xl:py-2.5">
+                            <StatusProgress row={row} />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={8} className="px-5 py-16 text-center">
+                          <FileCheck2 size={34} className="mx-auto text-[#C6D3E1]" />
+                          <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                            No CHWCP requests found
+                          </p>
+                          <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                            No request matches the current search and workflow filter.
+                          </p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        />
         </div>
       </div>
 

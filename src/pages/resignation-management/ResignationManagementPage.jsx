@@ -15,11 +15,13 @@ import {
   FileText,
   Loader2,
   Mail,
+  Minus,
   Plus,
   RefreshCcw,
   RefreshCw,
   Send,
   TrendingDown,
+  TrendingUp,
   UserCheck,
   UserRound,
   UsersRound,
@@ -31,6 +33,7 @@ import {
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
 import PaginationTable from "../../services/pagination/PaginationTable";
+import { DataCard, PageHeaderHero, ResponsiveTableShell } from "@/components/ui";
 import { useUser } from "../../services/context/UserContext";
 import {
   ResignationManagementModal,
@@ -646,18 +649,29 @@ function ResignationProcessStep({
   description,
   active,
   done,
+  isLast = false,
 }) {
   const IconComponent = icon;
 
   return (
-    <div className="relative min-w-0 flex-1">
-      <div className="flex min-w-0 flex-col items-center text-center">
+    <div className="relative flex min-w-0 flex-1 lg:block">
+      {/* Mobile Vertical Connecting Spine */}
+      {!isLast && (
         <div
-          className={`flex h-8 w-8 2xl:h-9.5 2xl:w-9.5 items-center justify-center rounded-full border-2 2xl:border-4 border-white text-xs font-extrabold shadow-sm transition-all duration-300 ${
+          className={`absolute left-4 top-8 -bottom-4 w-0.5 lg:hidden transition-colors ${
+            done ? "bg-[#042C51]" : "bg-slate-200"
+          }`}
+          aria-hidden="true"
+        />
+      )}
+
+      <div className="flex min-w-0 items-start gap-3.5 text-left lg:flex-col lg:items-center lg:text-center">
+        <div
+          className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-white text-xs font-extrabold shadow-sm transition-all duration-300 2xl:h-9.5 2xl:w-9.5 2xl:border-4 ${
             done
               ? "bg-[#042C51] text-white"
               : active
-                ? "scale-105 bg-[#FF5C28] text-white shadow-[#FF5C28]/20"
+                ? "scale-105 bg-[#FF5C28] text-white shadow-[#FF5C28]/20 ring-4 ring-[#FF5C28]/15"
                 : "bg-[#EEF2F6] text-[#98A2B3]"
           }`}
         >
@@ -668,14 +682,22 @@ function ResignationProcessStep({
           )}
         </div>
 
-        <div className="mt-1.5 2xl:mt-2 min-w-0">
-          <p
-            className={`sibs-text-micro font-extrabold ${
-              done || active ? "text-[#042C51]" : "text-[#98A2B3]"
-            }`}
-          >
-            {number}. {title}
-          </p>
+        <div className="min-w-0 flex-1 pt-0.5 lg:mt-1.5 lg:pt-0 2xl:mt-2">
+          <div className="flex flex-wrap items-center gap-1.5 lg:justify-center">
+            <p
+              className={`sibs-text-micro font-extrabold ${
+                done || active ? "text-[#042C51]" : "text-[#98A2B3]"
+              }`}
+            >
+              {number}. {title}
+            </p>
+
+            {active && (
+              <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-1.5 py-0.2 text-[9px] font-extrabold uppercase tracking-wide text-[#FF5C28] lg:hidden">
+                Current
+              </span>
+            )}
+          </div>
 
           <p className="mt-0.5 sibs-text-micro font-semibold leading-snug text-[#667085]">
             {description}
@@ -773,10 +795,10 @@ function ResignationAnalytics({ data = [], loading = false }) {
           </span>
         </div>
 
-        <div className="relative mt-6">
-          <div className="absolute left-[8%] right-[8%] top-6 hidden h-0.5 bg-[#d9e2ec] lg:block" />
+        <div className="relative mt-5 sm:mt-6">
+          <div className="absolute left-[8%] right-[8%] top-4 hidden h-0.5 bg-[#d9e2ec] lg:block 2xl:top-4.5" />
 
-          <div className="relative grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="relative flex flex-col gap-4 sm:gap-5 lg:grid lg:grid-cols-5 lg:gap-5">
             <ResignationProcessStep
               number="1"
               icon={Mail}
@@ -817,6 +839,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
               title="Completed"
               description="Clearance and final resignation completed."
               done={analytics.completed > 0}
+              isLast
             />
           </div>
         </div>
@@ -877,23 +900,53 @@ function ResignationAnalytics({ data = [], loading = false }) {
 
       <div className="grid min-w-0 grid-cols-1 gap-5">
         <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-3.5 2xl:p-5`}>
-          <div className="mb-3 2xl:mb-4 flex items-center justify-between gap-3">
-            <div className="space-y-1">
-              <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
-                Resignation Trend
-              </h2>
+          {(() => {
+            const currentMonthValue =
+              analytics.trend[analytics.trend.length - 1]?.[1] || 0;
+            const prevMonthValue =
+              analytics.trend[analytics.trend.length - 2]?.[1] || 0;
+            const isTrendingUp = currentMonthValue > prevMonthValue;
+            const isTrendingDown = currentMonthValue < prevMonthValue;
 
-              <p className="sibs-text-xs font-semibold text-[#667085]">
-                Monthly filed resignations
-              </p>
-            </div>
+            return (
+              <div className="mb-3 2xl:mb-4 flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+                    Resignation Trend
+                  </h2>
 
-            <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center ${EDGE} bg-red-50 text-red-600`}
-            >
-              <TrendingDown size={19} />
-            </div>
-          </div>
+                  <p className="sibs-text-xs font-semibold text-[#667085]">
+                    Monthly filed resignations
+                  </p>
+                </div>
+
+                <div
+                  className={`flex h-9 w-9 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-xl ${
+                    isTrendingUp
+                      ? "bg-orange-50 text-[#FF5C28]"
+                      : isTrendingDown
+                        ? "bg-emerald-50 text-emerald-600"
+                        : "bg-slate-50 text-slate-500"
+                  }`}
+                  title={
+                    isTrendingUp
+                      ? "Trending upward compared to previous month"
+                      : isTrendingDown
+                        ? "Trending downward compared to previous month"
+                        : "Steady compared to previous month"
+                  }
+                >
+                  {isTrendingUp ? (
+                    <TrendingUp size={18} />
+                  ) : isTrendingDown ? (
+                    <TrendingDown size={18} />
+                  ) : (
+                    <Minus size={18} />
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {loading ? (
             <div
@@ -902,26 +955,26 @@ function ResignationAnalytics({ data = [], loading = false }) {
               <Loader2 size={26} className="animate-spin text-sibs-primary-1" />
             </div>
           ) : analytics.trend.length > 0 ? (
-            <div className="relative flex h-48 w-full flex-col justify-end">
+            <div className="relative flex w-full aspect-[500/180] max-h-[190px] items-center justify-center overflow-hidden">
               {(() => {
                 const width = 500;
-                const height = 150;
-                const padLeft = 32;
-                const padRight = 32;
-                const padTop = 28;
-                const padBottom = 32;
+                const height = 180;
+                const padLeft = 40;
+                const padRight = 28;
+                const padTop = 26;
+                const padBottom = 34;
                 const plotWidth = width - padLeft - padRight;
                 const plotHeight = height - padTop - padBottom;
                 const baselineY = height - padBottom;
+
+                // Scale domain with a minimum ceiling of 3 so a single resignation doesn't shoot to 100% height
+                const yCeiling = Math.max(analytics.maxTrendValue || 0, 3);
 
                 const points = analytics.trend.map(([label, value], idx) => {
                   const x =
                     padLeft +
                     (idx / Math.max(analytics.trend.length - 1, 1)) * plotWidth;
-                  const ratio =
-                    analytics.maxTrendValue > 0
-                      ? value / analytics.maxTrendValue
-                      : 0;
+                  const ratio = Math.max(0, Math.min(1, value / yCeiling));
                   const y = padTop + (1 - ratio) * plotHeight;
                   return { x, y, label, value };
                 });
@@ -932,8 +985,8 @@ function ResignationAnalytics({ data = [], loading = false }) {
                   for (let i = 0; i < points.length - 1; i++) {
                     const curr = points[i];
                     const next = points[i + 1];
-                    const cX = (curr.x + next.x) / 2;
-                    curvePath += ` C ${cX} ${curr.y}, ${cX} ${next.y}, ${next.x} ${next.y}`;
+                    const cpDist = (next.x - curr.x) * 0.45;
+                    curvePath += ` C ${curr.x + cpDist} ${curr.y}, ${next.x - cpDist} ${next.y}, ${next.x} ${next.y}`;
                   }
                 }
 
@@ -946,7 +999,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                   <svg
                     viewBox={`0 0 ${width} ${height}`}
                     className="h-full w-full overflow-visible"
-                    preserveAspectRatio="none"
+                    preserveAspectRatio="xMidYMid meet"
                   >
                     <defs>
                       <linearGradient
@@ -968,7 +1021,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       y1={padTop}
                       x2={width - padRight}
                       y2={padTop}
-                      stroke="#EAECF0"
+                      stroke="#F2F4F7"
                       strokeDasharray="3 3"
                       strokeWidth="1"
                     />
@@ -977,7 +1030,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       y1={padTop + plotHeight / 2}
                       x2={width - padRight}
                       y2={padTop + plotHeight / 2}
-                      stroke="#EAECF0"
+                      stroke="#F2F4F7"
                       strokeDasharray="3 3"
                       strokeWidth="1"
                     />
@@ -989,6 +1042,32 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       stroke="#E4E7EC"
                       strokeWidth="1.2"
                     />
+
+                    {/* Y-axis Ticks */}
+                    <text
+                      x={padLeft - 10}
+                      y={padTop + 3.5}
+                      textAnchor="end"
+                      className="text-[9px] font-bold fill-[#98A2B3]"
+                    >
+                      {yCeiling}
+                    </text>
+                    <text
+                      x={padLeft - 10}
+                      y={padTop + plotHeight / 2 + 3.5}
+                      textAnchor="end"
+                      className="text-[9px] font-bold fill-[#98A2B3]"
+                    >
+                      {Math.round(yCeiling / 2)}
+                    </text>
+                    <text
+                      x={padLeft - 10}
+                      y={baselineY + 3.5}
+                      textAnchor="end"
+                      className="text-[9px] font-bold fill-[#98A2B3]"
+                    >
+                      0
+                    </text>
 
                     {/* Gradient Area */}
                     {areaPath ? (
@@ -1005,7 +1084,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                         d={curvePath}
                         fill="none"
                         stroke="#042C51"
-                        strokeWidth="2.75"
+                        strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         className="transition-all duration-300"
@@ -1029,47 +1108,59 @@ function ResignationAnalytics({ data = [], loading = false }) {
                             className="opacity-0 transition-opacity group-hover:opacity-100"
                           />
 
-                          {/* Outer pulse for active points */}
+                          {/* Outer halo for active points */}
                           {!isZero ? (
                             <circle
                               cx={pt.x}
                               cy={pt.y}
-                              r="8"
+                              r="8.5"
                               fill="#FF5C28"
-                              fillOpacity="0.18"
+                              fillOpacity="0.16"
                               className="animate-pulse"
                             />
                           ) : null}
 
-                          {/* Center Dot */}
+                          {/* Center Marker Dot */}
                           <circle
                             cx={pt.x}
                             cy={pt.y}
-                            r={isZero ? "3.5" : "5"}
-                            fill={isZero ? "#98A2B3" : "#042C51"}
+                            r={isZero ? "3" : "4.5"}
+                            fill={isZero ? "#CBD5E1" : "#FF5C28"}
                             stroke="#FFFFFF"
-                            strokeWidth="2"
+                            strokeWidth={isZero ? "1.5" : "2"}
                             className="transition-transform duration-200 group-hover:scale-125"
                           />
 
-                          {/* Value Badge above Point */}
-                          <text
-                            x={pt.x}
-                            y={pt.y - 9}
-                            textAnchor="middle"
-                            className={`font-heading text-[11px] font-bold tabular-nums ${
-                              isZero ? "fill-[#98A2B3]" : "fill-sibs-navy"
-                            }`}
-                          >
-                            {pt.value}
-                          </text>
+                          {/* Active Value Badge Pill above Point */}
+                          {!isZero ? (
+                            <g className="transition-transform duration-200">
+                              <rect
+                                x={pt.x - 9}
+                                y={pt.y - 20}
+                                width="18"
+                                height="14"
+                                rx="4"
+                                fill="#042C51"
+                              />
+                              <text
+                                x={pt.x}
+                                y={pt.y - 10}
+                                textAnchor="middle"
+                                className="font-heading text-[9.5px] font-extrabold fill-white tabular-nums"
+                              >
+                                {pt.value}
+                              </text>
+                            </g>
+                          ) : null}
 
                           {/* Month Label below baseline */}
                           <text
                             x={pt.x}
-                            y={baselineY + 18}
+                            y={baselineY + 16}
                             textAnchor="middle"
-                            className="text-[10px] font-bold uppercase tracking-wider fill-[#667085]"
+                            className={`text-[10px] font-bold uppercase tracking-wider ${
+                              !isZero ? "fill-sibs-navy font-extrabold" : "fill-[#94A3B8]"
+                            }`}
                           >
                             {pt.label}
                           </text>
@@ -1293,108 +1384,98 @@ function ResignationTableCard({
           className="border-0 bg-transparent p-0 shadow-none"
         />
 
-        <div className="mt-5 hidden overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:block">
-          <div className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar">
-            <table className="w-full min-w-[1220px] border-collapse bg-white">
-              <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
-                <tr className="sibs-data-table-head-row">
-                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-left 2xl:px-4 2xl:py-2.5">
-                    Employee Name
-                  </th>
-                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-left 2xl:px-4 2xl:py-2.5">
-                    Filed By
-                  </th>
-                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
-                    Type
-                  </th>
-                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
-                    Resignation Date
-                  </th>
-                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
-                    Last Working Date
-                  </th>
-                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
-                    Status
-                  </th>
-                  <th className="sibs-data-table-th whitespace-nowrap px-3 py-2 text-left 2xl:px-4 2xl:py-2.5">
-                    Reason
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-[#F1F5F9]">
-                {loading ? (
-                  Array.from({ length: 7 }).map((_, index) => (
-                    <tr key={index}>
-                      <td
-                        colSpan={7}
-                        className="px-3 py-2 2xl:px-4 2xl:py-2.5"
-                      >
-                        <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E6ECF2]" />
-                      </td>
+        <ResponsiveTableShell
+          className="mt-5"
+          desktopContent={
+            <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+              <div className="max-h-[620px] overflow-auto sibs-scrollbar">
+                <table className="w-full min-w-[1380px] border-collapse bg-white text-left">
+                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                    <tr className="border-b border-[#E6ECF2]">
+                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[240px] whitespace-nowrap text-left">Employee Name</th>
+                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[190px] whitespace-nowrap text-left">Filed By</th>
+                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[110px] whitespace-nowrap text-center">Type</th>
+                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[140px] whitespace-nowrap text-center">Resignation Date</th>
+                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Last Working Date</th>
+                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Status</th>
+                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[220px] whitespace-nowrap text-left">Reason</th>
+                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[170px] whitespace-nowrap text-center">Attachments</th>
                     </tr>
-                  ))
-                ) : pageData.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-5 py-16 text-center sibs-text-sm font-bold text-[#667085]"
-                    >
-                      No resignation records found.
-                    </td>
-                  </tr>
-                ) : (
-                  pageData.map((item, index) => (
-                    <ResignationRow
+                  </thead>
+
+                  <tbody>
+                    {loading ? (
+                      Array.from({ length: 7 }).map((_, index) => (
+                        <tr key={index}>
+                          <td colSpan={8} className="border-t border-[#EEF2F6] px-4 py-3.5">
+                            <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E9EEF5]" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : pageData.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-5 py-16 text-center sibs-text-sm font-bold text-[#667085]">
+                          No resignation records found.
+                        </td>
+                      </tr>
+                    ) : (
+                      pageData.map((item, index) => (
+                        <ResignationRow
+                          key={item?.id || item?.resignationId || index}
+                          item={item}
+                          onView={() => onView(item)}
+                          onOpenAttachments={() => onOpenAttachments?.(item)}
+                        />
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+          mobileContent={
+            <div>
+              {loading ? (
+                <DataCard.Skeleton count={4} />
+              ) : pageData.length === 0 ? (
+                <DataCard.Empty
+                  icon={<FileText size={22} />}
+                  title="No resignation records found"
+                  description="Adjust the search or filter criteria to see results."
+                />
+              ) : (
+                <div className="space-y-3">
+                  {pageData.map((item, index) => (
+                    <ResignationMobileCard
                       key={item?.id || item?.resignationId || index}
                       item={item}
                       index={index}
                       onView={() => onView(item)}
+                      onOpenAttachments={() => onOpenAttachments?.(item)}
                     />
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="block lg:hidden">
-          {loading ? (
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center sibs-text-sm font-bold text-[#667085]">
-              <Loader2 size={28} className="mx-auto mb-3 animate-spin text-[#042C51]" />
-              Loading resignations...
+                  ))}
+                </div>
+              )}
             </div>
-          ) : pageData.length === 0 ? (
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center sibs-text-sm font-bold text-[#667085]">
-              No resignation records found.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {pageData.map((item, index) => (
-                <ResignationMobileCard
-                  key={item?.id || item?.resignationId || index}
-                  item={item}
-                  onView={() => onView(item)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <PaginationTable
-          loading={loading}
-          showSearch={false}
-          showPagination
-          showCount
-          currentPage={currentPage}
-          totalPages={totalPages}
-          loadedCount={pageData.length}
-          totalRecords={data.length}
-          recordLabel="resignation records"
-          onPrevious={handlePreviousPage}
-          onNext={handleNextPage}
-          className="border-0 bg-transparent p-0 shadow-none"
+          }
         />
+
+        <div className="mt-4">
+          <PaginationTable
+            loading={loading}
+            showSearch={false}
+            showPagination
+            showCount
+            currentPage={currentPage}
+            totalPages={totalPages}
+            loadedCount={pageData.length}
+            totalRecords={data.length}
+            recordLabel="resignation records"
+            onPrevious={handlePreviousPage}
+            onNext={handleNextPage}
+            className="border-0 bg-transparent p-0 shadow-none"
+          />
+        </div>
       </div>
     </section>
   );
@@ -1532,45 +1613,64 @@ function ResignationRow({ item, index = 0, onView }) {
   );
 }
 
-function ResignationMobileCard({ item, onView }) {
+function ResignationMobileCard({ item, index = 0, onView, onOpenAttachments }) {
   const status = getResignationStatus(item);
+  const attachmentCount = getAttachmentCount(item);
+  const reason = item?.reason || item?.remarks || "";
 
   return (
-    <article
-      role="button"
-      tabIndex={0}
+    <DataCard
       onClick={onView}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onView?.();
-        }
-      }}
+      index={index}
       title="Open resignation details"
-      className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <ProfileAvatar item={item} size="lg" />
-          <div className="min-w-0">
-            <h3 className="font-heading text-sm font-bold leading-tight text-[#042C51]">{getFullName(item)}</h3>
-            <p className="mt-1 sibs-text-xs font-semibold text-[#667085]"><span className="font-extrabold text-[#FF5C28]">{getEmployeeSibsId(item)}</span> · {getEmployeeDepartment(item)}</p>
-          </div>
+      <DataCard.Header
+        avatar={<ProfileAvatar item={item} size="md" />}
+        title={getFullName(item)}
+        subtitle={
+          <span className="truncate">
+            <span className="font-extrabold text-[#FF5C28]">{getEmployeeSibsId(item)}</span> · {getEmployeeDepartment(item)}
+          </span>
+        }
+        badge={
+          <span className={`inline-flex shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(status)}`}>
+            {renderStatusIcon(status, 11)}
+            {status}
+          </span>
+        }
+      />
+
+      <DataCard.Metrics cols={2} className="mt-3">
+        <DataCard.MetricItem label="Type" value={item?.resignationType || item?.type || "—"} />
+        <DataCard.MetricItem label="Date" value={formatDate(item?.resignationDate || getItemDate(item))} />
+        <DataCard.MetricItem label="Last Working" value={formatDate(item?.lastWorkingDate || item?.last_working_date)} />
+        <DataCard.MetricItem label="Filed By" value={item?.filedByName || item?.supervisorName || "TL / OM"} />
+      </DataCard.Metrics>
+
+      {reason ? (
+        <div className="mt-2.5 rounded-lg border border-slate-100 bg-[#F8FAFC] px-2.5 py-1.5 text-left">
+          <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Reason</p>
+          <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-[#344054]">
+            {reason}
+          </p>
         </div>
-        <span className={`inline-flex min-w-[118px] shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getStatusClass(status)}`}>
-          {renderStatusIcon(status, 12)}
-          {status}
-        </span>
-      </div>
+      ) : null}
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <MobileMetric label="Type" value={item?.resignationType || item?.type} />
-        <MobileMetric label="Date" value={formatDate(item?.resignationDate || getItemDate(item))} />
-        <MobileMetric label="Last Working" value={formatDate(item?.lastWorkingDate || item?.last_working_date)} />
-        <MobileMetric label="Filed By" value={item?.filedByName || item?.supervisorName || "TL / OM"} />
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenAttachments?.();
+          }}
+          disabled={attachmentCount === 0}
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
+        >
+          <Paperclip size={14} />
+          {getAttachmentCountLabel(item)}
+        </button>
       </div>
-
-    </article>
+    </DataCard>
   );
 }
 
@@ -2303,49 +2403,39 @@ export default function ResignationManagementPage() {
         className="sibs-dashboard-main-wide"
       >
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
-          <section
-            className="sibs-page-header-in sibs-page-card-in relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
+          <PageHeaderHero
+            kicker={
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
+                  Core HR View
+                </span>
 
-            <div className="mt-0.5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    Core HR View
+                {isViewOnly && (
+                  <span className="inline-flex rounded border border-slate-200 bg-slate-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#667085]">
+                    Read-Only Access
                   </span>
-
-                  {isViewOnly && (
-                    <span className="inline-flex rounded border border-slate-200 bg-slate-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#667085]">
-                      Read-Only Access
-                    </span>
-                  )}
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  Resignation Management
-                </h1>
-
-                <p className="max-w-3xl sibs-text-sm font-semibold leading-relaxed text-[#667085]">
-                  {isViewOnly
-                    ? "View and monitor resignation requests. Approval decisions remain in Approval Request."
-                    : "File, monitor, analyze, and track resignation records. Approval decisions remain in Approval Request."}
-                </p>
+                )}
               </div>
-
-              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+            }
+            title="Resignation Management"
+            description={
+              isViewOnly
+                ? "View and monitor resignation requests. Approval decisions remain in Approval Request."
+                : "File, monitor, analyze, and track resignation records. Approval decisions remain in Approval Request."
+            }
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={handleRefresh}
                   disabled={resignationLoading}
                   title="Refresh Resignation Data"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  className="sibs-btn-icon"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      resignationLoading ? "animate-spin text-[#FF5C28]" : ""
+                      resignationLoading ? "animate-spin text-sibs-orange" : ""
                     }`}
                   />
                 </button>
@@ -2354,15 +2444,15 @@ export default function ResignationManagementPage() {
                   <button
                     type="button"
                     onClick={handleOpenAddResignation}
-                    className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap rounded-lg bg-sibs-orange px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98]"
+                    className="sibs-btn-primary max-sm:flex-1"
                   >
                     <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                     New Resignation
                   </button>
                 )}
-              </div>
-            </div>
-          </section>
+              </>
+            }
+          />
 
           <div className="relative z-[20] sibs-profile-tab-panel">
             <ResignationSummaryCards

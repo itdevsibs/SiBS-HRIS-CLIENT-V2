@@ -23,6 +23,8 @@ import {
   StatusBadge,
   TablePagination,
   TableEmptyRow,
+  DataCard,
+  ResponsiveTableShell,
 } from "@/components/ui";
 
 import {
@@ -941,7 +943,7 @@ export default function UserManagementPage() {
                   <button
                     type="button"
                     onClick={openAddModal}
-                    className="sibs-btn-primary"
+                    className="sibs-btn-primary max-sm:flex-1"
                   >
                     <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                     Add User
@@ -1006,82 +1008,83 @@ export default function UserManagementPage() {
               </div>
             </div>
 
-            <div className="hidden md:block">
-              <div ref={tableScrollRef} className="max-h-[500px] overflow-auto">
-                <table className="w-full min-w-[1300px] text-sm">
-                  <thead className="sticky top-0 z-10 sibs-table-head">
-                    <tr>
-                      <th className="sibs-table-th">SiBS ID</th>
-                      <th className="sibs-table-th">Full Name</th>
-                      <th className="sibs-table-th">Email</th>
-                      <th className="sibs-table-th">Role</th>
-                      <th className="sibs-table-th">Admin Access</th>
-                      <th className="sibs-table-th">Assigned Accounts</th>
-                      <th className="sibs-table-th">Department</th>
-                      <th className="sibs-table-th">Status</th>
-                      <th className="sibs-table-th">Actions</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {pageLoading ? (
+            <ResponsiveTableShell
+              desktopContent={
+                <div ref={tableScrollRef} className="max-h-[500px] overflow-auto">
+                  <table className="w-full min-w-[1300px] text-sm">
+                    <thead className="sticky top-0 z-10 sibs-table-head">
                       <tr>
-                        <td
-                          colSpan="9"
-                          className="p-6 text-center text-sm font-semibold text-sibs-muted"
-                        >
-                          Loading users...
-                        </td>
+                        <th className="sibs-table-th">SiBS ID</th>
+                        <th className="sibs-table-th">Full Name</th>
+                        <th className="sibs-table-th">Email</th>
+                        <th className="sibs-table-th">Role</th>
+                        <th className="sibs-table-th">Admin Access</th>
+                        <th className="sibs-table-th">Assigned Accounts</th>
+                        <th className="sibs-table-th">Department</th>
+                        <th className="sibs-table-th">Status</th>
+                        <th className="sibs-table-th">Actions</th>
                       </tr>
-                    ) : filteredUsers.length === 0 ? (
-                      <TableEmptyRow
-                        colSpan={9}
-                        title="No users found"
-                        description="No user accounts match your current keyword."
-                      />
-                    ) : (
-                      filteredUsers.map((item) => (
-                        <UserTableRow
+                    </thead>
+
+                    <tbody>
+                      {pageLoading ? (
+                        <tr>
+                          <td
+                            colSpan="9"
+                            className="p-6 text-center text-sm font-semibold text-sibs-muted"
+                          >
+                            Loading users...
+                          </td>
+                        </tr>
+                      ) : filteredUsers.length === 0 ? (
+                        <TableEmptyRow
+                          colSpan={9}
+                          title="No users found"
+                          description="No user accounts match your current keyword."
+                        />
+                      ) : (
+                        filteredUsers.map((item) => (
+                          <UserTableRow
+                            key={item.id}
+                            item={item}
+                            openActionId={openActionId}
+                            actionRef={actionRef}
+                            handleToggleActionDropdown={
+                              handleToggleActionDropdown
+                            }
+                          />
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              }
+              mobileContent={
+                <div className="p-3">
+                  {pageLoading ? (
+                    <DataCard.Skeleton count={4} />
+                  ) : filteredUsers.length === 0 ? (
+                    <DataCard.Empty
+                      title="No users found"
+                      description="No user accounts match your current keyword."
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      {filteredUsers.map((item, index) => (
+                        <UserMobileCard
                           key={item.id}
                           item={item}
+                          index={index}
                           openActionId={openActionId}
                           actionRef={actionRef}
-                          handleToggleActionDropdown={
-                            handleToggleActionDropdown
-                          }
+                          handleToggleActionDropdown={handleToggleActionDropdown}
                         />
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="block md:hidden">
-              {pageLoading ? (
-                <div className="p-6 text-center text-sm font-semibold text-sibs-muted">
-                  Loading users...
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ) : filteredUsers.length === 0 ? (
-                <TableEmptyRow
-                  colSpan={9}
-                  title="No users found"
-                  description="No user accounts match your current keyword."
-                />
-              ) : (
-                <div className="divide-y divide-[#F1F5F9]">
-                  {filteredUsers.map((item) => (
-                    <UserMobileCard
-                      key={item.id}
-                      item={item}
-                      openActionId={openActionId}
-                      actionRef={actionRef}
-                      handleToggleActionDropdown={handleToggleActionDropdown}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+              }
+            />
 
             <div className="px-4 pb-3">
               <TablePagination
@@ -1257,62 +1260,52 @@ function UserTableRow({
 
 function UserMobileCard({
   item,
+  index = 0,
   openActionId,
   actionRef,
   handleToggleActionDropdown,
 }) {
   return (
-    <div className="bg-white p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-sibs-tertiary-5">
-            SiBS ID: {item.sibsId || "-"}
-          </p>
-
-          <h3 className="mt-1 break-words text-base font-bold text-sibs-primary-1">
-            {getFullName(item)}
-          </h3>
-
-          <p className="mt-1 break-words text-xs text-sibs-tertiary-5">
-            {item.email || "-"}
-          </p>
-        </div>
-
-        <div
-          className="relative shrink-0"
-          ref={openActionId === item.id ? actionRef : null}
-        >
-          <button
-            type="button"
-            onClick={(e) => handleToggleActionDropdown(e, item)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sibs-tertiary-8 text-sibs-primary-1 transition hover:bg-gray-50"
+    <DataCard index={index}>
+      <DataCard.Header
+        kicker={item.sibsId ? `SiBS ID: ${item.sibsId}` : undefined}
+        title={getFullName(item)}
+        subtitle={item.email || "—"}
+        action={
+          <div
+            className="relative shrink-0"
+            ref={openActionId === item.id ? actionRef : null}
           >
-            <MoreHorizontal size={17} />
-          </button>
-        </div>
-      </div>
+            <button
+              type="button"
+              onClick={(e) => handleToggleActionDropdown(e, item)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]"
+            >
+              <MoreHorizontal size={17} />
+            </button>
+          </div>
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-2 text-sm">
+      <div className="mt-3 grid grid-cols-1 gap-2 text-xs">
         <InfoRow label="Role" value={formatRole(item.role)} />
 
         <div className="flex items-center justify-between gap-3">
-          <span className="text-xs text-sibs-tertiary-5">Admin Access</span>
-
-          <span className="max-w-[170px] rounded-full bg-blue-100 px-3 py-1 text-right text-xs font-medium text-blue-700">
+          <span className="text-xs font-semibold text-[#667085]">Admin Access</span>
+          <span className="max-w-[170px] rounded-full bg-blue-50 px-2.5 py-0.5 text-right text-[11px] font-bold text-blue-700 border border-blue-200/60">
             {formatAdminAccess(item.adminAccess)}
           </span>
         </div>
 
         <InfoRow label="Accounts" value={formatAssignedAccounts(item)} />
+        <InfoRow label="Department" value={item.department || "—"} />
 
-        <InfoRow label="Department" value={item.department || "-"} />
-
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xs text-sibs-tertiary-5">Status</span>
+        <div className="flex items-center justify-between gap-3 pt-2 border-t border-dashed border-[#E6ECF2]">
+          <span className="text-xs font-semibold text-[#667085]">Status</span>
           <StatusBadge status={item.status} />
         </div>
       </div>
-    </div>
+    </DataCard>
   );
 }
 
