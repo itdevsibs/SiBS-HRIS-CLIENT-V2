@@ -20,6 +20,14 @@ import { formatDate } from "@/components/layout/FormatDateTime";
 const PAGE_LIMIT = 15;
 const LATE_GRACE_MS = 60 * 1000;
 
+const AVATAR_TONES = [
+  "border-orange-100 bg-orange-50 text-[#FF5C28]",
+  "border-emerald-100 bg-emerald-50 text-emerald-700",
+  "border-blue-100 bg-blue-50 text-[#042C51]",
+  "border-pink-100 bg-pink-50 text-pink-700",
+  "border-violet-100 bg-violet-50 text-violet-700",
+];
+
 function formatNumber(value) {
   if (value === "..." || value === null || value === undefined) return "...";
 
@@ -255,26 +263,78 @@ function formatEmployeeName(item) {
   return String(item?.gy_emp_fullname || "").trim().toUpperCase() || "—";
 }
 
-function getEmployeeInitials(item, employeeName = "") {
-  const firstName = String(item?.gy_emp_fname || "").trim();
-  const lastName = String(item?.gy_emp_lname || "").trim();
+function getCleanValue(...values) {
+  const match = values.find((value) => {
+    return value !== undefined && value !== null && String(value).trim() !== "";
+  });
 
-  if (firstName || lastName) {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "?";
+  return match === undefined || match === null ? "" : String(match).trim();
+}
+
+function getAvatarNameParts(item = {}) {
+  return {
+    firstName: getCleanValue(
+      item.firstName,
+      item.first_name,
+      item.gy_emp_fname,
+    ),
+    middleName: getCleanValue(
+      item.middleName,
+      item.middle_name,
+      item.gy_emp_mname,
+    ),
+    lastName: getCleanValue(
+      item.lastName,
+      item.last_name,
+      item.gy_emp_lname,
+    ),
+  };
+}
+
+function getAvatarEmployeeName(item = {}) {
+  const { firstName, middleName, lastName } = getAvatarNameParts(item);
+
+  if (firstName || middleName || lastName) {
+    const givenNames = [firstName, middleName].filter(Boolean).join(" ");
+
+    return [lastName ? lastName.toUpperCase() : "", givenNames]
+      .filter(Boolean)
+      .join(lastName && givenNames ? ", " : "")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
-  const normalizedName = String(employeeName || item?.gy_emp_fullname || "")
-    .replace(/,/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    getCleanValue(
+      item.fullName,
+      item.full_name,
+      item.gy_emp_fullname,
+      item.name,
+    ) || "Unnamed Employee"
+  );
+}
 
-  if (!normalizedName || normalizedName === "—") return "?";
+function getEmployeeInitials(item = {}) {
+  const { firstName, lastName } = getAvatarNameParts(item);
 
-  const parts = normalizedName.split(" ").filter(Boolean);
+  if (firstName || lastName) {
+    return `${firstName.slice(0, 1)}${lastName.slice(0, 1)}`.toUpperCase();
+  }
 
-  return `${parts[0]?.charAt(0) || ""}${
-    parts.length > 1 ? parts[parts.length - 1]?.charAt(0) || "" : ""
-  }`.toUpperCase() || "?";
+  const tokens = getAvatarEmployeeName(item)
+    .replace(",", " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return `${tokens[0]?.[0] || "E"}${tokens[1]?.[0] || ""}`.toUpperCase();
+}
+
+function getAvatarTone(item = {}) {
+  const seed = getAvatarEmployeeName(item)
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+
+  return AVATAR_TONES[seed % AVATAR_TONES.length];
 }
 
 function getAttendanceAvatarPreviewPosition(element) {
@@ -292,7 +352,7 @@ function getAttendanceAvatarPreviewPosition(element) {
   };
 }
 
-function AttendanceEmployeeAvatar({ item, employeeName, className = "h-8 w-8" }) {
+function AttendanceEmployeeAvatar({ item, employeeName, className = "h-9 w-9" }) {
   const profilePictureUrl = String(
     item?.profilePictureUrl || item?.profile_picture_url || "",
   ).trim();
@@ -302,7 +362,8 @@ function AttendanceEmployeeAvatar({ item, employeeName, className = "h-8 w-8" })
   const avatarRef = useRef(null);
   const showImage =
     Boolean(profilePictureUrl) && failedImageUrl !== profilePictureUrl;
-  const initials = getEmployeeInitials(item, employeeName);
+  const initials = getEmployeeInitials(item);
+  const avatarTone = getAvatarTone(item);
 
   const showPreview = () => {
     setPreviewPosition(getAttendanceAvatarPreviewPosition(avatarRef.current));
@@ -344,7 +405,9 @@ function AttendanceEmployeeAvatar({ item, employeeName, className = "h-8 w-8" })
             }}
             aria-hidden="true"
           >
-            <span className="relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl bg-[#EEF5FF] text-[24px] font-extrabold text-[#174A7E]">
+            <span
+              className={`relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border text-[24px] font-extrabold ${avatarTone}`}
+            >
               <span>{initials}</span>
               {showImage ? (
                 <img
@@ -373,7 +436,7 @@ function AttendanceEmployeeAvatar({ item, employeeName, className = "h-8 w-8" })
         onBlur={hidePreview}
       >
         <span
-          className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E6F2] bg-[#EEF5FF] text-[10px] font-extrabold text-[#174A7E] ${className}`}
+          className={`relative inline-flex ${className} shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs font-extrabold shadow-inner ${avatarTone}`}
         >
           <span aria-hidden="true">{initials}</span>
           {showImage ? (
@@ -966,6 +1029,16 @@ export default function AttendanceTable() {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
   }, [setLoading, setPagination]);
+
+  // Match the Employee Directory search behavior: every time the Attendance
+  // page/table is entered again, do not keep the previous search text/query.
+  useEffect(() => {
+    setSearch?.("");
+    setSearchInput?.("");
+
+    // This intentionally runs once for each AttendanceTable mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const safePagination = pagination || {
     currentPage: page || 1,
@@ -1781,7 +1854,7 @@ export default function AttendanceTable() {
                               <AttendanceEmployeeAvatar
                                 item={item}
                                 employeeName={employeeName}
-                                className="h-10 w-10"
+                                className="h-11 w-11"
                               />
                             ) : null}
 
