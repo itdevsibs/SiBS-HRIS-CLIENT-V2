@@ -197,7 +197,7 @@ export default function UserDropdown({
       }
 
       if (response.data?.user) {
-        setUser(response.data.user);
+        setUser(response.data.user, response.data.expiresAt);
       }
 
       setAdminLogin(false);

@@ -37,21 +37,20 @@ export function readStoredExpiry() {
     localStore?.getItem(PERSISTENT_EXPIRY_KEY),
   );
 
-  const effectiveExpiry = Math.max(sessionExpiry, sharedExpiry);
+  /*
+   * The JWT cookie is shared across tabs, so the shared localStorage value is
+   * authoritative whenever it exists. This is important when a newer login
+   * has a shorter expiry than a stale tab-local value.
+   */
+  const effectiveExpiry = sharedExpiry || sessionExpiry;
 
   if (!effectiveExpiry) return 0;
 
-  /*
-   * sessionStorage is tab-scoped, while localStorage is shared by tabs on
-   * the same origin. Mirror the newest inactivity deadline so a sidebar
-   * link opened in a new tab can validate the already-authenticated cookie
-   * instead of treating the missing tab-local value as an expired session.
-   */
   if (sessionExpiry !== effectiveExpiry) {
     sessionStore?.setItem(SESSION_EXPIRY_KEY, String(effectiveExpiry));
   }
 
-  if (sharedExpiry !== effectiveExpiry) {
+  if (!sharedExpiry && sessionExpiry) {
     localStore?.setItem(PERSISTENT_EXPIRY_KEY, String(effectiveExpiry));
   }
 
@@ -136,7 +135,7 @@ export function readCachedAuthSession(now = Date.now()) {
 export function shouldEndSessionAfterUserFetchError(error) {
   const status = Number(error?.response?.status || 0);
 
-  // A 401 can be returned by an individual endpoint even while the cached
-  // HRIS session is still valid. Do not clear the token/session for it.
-  return status === 403;
+  // Authentication failures mean the current HRIS session is no longer
+  // usable. In particular, an expired JWT is returned as 401 by the server.
+  return status === 401 || status === 403;
 }

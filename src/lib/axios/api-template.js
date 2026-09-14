@@ -211,14 +211,11 @@ api.interceptors.response.use(
       isPublicPath(pathname) ||
       shouldIgnoreAuthRedirect(requestUrl);
 
-    // A 401 is an API authorization error, not proof that the HRIS session
-    // itself expired. Preserve the current token/session and let the caller
-    // display the API error instead of forcing a logout or login redirect.
+    // An authenticated private request returning 401 means the current JWT
+    // is no longer usable (for example, it expired). End the client session
+    // immediately so the browser returns to the login page.
     if (status === 401 && !ignoreRedirect) {
-      console.warn(
-        "Unauthorized API response; keeping the current session:",
-        error?.response?.data?.message || error?.message,
-      );
+      void handleLogout(true);
     }
 
     return Promise.reject(error);

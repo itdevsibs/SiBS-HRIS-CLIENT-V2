@@ -11,6 +11,7 @@ import {
 import api from "../../../lib/axios/api-template";
 
 import DetailRow from "../../recruitment/offers/common/DetailRow";
+import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
 
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import { formatCurrency } from "../../../lib/utils/offers/offerFormatters";
@@ -122,6 +123,11 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   const [approvalAction, setApprovalAction] = useState("");
   const [loadedOfferVersions, setLoadedOfferVersions] = useState([]);
   const [loadingOfferHistory, setLoadingOfferHistory] = useState(false);
+  const [employmentOfferPreview, setEmploymentOfferPreview] = useState({
+    open: false,
+    filename: "",
+    requestUrl: "",
+  });
 
   useEffect(() => {
     if (!offer) return;
@@ -443,10 +449,11 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   }
 
   return (
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4 font-jakarta"
-      onClick={handleClose}
-    >
+    <>
+      <div
+        className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4 font-jakarta"
+        onClick={handleClose}
+      >
       <div
         className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white font-jakarta shadow-2xl"
         onClick={(event) => event.stopPropagation()}
@@ -724,13 +731,23 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                               offer.candidate_pipeline_id ||
                               offer.dbId ||
                               offer.id;
-                            const baseUrl = cleanText(api.defaults?.baseURL).replace(/\/$/, "");
-                            const pdfUrl = `${baseUrl}/api/candidate-pipeline/${encodeURIComponent(
-                              pipelineId,
-                            )}/offer-versions/${encodeURIComponent(
-                              version.versionNumber,
-                            )}/pdf`;
-                            window.open(pdfUrl, "_blank", "noopener,noreferrer");
+
+                            if (!pipelineId || !version.versionNumber) {
+                              return;
+                            }
+
+                            setEmploymentOfferPreview({
+                              open: true,
+                              filename:
+                                version.pdfFilename ||
+                                version.pdf_filename ||
+                                `Employment Offer Version ${version.versionNumber}.pdf`,
+                              requestUrl: `/api/candidate-pipeline/${encodeURIComponent(
+                                pipelineId,
+                              )}/offer-versions/${encodeURIComponent(
+                                version.versionNumber,
+                              )}/pdf`,
+                            });
                           }}
                           className="mt-3 inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-blue-100"
                         >
@@ -922,5 +939,19 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
         </div>
       </div>
     </div>
+
+      <EmploymentOfferPdfPreviewModal
+        open={employmentOfferPreview.open}
+        filename={employmentOfferPreview.filename}
+        requestUrl={employmentOfferPreview.requestUrl}
+        onClose={() =>
+          setEmploymentOfferPreview({
+            open: false,
+            filename: "",
+            requestUrl: "",
+          })
+        }
+      />
+    </>
   );
 }

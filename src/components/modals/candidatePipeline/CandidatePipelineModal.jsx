@@ -85,6 +85,7 @@ import StatusModal from "../StatusModal";
 import RevisedOfferModal from "./RevisedOfferModal";
 import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
 import api from "../../../lib/axios/api-template";
+import { getFinalInterviewForms } from "../../../lib/axios/getRecruitmentSettings";
 import {
   findMatchingFinalInterviewForm,
   getCandidateAppliedPositionId,
@@ -9961,21 +9962,65 @@ async function handleConfirmScheduleNho() {
         latestCandidate.final_interview_form_id ||
         "";
 
-      const matchedFinalInterviewForm =
+      const concretePreferredFinalInterviewFormId =
+        cleanText(preferredFinalInterviewFormId) &&
+        cleanText(preferredFinalInterviewFormId) !==
+          "default-job-evaluation"
+          ? cleanText(preferredFinalInterviewFormId)
+          : "";
+
+      const formsResponse = await getFinalInterviewForms();
+
+      const databaseFinalInterviewForms = Array.isArray(
+        formsResponse?.data,
+      )
+        ? formsResponse.data
+        : Array.isArray(formsResponse?.data?.data)
+          ? formsResponse.data.data
+          : Array.isArray(formsResponse?.finalInterviewForms)
+            ? formsResponse.finalInterviewForms
+            : [];
+
+      const databaseMatchedFinalInterviewForm =
         findMatchingFinalInterviewForm({
-          preferredFormId: preferredFinalInterviewFormId,
+          forms: databaseFinalInterviewForms,
+          preferredFormId: concretePreferredFinalInterviewFormId,
           positionId: candidatePositionId,
           positionTitle: candidatePositionTitle,
+          requireConfiguredQuestions: true,
         });
+
+      const matchedFinalInterviewForm =
+        databaseMatchedFinalInterviewForm ||
+        findMatchingFinalInterviewForm({
+          preferredFormId: concretePreferredFinalInterviewFormId,
+          positionId: candidatePositionId,
+          positionTitle: candidatePositionTitle,
+          requireConfiguredQuestions: true,
+        });
+
+      const resolvedPositionId =
+        getFinalInterviewFormPositionId(
+          matchedFinalInterviewForm,
+        ) ||
+        candidatePositionId ||
+        "";
+
+      const resolvedPositionTitle =
+        getFinalInterviewFormPositionTitle(
+          matchedFinalInterviewForm,
+        ) ||
+        candidatePositionTitle ||
+        "";
 
       const resolvedTemplateFormId =
         getFinalInterviewFormId(
           matchedFinalInterviewForm,
         ) ||
-        preferredFinalInterviewFormId ||
+        concretePreferredFinalInterviewFormId ||
         (
-          candidatePositionId
-            ? `final-interview-${candidatePositionId}`
+          resolvedPositionId
+            ? `final-interview-${resolvedPositionId}`
             : "default-job-evaluation"
         );
 
@@ -10008,11 +10053,11 @@ async function handleConfirmScheduleNho() {
             latestCandidate.applicationId ||
             latestCandidate.application_id ||
             "",
-          positionId: candidatePositionId || "",
-          positionTitle: candidatePositionTitle || "",
+          positionId: resolvedPositionId,
+          positionTitle: resolvedPositionTitle,
           templateFormId: resolvedTemplateFormId,
           formId:
-            preferredFinalInterviewFormId ||
+            concretePreferredFinalInterviewFormId ||
             resolvedTemplateFormId,
           formName:
             matchedFinalInterviewForm?.formName ||

@@ -276,6 +276,7 @@ export default function OffersPage() {
     ConfirmationDialog,
     approvalUsers = [],
     approvalUsersLoading = false,
+    offerList = [],
     filteredOffers = [],
     isProcessingOfferDecision = false,
     refreshOffers,
@@ -330,14 +331,22 @@ export default function OffersPage() {
   const openedRouteOfferKeyRef = useRef("");
 
   const visibleOffers = useMemo(() => {
-    const offers = Array.isArray(filteredOffers) ? filteredOffers : [];
+    /*
+     * Normal Offers-page browsing must continue to respect the user's current
+     * search/status/account filters. A direct email link is different: it must
+     * be able to resolve the requested offer even when those page filters have
+     * not finished initializing yet or currently exclude the record.
+     */
+    if (!routeCandidate) {
+      return Array.isArray(filteredOffers) ? filteredOffers : [];
+    }
 
-    if (!routeCandidate) return offers;
+    const offers = Array.isArray(offerList) ? offerList : [];
 
     return offers.filter((offer) =>
       offerMatchesRouteCandidate(offer, routeCandidate),
     );
-  }, [filteredOffers, routeCandidate]);
+  }, [filteredOffers, offerList, routeCandidate]);
 
   function closeStatusModal() {
     setStatusModal((previous) => ({
@@ -390,10 +399,14 @@ export default function OffersPage() {
       return;
     }
 
-    const offers =
-      Array.isArray(filteredOffers)
-        ? filteredOffers
-        : [];
+    /*
+     * Resolve email deep links from the complete offer collection. The backend
+     * sends the employment-offer database ID in `offerId`, while the displayed
+     * offer can use a separate OFF-* identifier, so offerMatchesRouteCandidate
+     * intentionally falls back to the candidate/application identity supplied
+     * in the same signed-in redirect URL.
+     */
+    const offers = Array.isArray(offerList) ? offerList : [];
 
     if (!offers.length) {
       return;
@@ -440,7 +453,7 @@ export default function OffersPage() {
     setSelectedOffer(matchedOffer);
     scrollToTop("auto");
   }, [
-    filteredOffers,
+    offerList,
     routeCandidate,
     routeCandidateKey,
     setSelectedOffer,

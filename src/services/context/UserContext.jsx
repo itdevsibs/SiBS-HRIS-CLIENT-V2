@@ -30,17 +30,11 @@ import {
 const UserContext = createContext(null);
 
 const USER_REQUEST_TIMEOUT = 15_000;
-const SESSION_REFRESH_TIMEOUT = 15_000;
 const ACTIVITY_THROTTLE_MS = 1_000;
-const SERVER_REFRESH_RETRY_MAX_MS = 1_000;
 
 /*
- * The inactivity deadline and the JWT/cookie deadline are different values.
- *
- * - accessTokenExpiresAt/token_expires_at: last user activity + idle duration
- * - serverTokenExpiresAt/server_token_expires_at: actual JWT expiration
- *
- * Keeping these values separate is required for sliding inactivity sessions.
+ * The server JWT/cookie expiration is the hard HRIS session deadline.
+ * Client activity may validate the deadline, but it must never extend it.
  */
 const SERVER_TOKEN_EXPIRY_SESSION_KEY = "serverTokenExpiresAt";
 const SERVER_TOKEN_EXPIRY_LOCAL_KEY = "server_token_expires_at";
@@ -158,29 +152,6 @@ function clearStoredIdleDuration() {
   getSessionStorage()?.removeItem(SESSION_IDLE_DURATION_SESSION_KEY);
 
   getLocalStorage()?.removeItem(SESSION_IDLE_DURATION_LOCAL_KEY);
-}
-
-function getServerRefreshLeadMs(remainingMs) {
-  const remaining = Math.max(0, Number(remainingMs) || 0);
-
-  /*
-   * Short test tokens, such as 10s, refresh at roughly 60% of their life.
-   * A 10-second token therefore refreshes after about 6 seconds.
-   */
-  if (remaining <= 30_000) {
-    return Math.min(
-      Math.max(3_000, Math.floor(remaining * 0.4)),
-      Math.max(0, remaining - 500),
-    );
-  }
-
-  /*
-   * Normal one-hour tokens refresh five minutes before expiration.
-   */
-  return Math.min(
-    5 * 60 * 1_000,
-    Math.max(30_000, Math.floor(remaining * 0.1)),
-  );
 }
 
 export function UserProvider({ children }) {
@@ -418,12 +389,10 @@ export function UserProvider({ children }) {
         return false;
       }
 
-      if (!validateInactivityExpiry()) {
-        return false;
-      }
-
       const expiresAt =
-        normalizeExpiry(expiresAtValue) || readStoredServerTokenExpiry();
+        normalizeExpiry(expiresAtValue) ||
+        readStoredServerTokenExpiry() ||
+        readStoredExpiry();
 
       if (!expiresAt) {
         return false;
@@ -431,198 +400,47 @@ export function UserProvider({ children }) {
 
       writeStoredServerTokenExpiry(expiresAt);
 
-      const remaining = expiresAt - Date.now();
-
-      if (remaining <= 0) {
+      if (expiresAt <= Date.now()) {
         void forceLogout();
         return false;
       }
 
-      const refreshLead = getServerRefreshLeadMs(remaining);
-      const delay = Math.max(0, remaining - refreshLead);
-
-      serverRefreshTimerRef.current = window.setTimeout(() => {
-        serverRefreshTimerRef.current = null;
-
-        void refreshSessionRef.current?.({
-          reason: "server-token-expiring",
-        });
-      }, delay);
-
+      // No background refresh: startLogoutTimer owns the hard JWT deadline.
       return true;
     },
-    [clearServerRefreshTimer, forceLogout, validateInactivityExpiry],
+    [clearServerRefreshTimer, forceLogout],
   );
 
-  const scheduleServerRefreshRetry = useCallback(() => {
-    clearServerRefreshTimer();
-
-    const expiresAt = readStoredServerTokenExpiry();
-    const remaining = expiresAt - Date.now();
-
-    if (remaining <= 0) {
-      void forceLogout();
-      return false;
-    }
-
-    const retryDelay = Math.min(
-      SERVER_REFRESH_RETRY_MAX_MS,
-      Math.max(250, Math.floor(remaining / 2)),
-    );
-
-    serverRefreshTimerRef.current = window.setTimeout(() => {
-      serverRefreshTimerRef.current = null;
-
-      void refreshSessionRef.current?.({
-        reason: "server-refresh-retry",
-      });
-    }, retryDelay);
-
-    return true;
-  }, [clearServerRefreshTimer, forceLogout]);
-
-  const refreshServerSession = useCallback(
-    async ({ reason = "activity" } = {}) => {
-      if (
-        isPublicPath(window.location.pathname) ||
-        !userRef.current ||
-        logoutInProgressRef.current
-      ) {
-        return false;
-      }
-
-      if (!validateInactivityExpiry()) {
-        return false;
-      }
-
-      if (refreshPromiseRef.current) {
-        return refreshPromiseRef.current;
-      }
-
-      const controller = new AbortController();
-      refreshControllerRef.current = controller;
-
-      const refreshPromise = (async () => {
-        try {
-          const response = await api.post(
-            "/api/users/refresh",
-            { reason },
-            {
-              withCredentials: true,
-              timeout: SESSION_REFRESH_TIMEOUT,
-              signal: controller.signal,
-              skipAuthRedirect: true,
-            },
-          );
-
-          if (response.data?.success === false) {
-            throw new Error(
-              response.data?.message || "Unable to refresh the session.",
-            );
-          }
-
-          const expiresAt = normalizeExpiry(response.data?.expiresAt);
-
-          if (!expiresAt || expiresAt <= Date.now()) {
-            throw new Error(
-              "The refreshed session did not return a valid expiration.",
-            );
-          }
-
-          writeStoredServerTokenExpiry(expiresAt);
-          scheduleServerRefresh(expiresAt);
-
-          /*
-           * Do not change the inactivity deadline here. Only real user
-           * activity restarts the inactivity countdown.
-           */
-          startLogoutTimer();
-
-          return true;
-        } catch (error) {
-          if (isCanceledRequest(error)) {
-            return false;
-          }
-
-          const responseStatus = Number(error?.response?.status || 0);
-
-          if (responseStatus === 401) {
-            console.warn(
-              "Session refresh returned 401; keeping the current session:",
-              error?.response?.data || error?.message,
-            );
-            return false;
-          }
-
-          if (shouldEndSessionAfterUserFetchError(error)) {
-            await forceLogout();
-            return false;
-          }
-
-          console.warn(
-            "Session refresh was unavailable:",
-            error?.response?.data || error?.message,
-          );
-
-          scheduleServerRefreshRetry();
-          return false;
-        } finally {
-          if (refreshControllerRef.current === controller) {
-            refreshControllerRef.current = null;
-          }
-        }
-      })();
-
-      refreshPromiseRef.current = refreshPromise;
-
-      try {
-        return await refreshPromise;
-      } finally {
-        if (refreshPromiseRef.current === refreshPromise) {
-          refreshPromiseRef.current = null;
-        }
-      }
-    },
-    [
-      forceLogout,
-      scheduleServerRefresh,
-      scheduleServerRefreshRetry,
-      startLogoutTimer,
-      validateInactivityExpiry,
-    ],
-  );
-
-  refreshSessionRef.current = refreshServerSession;
-
-  const ensureServerTokenReady = useCallback(async () => {
-    const expiresAt = readStoredServerTokenExpiry();
-
+  const refreshServerSession = useCallback(async () => {
     /*
-     * Older cached sessions may not yet have this separate value. The /me
-     * response will populate it without blocking the cached user display.
+     * JWT expiration is a hard session deadline. Do not mint a replacement
+     * token in the background; the configured server JWT lifetime must be
+     * allowed to expire and return the user to /login.
      */
-    if (!expiresAt) {
-      return true;
-    }
+    const expiresAt =
+      readStoredServerTokenExpiry() || readStoredExpiry();
 
-    const remaining = expiresAt - Date.now();
-
-    if (remaining <= 0) {
+    if (!expiresAt || expiresAt <= Date.now()) {
       await forceLogout();
       return false;
     }
 
-    const refreshLead = getServerRefreshLeadMs(remaining);
+    return false;
+  }, [forceLogout]);
 
-    if (remaining <= refreshLead + 500) {
-      return refreshServerSession({
-        reason: "before-user-validation",
-      });
+  refreshSessionRef.current = refreshServerSession;
+
+  const ensureServerTokenReady = useCallback(async () => {
+    const expiresAt =
+      readStoredServerTokenExpiry() || readStoredExpiry();
+
+    if (!expiresAt || expiresAt <= Date.now()) {
+      await forceLogout();
+      return false;
     }
 
-    scheduleServerRefresh(expiresAt);
     return true;
-  }, [forceLogout, refreshServerSession, scheduleServerRefresh]);
+  }, [forceLogout]);
 
   const extendSessionFromActivity = useCallback(
     (activityAt = Date.now()) => {
@@ -636,44 +454,16 @@ export function UserProvider({ children }) {
 
       const currentExpiry = readStoredExpiry();
 
-      /* Activity cannot revive an already expired session. */
+      // User activity must never move the JWT deadline forward.
       if (!currentExpiry || currentExpiry <= activityAt) {
         void forceLogout();
         return false;
       }
 
-      const newExpiry = activityAt + idleDurationRef.current;
-
-      writeStoredExpiry(newExpiry);
       startLogoutTimer();
-
-      /*
-       * The JWT refresh timer is independent from activity events. Continuous
-       * pointer movement therefore cannot postpone token refresh forever.
-       */
-      const serverExpiresAt = readStoredServerTokenExpiry();
-
-      if (serverExpiresAt) {
-        const remaining = serverExpiresAt - activityAt;
-        const refreshLead = getServerRefreshLeadMs(remaining);
-
-        if (remaining <= refreshLead + 500) {
-          void refreshServerSession({
-            reason: "user-activity-near-token-expiry",
-          });
-        } else {
-          scheduleServerRefresh(serverExpiresAt);
-        }
-      }
-
       return true;
     },
-    [
-      forceLogout,
-      refreshServerSession,
-      scheduleServerRefresh,
-      startLogoutTimer,
-    ],
+    [forceLogout, startLogoutTimer],
   );
 
   const fetchUser = useCallback(
@@ -737,6 +527,7 @@ export function UserProvider({ children }) {
           const expiresAt = normalizeExpiry(response.data?.expiresAt);
 
           if (expiresAt > Date.now()) {
+            writeStoredExpiry(expiresAt);
             writeStoredServerTokenExpiry(expiresAt);
             scheduleServerRefresh(expiresAt);
           }
@@ -894,8 +685,7 @@ export function UserProvider({ children }) {
   }, [user]);
 
   /*
-   * A trusted user action restarts the inactivity countdown. Page refresh by
-   * itself does not restart it.
+   * User activity only checks the hard JWT deadline; it never extends it.
    */
   useEffect(() => {
     if (publicRoute || !user) {
@@ -969,21 +759,27 @@ export function UserProvider({ children }) {
 
       const now = Date.now();
       const normalizedServerExpiry = normalizeExpiry(serverExpiresAt);
+      const currentExpiry = readStoredExpiry();
+      const effectiveExpiry =
+        normalizedServerExpiry > now
+          ? normalizedServerExpiry
+          : currentExpiry > now
+            ? currentExpiry
+            : 0;
 
       /*
-       * The inactivity window is always one hour. The JWT may be much shorter
-       * during testing (for example 10 seconds), but it is refreshed
-       * independently and must never shorten the user's inactivity session.
+       * The server JWT expiration is the authoritative session deadline.
+       * Updating the user object must not create a new one-hour client session.
        */
       idleDurationRef.current = writeStoredIdleDuration(SESSION_DURATION_MS);
 
-      writeStoredExpiry(now + SESSION_DURATION_MS);
-
-      if (normalizedServerExpiry > now) {
-        writeStoredServerTokenExpiry(normalizedServerExpiry);
-      } else {
-        clearStoredServerTokenExpiry();
+      if (!effectiveExpiry) {
+        clearLocalAuthState();
+        return;
       }
+
+      writeStoredExpiry(effectiveExpiry);
+      writeStoredServerTokenExpiry(effectiveExpiry);
 
       lastHandledActivityRef.current = now;
       justLoggedInRef.current = true;
@@ -992,9 +788,7 @@ export function UserProvider({ children }) {
       setLoading(false);
       startLogoutTimer();
 
-      if (normalizedServerExpiry > now) {
-        scheduleServerRefresh(normalizedServerExpiry);
-      }
+      scheduleServerRefresh(effectiveExpiry);
     },
     [
       abortServerRefresh,

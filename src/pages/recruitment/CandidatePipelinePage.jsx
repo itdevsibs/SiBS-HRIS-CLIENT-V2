@@ -839,7 +839,7 @@ export default function CandidatePipelinePage() {
           </section>
 
           <section
-            className="sibs-page-card-in sibs-card relative z-[100] overflow-visible p-3 sm:p-4 2xl:p-5"
+            className="sibs-page-card-in sibs-card relative z-[40] overflow-visible p-3 sm:p-4 2xl:p-5"
             style={{ animationDelay: "120ms", animationFillMode: "both" }}
           >
             <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
