@@ -1475,86 +1475,335 @@ export default function JobDescriptionViewPage() {
       return;
     }
 
+    const pagedOutput = docNode.querySelector(".jd-paged-output");
+    const hasPagedPages = Boolean(pagedOutput?.querySelector(".pagedjs_pages"));
+
     const printRoot = document.createElement("div");
 
     printRoot.id = "jd-print-root";
 
     printRoot.style.cssText = "display:none;";
 
-    const clone = docNode.cloneNode(true);
-
-    clone
-      .querySelectorAll(
-        "button, [data-print-hide], .jd-mobile-actions-row, textarea, input, select",
-      )
-      .forEach((el) => el.remove());
-
-    clone.querySelectorAll("style").forEach((el) => el.remove());
-
-    clone.querySelectorAll("span.inline-flex").forEach((wrapperSpan) => {
-      wrapperSpan.classList.remove(
-        "inline-flex",
-        "items-center",
-        "gap-1",
-        "align-middle",
-      );
-
-      wrapperSpan.classList.add("inline");
-    });
-
-    printRoot.appendChild(clone);
-
-    document.body.appendChild(printRoot);
-
     const isolationStyle = document.createElement("style");
 
     isolationStyle.id = "jd-print-isolation-style";
 
-    isolationStyle.textContent = [
-      "@media print {",
-      "  body > *:not(#jd-print-root) { display: none !important; }",
-      "  #jd-print-root {",
-      "    display: block !important;",
-      "    position: static !important;",
-      "    background: white !important;",
-      "    padding: 0 !important;",
-      "    margin: 0 !important;",
-      "  }",
-      "  #jd-print-root .jd-details-document {",
-      "    box-shadow: none !important;",
-      "    border-radius: 0 !important;",
-      "    max-width: 100% !important;",
-      "    width: 100% !important;",
-      "    padding: 0 !important;",
-      "    overflow: visible !important;",
-      "    background: white !important;",
-      "    min-height: 0 !important;",
-      "    height: auto !important;",
-      "  }",
-      "  #jd-print-root table, #jd-print-root tr {",
-      "    break-inside: avoid !important;",
-      "    page-break-inside: avoid !important;",
-      "  }",
-      "  #jd-print-root .grid > div {",
-      "    break-inside: avoid !important;",
-      "    page-break-inside: avoid !important;",
-      "  }",
-      "  #jd-print-root h1, #jd-print-root h2, #jd-print-root h3 {",
-      "    break-after: avoid !important;",
-      "    page-break-after: avoid !important;",
-      "  }",
-      '  #jd-print-root [class*="border-amber"][class*="bg-amber"] {',
-      "    display: none !important;",
-      "  }",
-      "  #jd-print-root span[title] {",
-      "    background: transparent !important;",
-      "    box-shadow: none !important;",
-      "    border-radius: 0 !important;",
-      "    padding: 0 !important;",
-      "  }",
-      "  @page { size: A4 portrait; margin: 18mm 16mm; }",
-      "}",
-    ].join("\n");
+    if (hasPagedPages) {
+      const clone = pagedOutput.cloneNode(true);
+
+      clone
+        .querySelectorAll(
+          "button, [data-print-hide], .jd-mobile-actions-row, textarea, input, select",
+        )
+        .forEach((el) => el.remove());
+
+      clone.classList.remove("jd-paged-output-compact-hidden");
+      clone.style.removeProperty("display");
+      clone.style.removeProperty("height");
+      clone.style.removeProperty("overflow");
+
+      const pagesEl = clone.querySelector(".pagedjs_pages");
+      if (pagesEl) {
+        pagesEl.style.removeProperty("zoom");
+        pagesEl.style.removeProperty("transform");
+      }
+
+      printRoot.appendChild(clone);
+
+      document.body.appendChild(printRoot);
+
+      isolationStyle.textContent = [
+        "@media print {",
+        "  @page {",
+        "    size: A4 portrait;",
+        "    margin: 0;",
+        "  }",
+        "  html, body {",
+        "    width: 210mm !important;",
+        "    min-width: 210mm !important;",
+        "    height: auto !important;",
+        "    margin: 0 !important;",
+        "    padding: 0 !important;",
+        "    background: white !important;",
+        "    overflow: visible !important;",
+        "  }",
+        "  body > *:not(#jd-print-root) { display: none !important; }",
+        "  #jd-print-root {",
+        "    display: block !important;",
+        "    position: absolute !important;",
+        "    top: 0 !important;",
+        "    left: 0 !important;",
+        "    width: 210mm !important;",
+        "    min-width: 210mm !important;",
+        "    max-width: 210mm !important;",
+        "    height: auto !important;",
+        "    margin: 0 !important;",
+        "    padding: 0 !important;",
+        "    background: white !important;",
+        "    visibility: visible !important;",
+        "    transform: none !important;",
+        "  }",
+        "  #jd-print-root * {",
+        "    visibility: visible !important;",
+        "  }",
+        "  #jd-print-root .jd-paged-output {",
+        "    display: block !important;",
+        "    width: 210mm !important;",
+        "    min-width: 210mm !important;",
+        "    max-width: 210mm !important;",
+        "    height: auto !important;",
+        "    margin: 0 !important;",
+        "    padding: 0 !important;",
+        "    background: white !important;",
+        "    overflow: visible !important;",
+        "    transform: none !important;",
+        "  }",
+        "  #jd-print-root .pagedjs_pages {",
+        "    display: block !important;",
+        "    width: 210mm !important;",
+        "    min-width: 210mm !important;",
+        "    max-width: 210mm !important;",
+        "    height: auto !important;",
+        "    margin: 0 !important;",
+        "    padding: 0 !important;",
+        "    gap: 0 !important;",
+        "    background: white !important;",
+        "    zoom: 1 !important;",
+        "    transform: none !important;",
+        "  }",
+        "  #jd-print-root .pagedjs_page {",
+        "    position: relative !important;",
+        "    display: block !important;",
+        "    width: 210mm !important;",
+        "    min-width: 210mm !important;",
+        "    max-width: 210mm !important;",
+        "    height: 297mm !important;",
+        "    min-height: 297mm !important;",
+        "    max-height: 297mm !important;",
+        "    margin: 0 !important;",
+        "    padding: 0 !important;",
+        "    overflow: hidden !important;",
+        "    background: white !important;",
+        "    box-shadow: none !important;",
+        "    break-before: auto !important;",
+        "    break-after: page !important;",
+        "    page-break-after: always !important;",
+        "  }",
+        "  #jd-print-root .pagedjs_sheet {",
+        "    position: absolute !important;",
+        "    top: 0 !important;",
+        "    left: 0 !important;",
+        "    width: 1100px !important;",
+        "    min-width: 1100px !important;",
+        "    max-width: 1100px !important;",
+        "    height: 1556px !important;",
+        "    min-height: 1556px !important;",
+        "    max-height: 1556px !important;",
+        "    margin: 0 !important;",
+        "    padding: 0 !important;",
+        "    overflow: hidden !important;",
+        "    background: white !important;",
+        "    box-shadow: none !important;",
+        "    transform: scale(0.7214) !important;",
+        "    transform-origin: top left !important;",
+        "  }",
+        "  #jd-print-root .pagedjs_pagebox {",
+        "    width: 1100px !important;",
+        "    min-width: 1100px !important;",
+        "    max-width: 1100px !important;",
+        "    height: 1556px !important;",
+        "    min-height: 1556px !important;",
+        "    max-height: 1556px !important;",
+        "    margin: 0 !important;",
+        "    padding: 0 !important;",
+        "    overflow: hidden !important;",
+        "    background: white !important;",
+        "    transform: none !important;",
+        "  }",
+        "  #jd-print-root .pagedjs_page_content {",
+        "    overflow: hidden !important;",
+        "  }",
+        "  #jd-print-root .pagedjs_page:last-child {",
+        "    break-after: auto !important;",
+        "    page-break-after: auto !important;",
+        "  }",
+        "  #jd-print-root [class*=\"border-amber\"][class*=\"bg-amber\"] {",
+        "    display: none !important;",
+        "  }",
+        "}",
+      ].join("\n");
+    } else {
+      const clone = docNode.cloneNode(true);
+
+      clone
+        .querySelectorAll(
+          "button, [data-print-hide], .jd-mobile-actions-row, textarea, input, select, .jd-paged-output, .jd-mobile-paged-output, .jd-paged-loading",
+        )
+        .forEach((el) => el.remove());
+
+      clone.querySelectorAll(".jd-paged-source").forEach((sourceEl) => {
+        sourceEl.classList.remove("jd-paged-source");
+        sourceEl.style.cssText =
+          "position: static !important; width: 100% !important; max-width: 100% !important; opacity: 1 !important; visibility: visible !important; left: auto !important;";
+        sourceEl.removeAttribute("aria-hidden");
+      });
+
+      clone.querySelectorAll("style").forEach((el) => el.remove());
+
+      clone.querySelectorAll("span.inline-flex").forEach((wrapperSpan) => {
+        wrapperSpan.classList.remove(
+          "inline-flex",
+          "items-center",
+          "gap-1",
+          "align-middle",
+        );
+
+        wrapperSpan.classList.add("inline");
+      });
+
+      printRoot.appendChild(clone);
+
+      document.body.appendChild(printRoot);
+
+      isolationStyle.textContent = [
+        "@media print {",
+        "  @page {",
+        "    size: A4 portrait;",
+        "    margin: 15mm 15mm;",
+        "  }",
+        "  html, body {",
+        "    width: 100% !important;",
+        "    min-width: 0 !important;",
+        "    max-width: 100% !important;",
+        "    height: auto !important;",
+        "    margin: 0 !important;",
+        "    padding: 0 !important;",
+        "    background: white !important;",
+        "    overflow: visible !important;",
+        "  }",
+        "  body > *:not(#jd-print-root) { display: none !important; }",
+        "  #jd-print-root {",
+        "    display: block !important;",
+        "    position: static !important;",
+        "    width: 100% !important;",
+        "    max-width: 100% !important;",
+        "    min-width: 0 !important;",
+        "    background: white !important;",
+        "    padding: 0 !important;",
+        "    margin: 0 !important;",
+        "    visibility: visible !important;",
+        "  }",
+        "  #jd-print-root * {",
+        "    visibility: visible !important;",
+        "  }",
+        "  #jd-print-root .jd-details-document {",
+        "    display: block !important;",
+        "    box-shadow: none !important;",
+        "    border-radius: 0 !important;",
+        "    max-width: 100% !important;",
+        "    width: 100% !important;",
+        "    min-width: 0 !important;",
+        "    margin: 0 !important;",
+        "    padding: 0 !important;",
+        "    padding-left: 0 !important;",
+        "    padding-right: 0 !important;",
+        "    overflow: visible !important;",
+        "    background: white !important;",
+        "    min-height: 0 !important;",
+        "    height: auto !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-header-wrapper {",
+        "    width: 100% !important;",
+        "    max-width: 100% !important;",
+        "    min-width: 0 !important;",
+        "    overflow: visible !important;",
+        "    padding: 0 !important;",
+        "    margin-bottom: 1.5rem !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-header-desktop {",
+        "    display: block !important;",
+        "    width: 100% !important;",
+        "    max-width: 100% !important;",
+        "    min-width: 0 !important;",
+        "    overflow: visible !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-header-mobile {",
+        "    display: none !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-header-grid {",
+        "    display: grid !important;",
+        "    width: 100% !important;",
+        "    max-width: 100% !important;",
+        "    min-width: 0 !important;",
+        "    grid-template-columns: 170px minmax(0, 1fr) !important;",
+        "    border: 2px solid #000 !important;",
+        "    overflow: hidden !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-header-logo-column {",
+        "    min-height: 0 !important;",
+        "    padding: 1rem !important;",
+        "    border-right: 2px solid #000 !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-header-logo {",
+        "    width: min(100%, 140px) !important;",
+        "    max-width: 140px !important;",
+        "    height: auto !important;",
+        "    margin-inline: auto !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-issuance {",
+        "    margin-top: 1.5rem !important;",
+        "    font-size: 0.8125rem !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-header-main-row {",
+        "    display: grid !important;",
+        "    grid-template-columns: minmax(0, 1fr) 150px !important;",
+        "  }",
+        "  #jd-print-root .record-info-manualHero,",
+        "  #jd-print-root .record-info-manualDocumentTitle {",
+        "    min-height: 0 !important;",
+        "    padding: 0.75rem 1rem !important;",
+        "  }",
+        "  #jd-print-root .record-info-manualMeta {",
+        "    min-height: 0 !important;",
+        "    padding: 0.5rem 0.75rem !important;",
+        "  }",
+        "  #jd-print-root .record-info-manualFooter {",
+        "    min-height: 0 !important;",
+        "    padding: 0.5rem 0.75rem !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-header-footer-row.grid-cols-4 {",
+        "    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;",
+        "  }",
+        "  #jd-print-root .jd-manual-header-footer-row.grid-cols-2 {",
+        "    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;",
+        "  }",
+        "  #jd-print-root table, #jd-print-root tr {",
+        "    break-inside: avoid !important;",
+        "    page-break-inside: avoid !important;",
+        "  }",
+        "  #jd-print-root .grid > div {",
+        "    break-inside: avoid !important;",
+        "    page-break-inside: avoid !important;",
+        "  }",
+        "  #jd-print-root h1, #jd-print-root h2, #jd-print-root h3, #jd-print-root h4 {",
+        "    break-after: avoid !important;",
+        "    page-break-after: avoid !important;",
+        "  }",
+        "  #jd-print-root [class*=\"border-amber\"][class*=\"bg-amber\"] {",
+        "    display: none !important;",
+        "  }",
+        "  #jd-print-root span[title] {",
+        "    background: transparent !important;",
+        "    box-shadow: none !important;",
+        "    border-radius: 0 !important;",
+        "    padding: 0 !important;",
+        "  }",
+        "  #jd-print-root .jd-details-document [class*=\"lg:grid-cols-4\"] {",
+        "    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;",
+        "  }",
+        "}",
+      ].join("\n");
+    }
 
     document.head.appendChild(isolationStyle);
 

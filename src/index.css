@@ -1816,6 +1816,8 @@
     height: auto !important;
     max-height: none !important;
     padding-bottom: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   /* 3. Hide UI chrome: header bar, footer bar, overlays, FAB */
@@ -1831,7 +1833,7 @@
   /* 4. A4 page setup */
   @page {
     size: A4 portrait;
-    margin: 18mm 16mm;
+    margin: 15mm 15mm;
   }
 
   /* 5. Document card: strip shadows/radius for clean paper output */
@@ -1841,6 +1843,9 @@
     box-shadow: none !important;
     border-radius: 0 !important;
     padding: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin: 0 !important;
     overflow: visible !important;
     background: white !important;
   }

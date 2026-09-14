@@ -344,8 +344,15 @@ export const detailsResponsiveAuditStyles = `
     }
 
     .jd-paged-output,
-    .jd-paged-output * {
+    .jd-paged-output *,
+    #jd-print-root,
+    #jd-print-root * {
       visibility: visible !important;
+    }
+
+    .jd-details-document {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
     }
 
     .jd-paged-source,
@@ -1559,12 +1566,25 @@ export const pagedJobDescriptionStyles = String.raw`
     margin-top: 3mm !important;
   }
 
+  .jd-paged-document-body section > div:first-child,
+  .jd-paged-document-body section > div:first-child > div:first-child,
+  .jd-paged-document-body h4,
+  .jd-details-section-header {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
   .jd-paged-document-body h4 {
     margin-bottom: 2.5mm !important;
-    break-after: avoid;
-    page-break-after: avoid;
     text-align: left !important;
     line-height: 1.35 !important;
+  }
+
+  .jd-paged-document-body section > div:first-child + * {
+    break-before: avoid !important;
+    page-break-before: avoid !important;
   }
 
   /*
