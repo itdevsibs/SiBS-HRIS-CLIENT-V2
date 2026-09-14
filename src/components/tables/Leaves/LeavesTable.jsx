@@ -1187,6 +1187,20 @@ export default function LeavesTable({
             rightContent={<InlineDateRangeFilter visible />}
             className="mt-4 border-0 bg-transparent p-0 shadow-none"
           />
+
+          <button
+            type="button"
+            onClick={runSearch}
+            disabled={loading}
+            className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E94F1F] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
+          >
+            {loading ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <Search size={15} />
+            )}
+            Apply Search
+          </button>
         </div>
 
         <div className="p-3 sm:p-5 2xl:p-6 font-jakarta">

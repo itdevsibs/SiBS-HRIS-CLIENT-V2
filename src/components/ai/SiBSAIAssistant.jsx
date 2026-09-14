@@ -386,12 +386,27 @@ export default function SiBSAIAssistant({ enabled = true }) {
         onPointerCancel={handleTriggerPointerCancel}
         aria-label="Open Ask SiBS AI"
         aria-expanded={open}
-        className={`font-jakarta fixed right-4 sm:right-6 z-[120] transform-gpu inline-flex items-center gap-2 sm:gap-2.5 rounded-2xl bg-sibs-navy p-2 sm:px-4 sm:py-3 font-heading text-sm font-bold tracking-tight text-white shadow-xl border border-white/10 transition-[transform,background-color,box-shadow,opacity] duration-200 hover:-translate-y-0.5 hover:bg-sibs-tertiary-2 focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 active:scale-[0.98] ${
-          open ? "pointer-events-none opacity-0" : "opacity-100"
-        }`}
-        style={{
-          bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
-        }}
+        className={`font-jakarta fixed z-[120] transform-gpu inline-flex select-none items-center gap-2 sm:gap-2.5 rounded-2xl bg-sibs-navy p-2 sm:px-4 sm:py-3 font-heading text-sm font-bold tracking-tight text-white shadow-xl border border-white/10 transition-[transform,background-color,box-shadow,opacity] duration-200 hover:bg-sibs-tertiary-2 focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 ${
+          triggerPosition ? "" : "right-4 sm:right-6"
+        } ${
+          triggerDragging
+            ? "cursor-grabbing"
+            : "cursor-grab hover:-translate-y-0.5 active:scale-[0.98]"
+        } ${open ? "pointer-events-none opacity-0" : "opacity-100"}`}
+        style={
+          triggerPosition
+            ? {
+                left: `${triggerPosition.left}px`,
+                top: `${triggerPosition.top}px`,
+                right: "auto",
+                bottom: "auto",
+                touchAction: "none",
+              }
+            : {
+                bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
+                touchAction: "none",
+              }
+        }
       >
         <span className="inline-flex h-8 w-8 sm:h-7 sm:w-7 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
           <Sparkles size={16} />
