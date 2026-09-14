@@ -16,6 +16,7 @@ import {
   Loader2,
   Mail,
   Minus,
+  Paperclip,
   Plus,
   RefreshCcw,
   RefreshCw,
@@ -50,6 +51,10 @@ import {
   getTodayDate,
 } from "../../components/layout/FormatDateTime";
 import { findResignationNotificationTarget } from "../../lib/utils/notifications/auditNotificationHelpers";
+import {
+  getAttachmentCount,
+  getAttachmentCountLabel,
+} from "../../lib/utils/resignation/attachmentUtils";
 
 const EDGE = "rounded-[10px]";
 const PANEL_BORDER = "border border-[#E1E7EF]";
@@ -1652,6 +1657,24 @@ function ResignationMobileCard({ item, index = 0, onView }) {
         </div>
       ) : null}
 
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (onOpenAttachments) {
+              onOpenAttachments();
+            } else {
+              onView?.();
+            }
+          }}
+          disabled={attachmentCount === 0}
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
+        >
+          <Paperclip size={14} />
+          {getAttachmentCountLabel(item)}
+        </button>
+      </div>
     </DataCard>
   );
 }
