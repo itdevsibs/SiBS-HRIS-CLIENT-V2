@@ -314,6 +314,7 @@ export default function ForecastWeekAccountDetailsModal({
   onClose,
 }) {
   const [searchValue, setSearchValue] = useState("");
+  const [fitToScreen, setFitToScreen] = useState(true);
   const dragScrollRef = useRef(null);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
@@ -391,19 +392,19 @@ export default function ForecastWeekAccountDetailsModal({
 
   return createPortal(
     <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
-      <div className="sibs-modal-pop-in flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[96vw] 2xl:max-w-7xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white font-jakarta shadow-2xl">
+      <div className="sibs-modal-pop-in flex max-h-[96vh] w-full max-w-[99vw] 2xl:max-w-[1850px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white font-jakarta shadow-2xl">
         <div
           data-layout="forecast-week-details-header-v2"
-          className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-[#042C51] px-5 py-3 2xl:py-3.5 text-white"
+          className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-sibs-navy-dark bg-sibs-navy px-5 py-3 2xl:py-3.5 text-white"
         >
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+            <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-xs">
               <BarChart2 size={16} />
             </div>
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="sibs-modal-title truncate text-white">
+                <h2 className="sibs-modal-title !text-white truncate">
                   Forecast Week Details
                 </h2>
 
@@ -413,7 +414,7 @@ export default function ForecastWeekAccountDetailsModal({
                   Account / Cluster Breakdown
                 </span>
 
-                <span className="rounded-full bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wider text-white shadow-sm">
+                <span className="rounded-full bg-sibs-orange px-2.5 py-0.5 text-xs font-extrabold text-white shadow-xs">
                   {filteredRows.length} of {normalizedRows.length} rows
                 </span>
               </div>
@@ -440,32 +441,47 @@ export default function ForecastWeekAccountDetailsModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            className="sibs-modal-close-btn"
             aria-label="Close forecast details"
-            title="Close Modal"
+            title="Close modal (Esc)"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-2 2xl:px-5 2xl:py-2.5">
-          <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+        {/* Tier 2: Controls Toolbar */}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-sibs-border bg-sibs-canvas px-4 py-2 sm:px-5 2xl:px-6">
+          <p className="sibs-modal-subtitle text-xs font-semibold text-sibs-muted">
             Clicked forecast week rows are shown per account and cluster.
           </p>
 
-          <div className="group relative w-full max-w-xs 2xl:max-w-md">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
-            />
+          <div className="flex items-center gap-2.5">
+            <div className="group relative w-52 sm:w-64">
+              <Search
+                size={14}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted transition-colors group-focus-within:text-sibs-orange"
+              />
 
-            <input
-              type="text"
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-              placeholder="Search cluster or account..."
-              className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] pl-9 pr-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
-            />
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                placeholder="Search cluster or account..."
+                className="h-8.5 w-full rounded-lg border border-sibs-border bg-white px-3 pl-8.5 font-jakarta text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setFitToScreen((prev) => !prev)}
+              className={`inline-flex h-8.5 items-center justify-center rounded-lg border px-3 text-xs font-bold transition ${
+                fitToScreen
+                  ? "border-sibs-orange bg-sibs-cream-light text-sibs-orange"
+                  : "border-slate-200 bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
+              }`}
+            >
+              {fitToScreen ? "Scroll View" : "Fit to Screen"}
+            </button>
           </div>
         </div>
 
@@ -477,29 +493,54 @@ export default function ForecastWeekAccountDetailsModal({
               onMouseMove={handleDragMove}
               onMouseUp={handleDragEnd}
               onMouseLeave={handleDragEnd}
-              className={`max-h-[48vh] 2xl:max-h-[54vh] overflow-auto sibs-scrollbar ${
+              className={`max-h-[66vh] 2xl:max-h-[72vh] overflow-auto sibs-scrollbar ${
                 isDragging ? "cursor-grabbing" : "cursor-grab"
               }`}
             >
-              <table className="w-full min-w-[2100px] border-separate border-spacing-0">
+              <table
+                className={`table-fixed border-collapse font-jakarta whitespace-nowrap ${
+                  fitToScreen
+                    ? "w-full min-w-[1320px] text-[11px] 2xl:text-xs"
+                    : "w-[2100px] min-w-[2100px] text-xs"
+                }`}
+              >
+                <colgroup>
+                  <col style={{ width: fitToScreen ? "9%" : "150px" }} />
+                  <col style={{ width: fitToScreen ? "11.5%" : "190px" }} />
+                  <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
+                  <col style={{ width: fitToScreen ? "5%" : "105px" }} />
+                  <col style={{ width: fitToScreen ? "5%" : "95px" }} />
+                  <col style={{ width: fitToScreen ? "6%" : "125px" }} />
+                  <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
+                  <col style={{ width: fitToScreen ? "6%" : "135px" }} />
+                  <col style={{ width: fitToScreen ? "6%" : "135px" }} />
+                  <col style={{ width: fitToScreen ? "5.5%" : "125px" }} />
+                  <col style={{ width: fitToScreen ? "5%" : "110px" }} />
+                  <col style={{ width: fitToScreen ? "5%" : "105px" }} />
+                  <col style={{ width: fitToScreen ? "5%" : "105px" }} />
+                  <col style={{ width: fitToScreen ? "4.5%" : "95px" }} />
+                  <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
+                  <col style={{ width: fitToScreen ? "5.5%" : "120px" }} />
+                  <col style={{ width: fitToScreen ? "8.5%" : "170px" }} />
+                </colgroup>
                 <thead>
                   <tr>
                     <WorkforceHeaderTh className="!top-0 !text-left">Cluster</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-left">Account</WorkforceHeaderTh>
-                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#042C51]">Required HC</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-sibs-navy">Required HC</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-center">Actual HC</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-center">Buffer %</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-center">Absenteeism</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-center">Attrition</WorkforceHeaderTh>
-                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#042C51]">Net Actual HC</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-sibs-navy">Net Actual HC</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-rose-600">Hiring Needed</WorkforceHeaderTh>
-                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#042C51]">Accepted JO</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-sibs-navy">Accepted JO</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-center">NHO Count</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-center">FST Count</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-center">PST Count</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-emerald-700">Go Live</WorkforceHeaderTh>
-                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#042C51]">Hired Count</WorkforceHeaderTh>
-                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-[#FF5C28]">Hiring Rate</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-sibs-navy">Hired Count</WorkforceHeaderTh>
+                    <WorkforceHeaderTh className="!top-0 !text-center !font-black !text-sibs-orange">Hiring Rate</WorkforceHeaderTh>
                     <WorkforceHeaderTh className="border-r-0 !top-0 !text-center !font-black !text-purple-700">Leads to Interview</WorkforceHeaderTh>
                   </tr>
                 </thead>
@@ -511,7 +552,7 @@ export default function ForecastWeekAccountDetailsModal({
                         key={`${row.cluster}-${row.account}-${row.id || index}`}
                         className="transition hover:bg-blue-50/40"
                       >
-                        <WorkforceBodyTd align="left" className="font-bold text-[#042C51]">
+                        <WorkforceBodyTd align="left" className="font-bold text-sibs-navy">
                           {row.cluster}
                         </WorkforceBodyTd>
                         <WorkforceBodyTd align="left" className="font-medium text-slate-700">
@@ -568,7 +609,7 @@ export default function ForecastWeekAccountDetailsModal({
                         <WorkforceBodyTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
                           {formatOverviewNumber(row.hiredCount)}
                         </WorkforceBodyTd>
-                        <WorkforceBodyTd className="!font-black !text-[#FF5C28]">
+                        <WorkforceBodyTd className="!font-black !text-sibs-orange">
                           {formatOverviewPercent(row.hiringRate)}
                         </WorkforceBodyTd>
                         <WorkforceBodyTd className="border-r-0 !font-black !text-purple-700">
@@ -588,7 +629,7 @@ export default function ForecastWeekAccountDetailsModal({
                 {filteredRows.length ? (
                   <tfoot>
                     <tr>
-                      <WorkforceFooterTd align="left" className="!font-black text-[#042C51]">
+                      <WorkforceFooterTd align="left" className="!font-black text-sibs-navy">
                         TOTAL / AVG.
                       </WorkforceFooterTd>
                       <WorkforceFooterTd />
@@ -643,7 +684,7 @@ export default function ForecastWeekAccountDetailsModal({
                       <WorkforceFooterTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
                         {formatOverviewNumber(totals.hiredCount)}
                       </WorkforceFooterTd>
-                      <WorkforceFooterTd className="!font-black !text-[#FF5C28]">
+                      <WorkforceFooterTd className="!font-black !text-sibs-orange">
                         {formatOverviewPercent(totals.hiringRate)}
                       </WorkforceFooterTd>
                       <WorkforceFooterTd className="border-r-0 !font-black !text-purple-700">
