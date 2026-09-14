@@ -20,6 +20,7 @@ import {
   Plus,
   RefreshCcw,
   RefreshCw,
+  Search,
   Send,
   TrendingDown,
   TrendingUp,
@@ -1289,6 +1290,13 @@ function ResignationTableCard({
   onView,
 }) {
   const [pageState, setPageState] = useState({ data, page: 1 });
+  const [draftSearch, setDraftSearch] = useState(search);
+  const [draftStatusFilter, setDraftStatusFilter] = useState(statusFilter);
+  const [draftTypeFilter, setDraftTypeFilter] = useState(typeFilter);
+  const [isMobileFilterMode, setIsMobileFilterMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 1023px)").matches;
+  });
   const totalPages = Math.max(Math.ceil(data.length / PAGE_LIMIT), 1);
   const currentPage = Math.min(
     Math.max(pageState.data === data ? pageState.page : 1, 1),
@@ -1300,6 +1308,75 @@ function ResignationTableCard({
     const start = (safePage - 1) * PAGE_LIMIT;
     return data.slice(start, start + PAGE_LIMIT);
   }, [data, currentPage, totalPages]);
+
+  useEffect(() => {
+    setDraftSearch(search);
+    setDraftStatusFilter(statusFilter);
+    setDraftTypeFilter(typeFilter);
+  }, [search, statusFilter, typeFilter]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+
+    function handleViewportChange(event) {
+      setIsMobileFilterMode(event.matches);
+    }
+
+    handleViewportChange(mediaQuery);
+    mediaQuery.addEventListener?.("change", handleViewportChange);
+
+    return () => {
+      mediaQuery.removeEventListener?.("change", handleViewportChange);
+    };
+  }, []);
+
+  function handleSearchChange(value) {
+    setDraftSearch(value);
+
+    if (!isMobileFilterMode) {
+      setSearch(value);
+    }
+  }
+
+  function handleStatusChange(value) {
+    setDraftStatusFilter(value);
+
+    if (!isMobileFilterMode) {
+      setStatusFilter(value);
+    }
+  }
+
+  function handleTypeChange(value) {
+    setDraftTypeFilter(value);
+
+    if (!isMobileFilterMode) {
+      setTypeFilter(value);
+    }
+  }
+
+  function handleApplyFilters() {
+    setSearch(String(draftSearch || "").trim());
+    setStatusFilter(draftStatusFilter || "All");
+    setTypeFilter(draftTypeFilter || "All");
+    setPageState({ data, page: 1 });
+  }
+
+  function handleFilterSearchKeyDown(event) {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    handleApplyFilters();
+  }
+
+  function handleClearTableFilters() {
+    setDraftSearch("");
+    setDraftStatusFilter("All");
+    setDraftTypeFilter("All");
+    setPageState({ data, page: 1 });
+    onClearFilters?.();
+  }
 
   function handlePreviousPage() {
     setPageState((current) => ({
@@ -1344,14 +1421,15 @@ function ResignationTableCard({
           showFilterHeader={false}
           showPagination={false}
           showSearch
-          searchValue={search}
+          searchValue={draftSearch}
           searchPlaceholder="Search employee, SIBS ID, department, type, status, reason..."
-          onSearchChange={(value) => setSearch(value)}
+          onSearchChange={handleSearchChange}
+          onSearchKeyDown={handleFilterSearchKeyDown}
           filters={[
             {
               key: "status",
-              value: statusFilter,
-              onChange: setStatusFilter,
+              value: draftStatusFilter,
+              onChange: handleStatusChange,
               options: STATUS_OPTIONS.map((option) => ({
                 label: option === "All" ? "All Statuses" : option,
                 value: option,
@@ -1363,8 +1441,8 @@ function ResignationTableCard({
             },
             {
               key: "type",
-              value: typeFilter,
-              onChange: setTypeFilter,
+              value: draftTypeFilter,
+              onChange: handleTypeChange,
               options: TYPE_OPTIONS.map((option) => ({
                 label: option === "All" ? "All Types" : option,
                 value: option,
@@ -1379,7 +1457,7 @@ function ResignationTableCard({
             hasActiveFilters ? (
               <button
                 type="button"
-                onClick={onClearFilters}
+                onClick={handleClearTableFilters}
                 className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] xl:w-auto"
               >
                 Clear
@@ -1388,6 +1466,20 @@ function ResignationTableCard({
           }
           className="border-0 bg-transparent p-0 shadow-none"
         />
+
+        <button
+          type="button"
+          onClick={handleApplyFilters}
+          disabled={loading}
+          className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E94F1F] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
+        >
+          {loading ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Search size={15} />
+          )}
+          Apply Search
+        </button>
 
         <ResponsiveTableShell
           className="mt-5"
