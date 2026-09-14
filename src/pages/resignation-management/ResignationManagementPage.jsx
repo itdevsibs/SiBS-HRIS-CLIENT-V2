@@ -1615,8 +1615,9 @@ function ResignationRow({ item, index = 0, onView }) {
   );
 }
 
-function ResignationMobileCard({ item, index = 0, onView }) {
+function ResignationMobileCard({ item, index = 0, onView, onOpenAttachments }) {
   const status = getResignationStatus(item);
+  const attachmentCount = getAttachmentCount(item);
   const reason = item?.reason || item?.remarks || "";
 
   return (
@@ -1663,7 +1664,7 @@ function ResignationMobileCard({ item, index = 0, onView }) {
           onClick={(event) => {
             event.stopPropagation();
             if (onOpenAttachments) {
-              onOpenAttachments();
+              onOpenAttachments(item);
             } else {
               onView?.();
             }
