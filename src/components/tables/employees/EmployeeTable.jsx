@@ -6,6 +6,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  Search,
   UserRound,
   UserRoundCheck,
 } from "lucide-react";
@@ -1179,6 +1180,16 @@ export default function EmployeeTable({
           }
           className="mt-4 border-0 bg-transparent p-0 shadow-none"
         />
+
+        <button
+          type="button"
+          onClick={submitSearch}
+          disabled={loading}
+          className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E94F1F] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
+        >
+          <Search size={15} />
+          Apply Search
+        </button>
       </div>
 
       <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
