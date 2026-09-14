@@ -107,7 +107,7 @@ export default function AdminLoginModal() {
       }
 
       if (data?.user) {
-        setUser(data.user);
+        setUser(data.user, data.expiresAt);
       }
 
       setPassword("");

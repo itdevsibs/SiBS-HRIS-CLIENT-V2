@@ -2382,7 +2382,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
     let cancelled = false;
 
     async function loadDatabaseFinalInterviewForm() {
-      if (!databasePositionIdentifier) {
+      if (!databasePositionIdentifier && !databasePositionTitle) {
         setDatabaseForm(null);
         setDatabaseFormError("");
         return;
@@ -2392,36 +2392,63 @@ export default function FinalInterviewForms({ publicMode = false }) {
         setDatabaseFormLoading(true);
         setDatabaseFormError("");
 
-        const response = await getFinalInterviewFormByPosition(
-          databasePositionIdentifier,
-        );
+        let exactPositionForm = null;
 
-        if (cancelled) return;
+        if (databasePositionIdentifier) {
+          const response = await getFinalInterviewFormByPosition(
+            databasePositionIdentifier,
+          );
 
-        const exactPositionForm = response?.success
-          ? response.data || null
-          : null;
-        const exactPositionHasQuestions = Boolean(
-          exactPositionForm &&
-            getFinalInterviewFormFields(exactPositionForm).some(
-              (field) => field?.enabled !== false,
-            ),
-        );
+          if (cancelled) return;
 
-        if (exactPositionHasQuestions || !databasePositionTitle) {
-          setDatabaseForm(exactPositionForm);
-          return;
+          exactPositionForm = response?.success
+            ? response.data || null
+            : null;
+
+          const exactPositionHasQuestions = Boolean(
+            exactPositionForm &&
+              getFinalInterviewFormFields(exactPositionForm).some(
+                (field) => field?.enabled !== false,
+              ),
+          );
+
+          if (exactPositionHasQuestions) {
+            setDatabaseForm(exactPositionForm);
+            return;
+          }
+
+          if (!databasePositionTitle) {
+            setDatabaseForm(exactPositionForm);
+            return;
+          }
         }
 
         const formsResponse = await getFinalInterviewForms();
 
         if (cancelled) return;
 
+        const databaseFinalInterviewForms = Array.isArray(
+          formsResponse?.data,
+        )
+          ? formsResponse.data
+          : Array.isArray(formsResponse?.data?.data)
+            ? formsResponse.data.data
+            : Array.isArray(formsResponse?.finalInterviewForms)
+              ? formsResponse.finalInterviewForms
+              : [];
+
+        const preferredConfiguredFormId = [
+          templateFormId,
+          formId,
+        ].find(
+          (value) =>
+            cleanText(value) &&
+            cleanText(value) !== DEFAULT_JOB_EVALUATION_FORM_ID,
+        ) || "";
+
         const configuredFallbackForm = findMatchingFinalInterviewForm({
-          forms: formsResponse?.success
-            ? formsResponse.data || []
-            : [],
-          preferredFormId: templateFormId || formId,
+          forms: databaseFinalInterviewForms,
+          preferredFormId: preferredConfiguredFormId,
           positionId: databasePositionIdentifier,
           positionTitle: databasePositionTitle,
           requireConfiguredQuestions: true,
@@ -2536,10 +2563,27 @@ export default function FinalInterviewForms({ publicMode = false }) {
   ]);
 
   const effectiveFormId = useMemo(() => {
+    const requestedFormId = cleanText(formId);
+    const requestedTemplateFormId = cleanText(templateFormId);
+
+    const concreteRequestedFormId =
+      requestedFormId &&
+      requestedFormId !== DEFAULT_JOB_EVALUATION_FORM_ID
+        ? requestedFormId
+        : "";
+
+    const concreteRequestedTemplateFormId =
+      requestedTemplateFormId &&
+      requestedTemplateFormId !== DEFAULT_JOB_EVALUATION_FORM_ID
+        ? requestedTemplateFormId
+        : "";
+
     return (
-      formId ||
+      concreteRequestedFormId ||
       activeFormId ||
-      templateFormId ||
+      concreteRequestedTemplateFormId ||
+      requestedFormId ||
+      requestedTemplateFormId ||
       (effectivePositionId
         ? `final-interview-${effectivePositionId}`
         : DEFAULT_JOB_EVALUATION_FORM_ID)

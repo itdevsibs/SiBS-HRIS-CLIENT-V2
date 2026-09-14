@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useUser } from "../../services/context/UserContext";
 import { getLogin } from "../../lib/axios/getLogin";
@@ -16,6 +16,17 @@ function getResponseUser(result) {
 
 function getDashboardPath(user) {
   return getDefaultDashboardPath(user);
+}
+
+function getSafeRedirectPath(search = "") {
+  const params = new URLSearchParams(search);
+  const redirectPath = String(params.get("redirect") || "").trim();
+
+  if (!redirectPath.startsWith("/") || redirectPath.startsWith("//")) {
+    return "";
+  }
+
+  return redirectPath;
 }
 
 function getLoginFailureMessage(result = {}) {
@@ -42,6 +53,7 @@ function getLoginFailureMessage(result = {}) {
 }
 
 export default function LoginPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { setUser } = useUser();
 
@@ -117,12 +129,20 @@ export default function LoginPage() {
         return;
       }
 
+      const expiresAt =
+        result?.expiresAt ||
+        result?.data?.expiresAt ||
+        result?.accessTokenExpiresAt ||
+        result?.data?.accessTokenExpiresAt ||
+        null;
+
       saveExpiry(result);
-      setUser(user);
+      setUser(user, expiresAt);
 
-      const dashboardPath = getDashboardPath(user);
+      const redirectPath = getSafeRedirectPath(location.search);
+      const destinationPath = redirectPath || getDashboardPath(user);
 
-      navigate(dashboardPath, { replace: true });
+      navigate(destinationPath, { replace: true });
     } catch (err) {
       console.error("Login error:", err?.response?.data || err?.message);
 
