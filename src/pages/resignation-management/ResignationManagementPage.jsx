@@ -86,7 +86,7 @@ const APPROVAL_PROCESS_ROUTES = [
     routeLabel: "OM / SOM",
     description: "Corporate accounts",
     stages: [
-      { stage: "1", approver: "Operations Manager", role: "Department Head" },
+      { stage: "1", approver: "Operations Manager (Managers Not Included)", role: "Department Head" },
       {
         stage: "2",
         approver: "Senior Operations Manager",
@@ -101,7 +101,7 @@ const APPROVAL_PROCESS_ROUTES = [
     description: "Operational and non-corporate accounts",
     stages: [
       { stage: "1", approver: "Team Leader", role: "Direct Supervisor" },
-      { stage: "2", approver: "Operations Manager", role: "Department Head" },
+      { stage: "2", approver: "Operations Manager (Optional for other accounts)", role: "Department Head" },
       {
         stage: "3",
         approver: "Senior Operations Manager",
