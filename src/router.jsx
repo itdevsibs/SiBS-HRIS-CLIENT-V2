@@ -49,6 +49,7 @@ const RequisitionsPage = lazyWithRetry(() => import("./pages/requisitions/Requis
 const SchedulePage = lazyWithRetry(() => import("./pages/schedule/SchedulePage"));
 const KronosDatasPage = lazyWithRetry(() => import("./pages/kronos-datas/KronosDatasPage"));
 const ApprovalRequest = lazyWithRetry(() => import("./pages/communication/ApprovalRequest"));
+const EmailLogsPage = lazyWithRetry(() => import("./pages/communication/EmailLogsPage"));
 
 // Recruitment
 const HiringNeedsPage = lazyWithRetry(() => import("./pages/recruitment/HiringNeedsPage"));
@@ -555,6 +556,15 @@ function MainApplicationRoutes() {
         element={
           <PrivateRoute>
             <ApprovalRequest />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/email-logs"
+        element={
+          <PrivateRoute>
+            <EmailLogsPage />
           </PrivateRoute>
         }
       />
