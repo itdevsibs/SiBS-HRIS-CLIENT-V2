@@ -65,6 +65,7 @@ import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/rea
 import StatusModal from "../StatusModal";
 import DocumentVaultManager from "../../documents/DocumentVaultManager.jsx";
 import NhoUploadModal from "../candidatePipeline/NhoUploadModal";
+import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
 import api from "../../../lib/axios/api-template";
 import { getApplicantLeadHistory } from "../../../lib/axios/getApplicantLeads";
 import {
@@ -1777,6 +1778,47 @@ function getResolvedFileUrl(fileUrl = "") {
   }
 
   return value;
+}
+
+function getOfferDocumentVersionNumber(version = {}) {
+  return Math.max(
+    Number(
+      version.versionNumber ||
+        version.version_number ||
+        version.offerVersion ||
+        version.offer_version ||
+        0,
+    ) || 0,
+    0,
+  );
+}
+
+function getOfferDocumentFilename(version = {}) {
+  const versionNumber = getOfferDocumentVersionNumber(version);
+
+  return cleanText(
+    version.pdfFilename ||
+      version.pdf_filename ||
+      `Employment Offer - Version ${versionNumber || 1}.pdf`,
+  );
+}
+
+function getOfferDocumentStatusClass(value = "") {
+  const status = normalizeLower(value);
+
+  if (["approved", "accepted"].includes(status)) {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (["rejected", "declined"].includes(status)) {
+    return "border-red-200 bg-red-50 text-red-700";
+  }
+
+  if (["for review", "pending", "negotiate"].includes(status)) {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-600";
 }
 
 function buildCandidatePipelineFileUrl(candidate = {}, file = {}) {
@@ -4078,6 +4120,15 @@ export default function CandidateProfileModal() {
   const [candidatePipelineFilesError, setCandidatePipelineFilesError] =
     useState("");
 
+  const [offerDocuments, setOfferDocuments] = useState([]);
+  const [offerDocumentsLoading, setOfferDocumentsLoading] = useState(false);
+  const [offerDocumentsError, setOfferDocumentsError] = useState("");
+  const [employmentOfferPreview, setEmploymentOfferPreview] = useState({
+    open: false,
+    filename: "",
+    requestUrl: "",
+  });
+
   const [selectedNhoFile, setSelectedNhoFile] = useState(null);
   const [showNhoUploadModal, setShowNhoUploadModal] = useState(false);
   const [isMovingToOnboarding, setIsMovingToOnboarding] = useState(false);
@@ -4125,6 +4176,14 @@ export default function CandidateProfileModal() {
     setLeadProcessHistory([]);
     setCandidatePipelineFiles([]);
     setCandidatePipelineFilesError("");
+    setOfferDocuments([]);
+    setOfferDocumentsLoading(false);
+    setOfferDocumentsError("");
+    setEmploymentOfferPreview({
+      open: false,
+      filename: "",
+      requestUrl: "",
+    });
     setPipelineCandidateDetailsError("");
     setStatusUpdateOpen(false);
     setStatusUpdateValue("");
@@ -4437,6 +4496,84 @@ export default function CandidateProfileModal() {
   useEffect(() => {
     loadCandidatePipelineNhoFiles();
   }, [loadCandidatePipelineNhoFiles]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (activeTab !== "offer-documents") return undefined;
+
+    const pipelineId = cleanText(
+      resolvedPipelineId || candidatePipelineLookupId,
+    );
+
+    if (!selectedCandidate || !pipelineId) {
+      setOfferDocuments([]);
+      setOfferDocumentsError("");
+      setOfferDocumentsLoading(false);
+      return undefined;
+    }
+
+    async function loadOfferDocuments() {
+      setOfferDocumentsLoading(true);
+      setOfferDocumentsError("");
+
+      try {
+        const response = await api.get(
+          `/api/candidate-pipeline/${encodeURIComponent(
+            pipelineId,
+          )}/offer-versions`,
+          {
+            withCredentials: true,
+            params: { _t: Date.now() },
+          },
+        );
+
+        if (cancelled) return;
+
+        const payload = safeObject(response?.data);
+        const versions = safeArray(
+          payload.versions ||
+            payload.offerVersions ||
+            payload.offer_versions ||
+            payload.data,
+        )
+          .map((version) => safeObject(version))
+          .filter((version) => getOfferDocumentVersionNumber(version) > 0)
+          .sort(
+            (left, right) =>
+              getOfferDocumentVersionNumber(right) -
+              getOfferDocumentVersionNumber(left),
+          );
+
+        setOfferDocuments(versions);
+      } catch (error) {
+        if (cancelled) return;
+
+        setOfferDocuments([]);
+        setOfferDocumentsError(
+          getApiErrorMessage(
+            error,
+            "Unable to load Employment Offer documents.",
+          ),
+        );
+      } finally {
+        if (!cancelled) {
+          setOfferDocumentsLoading(false);
+        }
+      }
+    }
+
+    void loadOfferDocuments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeTab,
+    candidatePipelineLookupId,
+    resolvedPipelineId,
+    selectedCandidate,
+  ]);
 
   useEffect(() => {
     function handlePipelineFilesUpdated(event) {
@@ -4852,6 +4989,11 @@ export default function CandidateProfileModal() {
       children: [
         { key: "documents.vault", label: "Document Vault" },
       ],
+    },
+    {
+      key: "offer-documents",
+      label: "Offer Documents",
+      icon: FileDown,
     },
     {
       key: "answers",
@@ -6736,6 +6878,154 @@ export default function CandidateProfileModal() {
     );
   }
 
+  function renderOfferDocuments() {
+    const pipelineId = cleanText(
+      resolvedPipelineId || candidatePipelineLookupId,
+    );
+
+    function handleViewOfferDocument(version) {
+      const versionNumber = getOfferDocumentVersionNumber(version);
+
+      if (!pipelineId || !versionNumber) {
+        showStatusModal({
+          type: "error",
+          title: "Offer Document Unavailable",
+          message:
+            "The Candidate Pipeline offer record could not be resolved for this candidate.",
+        });
+        return;
+      }
+
+      setEmploymentOfferPreview({
+        open: true,
+        filename: getOfferDocumentFilename(version),
+        requestUrl: `/api/candidate-pipeline/${encodeURIComponent(
+          pipelineId,
+        )}/offer-versions/${encodeURIComponent(versionNumber)}/pdf`,
+      });
+    }
+
+    return (
+      <section className="space-y-4">
+        <SectionTitle
+          icon={FileDown}
+          title="Offer Documents"
+          description="Employment Offer PDF records generated from Candidate Pipeline offer versions."
+        />
+
+        {!pipelineId && !offerDocumentsLoading ? (
+          <EmptyState title="No Candidate Pipeline offer record is linked to this candidate." />
+        ) : offerDocumentsLoading ? (
+          <div className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-sibs-border bg-sibs-canvas text-center">
+            <Loader2 size={24} className="animate-spin text-sibs-orange" />
+            <p className="mt-3 text-xs font-extrabold text-sibs-navy">
+              Loading offer documents...
+            </p>
+          </div>
+        ) : offerDocumentsError ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
+            {offerDocumentsError}
+          </div>
+        ) : offerDocuments.length === 0 ? (
+          <EmptyState title="No offer documents available." />
+        ) : (
+          <div className="space-y-2.5">
+            {offerDocuments.map((version) => {
+              const versionNumber = getOfferDocumentVersionNumber(version);
+              const filename = getOfferDocumentFilename(version);
+              const approvalStatus = cleanText(
+                version.approvalStatus ||
+                  version.approval_status ||
+                  "Pending",
+              );
+              const candidateResponse = cleanText(
+                version.candidateResponse ||
+                  version.candidate_response ||
+                  "Pending",
+              );
+              const roleTitle = cleanText(
+                version.roleTitle || version.role_title,
+              );
+              const account = cleanText(version.account);
+              const documentDate =
+                version.pdfGeneratedAt ||
+                version.pdf_generated_at ||
+                version.offerSentAt ||
+                version.offer_sent_at ||
+                version.submittedAt ||
+                version.submitted_at ||
+                version.createdAt ||
+                version.created_at;
+
+              return (
+                <article
+                  key={`offer-document-${versionNumber}`}
+                  className="flex flex-col gap-3 rounded-xl border border-sibs-border bg-[#F8FAFC] p-3.5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-100 bg-[#FFF3ED] text-sibs-orange">
+                      <FileText size={18} />
+                    </span>
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-black text-sibs-navy">
+                          Employment Offer - Version {versionNumber}
+                        </p>
+                        <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                          V{versionNumber}
+                        </span>
+                      </div>
+
+                      <p
+                        title={filename}
+                        className="mt-1 truncate text-[11px] font-semibold text-sibs-text-muted"
+                      >
+                        {filename}
+                      </p>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${getOfferDocumentStatusClass(
+                            approvalStatus,
+                          )}`}
+                        >
+                          {approvalStatus}
+                        </span>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${getOfferDocumentStatusClass(
+                            candidateResponse,
+                          )}`}
+                        >
+                          Candidate: {candidateResponse}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-[10px] font-semibold text-sibs-text-muted">
+                        {[roleTitle, account].filter(Boolean).join(" · ") ||
+                          "Employment Offer"}
+                        {documentDate ? ` · ${formatDate(documentDate)}` : ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleViewOfferDocument(version)}
+                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-sibs-navy px-3.5 text-xs font-extrabold text-white transition hover:bg-sibs-navy/90"
+                  >
+                    <Eye size={14} className="text-sibs-orange" />
+                    View PDF
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    );
+  }
+
   function renderUploadedFiles() {
     const audioFileUrl = getResolvedFileUrl(activeCandidate.audioFileUrl);
     const attachmentFileUrl = getResolvedFileUrl(activeCandidate.attachmentFileUrl);
@@ -7457,6 +7747,8 @@ export default function CandidateProfileModal() {
 
     if (activeTab === "documents.vault") return renderDocumentVault();
 
+    if (activeTab === "offer-documents") return renderOfferDocuments();
+
     if (activeTab === "answers") return renderApplicationAnswers();
 
     if (activeTab === "movement-history") return renderMovementHistory();
@@ -7989,6 +8281,19 @@ export default function CandidateProfileModal() {
           onSave={handleTalentPoolNhoSave}
         />
       )}
+
+      <EmploymentOfferPdfPreviewModal
+        open={employmentOfferPreview.open}
+        filename={employmentOfferPreview.filename}
+        requestUrl={employmentOfferPreview.requestUrl}
+        onClose={() =>
+          setEmploymentOfferPreview({
+            open: false,
+            filename: "",
+            requestUrl: "",
+          })
+        }
+      />
 
       <StatusModal
         open={statusModal.open}
