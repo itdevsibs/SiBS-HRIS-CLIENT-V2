@@ -26,6 +26,20 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function getOfferOwnerDisplay(version = {}, offer = {}) {
+  return (
+    cleanText(
+      version?.submittedByDisplay ||
+        version?.submitted_by_display ||
+        offer?.ownerDisplay ||
+        offer?.owner_display ||
+        version?.submittedBy ||
+        version?.submitted_by ||
+        offer?.owner,
+    ) || "—"
+  );
+}
+
 
 function getRateDisplay(value) {
   return value === null || value === undefined || value === ""
@@ -427,6 +441,16 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
         }
       }
 
+      /*
+       * Close Offer Details after a successful revised-offer submission.
+       * The success modal is owned by OffersContext, so it remains visible
+       * after this details modal is closed.
+       *
+       * Error paths intentionally do not close this modal so the user can
+       * correct the values and try again.
+       */
+      onClose?.();
+
       openStatusModal?.({
         type: "success",
         title: "Revised Offer Submitted",
@@ -639,7 +663,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                             Submitted: {formatOfferVersionDate(version.submittedAt)}
                           </p>
                           <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
-                            Submitted by: {version.submittedBy || "—"}
+                            Submitted by: {getOfferOwnerDisplay(version, offer)}
                           </p>
                         </div>
 
@@ -844,10 +868,10 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   />
                   <DetailRow
                     label="Owner"
-                    value={
-                      latestOfferVersion?.submittedBy ||
-                      offer.owner
-                    }
+                    value={getOfferOwnerDisplay(
+                      latestOfferVersion || {},
+                      offer,
+                    )}
                   />
                 </div>
               </section>

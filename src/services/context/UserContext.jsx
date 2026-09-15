@@ -17,7 +17,6 @@ import { createBirthdayLoginEvent } from "../../lib/utils/birthdayCelebration.js
 
 
 import {
-  SESSION_DURATION_MS,
   clearCachedAuthSession,
   normalizeExpiry,
   readCachedAuthSession,
@@ -30,16 +29,20 @@ import {
 const UserContext = createContext(null);
 
 const USER_REQUEST_TIMEOUT = 15_000;
+const SESSION_REFRESH_TIMEOUT = 15_000;
 const ACTIVITY_THROTTLE_MS = 1_000;
 
 /*
- * The server JWT/cookie expiration is the hard HRIS session deadline.
- * Client activity may validate the deadline, but it must never extend it.
+ * The backend JWT ENV values are the authoritative HRIS session lifetime.
+ *
+ * - JWT_EXPIRES_IN controls employee-token lifetime.
+ * - JWT_ADMIN_EXPIRES_IN controls admin-token lifetime.
+ * - meaningful user activity renews the token through /api/users/refresh.
+ * - no meaningful activity means no refresh; the token expires and HRIS logs out.
+ * - mouse movement by itself is intentionally ignored.
  */
 const SERVER_TOKEN_EXPIRY_SESSION_KEY = "serverTokenExpiresAt";
 const SERVER_TOKEN_EXPIRY_LOCAL_KEY = "server_token_expires_at";
-const SESSION_IDLE_DURATION_SESSION_KEY = "sessionIdleDurationMs";
-const SESSION_IDLE_DURATION_LOCAL_KEY = "session_idle_duration_ms";
 
 const PUBLIC_PATHS = [
   "/",
@@ -61,8 +64,10 @@ const PUBLIC_PATHS = [
 
 const ACTIVITY_EVENTS = [
   "pointerdown",
-  "pointermove",
+  "click",
   "keydown",
+  "input",
+  "change",
   "scroll",
   "wheel",
   "touchstart",
@@ -96,9 +101,24 @@ function readStoredServerTokenExpiry() {
     getSessionStorage()?.getItem(SERVER_TOKEN_EXPIRY_SESSION_KEY),
   );
 
-  if (!sessionExpiry) return 0;
+  const sharedExpiry = normalizeExpiry(
+    getLocalStorage()?.getItem(SERVER_TOKEN_EXPIRY_LOCAL_KEY),
+  );
 
-  return sessionExpiry;
+  const expiresAt = Math.max(sessionExpiry, sharedExpiry);
+
+  if (!expiresAt) return 0;
+
+  getSessionStorage()?.setItem(
+    SERVER_TOKEN_EXPIRY_SESSION_KEY,
+    String(expiresAt),
+  );
+  getLocalStorage()?.setItem(
+    SERVER_TOKEN_EXPIRY_LOCAL_KEY,
+    String(expiresAt),
+  );
+
+  return expiresAt;
 }
 
 function writeStoredServerTokenExpiry(value) {
@@ -110,8 +130,10 @@ function writeStoredServerTokenExpiry(value) {
     SERVER_TOKEN_EXPIRY_SESSION_KEY,
     String(expiresAt),
   );
-
-  getLocalStorage()?.removeItem(SERVER_TOKEN_EXPIRY_LOCAL_KEY);
+  getLocalStorage()?.setItem(
+    SERVER_TOKEN_EXPIRY_LOCAL_KEY,
+    String(expiresAt),
+  );
 
   return expiresAt;
 }
@@ -120,38 +142,6 @@ function clearStoredServerTokenExpiry() {
   getSessionStorage()?.removeItem(SERVER_TOKEN_EXPIRY_SESSION_KEY);
 
   getLocalStorage()?.removeItem(SERVER_TOKEN_EXPIRY_LOCAL_KEY);
-}
-
-function readStoredIdleDuration() {
-  const duration = SESSION_DURATION_MS;
-
-  getSessionStorage()?.setItem(
-    SESSION_IDLE_DURATION_SESSION_KEY,
-    String(duration),
-  );
-
-  getLocalStorage()?.removeItem(SESSION_IDLE_DURATION_LOCAL_KEY);
-
-  return duration;
-}
-
-function writeStoredIdleDuration() {
-  const duration = SESSION_DURATION_MS;
-
-  getSessionStorage()?.setItem(
-    SESSION_IDLE_DURATION_SESSION_KEY,
-    String(duration),
-  );
-
-  getLocalStorage()?.removeItem(SESSION_IDLE_DURATION_LOCAL_KEY);
-
-  return duration;
-}
-
-function clearStoredIdleDuration() {
-  getSessionStorage()?.removeItem(SESSION_IDLE_DURATION_SESSION_KEY);
-
-  getLocalStorage()?.removeItem(SESSION_IDLE_DURATION_LOCAL_KEY);
 }
 
 export function UserProvider({ children }) {
@@ -188,7 +178,7 @@ export function UserProvider({ children }) {
   const justLoggedInRef = useRef(false);
 
   const lastHandledActivityRef = useRef(0);
-  const idleDurationRef = useRef(readStoredIdleDuration());
+  const lastServerRefreshRequestRef = useRef(0);
 
   const replaceUser = useCallback((nextUser, { cache = true } = {}) => {
     userRef.current = nextUser;
@@ -272,9 +262,6 @@ export function UserProvider({ children }) {
 
     clearCachedAuthSession();
     clearStoredServerTokenExpiry();
-    clearStoredIdleDuration();
-
-    idleDurationRef.current = SESSION_DURATION_MS;
     justLoggedInRef.current = false;
     setPostLoginCelebrationEvent(null);
     replaceUser(null, { cache: false });
@@ -321,7 +308,7 @@ export function UserProvider({ children }) {
       return false;
     }
 
-    const expiresAt = readStoredExpiry();
+    const expiresAt = readStoredServerTokenExpiry() || readStoredExpiry();
 
     if (!expiresAt) {
       void forceLogout();
@@ -344,7 +331,8 @@ export function UserProvider({ children }) {
          * Re-read it before logging out so an older timer in this tab cannot
          * invalidate the shared authentication cookies for every open tab.
          */
-        const latestExpiresAt = readStoredExpiry();
+        const latestExpiresAt =
+          readStoredServerTokenExpiry() || readStoredExpiry();
         const latestRemaining = latestExpiresAt - Date.now();
 
         if (latestRemaining > 0) {
@@ -366,7 +354,8 @@ export function UserProvider({ children }) {
       return true;
     }
 
-    const expiresAt = readStoredExpiry();
+    const expiresAt =
+      readStoredServerTokenExpiry() || readStoredExpiry();
 
     if (!expiresAt || expiresAt <= Date.now()) {
       void forceLogout();
@@ -399,34 +388,132 @@ export function UserProvider({ children }) {
       }
 
       writeStoredServerTokenExpiry(expiresAt);
+      writeStoredExpiry(expiresAt);
 
       if (expiresAt <= Date.now()) {
         void forceLogout();
         return false;
       }
 
-      // No background refresh: startLogoutTimer owns the hard JWT deadline.
+      startLogoutTimer();
       return true;
     },
-    [clearServerRefreshTimer, forceLogout],
+    [
+      clearServerRefreshTimer,
+      forceLogout,
+      startLogoutTimer,
+    ],
   );
 
-  const refreshServerSession = useCallback(async () => {
-    /*
-     * JWT expiration is a hard session deadline. Do not mint a replacement
-     * token in the background; the configured server JWT lifetime must be
-     * allowed to expire and return the user to /login.
-     */
-    const expiresAt =
-      readStoredServerTokenExpiry() || readStoredExpiry();
+  const refreshServerSession = useCallback(
+    async ({ reason = "activity" } = {}) => {
+      if (
+        isPublicPath(window.location.pathname) ||
+        !userRef.current ||
+        logoutInProgressRef.current
+      ) {
+        return false;
+      }
 
-    if (!expiresAt || expiresAt <= Date.now()) {
-      await forceLogout();
-      return false;
-    }
+      if (!validateInactivityExpiry()) {
+        return false;
+      }
 
-    return false;
-  }, [forceLogout]);
+      if (refreshPromiseRef.current) {
+        return refreshPromiseRef.current;
+      }
+
+      const controller = new AbortController();
+      refreshControllerRef.current = controller;
+
+      const refreshPromise = (async () => {
+        try {
+          const response = await api.post(
+            "/api/users/refresh",
+            { reason },
+            {
+              withCredentials: true,
+              timeout: SESSION_REFRESH_TIMEOUT,
+              signal: controller.signal,
+              skipAuthRedirect: true,
+            },
+          );
+
+          if (response.data?.success === false) {
+            throw new Error(
+              response.data?.message ||
+                "Unable to refresh the session.",
+            );
+          }
+
+          const expiresAt = normalizeExpiry(
+            response.data?.expiresAt,
+          );
+
+          if (!expiresAt || expiresAt <= Date.now()) {
+            throw new Error(
+              "The refreshed session did not return a valid expiration.",
+            );
+          }
+
+          lastServerRefreshRequestRef.current = Date.now();
+          writeStoredServerTokenExpiry(expiresAt);
+          writeStoredExpiry(expiresAt);
+          scheduleServerRefresh(expiresAt);
+
+          return true;
+        } catch (error) {
+          if (isCanceledRequest(error)) {
+            return false;
+          }
+
+          if (shouldEndSessionAfterUserFetchError(error)) {
+            await forceLogout();
+            return false;
+          }
+
+          lastServerRefreshRequestRef.current = 0;
+
+          console.warn(
+            "Session refresh was unavailable:",
+            error?.response?.data || error?.message,
+          );
+
+          const serverExpiresAt =
+            readStoredServerTokenExpiry() || readStoredExpiry();
+
+          if (!serverExpiresAt || serverExpiresAt <= Date.now()) {
+            await forceLogout();
+          } else {
+            startLogoutTimer();
+          }
+
+          return false;
+        } finally {
+          if (refreshControllerRef.current === controller) {
+            refreshControllerRef.current = null;
+          }
+        }
+      })();
+
+      refreshPromiseRef.current = refreshPromise;
+
+      try {
+        return await refreshPromise;
+      } finally {
+        if (refreshPromiseRef.current === refreshPromise) {
+          refreshPromiseRef.current = null;
+        }
+      }
+    },
+    [
+      clearServerRefreshTimer,
+      forceLogout,
+      scheduleServerRefresh,
+      startLogoutTimer,
+      validateInactivityExpiry,
+    ],
+  );
 
   refreshSessionRef.current = refreshServerSession;
 
@@ -434,13 +521,18 @@ export function UserProvider({ children }) {
     const expiresAt =
       readStoredServerTokenExpiry() || readStoredExpiry();
 
-    if (!expiresAt || expiresAt <= Date.now()) {
+    if (!expiresAt) {
+      return true;
+    }
+
+    if (expiresAt <= Date.now()) {
       await forceLogout();
       return false;
     }
 
+    scheduleServerRefresh(expiresAt);
     return true;
-  }, [forceLogout]);
+  }, [forceLogout, scheduleServerRefresh]);
 
   const extendSessionFromActivity = useCallback(
     (activityAt = Date.now()) => {
@@ -452,18 +544,23 @@ export function UserProvider({ children }) {
         return false;
       }
 
-      const currentExpiry = readStoredExpiry();
+      const serverExpiresAt =
+        readStoredServerTokenExpiry() || readStoredExpiry();
 
-      // User activity must never move the JWT deadline forward.
-      if (!currentExpiry || currentExpiry <= activityAt) {
+      if (!serverExpiresAt || serverExpiresAt <= activityAt) {
         void forceLogout();
         return false;
       }
 
-      startLogoutTimer();
+      lastServerRefreshRequestRef.current = activityAt;
+
+      void refreshSessionRef.current?.({
+        reason: "user-activity",
+      });
+
       return true;
     },
-    [forceLogout, startLogoutTimer],
+    [forceLogout],
   );
 
   const fetchUser = useCallback(
@@ -527,8 +624,8 @@ export function UserProvider({ children }) {
           const expiresAt = normalizeExpiry(response.data?.expiresAt);
 
           if (expiresAt > Date.now()) {
-            writeStoredExpiry(expiresAt);
             writeStoredServerTokenExpiry(expiresAt);
+            writeStoredExpiry(expiresAt);
             scheduleServerRefresh(expiresAt);
           }
 
@@ -630,8 +727,6 @@ export function UserProvider({ children }) {
       return undefined;
     }
 
-    idleDurationRef.current = readStoredIdleDuration();
-
     if (justLoggedInRef.current && userRef.current) {
       justLoggedInRef.current = false;
       setLoading(false);
@@ -685,7 +780,8 @@ export function UserProvider({ children }) {
   }, [user]);
 
   /*
-   * User activity only checks the hard JWT deadline; it never extends it.
+   * Only meaningful interaction extends the session. Mouse movement alone is
+   * deliberately excluded. Focus/visibility only validate the session.
    */
   useEffect(() => {
     if (publicRoute || !user) {
@@ -707,9 +803,17 @@ export function UserProvider({ children }) {
       extendSessionFromActivity(now);
     }
 
-    function handleVisibilityChange(event) {
+    function validateVisibleSession() {
+      if (!validateInactivityExpiry()) {
+        return;
+      }
+
+      void ensureServerTokenReady();
+    }
+
+    function handleVisibilityChange() {
       if (document.visibilityState === "visible") {
-        handleUserActivity(event);
+        validateVisibleSession();
       }
     }
 
@@ -717,8 +821,7 @@ export function UserProvider({ children }) {
       window.addEventListener(eventName, handleUserActivity, { passive: true });
     });
 
-    window.addEventListener("focus", handleUserActivity);
-
+    window.addEventListener("focus", validateVisibleSession);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     startLogoutTimer();
@@ -734,20 +837,39 @@ export function UserProvider({ children }) {
         window.removeEventListener(eventName, handleUserActivity);
       });
 
-      window.removeEventListener("focus", handleUserActivity);
-
+      window.removeEventListener("focus", validateVisibleSession);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
+    ensureServerTokenReady,
     extendSessionFromActivity,
     publicRoute,
     scheduleServerRefresh,
     startLogoutTimer,
     user,
+    validateInactivityExpiry,
+  ]);
+
+  /*
+   * React Router navigation is also meaningful activity. This catches sidebar
+   * and page navigation even when the originating click is handled elsewhere.
+   */
+  useEffect(() => {
+    if (publicRoute || !user) return;
+
+    const now = Date.now();
+    lastHandledActivityRef.current = now;
+    extendSessionFromActivity(now);
+  }, [
+    extendSessionFromActivity,
+    location.pathname,
+    location.search,
+    publicRoute,
+    user,
   ]);
 
   const updateUser = useCallback(
-    (newUser, serverExpiresAt = null) => {
+    (newUser, serverExpiresAt = null, expiresInMs = null) => {
       abortUserFetch();
       abortServerRefresh();
       clearServerRefreshTimer();
@@ -759,36 +881,32 @@ export function UserProvider({ children }) {
 
       const now = Date.now();
       const normalizedServerExpiry = normalizeExpiry(serverExpiresAt);
-      const currentExpiry = readStoredExpiry();
-      const effectiveExpiry =
+      const expiresIn = Number(expiresInMs);
+      const calculatedServerExpiry =
         normalizedServerExpiry > now
           ? normalizedServerExpiry
-          : currentExpiry > now
-            ? currentExpiry
-            : 0;
+          : Number.isFinite(expiresIn) && expiresIn > 0
+            ? now + expiresIn
+            : readStoredServerTokenExpiry();
 
-      /*
-       * The server JWT expiration is the authoritative session deadline.
-       * Updating the user object must not create a new one-hour client session.
-       */
-      idleDurationRef.current = writeStoredIdleDuration(SESSION_DURATION_MS);
-
-      if (!effectiveExpiry) {
-        clearLocalAuthState();
-        return;
+      if (calculatedServerExpiry > now) {
+        writeStoredExpiry(calculatedServerExpiry);
+        writeStoredServerTokenExpiry(calculatedServerExpiry);
+      } else {
+        clearStoredServerTokenExpiry();
       }
 
-      writeStoredExpiry(effectiveExpiry);
-      writeStoredServerTokenExpiry(effectiveExpiry);
-
       lastHandledActivityRef.current = now;
+      lastServerRefreshRequestRef.current = now;
       justLoggedInRef.current = true;
 
       replaceUser(newUser);
       setLoading(false);
       startLogoutTimer();
 
-      scheduleServerRefresh(effectiveExpiry);
+      if (calculatedServerExpiry > now) {
+        scheduleServerRefresh(calculatedServerExpiry);
+      }
     },
     [
       abortServerRefresh,

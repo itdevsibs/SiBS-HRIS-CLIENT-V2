@@ -770,7 +770,7 @@ export default function PublicInterviewDateSelectionPage() {
   return (
     <main className="min-h-dvh bg-[#F4F7FB] px-4 py-8 font-jakarta sm:py-12">
       <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-3xl border border-[#D9E2EC] bg-white shadow-xl">
-        <header className="border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-8">
+        <header className="flex items-center justify-center border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-8">
           <img
             src="/SiBSLogoNavy.png"
             alt="SiBS Contact Center"

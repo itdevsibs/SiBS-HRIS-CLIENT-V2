@@ -2961,6 +2961,7 @@ function buildOffersPageCandidateParams(candidate = {}) {
   }
 
   params.set("source", "candidate-pipeline");
+  params.set("openOffer", "1");
 
   return params;
 }

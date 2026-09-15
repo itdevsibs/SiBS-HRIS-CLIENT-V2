@@ -113,13 +113,53 @@ let isRedirecting = false;
 let logoutPromise = null;
 
 function clearClientSession() {
-  sessionStorage.removeItem("accessTokenExpiresAt");
-  sessionStorage.removeItem("selectedEmployeeId");
-  sessionStorage.removeItem("sibsAuthenticatedUser");
+  if (typeof sessionStorage !== "undefined") {
+    /*
+     * Session storage is tab-scoped. Clear it completely so an expired
+     * session cannot restore stale HRIS page/auth state after redirect.
+     */
+    sessionStorage.clear();
+  }
 
-  localStorage.removeItem("token_expires_at");
-  localStorage.removeItem("selectedEmployeeId");
-  localStorage.removeItem("employeePageState");
+  if (typeof localStorage !== "undefined") {
+    [
+      "token_expires_at",
+      "server_token_expires_at",
+      "session_idle_duration_ms",
+      "selectedEmployeeId",
+      "employeePageState",
+    ].forEach((key) => localStorage.removeItem(key));
+  }
+}
+
+async function clearBrowserRuntimeCache() {
+  if (typeof window === "undefined") return;
+
+  try {
+    if ("caches" in window) {
+      const cacheNames = await window.caches.keys();
+
+      await Promise.all(
+        cacheNames.map((cacheName) =>
+          window.caches.delete(cacheName),
+        ),
+      );
+    }
+  } catch (error) {
+    console.warn(
+      "Unable to clear browser Cache Storage during logout:",
+      error?.message || error,
+    );
+  }
+}
+
+function getFreshLoginUrl() {
+  if (typeof window === "undefined") return "/login";
+
+  const loginUrl = new URL("/login", window.location.origin);
+  loginUrl.searchParams.set("_fresh", String(Date.now()));
+
+  return `${loginUrl.pathname}${loginUrl.search}`;
 }
 
 function dispatchLogoutStart() {
@@ -162,9 +202,15 @@ export async function handleLogout(redirect = true) {
       }
     } finally {
       clearClientSession();
+      await clearBrowserRuntimeCache();
 
       if (redirect) {
-        window.location.replace("/login");
+        /*
+         * JavaScript cannot issue the browser's Ctrl+Shift+R command. A
+         * cache-busted full document navigation, after clearing Cache Storage,
+         * gives HRIS the same clean-start behavior for an expired session.
+         */
+        window.location.replace(getFreshLoginUrl());
       } else {
         isRedirecting = false;
       }
