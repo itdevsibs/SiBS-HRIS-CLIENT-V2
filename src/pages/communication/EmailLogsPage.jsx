@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import Header from "@/components/layout/Header";
+import RichTextEditor from "@/components/modals/jobDescription/RichTextEditor";
 import {
   DataCard,
   ModalShell,
@@ -24,9 +25,11 @@ import {
   TablePagination,
 } from "@/components/ui";
 import useEmailLogsPage from "@/hooks/emailLogs/useEmailLogsPage";
+import { sendTestEmailDispatch } from "@/lib/axios/getEmailLogs";
 import { EMAIL_STATUS_TABS } from "@/lib/utils/emailLogs/emailLogsData";
 import { isEmailLogActivationKey } from "@/lib/utils/emailLogs/emailLogsHelpers";
 import EmailLogDetailsDrawer from "./emailLogs/EmailLogDetailsDrawer";
+import EmailLogCategoryDropdown from "./emailLogs/EmailLogCategoryDropdown";
 
 const STATUS_STYLES = {
   delivered: {
@@ -165,7 +168,7 @@ function DesktopTable({ records, onView }) {
               className="cursor-pointer transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40"
             >
               <td className="w-[190px] px-4 py-3.5 align-middle">
-                <p className="block max-w-[190px] truncate text-left text-[11px] font-extrabold uppercase text-sibs-orange">
+                <p className="block max-w-[190px] truncate text-left text-[11px] font-extrabold text-sibs-orange">
                   {record.recipient}
                 </p>
                 <p className="mt-0.5 font-mono text-[9px] font-bold text-sibs-faint">LOG ID: {record.id}</p>
@@ -196,7 +199,7 @@ function DesktopTable({ records, onView }) {
                 {record.statusDetail ? <p className="mt-1 max-w-[140px] truncate text-[8px] font-bold text-rose-600">{record.statusDetail}</p> : null}
               </td>
               <td className="w-[190px] px-4 py-3.5 align-middle">
-                <p className="flex items-center gap-1.5 truncate text-[10px] font-extrabold uppercase text-sibs-navy">
+                <p className="flex items-center gap-1.5 truncate text-[10px] font-extrabold text-sibs-navy">
                   <UserRound className="h-3.5 w-3.5 shrink-0 text-sibs-orange" />
                   {record.dispatchedBy}
                 </p>
@@ -248,7 +251,14 @@ export default function EmailLogsPage() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [testEmailSent, setTestEmailSent] = useState(false);
-
+  const [testEmailCategory, setTestEmailCategory] = useState("Interview");
+  const [testEmailRecipient, setTestEmailRecipient] = useState("");
+  const [testEmailSubject, setTestEmailSubject] = useState("SiBS Test Email Dispatch");
+  const [testEmailMessageHtml, setTestEmailMessageHtml] = useState("");
+  const [testEmailMessageText, setTestEmailMessageText] = useState("");
+  const [testEmailSending, setTestEmailSending] = useState(false);
+  const [testEmailError, setTestEmailError] = useState("");
+  const [testEmailResult, setTestEmailResult] = useState(null);
   const showingStart = logs.totalRecords ? (logs.page - 1) * logs.pageSize + 1 : 0;
   const showingEnd = Math.min(logs.page * logs.pageSize, logs.totalRecords);
 
@@ -270,9 +280,59 @@ export default function EmailLogsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const submitTestEmail = (event) => {
+  const openTestEmailModal = () => {
+    setTestEmailOpen(true);
+    setTestEmailSent(false);
+    setTestEmailCategory("Interview");
+    setTestEmailRecipient("");
+    setTestEmailSubject("SiBS Test Email Dispatch");
+    setTestEmailMessageHtml("");
+    setTestEmailMessageText("");
+    setTestEmailSending(false);
+    setTestEmailError("");
+    setTestEmailResult(null);
+  };
+
+  const closeTestEmailModal = () => {
+    if (testEmailSending) return;
+    setTestEmailOpen(false);
+  };
+
+  const submitTestEmail = async (event) => {
     event.preventDefault();
-    setTestEmailSent(true);
+
+    if (testEmailSending) return;
+
+    setTestEmailSending(true);
+    setTestEmailError("");
+
+    try {
+      const result = await sendTestEmailDispatch({
+        recipientEmail: testEmailRecipient,
+        category: testEmailCategory,
+        subject: testEmailSubject,
+        messageHtml: testEmailMessageHtml,
+        messageText: testEmailMessageText,
+      });
+
+      if (!result?.success) {
+        throw new Error(result?.message || "Unable to send the test email.");
+      }
+
+      setTestEmailResult(result);
+      setTestEmailSent(true);
+      logs.refresh();
+    } catch (error) {
+      const responseData = error?.response?.data;
+      setTestEmailError(
+        responseData?.error ||
+          responseData?.message ||
+          error?.message ||
+          "Unable to send the test email.",
+      );
+    } finally {
+      setTestEmailSending(false);
+    }
   };
 
   return (
@@ -293,7 +353,7 @@ export default function EmailLogsPage() {
               <button type="button" className="sibs-btn-secondary" onClick={downloadCsvTemplate}>
                 <Download className="h-4 w-4" /> CSV Template
               </button>
-              <button type="button" className="sibs-btn-primary" onClick={() => { setTestEmailOpen(true); setTestEmailSent(false); }}>
+              <button type="button" className="sibs-btn-primary" onClick={openTestEmailModal}>
                 <Send className="h-4 w-4" /> Dispatch Test Email
               </button>
             </>
@@ -419,38 +479,99 @@ export default function EmailLogsPage() {
 
       <ModalShell
         open={testEmailOpen}
-        onClose={() => setTestEmailOpen(false)}
+        onClose={closeTestEmailModal}
         title="Dispatch Test Email"
-        subtitle="Preview the front-end dispatch workflow without connecting to a mail service."
+        subtitle="Send a real test message through the configured HRIS mail service and record the delivery result in Email Logs."
         icon={Send}
-        badge="Local Preview"
-        footer={!testEmailSent ? null : <button type="button" className="sibs-btn-primary" onClick={() => setTestEmailOpen(false)}>Done</button>}
+        badge="Live SMTP"
+        footer={!testEmailSent ? null : <button type="button" className="sibs-btn-primary" onClick={closeTestEmailModal}>Done</button>}
       >
         {testEmailSent ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
-            <p className="mt-3 text-sm font-extrabold text-emerald-800">Test dispatch prepared</p>
-            <p className="mt-1 text-xs font-semibold text-emerald-700">This is a front-end preview only. No email was sent.</p>
+            <p className="mt-3 text-sm font-extrabold text-emerald-800">Test email sent</p>
+            <p className="mt-1 text-xs font-semibold text-emerald-700">
+              Delivered to {testEmailResult?.recipientEmail || testEmailRecipient} through the configured HRIS mail service.
+            </p>
+            {testEmailResult?.messageId ? (
+              <p className="mt-2 break-all font-mono text-[10px] font-semibold text-emerald-700/80">
+                Message ID: {testEmailResult.messageId}
+              </p>
+            ) : null}
           </div>
         ) : (
-          <form className="space-y-4" onSubmit={submitTestEmail}>
+          <form className="space-y-4" autoComplete="off" onSubmit={submitTestEmail}>
             <label className="block">
               <span className="sibs-field-label">Recipient Email</span>
-              <input required type="email" className="sibs-dashboard-input px-3" placeholder="name@example.com" />
+              <input
+                required
+                type="email"
+                name="recipient_email"
+                autoComplete="email"
+                className="sibs-dashboard-input px-3"
+                placeholder="name@example.com"
+                value={testEmailRecipient}
+                onChange={(event) => setTestEmailRecipient(event.target.value)}
+                disabled={testEmailSending}
+              />
             </label>
-            <label className="block">
-              <span className="sibs-field-label">Template Category</span>
-              <select className="sibs-dashboard-input px-3" defaultValue="Interview">
-                {logs.categories.map((value) => <option key={value}>{value}</option>)}
-              </select>
-            </label>
+            <EmailLogCategoryDropdown
+              categories={logs.categories}
+              value={testEmailCategory}
+              onChange={setTestEmailCategory}
+            />
             <label className="block">
               <span className="sibs-field-label">Subject</span>
-              <input required className="sibs-dashboard-input px-3" defaultValue="SiBS Test Email Dispatch" />
+              <input
+                required
+                type="text"
+                name="subject"
+                className="sibs-dashboard-input px-3"
+                value={testEmailSubject}
+                onChange={(event) => setTestEmailSubject(event.target.value)}
+                disabled={testEmailSending}
+              />
             </label>
+
+            <div className="block">
+              <span className="sibs-field-label">Message Body</span>
+              <p className="mb-2 text-[10px] font-semibold text-sibs-muted">
+                Paste formatted content here. Paragraphs, line breaks, bold, italic, lists, and supported links are preserved. Leave blank to use the selected category template.
+              </p>
+              <div className={testEmailSending ? "pointer-events-none opacity-60" : ""}>
+                <RichTextEditor
+                  id="email-test-message-body"
+                  value={testEmailMessageHtml}
+                  onChange={(html, text) => {
+                    setTestEmailMessageHtml(html);
+                    setTestEmailMessageText(text);
+                  }}
+                  placeholder="Write or paste the email message body..."
+                  minHeight={170}
+                />
+              </div>
+            </div>
+
+            {testEmailError ? (
+              <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-semibold text-rose-700">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{testEmailError}</span>
+              </div>
+            ) : null}
+
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" className="sibs-btn-secondary" onClick={() => setTestEmailOpen(false)}>Cancel</button>
-              <button type="submit" className="sibs-btn-primary"><Send className="h-4 w-4" /> Prepare Dispatch</button>
+              <button
+                type="button"
+                className="sibs-btn-secondary"
+                onClick={closeTestEmailModal}
+                disabled={testEmailSending}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="sibs-btn-primary" disabled={testEmailSending}>
+                <Send className={`h-4 w-4 ${testEmailSending ? "animate-pulse" : ""}`} />
+                {testEmailSending ? "Sending..." : "Send Test Email"}
+              </button>
             </div>
           </form>
         )}

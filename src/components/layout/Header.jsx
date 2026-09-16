@@ -41,6 +41,7 @@ import { useUser } from "../../services/context/UserContext";
 import { useHeader } from "../../services/context/HeaderContext";
 import { getEmployee } from "../../lib/axios/getEmployee";
 import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
+import { getManilaClock } from "../../lib/axios/getAuditNotifications";
 import {
   sanitizeDisplayFullName,
   sanitizeMiddleName,
@@ -1025,14 +1026,66 @@ export default function Header() {
       hour12: true,
     });
 
-    const updateClock = () => {
-      setTimeStr(`${formatter.format(new Date())} GMT+8`);
+    let cancelled = false;
+    let authoritativeEpochMs = null;
+    let performanceAnchorMs = null;
+
+    const getSyncedNow = () => {
+      if (
+        !Number.isFinite(authoritativeEpochMs) ||
+        !Number.isFinite(performanceAnchorMs)
+      ) {
+        return null;
+      }
+
+      const elapsedMs = performance.now() - performanceAnchorMs;
+      return new Date(authoritativeEpochMs + Math.max(0, elapsedMs));
     };
 
-    updateClock();
-    const interval = window.setInterval(updateClock, 1000);
+    const updateClock = () => {
+      const syncedNow = getSyncedNow();
+      if (!syncedNow || cancelled) return;
 
-    return () => window.clearInterval(interval);
+      setTimeStr(`${formatter.format(syncedNow)} GMT+8`);
+    };
+
+    const syncClock = async () => {
+      try {
+        const requestStartedAt = performance.now();
+        const payload = await getManilaClock();
+        const requestEndedAt = performance.now();
+        const nextEpochMs = Number(payload?.serverEpochMs);
+
+        if (!Number.isFinite(nextEpochMs) || nextEpochMs <= 0) return;
+
+        authoritativeEpochMs =
+          nextEpochMs + Math.max(0, requestEndedAt - requestStartedAt) / 2;
+        performanceAnchorMs = requestEndedAt;
+        updateClock();
+      } catch (error) {
+        console.warn(
+          "[Header] Unable to synchronize authoritative Manila clock:",
+          error?.message || error,
+        );
+      }
+    };
+
+    void syncClock();
+
+    const tickInterval = window.setInterval(updateClock, 1000);
+    const resyncInterval = window.setInterval(syncClock, 5 * 60_000);
+    const handleWindowFocus = () => {
+      void syncClock();
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(tickInterval);
+      window.clearInterval(resyncInterval);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
   }, []);
 
   useEffect(() => {
