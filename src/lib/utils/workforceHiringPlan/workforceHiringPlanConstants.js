@@ -21,6 +21,7 @@ export const WEEKLY_CLUSTER_OPTIONS = [
   "US Visa",
   "SME",
   "Yomdel",
+  "Shared",
   "Corporate",
 ];
 

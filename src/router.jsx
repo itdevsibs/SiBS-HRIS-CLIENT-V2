@@ -79,6 +79,9 @@ const FinalInterviewForms = lazyWithRetry(() => import("./components/recruitment
 const RecruitmentSettingsPage = lazyWithRetry(() => import("./pages/Settings/RecruitmentSettingsPage"));
 const AccountSettingsPage = lazyWithRetry(() => import("./pages/Settings/AccountSettingsPage"));
 
+// Administration
+const DepartmentsPage = lazyWithRetry(() => import("./pages/administration/DepartmentsPage"));
+
 const DEFAULT_PUBLIC_APPLICATION_HOST = "sibsapply.getleadsource.com";
 
 function normalizeHostname(value) {
@@ -527,6 +530,16 @@ function MainApplicationRoutes() {
         element={
           <PrivateRoute>
             <FinalInterviewForms />
+          </PrivateRoute>
+        }
+      />
+
+      {/* ADMINISTRATION */}
+      <Route
+        path="/departments"
+        element={
+          <PrivateRoute>
+            <DepartmentsPage />
           </PrivateRoute>
         }
       />
