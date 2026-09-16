@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Building2,
   Check,
@@ -2266,9 +2266,28 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
   );
 }
 
-function MobileUserCard({ user, onEdit, onDelete }) {
+function MobileUserCard({
+  user,
+  onEdit,
+  onDelete,
+  highlighted = false,
+}) {
   return (
-    <DataCard>
+    <div
+      data-account-settings-sibs-id={safeText(user?.sibsId)}
+      className={`rounded-2xl transition-all duration-300 ${
+        highlighted
+          ? "ring-2 ring-[#FF5C28]/50 ring-offset-2 ring-offset-[#F8FAFC]"
+          : ""
+      }`}
+    >
+      <DataCard
+        className={
+          highlighted
+            ? "border-[#FF5C28]/50 bg-[#FFF9F6] shadow-md"
+            : ""
+        }
+      >
       <DataCard.Header
         avatar={<ProfileAvatar employee={user} size="lg" />}
         title={formatEmployeeName(user)}
@@ -2336,7 +2355,8 @@ function MobileUserCard({ user, onEdit, onDelete }) {
           Delete
         </button>
       </DataCard.Actions>
-    </DataCard>
+      </DataCard>
+    </div>
   );
 }
 
@@ -2376,6 +2396,7 @@ function AccountSettingsLoading() {
 
 export default function AccountSettingsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading: userLoading } = useUser();
   const searchInputRef = useRef(null);
   const skipInitialUsersReloadRef = useRef(true);
@@ -2387,6 +2408,7 @@ export default function AccountSettingsPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [highlightedSibsId, setHighlightedSibsId] = useState("");
 
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
@@ -2563,6 +2585,37 @@ export default function AccountSettingsPage() {
   ]);
 
   useEffect(() => {
+    const state = location.state;
+
+    if (state?.source !== "account-settings-notification") {
+      return;
+    }
+
+    const targetSibsId = safeText(
+      state?.highlightSibsId || state?.targetSibsId,
+    );
+
+    if (targetSibsId) {
+      /*
+       * Search by the notification target so the selected employee can be
+       * located even when their record was previously on another page.
+       */
+      skipInitialUsersReloadRef.current = false;
+      setSearch(targetSibsId);
+      setAppliedSearch(targetSibsId);
+      setRoleFilter("All");
+      setAccountFilter("All");
+      setCurrentPage(1);
+      setHighlightedSibsId(targetSibsId);
+    }
+
+    navigate(location.pathname, {
+      replace: true,
+      state: {},
+    });
+  }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       setAppliedSearch(search.trim());
       setCurrentPage(1);
@@ -2675,6 +2728,54 @@ export default function AccountSettingsPage() {
       setCurrentPage(pagination.totalPages || 1);
     }
   }, [currentPage, pagination.totalPages]);
+
+  useEffect(() => {
+    if (!highlightedSibsId || isDataLoading) {
+      return undefined;
+    }
+
+    const matchingUser = users.find(
+      (assignedUser) =>
+        safeText(assignedUser?.sibsId) === safeText(highlightedSibsId),
+    );
+
+    if (!matchingUser) {
+      return undefined;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const candidates = Array.from(
+        document.querySelectorAll("[data-account-settings-sibs-id]"),
+      );
+
+      const targetElement =
+        candidates.find(
+          (element) =>
+            element.dataset.accountSettingsSibsId === highlightedSibsId &&
+            element.offsetParent !== null,
+        ) ||
+        candidates.find(
+          (element) =>
+            element.dataset.accountSettingsSibsId === highlightedSibsId,
+        );
+
+      targetElement?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    });
+
+    const timer = window.setTimeout(() => {
+      setHighlightedSibsId("");
+    }, 6000);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [highlightedSibsId, isDataLoading, users]);
+
 
   function clearFilters() {
     setSearch("");
@@ -2935,6 +3036,10 @@ export default function AccountSettingsPage() {
                           user={assignedUser}
                           onEdit={openEditModal}
                           onDelete={setDeleteTarget}
+                          highlighted={
+                            safeText(assignedUser.sibsId) ===
+                            safeText(highlightedSibsId)
+                          }
                         />
                       ))
                     ) : (
@@ -2983,6 +3088,9 @@ export default function AccountSettingsPage() {
                       users.map((assignedUser, index) => (
                         <tr
                           key={assignedUser.id}
+                          data-account-settings-sibs-id={safeText(
+                            assignedUser.sibsId,
+                          )}
                           role="button"
                           tabIndex={0}
                           onClick={() => openDetailsModal(assignedUser)}
@@ -2993,7 +3101,12 @@ export default function AccountSettingsPage() {
                             }
                           }}
                           aria-label={`Open access details for ${formatEmployeeName(assignedUser)}`}
-                          className="sibs-data-table-row sibs-account-settings-row-reveal cursor-pointer border-b border-[#E6ECF2] transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                          className={`sibs-data-table-row sibs-account-settings-row-reveal cursor-pointer border-b border-[#E6ECF2] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30 ${
+                            safeText(assignedUser.sibsId) ===
+                            safeText(highlightedSibsId)
+                              ? "bg-[#FFF3ED] shadow-[inset_4px_0_0_#FF5C28] ring-2 ring-inset ring-[#FF5C28]/40"
+                              : "hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6]"
+                          }`}
                           style={{
                             animationDelay: `${Math.min(index, 10) * 36}ms`,
                           }}
