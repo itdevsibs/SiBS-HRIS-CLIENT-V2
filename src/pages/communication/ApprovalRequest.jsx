@@ -35,6 +35,7 @@ import JobDescriptionRequestTable from "../../components/tables/jobDescription/J
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
 import { useUser } from "../../services/context/UserContext";
+import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
