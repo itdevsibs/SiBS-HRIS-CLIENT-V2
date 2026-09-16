@@ -42,7 +42,13 @@ export default function NotificationDropdown() {
   const navigate = useNavigate();
   const {
     notificationsList = [],
+    fullNotificationsList = notificationsList,
     unreadCount = 0,
+    fullUnreadCount = unreadCount,
+    auditHistoryLoading = false,
+    auditHistoryHasMore = false,
+    loadAuditNotificationHistory,
+    loadMoreAuditNotificationHistory,
     markAsRead,
     markAllAsRead,
     dismissNotification,
@@ -50,10 +56,12 @@ export default function NotificationDropdown() {
 
   const [open, setOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [expanded, setExpanded] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
 
   const buttonRef = useRef(null);
   const dropdownRef = useRef(null);
+  const notificationListRef = useRef(null);
 
   const calculatePosition = useCallback(() => {
     if (!buttonRef.current) return;
@@ -67,6 +75,7 @@ export default function NotificationDropdown() {
   const toggleDropdown = () => {
     if (!open) {
       calculatePosition();
+      setExpanded(false);
     }
     setOpen((prev) => !prev);
   };
@@ -109,11 +118,63 @@ export default function NotificationDropdown() {
     };
   }, [open, calculatePosition]);
 
+  const displayedNotifications = expanded
+    ? fullNotificationsList
+    : notificationsList;
+  const displayedUnreadCount = expanded ? fullUnreadCount : unreadCount;
+
   // Filter notifications by category tab
   const filteredNotifications = useMemo(() => {
-    if (activeCategory === "all") return notificationsList;
-    return notificationsList.filter((n) => n.category === activeCategory);
-  }, [notificationsList, activeCategory]);
+    if (activeCategory === "all") return displayedNotifications;
+    return displayedNotifications.filter((n) => n.category === activeCategory);
+  }, [displayedNotifications, activeCategory]);
+
+  const handleExpandedToggle = useCallback(() => {
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
+
+    setExpanded(true);
+    loadAuditNotificationHistory?.({ reset: true });
+  }, [expanded, loadAuditNotificationHistory]);
+
+  const handleNotificationListScroll = useCallback(
+    (event) => {
+      if (!expanded || auditHistoryLoading || !auditHistoryHasMore) return;
+
+      const element = event.currentTarget;
+      const distanceFromBottom =
+        element.scrollHeight - element.scrollTop - element.clientHeight;
+
+      if (distanceFromBottom <= 80) {
+        loadMoreAuditNotificationHistory?.();
+      }
+    },
+    [
+      expanded,
+      auditHistoryLoading,
+      auditHistoryHasMore,
+      loadMoreAuditNotificationHistory,
+    ],
+  );
+
+  useEffect(() => {
+    if (!expanded || auditHistoryLoading || !auditHistoryHasMore) return;
+
+    const element = notificationListRef.current;
+    if (!element) return;
+
+    if (element.scrollHeight <= element.clientHeight + 24) {
+      loadMoreAuditNotificationHistory?.();
+    }
+  }, [
+    expanded,
+    auditHistoryLoading,
+    auditHistoryHasMore,
+    filteredNotifications.length,
+    loadMoreAuditNotificationHistory,
+  ]);
 
   const handleActionClick = (notification) => {
     markAsRead?.(notification.id);
@@ -169,14 +230,14 @@ export default function NotificationDropdown() {
                 <h3 className="font-heading text-base font-bold text-sibs-navy tracking-tight">
                   Notifications
                 </h3>
-                {unreadCount > 0 ? (
+                {displayedUnreadCount > 0 ? (
                   <span className="rounded-full bg-sibs-cream px-2 py-0.5 sibs-text-micro font-extrabold text-sibs-orange border border-sibs-orange/20">
-                    {unreadCount} new
+                    {displayedUnreadCount} new
                   </span>
                 ) : null}
               </div>
 
-              {unreadCount > 0 ? (
+              {displayedUnreadCount > 0 ? (
                 <button
                   type="button"
                   onClick={markAllAsRead}
@@ -193,8 +254,8 @@ export default function NotificationDropdown() {
                 const active = activeCategory === tab.id;
                 const count =
                   tab.id === "all"
-                    ? notificationsList.length
-                    : notificationsList.filter((n) => n.category === tab.id).length;
+                    ? displayedNotifications.length
+                    : displayedNotifications.filter((n) => n.category === tab.id).length;
 
                 return (
                   <button
@@ -223,7 +284,11 @@ export default function NotificationDropdown() {
             </div>
 
             {/* Notifications List */}
-            <div className="max-h-[380px] overflow-y-auto divide-y divide-[#F1F5F9] sibs-scrollbar">
+            <div
+              ref={notificationListRef}
+              onScroll={handleNotificationListScroll}
+              className="max-h-[380px] overflow-y-auto divide-y divide-[#F1F5F9] sibs-scrollbar"
+            >
               {filteredNotifications.length === 0 ? (
                 <div className="py-12 px-4 text-center">
                   <CheckCheck className="mx-auto h-8 w-8 text-emerald-500 mb-2" />
@@ -349,6 +414,18 @@ export default function NotificationDropdown() {
                   );
                 })
               )}
+
+              {expanded && auditHistoryLoading ? (
+                <div className="px-4 py-3 text-center sibs-text-micro font-bold text-sibs-text-muted">
+                  Loading more notifications...
+                </div>
+              ) : null}
+
+              {expanded && !auditHistoryLoading && !auditHistoryHasMore && filteredNotifications.length > 0 ? (
+                <div className="px-4 py-3 text-center sibs-text-micro font-semibold text-sibs-text-muted">
+                  All notifications loaded
+                </div>
+              ) : null}
             </div>
 
             {/* Footer */}
@@ -358,13 +435,11 @@ export default function NotificationDropdown() {
               </span>
               <button
                 type="button"
-                onClick={() => {
-                  setOpen(false);
-                  navigate("/approval-request");
-                }}
+                onClick={handleExpandedToggle}
+                aria-expanded={expanded}
                 className="sibs-text-micro font-extrabold text-sibs-navy hover:text-sibs-orange transition-colors"
               >
-                View Approvals Queue →
+                {expanded ? "Show Less" : "See All"}
               </button>
             </div>
           </div>,

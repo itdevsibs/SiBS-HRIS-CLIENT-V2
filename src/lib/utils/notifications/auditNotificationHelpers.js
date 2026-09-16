@@ -136,6 +136,12 @@ export function buildAuditNotificationActionState(item = {}) {
   const moduleName = cleanText(item.module).toLowerCase();
   const action = cleanText(item.action).toUpperCase();
   const targetPath = cleanText(item.targetPath);
+  const targetSibsId = cleanText(item.targetSibsId || item.target_sibs_id);
+  const isAccountSettingsModule = [
+    "users",
+    "account-settings",
+    "assigned-accounts",
+  ].includes(moduleName);
   const isResignationModule = ["resignation", "attrition"].includes(moduleName);
   const resignationId = cleanText(item.resignationId || item.resignation_id);
   const employeeSibsId = cleanText(
@@ -145,6 +151,18 @@ export function buildAuditNotificationActionState(item = {}) {
     targetPath === "/resignation" &&
     ["APPROVE", "REJECT"].includes(action) &&
     Boolean(resignationId || employeeSibsId);
+
+  if (
+    isAccountSettingsModule &&
+    ["CREATE", "UPDATE"].includes(action) &&
+    targetSibsId
+  ) {
+    return {
+      source: "account-settings-notification",
+      highlightSibsId: targetSibsId,
+      accessAction: action,
+    };
+  }
 
   if (!isResignationModule && !isGenericResignationApproval) return null;
 

@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -132,6 +133,62 @@ function writeStorage(storageKey, data) {
   }
 }
 
+function mapAuditNotifications(payload = {}) {
+  const normalized = normalizeAuditNotificationsResponse(payload);
+  const authoritativeEpochMs = Number(payload?.serverEpochMs);
+  const authoritativeNow = Number.isFinite(authoritativeEpochMs)
+    ? new Date(authoritativeEpochMs)
+    : undefined;
+
+  return normalized.map((item) => {
+    const isApproval =
+      ["approval-request", "hiring-needs", "job-description", "leaves"].includes(
+        item.module,
+      ) ||
+      [
+        "APPROVE",
+        "SUBMIT",
+        "PENDING",
+        "STATUS_CHANGE",
+        "RESIGN_REVIEW",
+      ].includes(item.action);
+    const actionState = buildAuditNotificationActionState(item);
+
+    return {
+      id: item.id || `audit-${item.auditLogId}`,
+      category: isApproval ? "approvals" : "system",
+      type:
+        item.tone === "danger" || item.tone === "warning"
+          ? "warning"
+          : item.tone === "action"
+            ? "action"
+            : "info",
+      title: item.title,
+      message: item.message,
+      time: authoritativeNow
+        ? shouldUseExactAuditNotificationTime(item)
+          ? formatAuditNotificationExactTime(item.occurredAt)
+          : formatAuditNotificationTime(item.occurredAt, authoritativeNow)
+        : "Recently",
+      timestamp: item.occurredAt ? new Date(item.occurredAt).getTime() : 0,
+      actionLabel: getActionLabelByModule(item.module),
+      actionPath: item.targetPath || "/approval-request",
+      ...(actionState ? { actionState } : {}),
+    };
+  });
+}
+
+function mergeNotificationsById(existing = [], incoming = []) {
+  const merged = new Map();
+
+  [...existing, ...incoming].forEach((item) => {
+    if (!item?.id) return;
+    merged.set(item.id, item);
+  });
+
+  return sortNotificationsByNewest(Array.from(merged.values()));
+}
+
 export function SidebarNotificationProvider({ children }) {
   const { user } = useUser() || {};
   const userNotificationId = useMemo(() => getUserNotificationId(user), [user]);
@@ -157,12 +214,27 @@ export function SidebarNotificationProvider({ children }) {
   const [leavePendingNotification, setLeavePendingNotification] = useState(null);
   const [operationalNotifications, setOperationalNotifications] = useState([]);
   const [auditNotifications, setAuditNotifications] = useState([]);
+  const [auditHistoryNotifications, setAuditHistoryNotifications] = useState([]);
+  const [auditHistoryCursor, setAuditHistoryCursor] = useState(null);
+  const [auditHistoryHasMore, setAuditHistoryHasMore] = useState(false);
+  const [auditHistoryLoaded, setAuditHistoryLoaded] = useState(false);
+  const [auditHistoryLoading, setAuditHistoryLoading] = useState(false);
+  const auditHistoryLoadingRef = useRef(false);
 
   useEffect(() => {
     setLastSeen(readStorage(sidebarStorageKey));
     setReadNotifIds(readStorage(readNotifsStorageKey));
     setDismissedNotifIds(readStorage(dismissedNotifsStorageKey));
   }, [sidebarStorageKey, readNotifsStorageKey, dismissedNotifsStorageKey]);
+
+  useEffect(() => {
+    auditHistoryLoadingRef.current = false;
+    setAuditHistoryNotifications([]);
+    setAuditHistoryCursor(null);
+    setAuditHistoryHasMore(false);
+    setAuditHistoryLoaded(false);
+    setAuditHistoryLoading(false);
+  }, [userNotificationId]);
 
 
   useEffect(() => {
@@ -331,52 +403,7 @@ export function SidebarNotificationProvider({ children }) {
 
         if (cancelled) return;
 
-        const normalized = normalizeAuditNotificationsResponse(payload);
-        const authoritativeEpochMs = Number(payload?.serverEpochMs);
-        const authoritativeNow = Number.isFinite(authoritativeEpochMs)
-          ? new Date(authoritativeEpochMs)
-          : undefined;
-        const mapped = normalized.map((item) => {
-          const isApproval =
-            [
-              "approval-request",
-              "hiring-needs",
-              "job-description",
-              "leaves",
-            ].includes(item.module) ||
-            [
-              "APPROVE",
-              "SUBMIT",
-              "PENDING",
-              "STATUS_CHANGE",
-              "RESIGN_REVIEW",
-            ].includes(item.action);
-          const actionState = buildAuditNotificationActionState(item);
-
-          return {
-            id: item.id || `audit-${item.auditLogId}`,
-            category: isApproval ? "approvals" : "system",
-            type:
-              item.tone === "danger" || item.tone === "warning"
-                ? "warning"
-                : item.tone === "action"
-                  ? "action"
-                  : "info",
-            title: item.title,
-            message: item.message,
-            time: authoritativeNow
-              ? shouldUseExactAuditNotificationTime(item)
-                ? formatAuditNotificationExactTime(item.occurredAt)
-                : formatAuditNotificationTime(item.occurredAt, authoritativeNow)
-              : "Recently",
-            timestamp: item.occurredAt
-              ? new Date(item.occurredAt).getTime()
-              : Date.now(),
-            actionLabel: getActionLabelByModule(item.module),
-            actionPath: item.targetPath || "/approval-request",
-            ...(actionState ? { actionState } : {}),
-          };
-        });
+        const mapped = mapAuditNotifications(payload);
 
         if (!cancelled) {
           setAuditNotifications(mapped);
@@ -420,6 +447,61 @@ export function SidebarNotificationProvider({ children }) {
       );
     };
   }, [user]);
+
+  const loadAuditNotificationHistory = useCallback(
+    async ({ reset = false } = {}) => {
+      if (!user || !canUseAuditNotifications(user)) return;
+      if (auditHistoryLoadingRef.current) return;
+      if (!reset && auditHistoryLoaded && !auditHistoryHasMore) return;
+
+      const beforeId = reset ? null : auditHistoryCursor;
+      if (!reset && !beforeId) return;
+
+      auditHistoryLoadingRef.current = true;
+      setAuditHistoryLoading(true);
+
+      try {
+        const payload = await getAuditNotifications({
+          limit: 50,
+          beforeId,
+          history: true,
+        });
+        const mapped = mapAuditNotifications(payload);
+
+        setAuditHistoryNotifications((previous) =>
+          reset ? mapped : mergeNotificationsById(previous, mapped),
+        );
+        setAuditHistoryCursor(payload?.nextCursor ?? null);
+        setAuditHistoryHasMore(Boolean(payload?.hasMore));
+        setAuditHistoryLoaded(true);
+      } catch (error) {
+        console.warn(
+          "[SidebarNotificationContext] audit notification history failed:",
+          error?.message,
+        );
+
+        if (reset) {
+          setAuditHistoryNotifications([]);
+          setAuditHistoryCursor(null);
+          setAuditHistoryHasMore(false);
+          setAuditHistoryLoaded(false);
+        }
+      } finally {
+        auditHistoryLoadingRef.current = false;
+        setAuditHistoryLoading(false);
+      }
+    },
+    [
+      user,
+      auditHistoryCursor,
+      auditHistoryHasMore,
+      auditHistoryLoaded,
+    ],
+  );
+
+  const loadMoreAuditNotificationHistory = useCallback(() => {
+    return loadAuditNotificationHistory({ reset: false });
+  }, [loadAuditNotificationHistory]);
 
   const setSidebarNotification = useCallback((key, notification) => {
     if (!key) return;
@@ -486,6 +568,7 @@ export function SidebarNotificationProvider({ children }) {
       ...(leavePendingNotification ? [leavePendingNotification] : []),
       ...operationalNotifications,
       ...auditNotifications,
+      ...auditHistoryNotifications,
       ...DEFAULT_SYSTEM_NOTIFICATIONS,
       ...dynamicNotifications,
     ];
@@ -500,6 +583,7 @@ export function SidebarNotificationProvider({ children }) {
     leavePendingNotification,
     operationalNotifications,
     auditNotifications,
+    auditHistoryNotifications,
     readNotifsStorageKey,
   ]);
 
@@ -546,10 +630,44 @@ export function SidebarNotificationProvider({ children }) {
     readNotifIds,
   ]);
 
+  const fullNotificationsList = useMemo(() => {
+    const auditSource = auditHistoryLoaded
+      ? auditHistoryNotifications
+      : auditNotifications;
+    const combined = sortNotificationsByNewest([
+      ...dynamicNotifications,
+      ...(leavePendingNotification ? [leavePendingNotification] : []),
+      ...operationalNotifications,
+      ...auditSource,
+      ...DEFAULT_SYSTEM_NOTIFICATIONS,
+    ]);
+
+    return combined
+      .filter((n) => !dismissedNotifIds[n.id])
+      .map((n) => ({
+        ...n,
+        isRead: Boolean(readNotifIds[n.id]),
+      }));
+  }, [
+    dynamicNotifications,
+    leavePendingNotification,
+    operationalNotifications,
+    auditNotifications,
+    auditHistoryNotifications,
+    auditHistoryLoaded,
+    dismissedNotifIds,
+    readNotifIds,
+  ]);
+
   // Total unread count
   const unreadCount = useMemo(
     () => notificationsList.filter((n) => !n.isRead).length,
     [notificationsList],
+  );
+
+  const fullUnreadCount = useMemo(
+    () => fullNotificationsList.filter((n) => !n.isRead).length,
+    [fullNotificationsList],
   );
 
   const notifications = useMemo(
@@ -572,7 +690,13 @@ export function SidebarNotificationProvider({ children }) {
       setSidebarNotification,
       // System Notification System
       notificationsList,
+      fullNotificationsList,
       unreadCount,
+      fullUnreadCount,
+      auditHistoryLoading,
+      auditHistoryHasMore,
+      loadAuditNotificationHistory,
+      loadMoreAuditNotificationHistory,
       markAsRead,
       markAllAsRead,
       dismissNotification,
@@ -583,7 +707,13 @@ export function SidebarNotificationProvider({ children }) {
       notifications,
       setSidebarNotification,
       notificationsList,
+      fullNotificationsList,
       unreadCount,
+      fullUnreadCount,
+      auditHistoryLoading,
+      auditHistoryHasMore,
+      loadAuditNotificationHistory,
+      loadMoreAuditNotificationHistory,
       markAsRead,
       markAllAsRead,
       dismissNotification,

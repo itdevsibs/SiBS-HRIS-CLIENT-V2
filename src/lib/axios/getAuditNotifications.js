@@ -1,11 +1,20 @@
 import api from "./api-template";
 
-export async function getAuditNotifications({ limit = 20 } = {}) {
+export async function getAuditNotifications({
+  limit = 20,
+  beforeId = null,
+  history = false,
+} = {}) {
   const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
+  const safeBeforeId = Number(beforeId);
 
   const response = await api.get("/api/audit-notifications", {
     params: {
       limit: safeLimit,
+      ...(Number.isFinite(safeBeforeId) && safeBeforeId > 0
+        ? { beforeId: Math.trunc(safeBeforeId) }
+        : {}),
+      ...(history ? { history: 1 } : {}),
     },
   });
 
@@ -13,6 +22,8 @@ export async function getAuditNotifications({ limit = 20 } = {}) {
     success: false,
     notifications: [],
     count: 0,
+    hasMore: false,
+    nextCursor: null,
   };
 }
 
