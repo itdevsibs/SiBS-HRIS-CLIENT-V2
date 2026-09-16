@@ -17,6 +17,86 @@ function matchesStatus(record, filter) {
   return normalize(record.status) === normalizedFilter;
 }
 
+export const DEFAULT_EMAIL_LOG_CATEGORIES = [
+  "Job Offer",
+  "Interview",
+  "Approval Needed",
+  "Intake Form",
+  "Assessment",
+  "NHO Schedule",
+  "Weekly Digest",
+  "Talent Pool",
+  "System Email",
+];
+
+export function filterEmailLogCategoryOptions(categories = [], search = "") {
+  const keyword = normalize(search);
+
+  if (!keyword) {
+    return [...categories];
+  }
+
+  return categories.filter((category) => normalize(category).includes(keyword));
+}
+
+export function buildEmailLogCategories(records = []) {
+  const seen = new Set(DEFAULT_EMAIL_LOG_CATEGORIES.map(normalize));
+  const additionalCategories = [];
+
+  for (const record of records) {
+    const category = String(record?.category ?? "").trim();
+    const key = normalize(category);
+
+    if (!category || seen.has(key)) continue;
+
+    seen.add(key);
+    additionalCategories.push(category);
+  }
+
+  return [
+    ...DEFAULT_EMAIL_LOG_CATEGORIES,
+    ...additionalCategories.sort((left, right) => left.localeCompare(right)),
+  ];
+}
+
+
+export function normalizeEmailLogRecord(record = {}) {
+  const normalizeStatus = (value) => {
+    const status = normalize(value).replace(/[\s_-]+/g, " ");
+
+    if (["sent", "success", "successful", "accepted", "processed", "delivered"].includes(status)) return "delivered";
+    if (["open", "opened", "read"].includes(status)) return "opened";
+    if (["click", "clicked", "clicked cta", "cta clicked"].includes(status)) return "clicked";
+    if (["bounce", "bounced", "rejected", "undeliverable"].includes(status)) return "bounced";
+    if (["fail", "failed", "failure", "error", "send failed"].includes(status)) return "failed";
+
+    return status || "delivered";
+  };
+
+  return {
+    ...record,
+    id: String(record.id ?? record.log_id ?? record.email_log_id ?? "").trim(),
+    recipient: String(record.recipient ?? record.recipient_name ?? record.email ?? record.recipient_email ?? "Recipient").trim(),
+    email: String(record.email ?? record.recipient_email ?? "").trim(),
+    role: String(record.role ?? record.recipient_role ?? "Recipient").trim(),
+    site: String(record.site ?? record.location ?? "—").trim() || "—",
+    category: String(record.category ?? record.email_category ?? "System Email").trim(),
+    subject: String(record.subject ?? record.email_subject ?? "SiBS HRIS Communication").trim(),
+    preview: String(record.preview ?? record.message_preview ?? "").trim(),
+    textBody: String(record.textBody ?? record.text_body ?? ""),
+    htmlBody: String(record.htmlBody ?? record.html_body ?? ""),
+    position: String(record.position ?? record.job_position ?? "—").trim() || "—",
+    account: String(record.account ?? record.account_name ?? "—").trim() || "—",
+    status: normalizeStatus(record.status ?? record.delivery_status),
+    statusDetail: String(record.statusDetail ?? record.status_detail ?? record.error_message ?? "").trim() || undefined,
+    senderEmail: String(record.senderEmail ?? record.sender_email ?? "").trim(),
+    replyTo: String(record.replyTo ?? record.reply_to ?? "").trim(),
+    attachments: Array.isArray(record.attachments) ? record.attachments : [],
+    dispatchedBy: String(record.dispatchedBy ?? record.dispatched_by ?? record.sent_by ?? "SiBS HRIS").trim(),
+    dispatchedAt: record.dispatchedAt ?? record.dispatched_at ?? record.sent_at ?? record.created_at ?? "",
+  };
+}
+
 export function filterEmailLogs(records = [], filters = {}) {
   const search = normalize(filters.search);
 
@@ -181,12 +261,18 @@ export function buildSmtpHeaders(record = {}) {
   };
 }
 
+export function getEmailLogRenderedHtml(record = {}) {
+  return String(record.htmlBody ?? record.html_body ?? "").trim();
+}
+
 export function buildPlainTextEmail(record = {}) {
+  const fullTextBody = String(record.textBody ?? record.text_body ?? "").trim();
+
   return [
     `To: ${record.recipient || "Recipient"} <${record.email || ""}>`,
     `Subject: ${record.subject || "SiBS HRIS Communication"}`,
     "",
-    record.preview || "No message preview available.",
+    fullTextBody || record.preview || "No message content available.",
   ].join("\n");
 }
 

@@ -1880,6 +1880,12 @@ function AccessModal({
         window.dispatchEvent(
           new Event("sibs-audit-notifications-refresh"),
         );
+
+        window.setTimeout(() => {
+          window.dispatchEvent(
+            new Event("sibs-audit-notifications-refresh"),
+          );
+        }, 500);
       }
     } catch (error) {
       openStatus(

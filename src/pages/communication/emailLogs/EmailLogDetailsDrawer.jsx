@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import DOMPurify from "dompurify";
 import {
   CheckCircle2,
   Clock3,
@@ -18,6 +19,7 @@ import {
   buildPlainTextEmail,
   buildRenderedEmail,
   buildSmtpHeaders,
+  getEmailLogRenderedHtml,
 } from "@/lib/utils/emailLogs/emailLogsHelpers";
 
 const TABS = [
@@ -98,11 +100,48 @@ function MetadataPanel({ record }) {
 }
 
 function RenderedPreview({ record, preview }) {
+  const storedHtml = getEmailLogRenderedHtml(record);
+  const sanitizedHtml = useMemo(
+    () => (storedHtml ? DOMPurify.sanitize(storedHtml) : ""),
+    [storedHtml],
+  );
+  const fullTextBody = String(record.textBody ?? record.text_body ?? "").trim();
+
+  if (sanitizedHtml) {
+    return (
+      <section className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+        <div className="flex items-center justify-between gap-3 border-b border-sibs-border px-4 py-3">
+          <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Rendered Email Content</p>
+          <p className="text-[9px] font-extrabold uppercase text-emerald-600">Saved HTML Body</p>
+        </div>
+        <div className="overflow-x-auto bg-white p-3 sm:p-4">
+          <div
+            className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white"
+            dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  if (fullTextBody) {
+    return (
+      <section className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+        <div className="border-b border-sibs-border px-4 py-3">
+          <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Rendered Email Content</p>
+        </div>
+        <pre className="whitespace-pre-wrap break-words p-5 font-sans text-xs leading-relaxed text-sibs-secondary">
+          {fullTextBody}
+        </pre>
+      </section>
+    );
+  }
+
   return (
     <section className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
       <div className="flex items-center justify-between gap-3 border-b border-sibs-border px-4 py-3">
         <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Rendered Email Content</p>
-        <p className="text-[9px] font-extrabold uppercase text-emerald-600">100% Inline CSS Compatible</p>
+        <p className="text-[9px] font-extrabold uppercase text-sibs-faint">Preview Only</p>
       </div>
       <div className="p-3 sm:p-4">
         <div className="overflow-hidden rounded-xl border border-sibs-border">

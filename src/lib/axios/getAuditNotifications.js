@@ -16,4 +16,14 @@ export async function getAuditNotifications({ limit = 20 } = {}) {
   };
 }
 
+export async function getManilaClock() {
+  const response = await api.get("/api/audit-notifications/clock");
+
+  return response?.data || {
+    success: false,
+    serverEpochMs: null,
+    timeZone: "Asia/Manila",
+  };
+}
+
 export default getAuditNotifications;

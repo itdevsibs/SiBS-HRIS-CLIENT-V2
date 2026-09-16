@@ -21,8 +21,10 @@ import {
 import {
   buildAuditNotificationActionState,
   canUseAuditNotifications,
+  formatAuditNotificationExactTime,
   formatAuditNotificationTime,
   normalizeAuditNotificationsResponse,
+  shouldUseExactAuditNotificationTime,
 } from "../../lib/utils/notifications/auditNotificationHelpers";
 import {
   createSidebarNotificationState,
@@ -330,6 +332,10 @@ export function SidebarNotificationProvider({ children }) {
         if (cancelled) return;
 
         const normalized = normalizeAuditNotificationsResponse(payload);
+        const authoritativeEpochMs = Number(payload?.serverEpochMs);
+        const authoritativeNow = Number.isFinite(authoritativeEpochMs)
+          ? new Date(authoritativeEpochMs)
+          : undefined;
         const mapped = normalized.map((item) => {
           const isApproval =
             [
@@ -358,7 +364,11 @@ export function SidebarNotificationProvider({ children }) {
                   : "info",
             title: item.title,
             message: item.message,
-            time: formatAuditNotificationTime(item.occurredAt),
+            time: authoritativeNow
+              ? shouldUseExactAuditNotificationTime(item)
+                ? formatAuditNotificationExactTime(item.occurredAt)
+                : formatAuditNotificationTime(item.occurredAt, authoritativeNow)
+              : "Recently",
             timestamp: item.occurredAt
               ? new Date(item.occurredAt).getTime()
               : Date.now(),

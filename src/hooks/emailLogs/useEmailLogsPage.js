@@ -1,9 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { EMAIL_LOGS } from "@/lib/utils/emailLogs/emailLogsData";
+import { getEmailLogs } from "@/lib/axios/getEmailLogs";
 import {
+  buildEmailLogCategories,
   buildEmailLogMetrics,
   filterEmailLogs,
+  normalizeEmailLogRecord,
   paginateEmailLogs,
   retryEmailDelivery,
 } from "@/lib/utils/emailLogs/emailLogsHelpers";
@@ -11,13 +13,38 @@ import {
 const PAGE_SIZE = 8;
 
 export default function useEmailLogsPage() {
-  const [records, setRecords] = useState(EMAIL_LOGS);
+  const [records, setRecords] = useState([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [account, setAccount] = useState("all");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+
+  const loadRecords = useCallback(async () => {
+    setRefreshing(true);
+
+    try {
+      const result = await getEmailLogs({ limit: 2000 });
+      const nextRecords = Array.isArray(result?.records)
+        ? result.records.map(normalizeEmailLogRecord)
+        : [];
+
+      setRecords(nextRecords);
+    } catch (error) {
+      console.error(
+        "Unable to load email logs:",
+        error?.response?.data || error?.message || error,
+      );
+      setRecords([]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRecords();
+  }, [loadRecords]);
 
   const resetPage = useCallback((setter) => (value) => {
     setter(value);
@@ -48,12 +75,12 @@ export default function useEmailLogsPage() {
   }), [metrics, records]);
 
   const categories = useMemo(
-    () => [...new Set(records.map((record) => record.category))].sort(),
+    () => buildEmailLogCategories(records),
     [records],
   );
 
   const accounts = useMemo(
-    () => [...new Set(records.map((record) => record.account))].sort(),
+    () => [...new Set(records.map((record) => record.account).filter((value) => value && value !== "—"))].sort(),
     [records],
   );
 
@@ -66,9 +93,8 @@ export default function useEmailLogsPage() {
   }, []);
 
   const refresh = useCallback(() => {
-    setRefreshing(true);
-    window.setTimeout(() => setRefreshing(false), 550);
-  }, []);
+    void loadRecords();
+  }, [loadRecords]);
 
   const retryDelivery = useCallback((recordId) => {
     setRecords((current) => retryEmailDelivery(current, recordId));

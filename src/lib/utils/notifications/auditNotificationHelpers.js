@@ -264,6 +264,28 @@ export function findResignationNotificationTarget(records = [], state = {}) {
   );
 }
 
+export function shouldUseExactAuditNotificationTime() {
+  return false;
+}
+
+export function formatAuditNotificationExactTime(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Recently";
+  }
+
+  return date.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 export function formatAuditNotificationTime(value, now = new Date()) {
   const date = new Date(value);
   const nowDate = now instanceof Date ? now : new Date(now);
@@ -276,11 +298,22 @@ export function formatAuditNotificationTime(value, now = new Date()) {
   const minutes = Math.floor(diffMs / 60_000);
 
   if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) {
+    return `${minutes} ${minutes === 1 ? "min" : "mins"} ago`;
+  }
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) {
+    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  }
 
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  const timeText = date.toLocaleTimeString("en-PH", {
+    timeZone: "Asia/Manila",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  return `${days} ${days === 1 ? "day" : "days"} ago at ${timeText}`;
 }
