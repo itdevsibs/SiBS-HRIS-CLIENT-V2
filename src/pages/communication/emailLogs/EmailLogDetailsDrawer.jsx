@@ -115,8 +115,72 @@ function RenderedPreview({ record, preview }) {
           <p className="text-[9px] font-extrabold uppercase text-emerald-600">Saved HTML Body</p>
         </div>
         <div className="overflow-x-auto bg-white p-3 sm:p-4">
+          <style>{`
+            .email-log-rendered-html p:not([style]) {
+              margin: 0 0 14px;
+              line-height: 1.65;
+            }
+            .email-log-rendered-html p:not([style]):empty::before {
+              content: "\\00a0";
+            }
+            .email-log-rendered-html ol:not([style]),
+            .email-log-rendered-html ul:not([style]) {
+              display: block !important;
+              margin: 12px 0 16px !important;
+              padding-left: 32px !important;
+              list-style-position: outside !important;
+            }
+            .email-log-rendered-html ol:not([style]) {
+              list-style-type: decimal !important;
+            }
+            .email-log-rendered-html ul:not([style]) {
+              list-style-type: disc !important;
+            }
+            .email-log-rendered-html ol:not([style]) ol:not([style]) {
+              list-style-type: lower-alpha !important;
+            }
+            .email-log-rendered-html ol:not([style]) ol:not([style]) ol:not([style]) {
+              list-style-type: lower-roman !important;
+            }
+            .email-log-rendered-html ul:not([style]) ul:not([style]) {
+              list-style-type: circle !important;
+            }
+            .email-log-rendered-html ul:not([style]) ul:not([style]) ul:not([style]) {
+              list-style-type: square !important;
+            }
+            .email-log-rendered-html li:not([style]) {
+              display: list-item !important;
+              margin: 0 0 8px;
+              padding-left: 6px;
+              line-height: 1.65;
+            }
+            .email-log-rendered-html li > p:not([style]) {
+              display: inline;
+              margin: 0;
+            }
+            .email-log-rendered-html strong:not([style]),
+            .email-log-rendered-html b:not([style]) {
+              font-weight: 700;
+            }
+            .email-log-rendered-html em:not([style]),
+            .email-log-rendered-html i:not([style]) {
+              font-style: italic;
+            }
+            .email-log-rendered-html u:not([style]) {
+              text-decoration: underline;
+            }
+            .email-log-rendered-html s:not([style]),
+            .email-log-rendered-html strike:not([style]) {
+              text-decoration: line-through;
+            }
+            .email-log-rendered-html a:not([style]) {
+              color: #0b5cad;
+              text-decoration: underline;
+              overflow-wrap: anywhere;
+            }
+          `}</style>
           <div
-            className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white"
+            className="email-log-rendered-html min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white"
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
         </div>
