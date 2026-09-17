@@ -56,6 +56,60 @@ export async function getSupervisorResignations() {
   }
 }
 
+export async function getResignationCase({
+  resignationId = "",
+  employeeSibsId = "",
+} = {}) {
+  const cleanResignationId = String(resignationId || "").trim();
+  const cleanEmployeeSibsId = String(employeeSibsId || "").trim();
+
+  if (!cleanResignationId && !cleanEmployeeSibsId) {
+    return {
+      success: false,
+      message: "A resignation ID or employee SIBS ID is required.",
+      data: null,
+    };
+  }
+
+  async function requestCase(params) {
+    const response = await api.get("/api/resignation-management", { params });
+    const payload = response.data || {};
+    const rows = Array.isArray(payload.data) ? payload.data : [];
+
+    return {
+      ...payload,
+      data: rows[0] || null,
+    };
+  }
+
+  try {
+    const primary = await requestCase({
+      ...(cleanResignationId ? { resignationId: cleanResignationId } : {}),
+      ...(cleanEmployeeSibsId ? { employeeSibsId: cleanEmployeeSibsId } : {}),
+    });
+
+    if (primary?.data || !cleanResignationId || !cleanEmployeeSibsId) {
+      return primary;
+    }
+
+    // Older audit notifications can contain a stale/missing record ID.
+    // Fall back to the employee's newest visible resignation case.
+    return await requestCase({ employeeSibsId: cleanEmployeeSibsId });
+  } catch (error) {
+    console.error("GET RESIGNATION CASE ERROR:", error);
+
+    return {
+      success: false,
+      message:
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to load the selected resignation case.",
+      data: null,
+    };
+  }
+}
+
 export async function saveSupervisorResignation(payload = {}) {
   try {
     const formData = new FormData();

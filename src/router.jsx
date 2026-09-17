@@ -81,6 +81,7 @@ const AccountSettingsPage = lazyWithRetry(() => import("./pages/Settings/Account
 
 // Administration
 const DepartmentsPage = lazyWithRetry(() => import("./pages/administration/DepartmentsPage"));
+const OfficeLocationsPage = lazyWithRetry(() => import("./pages/administration/OfficeLocationsPage"));
 
 const DEFAULT_PUBLIC_APPLICATION_HOST = "sibsapply.getleadsource.com";
 
@@ -540,6 +541,15 @@ function MainApplicationRoutes() {
         element={
           <PrivateRoute>
             <DepartmentsPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/locations"
+        element={
+          <PrivateRoute>
+            <OfficeLocationsPage />
           </PrivateRoute>
         }
       />
