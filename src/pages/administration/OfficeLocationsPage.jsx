@@ -38,10 +38,6 @@ function LocationCard({ location, loading }) {
             </h2>
           </div>
         </div>
-
-        <span className="rounded-full border border-[#DDE7F0] bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-extrabold text-[#667085]">
-          ID {location.id}
-        </span>
       </div>
 
       <div className="relative mt-6 border-t border-[#EEF2F6] pt-5">
