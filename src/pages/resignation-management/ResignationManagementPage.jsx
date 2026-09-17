@@ -43,6 +43,7 @@ import {
 } from "../../components/modals/resignation-management/ResignationManagementModal";
 import {
   getManagedEmployees,
+  getResignationCase,
   getSupervisorResignations,
   saveSupervisorResignation,
 } from "../../lib/axios/getResignationManagement";
@@ -1817,6 +1818,7 @@ export default function ResignationManagementPage() {
 
   const mainScrollRef = useRef(null);
   const employeePickerRequestRef = useRef(0);
+  const resignationNotificationLookupRef = useRef("");
 
   const userRole = normalizeRoleKey(
     user?.role || user?.userRole || user?.adminRole || user?.position || "",
@@ -2110,11 +2112,27 @@ export default function ResignationManagementPage() {
 
     if (
       !navigationState?.openResignationDetails ||
-      navigationState?.source !== "resignation-review-notification" ||
       resignationLoading ||
       !resignationsLoaded
     ) {
-      return;
+      return undefined;
+    }
+
+    function clearResignationNotificationState() {
+      const remainingState = { ...navigationState };
+      delete remainingState.openResignationDetails;
+      delete remainingState.resignationId;
+      delete remainingState.employeeSibsId;
+      delete remainingState.employeeName;
+      delete remainingState.source;
+
+      navigate(
+        `${location.pathname}${location.search}${location.hash}`,
+        {
+          replace: true,
+          state: Object.keys(remainingState).length ? remainingState : null,
+        },
+      );
     }
 
     const targetResignation = findResignationNotificationTarget(
@@ -2123,23 +2141,76 @@ export default function ResignationManagementPage() {
     );
 
     if (targetResignation) {
+      resignationNotificationLookupRef.current = "";
       setSelectedResignation(targetResignation);
+      clearResignationNotificationState();
+      return undefined;
     }
 
-    const remainingState = { ...navigationState };
-    delete remainingState.openResignationDetails;
-    delete remainingState.resignationId;
-    delete remainingState.employeeSibsId;
-    delete remainingState.employeeName;
-    delete remainingState.source;
+    const resignationId = String(navigationState?.resignationId || "").trim();
+    const employeeSibsId = String(
+      navigationState?.employeeSibsId || "",
+    ).trim();
 
-    navigate(
-      `${location.pathname}${location.search}${location.hash}`,
-      {
-        replace: true,
-        state: Object.keys(remainingState).length ? remainingState : null,
-      },
-    );
+    if (!resignationId && !employeeSibsId) {
+      return undefined;
+    }
+
+    const lookupKey = [resignationId, employeeSibsId].join("::");
+
+    if (resignationNotificationLookupRef.current === lookupKey) {
+      return undefined;
+    }
+
+    resignationNotificationLookupRef.current = lookupKey;
+    let cancelled = false;
+
+    void (async () => {
+      const result = await getResignationCase({
+        resignationId,
+        employeeSibsId,
+      });
+
+      if (cancelled) return;
+
+      const exactCase = result?.success ? result.data : null;
+
+      if (!exactCase) {
+        resignationNotificationLookupRef.current = "";
+        return;
+      }
+
+      setResignations((previous) => {
+        const exactId = String(
+          exactCase?.id ||
+            exactCase?.resignationId ||
+            exactCase?.resignation_id ||
+            "",
+        );
+
+        if (
+          exactId &&
+          previous.some(
+            (item) =>
+              String(
+                item?.id || item?.resignationId || item?.resignation_id || "",
+              ) === exactId,
+          )
+        ) {
+          return previous;
+        }
+
+        return [exactCase, ...previous];
+      });
+
+      resignationNotificationLookupRef.current = "";
+      setSelectedResignation(exactCase);
+      clearResignationNotificationState();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     location.hash,
     location.pathname,

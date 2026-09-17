@@ -118,10 +118,20 @@ function normalizeComparableResignationId(value) {
 
 function normalizeComparableSibsId(value) {
   const text = cleanText(value);
-  if (!text) return "";
+  if (!text || /^\[?redacted\]?$/i.test(text)) return "";
 
   const numeric = Number(text);
   return Number.isFinite(numeric) ? String(numeric) : text.toLowerCase();
+}
+
+function firstUsableSibsId(...values) {
+  for (const value of values) {
+    const text = cleanText(value);
+    if (!text || /^\[?redacted\]?$/i.test(text)) continue;
+    return text;
+  }
+
+  return "";
 }
 
 function normalizeNameTokens(value) {
@@ -142,10 +152,22 @@ export function buildAuditNotificationActionState(item = {}) {
     "account-settings",
     "assigned-accounts",
   ].includes(moduleName);
-  const isResignationModule = ["resignation", "attrition"].includes(moduleName);
+  const isResignationModule = [
+    "resignation",
+    "resignation-management",
+    "attrition",
+  ].includes(moduleName);
   const resignationId = cleanText(item.resignationId || item.resignation_id);
-  const employeeSibsId = cleanText(
-    item.employeeSibsId || item.employee_sibs_id,
+  const actorSibsId = cleanText(item.actorSibsId || item.actor_sibs_id);
+  const isSelfFiledResignationUpload =
+    ["resignation", "resignation-management"].includes(moduleName) &&
+    action === "UPLOAD";
+  const employeeSibsId = firstUsableSibsId(
+    item.employeeSibsId,
+    item.employee_sibs_id,
+    item.targetSibsId,
+    item.target_sibs_id,
+    isSelfFiledResignationUpload ? actorSibsId : "",
   );
   const isGenericResignationApproval =
     targetPath === "/resignation" &&
@@ -174,7 +196,8 @@ export function buildAuditNotificationActionState(item = {}) {
 
   if (
     targetPath === "/resignation" &&
-    ["RESIGN_REVIEW", "APPROVE", "REJECT"].includes(action)
+    (isResignationModule || isGenericResignationApproval) &&
+    Boolean(resignationId || employeeSibsId)
   ) {
     return {
       openResignationDetails: true,
@@ -214,6 +237,10 @@ export function findResignationNotificationTarget(records = [], state = {}) {
         item?.resignation_id,
         item?.raw?.resignationId,
         item?.raw?.resignation_id,
+        item?.attritionId,
+        item?.attrition_id,
+        item?.raw?.attritionId,
+        item?.raw?.attrition_id,
         item?.id,
       ]
         .map(normalizeComparableResignationId)
