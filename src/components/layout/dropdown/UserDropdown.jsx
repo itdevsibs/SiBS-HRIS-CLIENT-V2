@@ -31,7 +31,7 @@ function normalizeRole(value = "") {
   return String(value || "")
     .trim()
     .toLowerCase()
-    .replace(/[\s-]+/g, "_");
+    .replace(/[\\s-]+/g, "_");
 }
 
 function getAdminAccess(user = {}) {
@@ -60,12 +60,16 @@ export default function UserDropdown({
     top: 0,
     left: 0,
   });
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 260,
+  });
 
   const navigate = useNavigate();
   const ref = useRef(null);
+  const dropdownRef = useRef(null);
   const avatarPreviewAnchorRef = useRef(null);
-  const avatarHoveredRef = useRef(false);
-  const avatarPreviewLockedRef = useRef(false);
 
   const { user, setUser, refetchUser } = useUser();
   const { setAdminLogin } = useHeader();
@@ -74,14 +78,7 @@ export default function UserDropdown({
   useEffect(() => {
     setProfileImageFailed(false);
     setAvatarPreviewOpen(false);
-    avatarPreviewLockedRef.current = false;
   }, [profilePictureUrl]);
-
-  useEffect(() => {
-    if (open) {
-      setAvatarPreviewOpen(false);
-    }
-  }, [open]);
 
   useEffect(() => {
     if (!avatarPreviewOpen) return undefined;
@@ -125,8 +122,52 @@ export default function UserDropdown({
   }, [avatarPreviewOpen]);
 
   useEffect(() => {
+    if (!open) return undefined;
+
+    let frame = 0;
+
+    const updateDropdownPosition = () => {
+      const anchor = ref.current;
+      if (!anchor || typeof window === "undefined") return;
+
+      const rect = anchor.getBoundingClientRect();
+      const viewportPadding = 12;
+      const gap = 8;
+      const width = window.innerWidth >= 1536 ? 286 : 260;
+      const menuHeight = dropdownRef.current?.offsetHeight || 126;
+
+      let left = rect.right - width;
+      left = Math.max(
+        viewportPadding,
+        Math.min(left, window.innerWidth - width - viewportPadding),
+      );
+
+      let top = rect.bottom + gap;
+      if (top + menuHeight > window.innerHeight - viewportPadding) {
+        top = Math.max(viewportPadding, rect.top - menuHeight - gap);
+      }
+
+      setDropdownPosition({ top, left, width });
+    };
+
+    updateDropdownPosition();
+    frame = window.requestAnimationFrame(updateDropdownPosition);
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
-      if (ref.current && !ref.current.contains(event.target)) {
+      const clickedTrigger = ref.current?.contains(event.target);
+      const clickedDropdown = dropdownRef.current?.contains(event.target);
+
+      if (!clickedTrigger && !clickedDropdown) {
         setOpen(false);
       }
     };
@@ -197,7 +238,7 @@ export default function UserDropdown({
       }
 
       if (response.data?.user) {
-        setUser(response.data.user, response.data.expiresAt);
+        setUser(response.data.user);
       }
 
       setAdminLogin(false);
@@ -234,14 +275,7 @@ export default function UserDropdown({
     ADMIN_ACCESS_LABELS[adminAccess] || "Talent Acquisition";
 
   const showAvatarPreview = () => {
-    if (
-      open ||
-      avatarPreviewLockedRef.current ||
-      !avatarPreviewAnchorRef.current
-    ) {
-      return;
-    }
-
+    if (open || !avatarPreviewAnchorRef.current) return;
     setAvatarPreviewOpen(true);
   };
 
@@ -249,16 +283,63 @@ export default function UserDropdown({
     setAvatarPreviewOpen(false);
   };
 
-  const handleAvatarMouseEnter = () => {
-    avatarHoveredRef.current = true;
-    showAvatarPreview();
-  };
+  const dropdownMenu =
+    open && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={dropdownRef}
+            role="menu"
+            className="fixed z-[2147483000] origin-top-right overflow-hidden rounded-xl border border-[#D7E0E9] bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)] animate-[sibsUserDropdownOpen_180ms_ease-out_both]"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width,
+            }}
+          >
+            <div className="p-1.5 2xl:p-2">
+              {!isAdminSide && canSwitchToAdmin && (
+                <DropdownItem
+                  icon={UserKey}
+                  title={switchToAdminLabel}
+                  subtitle="Current role: Employee"
+                  onClick={handleSwitchToAdmin}
+                  disabled={Boolean(actionLoading)}
+                />
+              )}
 
-  const handleAvatarMouseLeave = () => {
-    avatarHoveredRef.current = false;
-    avatarPreviewLockedRef.current = false;
-    hideAvatarPreview();
-  };
+              {isAdminSide && (
+                <DropdownItem
+                  icon={UserRound}
+                  title="Switch to Employee"
+                  subtitle={`Current role: ${currentAdminRoleLabel}`}
+                  onClick={handleSwitchToEmployee}
+                  loading={actionLoading === "employee"}
+                  disabled={Boolean(actionLoading)}
+                />
+              )}
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={onLogout}
+                disabled={Boolean(actionLoading)}
+                className="mt-0.5 flex min-h-[44px] 2xl:min-h-[50px] w-full items-center gap-2.5 2xl:gap-3 rounded-lg px-2.5 2xl:px-3 py-2 2xl:py-2.5 text-left text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {actionLoading === "logout" ? (
+                  <Loader2 size={16} className="shrink-0 animate-spin" />
+                ) : (
+                  <LogOut size={16} className="shrink-0" />
+                )}
+
+                <span className="text-[11px] 2xl:text-xs font-extrabold">
+                  {actionLoading === "logout" ? "Logging out..." : "Logout"}
+                </span>
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div className="relative z-[99999] min-w-0" ref={ref}>
@@ -267,31 +348,24 @@ export default function UserDropdown({
         onClick={(event) => {
           event.stopPropagation();
           hideAvatarPreview();
-
-          setOpen((previous) => {
-            const nextOpen = !previous;
-
-            if (nextOpen && avatarHoveredRef.current) {
-              avatarPreviewLockedRef.current = true;
-            }
-
-            return nextOpen;
-          });
+          setOpen((previous) => !previous);
         }}
+        onFocus={showAvatarPreview}
+        onBlur={hideAvatarPreview}
         aria-expanded={open}
         aria-haspopup="menu"
         className={[
           "group flex max-w-[360px] cursor-pointer items-center gap-2 2xl:gap-2.5 rounded-xl border px-2 py-1 2xl:py-1.5 text-left transition-all duration-150",
           mobileCompact ? "max-[430px]:gap-0 max-[430px]:px-0 max-[430px]:py-0" : "",
           open
-            ? "border-sibs-orange/40 bg-sibs-cream shadow-sm ring-2 ring-sibs-orange/15"
-            : "border-transparent bg-transparent hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle hover:shadow-xs",
+            ? "border-sibs-primary-1/25 bg-white shadow-sm ring-2 ring-sibs-primary-1/10"
+            : "border-transparent bg-transparent hover:border-sibs-tertiary-9 hover:bg-white",
         ].join(" ")}
       >
         <div
           ref={avatarPreviewAnchorRef}
-          onMouseEnter={handleAvatarMouseEnter}
-          onMouseLeave={handleAvatarMouseLeave}
+          onMouseEnter={showAvatarPreview}
+          onMouseLeave={hideAvatarPreview}
           className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-[11px] 2xl:text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-7.5 max-[360px]:w-7.5"
         >
           {profilePictureUrl && !profileImageFailed ? (
@@ -336,7 +410,7 @@ export default function UserDropdown({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[1000000] h-[152px] w-[152px] overflow-hidden rounded-2xl border border-[#D7E0E9] bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
+            className="pointer-events-none fixed z-[2147483001] h-[152px] w-[152px] overflow-hidden rounded-2xl border border-[#D7E0E9] bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
             style={{
               top: avatarPreviewPosition.top,
               left: avatarPreviewPosition.left,
@@ -359,53 +433,7 @@ export default function UserDropdown({
           document.body,
         )}
 
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-[calc(100%+8px)] z-[999999] w-[260px] 2xl:w-[286px] origin-top-right overflow-hidden rounded-xl border border-[#D7E0E9] bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)] animate-[sibsUserDropdownOpen_180ms_ease-out_both]"
-        >
-          <div className="p-1.5 2xl:p-2">
-            {!isAdminSide && canSwitchToAdmin && (
-              <DropdownItem
-                icon={UserKey}
-                title={switchToAdminLabel}
-                subtitle="Current role: Employee"
-                onClick={handleSwitchToAdmin}
-                disabled={Boolean(actionLoading)}
-              />
-            )}
-
-            {isAdminSide && (
-              <DropdownItem
-                icon={UserRound}
-                title="Switch to Employee"
-                subtitle={`Current role: ${currentAdminRoleLabel}`}
-                onClick={handleSwitchToEmployee}
-                loading={actionLoading === "employee"}
-                disabled={Boolean(actionLoading)}
-              />
-            )}
-
-            <button
-              type="button"
-              role="menuitem"
-              onClick={onLogout}
-              disabled={Boolean(actionLoading)}
-              className="mt-0.5 flex min-h-[44px] 2xl:min-h-[50px] w-full items-center gap-2.5 2xl:gap-3 rounded-lg px-2.5 2xl:px-3 py-2 2xl:py-2.5 text-left text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {actionLoading === "logout" ? (
-                <Loader2 size={16} className="shrink-0 animate-spin" />
-              ) : (
-                <LogOut size={16} className="shrink-0" />
-              )}
-
-              <span className="text-[11px] 2xl:text-xs font-extrabold">
-                {actionLoading === "logout" ? "Logging out..." : "Logout"}
-              </span>
-            </button>
-          </div>
-        </div>
-      )}
+      {dropdownMenu}
 
       <style>
         {`

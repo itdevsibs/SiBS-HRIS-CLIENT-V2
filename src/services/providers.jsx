@@ -2,6 +2,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { UserProvider } from "./context/UserContext";
+import { ChatProvider } from "./context/ChatContext";
 import BirthdayCelebrationGate from "../components/birthday/BirthdayCelebrationGate.jsx";
 import { SidebarNotificationProvider } from "./context/SidebarNotificationContext";
 import HeaderProvider from "./context/HeaderContext";
@@ -30,7 +31,8 @@ export default function Providers({ children }) {
         <HeaderProvider>
           <UserProvider>
             <BirthdayCelebrationGate />
-            <SidebarNotificationProvider>
+            <ChatProvider>
+              <SidebarNotificationProvider>
               <AdminProvider>
                 <RecruitmentSettingsProvider>
                   <JobDescriptionProvider>
@@ -56,7 +58,8 @@ export default function Providers({ children }) {
                   </JobDescriptionProvider>
                 </RecruitmentSettingsProvider>
               </AdminProvider>
-            </SidebarNotificationProvider>
+              </SidebarNotificationProvider>
+            </ChatProvider>
           </UserProvider>
         </HeaderProvider>
       </PaginationProvider>
