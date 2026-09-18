@@ -1,10 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Search, MapPin, ChevronRight, RefreshCw, FileText, Loader2 } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus, Search, MapPin, ChevronRight, RefreshCw, FileText } from "lucide-react";
 import Header from "../../components/layout/Header";
 import RequisitionModal from "../../components/modals/requisitions/RequisitionModal";
-import PageHeaderHero from "@/components/ui/PageHeaderHero";
-import StatusBadge from "@/components/ui/StatusBadge";
-import { DataCard, ResponsiveTableShell, TablePagination } from "@/components/ui";
+import {
+  DataCard,
+  MetricGridSkeleton,
+  PageHeaderHero,
+  ResponsiveTableShell,
+  StatusBadge,
+  TablePagination,
+  TableSkeletonRows,
+} from "@/components/ui";
 import { getDepartments, getRequisitions } from "@/lib/axios/getRequisition";
 
 export default function RequisitionPage() {
@@ -95,12 +101,7 @@ export default function RequisitionPage() {
     };
   }, [requisitions]);
 
-  const statusTones = {
-    Approved: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Pending: "bg-amber-50 text-amber-700 border-amber-200",
-    Draft: "bg-slate-50 text-slate-700 border-slate-200",
-    Rejected: "bg-red-50 text-red-700 border-red-200",
-  };
+
 
   return (
     <div className="sibs-dashboard-shell">
@@ -143,13 +144,28 @@ export default function RequisitionPage() {
           />
 
           {/* Metric KPI Cards */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <StatCard title="Total Requisitions" value={stats.all} index={0} />
-            <StatCard title="Draft" value={stats.draft} index={1} />
-            <StatCard title="Pending Review" value={stats.pending} index={2} />
-            <StatCard title="Approved" value={stats.approved} tone="emerald" index={3} />
-            <StatCard title="Rejected" value={stats.rejected} tone="rose" index={4} />
-          </div>
+          {loading ? (
+            <MetricGridSkeleton
+              count={5}
+              labels={[
+                "Total Requisitions",
+                "Draft",
+                "Pending Review",
+                "Approved",
+                "Rejected",
+              ]}
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+              ariaLabel="Loading requisition metrics"
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <StatCard title="Total Requisitions" value={stats.all} index={0} />
+              <StatCard title="Draft" value={stats.draft} index={1} />
+              <StatCard title="Pending Review" value={stats.pending} index={2} />
+              <StatCard title="Approved" value={stats.approved} tone="emerald" index={3} />
+              <StatCard title="Rejected" value={stats.rejected} tone="rose" index={4} />
+            </div>
+          )}
 
           {/* Table / List Records Card */}
           <section
@@ -341,12 +357,7 @@ export default function RequisitionPage() {
                     </thead>
                     <tbody className="divide-y divide-sibs-border bg-white">
                       {loading ? (
-                        <tr>
-                          <td colSpan={7} className="px-4 py-12 text-center text-sibs-muted">
-                            <Loader2 size={24} className="mx-auto mb-2 animate-spin text-sibs-orange" />
-                            <p className="sibs-text-xs font-semibold">Loading requisitions...</p>
-                          </td>
-                        </tr>
+                        <TableSkeletonRows count={5} columns={7} />
                       ) : filteredRequisitions.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="px-4 py-12 text-center text-sibs-muted">

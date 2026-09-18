@@ -35,9 +35,11 @@ import { useUser } from "../../services/context/UserContext";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "../../lib/utils/employees/employeeNameDisplay.js";
 import {
   DataCard,
+  MetricGridSkeleton,
   PageHeaderHero,
   ResponsiveTableShell,
   TablePagination,
+  TableSkeletonRows,
 } from "@/components/ui";
 import {
   createAccountSettingsUser,
@@ -509,7 +511,8 @@ function getAuditDateValue(user = {}, type = "created") {
   }, null);
 }
 
-function SummaryCard({ icon: Icon, label, value, description, tone = "blue" }) {
+function SummaryCard(props) {
+  const { icon: Icon, label, value, description, tone = "blue" } = props;
   const tones = {
     blue: {
       label: "text-[#042C51]",
@@ -1154,15 +1157,6 @@ function DraggableTableScroll({ children }) {
   );
 }
 
-function LoadingRows() {
-  return Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-    <tr key={index}>
-      <td colSpan={10} className="border-b border-[#E6ECF2] px-3 py-3">
-        <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
-      </td>
-    </tr>
-  ));
-}
 
 function EmptyState() {
   return (
@@ -2404,7 +2398,7 @@ export default function AccountSettingsPage() {
   const [users, setUsers] = useState([]);
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [accountOptions, setAccountOptions] = useState([]);
-  const [departmentOptions, setDepartmentOptions] = useState([]);
+  const [, setDepartmentOptions] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -2471,10 +2465,6 @@ export default function AccountSettingsPage() {
     [],
   );
 
-  const showingFrom = pagination.total
-    ? (currentPage - 1) * PAGE_LIMIT + 1
-    : 0;
-  const showingTo = Math.min(currentPage * PAGE_LIMIT, pagination.total);
   const isDataLoading = pageLoading || tableLoading;
 
   const openStatus = useCallback((type, title, message) => {
@@ -2885,53 +2875,57 @@ export default function AccountSettingsPage() {
             }
           />
 
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            {pageLoading ? (
-              Array.from({ length: 5 }).map((_, index) => (
-                <div
-                  key={`summary-loading-${index}`}
-                  className="sibs-card h-28 animate-sibs-pulse rounded-2xl bg-gray-100"
-                />
-              ))
-            ) : (
-              <>
-                <SummaryCard
-                  icon={UsersRound}
-                  label="Assigned Users"
-                  value={summary.totalUsers}
-                  description="Distinct HRIS users"
-                />
-                <SummaryCard
-                  icon={KeyRound}
-                  label="Assignments"
-                  value={summary.totalAssignments}
-                  description="Total access records"
-                  tone="violet"
-                />
-                <SummaryCard
-                  icon={Building2}
-                  label="Assigned Accounts"
-                  value={summary.assignedAccounts}
-                  description={`${summary.activeKronosAccounts} available accounts`}
-                  tone="cyan"
-                />
-                <SummaryCard
-                  icon={UserCog}
-                  label="Departments"
-                  value={summary.assignedDepartments}
-                  description={`${summary.kronosDepartments} available departments`}
-                  tone="amber"
-                />
-                <SummaryCard
-                  icon={ShieldCheck}
-                  label="Super Admins"
-                  value={summary.superAdmins}
-                  description="Access level 7"
-                  tone="emerald"
-                />
-              </>
-            )}
-          </section>
+          {pageLoading ? (
+            <MetricGridSkeleton
+              count={5}
+              labels={[
+                "Assigned Users",
+                "Assignments",
+                "Assigned Accounts",
+                "Departments",
+                "Super Admins",
+              ]}
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
+              ariaLabel="Loading account settings metrics"
+            />
+          ) : (
+            <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <SummaryCard
+                icon={UsersRound}
+                label="Assigned Users"
+                value={summary.totalUsers}
+                description="Distinct HRIS users"
+              />
+              <SummaryCard
+                icon={KeyRound}
+                label="Assignments"
+                value={summary.totalAssignments}
+                description="Total access records"
+                tone="violet"
+              />
+              <SummaryCard
+                icon={Building2}
+                label="Assigned Accounts"
+                value={summary.assignedAccounts}
+                description={`${summary.activeKronosAccounts} available accounts`}
+                tone="cyan"
+              />
+              <SummaryCard
+                icon={UserCog}
+                label="Departments"
+                value={summary.assignedDepartments}
+                description={`${summary.kronosDepartments} available departments`}
+                tone="amber"
+              />
+              <SummaryCard
+                icon={ShieldCheck}
+                label="Super Admins"
+                value={summary.superAdmins}
+                description="Access level 7"
+                tone="emerald"
+              />
+            </section>
+          )}
 
           <section className="sibs-card overflow-hidden rounded-2xl">
             <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
@@ -3083,7 +3077,7 @@ export default function AccountSettingsPage() {
 
                   <tbody>
                     {isDataLoading ? (
-                      <LoadingRows />
+                      <TableSkeletonRows count={PAGE_LIMIT} columns={10} />
                     ) : users.length ? (
                       users.map((assignedUser, index) => (
                         <tr

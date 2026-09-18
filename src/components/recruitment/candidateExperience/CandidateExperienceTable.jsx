@@ -1,19 +1,21 @@
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { CalendarDays } from "lucide-react";
 import PaginationTable from "@/services/pagination/PaginationTable.jsx";
-import { ResponsiveTableShell } from "@/components/ui";
+import { ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 import CandidateExperienceMobileCards from "./CandidateExperienceMobileCards.jsx";
 import { OutcomeBadge, RatingStars, ResponseSourceBadge, SurveyStatusBadge, formatExperienceDate } from "./presentation.jsx";
 
 const DEFAULT_PAGE_SIZE = 10;
 
-export default function CandidateExperienceTable({ records, onSelect }) {
+export default function CandidateExperienceTable({ records = [], onSelect, loading = false }) {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [prevRecords, setPrevRecords] = useState(records);
 
-  useEffect(() => {
+  if (records !== prevRecords) {
+    setPrevRecords(records);
     setPage(1);
-  }, [records]);
+  }
 
   const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -27,6 +29,7 @@ export default function CandidateExperienceTable({ records, onSelect }) {
           <CandidateExperienceMobileCards
             records={paginatedRecords}
             onSelect={onSelect}
+            loading={loading}
           />
         }
         desktopContent={
@@ -56,7 +59,9 @@ export default function CandidateExperienceTable({ records, onSelect }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-sibs-border font-jakarta">
-            {paginatedRecords.length ? (
+            {loading ? (
+              <TableSkeletonRows count={6} columns={9} />
+            ) : paginatedRecords.length ? (
               paginatedRecords.map((record, index) => (
                 <tr
                   key={record.id}

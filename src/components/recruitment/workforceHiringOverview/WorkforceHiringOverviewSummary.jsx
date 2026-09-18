@@ -1,3 +1,4 @@
+import React from "react";
 import {
   CalendarX2,
   CheckCircle2,
@@ -8,12 +9,27 @@ import {
   Users,
 } from "lucide-react";
 import { useWorkforceHiringView } from "@/services/context/WorkforceHiringContextAdapter";
+import { MetricGridSkeleton } from "@/components/ui";
 import KpiCard from "./shared/KpiCard";
+import { WORKFORCE_OVERVIEW_METRIC_LABELS } from "../../../lib/utils/workforceHiringOverview/workforceHiringOverviewConstants";
 
 export default function WorkforceHiringOverviewSummary() {
   const {
-    overview: { summary },
+    overview,
+    status,
   } = useWorkforceHiringView();
+  const summary = overview?.summary || {};
+
+  if (status?.isLoading || overview?.trendsLoading) {
+    return (
+      <MetricGridSkeleton
+        labels={WORKFORCE_OVERVIEW_METRIC_LABELS}
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-9 xl:gap-3 2xl:gap-4"
+        testId="workforce-summary-skeleton"
+        ariaLabel="Loading workforce hiring summary metrics"
+      />
+    );
+  }
 
   const metrics = [
     {

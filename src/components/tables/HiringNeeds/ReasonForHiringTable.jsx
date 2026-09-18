@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { Skeleton } from "@/components/ui";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -62,6 +63,7 @@ function normalizeReasonRows(data) {
 
 export default function ReasonForHiringTable({
   data = [],
+  loading = false,
   delay = 0,
 }) {
   const rows = useMemo(() => normalizeReasonRows(data), [data]);
@@ -92,7 +94,26 @@ export default function ReasonForHiringTable({
       </div>
 
       <div className="mt-3 2xl:mt-4 flex-1 space-y-2.5 2xl:space-y-3">
-        {rows.length > 0 ? (
+        {loading ? (
+          <div
+            className="space-y-3"
+            role="status"
+            aria-label="Loading headcount by reason"
+            aria-busy="true"
+          >
+            {Array.from({ length: 3 }, (_, index) => (
+              <div key={`reason-skeleton-${index}`} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-4">
+                  <Skeleton className="h-3 w-28" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
+                  <Skeleton className="h-full w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : rows.length > 0 ? (
           rows.map((item) => {
             const percentage =
               item.value > 0

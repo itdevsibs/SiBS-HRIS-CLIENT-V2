@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { Skeleton } from "@/components/ui";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -62,6 +63,7 @@ function normalizeDepartmentRows(data) {
 
 export default function RequisitionByDepartmentTable({
   data = [],
+  loading = false,
   delay = 0,
 }) {
   const rows = useMemo(
@@ -95,7 +97,26 @@ export default function RequisitionByDepartmentTable({
       </div>
 
       <div className="mt-3 2xl:mt-4 flex-1 space-y-2.5 2xl:space-y-3">
-        {rows.length > 0 ? (
+        {loading ? (
+          <div
+            className="space-y-3"
+            role="status"
+            aria-label="Loading requisition by department"
+            aria-busy="true"
+          >
+            {Array.from({ length: 4 }, (_, index) => (
+              <div key={`dept-skeleton-${index}`} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-4">
+                  <Skeleton className="h-3 w-32" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
+                  <Skeleton className="h-full w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : rows.length > 0 ? (
           rows.map((item) => {
             const percentage =
               item.value > 0

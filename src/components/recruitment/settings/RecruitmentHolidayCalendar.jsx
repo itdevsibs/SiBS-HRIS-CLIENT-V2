@@ -19,6 +19,7 @@ import {
 } from "../../../lib/axios/getRecruitmentSettings";
 import StatusModal from "../../modals/StatusModal";
 import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
+import { Skeleton } from "@/components/ui";
 
 const EMPTY_FORM = {
   id: "",
@@ -355,9 +356,25 @@ export default function RecruitmentHolidayCalendar() {
         </div>
 
         {loading ? (
-          <div className="flex min-h-48 items-center justify-center gap-2 text-sm font-bold text-[#667085]">
-            <Loader2 size={18} className="animate-spin" />
-            Loading holidays...
+          <div className="divide-y divide-[#EEF2F6]" data-testid="holidays-skeleton">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`holiday-skeleton-${index}`}
+                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3.5 w-28" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : sortedHolidays.length ? (
           <div className="divide-y divide-[#EEF2F6]">

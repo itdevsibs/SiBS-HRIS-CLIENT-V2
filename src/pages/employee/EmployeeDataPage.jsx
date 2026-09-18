@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, HeartPulse, History } from "lucide-react";
 
@@ -12,6 +12,7 @@ import EmployeeProfileContextPanel from "../../components/employee/profile/compo
 import EmployeeProfileHeader from "../../components/employee/profile/components/EmployeeProfileHeader.jsx";
 import EmployeeProfileNavigation from "../../components/employee/profile/components/EmployeeProfileNavigation.jsx";
 import EmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
+import EmployeeProfileSkeleton from "../../components/employee/profile/components/EmployeeProfileSkeleton.jsx";
 import ChwcpCoverageSection from "../../components/employee/profile/components/ChwcpCoverageSection.jsx";
 
 import { useUser } from "../../services/context/UserContext";
@@ -961,9 +962,7 @@ export default function EmployeeDataPage() {
           </div>
 
           {loading ? (
-            <div className="rounded-2xl border border-[#D6E0EA] bg-white p-6 text-sm font-semibold text-[#667085] shadow-sm">
-              Loading employee profile...
-            </div>
+            <EmployeeProfileSkeleton />
           ) : !displayEmployee ? (
             <div className="rounded-2xl border border-[#D6E0EA] bg-white p-6 text-sm font-semibold text-[#667085] shadow-sm">
               Profile not found.

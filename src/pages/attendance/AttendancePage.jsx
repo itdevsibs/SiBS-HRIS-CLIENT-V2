@@ -1,11 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Clock, RefreshCw } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
 import AttendanceTable from "../../components/tables/AttendanceTable";
 import { usePagination } from "../../services/context/PaginationContext";
-import { PageHeaderHero } from "@/components/ui";
+import { MetricGridSkeleton, PageHeaderHero } from "@/components/ui";
 
 function getAnimationStyle(delay = 0) {
   return {
@@ -149,14 +149,39 @@ export default function AttendancePage() {
           {tableReady ? (
             <AttendanceTable />
           ) : (
-            <section
-              className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
-              style={getAnimationStyle(80)}
+            <div
+              role="status"
+              aria-busy="true"
+              aria-label="Loading attendance view"
+              className="space-y-5 sm:space-y-6"
             >
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-8 text-center text-xs font-extrabold text-[#667085]">
-                Loading attendance records...
-              </div>
-            </section>
+              <MetricGridSkeleton
+                count={4}
+                labels={[
+                  "Loaded Attendance",
+                  "Approved",
+                  "Pending Review",
+                  "Computed Work Hours",
+                ]}
+                ariaLabel="Loading attendance metrics"
+                className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+              />
+              <section
+                className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+                style={getAnimationStyle(80)}
+              >
+                <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+                  <div className="h-5 w-44 animate-sibs-pulse rounded bg-sibs-tertiary-9 motion-reduce:animate-none" />
+                  <div className="mt-2 h-3.5 w-80 animate-sibs-pulse rounded bg-sibs-tertiary-9 motion-reduce:animate-none" />
+                </div>
+                <div className="p-4 sm:p-6 space-y-3">
+                  <div className="h-9 w-full animate-sibs-pulse rounded-lg bg-sibs-tertiary-9 motion-reduce:animate-none" />
+                  <div className="h-10 w-full animate-sibs-pulse rounded-lg bg-sibs-tertiary-9 motion-reduce:animate-none" />
+                  <div className="h-10 w-full animate-sibs-pulse rounded-lg bg-sibs-tertiary-9 motion-reduce:animate-none" />
+                  <div className="h-10 w-full animate-sibs-pulse rounded-lg bg-sibs-tertiary-9 motion-reduce:animate-none" />
+                </div>
+              </section>
+            </div>
           )}
         </div>
       </main>

@@ -941,7 +941,7 @@ export function OffersProvider({ children }) {
   const [approvalUsersLoading, setApprovalUsersLoading] = useState(false);
 
   const [apiCandidates, setApiCandidates] = useState([]);
-  const [isLoadingOffers, setIsLoadingOffers] = useState(false);
+  const [isLoadingOffers, setIsLoadingOffers] = useState(true);
   const [offersLoadError, setOffersLoadError] = useState("");
   const [storageSyncTick, setStorageSyncTick] = useState(0);
 
@@ -1603,6 +1603,7 @@ export function OffersProvider({ children }) {
       getApprovalRecordForUser(getApprovalsObject(offer), approvalUser),
 
     isLoadingOffers,
+    isLoading: isLoadingOffers,
     offersLoadError,
     refreshOffers,
     openStatusModal,

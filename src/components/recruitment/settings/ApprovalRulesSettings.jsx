@@ -17,6 +17,7 @@ import {
 import StatusModal from "../../modals/StatusModal";
 import { useUser } from "../../../services/context/UserContext";
 import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
+import { Skeleton } from "@/components/ui";
 
 import {
   addOfferApprovalUser,
@@ -674,12 +675,22 @@ function ApprovalRulePanel({
 
       <div className="mt-5 space-y-3">
         {loading ? (
-          <div className="rounded-xl border border-[#D9E2EC] bg-white px-5 py-10 text-center text-xs font-bold text-sibs-primary-1">
-            <Loader2
-              size={20}
-              className="mx-auto mb-2 animate-spin text-sibs-primary-1"
-            />
-            Loading approval users...
+          <div className="space-y-3" data-testid="approval-users-skeleton">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={`approval-user-skeleton-${index}`}
+                className="flex items-center justify-between gap-4 rounded-xl border border-[#D9E2EC] bg-white p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                </div>
+                <Skeleton className="h-9 w-9 rounded-lg" />
+              </div>
+            ))}
           </div>
         ) : users.length > 0 ? (
           users.map((user) => (
@@ -1018,7 +1029,6 @@ export default function ApprovalRulesSettings() {
     return () => {
       window.clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeRule.key, activeSearch]);
 
   return (

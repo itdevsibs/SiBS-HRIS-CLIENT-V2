@@ -39,8 +39,9 @@ function OutcomeBar({ label, value, count, toneClass, delay = 0 }) {
   );
 }
 
-export default function OnboardingOutcomeOverview() {
-  const { stats = {} } = useOnboarding();
+export default function OnboardingOutcomeOverview({ loading: propLoading }) {
+  const { stats = {}, loading: contextLoading = false } = useOnboarding() || {};
+  const loading = propLoading ?? contextLoading;
 
   const rows = [
     {
@@ -89,15 +90,31 @@ export default function OnboardingOutcomeOverview() {
               </p>
             </div>
 
-            <span className="inline-flex w-fit shrink-0 rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 sibs-text-micro font-extrabold text-[#475467]">
-              Total Records: {Number(stats.total || 0).toLocaleString("en-US")}
-            </span>
+            {loading ? (
+              <span className="inline-flex h-6 w-28 shrink-0 rounded-full bg-slate-100 animate-sibs-pulse" />
+            ) : (
+              <span className="inline-flex w-fit shrink-0 rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 sibs-text-micro font-extrabold text-[#475467]">
+                Total Records: {Number(stats.total || 0).toLocaleString("en-US")}
+              </span>
+            )}
           </div>
 
           <div className="space-y-3.5">
-            {rows.map((row, index) => (
-              <OutcomeBar key={row.label} {...row} delay={160 + index * 45} />
-            ))}
+            {loading ? (
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div key={`outcome-bar-skeleton-${idx}`} className="space-y-1.5" data-testid="outcome-bar-skeleton">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="h-3.5 w-24 rounded bg-slate-100 animate-sibs-pulse" />
+                    <div className="h-3.5 w-16 rounded bg-slate-100 animate-sibs-pulse" />
+                  </div>
+                  <div className="h-2.5 w-full rounded-full bg-slate-100 animate-sibs-pulse" />
+                </div>
+              ))
+            ) : (
+              rows.map((row, index) => (
+                <OutcomeBar key={row.label} {...row} delay={160 + index * 45} />
+              ))
+            )}
           </div>
         </div>
       </section>

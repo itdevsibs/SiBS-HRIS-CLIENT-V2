@@ -29,6 +29,7 @@ import StatusModal from "../../modals/StatusModal";
 import RichTextEditor from "../../modals/jobDescription/RichTextEditor";
 import RichTextViewer from "../../modals/jobDescription/RichTextViewer";
 import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
+import { TableSkeletonRows } from "@/components/ui";
 
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
 const APPLICATION_FORMS_TABLE_PAGE_SIZE = 6;
@@ -930,14 +931,7 @@ export default function ApplicationQuestionsFormSettings() {
                 })}
 
                 {positionsLoading && !filteredApplicationForms.length && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-14 text-center">
-                      <div className="inline-flex items-center gap-2 text-sm font-extrabold text-sibs-primary-1">
-                        <Loader2 size={18} className="animate-spin" />
-                        Loading application forms...
-                      </div>
-                    </td>
-                  </tr>
+                  <TableSkeletonRows count={5} columns={7} />
                 )}
 
                 {!positionsLoading && !filteredApplicationForms.length && (

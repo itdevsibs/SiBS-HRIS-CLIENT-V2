@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -28,7 +28,6 @@ function MoreActionsPortal({ open, anchorRef, children }) {
 
   useEffect(() => {
     if (!open || typeof window === "undefined") {
-      setPosition(null);
       return undefined;
     }
 
@@ -81,7 +80,8 @@ function MoreActionsPortal({ open, anchorRef, children }) {
   );
 }
 
-function HeaderFact({ icon: Icon, children }) {
+function HeaderFact(props) {
+  const { icon: Icon, children } = props;
   if (!children) return null;
 
   return (

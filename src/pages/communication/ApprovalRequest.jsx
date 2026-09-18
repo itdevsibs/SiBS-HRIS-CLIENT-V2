@@ -19,7 +19,6 @@ import {
   FileCheck2,
   FileText,
   ListChecks,
-  Loader2,
   MessageSquareText,
   RefreshCcw,
   RefreshCw,
@@ -33,13 +32,20 @@ import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
 import JobDescriptionRequestTable from "../../components/tables/jobDescription/JobDescriptionRequestTable";
 import PaginationTable from "@/services/pagination/PaginationTable";
+import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
 import { useUser } from "../../services/context/UserContext";
-import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
-import { PageHeaderHero, DataCard, ResponsiveTableShell } from "@/components/ui";
+import {
+  PageHeaderHero,
+  DataCard,
+  ResponsiveTableShell,
+  TableSkeletonRows,
+  MetricGridSkeleton,
+  Skeleton,
+} from "@/components/ui";
 
 import {
   getApprovalRequestsByModule,
@@ -575,22 +581,21 @@ function getPriorityClass(priority) {
   }
 }
 
-function getStatusIcon(status) {
+function StatusIcon({ status, size = 14, className }) {
   switch (status) {
     case "Approved":
-      return CheckCircle2;
+      return <CheckCircle2 size={size} className={className} />;
     case "Rejected":
-      return XCircle;
+      return <XCircle size={size} className={className} />;
     case "For Review":
-      return AlertCircle;
+      return <AlertCircle size={size} className={className} />;
     default:
-      return Clock3;
+      return <Clock3 size={size} className={className} />;
   }
 }
 
 function StatusBadge({ status, emptyText = "--" }) {
   const displayStatus = status || emptyText;
-  const StatusIcon = getStatusIcon(displayStatus);
 
   return (
     <span
@@ -598,7 +603,9 @@ function StatusBadge({ status, emptyText = "--" }) {
         displayStatus,
       )}`}
     >
-      {displayStatus !== "No Request" && <StatusIcon size={14} />}
+      {displayStatus !== "No Request" && (
+        <StatusIcon status={displayStatus} size={14} />
+      )}
       {displayStatus}
     </span>
   );
@@ -823,7 +830,7 @@ function getRequesterDisplayInfo(request = {}) {
   };
 }
 
-function isWorkforceRecruitmentSettingsRequest(request) {
+function _isWorkforceRecruitmentSettingsRequest(request) {
   return (
     isWorkforceHiringPlanRequest(request) &&
     getRequestType(request) === "Recruitment Settings"
@@ -969,7 +976,7 @@ function getFinalRequiredHeadcount(request) {
   );
 }
 
-function getEditableRequiredHeadcountDefault(request) {
+function _getEditableRequiredHeadcountDefault(request) {
   const value = getFinalRequiredHeadcount(request);
 
   if (value === null || value === undefined || value === "") {
@@ -1398,8 +1405,8 @@ export default function ApprovalRequest() {
   const [page, setPage] = useState(1);
 
   const [requests, setRequests] = useState([]);
-  const [counts, setCounts] = useState(DEFAULT_COUNTS);
-  const [pagination, setPagination] = useState({
+  const [_counts, setCounts] = useState(DEFAULT_COUNTS);
+  const [_pagination, setPagination] = useState({
     total: 0,
     totalPages: 1,
     currentPage: 1,
@@ -3063,7 +3070,20 @@ function ApprovalSearchTable({
   );
 }
 
-function ApprovalSummaryCards({ stats, activeModule, loading }) {
+function ApprovalSummaryCards({ stats, loading }) {
+  if (loading) {
+    return (
+      <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white p-5`}>
+        <MetricGridSkeleton
+          count={5}
+          labels={["Total Requests", "Pending", "For Review", "Approved", "Rejected"]}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
+          ariaLabel="Loading approval summary metrics"
+        />
+      </section>
+    );
+  }
+
   const normalizedStats = {
     ...DEFAULT_COUNTS,
     ...(stats || {}),
@@ -3143,8 +3163,18 @@ function ApprovalModuleTabs({
   onChangeModule,
   moduleNotificationCounts,
   requestModules = REQUEST_MODULES,
+  loading = false,
 }) {
-  if (!requestModules.length) return null;
+  if (loading || !requestModules.length) {
+    return (
+      <div className="border-t border-[#E6ECF2] bg-white px-5">
+        <div className="flex min-w-0 items-center gap-8 overflow-x-auto py-4">
+          <Skeleton className="h-6 w-24 rounded-md" />
+          <Skeleton className="h-6 w-32 rounded-md" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border-t border-[#E6ECF2] bg-white px-5">
@@ -3234,8 +3264,11 @@ function ApprovalRequestTable({
           </div>
 
           <div className="inline-flex w-fit items-center gap-2 rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
-            {loading && <Loader2 size={15} className="animate-spin" />}
-            Showing: {loadedCount} / {totalRecords}
+            {loading ? (
+              <Skeleton className="h-4 w-28 rounded" />
+            ) : (
+              <span>Showing: {loadedCount} / {totalRecords}</span>
+            )}
           </div>
         </div>
       </div>
@@ -3245,6 +3278,7 @@ function ApprovalRequestTable({
         requestModules={requestModules}
         onChangeModule={onChangeModule}
         moduleNotificationCounts={moduleNotificationCounts}
+        loading={loading}
       />
 
       <div className="p-5" data-approval-table-top>
@@ -3336,23 +3370,9 @@ function ApprovalRequestTable({
                     </tr>
                   </thead>
 
-                  <tbody>
+                  <tbody aria-busy={loading ? "true" : undefined}>
                     {loading ? (
-                      <tr>
-                        <td
-                          colSpan={colSpan}
-                          className="px-5 py-12 text-center"
-                        >
-                          <Loader2
-                            size={30}
-                            className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-                          />
-
-                          <p className="text-sm font-bold text-gray-500">
-                            Loading approval requests...
-                          </p>
-                        </td>
-                      </tr>
+                      <TableSkeletonRows count={PAGE_LIMIT} columns={colSpan} />
                     ) : requests.length === 0 ? (
                       <tr>
                         <td
@@ -3459,7 +3479,7 @@ function AvailablePositionApprovalTable({
     event.preventDefault();
   }
 
-  function stopTableDragging(event) {
+  function stopTableDragging() {
     const container = tableScrollRef.current;
     const pointerId = dragStateRef.current.pointerId;
 
@@ -3521,19 +3541,9 @@ function AvailablePositionApprovalTable({
               </tr>
             </thead>
 
-            <tbody>
+            <tbody aria-busy={loading ? "true" : undefined}>
               {loading ? (
-                <tr>
-                  <td colSpan={desktopColumns} className="px-5 py-12 text-center">
-                    <Loader2
-                      size={30}
-                      className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-                    />
-                    <p className="text-sm font-bold text-gray-500">
-                      Loading Available Position requests...
-                    </p>
-                  </td>
-                </tr>
+                <TableSkeletonRows count={PAGE_LIMIT} columns={desktopColumns} />
               ) : requests.length === 0 ? (
                 <tr>
                   <td
@@ -3657,15 +3667,7 @@ function AvailablePositionApprovalTable({
 
       <div className="block lg:hidden" data-approval-mobile-scroll>
         {loading ? (
-          <div className="rounded-[14px] border border-[#D9E2EC] bg-white px-5 py-10 text-center shadow-sm">
-            <Loader2
-              size={30}
-              className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-            />
-            <p className="text-sm font-bold text-gray-500">
-              Loading Available Position requests...
-            </p>
-          </div>
+          <DataCard.Skeleton count={4} lines={4} />
         ) : requests.length === 0 ? (
           <div className="rounded-[14px] border border-[#D9E2EC] bg-white px-5 py-10 text-center shadow-sm">
             <p className="text-sm font-bold text-gray-500">
@@ -3790,7 +3792,6 @@ function PositionAvailabilityBadge({ status }) {
 
 function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
   const status = getNormalizedRequestStatus(request);
-  const StatusIcon = getStatusIcon(status);
   const requestType = getRequestType(request);
   const displayRequestType = getApprovalRequestDisplayType(request);
   const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
@@ -3798,7 +3799,6 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
   const accountName = getAccountName(request);
   const isHiringNeeds = isHiringNeedsRequest(request);
   const isAvailablePosition = isAvailablePositionRequest(request);
-  const isAttrition = isAttritionRequest(request);
   const requesterInfo = getRequesterDisplayInfo(request);
 
   const requesterSubtitle = isHiringNeeds
@@ -3900,7 +3900,7 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
               status,
             )}`}
           >
-            <StatusIcon size={14} />
+            <StatusIcon status={status} size={14} />
             {status || "--"}
           </span>
         </td>
@@ -3928,7 +3928,6 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
 
 function ApprovalRequestMobileCard({ request, isWorkforceModule, onView }) {
   const status = getNormalizedRequestStatus(request);
-  const StatusIcon = getStatusIcon(status);
   const requestType = getRequestType(request);
   const displayRequestType = getApprovalRequestDisplayType(request);
   const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
@@ -3957,7 +3956,7 @@ function ApprovalRequestMobileCard({ request, isWorkforceModule, onView }) {
                 status,
               )}`}
             >
-              <StatusIcon size={12} />
+              <StatusIcon status={status} size={12} />
               {status || "--"}
             </span>
           ) : null
@@ -4066,6 +4065,17 @@ function ViewApprovalRequestModal({
   canViewHiringNeedsApproval = false,
   canViewAvailablePositionApproval = false,
 }) {
+  const [prevRequestKey, setPrevRequestKey] = useState(null);
+  const [workforceEditableRequiredHeadcount, setWorkforceEditableRequiredHeadcount] =
+    useState("");
+
+  const currentRequestKey =
+    open && request ? request.id || request.attritionId || "open" : null;
+  if (currentRequestKey !== prevRequestKey) {
+    setPrevRequestKey(currentRequestKey);
+    setWorkforceEditableRequiredHeadcount("");
+  }
+
   if (!open || !request) return null;
 
   const status = getNormalizedRequestStatus(request);
@@ -4089,29 +4099,8 @@ function ViewApprovalRequestModal({
     isHiringNeeds && canReview && !isFinalDecision;
   const showAvailablePositionFooterActions =
     isAvailablePosition && canReview && !isFinalDecision;
-  const isWorkforceRecruitmentSettings =
-    isWorkforceRecruitmentSettingsRequest(request);
   const canEditRequiredHeadcount =
     canEditRequiredHeadcountOnWorkforceApproval(request);
-
-  const [workforceEditableRequiredHeadcount, setWorkforceEditableRequiredHeadcount] =
-    useState("");
-
-  useEffect(() => {
-    if (!open || !request) {
-      setWorkforceEditableRequiredHeadcount("");
-      return;
-    }
-
-    /*
-      HR / HR Admin edits Required Headcount directly in this
-      Approval Request Workforce Hiring Plan modal.
-      Keep it blank on every open so the final value is intentionally entered.
-    */
-    setWorkforceEditableRequiredHeadcount(
-      canEditRequiredHeadcountOnWorkforceApproval(request) ? "" : "",
-    );
-  }, [open, request]);
 
   function handleApproveWorkforceHiringPlan() {
     if (canEditRequiredHeadcount) {
@@ -5186,7 +5175,6 @@ function WorkforceHiringPlanApprovalPanel({
 
   const requiredHeadcount = getRequiredHeadcount(request);
   const requestedRequiredHeadcount = getRequestedRequiredHeadcount(request);
-  const isRecruitmentSettings = isWorkforceRecruitmentSettingsRequest(request);
   const isUpdateHeadcount = isWorkforceUpdateHeadcountRequest(request);
   const canEditRequiredHeadcount =
     canEditRequiredHeadcountOnWorkforceApproval(request);
@@ -5433,7 +5421,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
                   status,
                 )}`}
               >
-                {React.createElement(getStatusIcon(status), { size: 14 })}
+                <StatusIcon status={status} size={14} />
                 {status}
               </span>
             </div>
@@ -5553,8 +5541,6 @@ function DecisionModal({
   const isHiringNeeds = isHiringNeedsRequest(request);
   const isAvailablePosition = isAvailablePositionRequest(request);
   const isWorkforce = isWorkforceHiringPlanRequest(request);
-  const isWorkforceRecruitmentSettings =
-    isWorkforceRecruitmentSettingsRequest(request);
   const isWorkforceUpdateHeadcount = isWorkforceUpdateHeadcountRequest(request);
   const displayRequestType = getApprovalRequestDisplayType(request);
   const canEditRequiredHeadcount =
@@ -6080,3 +6066,10 @@ function DecisionChecklistItem({ done = false, title, subtitle }) {
     </div>
   );
 }
+
+export {
+  ApprovalSummaryCards,
+  ApprovalModuleTabs,
+  ApprovalRequestTable,
+  AvailablePositionApprovalTable,
+};

@@ -227,3 +227,16 @@ export const workforceHiringOverviewDetailRows = [
     hiringRate: 20,
   },
 ];
+
+export const WORKFORCE_OVERVIEW_METRIC_LABELS = [
+  "Required HC",
+  "Actual HC",
+  "Buffer %",
+  "Absenteeism",
+  "Attrition",
+  "Net Actual HC",
+  "Hiring Needed",
+  "Hiring Rate",
+  "Hired Count",
+];
+

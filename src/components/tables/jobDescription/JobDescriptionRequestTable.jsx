@@ -5,7 +5,6 @@ import {
   Clock3,
   Eye,
   FileText,
-  Loader2,
   PencilLine,
   RotateCcw,
   XCircle,
@@ -14,7 +13,7 @@ import {
 import { getJobDescriptionApprovalRequests } from "../../../lib/axios/getApprovalRequest";
 import { usePagination } from "../../../services/context/PaginationContext";
 import TableFooter from "../footer/TableFooter";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 
 const JOB_DESCRIPTION_REQUEST_ENTITY = "job-description-approval-requests";
 
@@ -71,22 +70,20 @@ function getStatusClass(status) {
   }
 }
 
-function getStatusIcon(status) {
+function StatusIcon({ status, size = 11, className = "" }) {
   switch (normalizeStatus(status)) {
     case "Approved":
-      return CheckCircle2;
+      return <CheckCircle2 size={size} className={className} />;
 
     case "Rejected":
-      return XCircle;
+      return <XCircle size={size} className={className} />;
 
     case "For Review":
-      return AlertCircle;
+      return <AlertCircle size={size} className={className} />;
 
     case "Pending":
-      return Clock3;
-
     default:
-      return Clock3;
+      return <Clock3 size={size} className={className} />;
   }
 }
 
@@ -115,7 +112,6 @@ function getRawValue(request, key, fallback = "") {
 function JobDescriptionMobileCard({ request, onView }) {
   const rawStatus = getRawValue(request, "jdStatus", request.status);
   const normalizedStatus = normalizeStatus(request.status || rawStatus);
-  const StatusIcon = getStatusIcon(normalizedStatus);
 
   return (
     <DataCard interactive onClick={() => onView?.(request)}>
@@ -133,7 +129,7 @@ function JobDescriptionMobileCard({ request, onView }) {
               normalizedStatus,
             )}`}
           >
-            <StatusIcon size={11} />
+            <StatusIcon status={normalizedStatus} size={11} />
             {normalizedStatus}
           </span>
         }
@@ -295,20 +291,9 @@ const JobDescriptionRequestTable = ({ onView }) => {
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody aria-busy={loading ? "true" : undefined}>
                   {loading ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                      >
-                        <Loader2
-                          size={28}
-                          className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-                        />
-                        Loading Job Description approval requests...
-                      </td>
-                    </tr>
+                    <TableSkeletonRows count={15} columns={6} />
                   ) : requests.length === 0 ? (
                     <tr>
                       <td
@@ -328,7 +313,6 @@ const JobDescriptionRequestTable = ({ onView }) => {
                       const normalizedStatus = normalizeStatus(
                         request.status || rawStatus,
                       );
-                      const StatusIcon = getStatusIcon(normalizedStatus);
 
                       return (
                         <tr
@@ -448,7 +432,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                                 normalizedStatus,
                               )}`}
                             >
-                              <StatusIcon size={13} className="shrink-0" />
+                              <StatusIcon status={normalizedStatus} size={13} className="shrink-0" />
                               <span className="truncate">{normalizedStatus}</span>
                             </span>
                           </td>

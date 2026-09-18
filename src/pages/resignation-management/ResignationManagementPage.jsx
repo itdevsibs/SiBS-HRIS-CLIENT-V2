@@ -35,7 +35,13 @@ import {
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
 import PaginationTable from "../../services/pagination/PaginationTable";
-import { DataCard, PageHeaderHero, ResponsiveTableShell } from "@/components/ui";
+import {
+  DataCard,
+  MetricGridSkeleton,
+  PageHeaderHero,
+  ResponsiveTableShell,
+  TableSkeletonRows,
+} from "@/components/ui";
 import { useUser } from "../../services/context/UserContext";
 import {
   ResignationManagementModal,
@@ -501,6 +507,23 @@ function renderStatusIcon(status, size = 12) {
 
 
 function ResignationSummaryCards({ stats, loading }) {
+  if (loading) {
+    return (
+      <MetricGridSkeleton
+        count={5}
+        labels={[
+          "Total Resignations",
+          "For Approval",
+          "Notice Period",
+          "Completed",
+          "Declined",
+        ]}
+        ariaLabel="Loading resignation summary metrics"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
+      />
+    );
+  }
+
   const normalizedStats = {
     ...DEFAULT_COUNTS,
     ...(stats || {}),
@@ -604,7 +627,7 @@ function ResignationSummaryCards({ stats, loading }) {
                   <p
                     className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${tone.value}`}
                   >
-                    {loading ? "..." : card.value}
+                    {card.value}
                   </p>
                 </div>
 
@@ -616,11 +639,7 @@ function ResignationSummaryCards({ stats, loading }) {
               <span
                 className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${tone.iconWrap} ${tone.icon}`}
               >
-                {loading ? (
-                  <Loader2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 animate-spin" />
-                ) : (
-                  <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
-                )}
+                <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
               </span>
             </div>
           </article>
@@ -1295,8 +1314,8 @@ function ResignationTableCard({
   const [draftStatusFilter, setDraftStatusFilter] = useState(statusFilter);
   const [draftTypeFilter, setDraftTypeFilter] = useState(typeFilter);
   const [isMobileFilterMode, setIsMobileFilterMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(max-width: 1023px)").matches;
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+    return window.matchMedia("(max-width: 1023px)")?.matches || false;
   });
   const totalPages = Math.max(Math.ceil(data.length / PAGE_LIMIT), 1);
   const currentPage = Math.min(
@@ -1311,15 +1330,17 @@ function ResignationTableCard({
   }, [data, currentPage, totalPages]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraftSearch(search);
     setDraftStatusFilter(statusFilter);
     setDraftTypeFilter(typeFilter);
   }, [search, statusFilter, typeFilter]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
 
     const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    if (!mediaQuery) return undefined;
 
     function handleViewportChange(event) {
       setIsMobileFilterMode(event.matches);
@@ -1401,7 +1422,7 @@ function ResignationTableCard({
 
   return (
     <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm font-jakarta">
-      <div className="border-b border-[#E6ECF2] bg-white px-3 py-2 2xl:px-5 2xl:py-4">
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-0.5">
             <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
@@ -1413,9 +1434,7 @@ function ResignationTableCard({
             </p>
           </div>
         </div>
-      </div>
 
-      <div className="relative overflow-visible p-3.5 sm:p-5">
         <PaginationTable
           filterLayout="ta-inline"
           showFilterPanel={false}
@@ -1465,7 +1484,7 @@ function ResignationTableCard({
               </button>
             ) : null
           }
-          className="border-0 bg-transparent p-0 shadow-none"
+          className="mt-4 border-0 bg-transparent p-0 shadow-none"
         />
 
         <button
@@ -1481,9 +1500,10 @@ function ResignationTableCard({
           )}
           Apply Search
         </button>
+      </div>
 
+      <div className="p-3 sm:p-5 2xl:p-6 font-jakarta">
         <ResponsiveTableShell
-          className="mt-5"
           desktopContent={
             <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
               <div className="max-h-[620px] overflow-auto sibs-scrollbar">
@@ -1502,13 +1522,11 @@ function ResignationTableCard({
 
                   <tbody>
                     {loading ? (
-                      Array.from({ length: 7 }).map((_, index) => (
-                        <tr key={index}>
-                          <td colSpan={7} className="border-t border-[#EEF2F6] px-4 py-3.5">
-                            <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E9EEF5]" />
-                          </td>
-                        </tr>
-                      ))
+                      <TableSkeletonRows
+                        count={7}
+                        columns={7}
+                        cellClassName="px-2.5 py-2 2xl:px-4 2xl:py-3.5 align-middle"
+                      />
                     ) : pageData.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-5 py-16 text-center sibs-text-sm font-bold text-[#667085]">

@@ -1,6 +1,7 @@
 import React from "react";
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
+import { Skeleton } from "@/components/ui";
 
 function SummaryBar({ item, total, accent = "#2563EB" }) {
   const percent = total > 0 ? Math.round((item.total / total) * 100) : 0;
@@ -23,8 +24,11 @@ function SummaryBar({ item, total, accent = "#2563EB" }) {
   );
 }
 
-export default function ApplicantLeadsChannelSources() {
-  const { channelSourceSummary, accountLeadSummary } = useApplicantLeadsPage();
+export default function ApplicantLeadsChannelSources({ loading }) {
+  const pageState = useApplicantLeadsPage();
+  const isLoading = loading !== undefined ? loading : pageState.isLoading;
+  const { channelSourceSummary = [], accountLeadSummary = [] } = pageState;
+
   const totalSources = channelSourceSummary.reduce(
     (sum, item) => sum + item.total,
     0,
@@ -41,16 +45,36 @@ export default function ApplicantLeadsChannelSources() {
           Distribution of pre-applicant inquiries across recruitment channels.
         </p>
 
-        <div className="mt-3.5 2xl:mt-4 space-y-3">
-          {channelSourceSummary.slice(0, 8).map((item, index) => (
-            <SummaryBar
-              key={item.label}
-              item={item}
-              total={totalSources}
-              accent={accents[index % accents.length]}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="mt-3.5 2xl:mt-4 space-y-3.5" data-testid="channel-breakdown-skeleton">
+            {[1, 2, 3, 4].map((key) => (
+              <div key={key}>
+                <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                  <Skeleton className="h-3.5 w-28" />
+                  <Skeleton className="h-3.5 w-16" />
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
+                  <Skeleton className="h-full w-full rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : channelSourceSummary.length > 0 ? (
+          <div className="mt-3.5 2xl:mt-4 space-y-3">
+            {channelSourceSummary.slice(0, 8).map((item, index) => (
+              <SummaryBar
+                key={item.label}
+                item={item}
+                total={totalSources}
+                accent={accents[index % accents.length]}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] p-8 text-center text-xs font-semibold text-[#667085]">
+            No lead channel source data available.
+          </div>
+        )}
       </section>
 
       <section className="rounded-2xl border border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-xs">
@@ -61,31 +85,55 @@ export default function ApplicantLeadsChannelSources() {
           Target account client demand from inbound leads.
         </p>
 
-        <div className="mt-3.5 2xl:mt-4 space-y-2.5">
-          {accountLeadSummary.slice(0, 8).map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-2.5"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-xs font-extrabold text-[#042C51]">
-                  {item.label}
-                </p>
-                <p className="text-[10px] font-semibold text-[#91A2B8]">
-                  Target Account Client
-                </p>
+        {isLoading ? (
+          <div className="mt-3.5 2xl:mt-4 space-y-2.5" data-testid="account-intake-skeleton">
+            {[1, 2, 3, 4].map((key) => (
+              <div
+                key={key}
+                className="flex items-center justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-2.5"
+              >
+                <div className="min-w-0 space-y-1">
+                  <Skeleton className="h-3.5 w-32" />
+                  <Skeleton className="h-2.5 w-24" />
+                </div>
+                <div className="text-right space-y-1">
+                  <Skeleton className="h-4 w-10 ml-auto" />
+                  <Skeleton className="h-2.5 w-16 ml-auto" />
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-extrabold text-[#042C51]">
-                  {item.total}
-                </p>
-                <p className="text-[10px] font-semibold text-[#91A2B8]">
-                  Total Inquiries
-                </p>
+            ))}
+          </div>
+        ) : accountLeadSummary.length > 0 ? (
+          <div className="mt-3.5 2xl:mt-4 space-y-2.5">
+            {accountLeadSummary.slice(0, 8).map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-extrabold text-[#042C51]">
+                    {item.label}
+                  </p>
+                  <p className="text-[10px] font-semibold text-[#91A2B8]">
+                    Target Account Client
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-extrabold text-[#042C51]">
+                    {item.total}
+                  </p>
+                  <p className="text-[10px] font-semibold text-[#91A2B8]">
+                    Total Inquiries
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] p-8 text-center text-xs font-semibold text-[#667085]">
+            No account lead intake data recorded.
+          </div>
+        )}
       </section>
     </div>
   );

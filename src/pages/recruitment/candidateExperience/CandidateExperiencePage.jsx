@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Header from "../../../components/layout/Header";
 import CandidateExperienceHeader from "../../../components/recruitment/candidateExperience/CandidateExperienceHeader.jsx";
 import CandidateExperienceSummary from "../../../components/recruitment/candidateExperience/CandidateExperienceSummary.jsx";
@@ -78,9 +78,9 @@ export default function CandidateExperiencePage() {
             </div>
           ) : null}
 
-          <CandidateExperienceSummary metrics={metrics} />
+          <CandidateExperienceSummary metrics={metrics} loading={loading} />
 
-          <CandidateExperienceAnalytics records={records} metrics={metrics} />
+          <CandidateExperienceAnalytics records={records} metrics={metrics} loading={loading} />
 
           <section
             className="sibs-page-card-in overflow-hidden rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white shadow-sm font-jakarta"
@@ -109,16 +109,11 @@ export default function CandidateExperiencePage() {
             </header>
 
             <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
-              {loading ? (
-                <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] p-10 text-center text-xs font-bold text-[#667085]">
-                  Loading Candidate Experience records...
-                </div>
-              ) : (
-                <CandidateExperienceTable
-                  records={filteredRecords}
-                  onSelect={setSelectedRecord}
-                />
-              )}
+              <CandidateExperienceTable
+                records={filteredRecords}
+                onSelect={setSelectedRecord}
+                loading={loading}
+              />
             </div>
           </section>
         </div>

@@ -8,7 +8,8 @@ import {
 } from "react-router-dom";
 
 import App from "./App.jsx";
-import PageFallback from "./components/ui/PageFallback.jsx";
+import PublicRouteFallback from "./components/ui/PublicRouteFallback.jsx";
+import { isStandalonePublicRoute } from "./config/publicRoutes";
 import "./index.css";
 
 function lazyWithRetry(componentImport) {
@@ -48,97 +49,9 @@ const PublicJobDescriptionPage = lazyWithRetry(() =>
 const CandidateExperienceSurveyPage = lazyWithRetry(() =>
   import("./pages/recruitment/candidateExperience/public/CandidateExperienceSurveyPage.jsx")
 );
-
-/* =====================================================
-   PUBLIC APPLICATION HOST
-===================================================== */
-
-const DEFAULT_PUBLIC_APPLICATION_HOST = "sibsapply.getleadsource.com";
-
-function normalizeHostname(value = "") {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/\/.*$/, "")
-    .replace(/:\d+$/, "");
-}
-
-function getPublicApplicationHosts() {
-  const configuredHosts =
-    import.meta.env.VITE_PUBLIC_APPLICATION_HOSTS ||
-    import.meta.env.VITE_PUBLIC_APPLICATION_HOST ||
-    DEFAULT_PUBLIC_APPLICATION_HOST;
-
-  return String(configuredHosts)
-    .split(",")
-    .map(normalizeHostname)
-    .filter(Boolean);
-}
-
-function isPublicApplicationHostname(hostname = "") {
-  const normalizedHostname = normalizeHostname(hostname);
-
-  if (!normalizedHostname) {
-    return false;
-  }
-
-  return getPublicApplicationHosts().includes(normalizedHostname);
-}
-
-/* =====================================================
-   STANDALONE PUBLIC PATH DETECTION
-===================================================== */
-
-function isStandalonePublicPath(pathname = "", hostname = "") {
-  /*
-   * Everything served from:
-   *
-   * https://sibsapply.getleadsource.com
-   *
-   * is part of the standalone public application.
-   *
-   * This prevents the normal HRIS App/UserProvider
-   * from mounting on this hostname.
-   */
-  if (isPublicApplicationHostname(hostname)) {
-    return true;
-  }
-
-  /*
-   * Localhost / normal HRIS domain public routes.
-   */
-  return (
-    /* ================= TALENT POOL ================= */
-    pathname === "/apply" ||
-    pathname === "/public/talent-pool/apply" ||
-    pathname === "/recruitment/talent-pool/apply" ||
-
-    /* ================= PUBLIC JD ================= */
-    pathname === "/job-description" ||
-    pathname.startsWith("/job-description/") ||
-    pathname === "/public/job-description" ||
-    pathname.startsWith("/public/job-description/") ||
-
-    /* ================= INTERVIEW ================= */
-    pathname === "/public/interview-date" ||
-    pathname.startsWith("/public/interview-date/") ||
-
-    /* ================= OFFER ================= */
-    pathname === "/public/offer-response" ||
-    pathname.startsWith("/public/offer-response/") ||
-
-    /* ================= NHO ================= */
-    pathname === "/public/nho-schedule-response" ||
-    pathname.startsWith("/public/nho-schedule-response/") ||
-
-    /* ================= CANDIDATE EXPERIENCE ================= */
-    pathname === "/public/candidate-experience-survey" ||
-    pathname.startsWith("/public/candidate-experience-survey/") ||
-    pathname === "/recruitment/candidate-experience/survey" ||
-    pathname.startsWith("/recruitment/candidate-experience/survey/")
-  );
-}
+const FinalInterviewForms = lazyWithRetry(() =>
+  import("./components/recruitment/forms/FinalInterviewForms.jsx")
+);
 
 /* =====================================================
    STANDALONE PUBLIC APPLICATION
@@ -157,7 +70,7 @@ function isStandalonePublicPath(pathname = "", hostname = "") {
 
 export function StandalonePublicApp() {
   return (
-    <Suspense fallback={<PageFallback />}>
+    <Suspense fallback={<PublicRouteFallback />}>
       <Routes>
         {/* =========================================
             TALENT POOL APPLICATION
@@ -281,6 +194,15 @@ export function StandalonePublicApp() {
         />
 
         {/* =========================================
+            ONLINE ASSESSMENT / EVALUATION FORM
+        ========================================= */}
+
+        <Route
+          path="/online-assessment"
+          element={<FinalInterviewForms publicMode />}
+        />
+
+        {/* =========================================
             PUBLIC HOST FALLBACK
         ========================================= */}
 
@@ -300,7 +222,7 @@ export function StandalonePublicApp() {
 const pathname = window.location.pathname;
 const hostname = window.location.hostname;
 
-const isStandalonePublicRoute = isStandalonePublicPath(
+const isStandalonePublic = isStandalonePublicRoute(
   pathname,
   hostname,
 );
@@ -308,7 +230,7 @@ const isStandalonePublicRoute = isStandalonePublicPath(
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      {isStandalonePublicRoute ? <StandalonePublicApp /> : <App />}
+      {isStandalonePublic ? <StandalonePublicApp /> : <App />}
     </BrowserRouter>
   </React.StrictMode>,
 );

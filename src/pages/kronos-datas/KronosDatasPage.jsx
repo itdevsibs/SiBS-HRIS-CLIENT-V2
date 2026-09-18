@@ -1,15 +1,24 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Building2,
-  Database,
   RefreshCw,
   Search,
   Server,
   Users,
+  X,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import { PageHeaderHero, TablePagination, TableEmptyRow, DataCard, ResponsiveTableShell } from "@/components/ui";
+import { getKronosDatas } from "../../lib/axios/getKronosDatas";
+import {
+  DataCard,
+  MetricGridSkeleton,
+  PageHeaderHero,
+  ResponsiveTableShell,
+  TableEmptyRow,
+  TablePagination,
+  TableSkeletonRows,
+} from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 const KRONOS_STATE_KEY = "kronosDatasPageState";
@@ -187,7 +196,8 @@ function getEmployeeHireDate(employee) {
   );
 }
 
-function SummaryCard({ label, value, icon: Icon, delay = 0 }) {
+function SummaryCard(props) {
+  const { label, value, icon: Icon, delay = 0 } = props;
   return (
     <div
       className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
@@ -214,28 +224,6 @@ function SummaryCard({ label, value, icon: Icon, delay = 0 }) {
   );
 }
 
-function LoadingRows() {
-  return Array.from({ length: 8 }).map((_, index) => (
-    <tr key={index}>
-      <td colSpan={9} className="px-5 py-4">
-        <div className="h-5 animate-pulse rounded bg-slate-100" />
-      </td>
-    </tr>
-  ));
-}
-
-function MobileLoadingCards() {
-  return Array.from({ length: 5 }).map((_, index) => (
-    <div
-      key={index}
-      className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
-    >
-      <div className="h-5 w-1/2 animate-pulse rounded bg-slate-100" />
-      <div className="mt-3 h-4 w-full animate-pulse rounded bg-slate-100" />
-      <div className="mt-2 h-4 w-3/4 animate-pulse rounded bg-slate-100" />
-    </div>
-  ));
-}
 
 export default function KronosDatasPage() {
   const mainScrollRef = useRef(null);
@@ -271,6 +259,15 @@ export default function KronosDatasPage() {
   });
 
   const canFilterEmployees = access?.canFilterEmployees !== false;
+
+  const pageStart =
+    pagination.total === 0
+      ? 0
+      : (pagination.currentPage - 1) * pagination.limit + 1;
+  const pageEnd = Math.min(
+    pagination.currentPage * pagination.limit,
+    pagination.total,
+  );
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
@@ -617,37 +614,46 @@ export default function KronosDatasPage() {
                 </p>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <SummaryCard
-                  label="Total Employees"
-                  value={pagination.total}
-                  icon={Users}
-                  delay={
-                    animationTiming.summaryCardBase +
-                    0 * animationTiming.summaryCardStagger
-                  }
+              {loading ? (
+                <MetricGridSkeleton
+                  count={3}
+                  labels={["Total Employees", "Displayed", "Departments"]}
+                  className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                  ariaLabel="Loading Kronos employee metrics"
                 />
+              ) : (
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <SummaryCard
+                    label="Total Employees"
+                    value={pagination.total}
+                    icon={Users}
+                    delay={
+                      animationTiming.summaryCardBase +
+                      0 * animationTiming.summaryCardStagger
+                    }
+                  />
 
-                <SummaryCard
-                  label="Displayed"
-                  value={records.length}
-                  icon={Search}
-                  delay={
-                    animationTiming.summaryCardBase +
-                    1 * animationTiming.summaryCardStagger
-                  }
-                />
+                  <SummaryCard
+                    label="Displayed"
+                    value={records.length}
+                    icon={Search}
+                    delay={
+                      animationTiming.summaryCardBase +
+                      1 * animationTiming.summaryCardStagger
+                    }
+                  />
 
-                <SummaryCard
-                  label="Departments"
-                  value={departmentOptions.length}
-                  icon={Building2}
-                  delay={
-                    animationTiming.summaryCardBase +
-                    2 * animationTiming.summaryCardStagger
-                  }
-                />
-              </div>
+                  <SummaryCard
+                    label="Departments"
+                    value={departmentOptions.length}
+                    icon={Building2}
+                    delay={
+                      animationTiming.summaryCardBase +
+                      2 * animationTiming.summaryCardStagger
+                    }
+                  />
+                </div>
+              )}
             </div>
           </section>
 
@@ -691,8 +697,19 @@ export default function KronosDatasPage() {
                       value={searchInput}
                       onChange={(event) => setSearchInput(event.target.value)}
                       placeholder="Search employee..."
-                      className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-3 sibs-text-xs font-medium text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:bg-white focus:ring-4 focus:ring-sibs-primary-1/10"
+                      className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-9 sibs-text-xs font-medium text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:bg-white focus:ring-4 focus:ring-sibs-primary-1/10"
                     />
+
+                    {searchInput ? (
+                      <button
+                        type="button"
+                        onClick={handleClearSearch}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                        title="Clear search"
+                      >
+                        <X size={14} />
+                      </button>
+                    ) : null}
                   </div>
 
                   {canFilterEmployees ? (
@@ -871,7 +888,7 @@ export default function KronosDatasPage() {
 
                       <tbody className="divide-y divide-[#EEF2F6] bg-white">
                         {loading ? (
-                          <LoadingRows />
+                          <TableSkeletonRows count={PAGE_LIMIT} columns={9} />
                         ) : records.length > 0 ? (
                           records.map((employee, index) => {
                             const rowNumber =

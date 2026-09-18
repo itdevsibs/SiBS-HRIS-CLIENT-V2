@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
+import EmployeeDashboardSkeleton from "../../components/Dashboard/EmployeeDashboard/EmployeeDashboardSkeleton";
 import AdminLoginModal from "../../components/modals/AdminLoginModal";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
 import { ViewResignationModal } from "../../components/modals/resignation-management/ResignationManagementModal";
@@ -171,44 +172,6 @@ function formatLeaveValue(value) {
     : Number(value).toLocaleString("en-PH", {
         maximumFractionDigits: 2,
       });
-}
-
-function DashboardLoadingState() {
-  return (
-    <div className="sibs-dashboard-shell font-jakarta">
-      <div className="shrink-0">
-        <Header />
-      </div>
-
-      <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-6">
-          <div className="h-36 animate-sibs-pulse rounded-2xl bg-slate-300" />
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2">
-              {[1, 2, 3].map((item) => (
-                <div
-                  key={item}
-                  className="h-72 animate-sibs-pulse rounded-2xl bg-slate-200"
-                />
-              ))}
-            </div>
-
-            <div className="space-y-6">
-              {[1, 2, 3].map((item) => (
-                <div
-                  key={item}
-                  className="h-64 animate-sibs-pulse rounded-2xl bg-slate-200"
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <AdminLoginModal />
-    </div>
-  );
 }
 
 export default function EmployeeDashboardPage() {
@@ -562,7 +525,7 @@ export default function EmployeeDashboardPage() {
   );
 
   if (loading || !user || user.role !== "employee") {
-    return <DashboardLoadingState />;
+    return <EmployeeDashboardSkeleton />;
   }
 
   const attendanceTone = getStatusTone(attendance.status);

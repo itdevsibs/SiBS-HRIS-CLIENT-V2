@@ -8,9 +8,11 @@ import {
 
 import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
 import { useActionItemsReport } from "../../../services/context/ActionItemsReportContext.jsx";
+import { usePagination } from "../../../services/context/PaginationContext.jsx";
 import { formatDate } from "../../../lib/utils/actionItems/actionItemsHelpers.js";
 import { getActionCoverageForRow } from "../../../lib/utils/actionItems/actionItemsCoverageHelpers.js";
 import { WorkforceBodyTd } from "../workforceHiringPlan/WorkforceHiringTablePrimitives.jsx";
+import { TableSkeletonRows, DataCard } from "@/components/ui";
 
 const RECENT_COMPLETED_ACTION_DAYS = 14;
 
@@ -200,13 +202,19 @@ function RequirementMobileCard({ row, onCreateAction }) {
   );
 }
 
-export default function ActionItemsCurrentStatus() {
-  const { combinedItems } = useActionItems();
+export default function ActionItemsCurrentStatus({ loading: explicitLoading }) {
+  const actionItemsContext = useActionItems() || {};
+  const { combinedItems = [] } = actionItemsContext;
   const {
     filteredCurrentStatusRows,
     openAddModalForStatusRow,
-    selectReportRow,
   } = useActionItemsReport();
+  const pagination = usePagination("action-items");
+
+  const isLoading =
+    explicitLoading !== undefined
+      ? explicitLoading
+      : actionItemsContext?.loading ?? pagination?.loading ?? false;
 
   const rows = useMemo(
     () =>
@@ -314,7 +322,9 @@ export default function ActionItemsCurrentStatus() {
           </thead>
 
           <tbody className="divide-y divide-[#E6ECF2]">
-            {rows.length ? (
+            {isLoading ? (
+              <TableSkeletonRows count={5} columns={14} />
+            ) : rows.length ? (
               rows.map((row, index) => {
                 const fillRate = getFillRate(row);
 
@@ -432,7 +442,9 @@ export default function ActionItemsCurrentStatus() {
   </div>
 
       <div className="space-y-3 p-3 lg:hidden">
-        {rows.length ? (
+        {isLoading ? (
+          <DataCard.Skeleton count={3} lines={4} />
+        ) : rows.length ? (
           rows.map((row) => (
             <RequirementMobileCard
               key={row.id || row.roleAccountKey}

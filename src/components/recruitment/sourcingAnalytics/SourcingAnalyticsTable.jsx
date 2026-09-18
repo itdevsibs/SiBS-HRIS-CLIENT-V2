@@ -3,7 +3,7 @@ import React, {
   useMemo,
 } from "react";
 import { Compass } from "lucide-react";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 
 import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
 import { usePagination } from "../../../services/context/PaginationContext";
@@ -74,11 +74,14 @@ function getSourceStatusClass(source) {
 
 export default function SourcingAnalyticsTable({
   onView,
+  loading: loadingProp,
 }) {
   const {
     sourceRows = [],
-    loading,
+    loading: contextLoading,
   } = useSourcingAnalytics();
+
+  const loading = loadingProp !== undefined ? loadingProp : contextLoading;
 
   const {
     page,
@@ -310,23 +313,7 @@ export default function SourcingAnalyticsTable({
 
             <tbody className="divide-y divide-[#E6ECF2]">
               {loading ? (
-                <tr>
-                  <td
-                    colSpan={12}
-                    className="px-5 py-14 text-center"
-                  >
-                    <Compass className="mx-auto h-9 w-9 animate-pulse text-[#CBD5E1]" />
-
-                    <p className="mt-3 text-sm font-extrabold text-[#042C51]">
-                      Loading Sourcing Channels
-                    </p>
-
-                    <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                      Fetching the current sourcing
-                      performance records.
-                    </p>
-                  </td>
-                </tr>
+                <TableSkeletonRows count={8} columns={12} />
               ) : paginatedData.length > 0 ? (
                 paginatedData.map(
                   (source, index) => (

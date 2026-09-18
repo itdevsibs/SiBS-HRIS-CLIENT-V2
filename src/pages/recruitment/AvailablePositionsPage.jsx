@@ -34,6 +34,7 @@ import {
 } from "../../lib/utils/availablePositions/availablePositionsHelpers";
 import {
   emptyForm,
+  AVAILABLE_POSITION_STATUS_TABS,
   LOCATION_SITE_OPTIONS,
   POSITIONS_PER_PAGE,
   STATUS_FILTER_OPTIONS,
@@ -415,41 +416,6 @@ function mergeAvailablePositionApprovalRequests(positions = [], requests = []) {
 
   return merged;
 }
-
-const AVAILABLE_POSITION_STATUS_TABS = [
-  {
-    label: "All Positions",
-    value: "All",
-  },
-  {
-    label: "For Approval",
-    value: "For Approval",
-  },
-  {
-    label: "Active",
-    value: "Active",
-  },
-  {
-    label: "Inactive",
-    value: "Inactive",
-  },
-  {
-    label: "Approved",
-    value: "Approved",
-  },
-  {
-    label: "Rejected",
-    value: "Rejected",
-  },
-  {
-    label: "Archived",
-    value: "Archived",
-  },
-  {
-    label: "Unlinked From Job Descriptions",
-    value: UNLINKED_JD_TAB,
-  },
-];
 
 export default function AvailablePositionsPage() {
   const mainRef = useRef(null);
@@ -1807,9 +1773,19 @@ export default function AvailablePositionsPage() {
                   </p>
                 </div>
 
-                <span className="inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 sibs-text-micro font-extrabold text-sibs-navy">
-                  {filteredPositions.length} Records
-                </span>
+                {isLoading ? (
+                  <span
+                    role="status"
+                    aria-label="Loading available position records count"
+                    className="inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50/70 px-2.5 py-0.5 sibs-text-micro font-extrabold text-sibs-navy animate-sibs-pulse motion-reduce:animate-none"
+                  >
+                    Loading records...
+                  </span>
+                ) : (
+                  <span className="inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 sibs-text-micro font-extrabold text-sibs-navy">
+                    {filteredPositions.length} Records
+                  </span>
+                )}
               </div>
 
               <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">

@@ -13,7 +13,7 @@ import {
 
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
-import { TableEmptyRow, DataCard, ResponsiveTableShell } from "@/components/ui";
+import { TableEmptyRow, TableSkeletonRows, DataCard, ResponsiveTableShell } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 
@@ -1002,13 +1002,13 @@ export default function LeavesTable({
 
   useEffect(() => {
     clearPersistedLeavesSearch();
-    setSearchInput("");
-    setSearchKeyword("");
+    setSearchInput?.("");
+    setSearchKeyword?.("");
 
     return () => {
       clearPersistedLeavesSearch();
-      setSearchInput("");
-      setSearchKeyword("");
+      setSearchInput?.("");
+      setSearchKeyword?.("");
     };
     // Run only when the Leaves table enters/leaves the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1258,13 +1258,11 @@ export default function LeavesTable({
                   className="divide-y divide-[#F1F5F9]"
                 >
                   {loading ? (
-                    Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                      <tr key={index}>
-                        <td colSpan={12} className="px-3 2xl:px-4 py-2 2xl:py-2.5">
-                          <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E6ECF2]" />
-                        </td>
-                      </tr>
-                    ))
+                    <TableSkeletonRows
+                      count={PAGE_LIMIT}
+                      columns={12}
+                      cellClassName="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle"
+                    />
                   ) : leaves.length > 0 ? (
                     leaves.map((item, index) => (
                       <tr

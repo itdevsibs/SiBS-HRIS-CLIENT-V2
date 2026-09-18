@@ -33,11 +33,13 @@ function parseDateOnly(value) {
   if (!value) return null;
 
   if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
+    return Number.isNaN(value.getTime())
+      ? null
+      : new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
 
   const text = cleanText(value);
-  const dateOnlyMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const dateOnlyMatch = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
 
   if (dateOnlyMatch) {
     const [, year, month, day] = dateOnlyMatch;
@@ -45,8 +47,16 @@ function parseDateOnly(value) {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
+  const usMatch = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (usMatch) {
+    const [, month, day, year] = usMatch;
+    const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
   const parsed = new Date(text);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
 }
 
 export function getCurrentAge(dateOfBirth, today = new Date()) {

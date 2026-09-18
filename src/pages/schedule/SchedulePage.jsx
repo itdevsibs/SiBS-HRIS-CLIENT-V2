@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
 import { CalendarDays, RefreshCw } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -10,13 +9,6 @@ import { PageHeaderHero } from "@/components/ui";
 
 const SCHEDULE_STATE_KEY = "schedulePageState";
 const PAGE_LIMIT = 15;
-
-function getAnimationStyle(delay = 0) {
-  return {
-    animationDelay: `${delay}ms`,
-    animationFillMode: "both",
-  };
-}
 
 export default function SchedulePage() {
   const [schedule, setSchedule] = useState([]);

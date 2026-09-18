@@ -22,6 +22,7 @@ import { useUser } from "../../services/context/UserContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { usePagination } from "@/services/context/PaginationContext";
 import LeavesTable from "@/components/tables/Leaves/LeavesTable";
+import { MetricGridSkeleton } from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 
@@ -711,63 +712,79 @@ export default function LeavesPage() {
             </div>
           </section>
 
-          <section
-            className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
-          >
-            <StatCard
-              title="Loaded Leaves"
-              value={loading ? "..." : formatNumber(pageStats.totalLeaves)}
-              description="Records loaded on this page"
-              icon={FileText}
-              tone="navy"
-              delay={0}
+          {loading ? (
+            <MetricGridSkeleton
+              count={6}
+              labels={[
+                "Loaded Leaves",
+                "Approved",
+                "Pending",
+                "Rejected",
+                "Page Leave Days",
+                "Page Remaining",
+              ]}
+              ariaLabel="Loading leaves metrics"
+              className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
             />
+          ) : (
+            <section
+              className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
+            >
+              <StatCard
+                title="Loaded Leaves"
+                value={formatNumber(pageStats.totalLeaves)}
+                description="Records loaded on this page"
+                icon={FileText}
+                tone="navy"
+                delay={0}
+              />
 
-            <StatCard
-              title="Approved"
-              value={loading ? "..." : formatNumber(pageStats.approvedLeaves)}
-              description="Approved leave requests"
-              icon={CheckCircle2}
-              tone="emerald"
-              delay={60}
-            />
+              <StatCard
+                title="Approved"
+                value={formatNumber(pageStats.approvedLeaves)}
+                description="Approved leave requests"
+                icon={CheckCircle2}
+                tone="emerald"
+                delay={60}
+              />
 
-            <StatCard
-              title="Pending"
-              value={loading ? "..." : formatNumber(pageStats.pendingLeaves)}
-              description="Awaiting review"
-              icon={Clock}
-              tone="amber"
-              delay={120}
-            />
+              <StatCard
+                title="Pending"
+                value={formatNumber(pageStats.pendingLeaves)}
+                description="Awaiting review"
+                icon={Clock}
+                tone="amber"
+                delay={120}
+              />
 
-            <StatCard
-              title="Rejected"
-              value={loading ? "..." : formatNumber(pageStats.rejectedLeaves)}
-              description="Rejected leave requests"
-              icon={XCircle}
-              tone="red"
-              delay={180}
-            />
+              <StatCard
+                title="Rejected"
+                value={formatNumber(pageStats.rejectedLeaves)}
+                description="Rejected leave requests"
+                icon={XCircle}
+                tone="red"
+                delay={180}
+              />
 
-            <StatCard
-              title="Page Leave Days"
-              value={loading ? "..." : formatNumber(pageStats.totalLeaveDays)}
-              description="Leave days on this page"
-              icon={CalendarDays}
-              tone="orange"
-              delay={240}
-            />
+              <StatCard
+                title="Page Leave Days"
+                value={formatNumber(pageStats.totalLeaveDays)}
+                description="Leave days on this page"
+                icon={CalendarDays}
+                tone="orange"
+                delay={240}
+              />
 
-            <StatCard
-              title="Page Remaining"
-              value={loading ? "..." : formatNumber(pageStats.totalRemaining)}
-              description="Remaining leave balance"
-              icon={UserRound}
-              tone="emerald"
-              delay={300}
-            />
-          </section>
+              <StatCard
+                title="Page Remaining"
+                value={formatNumber(pageStats.totalRemaining)}
+                description="Remaining leave balance"
+                icon={UserRound}
+                tone="emerald"
+                delay={300}
+              />
+            </section>
+          )}
 
           <section className="flex flex-1 flex-col min-w-0">
             <LeavesTable

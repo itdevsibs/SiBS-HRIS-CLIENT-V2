@@ -7,9 +7,10 @@ import {
   UserRoundX,
   Users,
 } from "lucide-react";
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
 import KpiCard from "../workforceHiringOverview/shared/KpiCard";
+import { MetricGridSkeleton } from "@/components/ui";
 
 const EMPTY_SUMMARY = {
   requiredHeadcount: 0,
@@ -193,7 +194,7 @@ function formatKpiPercent(value, decimals = 2) {
   return `${formatKpiNumber(value, decimals)}%`;
 }
 
-export default function ForecastWorkforceHiringOverviewSummary({ rows = [] }) {
+export default function ForecastWorkforceHiringOverviewSummary({ rows = [], loading = false }) {
   const { weeklyVersion } = useWorkforceHiring();
 
   const selectedForecastRow = useMemo(
@@ -201,13 +202,30 @@ export default function ForecastWorkforceHiringOverviewSummary({ rows = [] }) {
     [rows, weeklyVersion],
   );
 
-  const summary = useMemo(
-    () =>
-      selectedForecastRow
-        ? buildSummaryFromForecastRow(selectedForecastRow)
-        : EMPTY_SUMMARY,
-    [selectedForecastRow],
-  );
+  if (loading || !selectedForecastRow) {
+    return (
+      <section className="space-y-3">
+        <MetricGridSkeleton
+          count={9}
+          labels={[
+            "Required HC",
+            "Actual HC",
+            "Buffer %",
+            "Absenteeism",
+            "Attrition",
+            "Net Actual HC",
+            "Hiring Needed",
+            "Hiring Rate",
+            "Hired Count",
+          ]}
+          ariaLabel="Loading workforce hiring forecast metrics"
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-9 xl:gap-3 2xl:gap-4"
+        />
+      </section>
+    );
+  }
+
+  const summary = buildSummaryFromForecastRow(selectedForecastRow);
 
   const metrics = [
     {

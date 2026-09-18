@@ -19,6 +19,43 @@ export const STATUS_FILTER_OPTIONS = [
   "Archived",
 ];
 
+export const UNLINKED_JD_TAB = "Unlinked From Job Descriptions";
+
+export const AVAILABLE_POSITION_STATUS_TABS = [
+  {
+    label: "All Positions",
+    value: "All",
+  },
+  {
+    label: "For Approval",
+    value: "For Approval",
+  },
+  {
+    label: "Active",
+    value: "Active",
+  },
+  {
+    label: "Inactive",
+    value: "Inactive",
+  },
+  {
+    label: "Approved",
+    value: "Approved",
+  },
+  {
+    label: "Rejected",
+    value: "Rejected",
+  },
+  {
+    label: "Archived",
+    value: "Archived",
+  },
+  {
+    label: "Unlinked From Job Descriptions",
+    value: UNLINKED_JD_TAB,
+  },
+];
+
 // Used in the Add/Edit Position modal.
 export const STATUS_OPTIONS = ["Active", "Inactive", "Archived"];
 

@@ -1,3 +1,4 @@
+import React from "react";
 import { FilterX, Gift, RefreshCw } from "lucide-react";
 import { PageHeaderHero } from "@/components/ui";
 

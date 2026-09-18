@@ -1,6 +1,14 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
+import { Skeleton, MetricGridSkeleton } from "@/components/ui";
 
-const METRIC_COUNT = 6;
+const SUPER_ADMIN_METRIC_LABELS = [
+  "Employees",
+  "Departments",
+  "Attendance Rate",
+  "Present Today",
+  "Pending Approvals",
+  "Active Requisitions",
+];
 const TABLE_ROW_COUNT = 6;
 
 function SkeletonLines({ widths = ["w-full", "w-4/5"] }) {
@@ -11,31 +19,12 @@ function SkeletonLines({ widths = ["w-full", "w-4/5"] }) {
 
 export function SuperAdminDashboardStatsSkeleton() {
   return (
-    <section
-      aria-hidden="true"
+    <MetricGridSkeleton
+      count={6}
+      labels={SUPER_ADMIN_METRIC_LABELS}
+      ariaLabel="Loading super admin metrics"
       className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 2xl:gap-3"
-    >
-      {Array.from({ length: METRIC_COUNT }, (_, index) => (
-        <div
-          key={`super-admin-metric-skeleton-${index}`}
-          className="sibs-metric-card relative flex h-[104px] min-h-[96px] flex-col justify-between overflow-hidden p-3 2xl:h-[116px] 2xl:min-h-[112px] 2xl:p-3.5"
-        >
-          <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-            <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
-              <div className="space-y-2">
-                <Skeleton className="h-2.5 w-20" />
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-7 w-16 2xl:h-8" />
-                  <Skeleton className="h-4 w-16 rounded" />
-                </div>
-              </div>
-              <Skeleton className="h-2.5 w-4/5" />
-            </div>
-            <Skeleton className="h-8 w-8 shrink-0 rounded-full 2xl:h-9 2xl:w-9" />
-          </div>
-        </div>
-      ))}
-    </section>
+    />
   );
 }
 

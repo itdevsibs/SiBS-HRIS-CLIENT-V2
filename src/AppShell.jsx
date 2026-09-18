@@ -4,29 +4,11 @@ import Providers from "@/services/providers";
 import ConditionalSidebar from "@/components/layout/ConditionalSidebar";
 import AdminLoginModal from "@/components/modals/AdminLoginModal";
 import SiBSAIAssistant from "@/components/ai/SiBSAIAssistant";
-import SiBSChat from "@/components/chat/SiBSChat";
-
-const PUBLIC_ROUTES_WITHOUT_SIDEBAR = [
-  "/",
-  "/login",
-  "/recruitment/talent-pool/apply",
-  "/public/interview-date",
-  "/public/offer-response",
-  "/public/candidate-experience-survey",
-  "/recruitment/candidate-experience/survey",
-];
-
-function shouldHideSidebar(pathname) {
-  return PUBLIC_ROUTES_WITHOUT_SIDEBAR.some((path) => {
-    if (path === "/") return pathname === "/";
-
-    return pathname === path || pathname.startsWith(`${path}/`);
-  });
-}
+import { isPublicPath } from "@/config/publicRoutes";
 
 export default function AppShell({ children }) {
   const location = useLocation();
-  const hideSidebar = shouldHideSidebar(location.pathname);
+  const hideSidebar = isPublicPath(location.pathname);
 
   return (
     <Providers>

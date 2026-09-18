@@ -1,3 +1,4 @@
+import React from "react";
 import WorkforceHiringOverviewFilters from "./WorkforceHiringOverviewFilters";
 import { PageHeaderHero } from "@/components/ui";
 
