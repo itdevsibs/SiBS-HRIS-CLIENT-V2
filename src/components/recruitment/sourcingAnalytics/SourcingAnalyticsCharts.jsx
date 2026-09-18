@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Activity, ReceiptText, UsersRound } from "lucide-react";
+import { Skeleton } from "@/components/ui";
 
 function formatCurrency(value) {
   const amount = Number(value || 0);
@@ -43,6 +44,31 @@ function EmptyChart({ message }) {
   return (
     <div className="flex h-[200px] items-center justify-center rounded-xl border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-5 text-center">
       <p className="text-xs font-bold text-[#98A2B3]">{message}</p>
+    </div>
+  );
+}
+
+function ChartSkeleton() {
+  const heights = [70, 110, 45, 95, 60];
+
+  return (
+    <div
+      data-testid="chart-skeleton"
+      className="flex h-[200px] w-full items-end justify-between gap-3 px-4 pb-7 pt-4"
+    >
+      {heights.map((heightPercent, index) => (
+        <div
+          key={`chart-skeleton-bar-${index}`}
+          data-testid="chart-skeleton-bar"
+          className="flex flex-1 flex-col items-center gap-2"
+        >
+          <Skeleton
+            className="w-full rounded-t-md"
+            style={{ height: `${heightPercent}%` }}
+          />
+          <Skeleton className="h-3 w-3/4 rounded" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -129,7 +155,7 @@ function NativeSvgBarChart({ items = [], getValue, formatValue, activeColor = "#
   );
 }
 
-function ChartCard({ title, description, icon: Icon, children, delay = 0 }) {
+function ChartCard({ title, description, icon, children, delay = 0 }) {
   return (
     <section
       className="sibs-page-card-in sibs-card rounded-2xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 font-jakarta shadow-sm"
@@ -146,7 +172,11 @@ function ChartCard({ title, description, icon: Icon, children, delay = 0 }) {
         </div>
 
         <span className="flex h-7.5 w-7.5 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-full bg-[#EAF2FB] text-[#042C51]">
-          <Icon className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
+          {icon
+            ? React.createElement(icon, {
+                className: "h-3.5 w-3.5 2xl:h-4 2xl:w-4",
+              })
+            : null}
         </span>
       </div>
 
@@ -155,7 +185,7 @@ function ChartCard({ title, description, icon: Icon, children, delay = 0 }) {
   );
 }
 
-export default function SourcingAnalyticsCharts({ data = [] }) {
+export default function SourcingAnalyticsCharts({ data = [], loading = false }) {
   const chartData = useMemo(() => normalizeChartData(data), [data]);
   const hasData = chartData.length > 0;
 
@@ -167,7 +197,9 @@ export default function SourcingAnalyticsCharts({ data = [] }) {
         icon={UsersRound}
         delay={60}
       >
-        {hasData ? (
+        {loading ? (
+          <ChartSkeleton />
+        ) : hasData ? (
           <NativeSvgBarChart
             items={chartData}
             getValue={(item) => item.volume}
@@ -186,7 +218,9 @@ export default function SourcingAnalyticsCharts({ data = [] }) {
         icon={Activity}
         delay={120}
       >
-        {hasData ? (
+        {loading ? (
+          <ChartSkeleton />
+        ) : hasData ? (
           <NativeSvgBarChart
             items={chartData}
             getValue={(item) => item.conversionRate}
@@ -205,7 +239,9 @@ export default function SourcingAnalyticsCharts({ data = [] }) {
         icon={ReceiptText}
         delay={180}
       >
-        {hasData ? (
+        {loading ? (
+          <ChartSkeleton />
+        ) : hasData ? (
           <NativeSvgBarChart
             items={chartData}
             getValue={(item) => item.sourceCost}

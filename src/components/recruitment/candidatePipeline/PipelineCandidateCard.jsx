@@ -486,4 +486,54 @@ const PipelineCandidateCard = ({
   );
 };
 
+export function PipelineCandidateCardSkeleton() {
+  return (
+    <article
+      data-testid="pipeline-candidate-card-skeleton"
+      className="overflow-hidden rounded-xl border border-[#D7DEE8] bg-white p-3 font-jakarta shadow-[0_3px_9px_rgba(4,44,81,0.04)]"
+      aria-hidden="true"
+    >
+      <div className="flex items-start justify-between gap-2.5">
+        <div className="flex min-w-0 flex-1 items-start gap-1.5">
+          <div className="h-3 w-3 mt-0.5 shrink-0 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="h-3 w-28 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+            <div className="h-2.5 w-36 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+          </div>
+        </div>
+        <div className="h-7 w-7 shrink-0 rounded-full bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+      </div>
+
+      <div className="mt-2.5 flex items-center justify-between gap-2">
+        <div className="h-4 w-16 rounded-md bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+        <div className="h-4 w-14 rounded-md bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+      </div>
+
+      <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-lg border border-[#E9EEF4] bg-[#F8FAFC] px-2.5 py-2.5">
+        <div className="min-w-0 border-r border-[#E1E8F0] pr-2 space-y-1">
+          <div className="h-2 w-10 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+          <div className="h-2.5 w-20 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+        </div>
+        <div className="min-w-0 pl-0.5 space-y-1">
+          <div className="h-2 w-12 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+          <div className="h-2.5 w-16 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+        </div>
+      </div>
+
+      <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+        <div className="h-6 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1.5" />
+        <div className="h-6 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1.5" />
+      </div>
+
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[#E9EEF4] pt-2.5">
+        <div className="h-2.5 w-16 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+        <div className="flex shrink-0 items-center gap-1">
+          <div className="h-6 w-6 rounded-md bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+          <div className="h-6 w-14 rounded-md bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default PipelineCandidateCard;

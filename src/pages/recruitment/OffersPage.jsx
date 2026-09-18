@@ -280,6 +280,8 @@ export default function OffersPage() {
     filteredOffers = [],
     isProcessingOfferDecision = false,
     refreshOffers,
+    isLoadingOffers = false,
+    isLoading = false,
   } = useOffers();
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -555,7 +557,7 @@ export default function OffersPage() {
             isManualRefreshing={isManualRefreshing}
           />
 
-          <OfferSummaryCards />
+          <OfferSummaryCards isLoading={isLoading || isLoadingOffers} />
 
           <section
             className="sibs-page-card-in sibs-card relative z-[10] overflow-visible font-jakarta"
@@ -567,6 +569,7 @@ export default function OffersPage() {
               <OfferRecordsTable
                 offersOverride={visibleOffers}
                 routeFilterActive={Boolean(routeCandidate)}
+                isLoading={isLoading || isLoadingOffers}
                 emptyMessage={
                   routeCandidate
                     ? "No offer record was found for the selected candidate."

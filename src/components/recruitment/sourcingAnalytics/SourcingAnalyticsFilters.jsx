@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { RotateCcw } from "lucide-react";
 
 import { usePagination } from "../../../services/context/PaginationContext";

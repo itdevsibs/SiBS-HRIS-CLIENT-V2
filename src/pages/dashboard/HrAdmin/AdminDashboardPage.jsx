@@ -1,4 +1,4 @@
-import {
+import React, {
   useCallback,
   useEffect,
   useMemo,
@@ -37,6 +37,7 @@ import AdminDashboardNotifications from "../../../components/Dashboard/HRAdminDa
 import AdminDashboardQuickActions from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardQuickActions";
 import AdminDashboardWorkforceKpi from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardWorkforceKpi";
 import AdminDashboardToast from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardToast";
+import AdminDashboardSkeleton from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardSkeleton";
 import { DashboardModalManager } from "../../../components/modals/dashboard/AdminDashboardModals";
 import {
   EMPTY_OVERVIEW,
@@ -561,6 +562,10 @@ export default function AdminDashboardPage() {
     setActiveModal(null);
     setDetailState({ data: null, loading: false, error: "" });
   }, []);
+
+  if ((loading || !initialLoadFinished) && !overview.generatedAt) {
+    return <AdminDashboardSkeleton />;
+  }
 
   return (
     <div className="sibs-dashboard-shell">

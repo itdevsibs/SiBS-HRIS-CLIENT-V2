@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   FileCheck2,
@@ -11,7 +10,12 @@ import {
 import PaginationTable from "@/services/pagination/PaginationTable";
 import ChwcpRequestDetailsModal from "../../modals/employees/ChwcpRequestDetailsModal";
 import { getChwcpRequests } from "../../../lib/axios/getChwcp";
-import { DataCard, ResponsiveTableShell, StatusFilterTabs } from "@/components/ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  StatusFilterTabs,
+  TableSkeletonRows,
+} from "@/components/ui";
 
 const DEFAULT_LIMIT = 25;
 const STAGE_OPTIONS = [
@@ -521,13 +525,13 @@ function ChwcpMobileCard({ row, onOpen }) {
 }
 
 function LoadingRows() {
-  return Array.from({ length: 6 }).map((_, index) => (
-    <tr key={`chwcp-loading-${index}`}>
-      <td colSpan={8} className="px-3 py-3 2xl:px-4">
-        <div className="h-6 w-full animate-sibs-pulse rounded bg-slate-100" />
-      </td>
-    </tr>
-  ));
+  return (
+    <TableSkeletonRows
+      count={10}
+      columns={8}
+      cellClassName="px-3 py-3 2xl:px-4 align-middle"
+    />
+  );
 }
 
 function WorkflowFilter({
@@ -680,7 +684,7 @@ export default function ChwcpTable({
   );
 
   useEffect(() => {
-    tableScrollRef.current?.scrollTo({
+    tableScrollRef.current?.scrollTo?.({
       top: 0,
       left: 0,
       behavior: "smooth",

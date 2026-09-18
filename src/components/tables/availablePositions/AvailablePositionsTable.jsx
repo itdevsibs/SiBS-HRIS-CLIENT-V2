@@ -1,6 +1,6 @@
 import React from "react";
 import { AlertTriangle, CheckCircle2, FileText } from "lucide-react";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 
 import PositionMobileCard from "../../recruitment/availablePositions/PositionMobileCard";
 import StatusFilterTabs from "../../recruitment/StatusFilterTabs";
@@ -183,47 +183,43 @@ export default function AvailablePositionsTable({
 
   return (
     <div className="relative z-[1] font-jakarta">
-      {isLoading ? (
-        <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-12 text-center text-sm font-extrabold text-[#042C51]">
-          Loading available positions from the database...
-        </div>
-      ) : (
-        <>
-          <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
-            <StatusFilterTabs
-              tabs={visibleStatusTabs}
-              activeValue={statusFilter}
-              counts={statusCounts}
-              onChange={onStatusFilterChange}
-            />
+      <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+        <StatusFilterTabs
+          tabs={visibleStatusTabs}
+          activeValue={statusFilter}
+          counts={statusCounts}
+          onChange={onStatusFilterChange}
+        />
 
-            <ResponsiveTableShell
-              mobileContent={
-                paginatedPositions.length > 0 ? (
-                  <div className="space-y-3 p-3.5 sm:p-4">
-                    {paginatedPositions.map((position) => (
-                      <PositionMobileCard
-                        key={position.id}
-                        position={position}
-                        onEdit={onEdit}
-                        onSetStatus={onSetStatus}
-                        isSaving={isSaving}
-                        activeStatus={activeStatus}
-                        inactiveStatus={inactiveStatus}
-                        unlinked={isPositionUnlinked(position)}
-                        jdLinkStatus={getAvailablePositionJdLinkStatus(position)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-3.5 sm:p-4">
-                    <DataCard.Empty
-                      title="No Positions Found"
-                      description="Adjust the active filters or register a new position."
-                    />
-                  </div>
-                )
-              }
+        <ResponsiveTableShell
+          mobileContent={
+            isLoading ? (
+              <DataCard.Skeleton count={4} lines={3} className="p-3.5 sm:p-4" />
+            ) : paginatedPositions.length > 0 ? (
+              <div className="space-y-3 p-3.5 sm:p-4">
+                {paginatedPositions.map((position) => (
+                  <PositionMobileCard
+                    key={position.id}
+                    position={position}
+                    onEdit={onEdit}
+                    onSetStatus={onSetStatus}
+                    isSaving={isSaving}
+                    activeStatus={activeStatus}
+                    inactiveStatus={inactiveStatus}
+                    unlinked={isPositionUnlinked(position)}
+                    jdLinkStatus={getAvailablePositionJdLinkStatus(position)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-3.5 sm:p-4">
+                <DataCard.Empty
+                  title="No Positions Found"
+                  description="Adjust the active filters or register a new position."
+                />
+              </div>
+            )
+          }
               desktopContent={
                 <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
                   <table className="w-full border-collapse bg-white text-left text-xs">
@@ -267,7 +263,9 @@ export default function AvailablePositionsTable({
                     key={statusFilter}
                     className="divide-y divide-[#E6ECF2]"
                   >
-                    {paginatedPositions.length > 0 ? (
+                    {isLoading ? (
+                      <TableSkeletonRows count={10} columns={8} />
+                    ) : paginatedPositions.length > 0 ? (
                       paginatedPositions.map((position, index) => {
                         const linkedJd = getAvailablePositionLinkedJd(position);
 
@@ -443,26 +441,24 @@ export default function AvailablePositionsTable({
           />
         </div>
 
-          <div>
-            <PaginationTable
-              showSearch={false}
-              showPagination
-              showCount
-              loading={isLoading}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              loadedCount={paginatedPositions.length}
-              totalRecords={filteredPositionsCount}
-              recordLabel="positions"
-              onPrevious={() => onPageChange?.(Math.max(currentPage - 1, 1))}
-              onNext={() =>
-                onPageChange?.(Math.min(currentPage + 1, totalPages))
-              }
-              className="border-0 bg-transparent p-0 shadow-none"
-            />
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+        <div>
+          <PaginationTable
+            showSearch={false}
+            showPagination
+            showCount
+            loading={isLoading}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            loadedCount={paginatedPositions.length}
+            totalRecords={filteredPositionsCount}
+            recordLabel="positions"
+            onPrevious={() => onPageChange?.(Math.max(currentPage - 1, 1))}
+            onNext={() =>
+              onPageChange?.(Math.min(currentPage + 1, totalPages))
+            }
+            className="border-0 bg-transparent p-0 shadow-none"
+          />
+        </div>
+      </div>
+    );
+  }

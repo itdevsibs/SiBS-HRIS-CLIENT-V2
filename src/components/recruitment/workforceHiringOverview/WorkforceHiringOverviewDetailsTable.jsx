@@ -1,4 +1,4 @@
-import {
+import React, {
   Fragment,
   useEffect,
   useMemo,
@@ -9,7 +9,7 @@ import { CalendarDays, ChevronDown, ChevronRight, ChevronUp, GripHorizontal } fr
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import { usePagination } from "../../../services/context/PaginationContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, Skeleton, TableSkeletonRows } from "@/components/ui";
 import {
   formatOverviewNumber,
   formatOverviewPercent,
@@ -1541,7 +1541,10 @@ export default function WorkforceHiringOverviewDetailsTable() {
   const {
     detailTable: { detailRows, totals },
     filters,
+    sixWeekTable,
+    status,
   } = workforceView;
+  const isLoading = Boolean(sixWeekTable?.loading || status?.isLoading || status?.isLoadingAccounts);
 
   const {
     search,
@@ -1819,7 +1822,23 @@ export default function WorkforceHiringOverviewDetailsTable() {
       <div className="p-3 sm:p-4">
         <ResponsiveTableShell
           mobileContent={
-            sortedRows.length === 0 ? (
+            isLoading ? (
+              <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading accounts">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={idx} className="sibs-card p-4 space-y-3">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                    <Skeleton className="h-3 w-48" />
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <Skeleton className="h-10 rounded-lg" />
+                      <Skeleton className="h-10 rounded-lg" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : sortedRows.length === 0 ? (
               <DataCard.Empty
                 title="No account records found"
                 description="No account records match the current period, search, and filters."
@@ -1971,7 +1990,9 @@ export default function WorkforceHiringOverviewDetailsTable() {
                   </thead>
 
                   <tbody className="bg-white font-jakarta font-medium">
-                    {sortedRows.length === 0 ? (
+                    {isLoading ? (
+                      <TableSkeletonRows count={6} columns={TABLE_COLUMN_COUNT} rowHeight="h-7" />
+                    ) : sortedRows.length === 0 ? (
                       <tr>
                         <td
                           colSpan={TABLE_COLUMN_COUNT}

@@ -1,3 +1,4 @@
+import React from "react";
 import { PROFILE_TABS } from "../../../../lib/utils/employees/employeeProfileSchemas.js";
 import { getActivePrimaryKey } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 

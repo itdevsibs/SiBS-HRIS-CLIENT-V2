@@ -1,3 +1,4 @@
+import React from "react";
 import {
   ArrowRight,
   FileText,
@@ -11,6 +12,8 @@ import { formatOverviewNumber } from "../../../lib/utils/workforceHiringOverview
 import AnimatedNumber from "./shared/AnimatedNumber";
 import FunnelShape from "./shared/FunnelShape";
 import { SmallTd, SmallTh } from "./shared/TableCells";
+import { Skeleton } from "../../ui";
+import { WorkforceHiringPipelineStripSkeleton } from "./WorkforceHiringOverviewSkeleton";
 
 const PIPELINE_ICONS = {
   fileText: FileText,
@@ -30,8 +33,15 @@ const STAGE_TONES = [
 
 export function WorkforceHiringOverviewPipelineStrip() {
   const {
-    overview: { pipeline, summary },
+    overview,
+    status,
   } = useWorkforceHiringView();
+  const pipeline = overview?.pipeline || [];
+  const summary = overview?.summary || {};
+
+  if (status?.isLoading || overview?.trendsLoading) {
+    return <WorkforceHiringPipelineStripSkeleton />;
+  }
 
   return (
     <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-3.5 shadow-sm 2xl:p-5">
@@ -101,8 +111,43 @@ export function WorkforceHiringOverviewPipelineStrip() {
 
 export function HiringFunnelCard() {
   const {
-    overview: { pipeline, summary },
+    overview,
+    status,
   } = useWorkforceHiringView();
+  const pipeline = Array.isArray(overview?.pipeline) ? overview.pipeline : [];
+  const summary = overview?.summary || {};
+  const loading = Boolean(status?.isLoading || overview?.trendsLoading);
+
+  if (loading) {
+    return (
+      <section
+        data-testid="hiring-funnel-skeleton"
+        className="sibs-page-card-in sibs-card flex h-full min-h-[480px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        aria-label="Loading hiring funnel"
+      >
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-3.5 w-64" />
+        </div>
+        <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] px-4 py-5">
+          <Skeleton className="h-44 w-3/4 rounded-xl" />
+        </div>
+        <div className="mt-3 overflow-hidden rounded-xl border border-[#DDE5EE] bg-white p-2 space-y-2">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="flex justify-between py-1">
+              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className="h-3.5 w-16" />
+              <Skeleton className="h-3.5 w-16" />
+              <Skeleton className="h-3.5 w-16" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="sibs-page-card-in sibs-card flex h-full min-h-[480px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">

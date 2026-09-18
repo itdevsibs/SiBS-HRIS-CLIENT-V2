@@ -7,6 +7,7 @@ import {
   findTalentPoolProfile,
   getRoleTitle,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
+import { getCurrentAge } from "../../../lib/utils/talentPool/talentPoolTabs";
 
 import CandidateProfileHero from "./profile/CandidateProfileHero";
 import CandidateProfilePersonalInfo from "./profile/CandidateProfilePersonalInfo";
@@ -613,11 +614,15 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
       suffix: pickFromSources(sources, ["suffix", "extension"]),
       dateOfBirth,
       dateOfBirthFormatted: formatDateValue(dateOfBirth),
-      age: pickFromSources(sources, [
-        "ageAsOfApplication",
-        "age_as_of_application",
-        "age",
-      ]),
+      age:
+        (dateOfBirth && getCurrentAge(dateOfBirth) !== null
+          ? String(getCurrentAge(dateOfBirth))
+          : null) ||
+        pickFromSources(sources, [
+          "ageAsOfApplication",
+          "age_as_of_application",
+          "age",
+        ]),
       gender: pickFromSources(sources, ["gender", "sex"]),
       civilStatus: pickFromSources(sources, ["civilStatus", "civil_status", "maritalStatus"]),
       nationality: pickFromSources(sources, ["nationality", "citizenship"]) || "Filipino",

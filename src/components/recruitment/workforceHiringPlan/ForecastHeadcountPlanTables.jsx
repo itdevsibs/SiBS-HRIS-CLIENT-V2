@@ -6,7 +6,7 @@ import {
 import { getWorkforceHiringPlanForecast } from "../../../lib/axios/getWorkforceHiringPlan";
 import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
 import ForecastWeekAccountDetailsModal from "./ForecastWeekAccountDetailsModal";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 import {
   WORKFORCE_BOLD_NUMBER_CLASS,
   WORKFORCE_SECONDARY_NUMBER_CLASS,
@@ -1078,6 +1078,12 @@ export default function ForecastHeadcountPlanTable({
                           </WorkforceBodyTd>
                         </tr>
                       ))
+                    ) : forecastData.loading ? (
+                      <TableSkeletonRows
+                        count={6}
+                        columns={16}
+                        cellClassName="border-b border-r border-[#E6ECF2] px-2 py-1.5 2xl:px-3 2xl:py-2 align-middle"
+                      />
                     ) : (
                       <tr>
                         <WorkforceBodyTd
@@ -1086,9 +1092,7 @@ export default function ForecastHeadcountPlanTable({
                           numeric={false}
                           className="border-r-0 py-12 font-semibold text-slate-400"
                         >
-                          {forecastData.loading
-                            ? "Loading forecast..."
-                            : "No forecast data available."}
+                          No forecast data available.
                         </WorkforceBodyTd>
                       </tr>
                     )}

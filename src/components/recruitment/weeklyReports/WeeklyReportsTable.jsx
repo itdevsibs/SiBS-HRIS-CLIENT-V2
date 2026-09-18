@@ -1,6 +1,6 @@
 import React from "react";
 import { AlertTriangle, CheckSquare, Eye } from "lucide-react";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 import WeeklyReportMobileCard from "./WeeklyReportMobileCard.jsx";
 
 function getReportStatusClass(status) {
@@ -21,14 +21,16 @@ function getFulfillment(report) {
   return requirement > 0 ? Math.max(0, Math.round((filled / requirement) * 100)) : 0;
 }
 
-export default function WeeklyReportsTable({ reports, onView }) {
+export default function WeeklyReportsTable({ reports, onView, loading = false }) {
   const safeReports = Array.isArray(reports) ? reports : [];
 
   return (
     <ResponsiveTableShell
       mobileContent={
         <div className="space-y-3 font-jakarta">
-          {safeReports.length > 0 ? (
+          {loading ? (
+            <DataCard.Skeleton count={3} lines={3} />
+          ) : safeReports.length > 0 ? (
             safeReports.map((report, index) => (
               <WeeklyReportMobileCard
                 key={report.reportId}
@@ -62,7 +64,9 @@ export default function WeeklyReportsTable({ reports, onView }) {
             </thead>
 
             <tbody className="divide-y divide-[#F1F5F9]">
-              {safeReports.length > 0 ? (
+              {loading ? (
+                <TableSkeletonRows count={5} columns={6} />
+              ) : safeReports.length > 0 ? (
                 safeReports.map((report, index) => {
                   const actionCount = toNumber(report.actionItemsCount);
                   const alertCount = toNumber(report.missingDataCount);

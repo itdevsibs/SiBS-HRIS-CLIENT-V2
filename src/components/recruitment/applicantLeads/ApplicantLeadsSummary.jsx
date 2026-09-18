@@ -1,10 +1,6 @@
 import React from "react";
 import {
-  CheckCircle2,
-  ClipboardList,
-  MailCheck,
   Send,
-  Sparkles,
   TrendingUp,
   UserCheck,
   UserPlus,
@@ -12,6 +8,15 @@ import {
 } from "lucide-react";
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
+import { MetricGridSkeleton } from "@/components/ui";
+
+const STAT_LABELS = [
+  "Total Leads",
+  "New Leads",
+  "Link Sent",
+  "Converted",
+  "Conversion Rate",
+];
 
 function StatCard({
   title,
@@ -62,8 +67,23 @@ function StatCard({
   );
 }
 
-export default function ApplicantLeadsSummary() {
-  const { metrics } = useApplicantLeadsPage();
+export default function ApplicantLeadsSummary({ loading }) {
+  const pageState = useApplicantLeadsPage();
+  const isLoading = loading !== undefined ? loading : pageState.isLoading;
+  const metrics = pageState.metrics || {};
+
+  if (isLoading) {
+    return (
+      <section aria-labelledby="applicant-leads-summary-title">
+        <MetricGridSkeleton
+          count={5}
+          labels={STAT_LABELS}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5"
+          ariaLabel="Loading applicant lead metrics"
+        />
+      </section>
+    );
+  }
 
   return (
     <section aria-labelledby="applicant-leads-summary-title">

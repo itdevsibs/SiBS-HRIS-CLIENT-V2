@@ -1,4 +1,4 @@
-import {
+import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -16,7 +16,7 @@ import ChwcpTable from "../../components/tables/employees/ChwcpTable";
 import EmployeeTable from "../../components/tables/employees/EmployeeTable";
 import { getChwcpRequests } from "../../lib/axios/getChwcp";
 import { usePagination } from "@/services/context/PaginationContext";
-import { PageHeaderHero } from "@/components/ui";
+import { MetricCardSkeleton, PageHeaderHero } from "@/components/ui";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 
@@ -81,6 +81,7 @@ function SummaryCard({
 
   return (
     <article
+      data-testid="employee-summary-card"
       className="group sibs-metric-card sibs-page-card-in font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
       style={getAnimationStyle(delay)}
     >
@@ -114,11 +115,17 @@ function SummaryCard({
 }
 
 export default function EmployeesPage() {
-  const { setSearch, setSearchInput, setPage, pagination } =
-    usePagination("employees");
+  const {
+    setSearch,
+    setSearchInput,
+    setPage,
+    pagination,
+    loading: employeesLoading,
+  } = usePagination("employees");
 
   const [activeEmployeeTab, setActiveEmployeeTab] = useState("Employees");
   const [chwcpTotal, setChwcpTotal] = useState(0);
+  const [chwcpLoading, setChwcpLoading] = useState(true);
   const [summaryRefreshing, setSummaryRefreshing] = useState(false);
   const [chwcpReloadKey, setChwcpReloadKey] = useState(0);
 
@@ -143,13 +150,6 @@ export default function EmployeesPage() {
     return tab;
   });
 
-  const activeTabIndex = Math.max(
-    0,
-    directoryTabs.findIndex((tab) => tab.label === activeEmployeeTab),
-  );
-
-  const activeTab = directoryTabs[activeTabIndex] || directoryTabs[0];
-
   const loadChwcpCount = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setSummaryRefreshing(true);
 
@@ -167,9 +167,12 @@ export default function EmployeesPage() {
       console.error("LOAD CHWCP SUMMARY COUNT ERROR:", error);
       return false;
     } finally {
+      setChwcpLoading(false);
       if (!silent) setSummaryRefreshing(false);
     }
   }, []);
+
+  const summaryLoading = employeesLoading || chwcpLoading || summaryRefreshing;
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
@@ -312,23 +315,34 @@ export default function EmployeesPage() {
           />
 
           <section
+            role={summaryLoading ? "status" : undefined}
+            aria-live={summaryLoading ? "polite" : undefined}
+            aria-busy={summaryLoading ? "true" : undefined}
+            aria-label={summaryLoading ? "Loading employee directory metrics" : undefined}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"
             style={getAnimationStyle(animationTiming.summary)}
           >
-            {directoryTabs.map((tab, index) => (
-              <SummaryCard
-                key={tab.label}
-                label={tab.label}
-                value={tab.count}
-                description={tab.description}
-                icon={tab.icon}
-                tone={tab.tone}
-                delay={
-                  animationTiming.summaryCardBase +
-                  index * animationTiming.summaryCardStagger
-                }
-              />
-            ))}
+            {summaryLoading ? (
+              <>
+                <MetricCardSkeleton label="Employees" />
+                <MetricCardSkeleton label="CHWCP Requests" />
+              </>
+            ) : (
+              directoryTabs.map((tab, index) => (
+                <SummaryCard
+                  key={tab.label}
+                  label={tab.label}
+                  value={tab.count}
+                  description={tab.description}
+                  icon={tab.icon}
+                  tone={tab.tone}
+                  delay={
+                    animationTiming.summaryCardBase +
+                    index * animationTiming.summaryCardStagger
+                  }
+                />
+              ))
+            )}
           </section>
 
           <section

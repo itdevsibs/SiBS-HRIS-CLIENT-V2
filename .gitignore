@@ -57,3 +57,9 @@ docs/superpowers/
 
 # Local Git worktrees
 .worktrees/
+
+# Tests & test setups
+test/
+src/test/
+tests/
+*.test.*

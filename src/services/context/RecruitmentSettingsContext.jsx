@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useCallback,
@@ -366,7 +367,7 @@ export function RecruitmentSettingsProvider({
   const [
     positionsLoading,
     setPositionsLoading,
-  ] = useState(false);
+  ] = useState(Boolean(canLoadRecruitmentSettings));
 
   const [
     positionsError,

@@ -1,7 +1,10 @@
 import React, { useRef, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { useActionItemsReport } from "../../../services/context/ActionItemsReportContext.jsx";
+import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
+import { usePagination } from "../../../services/context/PaginationContext.jsx";
 import { WorkforceBodyTd } from "../workforceHiringPlan/WorkforceHiringTablePrimitives.jsx";
+import { TableSkeletonRows, DataCard } from "@/components/ui";
 
 function WeeklyPerformanceMobileCard({ row, index = 0 }) {
   const isTargetMet = Number(row.hired || 0) >= Number(row.targetHires || 0);
@@ -93,13 +96,18 @@ function WeeklyPerformanceMobileCard({ row, index = 0 }) {
   );
 }
 
-export default function ActionItemsWeeklyPerformance() {
+export default function ActionItemsWeeklyPerformance({ loading: explicitLoading }) {
   const {
     filteredWeeklyPerformanceRows,
-    selectedRoleAccount,
-    selectReportRow,
     previousWeekLabel,
   } = useActionItemsReport();
+  const actionItemsContext = useActionItems() || {};
+  const pagination = usePagination("action-items");
+
+  const isLoading =
+    explicitLoading !== undefined
+      ? explicitLoading
+      : actionItemsContext?.loading ?? pagination?.loading ?? false;
 
   const dragScrollRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -192,7 +200,9 @@ export default function ActionItemsWeeklyPerformance() {
           </thead>
 
           <tbody className="divide-y divide-[#E6ECF2]">
-            {filteredWeeklyPerformanceRows.length ? (
+            {isLoading ? (
+              <TableSkeletonRows count={5} columns={14} />
+            ) : filteredWeeklyPerformanceRows.length ? (
               filteredWeeklyPerformanceRows.map((row, index) => {
                 return (
                   <tr
@@ -289,7 +299,9 @@ export default function ActionItemsWeeklyPerformance() {
   </div>
 
       <div className="space-y-3 p-3 lg:hidden">
-        {filteredWeeklyPerformanceRows.length ? (
+        {isLoading ? (
+          <DataCard.Skeleton count={3} lines={4} />
+        ) : filteredWeeklyPerformanceRows.length ? (
           filteredWeeklyPerformanceRows.map((row, index) => (
             <WeeklyPerformanceMobileCard
               key={row.id}

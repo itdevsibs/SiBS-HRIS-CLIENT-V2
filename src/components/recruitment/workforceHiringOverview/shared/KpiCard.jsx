@@ -1,3 +1,4 @@
+import React from "react";
 import AnimatedNumber from "./AnimatedNumber";
 
 function getToneClasses(tone = "navy") {

@@ -11,7 +11,7 @@ import { usePagination } from "../../../services/context/PaginationContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import HiringNeedsMobileCard from "./HiringNeedsMobileCard";
 import StatusFilterTabs from "../StatusFilterTabs";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 import {
   getHiringNeedsDateOrWeek,
   getHiringNeedsDepartmentAccount,
@@ -282,19 +282,11 @@ export default function HiringNeedsTable({
                   className="divide-y divide-[#E6ECF2]"
                 >
                   {loading ? (
-                    <tr>
-                      <td colSpan={9} className="px-5 py-14 text-center">
-                        <FileText className="mx-auto h-9 w-9 animate-pulse text-[#CBD5E1]" />
-
-                        <p className="mt-3 text-sm font-extrabold text-[#042C51]">
-                          Loading Personnel Requisitions
-                        </p>
-
-                        <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
-                          Fetching the current Hiring Needs records.
-                        </p>
-                      </td>
-                    </tr>
+                    <TableSkeletonRows
+                      count={Math.min(limit || 8, 10)}
+                      columns={9}
+                      cellClassName="px-2.5 py-3 2xl:px-4 2xl:py-3.5 align-middle"
+                    />
                   ) : paginatedData.length > 0 ? (
                     paginatedData.map((item, index) => {
                       const requestType = getHiringNeedsRequestType(item);

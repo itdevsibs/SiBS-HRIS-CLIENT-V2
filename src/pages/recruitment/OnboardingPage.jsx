@@ -61,7 +61,7 @@ const emptyOnboardingForm = {
 };
 
 export default function OnboardingPage() {
-  const { fetchList, createRecord, updateOutcome, list } = useOnboarding();
+  const { fetchList, createRecord, updateOutcome, list, loading = false } = useOnboarding();
 
   const refreshTimerRef = useRef(null);
   const loadingDataRef = useRef(false);
@@ -253,8 +253,8 @@ export default function OnboardingPage() {
             }
           />
 
-          <OnboardingStats />
-          <OnboardingOutcomeOverview />
+          <OnboardingStats loading={loading} />
+          <OnboardingOutcomeOverview loading={loading} />
 
           <section
             className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm"
@@ -274,7 +274,7 @@ export default function OnboardingPage() {
             </header>
 
             <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
-              <OnboardingTable onView={setSelectedRecord} />
+              <OnboardingTable onView={setSelectedRecord} loading={loading} />
             </div>
           </section>
         </div>

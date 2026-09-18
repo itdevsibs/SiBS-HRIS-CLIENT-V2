@@ -1,3 +1,4 @@
+import React from "react";
 import Header from "../../components/layout/Header";
 import WeeklyReportDetailsModal from "../../components/recruitment/weeklyReports/WeeklyReportDetailsModal.jsx";
 import WeeklyReportSnapshot from "../../components/recruitment/weeklyReports/WeeklyReportSnapshot.jsx";
@@ -8,7 +9,7 @@ import WeeklyReportsStats from "../../components/recruitment/weeklyReports/Weekl
 import useWeeklyReportsPage from "../../hooks/weeklyReports/useWeeklyReportsPage.js";
 
 export default function WeeklyReportsPage() {
-  const weeklyReports = useWeeklyReportsPage();
+  const { mainRef, ...weeklyReports } = useWeeklyReportsPage();
 
   return (
     <div className="sibs-dashboard-shell">
@@ -17,7 +18,7 @@ export default function WeeklyReportsPage() {
       </div>
 
       <main
-        ref={weeklyReports.mainRef}
+        ref={mainRef}
         className="sibs-dashboard-main-wide"
       >
         <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
@@ -27,14 +28,21 @@ export default function WeeklyReportsPage() {
             isManualRefreshing={weeklyReports.isManualRefreshing}
           />
 
-          <WeeklyReportsStats stats={weeklyReports.stats} />
+          <WeeklyReportsStats
+            stats={weeklyReports.stats}
+            loading={weeklyReports.isLoading}
+          />
 
           <WeeklyReportSnapshot
             report={weeklyReports.stats.current}
             onViewReport={weeklyReports.setSelectedReport}
+            loading={weeklyReports.isLoading}
           />
 
-          <WeeklyReportsModuleSignals items={weeklyReports.moduleSignalCards} />
+          <WeeklyReportsModuleSignals
+            items={weeklyReports.moduleSignalCards}
+            loading={weeklyReports.isLoading}
+          />
 
           <WeeklyReportsList
             search={weeklyReports.search}
@@ -45,6 +53,7 @@ export default function WeeklyReportsPage() {
             totalPages={weeklyReports.totalPages}
             showingFrom={weeklyReports.showingFrom}
             showingTo={weeklyReports.showingTo}
+            loading={weeklyReports.isLoading}
             onSearchChange={weeklyReports.setSearch}
             onStatusChange={weeklyReports.setStatusFilter}
             onClearFilters={weeklyReports.handleClearFilters}

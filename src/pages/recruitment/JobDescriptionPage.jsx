@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
-import { PageHeaderHero } from "@/components/ui";
+import { MetricGridSkeleton, PageHeaderHero } from "@/components/ui";
 import {
   getJobDescriptionDropdowns,
   getJobDescriptions,
@@ -293,6 +293,7 @@ export default function JobDescriptionPage() {
   } = useJobDescription();
 
   const [jobDescriptionList, setJobDescriptionList] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { canApprove: canApproveJobDescriptions } = useApprovalRuleAccess(
@@ -412,54 +413,60 @@ export default function JobDescriptionPage() {
     let isMounted = true;
 
     async function loadInitialData() {
+      setLoading(true);
       setDropdownLoading(true);
       setDropdownError("");
 
       forceScrollToTop();
 
-      const [dropdownResult, listResult] = await Promise.all([
-        getJobDescriptionDropdowns(),
-        getJobDescriptions({
-          page: 1,
-          limit: 100,
-        }),
-      ]);
+      try {
+        const [dropdownResult, listResult] = await Promise.all([
+          getJobDescriptionDropdowns(),
+          getJobDescriptions({
+            page: 1,
+            limit: 100,
+          }),
+        ]);
 
-      if (!isMounted) return;
+        if (!isMounted) return;
 
-      if (dropdownResult.success) {
-        setAccounts(dropdownResult.accounts || []);
-        setDepartments(dropdownResult.departments || []);
-        setRequestedByUsers(dropdownResult.requestedByUsers || []);
-      } else {
-        setAccounts([]);
-        setDepartments([]);
-        setRequestedByUsers([]);
-        setDropdownError(dropdownResult.message || "Failed to load dropdowns.");
+        if (dropdownResult.success) {
+          setAccounts(dropdownResult.accounts || []);
+          setDepartments(dropdownResult.departments || []);
+          setRequestedByUsers(dropdownResult.requestedByUsers || []);
+        } else {
+          setAccounts([]);
+          setDepartments([]);
+          setRequestedByUsers([]);
+          setDropdownError(dropdownResult.message || "Failed to load dropdowns.");
 
-        showStatus({
-          type: "error",
-          title: "Dropdown Load Failed",
-          message: dropdownResult.message || "Failed to load dropdowns.",
-        });
+          showStatus({
+            type: "error",
+            title: "Dropdown Load Failed",
+            message: dropdownResult.message || "Failed to load dropdowns.",
+          });
+        }
+
+        if (listResult.success) {
+          setJobDescriptionList(
+            (listResult.data || []).map(normalizeJobDescriptionItem),
+          );
+        } else {
+          setJobDescriptionList([]);
+
+          showStatus({
+            type: "error",
+            title: "Load Failed",
+            message: listResult.message || "Failed to load job descriptions.",
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setDropdownLoading(false);
+          setLoading(false);
+          forceScrollToTop();
+        }
       }
-
-      if (listResult.success) {
-        setJobDescriptionList(
-          (listResult.data || []).map(normalizeJobDescriptionItem),
-        );
-      } else {
-        setJobDescriptionList([]);
-
-        showStatus({
-          type: "error",
-          title: "Load Failed",
-          message: listResult.message || "Failed to load job descriptions.",
-        });
-      }
-
-      setDropdownLoading(false);
-      forceScrollToTop();
     }
 
     loadInitialData();
@@ -825,40 +832,54 @@ export default function JobDescriptionPage() {
             }
           />
 
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-4">
-            <StatCard
-              title="Total JD"
-              value={stats.total}
-              icon={ClipboardList}
-              description="All job descriptions in database"
-              tone="navy"
-              delay={0}
+          {loading ? (
+            <MetricGridSkeleton
+              count={4}
+              labels={[
+                "Total JD",
+                "Existing",
+                "For Revision",
+                "New Job Description",
+              ]}
+              ariaLabel="Loading job description metrics"
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-4"
             />
-            <StatCard
-              title="Existing"
-              value={stats.existing}
-              icon={CheckCircle2}
-              description="Ready or already available"
-              tone="green"
-              delay={60}
-            />
-            <StatCard
-              title="For Revision"
-              value={stats.revision}
-              icon={AlertTriangle}
-              description="Needs specification update or remarks"
-              tone="amber"
-              delay={120}
-            />
-            <StatCard
-              title="New Job Description"
-              value={stats.newJd}
-              icon={FileText}
-              description="New or unlinked JD intake"
-              tone="indigo"
-              delay={180}
-            />
-          </section>
+          ) : (
+            <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-4">
+              <StatCard
+                title="Total JD"
+                value={stats.total}
+                icon={ClipboardList}
+                description="All job descriptions in database"
+                tone="navy"
+                delay={0}
+              />
+              <StatCard
+                title="Existing"
+                value={stats.existing}
+                icon={CheckCircle2}
+                description="Ready or already available"
+                tone="green"
+                delay={60}
+              />
+              <StatCard
+                title="For Revision"
+                value={stats.revision}
+                icon={AlertTriangle}
+                description="Needs specification update or remarks"
+                tone="amber"
+                delay={120}
+              />
+              <StatCard
+                title="New Job Description"
+                value={stats.newJd}
+                icon={FileText}
+                description="New or unlinked JD intake"
+                tone="indigo"
+                delay={180}
+              />
+            </section>
+          )}
 
           <div
             key={jobDescriptionList.length}
@@ -868,6 +889,7 @@ export default function JobDescriptionPage() {
           >
             <JobDescriptionTable
               jobDescriptionList={jobDescriptionList}
+              loading={loading}
               canApproveJobDescriptions={canApproveJobDescriptions}
               onView={handleViewJobDescription}
               onRevise={handleOpenRevision}

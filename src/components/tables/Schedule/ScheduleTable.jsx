@@ -1,10 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, Clock, Search } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { CalendarDays, Clock } from "lucide-react";
 
 import { formatDate } from "@/components/layout/FormatDateTime";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import {
+  DataCard,
+  MetricGridSkeleton,
+  ResponsiveTableShell,
+  TableSkeletonRows,
+} from "@/components/ui";
 
 const PAGE_LIMIT = 15;
 
@@ -306,43 +311,52 @@ export default function ScheduleTable({
           className="sibs-profile-tab-panel"
           style={getAnimationStyle(60)}
         >
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3">
-            <StatCard
-              title="Loaded Schedules"
-              value={loading ? "..." : pageStats.totalLoaded}
-              description="Records loaded on the current page"
-              icon={CalendarDays}
-              tone="navy"
-              delay={0}
+          {loading ? (
+            <MetricGridSkeleton
+              count={4}
+              labels={["Loaded Schedules", "Regular", "Day Off", "Rest Day"]}
+              className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3"
+              ariaLabel="Loading schedule metrics"
             />
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3">
+              <StatCard
+                title="Loaded Schedules"
+                value={pageStats.totalLoaded}
+                description="Records loaded on the current page"
+                icon={CalendarDays}
+                tone="navy"
+                delay={0}
+              />
 
-            <StatCard
-              title="Regular"
-              value={loading ? "..." : pageStats.regularCount}
-              description="Regular work schedules on this page"
-              icon={Clock}
-              tone="emerald"
-              delay={60}
-            />
+              <StatCard
+                title="Regular"
+                value={pageStats.regularCount}
+                description="Regular work schedules on this page"
+                icon={Clock}
+                tone="emerald"
+                delay={60}
+              />
 
-            <StatCard
-              title="Day Off"
-              value={loading ? "..." : pageStats.dayOffCount}
-              description="Scheduled days off on this page"
-              icon={Clock}
-              tone="rose"
-              delay={120}
-            />
+              <StatCard
+                title="Day Off"
+                value={pageStats.dayOffCount}
+                description="Scheduled days off on this page"
+                icon={Clock}
+                tone="rose"
+                delay={120}
+              />
 
-            <StatCard
-              title="Rest Day"
-              value={loading ? "..." : pageStats.restDayCount}
-              description="Rest days scheduled on this page"
-              icon={Clock}
-              tone="amber"
-              delay={180}
-            />
-          </div>
+              <StatCard
+                title="Rest Day"
+                value={pageStats.restDayCount}
+                description="Rest days scheduled on this page"
+                icon={Clock}
+                tone="amber"
+                delay={180}
+              />
+            </div>
+          )}
         </section>
 
         <section
@@ -399,13 +413,7 @@ export default function ScheduleTable({
                     className="divide-y divide-[#E6ECF2]"
                   >
                     {loading ? (
-                      Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                        <tr key={`schedule-skeleton-${index}`}>
-                          <td colSpan={7} className="px-4 py-3.5">
-                            <div className="h-6 w-full animate-sibs-pulse rounded bg-slate-100" />
-                          </td>
-                        </tr>
-                      ))
+                      <TableSkeletonRows count={PAGE_LIMIT} columns={7} />
                     ) : schedule.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="p-8 2xl:p-12 text-center">

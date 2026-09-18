@@ -12,6 +12,7 @@ import {
   sortActionItems,
 } from "../../../lib/utils/actionItems/actionItemsHelpers.js";
 import ActionItemMobileCard from "./ActionItemMobileCard.jsx";
+import { TableSkeletonRows, DataCard } from "@/components/ui";
 
 const ENTITY_KEY = "action-items";
 
@@ -112,10 +113,6 @@ export default function ActionItemsTable() {
     dragScrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
-  if (loading) {
-    return <div className="px-5 py-12 text-center text-sm font-semibold text-[#667085]">Loading action items...</div>;
-  }
-
   return (
     <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
       <div
@@ -156,7 +153,9 @@ export default function ActionItemsTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E6ECF2] font-jakarta">
-            {paginatedItems.length ? (
+            {loading ? (
+              <TableSkeletonRows count={6} columns={8} />
+            ) : paginatedItems.length ? (
               paginatedItems.map((item, index) => {
                 const systemGenerated = item.systemGenerated || String(item.sourceType || "").toLowerCase().includes("system");
                 return (
@@ -232,15 +231,19 @@ export default function ActionItemsTable() {
       </div>
 
       <div className="space-y-3 p-3 lg:hidden">
-        {paginatedItems.length ? paginatedItems.map((item, index) => (
-          <ActionItemMobileCard
-            key={`${item.sourceType}-${item.id}-${item.actionId}`}
-            item={item}
-            delay={index * 40}
-            onOpen={() => setSelectedItem(item)}
-            onComplete={() => completeActionItem(item)}
-          />
-        )) : (
+        {loading ? (
+          <DataCard.Skeleton count={4} lines={3} />
+        ) : paginatedItems.length ? (
+          paginatedItems.map((item, index) => (
+            <ActionItemMobileCard
+              key={`${item.sourceType}-${item.id}-${item.actionId}`}
+              item={item}
+              delay={index * 40}
+              onOpen={() => setSelectedItem(item)}
+              onComplete={() => completeActionItem(item)}
+            />
+          ))
+        ) : (
           <div className="rounded-xl border border-dashed border-[#D9E2EC] p-8 text-center text-sm font-semibold text-[#98A2B3]">
             No action items match the current filters.
           </div>

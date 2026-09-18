@@ -30,7 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
+import React, {
   useEffect,
   useMemo,
   useRef,
@@ -673,10 +673,10 @@ function SearchResultButton({
         onClick={() => onSelect(item)}
         className={[
           "group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition",
-          active ? "bg-sibs-cream-light ring-1 ring-sibs-orange/30" : "hover:bg-[#F8FAFC]",
+          active ? "bg-sibs-cream-light ring-1 ring-sibs-orange/30" : "hover:bg-sibs-surface",
         ].join(" ")}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#D7DEE8] bg-[#F4F7FA] text-xs font-black text-sibs-navy shadow-xs group-hover:border-sibs-orange/40 group-hover:text-sibs-orange">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-sibs-border-subtle bg-sibs-surface-subtle text-xs font-black text-sibs-navy shadow-xs group-hover:border-sibs-orange/40 group-hover:text-sibs-orange">
           {item.initials}
         </span>
 
@@ -685,12 +685,12 @@ function SearchResultButton({
             <span className="truncate text-xs font-extrabold text-sibs-navy">
               <HighlightMatch text={item.label} query={query} />
             </span>
-            <span className="inline-flex items-center rounded border border-[#B8E6CB] bg-[#EDFBF2] px-1.5 py-0.5 text-[8.5px] font-black uppercase text-[#1B804B]">
+            <span className="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[8.5px] font-black uppercase text-emerald-700">
               <HighlightMatch text={item.sibsId} query={query} />
             </span>
           </div>
 
-          <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#667085]">
+          <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-sibs-muted">
             {item.details ? (
               <span className="truncate">
                 <HighlightMatch text={item.details} query={query} />
@@ -708,7 +708,7 @@ function SearchResultButton({
             "h-3.5 w-3.5 shrink-0 transition-transform",
             active
               ? "translate-x-0.5 text-sibs-orange"
-              : "text-[#98A2B3] group-hover:text-sibs-navy",
+              : "text-sibs-faint group-hover:text-sibs-navy",
           ].join(" ")}
         />
       </button>
@@ -726,7 +726,7 @@ function SearchResultButton({
       onClick={() => onSelect(item)}
       className={[
         "group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition",
-        active ? "bg-sibs-cream-light ring-1 ring-sibs-orange/30" : "hover:bg-[#F8FAFC]",
+        active ? "bg-sibs-cream-light ring-1 ring-sibs-orange/30" : "hover:bg-sibs-surface",
       ].join(" ")}
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sibs-navy text-white shadow-xs group-hover:bg-sibs-orange">
@@ -738,11 +738,11 @@ function SearchResultButton({
           <span className="truncate text-xs font-extrabold text-sibs-navy">
             <HighlightMatch text={item.label} query={query} />
           </span>
-          <span className="inline-flex items-center rounded bg-[#EEF4FA] px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase text-sibs-navy">
+          <span className="inline-flex items-center rounded bg-sibs-surface-subtle px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase text-sibs-navy">
             {item.group || "Module"}
           </span>
         </div>
-        <span className="mt-0.5 block truncate text-[10px] text-[#667085]">
+        <span className="mt-0.5 block truncate text-[10px] text-sibs-muted">
           <HighlightMatch text={item.description} query={query} />
         </span>
       </span>
@@ -752,7 +752,7 @@ function SearchResultButton({
           "h-3.5 w-3.5 shrink-0 transition-transform",
           active
             ? "translate-x-0.5 text-sibs-orange"
-            : "text-[#98A2B3] group-hover:text-sibs-navy",
+            : "text-sibs-faint group-hover:text-sibs-navy",
         ].join(" ")}
       />
     </button>
@@ -1308,8 +1308,8 @@ export default function Header() {
 
   if (!mounted) {
     return (
-      <header className="h-[86px] shrink-0 border-b border-[#C9D6E4] bg-white px-4 shadow-sm sm:px-6">
-        <div className="flex h-full items-center justify-between gap-4 pl-12 sm:pl-0">
+      <header className="sibs-dashboard-header-skeleton">
+        <div className="sibs-dashboard-header-inner gap-4">
           <div className="h-10 min-w-0 flex-1 animate-pulse rounded-lg bg-gray-200 sm:max-w-[460px]" />
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 animate-pulse rounded-lg bg-gray-200" />
@@ -1341,13 +1341,13 @@ export default function Header() {
     (!employeeSearchAllowed || query.trim().length >= 2);
 
   return (
-    <header className="sticky top-0 z-[70] flex h-[74px] 2xl:h-[86px] shrink-0 items-center border-b border-[#D7E0E9] bg-[#FAFCFF] px-2.5 font-jakarta shadow-xs sm:px-5 2xl:px-6">
-      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-2 sm:gap-3 2xl:gap-4">
+    <header className="sibs-dashboard-header">
+      <div className="sibs-dashboard-header-inner">
         {/* Mobile Hamburger Button - inside header so it always stays aligned */}
         <button
           type="button"
           onClick={() => setMobileSidebarOpen?.(true)}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#083A69] bg-sibs-primary-1 text-white shadow-xs transition hover:bg-[#063560] active:scale-95 lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sibs-tertiary-2 bg-sibs-primary-1 text-white shadow-xs transition hover:bg-sibs-tertiary-2 active:scale-95 lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg"
           aria-label="Open sidebar"
         >
           <Menu
@@ -1362,13 +1362,13 @@ export default function Header() {
         >
           <div
             className={[
-              "relative flex h-8.5 sm:h-9 2xl:h-10 min-w-0 items-center rounded-xl border bg-[#F1F5F9] transition-all duration-150",
+              "relative flex h-8.5 sm:h-9 2xl:h-10 min-w-0 items-center rounded-xl border bg-sibs-surface transition-all duration-150",
               showSearchPanel
-                ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
-                : "border-transparent hover:border-[#FF5C28]/40 focus-within:border-[#FF5C28] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#FF5C28]/10",
+                ? "border-sibs-orange bg-white ring-2 ring-sibs-orange/10"
+                : "border-transparent hover:border-sibs-orange/40 focus-within:border-sibs-orange focus-within:bg-white focus-within:ring-2 focus-within:ring-sibs-orange/10",
             ].join(" ")}
           >
-            <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-[#98A2B3]" />
+            <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-faint" />
 
             <input
               ref={searchInputRef}
@@ -1396,7 +1396,7 @@ export default function Header() {
                   ? `header-search-result-${activeIndex}`
                   : undefined
               }
-              className="h-full min-w-0 flex-1 bg-transparent pl-9 pr-14 sibs-text-xs font-semibold text-sibs-navy outline-none placeholder:font-medium placeholder:text-[#98A2B3] sm:pr-16"
+              className="h-full min-w-0 flex-1 bg-transparent pl-9 pr-14 sibs-text-xs font-semibold text-sibs-navy outline-none placeholder:font-medium placeholder:text-sibs-faint sm:pr-16"
             />
 
             <div className="absolute right-2 flex items-center gap-1">
@@ -1413,7 +1413,7 @@ export default function Header() {
                     closeSearch({ clear: true });
                     searchInputRef.current?.focus();
                   }}
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#98A2B3] transition hover:bg-[#E7EDF4] hover:text-sibs-navy"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-sibs-faint transition hover:bg-sibs-surface-subtle hover:text-sibs-navy"
                   aria-label="Clear search"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -1426,14 +1426,14 @@ export default function Header() {
             <div
               id="header-global-search-results"
               role="listbox"
-              className="fixed inset-x-3 top-[70px] z-[9999] max-h-[80vh] overflow-hidden rounded-2xl border border-[#D7E0E9] bg-white p-3 shadow-2xl lg:absolute lg:inset-auto lg:left-0 lg:top-[calc(100%+10px)] lg:max-h-[540px] lg:w-[560px] lg:p-3.5 lg:shadow-[0_18px_50px_rgba(4,44,81,0.18)]"
+              className="fixed inset-x-3 top-[70px] z-[9999] max-h-[80vh] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white p-3 shadow-2xl lg:absolute lg:inset-auto lg:left-0 lg:top-[calc(100%+10px)] lg:max-h-[540px] lg:w-[560px] lg:p-3.5 lg:shadow-2xl"
             >
               {isQueryEmpty ? (
                 <div className="space-y-4">
                   {recentProfiles.length > 0 ? (
                     <div>
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[#667085]">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-sibs-muted">
                           Recently Viewed Profiles
                         </span>
                         <button
@@ -1442,7 +1442,7 @@ export default function Header() {
                             clearRecentProfilesFromStorage();
                             setRecentProfiles([]);
                           }}
-                          className="text-[10px] font-bold text-[#FF5C28] hover:underline"
+                          className="text-[10px] font-bold text-sibs-orange hover:underline"
                         >
                           Clear
                         </button>
@@ -1452,7 +1452,7 @@ export default function Header() {
                         {recentProfiles.map((prof) => (
                           <div
                             key={prof.sibsId}
-                            className="group flex items-center justify-between gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3]"
+                            className="group flex items-center justify-between gap-2 rounded-xl border border-sibs-border bg-sibs-surface p-2 transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle"
                           >
                             <button
                               type="button"
@@ -1467,14 +1467,14 @@ export default function Header() {
                               }}
                               className="flex min-w-0 flex-1 items-center gap-2 text-left"
                             >
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#D7DEE8] bg-white text-[10px] font-black text-sibs-navy">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sibs-border-subtle bg-white text-[10px] font-black text-sibs-navy">
                                 {prof.initials}
                               </span>
                               <span className="min-w-0 flex-1">
                                 <span className="block truncate text-xs font-extrabold text-sibs-navy group-hover:text-sibs-orange">
                                   {prof.label}
                                 </span>
-                                <span className="block truncate text-[9.5px] text-[#667085]">
+                                <span className="block truncate text-[9.5px] text-sibs-muted">
                                   {prof.sibsId}
                                 </span>
                               </span>
@@ -1486,7 +1486,7 @@ export default function Header() {
                                 const updated = removeRecentProfileFromStorage(prof.sibsId);
                                 setRecentProfiles(updated);
                               }}
-                              className="text-[#98A2B3] hover:text-sibs-navy"
+                              className="text-sibs-faint hover:text-sibs-navy"
                               aria-label={`Remove ${prof.label}`}
                             >
                               <X size={13} />
@@ -1500,13 +1500,13 @@ export default function Header() {
                   {recentSearches.length > 0 ? (
                     <div>
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[#667085]">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-sibs-muted">
                           Recent Searches
                         </span>
                         <button
                           type="button"
                           onClick={handleClearAllRecent}
-                          className="text-[10px] font-bold text-[#FF5C28] hover:underline"
+                          className="text-[10px] font-bold text-sibs-orange hover:underline"
                         >
                           Clear All
                         </button>
@@ -1516,7 +1516,7 @@ export default function Header() {
                         {recentSearches.map((term) => (
                           <span
                             key={term}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 text-xs font-bold text-[#042C51] transition hover:bg-[#EEF4FA]"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1 text-xs font-bold text-sibs-navy transition hover:bg-sibs-surface-subtle"
                           >
                             <button
                               type="button"
@@ -1528,7 +1528,7 @@ export default function Header() {
                             <button
                               type="button"
                               onClick={(e) => handleRemoveRecent(term, e)}
-                              className="text-[#98A2B3] hover:text-[#042C51]"
+                              className="text-sibs-faint hover:text-sibs-navy"
                               aria-label={`Remove ${term}`}
                             >
                               <X size={13} />
@@ -1541,7 +1541,7 @@ export default function Header() {
 
                   <div>
                     <div className="mb-2.5 flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-[#667085]">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-sibs-muted">
                         Popular Quick Categories
                       </span>
                     </div>
@@ -1557,15 +1557,15 @@ export default function Header() {
                               navigate(cat.path);
                               setSearchOpen(false);
                             }}
-                            className="flex flex-col items-center gap-1.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 text-center transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:shadow-sm sm:p-3"
+                            className="flex flex-col items-center gap-1.5 rounded-xl border border-sibs-border bg-sibs-surface p-2.5 text-center transition hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:shadow-sm sm:p-3"
                           >
                             <div className={`flex h-8 w-8 items-center justify-center rounded-xl border sm:h-9 sm:w-9 ${cat.color}`}>
                               <Icon size={17} />
                             </div>
-                            <span className="text-[11px] font-extrabold text-[#042C51]">
+                            <span className="text-[11px] font-extrabold text-sibs-navy">
                               {cat.label}
                             </span>
-                            <span className="line-clamp-1 text-[9px] font-semibold text-[#667085]">
+                            <span className="line-clamp-1 text-[9px] font-semibold text-sibs-muted">
                               {cat.description}
                             </span>
                           </button>
@@ -1576,7 +1576,7 @@ export default function Header() {
                 </div>
               ) : (
                 <div className="thin-scroll max-h-[500px] overflow-y-auto py-1">
-                  <div className="mb-2 flex items-center gap-1.5 border-b border-[#E6ECF2] pb-2">
+                  <div className="mb-2 flex items-center gap-1.5 border-b border-sibs-border pb-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -1587,7 +1587,7 @@ export default function Header() {
                         "rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition",
                         activeCategory === "all"
                           ? "bg-sibs-navy text-white shadow-xs"
-                          : "bg-[#F1F5F9] text-[#667085] hover:bg-[#E2E8F0] hover:text-sibs-navy",
+                          : "bg-sibs-surface text-sibs-muted hover:bg-sibs-border-subtle hover:text-sibs-navy",
                       ].join(" ")}
                     >
                       All ({allResults.length})
@@ -1604,7 +1604,7 @@ export default function Header() {
                           "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition",
                           activeCategory === "employees"
                             ? "bg-sibs-orange text-white shadow-xs"
-                            : "bg-[#F1F5F9] text-[#667085] hover:bg-[#E2E8F0] hover:text-sibs-navy",
+                            : "bg-sibs-surface text-sibs-muted hover:bg-sibs-border-subtle hover:text-sibs-navy",
                         ].join(" ")}
                       >
                         Employees ({employeeResults.length})
@@ -1621,7 +1621,7 @@ export default function Header() {
                         "rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition",
                         activeCategory === "modules"
                           ? "bg-sibs-navy text-white shadow-xs"
-                          : "bg-[#F1F5F9] text-[#667085] hover:bg-[#E2E8F0] hover:text-sibs-navy",
+                          : "bg-sibs-surface text-sibs-muted hover:bg-sibs-border-subtle hover:text-sibs-navy",
                       ].join(" ")}
                     >
                       Modules ({moduleResults.length})
@@ -1629,7 +1629,7 @@ export default function Header() {
                   </div>
 
                   {displayedResults.length > 0 ? (
-                    <div className="divide-y divide-[#EEF2F6]">
+                    <div className="divide-y divide-sibs-border">
                       {displayedResults.map((item, index) => (
                         <SearchResultButton
                           key={item.type === "employee" ? `emp-${item.sibsId}` : `mod-${item.path}`}
@@ -1645,7 +1645,7 @@ export default function Header() {
                   ) : null}
 
                   {employeeSearchAllowed && query.trim().length === 1 ? (
-                    <div className="mx-3 my-2 flex items-center gap-2 rounded-lg bg-[#F7F9FC] px-3 py-2 text-[10px] font-semibold text-[#667085]">
+                    <div className="mx-3 my-2 flex items-center gap-2 rounded-lg bg-sibs-surface px-3 py-2 text-[10px] font-semibold text-sibs-muted">
                       <UserRound className="h-3.5 w-3.5 text-sibs-primary-1" />
                       Type one more character to search employees.
                     </div>
@@ -1653,11 +1653,11 @@ export default function Header() {
 
                   {noResults || (displayedResults.length === 0 && !employeeLoading && query.trim().length >= 2) ? (
                     <div className="px-5 py-8 text-center">
-                      <Search className="mx-auto h-6 w-6 text-[#98A2B3]" />
-                      <p className="mt-2 text-xs font-extrabold text-[#344054]">
+                      <Search className="mx-auto h-6 w-6 text-sibs-faint" />
+                      <p className="mt-2 text-xs font-extrabold text-sibs-secondary">
                         No matching result
                       </p>
-                      <p className="mt-1 text-[10px] leading-relaxed text-[#667085]">
+                      <p className="mt-1 text-[10px] leading-relaxed text-sibs-muted">
                         Try a module name, employee name, SIBS ID, department, or
                         account.
                       </p>
@@ -1666,7 +1666,7 @@ export default function Header() {
                 </div>
               )}
 
-              <div className="mt-2 hidden items-center justify-between border-t border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[9px] font-semibold text-[#667085] sm:flex">
+              <div className="mt-2 hidden items-center justify-between border-t border-sibs-border bg-sibs-surface px-3 py-2 text-[9px] font-semibold text-sibs-muted sm:flex">
                 <span>↑ ↓ Navigate</span>
                 <span>Enter Open</span>
                 <span>Ctrl + K Focus</span>
@@ -1680,18 +1680,18 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setCalendarOpen(true)}
-            className="group hidden h-8.5 2xl:h-10 items-center gap-1.5 2xl:gap-2 rounded-xl border border-transparent px-2.5 2xl:px-3 sibs-text-micro font-semibold text-[#667085] transition-all duration-150 hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs xl:flex hover:cursor-pointer"
+            className="group hidden h-8.5 2xl:h-10 items-center gap-1.5 2xl:gap-2 rounded-xl border border-transparent px-2.5 2xl:px-3 sibs-text-micro font-semibold text-sibs-muted transition-all duration-150 hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs xl:flex hover:cursor-pointer"
             aria-label="Open HR and talent acquisition calendar"
           >
-            <CalendarDays className="h-3.5 w-3.5 text-[#98A2B3] transition-colors group-hover:text-sibs-orange" />
+            <CalendarDays className="h-3.5 w-3.5 text-sibs-faint transition-colors group-hover:text-sibs-orange" />
             <span className="whitespace-nowrap">{timeStr}</span>
           </button>
 
-          <div className="hidden h-5 2xl:h-6 w-px bg-[#E0E6ED] xl:block" />
+          <div className="hidden h-5 2xl:h-6 w-px bg-sibs-border-subtle xl:block" />
 
           <NotificationDropdown />
 
-          <div className="hidden h-5 2xl:h-6 w-px bg-[#E0E6ED] sm:block" />
+          <div className="hidden h-5 2xl:h-6 w-px bg-sibs-border-subtle sm:block" />
 
           <div className="relative z-[9999] min-w-0 shrink-0">
             {loading || !user ? (

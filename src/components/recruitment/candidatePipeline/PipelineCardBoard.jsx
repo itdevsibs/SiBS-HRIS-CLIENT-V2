@@ -1,7 +1,9 @@
 import React, { useMemo, useRef, useState } from "react";
 import { pipelineStages } from "../../../lib/utils/candidatePipeline/candidatePipelineConstants";
 import { getPipelineStageTheme } from "../../../lib/utils/candidatePipeline/candidatePipelineStageThemes";
-import PipelineCandidateCard from "./PipelineCandidateCard";
+import PipelineCandidateCard, {
+  PipelineCandidateCardSkeleton,
+} from "./PipelineCandidateCard";
 import PipelineListView from "./PipelineListView";
 
 const BOARD_SCROLLBAR_CLASS =
@@ -98,6 +100,7 @@ export default function PipelineCardsBoard({
   onCancelInterview,
   onCompleteInterview,
   viewMode = "board",
+  isLoading = false,
 }) {
   const candidatesByStage = useMemo(() => {
     return pipelineStages.reduce((acc, stage) => {
@@ -161,6 +164,7 @@ export default function PipelineCardsBoard({
           onOpenScheduleModal={onOpenScheduleModal}
           onCancelInterview={onCancelInterview}
           onCompleteInterview={onCompleteInterview}
+          isLoading={isLoading}
         />
       </div>
     );
@@ -204,17 +208,27 @@ export default function PipelineCardsBoard({
                   </p>
                 </div>
 
-                <span
-                  className={`inline-flex h-5.5 min-w-5.5 2xl:h-6 2xl:min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 2xl:px-2 text-[9.5px] 2xl:text-[10px] font-extrabold shadow-sm ${theme.badge}`}
-                >
-                  {count}
-                </span>
+                {isLoading ? (
+                  <span className="inline-flex h-5.5 w-6 2xl:h-6 2xl:w-7 shrink-0 items-center justify-center rounded-full bg-white/40 animate-sibs-pulse" />
+                ) : (
+                  <span
+                    className={`inline-flex h-5.5 min-w-5.5 2xl:h-6 2xl:min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 2xl:px-2 text-[9.5px] 2xl:text-[10px] font-extrabold shadow-sm ${theme.badge}`}
+                  >
+                    {count}
+                  </span>
+                )}
               </div>
 
               <div
                 className={`min-h-0 flex-1 space-y-2.5 2xl:space-y-3 overflow-y-auto p-1.5 pt-2.5 2xl:p-2 2xl:pt-3 ${COLUMN_SCROLLBAR_CLASS}`}
               >
-                {stageCandidates.length > 0 ? (
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, skeletonIndex) => (
+                    <PipelineCandidateCardSkeleton
+                      key={`pipeline-stage-skeleton-${stage}-${skeletonIndex}`}
+                    />
+                  ))
+                ) : stageCandidates.length > 0 ? (
                   stageCandidates.map((candidate, index) => (
                     <div
                       key={getCandidateKey(candidate, index)}

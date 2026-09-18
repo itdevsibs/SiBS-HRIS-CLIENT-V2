@@ -38,7 +38,7 @@ import {
   inputClass,
 } from "./RecruitmentHeadcountPrimitives";
 import SettingsHeaderCapsules from "../SettingsHeaderCapsules";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 
 async function saveRequiredHeadcountOverride(item, requiredHeadcount) {
   const cleanRequiredHeadcount = Number(requiredHeadcount);
@@ -978,18 +978,10 @@ function UpdateHeadcountsPanel() {
 
                   <tbody>
                     {accountsLoading || weeksLoading ? (
-                      Array.from({
-                        length: RECRUITMENT_HEADCOUNT_PAGE_LIMIT,
-                      }).map((_, index) => (
-                        <tr key={index}>
-                          <td
-                            colSpan={7}
-                            className="border-b border-[#E6ECF2] px-3 py-3"
-                          >
-                            <div className="h-4 w-full animate-sibs-pulse rounded bg-gray-200" />
-                          </td>
-                        </tr>
-                      ))
+                      <TableSkeletonRows
+                        count={RECRUITMENT_HEADCOUNT_PAGE_LIMIT}
+                        columns={7}
+                      />
                     ) : paginatedAccounts.length > 0 ? (
                       paginatedAccounts.map((item, index) => {
                         const metrics = getRecruitmentHeadcountMetrics(item);

@@ -886,9 +886,9 @@ export default function AddJobDescription({
   }
 
   const linkedExistingJdId = normalizeDatabaseJdId(
-    form.existingJdId ||
-      form.existing_jd_id ||
-      form.linkedHiringRequirement,
+    form?.existingJdId ||
+      form?.existing_jd_id ||
+      form?.linkedHiringRequirement,
   );
 
   const isExistingTemplateMode = Boolean(linkedExistingJdId);

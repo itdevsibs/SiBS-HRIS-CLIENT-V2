@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Maximize2, X } from "lucide-react";
 import WorkforceHiringTrendDetailsModal from "../../modals/workforceHiringOverview/WorkforceHiringTrendDetailsModal";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
+import { Skeleton } from "../../ui";
 import AnimatedNumber from "./shared/AnimatedNumber";
 import TrendSvg from "./shared/TrendSvg";
 import { HiringFunnelCard } from "./WorkforceHiringOverviewPipeline";
@@ -113,8 +114,53 @@ function getTrendWeekLabels(selectedWeek, fallbackWeeks = []) {
 
 function AttritionBetweenStagesCard() {
   const {
-    overview: { attritionStages, summary },
+    overview,
+    status,
   } = useWorkforceHiringView();
+  const attritionStages = overview?.attritionStages || [];
+  const summary = overview?.summary || {};
+  const loading = overview?.trendsLoading || status?.isLoading;
+
+  if (loading) {
+    return (
+      <section
+        data-testid="attrition-stages-skeleton"
+        className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+      >
+        <div className="space-y-1.5">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-3.5 w-72" />
+        </div>
+        <div className="mt-4 flex flex-1 flex-col justify-around gap-3 rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <article
+              key={index}
+              className="rounded-lg border border-[#DDE5EE] bg-white px-3 py-3 shadow-sm"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <Skeleton className="h-3 w-36" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="mt-2.5 h-2 w-full rounded-full" />
+            </article>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/70 px-3 py-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-7 rounded-full" />
+            <div className="space-y-1">
+              <Skeleton className="h-2.5 w-16" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+          <div className="space-y-1 text-right">
+            <Skeleton className="ml-auto h-4 w-12" />
+            <Skeleton className="ml-auto h-2.5 w-14" />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
@@ -217,7 +263,7 @@ function SixWeekTrendsCard() {
   } = useWorkforceHiringView();
 
   const [trendModalOpen, setTrendModalOpen] = useState(false);
-  const [summaryReady, setSummaryReady] = useState(false);
+  const [readyAnimationKey, setReadyAnimationKey] = useState("");
   const footerSummary = trendSummary || summary;
   const trendRangeLabel = getTrendWeekNumberRange(filters?.selectedWeek);
   const displayTrendWeeks = getTrendWeekLabels(
@@ -236,14 +282,17 @@ function SixWeekTrendsCard() {
   );
 
   useEffect(() => {
-    setSummaryReady(false);
-
     if (trendsLoading || trendsError) return undefined;
 
-    const timer = window.setTimeout(() => setSummaryReady(true), 900);
+    const timer = window.setTimeout(
+      () => setReadyAnimationKey(trendAnimationKey),
+      900,
+    );
     return () => window.clearTimeout(timer);
   }, [trendAnimationKey, trendsError, trendsLoading]);
 
+  const summaryReady =
+    readyAnimationKey === trendAnimationKey && !trendsLoading && !trendsError;
   const summaryLoading = trendsLoading || Boolean(trendsError) || !summaryReady;
 
   return (
@@ -278,8 +327,25 @@ function SixWeekTrendsCard() {
         </div>
 
         {trendsLoading ? (
-          <div className="flex min-h-[200px] items-center justify-center text-xs font-semibold text-[#667085] xl:min-h-[300px]">
-            Loading six-week trends...
+          <div
+            data-testid="trends-chart-skeleton"
+            className="flex min-h-[200px] flex-1 flex-col justify-between py-2 xl:min-h-[300px]"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            aria-label="Loading six-week trends chart"
+          >
+            <div className="flex flex-1 items-end justify-between gap-3 px-4 py-8">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div key={idx} className="flex flex-1 flex-col items-center gap-2">
+                  <Skeleton
+                    className="w-full rounded-t"
+                    style={{ height: `${60 + (idx % 3) * 40}px` }}
+                  />
+                  <Skeleton className="h-2.5 w-12" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : trendsError ? (
           <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-rose-100 bg-rose-50 px-4 text-center text-xs font-semibold text-rose-700 xl:min-h-[300px]">

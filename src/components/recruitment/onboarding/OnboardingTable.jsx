@@ -8,7 +8,7 @@ import { useOnboarding } from "../../../services/context/OnboardingContext";
 import { usePagination } from "../../../services/context/PaginationContext";
 import OnboardingMobileCardView from "./OnboardingMobileCardView";
 import PaginationTable from "../../../services/pagination/PaginationTable.jsx";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 
 const PAGE_SIZE = 8;
 
@@ -65,8 +65,9 @@ const getOutcomeClass = (outcome) =>
         ? "border-orange-200 bg-orange-50 text-orange-700"
         : "border-amber-200 bg-amber-50 text-amber-700";
 
-export default function OnboardingTable({ onView }) {
-  const { list = [], loading } = useOnboarding();
+export default function OnboardingTable({ onView, loading: propLoading }) {
+  const { list = [], loading: contextLoading = false } = useOnboarding() || {};
+  const loading = propLoading ?? contextLoading;
   const { page, setPage, setPagination, search, filterValues } =
     usePagination("onboarding");
 
@@ -209,11 +210,7 @@ export default function OnboardingTable({ onView }) {
 
           <tbody className="divide-y divide-[#F1F5F9]">
             {loading ? (
-              <tr>
-                <td colSpan={10} className="px-5 py-12 text-center sibs-text-xs font-bold text-[#667085]">
-                  Loading onboarding records...
-                </td>
-              </tr>
+              <TableSkeletonRows count={6} columns={10} />
             ) : paginatedData.length === 0 ? (
               <tr>
                 <td colSpan={10} className="px-5 py-12 text-center sibs-text-xs font-bold text-[#667085]">

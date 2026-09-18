@@ -1,8 +1,8 @@
-import { useState } from "react";
+import React from "react";
 import { Eye, Check, X, History, FileText } from "lucide-react";
 import { useOffers } from "../../../services/context/OffersContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
-import { ResponsiveTableShell } from "@/components/ui";
+import { ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 import OfferMobileCards from "./OfferMobileCards";
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import {
@@ -95,6 +95,7 @@ export default function OfferRecordsTable({
   offersOverride = null,
   routeFilterActive = false,
   emptyMessage = "No offered candidates found from Candidate Pipeline.",
+  isLoading: propIsLoading,
 }) {
   const {
     filteredOffers = [],
@@ -103,7 +104,10 @@ export default function OfferRecordsTable({
     handleApproval,
     canCurrentUserApproveOffer,
     getOfferApprovalStatus,
-  } = useOffers();
+    isLoading: contextIsLoading = false,
+  } = useOffers() || {};
+
+  const isLoading = propIsLoading ?? contextIsLoading;
 
   const displayedOffers = Array.isArray(offersOverride)
     ? offersOverride
@@ -143,6 +147,7 @@ export default function OfferRecordsTable({
           <OfferMobileCards
             offersOverride={displayedOffers}
             emptyMessage={emptyMessage}
+            isLoading={isLoading}
           />
         }
         desktopContent={
@@ -161,7 +166,9 @@ export default function OfferRecordsTable({
             </thead>
 
             <tbody>
-              {displayedOffers.length > 0 ? (
+              {isLoading ? (
+                <TableSkeletonRows count={5} columns={7} />
+              ) : displayedOffers.length > 0 ? (
                 displayedOffers.map((offer, index) => {
                   const approvalStatus = getApprovalStatus(offer);
                   const isAuthorizedApprover =
