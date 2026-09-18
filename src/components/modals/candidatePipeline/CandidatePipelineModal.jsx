@@ -7410,6 +7410,32 @@ const CandidatePipelineModal = ({
         {
           prfStatus: activePrfStatus,
           prf_status: activePrfStatus,
+
+          /*
+           * Send the selected candidate's stable identities with the action.
+           * The server uses them to protect against numeric ID namespace
+           * collisions between Candidate Pipeline and Talent Pool records.
+           */
+          candidatePipelineId: candidateNhoUploadId,
+          candidate_pipeline_id: candidateNhoUploadId,
+          candidateId:
+            activeCandidate?.candidateId || activeCandidate?.candidate_id || "",
+          candidate_id:
+            activeCandidate?.candidateId || activeCandidate?.candidate_id || "",
+          candidateApplicationId:
+            activeCandidate?.candidateApplicationId ||
+            activeCandidate?.candidate_application_id ||
+            activeCandidate?.applicationId ||
+            activeCandidate?.application_id ||
+            "",
+          sourceTalentPoolId:
+            activeCandidate?.sourceTalentPoolId ||
+            activeCandidate?.source_talent_pool_id ||
+            "",
+          candidateName:
+            activeCandidate?.name || activeCandidate?.candidateName || "",
+          candidateEmail: recipientEmail,
+
           recipientEmail,
           email: recipientEmail,
           roleName: getAssessmentEmailRole(activeCandidate),

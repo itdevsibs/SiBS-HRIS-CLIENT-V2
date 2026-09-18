@@ -983,27 +983,42 @@ export function findTalentPoolProfile(candidate) {
   const internalCandidates = safeReadArray(INTERNAL_CANDIDATES_STORAGE_KEY);
   const publicSubmissions = safeReadArray(PUBLIC_SUBMISSIONS_KEY);
 
-  const candidateMasterId =
-    candidate.candidateMasterId || candidate.masterCandidateId;
+  const candidateMasterId = String(
+    candidate.candidateMasterId || candidate.masterCandidateId || "",
+  ).trim();
 
-  const candidateApplicationId =
-    candidate.candidateApplicationId || candidate.id;
+  /*
+   * `candidate.id` is candidate_pipeline.id on the Pipeline board. It is not
+   * a Talent Pool/public application ID and must never be used to locate a
+   * submitted profile. Otherwise equal numeric IDs can display another
+   * applicant's personal data.
+   */
+  const candidateApplicationId = String(
+    candidate.candidateApplicationId || candidate.applicationId || "",
+  ).trim();
 
-  const candidateEmail = String(candidate.email || "").toLowerCase();
+  const candidateId = String(candidate.candidateId || "").trim();
+  const candidateEmail = String(candidate.email || "").trim().toLowerCase();
+
+  const sameValue = (left, right) =>
+    Boolean(right) && String(left ?? "").trim() === right;
+
+  const sameEmail = (left, right) =>
+    Boolean(right) && String(left ?? "").trim().toLowerCase() === right;
 
   const matchedInternal = internalCandidates.find((item) => {
     return (
-      String(item.id) === String(candidateMasterId) ||
-      String(item.candidateId) === String(candidate.candidateId) ||
-      String(item.email || "").toLowerCase() === candidateEmail
+      sameValue(item.id, candidateMasterId) ||
+      sameValue(item.candidateId, candidateId) ||
+      sameEmail(item.email, candidateEmail)
     );
   });
 
   const matchedPublic = publicSubmissions.find((item) => {
     return (
-      String(item.id) === String(candidateApplicationId) ||
-      String(item.candidateId) === String(candidate.candidateId) ||
-      String(item.email || "").toLowerCase() === candidateEmail
+      sameValue(item.id, candidateApplicationId) ||
+      sameValue(item.candidateId, candidateId) ||
+      sameEmail(item.email, candidateEmail)
     );
   });
 

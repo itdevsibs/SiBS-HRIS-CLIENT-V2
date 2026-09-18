@@ -726,13 +726,29 @@ export default function MoveToPipeLineModal() {
         return;
       }
 
+      const pipelineCandidate =
+        response?.candidate ||
+        response?.data?.pipelineCandidate ||
+        null;
+
+      /*
+       * Candidate Pipeline listeners must receive the candidate_pipeline row,
+       * not the Talent Pool application wrapper. The wrapper's generic `id`
+       * belongs to talent_pool_applications and can collide with another
+       * candidate_pipeline.id, causing stage checks and modal data to target
+       * the wrong person.
+       */
       window.dispatchEvent(
         new CustomEvent("ta-pipeline-candidates-updated", {
-          detail: response.data || payload,
+          detail: pipelineCandidate
+            ? { candidate: pipelineCandidate }
+            : { forceRefresh: true },
         }),
       );
 
-      await refreshAfterChange(response.data || payload);
+      await refreshAfterChange(
+        response?.data || payload,
+      );
 
       closeMoveToPipeline?.();
 

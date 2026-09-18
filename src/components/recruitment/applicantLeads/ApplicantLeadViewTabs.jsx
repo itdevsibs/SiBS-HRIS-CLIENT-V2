@@ -13,8 +13,13 @@ import StatusFilterTabs from "../StatusFilterTabs";
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 
 export default function ApplicantLeadViewTabs() {
-  const { leadView, setLeadView, activeLeads, statusOptions } =
-    useApplicantLeadsPage();
+  const {
+    leadView,
+    setLeadView,
+    activeLeads,
+    convertedLeads,
+    statusOptions,
+  } = useApplicantLeadsPage();
 
   const statusIcon = {
     "New Lead": UserPlus,
@@ -39,13 +44,16 @@ export default function ApplicantLeadViewTabs() {
     {
       id: "all",
       label: "All Leads",
-      count: activeLeads.length,
+      count: activeLeads.length + convertedLeads.length,
       icon: UsersRound,
     },
     ...statuses.map((status) => ({
       id: `status:${status}`,
       label: statusLabel[status] || status,
-      count: activeLeads.filter((lead) => lead.status === status).length,
+      count:
+        status === "Converted to Applicant"
+          ? convertedLeads.length
+          : activeLeads.filter((lead) => lead.status === status).length,
       icon: statusIcon[status] || UserCheck,
     })),
     {

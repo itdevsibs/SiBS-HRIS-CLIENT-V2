@@ -85,6 +85,60 @@ function getCandidateAddress(candidate = {}) {
   );
 }
 
+const OFFICE_SITE_ADDRESSES = {
+  "davao site":
+    "Robinsons Cybergate Delta, Tower 2, 5th Floor, Bajada, Davao City",
+  davao:
+    "Robinsons Cybergate Delta, Tower 2, 5th Floor, Bajada, Davao City",
+  "tagum site":
+    "Ramos Building, Arellano Street, Tagum City, Davao del Norte, Philippines",
+  tagum:
+    "Ramos Building, Arellano Street, Tagum City, Davao del Norte, Philippines",
+};
+
+function normalizeOfficeSite(value) {
+  const site = clean(value);
+  if (!site) return "Davao Site";
+
+  const key = site.toLowerCase().replace(/\s+/g, " ");
+  if (key === "davao" || key === "davao site") return "Davao Site";
+  if (key === "tagum" || key === "tagum site") return "Tagum Site";
+
+  return site;
+}
+
+function getOfferOfficeSite(candidate = {}, offer = {}) {
+  const metadata = candidate.metadata || candidate.candidateMetadata || {};
+  const hiringNeed = offer.hiringNeed || offer.hiring_need || {};
+
+  return normalizeOfficeSite(
+    offer.site ||
+      offer.locationSite ||
+      offer.location_site ||
+      candidate.applyingLocation ||
+      candidate.applying_location ||
+      candidate.currentLocation ||
+      candidate.current_location ||
+      metadata.applyingLocation ||
+      metadata.applying_location ||
+      metadata.currentLocation ||
+      metadata.current_location ||
+      hiringNeed.locationSite ||
+      hiringNeed.location_site,
+  );
+}
+
+function getOfferOfficeAddress(site, offer = {}) {
+  const explicitAddress = clean(offer.siteAddress || offer.site_address);
+  if (explicitAddress) return explicitAddress;
+
+  const key = clean(site).toLowerCase().replace(/\s+/g, " ");
+  return (
+    OFFICE_SITE_ADDRESSES[key] ||
+    OFFICE_SITE_ADDRESSES["davao site"]
+  );
+}
+
 function addWrapped(doc, text, x, y, width, options = {}) {
   const lineHeight = options.lineHeight || 5.15;
   const lines = doc.splitTextToSize(clean(text), width);
@@ -142,6 +196,8 @@ export async function generateEmploymentOfferPdf({ candidate = {}, offer = {} })
   const firstName = rawName.split(/\s+/)[0] || "Candidate";
   const address = getCandidateAddress(candidate) || "Address not provided";
   const roleTitle = clean(offer.roleTitle || offer.finalRole) || "Position not specified";
+  const site = getOfferOfficeSite(candidate, offer);
+  const siteAddress = getOfferOfficeAddress(site, offer);
   const startDate = formatLongDate(offer.startDate || offer.start_date);
   const basicPay = Number(offer.basicPay || 0);
   const deminimis = Number(offer.deminimisDailyRate || 0);
@@ -168,7 +224,7 @@ export async function generateEmploymentOfferPdf({ candidate = {}, offer = {} })
   let y = 108;
   y = addWrapped(
     doc,
-    `We are delighted to extend this offer of employment for the position of ${roleTitle} here at SiBS. You will be reporting out our Davao Site located at Robinsons Cybergate Delta, Tower 2, 5th Floor, Bajada, Davao City.`,
+    `We are delighted to extend this offer of employment for the position of ${roleTitle} here at SiBS. You will be reporting out our ${site} located at ${siteAddress}.`,
     left,
     y,
     contentWidth,

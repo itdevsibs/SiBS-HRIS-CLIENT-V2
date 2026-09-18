@@ -42,8 +42,8 @@ function formatApplicantLeadHistoryActor(item = {}) {
   const sibsId = cleanText(item.actorSibsId || item.actor_sibs_id);
   const name = cleanText(item.actorName || item.actor_name);
 
-  if (sibsId && name) return `${sibsId} - ${name}`;
-  if (sibsId) return sibsId;
+  if (sibsId && name) return `SiBS ID ${sibsId} - ${name}`;
+  if (sibsId) return `SiBS ID ${sibsId}`;
   return name || "System";
 }
 

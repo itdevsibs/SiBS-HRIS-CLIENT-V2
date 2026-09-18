@@ -64,6 +64,18 @@ function normalizeLookupOption(row = {}) {
 export function normalizeApplicantLead(row = {}) {
   const id = row.id ?? row.lead_id ?? row.leadId;
   const leadId = row.lead_id || row.leadId || row.id;
+  const rawStatus = cleanText(row.status) || "New Lead";
+  const hasTalentPoolApplication = Boolean(
+    cleanText(
+      row.talent_pool_application_id ||
+        row.talentPoolApplicationId,
+    ),
+  );
+  const status =
+    rawStatus.toLowerCase() === "moved to talent pool archive" ||
+    hasTalentPoolApplication
+      ? "Converted to Applicant"
+      : rawStatus;
 
   return {
     id,
@@ -106,7 +118,8 @@ export function normalizeApplicantLead(row = {}) {
       row.preferredSite ||
       row.preferredLocation ||
       "",
-    status: row.status || "New Lead",
+    status,
+    sourceStatus: rawStatus,
     referralCode: row.referral_code || row.referralCode || "",
     talentPoolApplicationId:
       row.talent_pool_application_id ||

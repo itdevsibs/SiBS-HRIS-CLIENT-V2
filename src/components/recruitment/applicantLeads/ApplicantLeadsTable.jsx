@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   CircleCheckBig,
   Mail,
-  MapPin,
   Phone,
   RotateCw,
   UserRound,
@@ -158,26 +157,23 @@ export default function ApplicantLeadsTable({
           }
           desktopContent={
             <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
-              <table className="w-full min-w-[1100px] border-collapse text-left">
+              <table className="w-full min-w-[980px] border-collapse text-left">
             <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="border-b border-[#E6ECF2]">
-                <th className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Lead ID &amp; Name
                 </th>
 
-                <th className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   CP Number / Email
                 </th>
 
-                <th className="w-[24%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[28%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Department &amp; Account / Client
                 </th>
 
-                <th className="w-[12%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
-                  Site
-                </th>
 
-                <th className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[14%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Status
                 </th>
 
@@ -199,7 +195,6 @@ export default function ApplicantLeadsTable({
                 const email = cleanText(lead.email);
                 const department = cleanText(lead.department);
                 const account = cleanText(lead.specificAccount);
-                const site = cleanText(lead.preferredSite);
                 const inputtedBy = cleanText(lead.inputtedBy);
                 const dateLogged = cleanText(lead.dateLogged);
                 const applicationLinkSent = isApplicantLeadApplicationLinkSent(lead);
@@ -292,22 +287,6 @@ export default function ApplicantLeadsTable({
                       </div>
                     </td>
 
-                    {/* SITE */}
-                    <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <MapPin
-                          size={12}
-                          strokeWidth={2}
-                          className="shrink-0 text-sibs-text-faint"
-                        />
-                        <span
-                          title={lead.preferredSite || ""}
-                          className="max-w-[170px] truncate text-[10px] 2xl:text-[11px] font-medium text-sibs-text-muted"
-                        >
-                          {site}
-                        </span>
-                      </div>
-                    </td>
 
                     {/* STATUS */}
                     <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">

@@ -2399,6 +2399,36 @@ export function CandidatePipelineProvider({ children }) {
       );
 
     /*
+     * The first offer must default to the account the applicant originally
+     * applied for in Talent Pool. metadata.account is captured when the
+     * candidate is moved to Candidate Pipeline and remains the stable source
+     * even if the pipeline account is later changed by reprofiling.
+     *
+     * For an approver-rejected offer revision, preserve the most recent offer
+     * assignment instead of resetting the candidate back to the original
+     * Talent Pool account.
+     */
+    const talentPoolAppliedAccount = firstAssignmentValue(
+      normalizedCandidate.metadata?.account,
+      normalizedCandidate.metadata?.currentAppliedAccount,
+      normalizedCandidate.metadata?.current_applied_account,
+      normalizedCandidate.currentAppliedAccount,
+      currentAccount,
+    );
+
+    const offerAccount = isRejectedOfferRevision
+      ? firstAssignmentValue(
+          offerDetails.account,
+          offerDetails.finalAccount,
+          currentAccount,
+          talentPoolAppliedAccount,
+        )
+      : firstAssignmentValue(
+          talentPoolAppliedAccount,
+          currentAccount,
+        );
+
+    /*
      * A rejected approver version starts a fresh compensation proposal while
      * preserving the approved assignment / PRF. The backend will create the
      * next candidate_offer_versions row instead of overwriting the rejected
@@ -2415,11 +2445,7 @@ export function CandidatePipelineProvider({ children }) {
         (currentRoleTitle === ""
           ? ""
           : currentRoleTitle),
-      account:
-        offerDetails.account ||
-        (currentAccount === ""
-          ? ""
-          : currentAccount),
+      account: offerAccount,
       basicPay:
         isRejectedOfferRevision
           ? ""
