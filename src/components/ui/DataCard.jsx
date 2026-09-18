@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronRight, FileQuestion } from "lucide-react";
+import { Skeleton } from "./skeleton";
 
 /**
  * Universal compound mobile card component for tabular records.
@@ -205,29 +206,43 @@ function DataCardFooter({
   );
 }
 
-function DataCardSkeleton({ count = 4, className = "" }) {
+function DataCardSkeleton({ count = 4, lines = 2, className = "" }) {
+  const lineCount = Math.max(1, Number(lines) || 2);
+
   return (
     <div className={`space-y-3 ${className}`}>
       {Array.from({ length: count }).map((_, index) => (
         <div
+          data-testid="data-card-skeleton"
           key={`data-card-skeleton-${index}`}
           className="rounded-xl border border-[#E6ECF2] bg-white p-3.5 shadow-xs"
         >
           <div className="flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 animate-sibs-pulse rounded-full bg-[#E6ECF2]" />
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
               <div className="space-y-1.5">
-                <div className="h-3.5 w-28 animate-sibs-pulse rounded bg-[#E6ECF2]" />
-                <div className="h-2.5 w-16 animate-sibs-pulse rounded bg-[#E6ECF2]" />
+                {Array.from({ length: lineCount }).map((__, lineIndex) => (
+                  <Skeleton
+                    key={`line-${lineIndex}`}
+                    data-slot="data-card-line"
+                    className={
+                      lineIndex === 0
+                        ? "h-3.5 w-28"
+                        : lineIndex === 1
+                        ? "h-2.5 w-16"
+                        : "h-2.5 w-24"
+                    }
+                  />
+                ))}
               </div>
             </div>
-            <div className="h-5 w-16 animate-sibs-pulse rounded-full bg-[#E6ECF2]" />
+            <Skeleton className="h-5 w-16 rounded-full" />
           </div>
           <div className="mt-3 grid grid-cols-4 gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-2">
             {Array.from({ length: 4 }).map((__, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
-                <div className="h-2 w-8 animate-sibs-pulse rounded bg-[#E6ECF2]" />
-                <div className="h-3 w-6 animate-sibs-pulse rounded bg-[#E6ECF2]" />
+                <Skeleton className="h-2 w-8" />
+                <Skeleton className="h-3 w-6" />
               </div>
             ))}
           </div>

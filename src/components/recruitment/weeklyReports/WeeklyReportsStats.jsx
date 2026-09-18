@@ -1,3 +1,4 @@
+import React from "react";
 import {
   AlertTriangle,
   Archive,
@@ -7,8 +8,29 @@ import {
   ListChecks,
 } from "lucide-react";
 import SummaryCard from "./SummaryCard.jsx";
+import { MetricGridSkeleton } from "@/components/ui";
 
-export default function WeeklyReportsStats({ stats }) {
+const STAT_LABELS = [
+  "Total Reports",
+  "Generated",
+  "Sent",
+  "Archived",
+  "Action Items",
+  "Missing Data",
+];
+
+export default function WeeklyReportsStats({ stats, loading = false }) {
+  if (loading) {
+    return (
+      <MetricGridSkeleton
+        count={6}
+        labels={STAT_LABELS}
+        className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
+        ariaLabel="Loading weekly report metrics"
+      />
+    );
+  }
+
   const current = stats?.current || null;
 
   return (

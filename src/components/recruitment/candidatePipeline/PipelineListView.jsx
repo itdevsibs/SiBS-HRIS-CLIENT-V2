@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import CandidateAvatar from "./CandidateAvatar";
 import PipelineStageTabs, { PIPELINE_STAGE_TABS } from "./PipelineStageTabs";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 import PipelineMobileCard from "./PipelineMobileCard";
 
 function getCandidateActions(candidate) {
@@ -159,8 +159,11 @@ const PipelineListView = ({
   onOpenScheduleModal,
   onCancelInterview,
   onCompleteInterview,
+  isLoading = false,
 }) => {
-  const [selectedTab, setSelectedTab] = useState(PIPELINE_STAGE_TABS.ALL);
+  const [selectedTab, setSelectedTab] = useState(
+    activeStage && activeStage !== "All" ? activeStage : PIPELINE_STAGE_TABS.ALL,
+  );
 
   const tabCounts = useMemo(() => {
     const list = Array.isArray(candidates) ? candidates : [];
@@ -234,7 +237,7 @@ const PipelineListView = ({
       />
 
       <div className="p-4 sm:p-5 2xl:p-6">
-        {!visibleCandidates.length ? (
+        {!isLoading && !visibleCandidates.length ? (
           <DataCard.Empty
             icon={<UsersRound size={28} />}
             title={`No candidates found in ${selectedTab}`}
@@ -243,21 +246,25 @@ const PipelineListView = ({
         ) : (
           <ResponsiveTableShell
             mobileContent={
-              <div className="space-y-3">
-                {visibleCandidates.map((candidate, index) => (
-                  <PipelineMobileCard
-                    key={candidate.id || `${candidate.name}-${index}`}
-                    candidate={candidate}
-                    index={index}
-                    onViewCandidate={openCandidate}
-                    onOpenMoveModal={onOpenMoveModal}
-                    onOpenAssessmentModal={onOpenAssessmentModal}
-                    onOpenScheduleModal={onOpenScheduleModal}
-                    onCancelInterview={onCancelInterview}
-                    onCompleteInterview={onCompleteInterview}
-                  />
-                ))}
-              </div>
+              isLoading ? (
+                <DataCard.Skeleton count={4} lines={3} className="space-y-3" />
+              ) : (
+                <div className="space-y-3">
+                  {visibleCandidates.map((candidate, index) => (
+                    <PipelineMobileCard
+                      key={candidate.id || `${candidate.name}-${index}`}
+                      candidate={candidate}
+                      index={index}
+                      onViewCandidate={openCandidate}
+                      onOpenMoveModal={onOpenMoveModal}
+                      onOpenAssessmentModal={onOpenAssessmentModal}
+                      onOpenScheduleModal={onOpenScheduleModal}
+                      onCancelInterview={onCancelInterview}
+                      onCompleteInterview={onCompleteInterview}
+                    />
+                  ))}
+                </div>
+              )
             }
             desktopContent={
               <div className="sibs-data-table-shell overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
@@ -288,11 +295,14 @@ const PipelineListView = ({
                   </thead>
 
                   <tbody className="divide-y divide-[#F1F5F9]">
-                    {visibleCandidates.map((candidate, index) => {
-                      const currentStage =
-                        candidate.currentStage ||
-                        candidate.stage ||
-                        "Initial Screening";
+                    {isLoading ? (
+                      <TableSkeletonRows count={8} columns={8} />
+                    ) : (
+                      visibleCandidates.map((candidate, index) => {
+                        const currentStage =
+                          candidate.currentStage ||
+                          candidate.stage ||
+                          "Initial Screening";
                       const interviewStatus =
                         getDisplayInterviewStatus(candidate);
 
@@ -415,7 +425,8 @@ const PipelineListView = ({
                           </td>
                         </tr>
                       );
-                    })}
+                    })
+                  )}
                   </tbody>
                 </table>
               </div>

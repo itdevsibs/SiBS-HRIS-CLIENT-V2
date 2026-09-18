@@ -382,7 +382,7 @@ export const OnboardingProvider = ({ children }) => {
   const [list, setList] = useState([]);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [loadError, setLoadError] = useState("");

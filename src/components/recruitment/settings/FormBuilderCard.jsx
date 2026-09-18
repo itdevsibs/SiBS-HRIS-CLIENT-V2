@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -24,6 +24,7 @@ import { useRecruitmentSettings } from "../../../services/context/RecruitmentSet
 import StatusModal from "../../modals/StatusModal";
 import RichTextEditor from "../../modals/jobDescription/RichTextEditor";
 import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
+import { TableSkeletonRows } from "@/components/ui";
 
 const FORM_STATUS_OPTIONS = ["Active", "Inactive", "Draft"];
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
@@ -274,13 +275,7 @@ export default function FormBuilderCard() {
       )
     : 0;
 
-  useEffect(() => {
-    setFormsPage(1);
-  }, [formsSearch, statusFilter]);
 
-  useEffect(() => {
-    setFormsPage((previous) => Math.min(previous, formsTotalPages));
-  }, [formsTotalPages]);
 
   const groupedSections = useMemo(() => groupFieldsBySection(fields), [fields]);
   const typeOptions = useMemo(
@@ -454,7 +449,10 @@ export default function FormBuilderCard() {
               />
               <input
                 value={formsSearch}
-                onChange={(event) => setFormsSearch(event.target.value)}
+                onChange={(event) => {
+                  setFormsSearch(event.target.value);
+                  setFormsPage(1);
+                }}
                 className="h-10 w-full rounded-[10px] border border-[#D6DEE8] bg-white px-4 pl-11 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
                 placeholder="Search forms by role title, position code, department..."
               />
@@ -468,7 +466,10 @@ export default function FormBuilderCard() {
             <div className="relative">
               <select
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
+                onChange={(event) => {
+                  setStatusFilter(event.target.value);
+                  setFormsPage(1);
+                }}
                 className="h-10 w-full appearance-none rounded-[10px] border border-[#D6DEE8] bg-white px-4 pr-10 text-xs font-extrabold text-sibs-primary-1 outline-none transition hover:border-[#BFD8F1] focus:border-[#BFD8F1] focus:ring-4 focus:ring-[#EFF6FF]"
               >
                 {TABLE_STATUS_OPTIONS.map((status) => (
@@ -605,14 +606,7 @@ export default function FormBuilderCard() {
                 })}
 
                 {positionsLoading && !formsForTable.length && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-14 text-center">
-                      <div className="inline-flex items-center gap-2 text-sm font-extrabold text-sibs-primary-1">
-                        <Loader2 size={18} className="animate-spin" />
-                        Loading final interview forms...
-                      </div>
-                    </td>
-                  </tr>
+                  <TableSkeletonRows count={5} columns={7} />
                 )}
 
                 {!positionsLoading && !formsForTable.length && (

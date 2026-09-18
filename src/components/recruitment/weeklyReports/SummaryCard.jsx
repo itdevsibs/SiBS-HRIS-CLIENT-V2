@@ -1,12 +1,14 @@
+import React from "react";
+
 export default function SummaryCard({
   title,
   value,
-  icon: Icon,
+  icon,
   description,
   tone = "navy",
-  badge = null,
   delay = 0,
 }) {
+  const Icon = icon;
   const toneMap = {
     navy: {
       label: "text-[#042C51]",

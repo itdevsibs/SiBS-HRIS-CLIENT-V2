@@ -1,4 +1,4 @@
-import { Layers3 } from "lucide-react";
+import React from "react";
 import WeeklyReportsFilters from "./WeeklyReportsFilters.jsx";
 import WeeklyReportsPagination from "./WeeklyReportsPagination.jsx";
 import WeeklyReportsTable from "./WeeklyReportsTable.jsx";
@@ -12,6 +12,7 @@ export default function WeeklyReportsList({
   totalPages,
   showingFrom,
   showingTo,
+  loading = false,
   onSearchChange,
   onStatusChange,
   onClearFilters,
@@ -51,7 +52,7 @@ export default function WeeklyReportsList({
       </header>
 
       <div className="min-h-0 flex-1 space-y-3.5 p-4 font-jakarta sm:space-y-4 sm:p-5 2xl:space-y-5 2xl:p-6">
-        <WeeklyReportsTable reports={paginatedReports} onView={onViewReport} />
+        <WeeklyReportsTable reports={paginatedReports} onView={onViewReport} loading={loading} />
 
         <WeeklyReportsPagination
           currentPage={currentPage}

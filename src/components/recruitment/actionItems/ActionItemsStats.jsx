@@ -9,8 +9,12 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useActionItemsReport } from "../../../services/context/ActionItemsReportContext.jsx";
+import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
+import { usePagination } from "../../../services/context/PaginationContext.jsx";
+import { MetricGridSkeleton } from "@/components/ui";
 
-function SummaryCard({ title, value, icon: Icon, description, tone = "navy", delay = 0, featured = false }) {
+function SummaryCard({ title, value, icon, description, tone = "navy", delay = 0, featured = false }) {
+  const Icon = icon;
   return (
     <article
       className={`sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-2.5 2xl:p-3.5 font-jakarta ${
@@ -59,8 +63,38 @@ function SummaryCard({ title, value, icon: Icon, description, tone = "navy", del
   );
 }
 
-export default function ActionItemsStats() {
+const METRIC_LABELS = [
+  "At-Risk Accounts",
+  "Missing Action",
+  "Planned",
+  "Ongoing",
+  "Overdue",
+  "Completed",
+  "System Suggested",
+];
+
+export default function ActionItemsStats({ loading: explicitLoading }) {
   const { executionMetrics } = useActionItemsReport();
+  const actionItemsContext = useActionItems() || {};
+  const pagination = usePagination("action-items");
+
+  const isLoading =
+    explicitLoading !== undefined
+      ? explicitLoading
+      : actionItemsContext?.loading ?? pagination?.loading ?? false;
+
+  if (isLoading) {
+    return (
+      <section>
+        <MetricGridSkeleton
+          count={7}
+          labels={METRIC_LABELS}
+          className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7"
+          ariaLabel="Loading action item metrics"
+        />
+      </section>
+    );
+  }
 
   return (
     <section>

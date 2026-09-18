@@ -1,11 +1,117 @@
+import React from "react";
 import { ArrowRight, FileText, Mail } from "lucide-react";
+import { Skeleton } from "@/components/ui";
 
 function toNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export default function WeeklyReportSnapshot({ report, onViewReport }) {
+export default function WeeklyReportSnapshot({ report, onViewReport, loading = false }) {
+  if (loading) {
+    return (
+      <section
+        data-testid="weekly-report-snapshot-skeleton"
+        role="status"
+        aria-label="Loading active week snapshot"
+        className="sibs-page-card-in relative overflow-hidden rounded-xl 2xl:rounded-2xl border border-[#083A69] bg-[#042C51] text-white shadow-md font-jakarta"
+        style={{ animationDelay: "120ms", animationFillMode: "both" }}
+      >
+        <div
+          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#FF5C28]/15 blur-3xl"
+          aria-hidden="true"
+        />
+
+        <div className="relative z-10 border-b border-white/10 px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-md bg-[#FF5C28] px-2.5 py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm">
+                Active Week Snapshot
+              </span>
+              <Skeleton className="h-4 w-32 bg-white/20" />
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="sibs-text-micro font-semibold text-blue-200">Report ID:</span>
+              <Skeleton className="h-4 w-24 bg-white/20" />
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 grid grid-cols-1 gap-3.5 p-3.5 sm:gap-4 sm:p-4 2xl:gap-5 2xl:p-5 xl:grid-cols-[1.05fr_1.25fr_0.9fr]">
+          <div className="rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+            <div className="grid grid-cols-3 divide-x divide-white/10">
+              <div className="px-2 text-center">
+                <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-blue-200">
+                  Target Requirement
+                </p>
+                <div className="mt-1 flex justify-center">
+                  <Skeleton className="h-7 w-12 bg-white/20 2xl:h-8" />
+                </div>
+              </div>
+
+              <div className="px-2 text-center">
+                <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-emerald-300">
+                  Total Filled
+                </p>
+                <div className="mt-1 flex justify-center">
+                  <Skeleton className="h-7 w-12 bg-white/20 2xl:h-8" />
+                </div>
+              </div>
+
+              <div className="px-2 text-center">
+                <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-rose-300">
+                  Total Drop-offs
+                </p>
+                <div className="mt-1 flex justify-center">
+                  <Skeleton className="h-7 w-12 bg-white/20 2xl:h-8" />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 border-t border-white/10 pt-3">
+              <div className="mb-1.5 flex items-center justify-between sibs-text-micro font-bold text-blue-100">
+                <span>Headcount Fulfillment</span>
+                <Skeleton className="h-3 w-8 bg-white/20" />
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <Skeleton className="h-full w-full bg-white/20" />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+            <p className="flex items-center gap-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-blue-200">
+              <FileText size={13} className="text-[#FF5C28]" />
+              Current Week Narrative Summary
+            </p>
+
+            <div className="mt-2 space-y-2">
+              <Skeleton className="h-3 w-full bg-white/20" />
+              <Skeleton className="h-3 w-5/6 bg-white/20" />
+              <Skeleton className="h-3 w-4/6 bg-white/20" />
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-between rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+            <div>
+              <p className="flex items-center gap-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-[#FF8C66]">
+                <Mail size={13} />
+                Management Email Digest
+              </p>
+
+              <div className="mt-2 space-y-1.5">
+                <Skeleton className="h-3 w-full bg-white/20" />
+                <Skeleton className="h-3 w-3/4 bg-white/20" />
+              </div>
+            </div>
+
+            <Skeleton className="mt-3 h-8.5 w-36 rounded-lg bg-white/20 2xl:h-10" />
+          </div>
+        </div>
+      </section>
+    );
+  }
   const requirement = toNumber(report?.totalRequirement);
   const filled = toNumber(report?.totalFilled);
   const dropOffs = toNumber(report?.dropOffs);

@@ -1217,6 +1217,18 @@
     @apply min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6 lg:p-7;
   }
 
+  .sibs-dashboard-header {
+    @apply sticky top-0 z-[70] flex h-[74px] 2xl:h-[86px] shrink-0 items-center border-b border-sibs-border-subtle bg-sibs-surface px-4 font-jakarta shadow-xs sm:px-6 lg:px-7;
+  }
+
+  .sibs-dashboard-header-inner {
+    @apply mx-auto flex h-full w-full max-w-[1700px] min-w-0 flex-1 items-center justify-between gap-2 sm:gap-3 2xl:gap-4;
+  }
+
+  .sibs-dashboard-header-skeleton {
+    @apply h-[86px] shrink-0 border-b border-sibs-border-subtle bg-white px-4 shadow-sm sm:px-6 lg:px-7;
+  }
+
   .sibs-top-accent {
     @apply pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 overflow-hidden rounded-t-[15px];
   }

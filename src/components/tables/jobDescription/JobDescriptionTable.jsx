@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -12,7 +11,12 @@ import { useNavigate } from "react-router-dom";
 
 import { usePagination } from "../../../services/context/PaginationContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
-import { DataCard, ResponsiveTableShell, StatusFilterTabs } from "@/components/ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  StatusFilterTabs,
+  TableSkeletonRows,
+} from "@/components/ui";
 
 const JOB_DESCRIPTION_ENTITY = "job-descriptions";
 const PAGE_LIMIT = 15;
@@ -455,6 +459,7 @@ JOB DESCRIPTION TABLE
 export default function JobDescriptionTable({
   jobDescriptionList = [],
   canApproveJobDescriptions = false,
+  loading = false,
 }) {
   const navigate = useNavigate();
 
@@ -560,12 +565,10 @@ export default function JobDescriptionTable({
   APPROVAL TAB ACCESS
   ===================================================== */
 
-  useEffect(() => {
-    if (!canApproveJobDescriptions && selectedStatusTab === "approval") {
-      setSelectedStatusTab("all");
-      setCurrentPage(1);
-    }
-  }, [canApproveJobDescriptions, selectedStatusTab]);
+  const effectiveStatusTab =
+    !canApproveJobDescriptions && selectedStatusTab === "approval"
+      ? "all"
+      : selectedStatusTab;
 
   /* =====================================================
   FILTERED LIST
@@ -609,7 +612,7 @@ export default function JobDescriptionTable({
         supervisoryFilter === "All Levels" ||
         supervisoryLevel === supervisoryFilter;
 
-      const matchesTab = matchesStatusTab(status, selectedStatusTab);
+      const matchesTab = matchesStatusTab(status, effectiveStatusTab);
 
       return (
         matchesSearch &&
@@ -622,9 +625,9 @@ export default function JobDescriptionTable({
   }, [
     accountFilter,
     departmentFilter,
+    effectiveStatusTab,
     jobDescriptionList,
     searchTerm,
-    selectedStatusTab,
     supervisoryFilter,
   ]);
 
@@ -802,7 +805,7 @@ export default function JobDescriptionTable({
           ================================================= */}
           <StatusFilterTabs
             tabs={visibleStatusTabs}
-            activeValue={selectedStatusTab}
+            activeValue={effectiveStatusTab}
             counts={statusCounts}
             onChange={(tabKey) => updateFilter(setSelectedStatusTab, tabKey)}
             layoutId="jdActiveTabIndicator"
@@ -814,7 +817,9 @@ export default function JobDescriptionTable({
 
           <ResponsiveTableShell
             mobileContent={
-              paginatedList.length > 0 ? (
+              loading ? (
+                <DataCard.Skeleton count={4} lines={2} className="p-3.5 sm:p-4" />
+              ) : paginatedList.length > 0 ? (
                 <div className="space-y-3 p-3.5 sm:p-4">
                   {paginatedList.map((item) => (
                     <JobDescriptionMobileCard
@@ -870,10 +875,15 @@ export default function JobDescriptionTable({
                   </thead>
 
                   <tbody
-                    key={selectedStatusTab}
+                    key={effectiveStatusTab}
                     className="divide-y divide-[#E6ECF2]"
                   >
-                    {paginatedList.length > 0 ? (
+                    {loading ? (
+                      <TableSkeletonRows
+                        count={PAGE_LIMIT}
+                        columns={5}
+                      />
+                    ) : paginatedList.length > 0 ? (
                       paginatedList.map((item, index) => {
                         const status = getRealJdStatus(item);
 

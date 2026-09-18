@@ -1,3 +1,4 @@
+import React from "react";
 import {
   BriefcaseBusiness,
   CheckCircle2,
@@ -8,6 +9,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import ModuleSignalCard from "./ModuleSignalCard.jsx";
+import { MetricGridSkeleton } from "@/components/ui";
 
 const ICONS = {
   publicTalentPool: UsersRound,
@@ -28,7 +30,32 @@ const TONES = {
   talentPool: "purple",
 };
 
-export default function WeeklyReportsModuleSignals({ items }) {
+const MODULE_LABELS = [
+  "Hiring Needs",
+  "Candidate Pipeline",
+  "Offers",
+  "Onboarding",
+  "Action Items",
+  "Talent Pool",
+];
+
+export default function WeeklyReportsModuleSignals({ items, loading = false }) {
+  if (loading) {
+    return (
+      <section
+        className="sibs-page-card-in font-jakarta"
+        style={{ animationDelay: "180ms", animationFillMode: "both" }}
+      >
+        <MetricGridSkeleton
+          count={6}
+          labels={MODULE_LABELS}
+          className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6"
+          ariaLabel="Loading module signals"
+        />
+      </section>
+    );
+  }
+
   const safeItems = Array.isArray(items) ? items : [];
   const publicTalentPool = safeItems.find((item) => item.iconKey === "publicTalentPool");
 

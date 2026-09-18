@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { AlertCircle, LoaderCircle, UsersRound } from "lucide-react";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import React, { useMemo, useState } from "react";
+import { AlertCircle, UsersRound } from "lucide-react";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
@@ -74,14 +74,17 @@ export default function TalentPoolTable({
   emptyTitle = "No candidate profiles found",
   emptyMessage = "Try changing or clearing the current search filters.",
   recordLabel = "candidate profiles",
+  loading: loadingProp,
 }) {
   const {
     filteredCandidates,
     setSelectedCandidate,
     statusFilter,
-    isLoading,
+    isLoading: contextIsLoading,
     loadError,
   } = useTalentPool();
+
+  const isLoading = loadingProp !== undefined ? loadingProp : contextIsLoading;
 
   const [pageState, setPageState] = useState({
     key: "",
@@ -152,19 +155,8 @@ export default function TalentPoolTable({
 
   return (
     <div className="font-jakarta">
-      {isLoading ? (
-        <div className="py-4">
-          <TableState
-            icon={LoaderCircle}
-            title="Loading candidates"
-            message="Retrieving current candidate profiles from the database."
-            spin
-          />
-        </div>
-      ) : null}
-
-      {!isLoading && loadError ? (
-        <div className="py-4">
+      {loadError ? (
+        <div className="p-4">
           <TableState
             icon={AlertCircle}
             title="Candidate directory unavailable"
@@ -172,14 +164,14 @@ export default function TalentPoolTable({
             tone="error"
           />
         </div>
-      ) : null}
-
-      {!isLoading && !loadError ? (
+      ) : (
         <>
           <div className="overflow-hidden bg-white">
             <ResponsiveTableShell
               mobileContent={
-                paginatedCandidates.length > 0 ? (
+                isLoading ? (
+                  <DataCard.Skeleton count={4} lines={3} className="p-3.5 sm:p-4" />
+                ) : paginatedCandidates.length > 0 ? (
                   <div className="space-y-3 p-3.5 sm:p-4">
                     {paginatedCandidates.map((candidate, index) => (
                       <TalentPoolMobileCard
@@ -222,7 +214,9 @@ export default function TalentPoolTable({
                 </thead>
 
                 <tbody key={statusFilter || "All"}>
-                  {paginatedCandidates.length > 0 ? (
+                  {isLoading ? (
+                    <TableSkeletonRows count={10} columns={5} />
+                  ) : paginatedCandidates.length > 0 ? (
                     paginatedCandidates.map((candidate, index) => {
                       const appliedPosition =
                         candidate.openPosition ||
@@ -431,7 +425,7 @@ export default function TalentPoolTable({
             className="border-0 bg-transparent p-0 shadow-none"
           />
         </>
-      ) : null}
+      )}
     </div>
   );
 }

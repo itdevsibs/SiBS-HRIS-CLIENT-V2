@@ -1,12 +1,17 @@
 import React, { Suspense, lazy } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import NotFound from "@/pages/NotFound";
 import LoginPage from "./pages/login/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PageFallback from "@/components/ui/PageFallback";
+import { PublicRouteFallback } from "@/components/ui";
 import { useUser } from "./services/context/UserContext";
 import { getDefaultDashboardPath } from "./config/accessControl";
+import {
+  isPublicApplicationHostname,
+  isPublicOrExternalRoute,
+} from "./config/publicRoutes";
 
 function lazyWithRetry(componentImport) {
   return lazy(async () => {
@@ -82,39 +87,6 @@ const AccountSettingsPage = lazyWithRetry(() => import("./pages/Settings/Account
 // Administration
 const DepartmentsPage = lazyWithRetry(() => import("./pages/administration/DepartmentsPage"));
 const OfficeLocationsPage = lazyWithRetry(() => import("./pages/administration/OfficeLocationsPage"));
-
-const DEFAULT_PUBLIC_APPLICATION_HOST = "sibsapply.getleadsource.com";
-
-function normalizeHostname(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/\/.*$/, "")
-    .replace(/:\d+$/, "");
-}
-
-function getPublicApplicationHosts() {
-  const configuredHosts =
-    import.meta.env.VITE_PUBLIC_APPLICATION_HOSTS ||
-    import.meta.env.VITE_PUBLIC_APPLICATION_HOST ||
-    DEFAULT_PUBLIC_APPLICATION_HOST;
-
-  return String(configuredHosts)
-    .split(",")
-    .map(normalizeHostname)
-    .filter(Boolean);
-}
-
-export function isPublicApplicationHostname(hostname) {
-  const normalizedHostname = normalizeHostname(hostname);
-
-  if (!normalizedHostname) {
-    return false;
-  }
-
-  return getPublicApplicationHosts().includes(normalizedHostname);
-}
 
 function PrivateRoute({ children }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
@@ -627,11 +599,17 @@ function MainApplicationRoutes() {
 }
 
 export default function Router() {
+  const location = useLocation();
   const hostname =
     typeof window !== "undefined" ? window.location.hostname : "";
+  const isPublic = isPublicOrExternalRoute(location.pathname, hostname);
 
   return (
-    <Suspense fallback={<PageFallback />}>
+    <Suspense
+      fallback={
+        isPublic ? <PublicRouteFallback /> : <PageFallback showHeader />
+      }
+    >
       {isPublicApplicationHostname(hostname) ? (
         <PublicApplicationRoutes />
       ) : (

@@ -55,7 +55,7 @@ export default function ViewJobDescriptionDetailsModal({
   } = useJobDescription();
 
   const item = selectedJobDescription;
-  const hasRevisionComments = revisionComments.length > 0;
+  const hasRevisionComments = (revisionComments || []).length > 0;
 
   const primaryButtonLabel = hasRevisionComments
     ? "Save"

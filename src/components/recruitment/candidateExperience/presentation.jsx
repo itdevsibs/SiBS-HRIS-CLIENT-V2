@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+import React from "react";
 import { getSurveyStatusLabel, getResponseSourceLabel } from "@/lib/utils/candidateExperience/index.js";
 
 export function formatExperienceDate(value) {

@@ -9,7 +9,16 @@ import {
 
 import ReasonForHiringTable from "../../tables/HiringNeeds/ReasonForHiringTable";
 import RequisitionByDepartmentTable from "../../tables/HiringNeeds/RequisitionByDepartmentTable";
+import { MetricGridSkeleton } from "@/components/ui";
 import { useHiringNeeds } from "@/services/context/HiringNeedsContext";
+
+const HIRING_NEEDS_METRIC_LABELS = [
+  "Total PRF",
+  "Headcount",
+  "For Approval",
+  "Approved",
+  "Not Approved",
+];
 
 function getStatValue(stats, key) {
   const value = Number(stats?.[key] || 0);
@@ -94,30 +103,42 @@ function MetricCard({ item, value, delay = 0 }) {
 export default function HiringNeedsStats() {
   const {
     stats,
+    loading,
     requisitionByReason,
     requisitionByDepartment,
   } = useHiringNeeds();
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {metricConfig.map((item, index) => (
-          <MetricCard
-            key={item.key}
-            item={item}
-            value={getStatValue(stats, item.key)}
-            delay={index * 60}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <MetricGridSkeleton
+          count={5}
+          labels={HIRING_NEEDS_METRIC_LABELS}
+          ariaLabel="Loading hiring needs metrics"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5"
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          {metricConfig.map((item, index) => (
+            <MetricCard
+              key={item.key}
+              item={item}
+              value={getStatValue(stats, item.key)}
+              delay={index * 60}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <ReasonForHiringTable
           data={requisitionByReason}
+          loading={loading}
           delay={metricConfig.length * 60}
         />
         <RequisitionByDepartmentTable
           data={requisitionByDepartment}
+          loading={loading}
           delay={(metricConfig.length + 1) * 60}
         />
       </div>

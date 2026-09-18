@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Ban,
   BriefcaseBusiness,
@@ -6,6 +7,7 @@ import {
   UserCheck,
   UsersRound,
 } from "lucide-react";
+import { MetricGridSkeleton } from "@/components/ui";
 import { useTalentPool } from "@/services/context/TalentPoolContext";
 
 function StatCard({
@@ -54,8 +56,29 @@ function StatCard({
   );
 }
 
-export default function TalentPoolStats() {
-  const { stats } = useTalentPool();
+const STAT_TITLES = [
+  "Total Candidates",
+  "Silver Pool",
+  "Recyclable",
+  "Do Not Reprocess",
+  "Hired / Active",
+  "Public Entries",
+];
+
+export default function TalentPoolStats({ loading: loadingProp }) {
+  const { stats, isLoading } = useTalentPool();
+  const loading = loadingProp !== undefined ? loadingProp : isLoading;
+
+  if (loading) {
+    return (
+      <MetricGridSkeleton
+        count={6}
+        labels={STAT_TITLES}
+        className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
+        ariaLabel="Loading talent pool metrics"
+      />
+    );
+  }
 
   return (
     <section aria-labelledby="talent-pool-summary-title">

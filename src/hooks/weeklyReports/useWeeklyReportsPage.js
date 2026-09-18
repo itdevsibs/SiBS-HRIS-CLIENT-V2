@@ -39,6 +39,7 @@ export default function useWeeklyReportsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [liveRecords, setLiveRecords] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [savedReports, setSavedReports] = useState(() => {
     return safeReadArray(WEEKLY_REPORTS_STORAGE_KEY, []);
@@ -201,6 +202,8 @@ export default function useWeeklyReportsPage() {
       });
     } catch (err) {
       console.error("Failed to load live weekly report data:", err);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -441,6 +444,7 @@ export default function useWeeklyReportsPage() {
     stats,
     moduleSignalCards,
     isManualRefreshing,
+    isLoading,
     handlePageChange,
     handleGenerateCurrentWeek,
     handleMarkSent,

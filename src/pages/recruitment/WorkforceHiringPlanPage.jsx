@@ -1,3 +1,4 @@
+import React from "react";
 import Header from "../../components/layout/Header";
 import WorkforceHiringPlanHeader from "../../components/recruitment/workforceHiringPlan/WorkforceHiringPlanHeader";
 import WorkforceHiringPlanTables from "../../components/recruitment/workforceHiringPlan/WorkforceHiringPlanTables";

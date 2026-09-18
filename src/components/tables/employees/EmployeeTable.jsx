@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion as Motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import {
@@ -17,7 +17,12 @@ import { useUser } from "@/services/context/UserContext";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "@/lib/utils/employees/employeeNameDisplay.js";
 import { usePagination } from "@/services/context/PaginationContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
-import { DataCard, ResponsiveTableShell, StatusFilterTabs } from "@/components/ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  StatusFilterTabs,
+  TableSkeletonRows,
+} from "@/components/ui";
 
 const ENTITY = "employees";
 const PAGE_LIMIT = 15;
@@ -1003,13 +1008,13 @@ export default function EmployeeTable({
   ]);
 
   useEffect(() => {
-    tableScrollRef.current?.scrollTo({
+    tableScrollRef.current?.scrollTo?.({
       top: 0,
       left: 0,
       behavior: "smooth",
     });
 
-    mobileScrollRef.current?.scrollTo({
+    mobileScrollRef.current?.scrollTo?.({
       top: 0,
       left: 0,
       behavior: "smooth",
@@ -1272,13 +1277,11 @@ export default function EmployeeTable({
                     className="divide-y divide-[#EEF2F6]"
                   >
                     {loading ? (
-                      Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                        <tr key={`employee-skeleton-${index}`}>
-                          <td colSpan={columns.length} className="px-3 2xl:px-4 py-3">
-                            <div className="h-6 w-full animate-sibs-pulse rounded bg-slate-100" />
-                          </td>
-                        </tr>
-                      ))
+                      <TableSkeletonRows
+                        count={PAGE_LIMIT}
+                        columns={columns.length}
+                        cellClassName="px-3 2xl:px-4 py-3 align-middle"
+                      />
                     ) : employees.length === 0 ? (
                       <tr>
                         <td colSpan={columns.length}>

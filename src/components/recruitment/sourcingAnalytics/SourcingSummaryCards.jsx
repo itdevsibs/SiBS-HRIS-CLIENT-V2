@@ -6,6 +6,7 @@ import {
   UserCheck,
   UsersRound,
 } from "lucide-react";
+import { MetricGridSkeleton } from "@/components/ui";
 
 function formatCurrency(value) {
   const amount = Number(value || 0);
@@ -123,7 +124,19 @@ function MetricCard({
 
 export default function SourcingSummaryCards({
   totals,
+  loading = false,
 }) {
+  if (loading) {
+    return (
+      <MetricGridSkeleton
+        count={5}
+        labels={metricConfig.map((item) => item.title)}
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
+        ariaLabel="Loading sourcing analytics metrics"
+      />
+    );
+  }
+
   return (
     <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {metricConfig.map((item, index) => (

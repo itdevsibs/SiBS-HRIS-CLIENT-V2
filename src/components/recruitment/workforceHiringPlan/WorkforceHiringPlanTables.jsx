@@ -32,7 +32,10 @@ export default function WorkforceHiringPlanTables() {
   return (
     <div className="space-y-4 sm:space-y-5">
       <section className="relative z-[30] sibs-page-card-in">
-        <ForecastWorkforceHiringOverviewSummary rows={forecastSnapshot.rows} />
+        <ForecastWorkforceHiringOverviewSummary
+          rows={forecastSnapshot.rows}
+          loading={forecastSnapshot.loading}
+        />
       </section>
 
       <section

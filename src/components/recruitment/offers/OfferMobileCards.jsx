@@ -11,6 +11,7 @@ import { useOffers } from "../../../services/context/OffersContext";
 export default function OfferMobileCards({
   offersOverride = null,
   emptyMessage = "No offered candidates found from Candidate Pipeline.",
+  isLoading = false,
 }) {
   const {
     filteredOffers = [],
@@ -32,6 +33,16 @@ export default function OfferMobileCards({
             __openSection: section,
           }
         : offer,
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <DataCard.Skeleton
+        count={4}
+        lines={3}
+        className="space-y-3 font-jakarta"
+      />
     );
   }
 

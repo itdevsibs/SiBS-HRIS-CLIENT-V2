@@ -12,7 +12,6 @@ import {
   ClipboardCheck,
   ChevronDown,
   RefreshCw,
-  Loader2,
   Users,
   LayoutGrid,
   List,
@@ -34,7 +33,7 @@ import {
   filterDropOffCandidates,
   isDropOffCandidate,
 } from "../../lib/utils/recruitment/dropOffCandidates";
-import { PageHeaderHero } from "@/components/ui";
+import { PageHeaderHero, MetricGridSkeleton } from "@/components/ui";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -452,30 +451,6 @@ function PipelineMetricCard({ label, value, description, icon: Icon, tone = "nav
   );
 }
 
-function LoadingPipelineBoard() {
-  return (
-    <section className="sibs-page-card-in sibs-card overflow-hidden">
-      <div className="border-b border-[#E6ECF2] px-4 py-3.5 sm:px-5">
-        <h2 className="sibs-section-title">Candidate Pipeline</h2>
-        <p className="sibs-section-subtitle">Loading current pipeline records.</p>
-      </div>
-
-      <div className="flex min-h-[360px] items-center justify-center p-8">
-        <div className="flex flex-col items-center text-center">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 bg-[#E9F0FC] text-[#042C51]">
-            <Loader2 size={20} className="animate-spin" />
-          </div>
-          <p className="mt-3 sibs-text-sm font-extrabold text-[#042C51]">
-            Loading candidate pipeline...
-          </p>
-          <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
-            Preparing the latest recruitment records.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 export default function CandidatePipelinePage() {
   const {
@@ -787,56 +762,72 @@ export default function CandidatePipelinePage() {
             </section>
           ) : null}
 
-          <section aria-label="Pipeline Summary" className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6">
-            <PipelineMetricCard
-              label="Initial Screening"
-              value={safeMetrics.initialScreening}
-              icon={UserCheck}
-              description="PRF match review"
-              tone="navy"
-              delay={0}
+          {isLoading ? (
+            <MetricGridSkeleton
+              count={6}
+              labels={[
+                "Initial Screening",
+                "Online Assessment",
+                "Interview Scheduled",
+                "Interviewed",
+                "Offered",
+                "Accepted",
+              ]}
+              className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
+              ariaLabel="Loading pipeline metrics"
             />
-            <PipelineMetricCard
-              label="Online Assessment"
-              value={safeMetrics.onlineAssessment}
-              icon={ClipboardCheck}
-              description="Matched candidates"
-              tone="indigo"
-              delay={60}
-            />
-            <PipelineMetricCard
-              label="Interview Scheduled"
-              value={safeMetrics.interviewScheduled}
-              icon={CalendarDays}
-              description="Booked sessions"
-              tone="blue"
-              delay={120}
-            />
-            <PipelineMetricCard
-              label="Interviewed"
-              value={safeMetrics.interviewed}
-              icon={ShieldCheck}
-              description="Evaluations complete"
-              tone="green"
-              delay={180}
-            />
-            <PipelineMetricCard
-              label="Offered"
-              value={safeMetrics.offered}
-              icon={BriefcaseBusiness}
-              description="Offers processing"
-              tone="amber"
-              delay={240}
-            />
-            <PipelineMetricCard
-              label="Accepted"
-              value={safeMetrics.accepted}
-              icon={UserCheck}
-              description="Ready for NHO"
-              tone="orange"
-              delay={300}
-            />
-          </section>
+          ) : (
+            <section aria-label="Pipeline Summary" className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6">
+              <PipelineMetricCard
+                label="Initial Screening"
+                value={safeMetrics.initialScreening}
+                icon={UserCheck}
+                description="PRF match review"
+                tone="navy"
+                delay={0}
+              />
+              <PipelineMetricCard
+                label="Online Assessment"
+                value={safeMetrics.onlineAssessment}
+                icon={ClipboardCheck}
+                description="Matched candidates"
+                tone="indigo"
+                delay={60}
+              />
+              <PipelineMetricCard
+                label="Interview Scheduled"
+                value={safeMetrics.interviewScheduled}
+                icon={CalendarDays}
+                description="Booked sessions"
+                tone="blue"
+                delay={120}
+              />
+              <PipelineMetricCard
+                label="Interviewed"
+                value={safeMetrics.interviewed}
+                icon={ShieldCheck}
+                description="Evaluations complete"
+                tone="green"
+                delay={180}
+              />
+              <PipelineMetricCard
+                label="Offered"
+                value={safeMetrics.offered}
+                icon={BriefcaseBusiness}
+                description="Offers processing"
+                tone="amber"
+                delay={240}
+              />
+              <PipelineMetricCard
+                label="Accepted"
+                value={safeMetrics.accepted}
+                icon={UserCheck}
+                description="Ready for NHO"
+                tone="orange"
+                delay={300}
+              />
+            </section>
+          )}
 
           <section
             className="sibs-page-card-in sibs-card relative z-[40] overflow-visible p-3 sm:p-4 2xl:p-5"
@@ -981,28 +972,25 @@ export default function CandidatePipelinePage() {
 
           {pageView === "pipeline" && (
             <div className="space-y-5">
-              {isLoading ? (
-                <LoadingPipelineBoard />
-              ) : (
-                <PipelineCardsBoard
-                  candidates={
-                    boardSubView === "list"
-                      ? safeFilteredCandidates
-                      : safeStageVisibleCandidates
-                  }
-                  dropOffCandidates={dropOffCandidates}
-                  stageCounts={safeStageCounts}
-                  activeStage={activeStage}
-                  setActiveStage={setActiveStage}
-                  onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
-                  onOpenMoveModal={handleOpenMoveModal}
-                  onOpenAssessmentModal={handleOpenAssessmentModal}
-                  onOpenScheduleModal={handleOpenScheduleInterview}
-                  onCancelInterview={handleCancelInterview}
-                  onCompleteInterview={handleCompleteInterview}
-                  viewMode={boardSubView}
-                />
-              )}
+              <PipelineCardsBoard
+                candidates={
+                  boardSubView === "list"
+                    ? safeFilteredCandidates
+                    : safeStageVisibleCandidates
+                }
+                dropOffCandidates={dropOffCandidates}
+                stageCounts={safeStageCounts}
+                activeStage={activeStage}
+                setActiveStage={setActiveStage}
+                onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
+                onOpenMoveModal={handleOpenMoveModal}
+                onOpenAssessmentModal={handleOpenAssessmentModal}
+                onOpenScheduleModal={handleOpenScheduleInterview}
+                onCancelInterview={handleCancelInterview}
+                onCompleteInterview={handleCompleteInterview}
+                viewMode={boardSubView}
+                isLoading={isLoading}
+              />
             </div>
           )}
 

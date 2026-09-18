@@ -20,7 +20,7 @@ import {
   WorkforceMetricWithPercent,
   getWorkforceValueColor,
 } from "./WorkforceHiringTablePrimitives";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 
 function safeNumber(value) {
   const numberValue = Number(value || 0);
@@ -239,11 +239,11 @@ function ForecastClusterAccountTableView({
 
         <tbody className="sibs-data-table-body">
           {loading ? (
-            <tr>
-              <td colSpan={17} className="px-4 py-8 text-center text-xs font-semibold text-sibs-muted">
-                Loading cluster and account details...
-              </td>
-            </tr>
+            <TableSkeletonRows
+              count={6}
+              columns={17}
+              cellClassName="border-b border-r border-[#E6ECF2] px-2 py-1.5 2xl:px-3 2xl:py-2 align-middle"
+            />
           ) : !hasRows ? (
             <tr>
               <td colSpan={17} className="px-4 py-8 text-center text-xs font-semibold text-sibs-muted">

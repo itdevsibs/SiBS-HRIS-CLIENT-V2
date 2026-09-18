@@ -6,6 +6,7 @@ import {
   CircleCheckBig,
   CircleX,
   Timer,
+  Loader2,
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
@@ -16,7 +17,7 @@ import {
 } from "@/services/context/PaginationContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate } from "@/components/layout/FormatDateTime";
-import { DataCard, ResponsiveTableShell } from "@/components/ui";
+import { DataCard, MetricGridSkeleton, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 import {
   sanitizeDisplayFullName,
   sanitizeMiddleName,
@@ -266,6 +267,31 @@ function formatEmployeeName(item) {
   }
 
   return sanitizeDisplayFullName(item?.gy_emp_fullname).toUpperCase() || "—";
+}
+
+function getAttendanceEmployeeDisplayName(item = {}) {
+  const cleanFullName = sanitizeDisplayFullName(
+    item?.gy_emp_fullname || item?.fullName || item?.name,
+  ).trim();
+
+  if (cleanFullName) {
+    return cleanFullName.toUpperCase();
+  }
+
+  const firstName = String(item?.gy_emp_fname || item?.firstName || "").trim();
+  const lastName = String(item?.gy_emp_lname || item?.lastName || "").trim();
+  const middleName = sanitizeMiddleName(item?.gy_emp_mname || item?.middleName);
+
+  if (firstName || lastName) {
+    return [firstName, middleName, lastName]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toUpperCase();
+  }
+
+  return "Unnamed Employee";
 }
 
 function getCleanValue(...values) {
@@ -1448,43 +1474,57 @@ export default function AttendanceTable() {
         className="sibs-profile-tab-panel"
         style={getAnimationStyle(60)}
       >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Loaded Attendance"
-            value={loading ? "..." : formatNumber(pageStats.totalLoaded)}
-            description="Records loaded on the current page"
-            icon={CalendarDays}
-            tone="navy"
-            delay={0}
+        {loading ? (
+          <MetricGridSkeleton
+            count={4}
+            labels={[
+              "Loaded Attendance",
+              "Approved",
+              "Pending Review",
+              "Computed Work Hours",
+            ]}
+            ariaLabel="Loading attendance metrics"
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
           />
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              title="Loaded Attendance"
+              value={formatNumber(pageStats.totalLoaded)}
+              description="Records loaded on the current page"
+              icon={CalendarDays}
+              tone="navy"
+              delay={0}
+            />
 
-          <StatCard
-            title="Approved"
-            value={loading ? "..." : formatNumber(pageStats.approvedCount)}
-            description="Ready for payroll processing"
-            icon={CircleCheckBig}
-            tone="emerald"
-            delay={60}
-          />
+            <StatCard
+              title="Approved"
+              value={formatNumber(pageStats.approvedCount)}
+              description="Ready for payroll processing"
+              icon={CircleCheckBig}
+              tone="emerald"
+              delay={60}
+            />
 
-          <StatCard
-            title="Pending Review"
-            value={loading ? "..." : formatNumber(pageStats.pendingCount)}
-            description="Awaiting attendance validation"
-            icon={CircleX}
-            tone="amber"
-            delay={120}
-          />
+            <StatCard
+              title="Pending Review"
+              value={formatNumber(pageStats.pendingCount)}
+              description="Awaiting attendance validation"
+              icon={CircleX}
+              tone="amber"
+              delay={120}
+            />
 
-          <StatCard
-            title="Computed Work Hours"
-            value={loading ? "..." : `${formatNumber(pageStats.totalWorkHours)} hrs`}
-            description="Capped work hours from this page"
-            icon={Timer}
-            tone="orange"
-            delay={180}
-          />
-        </div>
+            <StatCard
+              title="Computed Work Hours"
+              value={`${formatNumber(pageStats.totalWorkHours)} hrs`}
+              description="Capped work hours from this page"
+              icon={Timer}
+              tone="orange"
+              delay={180}
+            />
+          </div>
+        )}
       </section>
 
       <section
@@ -1549,21 +1589,23 @@ export default function AttendanceTable() {
             }
             className="mt-4 border-0 bg-transparent p-0 shadow-none"
           />
+
+          <button
+            type="button"
+            onClick={handleAttendanceSearchSubmit}
+            disabled={loading}
+            className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E94F1F] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
+          >
+            {loading ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <Search size={15} />
+            )}
+            Apply Search
+          </button>
         </div>
 
         <div className="p-3 sm:p-5 2xl:p-6">
-          <div className="mt-3 block sm:hidden">
-            <button
-              type="button"
-              onClick={handleAttendanceSearchSubmit}
-              disabled={loading}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1D] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Search size={16} />
-              Apply Search
-            </button>
-          </div>
-
           <ResponsiveTableShell
             desktopContent={
               <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
@@ -1648,13 +1690,11 @@ export default function AttendanceTable() {
                     className="divide-y divide-[#EEF2F6]"
                   >
                     {loading ? (
-                      Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                        <tr key={`attendance-skeleton-${index}`}>
-                          <td colSpan={emptyColSpan} className="px-4 py-4">
-                            <div className="h-7 w-full animate-sibs-pulse rounded bg-slate-100" />
-                          </td>
-                        </tr>
-                      ))
+                      <TableSkeletonRows
+                        count={PAGE_LIMIT}
+                        columns={emptyColSpan}
+                        cellClassName="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle"
+                      />
                     ) : attendance.length === 0 ? (
                       <tr>
                         <td
@@ -1811,7 +1851,7 @@ export default function AttendanceTable() {
                 />
               ) : (
                 attendance.map((item, index) => {
-                  const employeeName = formatEmployeeName(item);
+                  const employeeDisplayName = getAttendanceEmployeeDisplayName(item);
                   const loginTime = formatTime(item.gy_tracker_login);
                   const breakoutTime = formatTime(item.gy_tracker_breakout);
                   const breakinTime = formatTime(item.gy_tracker_breakin);
@@ -1839,7 +1879,7 @@ export default function AttendanceTable() {
                           adminView ? (
                             <AttendanceEmployeeAvatar
                               item={item}
-                              employeeName={employeeName}
+                              employeeName={employeeDisplayName}
                               className="h-9 w-9"
                             />
                           ) : (
@@ -1848,13 +1888,18 @@ export default function AttendanceTable() {
                             </span>
                           )
                         }
-                        kicker={adminView ? item.gy_emp_code || "N/A" : undefined}
-                        title={adminView ? employeeName : formatDate(item.gy_tracker_date)}
+                        title={adminView ? employeeDisplayName : formatDate(item.gy_tracker_date)}
                         subtitle={
                           adminView ? (
-                            <p className="font-semibold text-sibs-navy">
-                              {formatDate(item.gy_tracker_date)}
-                            </p>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-[10px] font-extrabold text-[#FF5C28]">
+                                {item.gy_emp_code || "—"}
+                              </span>
+                              <span className="text-[10px] text-slate-300">•</span>
+                              <span className="text-[11px] font-semibold text-sibs-navy">
+                                {formatDate(item.gy_tracker_date)}
+                              </span>
+                            </div>
                           ) : null
                         }
                         badge={renderStatusBadge(item.gy_tracker_status)}

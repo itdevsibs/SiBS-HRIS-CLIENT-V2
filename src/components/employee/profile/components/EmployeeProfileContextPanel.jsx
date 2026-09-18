@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import {
   ChevronRight,
   FileText,
@@ -9,7 +9,7 @@ import {
 
 import { formatDisplayDate } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 
-export const DEFAULT_QUICK_ACTIONS = [
+const DEFAULT_QUICK_ACTIONS = [
   { label: "Synchronize Record", action: "sync", icon: RefreshCw },
   { label: "Export / Print Profile", action: "print", icon: Printer },
   { label: "Review Documents", target: "documents", icon: FileText },
@@ -45,7 +45,7 @@ function normalizeQuickAction(item) {
   };
 }
 
-export function calculateProfileHealth(employee) {
+function calculateProfileHealth(employee) {
   if (!employee) {
     return {
       score: 0,

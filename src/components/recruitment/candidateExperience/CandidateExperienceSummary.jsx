@@ -8,16 +8,28 @@ import {
   UserX,
   UsersRound,
 } from "lucide-react";
+import { MetricGridSkeleton } from "@/components/ui";
+
+const STAT_LABELS = [
+  "Total Cases",
+  "Completed",
+  "Drop-offs",
+  "Surveys Sent",
+  "Responses",
+  "Avg. Rating",
+  "Voice of Candidate",
+];
 
 function SummaryCard({
   title,
   value,
-  icon: Icon,
+  icon,
   description,
   tone = "navy",
   delay = 0,
   featured = false,
 }) {
+  const Icon = icon;
   return (
     <article
       className={`sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-2.5 2xl:p-3.5 font-jakarta ${
@@ -73,7 +85,20 @@ function SummaryCard({
   );
 }
 
-export default function CandidateExperienceSummary({ metrics }) {
+export default function CandidateExperienceSummary({ metrics = {}, loading = false }) {
+  if (loading) {
+    return (
+      <section className="font-jakarta">
+        <MetricGridSkeleton
+          count={7}
+          labels={STAT_LABELS}
+          className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-7"
+          ariaLabel="Loading candidate experience metrics"
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="font-jakarta">
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-7">

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useCallback,
@@ -144,7 +145,7 @@ export function ApplicantLeadsProvider({ children }) {
   const [formData, setFormData] = useState(EMPTY_APPLICANT_LEAD_FORM);
   const [toastMessage, setToastMessage] = useState("");
   const [statusModal, setStatusModal] = useState(EMPTY_STATUS_MODAL);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [sendingApplicationLinkLead, setSendingApplicationLinkLead] = useState(null);
   const [applicationLinkSendStatus, setApplicationLinkSendStatus] = useState("");
@@ -262,21 +263,24 @@ export function ApplicantLeadsProvider({ children }) {
         setIsLoading(true);
       }
 
-      const result = await getApplicantLeads();
+      try {
+        const result = await getApplicantLeads();
 
-      if (result.success) {
-        setLeads(result.data || []);
-        setErrorMessage("");
-      } else {
-        setErrorMessage(result.message || "Failed to load applicant leads.");
+        if (result.success) {
+          setLeads(result.data || []);
+          setErrorMessage("");
+        } else {
+          setErrorMessage(result.message || "Failed to load applicant leads.");
 
-        if (!silent) {
-          setLeads([]);
+          if (!silent) {
+            setLeads([]);
+          }
         }
-      }
 
-      setIsLoading(false);
-      return result;
+        return result;
+      } finally {
+        setIsLoading(false);
+      }
     },
     [],
   );

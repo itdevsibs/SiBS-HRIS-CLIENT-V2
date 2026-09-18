@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { History } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -11,6 +11,8 @@ import EmployeeProfileContextPanel from "../../components/employee/profile/compo
 import MyEmployeeProfileHeader from "../../components/employee/profile/components/EmployeeProfileHeader.jsx";
 import EmployeeProfileNavigation from "../../components/employee/profile/components/EmployeeProfileNavigation.jsx";
 import MyEmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
+import EmployeeProfileSkeleton from "../../components/employee/profile/components/EmployeeProfileSkeleton.jsx";
+import { TableSkeletonRows, DataCard } from "@/components/ui";
 
 import { useUser } from "../../services/context/UserContext";
 import { useResignationList } from "../../services/context/ResignationListContext";
@@ -213,7 +215,7 @@ function normalizeResignationHistory(result = {}) {
   });
 }
 
-function ResignationHistorySection({ items = [], onView }) {
+function ResignationHistorySection({ items = [], loading = false, onView }) {
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
@@ -248,100 +250,121 @@ function ResignationHistorySection({ items = [], onView }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EEF2F6] bg-white">
-              {items.map((item, index) => {
-                const status = getResignationStatus(item);
-                return (
-                  <tr
-                    key={item?.id || item?.resignationId || `resignation-history-${index}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => onView?.(item)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onView?.(item);
-                      }
-                    }}
-                    className="cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+              {loading ? (
+                <TableSkeletonRows count={3} columns={6} />
+              ) : items.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-xs font-semibold text-[#667085]"
                   >
-                    <td className="px-3 py-3 text-xs font-extrabold text-[#FF5C28]">
-                      {getResignationCaseId(item)}
-                    </td>
-                    <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
-                      {formatResignationDate(getResignationDateValue(item))}
-                    </td>
-                    <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
-                      {formatResignationDate(getResignationLastWorkingDate(item))}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold uppercase ${getResignationStatusClass(status)}`}>
-                        {status}
-                      </span>
-                    </td>
-                    <td className="max-w-[280px] px-3 py-3 text-xs font-semibold text-[#344054]">
-                      <span className="line-clamp-2">{getResignationReason(item)}</span>
-                    </td>
-                    <td className="px-3 py-3 text-xs font-bold text-[#042C51]">
-                      {getResignationStage(item)}
-                    </td>
-                  </tr>
-                );
-              })}
+                    No resignation records found.
+                  </td>
+                </tr>
+              ) : (
+                items.map((item, index) => {
+                  const status = getResignationStatus(item);
+                  return (
+                    <tr
+                      key={item?.id || item?.resignationId || `resignation-history-${index}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onView?.(item)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onView?.(item);
+                        }
+                      }}
+                      className="cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                    >
+                      <td className="px-3 py-3 text-xs font-extrabold text-[#FF5C28]">
+                        {getResignationCaseId(item)}
+                      </td>
+                      <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
+                        {formatResignationDate(getResignationDateValue(item))}
+                      </td>
+                      <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
+                        {formatResignationDate(getResignationLastWorkingDate(item))}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold uppercase ${getResignationStatusClass(status)}`}>
+                          {status}
+                        </span>
+                      </td>
+                      <td className="max-w-[280px] px-3 py-3 text-xs font-semibold text-[#344054]">
+                        <span className="line-clamp-2">{getResignationReason(item)}</span>
+                      </td>
+                      <td className="px-3 py-3 text-xs font-bold text-[#042C51]">
+                        {getResignationStage(item)}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
 
         <div className="space-y-3 bg-[#F8FAFC] p-3 lg:hidden">
-          {items.map((item, index) => {
-            const status = getResignationStatus(item);
-            return (
-              <button
-                key={item?.id || item?.resignationId || `resignation-history-mobile-${index}`}
-                type="button"
-                onClick={() => onView?.(item)}
-                className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[#FF5C28]/30 hover:bg-[#FFF9F6]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
-                      Case ID
-                    </p>
-                    <p className="mt-1 text-sm font-extrabold text-[#FF5C28]">
-                      {getResignationCaseId(item)}
-                    </p>
+          {loading ? (
+            <DataCard.Skeleton count={3} />
+          ) : items.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[#D6E0EA] bg-white p-6 text-center text-xs font-semibold text-[#667085]">
+              No resignation records found.
+            </div>
+          ) : (
+            items.map((item, index) => {
+              const status = getResignationStatus(item);
+              return (
+                <button
+                  key={item?.id || item?.resignationId || `resignation-history-mobile-${index}`}
+                  type="button"
+                  onClick={() => onView?.(item)}
+                  className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[#FF5C28]/30 hover:bg-[#FFF9F6]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                        Case ID
+                      </p>
+                      <p className="mt-1 text-sm font-extrabold text-[#FF5C28]">
+                        {getResignationCaseId(item)}
+                      </p>
+                    </div>
+                    <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold uppercase ${getResignationStatusClass(status)}`}>
+                      {status}
+                    </span>
                   </div>
-                  <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold uppercase ${getResignationStatusClass(status)}`}>
-                    {status}
-                  </span>
-                </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Filed</p>
-                    <p className="mt-1 font-semibold text-[#344054]">
-                      {formatResignationDate(getResignationDateValue(item))}
-                    </p>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Filed</p>
+                      <p className="mt-1 font-semibold text-[#344054]">
+                        {formatResignationDate(getResignationDateValue(item))}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Last Working Day</p>
+                      <p className="mt-1 font-semibold text-[#344054]">
+                        {formatResignationDate(getResignationLastWorkingDate(item))}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Last Working Day</p>
-                    <p className="mt-1 font-semibold text-[#344054]">
-                      {formatResignationDate(getResignationLastWorkingDate(item))}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="mt-3 border-t border-[#EEF2F6] pt-3">
-                  <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Reason</p>
-                  <p className="mt-1 line-clamp-2 text-xs font-semibold text-[#344054]">
-                    {getResignationReason(item)}
-                  </p>
-                  <p className="mt-2 text-[10px] font-bold text-[#042C51]">
-                    Approval Stage: {getResignationStage(item)}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
+                  <div className="mt-3 border-t border-[#EEF2F6] pt-3">
+                    <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Reason</p>
+                    <p className="mt-1 line-clamp-2 text-xs font-semibold text-[#344054]">
+                      {getResignationReason(item)}
+                    </p>
+                    <p className="mt-2 text-[10px] font-bold text-[#042C51]">
+                      Approval Stage: {getResignationStage(item)}
+                    </p>
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
@@ -974,9 +997,7 @@ export default function UserProfilePage() {
           </div>
 
           {userLoading || profileLoading ? (
-            <div className="sibs-card p-6 text-sm font-semibold text-[#667085]">
-              Loading your employee profile...
-            </div>
+            <EmployeeProfileSkeleton />
           ) : !displayEmployee ? (
             <div className="sibs-card p-6 text-sm font-semibold text-[#667085]">
               Your employee profile could not be found.
@@ -1065,6 +1086,7 @@ export default function UserProfilePage() {
                   {activePrimary === "resignation-history" ? (
                     <ResignationHistorySection
                       items={resignationHistory}
+                      loading={resignationHistoryLoading}
                       onView={openResignationDetails}
                     />
                   ) : (

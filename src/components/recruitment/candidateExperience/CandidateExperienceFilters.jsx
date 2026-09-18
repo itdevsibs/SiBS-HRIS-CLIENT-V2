@@ -1,3 +1,4 @@
+import React from "react";
 import { Filter, Search, X } from "lucide-react";
 import ThemedDropdown from "@/components/layout/dropdown/ThemedDropdown.jsx";
 import { getResponseSourceLabel, getSurveyStatusLabel, SURVEY_STATUS_OPTIONS } from "@/lib/utils/candidateExperience/index.js";

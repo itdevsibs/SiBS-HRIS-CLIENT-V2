@@ -7,6 +7,7 @@ import {
   UserCheck,
   UsersRound,
 } from "lucide-react";
+import { MetricGridSkeleton } from "@/components/ui";
 import { useOnboarding } from "../../../services/context/OnboardingContext";
 
 const cards = [
@@ -99,8 +100,27 @@ function StatCard({ card, value, delay }) {
   );
 }
 
-export default function OnboardingStats() {
-  const { stats = {} } = useOnboarding();
+export default function OnboardingStats({ loading: propLoading }) {
+  const { stats = {}, loading: contextLoading = false } = useOnboarding() || {};
+  const loading = propLoading ?? contextLoading;
+
+  if (loading) {
+    return (
+      <MetricGridSkeleton
+        count={6}
+        labels={[
+          "Total Records",
+          "True Hires",
+          "Pending Start",
+          "No Show",
+          "Withdrawal",
+          "Show Rate",
+        ]}
+        className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
+        ariaLabel="Loading onboarding metrics"
+      />
+    );
+  }
 
   return (
     <section

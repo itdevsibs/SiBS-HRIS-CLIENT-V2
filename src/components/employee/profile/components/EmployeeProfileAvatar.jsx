@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import {
   getEmployeeInitials,
@@ -6,13 +6,9 @@ import {
 } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 
 export default function EmployeeProfileAvatar({ employee, apiUrl, onClick }) {
-  const [imageFailed, setImageFailed] = useState(false);
+  const [failedImageUrl, setFailedImageUrl] = useState(null);
   const imageUrl = getProfileImageUrl(employee, apiUrl);
-  const shouldShowImage = Boolean(imageUrl) && !imageFailed;
-
-  useEffect(() => {
-    setImageFailed(false);
-  }, [imageUrl]);
+  const shouldShowImage = Boolean(imageUrl) && failedImageUrl !== imageUrl;
 
   return (
     <button
@@ -27,7 +23,7 @@ export default function EmployeeProfileAvatar({ employee, apiUrl, onClick }) {
             src={imageUrl}
             alt="Employee profile"
             className="h-full w-full object-cover"
-            onError={() => setImageFailed(true)}
+            onError={() => setFailedImageUrl(imageUrl)}
           />
         ) : (
           <span>{getEmployeeInitials(employee)}</span>

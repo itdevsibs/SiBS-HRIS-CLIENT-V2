@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Clock3,
   FileText,
@@ -6,6 +7,7 @@ import {
   UserCheck,
   UserX,
 } from "lucide-react";
+import { MetricGridSkeleton } from "@/components/ui";
 import { useOffers } from "../../../services/context/OffersContext";
 
 function StatCard({ title, value, icon, description, tone = "navy", delay = 0 }) {
@@ -46,8 +48,27 @@ function StatCard({ title, value, icon, description, tone = "navy", delay = 0 })
   );
 }
 
-export default function OfferSummaryCards() {
-  const { stats = {} } = useOffers();
+export default function OfferSummaryCards({ isLoading: propIsLoading }) {
+  const { stats = {}, isLoading: contextIsLoading = false } = useOffers() || {};
+  const isLoading = propIsLoading ?? contextIsLoading;
+
+  if (isLoading) {
+    return (
+      <MetricGridSkeleton
+        count={6}
+        labels={[
+          "Total Offers",
+          "For Review",
+          "Approved",
+          "Contract Sent",
+          "Accepted",
+          "Declined",
+        ]}
+        className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
+        ariaLabel="Loading offer metrics"
+      />
+    );
+  }
 
   return (
     <section aria-labelledby="offer-summary-title">

@@ -1,3 +1,4 @@
+import React from "react";
 import PaginationTable from "@/services/pagination/PaginationTable";
 
 export default function WeeklyReportsPagination({

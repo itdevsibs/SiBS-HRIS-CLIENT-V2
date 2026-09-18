@@ -27,6 +27,7 @@ export default function SourcingAnalyticsPage() {
   const mainRef = useRef(null);
 
   const {
+    loading,
     fetchList,
     sourceRows,
     totals,
@@ -152,9 +153,9 @@ export default function SourcingAnalyticsPage() {
             }
           />
 
-          <SourcingSummaryCards totals={totals} />
+          <SourcingSummaryCards totals={totals} loading={loading || refreshing} />
 
-          <SourcingAnalyticsCharts data={sourceRows} />
+          <SourcingAnalyticsCharts data={sourceRows} loading={loading || refreshing} />
 
           <section
             className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm"
@@ -164,6 +165,7 @@ export default function SourcingAnalyticsPage() {
 
             <SourcingAnalyticsTable
               onView={setSelectedSource}
+              loading={loading || refreshing}
             />
           </section>
 

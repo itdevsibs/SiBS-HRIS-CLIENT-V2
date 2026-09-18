@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { useRecruitmentSettings } from "../../../services/context/RecruitmentSettingsContext";
+import { MetricGridSkeleton, PageHeaderHero } from "@/components/ui";
 
 const heroCards = [
   {
@@ -104,39 +105,35 @@ function getHeroMetrics(settings) {
   };
 }
 
-export default function RecruitmentSettingsHero({ onSyncConfigurations }) {
+export default function RecruitmentSettingsHero({
+  onSyncConfigurations,
+  loading: loadingProp,
+}) {
   const recruitmentSettings = useRecruitmentSettings();
+  const isLoading =
+    loadingProp !== undefined
+      ? loadingProp
+      : Boolean(recruitmentSettings?.positionsLoading);
   const metrics = getHeroMetrics(recruitmentSettings);
 
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white px-5 py-5 shadow-sm sm:px-6">
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#07365F] via-sibs-orange to-[#07365F]" />
+      <PageHeaderHero
+        kicker={
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#164E7A]">
+              <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
+              RECRUITMENT SETTINGS VIEW
+            </span>
 
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#164E7A]">
-                <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
-                RECRUITMENT SETTINGS VIEW
-              </span>
-
-              <span className="inline-flex rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-orange">
-                MODULE: SETTINGS
-              </span>
-            </div>
-
-            <h1 className="font-heading mt-2 break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-              Recruitment Settings
-            </h1>
-
-            <p className="mt-1 max-w-5xl sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
-              Configure recruitment forms, scoring rubrics, pipeline SLAs,
-              assessment thresholds, email templates, holidays, and approval
-              rules.
-            </p>
+            <span className="inline-flex rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-orange">
+              MODULE: SETTINGS
+            </span>
           </div>
-
+        }
+        title="Recruitment Settings"
+        description="Configure recruitment forms, scoring rubrics, pipeline SLAs, assessment thresholds, email templates, holidays, and approval rules."
+        actions={
           <button
             type="button"
             onClick={onSyncConfigurations}
@@ -145,53 +142,68 @@ export default function RecruitmentSettingsHero({ onSyncConfigurations }) {
             <RefreshCw size={15} className="text-sibs-orange" />
             Sync Configurations
           </button>
-        </div>
-      </section>
+        }
+      />
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {heroCards.map((card) => {
-          const Icon = card.icon;
-          const tone = toneClasses[card.tone] || toneClasses.navy;
+      {isLoading ? (
+        <MetricGridSkeleton
+          count={5}
+          labels={[
+            "Account Headcounts",
+            "Position Rubrics",
+            "Pipeline & SLAs",
+            "Email Templates",
+            "Governance & Rules",
+          ]}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
+          ariaLabel="Loading recruitment settings metrics"
+        />
+      ) : (
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {heroCards.map((card) => {
+            const Icon = card.icon;
+            const tone = toneClasses[card.tone] || toneClasses.navy;
 
-          return (
-            <article
-              key={card.key}
-              className="min-h-[112px] rounded-2xl border border-sibs-border bg-white px-4 py-4 shadow-sm"
-            >
-              <div className="flex h-full items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p
-                    className={`truncate text-[10px] font-extrabold uppercase tracking-normal ${tone.label}`}
-                  >
-                    {card.label}
-                  </p>
-
-                  <div className="mt-3 flex items-end gap-1.5">
-                    <span
-                      className={`text-2xl font-extrabold leading-none ${tone.value}`}
+            return (
+              <article
+                key={card.key}
+                className="min-h-[112px] rounded-2xl border border-sibs-border bg-white px-4 py-4 shadow-sm"
+              >
+                <div className="flex h-full items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p
+                      className={`truncate text-[10px] font-extrabold uppercase tracking-normal ${tone.label}`}
                     >
-                      {metrics[card.valueKey]}
-                    </span>
-                    <span className="pb-0.5 text-[10px] font-extrabold text-sibs-muted">
-                      {card.unit}
-                    </span>
+                      {card.label}
+                    </p>
+
+                    <div className="mt-3 flex items-end gap-1.5">
+                      <span
+                        className={`text-2xl font-extrabold leading-none ${tone.value}`}
+                      >
+                        {metrics[card.valueKey]}
+                      </span>
+                      <span className="pb-0.5 text-[10px] font-extrabold text-sibs-muted">
+                        {card.unit}
+                      </span>
+                    </div>
+
+                    <p className="mt-2 truncate text-[10px] font-semibold text-sibs-muted">
+                      {card.description}
+                    </p>
                   </div>
 
-                  <p className="mt-2 truncate text-[10px] font-semibold text-sibs-muted">
-                    {card.description}
-                  </p>
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${tone.icon}`}
+                  >
+                    <Icon size={16} strokeWidth={2.2} />
+                  </span>
                 </div>
-
-                <span
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${tone.icon}`}
-                >
-                  <Icon size={16} strokeWidth={2.2} />
-                </span>
-              </div>
-            </article>
-          );
-        })}
-      </section>
+              </article>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }

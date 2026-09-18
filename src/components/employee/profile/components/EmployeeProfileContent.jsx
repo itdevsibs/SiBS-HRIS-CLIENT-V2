@@ -1,3 +1,4 @@
+import React from "react";
 import { ApplicationSection } from "../sections/ApplicationSection.jsx";
 import DocumentsSection from "../sections/DocumentsSection.jsx";
 import { FamilySection } from "../sections/FamilySection.jsx";

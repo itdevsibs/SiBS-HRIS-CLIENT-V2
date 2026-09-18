@@ -1,33 +1,20 @@
 import { useLocation } from "react-router-dom";
 
+import { isStandalonePublicRoute } from "./config/publicRoutes";
 import AppShell from "./AppShell";
 import Router from "./router";
 import "./index.css";
 
-function isStandalonePublicRoute(pathname = "") {
-  return (
-    pathname === "/public/interview-date" ||
-    pathname.startsWith("/public/interview-date/") ||
-    pathname === "/public/offer-response" ||
-    pathname.startsWith("/public/offer-response/") ||
-    pathname === "/public/nho-schedule-response" ||
-    pathname.startsWith("/public/nho-schedule-response/") ||
-    pathname === "/public/candidate-experience-survey" ||
-    pathname.startsWith("/public/candidate-experience-survey/") ||
-    pathname === "/recruitment/candidate-experience/survey" ||
-    pathname.startsWith("/recruitment/candidate-experience/survey/")
-  );
-}
-
 export default function App() {
   const location = useLocation();
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname : "";
 
   /*
-   * Candidate interview scheduling is a standalone public experience.
-   * It bypasses AppShell so authenticated providers, user-session checks,
-   * admin login overlays, and sidebar logic are never mounted for candidates.
+   * Candidate standalone experiences bypass AppShell so authenticated providers,
+   * user-session checks, admin login overlays, and sidebar logic are never mounted for candidates.
    */
-  if (isStandalonePublicRoute(location.pathname)) {
+  if (isStandalonePublicRoute(location.pathname, hostname)) {
     return <Router />;
   }
 

@@ -1,5 +1,25 @@
+import React from "react";
 import { BarChart3, Sparkles, Star, Tag } from "lucide-react";
 import { buildCategoryBreakdown, buildDropOffStageBreakdown, buildRatingDistribution } from "@/lib/utils/candidateExperience/index.js";
+import { Skeleton } from "@/components/ui";
+
+function BarListSkeleton() {
+  return (
+    <div className="space-y-3 font-jakarta" data-testid="bar-list-skeleton">
+      {[1, 2, 3].map((key) => (
+        <div key={key}>
+          <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-3.5 w-6" />
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-sibs-surface">
+            <Skeleton className="h-full w-full rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function BarList({ rows, emptyText, accent = "bg-sibs-primary-1" }) {
   const max = Math.max(1, ...rows.map((row) => row.value));
@@ -31,7 +51,7 @@ function BarList({ rows, emptyText, accent = "bg-sibs-primary-1" }) {
   );
 }
 
-export default function CandidateExperienceAnalytics({ records, metrics }) {
+export default function CandidateExperienceAnalytics({ records = [], metrics = {}, loading = false }) {
   const stageRows = buildDropOffStageBreakdown(records);
   const categoryRows = buildCategoryBreakdown(records);
   const ratingRows = buildRatingDistribution(records);
@@ -41,15 +61,23 @@ export default function CandidateExperienceAnalytics({ records, metrics }) {
   return (
     <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-4 font-jakarta">
       <Panel icon={BarChart3} title="Drop-offs by Stage" subtitle="Where candidates leave the recruitment journey." delay={120}>
-        <BarList rows={stageRows} emptyText="No drop-off stage data yet." />
+        {loading ? <BarListSkeleton /> : <BarList rows={stageRows} emptyText="No drop-off stage data yet." />}
       </Panel>
 
       <Panel icon={Tag} title="Experience Categories" subtitle="Most common reasons and feedback themes." delay={165}>
-        <BarList rows={categoryRows} emptyText="No experience categories yet." accent="bg-sibs-primary-2" />
+        {loading ? (
+          <BarListSkeleton />
+        ) : (
+          <BarList rows={categoryRows} emptyText="No experience categories yet." accent="bg-sibs-primary-2" />
+        )}
       </Panel>
 
       <Panel icon={Star} title="Rating Distribution" subtitle="Candidate and manually recorded feedback ratings." delay={210}>
-        <BarList rows={ratingRows} emptyText="No ratings submitted yet." accent="bg-amber-500" />
+        {loading ? (
+          <BarListSkeleton />
+        ) : (
+          <BarList rows={ratingRows} emptyText="No ratings submitted yet." accent="bg-amber-500" />
+        )}
       </Panel>
 
       <section
@@ -65,24 +93,40 @@ export default function CandidateExperienceAnalytics({ records, metrics }) {
 
           <div className="mt-3 rounded-lg 2xl:rounded-xl border border-white/10 bg-white/10 p-3 2xl:p-3.5">
             <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-blue-200">Primary Drop-off Stage</p>
-            <p className="mt-0.5 text-base 2xl:text-lg font-extrabold text-white">{topStage}</p>
+            {loading ? (
+              <Skeleton className="mt-1 h-5 w-28 bg-white/20" />
+            ) : (
+              <p className="mt-0.5 text-base 2xl:text-lg font-extrabold text-white">{topStage}</p>
+            )}
 
             <p className="mt-3 text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-blue-200">Top Experience Category</p>
-            <p className="mt-0.5 text-xs 2xl:text-sm font-extrabold text-[#FFB69E]">{topCategory}</p>
+            {loading ? (
+              <Skeleton className="mt-1 h-4 w-32 bg-white/20" />
+            ) : (
+              <p className="mt-0.5 text-xs 2xl:text-sm font-extrabold text-[#FFB69E]">{topCategory}</p>
+            )}
           </div>
 
-          <p className="mt-3 sibs-text-xs leading-relaxed text-blue-200">
-            {metrics.responsesReceived
-              ? `${metrics.responsesReceived} response${metrics.responsesReceived === 1 ? "" : "s"} recorded with an average rating of ${metrics.averageRating}/5.`
-              : "Candidate experience insights will populate when survey or manual feedback is recorded."}
-          </p>
+          {loading ? (
+            <div className="mt-3 space-y-1.5" data-testid="insight-skeleton">
+              <Skeleton className="h-3 w-full bg-white/20" />
+              <Skeleton className="h-3 w-3/4 bg-white/20" />
+            </div>
+          ) : (
+            <p className="mt-3 sibs-text-xs leading-relaxed text-blue-200">
+              {metrics.responsesReceived
+                ? `${metrics.responsesReceived} response${metrics.responsesReceived === 1 ? "" : "s"} recorded with an average rating of ${metrics.averageRating}/5.`
+                : "Candidate experience insights will populate when survey or manual feedback is recorded."}
+            </p>
+          )}
         </div>
       </section>
     </div>
   );
 }
 
-function Panel({ icon: Icon, title, subtitle, delay = 120, children }) {
+function Panel({ icon, title, subtitle, delay = 120, children }) {
+  const Icon = icon;
   return (
     <section
       className="sibs-page-card-in rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm transition-all duration-200 hover:shadow-md font-jakarta"

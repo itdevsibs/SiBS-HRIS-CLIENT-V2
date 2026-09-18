@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
@@ -32,6 +32,7 @@ import {
   saveJobDescriptionRevision,
 } from "../../lib/axios/getJobDescription";
 import DeleteJobDescriptionModal from "../../components/modals/jobDescription/DeleteJobDescription";
+import JobDescriptionViewSkeleton from "../../components/layout/tabs/JobDescriptionView/JobDescriptionViewSkeleton";
 
 const detailTabs = ["Details", "Revision History"];
 
@@ -539,6 +540,20 @@ function normalizePageJobDescription(item, approvalPage = false) {
   return item;
 }
 
+function normalizeViewJdId(value = "") {
+  const text = String(value || "").trim();
+
+  if (!text) return 0;
+
+  const withoutPrefix = text.replace(/^JD[-_ ]?/i, "");
+
+  if (/^\d+$/.test(withoutPrefix)) {
+    return Number(withoutPrefix);
+  }
+
+  return Number(text) || 0;
+}
+
 function getFirstValue(...values) {
   return values.find((value) => String(value ?? "").trim()) || "";
 }
@@ -853,6 +868,7 @@ export default function JobDescriptionViewPage() {
     useState(false);
   const approvalRuleRevision = useApprovalRuleRevision("jobDescription");
 
+  const [loading, setLoading] = useState(true);
   const [pageReady, setPageReady] = useState(false);
 
   const [revisionEditorOpen, setRevisionEditorOpen] = useState(false);
@@ -918,23 +934,67 @@ export default function JobDescriptionViewPage() {
   ===================================================== */
 
   useEffect(() => {
-    const normalizedItem = normalizePageJobDescription(stateItem, approvalPage);
+    let cancelled = false;
 
-    if (normalizedItem) {
-      updateSelectedJobDescription?.(normalizedItem);
+    async function initializeJobDescription() {
+      const normalizedItem = normalizePageJobDescription(stateItem, approvalPage);
 
-      setPageReady(true);
+      if (normalizedItem) {
+        updateSelectedJobDescription?.(normalizedItem);
+        if (!cancelled) {
+          setPageReady(true);
+          setLoading(false);
+        }
+        return;
+      }
 
-      return;
+      if (selectedJobDescription) {
+        if (!cancelled) {
+          setPageReady(true);
+          setLoading(false);
+        }
+        return;
+      }
+
+      const urlJdId = normalizeViewJdId(id);
+
+      if (urlJdId) {
+        try {
+          if (!cancelled) {
+            setLoading(true);
+          }
+          const result = await getJobDescriptionById(urlJdId);
+
+          if (!cancelled && result?.success && result?.data) {
+            updateSelectedJobDescription?.(
+              normalizePageJobDescription(result.data, approvalPage),
+            );
+            setPageReady(true);
+          }
+        } catch (error) {
+          console.error("FAILED TO LOAD JOB DESCRIPTION BY ID:", error);
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+            setPageReady(true);
+          }
+        }
+        return;
+      }
+
+      if (!cancelled) {
+        setLoading(false);
+        setPageReady(true);
+      }
     }
 
-    if (selectedJobDescription) {
-      setPageReady(true);
-    }
+    initializeJobDescription();
 
-    // selectedJobDescription intentionally omitted here.
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateItem, approvalPage, updateSelectedJobDescription]);
+  }, [id, stateItem, approvalPage, updateSelectedJobDescription]);
 
   useEffect(() => {
     return () => {
@@ -1064,6 +1124,7 @@ export default function JobDescriptionViewPage() {
     loadRevisionComments?.(jdId, {
       revisionNo: getSelectedRevisionNo(),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     pageReady,
     item?.id,
@@ -1099,6 +1160,7 @@ export default function JobDescriptionViewPage() {
       open: false,
       revisionRemarks: "",
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageReady, item?.id, item?.rawId]);
 
   /* =====================================================
@@ -1964,20 +2026,6 @@ export default function JobDescriptionViewPage() {
   IDS
   ===================================================== */
 
-  function normalizeViewJdId(value = "") {
-    const text = String(value || "").trim();
-
-    if (!text) return 0;
-
-    const withoutPrefix = text.replace(/^JD[-_ ]?/i, "");
-
-    if (/^\d+$/.test(withoutPrefix)) {
-      return Number(withoutPrefix);
-    }
-
-    return Number(text) || 0;
-  }
-
   function getJobDescriptionId() {
     return (
       normalizeViewJdId(item?.rawId) ||
@@ -2399,10 +2447,18 @@ export default function JobDescriptionViewPage() {
   }
 
   /* =====================================================
-  EMPTY
+  LOADING SKELETON
   ===================================================== */
 
-  if (!pageReady || !item) {
+  if (loading || !pageReady) {
+    return <JobDescriptionViewSkeleton />;
+  }
+
+  /* =====================================================
+  EMPTY / NOT FOUND
+  ===================================================== */
+
+  if (!item) {
     return (
       <div className="jd-view-page-shell fixed inset-0 z-[9999] flex flex-col bg-[#EEF2F6] font-jakarta">
         <style>{jdViewAnimationStyles}</style>

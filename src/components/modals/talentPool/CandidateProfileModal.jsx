@@ -79,6 +79,8 @@ import {
   getTalentPoolStatusForNhoStage,
 } from "../../../lib/utils/candidatePipeline/nhoRequirementRouting";
 import {
+  getCandidateDateOfBirth,
+  getCurrentAge,
   isUnder18Candidate,
   shouldShowMoveToPipelineAction,
 } from "../../../lib/utils/talentPool/talentPoolTabs";
@@ -6179,6 +6181,15 @@ export default function CandidateProfileModal() {
   }
 
   function renderApplicationOverview() {
+    const candidateDob = getCandidateDateOfBirth(activeCandidate);
+    const dynamicAge = getCurrentAge(candidateDob);
+    const ageValue = dynamicAge !== null
+      ? String(dynamicAge)
+      : firstCandidateValue(
+          activeCandidate.ageAsOfApplication,
+          activeCandidate.age,
+        );
+
     return (
       <section className="space-y-4">
         <SectionTitle
@@ -6198,11 +6209,8 @@ export default function CandidateProfileModal() {
             value={candidateDisplayStatus}
           />
           <ProfileDetail
-            label="Age as of Application"
-            value={firstCandidateValue(
-              activeCandidate.ageAsOfApplication,
-              activeCandidate.age,
-            )}
+            label="Age"
+            value={ageValue}
           />
           <ProfileDetail
             label="Encoded By"

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useCallback,
@@ -225,7 +226,7 @@ export const HiringNeedsProvider = ({ children }) => {
 
   const [list, setList] = useState([]);
   const [jobDescriptions, setJobDescriptions] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [jobDescriptionLoading, setJobDescriptionLoading] = useState(false);
   const [error, setError] = useState(null);
 
