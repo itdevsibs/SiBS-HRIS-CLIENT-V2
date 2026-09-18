@@ -4,6 +4,7 @@ import Providers from "@/services/providers";
 import ConditionalSidebar from "@/components/layout/ConditionalSidebar";
 import AdminLoginModal from "@/components/modals/AdminLoginModal";
 import SiBSAIAssistant from "@/components/ai/SiBSAIAssistant";
+import SiBSChat from "@/components/chat/SiBSChat";
 import { isPublicPath } from "@/config/publicRoutes";
 
 export default function AppShell({ children }) {
