@@ -6,8 +6,22 @@ import { PageHeaderHero } from "@/components/ui";
 import { getOfficeLocations } from "../../lib/axios/officeLocations";
 
 const DEFAULT_LOCATIONS = [
-  { id: 0, name: "Tagum Site", employeeCount: 0, comingSoon: false },
-  { id: 1, name: "Davao Site", employeeCount: 0, comingSoon: false },
+  {
+    id: 0,
+    name: "Tagum Site",
+    address:
+      "Ramos Building, Arellano Street, Tagum City, Davao del Norte, Philippines",
+    employeeCount: 0,
+    comingSoon: false,
+  },
+  {
+    id: 1,
+    name: "Davao Site",
+    address:
+      "Robinsons Cybergate Delta, Tower 2, 5th Floor, Bajada, Davao City",
+    employeeCount: 0,
+    comingSoon: false,
+  },
   { id: 4, name: "Mabini Site", employeeCount: null, comingSoon: true },
 ];
 
@@ -36,6 +50,11 @@ function LocationCard({ location, loading }) {
             <h2 className="mt-0.5 truncate text-base font-extrabold text-[#042C51]">
               {location.name}
             </h2>
+            {location.address ? (
+              <p className="mt-1 max-w-md text-xs font-semibold leading-5 text-[#667085]">
+                {location.address}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -97,6 +116,7 @@ export default function OfficeLocationsPage() {
           ...(byId.get(fallback.id) || {}),
           id: fallback.id,
           name: fallback.name,
+          address: fallback.address || "",
           comingSoon: fallback.comingSoon,
         })),
       );

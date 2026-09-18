@@ -75,17 +75,47 @@ function getMetadata(candidate = {}) {
 function getSourceTalentPoolId(candidate = {}) {
   const metadata = getMetadata(candidate);
 
+  /*
+   * The Talent Pool details endpoint accepts talent_pool_applications.id only.
+   * Never fall back to candidate_pipeline.id or another application-ID
+   * namespace here. Numeric IDs can collide and show another applicant's
+   * submitted profile inside the open Candidate Pipeline record.
+   */
   return (
     candidate?.sourceTalentPoolId ||
     candidate?.source_talent_pool_id ||
     metadata?.sourceTalentPoolId ||
     metadata?.source_talent_pool_id ||
     metadata?.talentPoolApplicationId ||
-    metadata?.applicationId ||
-    candidate?.candidateApplicationId ||
-    candidate?.applicationId ||
     ""
   );
+}
+
+function isSameTalentPoolApplicant(profile = {}, candidate = {}) {
+  const profileCandidateId = cleanText(
+    profile?.candidateId || profile?.candidate_id,
+  ).toLowerCase();
+  const candidateId = cleanText(
+    candidate?.candidateId || candidate?.candidate_id,
+  ).toLowerCase();
+
+  if (profileCandidateId && candidateId) {
+    return profileCandidateId === candidateId;
+  }
+
+  const profileEmail = cleanText(
+    profile?.email || profile?.candidateEmail || profile?.candidate_email,
+  ).toLowerCase();
+  const candidateEmail = cleanText(
+    candidate?.email || candidate?.candidateEmail || candidate?.candidate_email,
+  ).toLowerCase();
+
+  if (profileEmail && candidateEmail) {
+    return profileEmail === candidateEmail;
+  }
+
+  /* No comparable identity is available, so do not reject a valid response. */
+  return true;
 }
 
 function buildDataSources(candidate = {}, baseProfile = {}, remoteProfile = {}) {
@@ -439,7 +469,23 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
 
         if (!active) return;
 
-        setRemoteProfile(response?.data?.data || response?.data?.application || {});
+        const loadedProfile =
+          response?.data?.data || response?.data?.application || {};
+
+        if (!isSameTalentPoolApplicant(loadedProfile, candidate)) {
+          console.warn(
+            "Ignoring Talent Pool profile because it belongs to a different candidate.",
+            {
+              requestedTalentPoolId: talentPoolId,
+              candidateId:
+                candidate?.candidateId || candidate?.candidate_id || "",
+            },
+          );
+          setRemoteProfile({});
+          return;
+        }
+
+        setRemoteProfile(loadedProfile);
       } catch (error) {
         if (!active) return;
 
@@ -461,13 +507,7 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
     return () => {
       active = false;
     };
-  }, [
-    candidate?.id,
-    candidate?.candidateId,
-    candidate?.candidateApplicationId,
-    candidate?.applicationId,
-    candidate?.sourceTalentPoolId,
-  ]);
+  }, [candidate]);
 
   const data = useMemo(() => {
     const sources = buildDataSources(candidate, baseProfile, remoteProfile);

@@ -1,8 +1,8 @@
 import React, { useRef, useState } from "react";
 import {
-  Building2,
   Check,
   CircleCheckBig,
+  Clock3,
   Copy,
   FileText,
   History,
@@ -17,7 +17,6 @@ import {
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 import { getApplicantLeadEditedFields } from "../../../lib/utils/applicantLeads/applicantLeadFormDirty";
-import DropdownField from "../availablePositions/DropdownField";
 import ApplicantLeadMovementHistoryDrawer from "./ApplicantLeadMovementHistoryDrawer";
 
 const INPUT_CLASS =
@@ -32,6 +31,40 @@ const AUTO_GROW_TEXTAREA_CLASS =
 const UPPERCASE_INPUT_CLASS = `${INPUT_CLASS} uppercase placeholder:normal-case`;
 const UPPERCASE_TEXTAREA_CLASS = `${TEXTAREA_CLASS} uppercase placeholder:normal-case`;
 const AUTO_GROW_UPPERCASE_TEXTAREA_CLASS = `${AUTO_GROW_TEXTAREA_CLASS} uppercase placeholder:normal-case`;
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function formatLeadCommentActor(item = {}) {
+  const sibsId = cleanText(item.actorSibsId || item.actor_sibs_id);
+  const name = cleanText(item.actorName || item.actor_name);
+
+  if (sibsId && name) return `SiBS ID ${sibsId} - ${name}`;
+  if (sibsId) return `SiBS ID ${sibsId}`;
+  return name || "System";
+}
+
+function formatLeadCommentDateTime(value) {
+  if (!value) return "";
+
+  const text = cleanText(value);
+  const normalizedValue = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)
+    ? `${text.replace(" ", "T")}+08:00`
+    : text;
+  const date = new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) return text;
+
+  return date.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function AutoResizeTextarea({ value, onChange, ...props }) {
   const textareaRef = useRef(null);
@@ -69,26 +102,6 @@ function updateFormField(setFormData, field, value) {
   }));
 }
 
-function getOptionValue(option) {
-  return String(option?.id || option?.value || option?.label || option || "");
-}
-
-function getOptionLabel(option) {
-  return String(option?.label || option?.name || option?.value || option || "");
-}
-
-function updateLookupField(setFormData, options, idField, labelField, value) {
-  const selectedOption = options.find(
-    (option) => getOptionValue(option) === String(value),
-  );
-
-  setFormData((current) => ({
-    ...current,
-    [idField]: selectedOption?.id || "",
-    [labelField]: selectedOption ? getOptionLabel(selectedOption) : value,
-  }));
-}
-
 async function copyTextToClipboard(text) {
   if (!text) return false;
 
@@ -107,16 +120,6 @@ async function copyTextToClipboard(text) {
   const copied = document.execCommand("copy");
   document.body.removeChild(textarea);
   return copied;
-}
-
-function getLookupSelectValue(id, label, options) {
-  if (id) return String(id);
-
-  const matchingOption = options.find(
-    (option) => getOptionLabel(option) === String(label),
-  );
-
-  return matchingOption ? getOptionValue(matchingOption) : String(label || "");
 }
 
 function EditedIndicator({ show }) {
@@ -161,10 +164,6 @@ export default function ApplicantLeadModal() {
     handleSaveLead,
     currentAccountName,
     isSaving,
-    departmentOptions,
-    accountOptions,
-    siteOptions,
-    statusOptions,
     leadHistory,
     isLeadHistoryLoading,
     leadHistoryError,
@@ -173,6 +172,10 @@ export default function ApplicantLeadModal() {
     isAddingLeadComment,
     handleAddLeadComment,
   } = useApplicantLeadsPage();
+
+  const leadComments = (Array.isArray(leadHistory) ? leadHistory : []).filter(
+    (item) => cleanText(item?.comment || item?.comment_text),
+  );
 
   if (!showLeadModal) return null;
 
@@ -196,10 +199,6 @@ export default function ApplicantLeadModal() {
     !isCpNumberValid ||
     (editingLead && !isEditFormEdited);
 
-  function isAnyEdited(...fields) {
-    return fields.some((field) => editedFields[field]);
-  }
-
   async function handleCopyReferralCode() {
     if (!canCopyReferralCode) return;
     const copied = await copyTextToClipboard(referralCode);
@@ -210,35 +209,7 @@ export default function ApplicantLeadModal() {
     }
   }
 
-  const formattedDepartmentOptions = departmentOptions.map((opt) => ({
-    id: opt.id,
-    value: getOptionValue(opt),
-    label: getOptionLabel(opt),
-  }));
 
-  const formattedAccountOptions = accountOptions.map((opt) => ({
-    id: opt.id,
-    value: getOptionValue(opt),
-    label: getOptionLabel(opt),
-  }));
-
-  const formattedSiteOptions = siteOptions.map((site) => ({
-    id: getOptionLabel(site),
-    value: getOptionLabel(site),
-    label: getOptionLabel(site),
-  }));
-
-  const formattedStatusOptions = statusOptions.map((status) => {
-    const statusLabel = getOptionLabel(status);
-    return {
-      id: statusLabel,
-      value: statusLabel,
-      label:
-        statusLabel === "New Lead"
-          ? "New Lead (Uncontacted)"
-          : statusLabel,
-    };
-  });
 
   return (
     <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-4 font-jakarta">
@@ -526,108 +497,7 @@ export default function ApplicantLeadModal() {
               </div>
             </FormSection>
 
-            {/* Section 2: Organizational Placement */}
-            {isEditMode && (
-              <FormSection
-              title="Organizational Placement"
-              subtitle="Assign department, target account, facility site, and initial status."
-              icon={Building2}
-            >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Department <span className="text-[#FF5C28]">*</span>
-                    <EditedIndicator
-                      show={isAnyEdited("departmentId", "department")}
-                    />
-                  </label>
-                  <DropdownField
-                    value={getLookupSelectValue(
-                      formData.departmentId,
-                      formData.department,
-                      departmentOptions,
-                    )}
-                    onChange={(value) =>
-                      updateLookupField(
-                        setFormData,
-                        departmentOptions,
-                        "departmentId",
-                        "department",
-                        value,
-                      )
-                    }
-                    options={formattedDepartmentOptions}
-                    placeholder="Select Department..."
-                    searchable={true}
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Account / Client <span className="text-[#FF5C28]">*</span>
-                    <EditedIndicator
-                      show={isAnyEdited("accountId", "specificAccount")}
-                    />
-                  </label>
-                  <DropdownField
-                    value={getLookupSelectValue(
-                      formData.accountId,
-                      formData.specificAccount,
-                      accountOptions,
-                    )}
-                    onChange={(value) =>
-                      updateLookupField(
-                        setFormData,
-                        accountOptions,
-                        "accountId",
-                        "specificAccount",
-                        value,
-                      )
-                    }
-                    options={formattedAccountOptions}
-                    placeholder="Select Account..."
-                    searchable={true}
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Preferred Work Location
-                    <EditedIndicator show={editedFields.preferredSite} />
-                  </label>
-                  <DropdownField
-                    value={formData.preferredSite}
-                    onChange={(value) =>
-                      updateFormField(setFormData, "preferredSite", value)
-                    }
-                    options={formattedSiteOptions}
-                    placeholder="Select Site..."
-                    searchable={false}
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Initial Lead Status
-                    <EditedIndicator show={editedFields.status} />
-                  </label>
-                  <DropdownField
-                    value={formData.status}
-                    onChange={(value) =>
-                      updateFormField(setFormData, "status", value)
-                    }
-                    options={formattedStatusOptions}
-                    placeholder="Select Status..."
-                    searchable={false}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-              </FormSection>
-            )}
+            {/* Organizational Placement is intentionally hidden in Edit Applicant Lead. */}
 
             {/* Section 3: Notes & Inquiry Remarks */}
             <FormSection
@@ -692,6 +562,54 @@ export default function ApplicantLeadModal() {
                       {isAddingLeadComment ? "Adding..." : "Add Comment"}
                     </button>
                   </div>
+                </div>
+
+                <div className="mt-4 border-t border-[#E6ECF2] pt-4">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs font-extrabold text-[#042C51]">
+                      <MessageSquareText size={14} className="text-[#FF5C28]" />
+                      Comments
+                    </div>
+                    <span className="rounded-full bg-[#EEF4FA] px-2 py-0.5 text-[9px] font-extrabold text-[#174A7C]">
+                      {leadComments.length}
+                    </span>
+                  </div>
+
+                  {isLeadHistoryLoading ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-4 text-[11px] font-semibold text-[#667085]">
+                      <Loader2 size={13} className="animate-spin text-[#FF5C28]" />
+                      Loading comments...
+                    </div>
+                  ) : leadComments.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-3 py-4 text-center text-[11px] font-semibold text-[#667085]">
+                      No comments yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {leadComments.map((item, index) => (
+                        <div
+                          key={item.id || `lead-comment-${index}`}
+                          className="rounded-xl border border-[#E6ECF2] bg-white p-3"
+                        >
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-[#667085]">
+                            <span className="inline-flex items-center gap-1 font-extrabold text-[#042C51]">
+                              <UserRound size={11} className="text-[#FF5C28]" />
+                              {formatLeadCommentActor(item)}
+                            </span>
+                            {(item.createdAt || item.created_at) ? (
+                              <span className="inline-flex items-center gap-1">
+                                <Clock3 size={11} className="text-[#98A2B3]" />
+                                {formatLeadCommentDateTime(item.createdAt || item.created_at)}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-2 whitespace-pre-wrap break-words text-[11px] font-semibold leading-5 text-[#344054]">
+                            {item.comment || item.comment_text}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </FormSection>
             )}

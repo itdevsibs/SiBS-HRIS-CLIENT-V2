@@ -459,7 +459,14 @@ function PublicInterviewTimePicker({
   );
 }
 
-function PublicStateCard({ icon, title, message, tone = "blue", children }) {
+function PublicStateCard({
+  icon,
+  title,
+  message,
+  tone = "blue",
+  children,
+  showLogo = false,
+}) {
   const toneClasses = {
     blue: "border-blue-100 bg-blue-50 text-sibs-primary-1",
     red: "border-red-100 bg-red-50 text-red-700",
@@ -469,8 +476,16 @@ function PublicStateCard({ icon, title, message, tone = "blue", children }) {
 
   return (
     <div className="mx-auto w-full max-w-xl rounded-3xl border border-[#D9E2EC] bg-white p-6 text-center shadow-xl sm:p-10">
+      {showLogo && (
+        <img
+          src="/SiBSLogoNavy.png"
+          alt="SiBS Contact Center"
+          className="mx-auto h-auto w-[240px] max-w-full"
+        />
+      )}
+
       <div
-        className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border ${toneClasses[tone]}`}
+        className={`${showLogo ? "mt-6 " : ""}mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border ${toneClasses[tone]}`}
       >
         {icon}
       </div>
@@ -507,6 +522,7 @@ function ReadOnlyResponse({ schedule, warning = "" }) {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-[#F4F7FB] px-4 py-10 font-jakarta">
       <PublicStateCard
+        showLogo
         icon={declined ? <XCircle size={32} /> : <CheckCircle2 size={32} />}
         title={title}
         message={message}

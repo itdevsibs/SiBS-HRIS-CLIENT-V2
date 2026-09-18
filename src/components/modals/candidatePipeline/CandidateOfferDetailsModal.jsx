@@ -173,6 +173,17 @@ function isInvalidMoney(value) {
   return !Number.isFinite(numericValue) || numericValue <= 0;
 }
 
+function optionMatchesAssignment(option = {}, { roleTitle = "", account = "" } = {}) {
+  const roleKey = normalizeKey(roleTitle);
+  const accountKey = normalizeKey(account);
+  const optionAccountKey = normalizeKey(option.account);
+  const optionRoleKey = normalizeKey(option.roleTitle);
+
+  if (!accountKey || optionAccountKey !== accountKey) return false;
+
+  return !roleKey || !optionRoleKey || optionRoleKey === roleKey;
+}
+
 function getSuggestedReprofileOption(
   options = [],
   {
@@ -182,12 +193,12 @@ function getSuggestedReprofileOption(
   } = {},
 ) {
   const requirementId = cleanText(hiringRequirementId);
-  const roleKey = normalizeKey(roleTitle);
-  const accountKey = normalizeKey(account);
 
   if (requirementId) {
     const exactRequirement = options.find(
-      (option) => String(option.value) === String(requirementId),
+      (option) =>
+        String(option.value) === String(requirementId) &&
+        optionMatchesAssignment(option, { roleTitle, account }),
     );
 
     if (exactRequirement) {
@@ -195,18 +206,10 @@ function getSuggestedReprofileOption(
     }
   }
 
-  if (!accountKey) return null;
-
   return (
-    options.find((option) => {
-      const optionAccountKey = normalizeKey(option.account);
-      const optionRoleKey = normalizeKey(option.roleTitle);
-
-      return (
-        optionAccountKey === accountKey &&
-        (!roleKey || !optionRoleKey || optionRoleKey === roleKey)
-      );
-    }) || null
+    options.find((option) =>
+      optionMatchesAssignment(option, { roleTitle, account }),
+    ) || null
   );
 }
 
@@ -837,6 +840,60 @@ export default function CandidateOfferDetailsModal({
     ],
   );
 
+  useEffect(() => {
+    if (!open || isLoadingHiringNeeds || loadError) return;
+
+    const currentAccount = cleanText(form?.account);
+    if (!currentAccount || !candidateRoleTitle) return;
+
+    const currentRequirementId = cleanText(form?.hiringRequirementId);
+    const currentRequirement = reprofileOptions.find(
+      (option) => String(option.value) === String(currentRequirementId),
+    );
+
+    if (
+      currentRequirement &&
+      optionMatchesAssignment(currentRequirement, {
+        roleTitle: candidateRoleTitle,
+        account: currentAccount,
+      })
+    ) {
+      return;
+    }
+
+    const matchingRequirement = reprofileOptions.find((option) =>
+      optionMatchesAssignment(option, {
+        roleTitle: candidateRoleTitle,
+        account: currentAccount,
+      }),
+    );
+
+    setForm((previous) => {
+      const previousRequirementId = cleanText(previous?.hiringRequirementId);
+      const nextRequirementId = matchingRequirement?.value || "";
+
+      if (previousRequirementId === cleanText(nextRequirementId)) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        hiringRequirementId: nextRequirementId,
+        hiringRequirementLabel: matchingRequirement?.raw?.label || "",
+        hiringNeed: matchingRequirement?.raw || null,
+      };
+    });
+  }, [
+    open,
+    isLoadingHiringNeeds,
+    loadError,
+    reprofileOptions,
+    form?.account,
+    form?.hiringRequirementId,
+    candidateRoleTitle,
+    setForm,
+  ]);
+
   if (!open || !candidate) return null;
 
   function updateForm(patch) {
@@ -1039,9 +1096,9 @@ export default function CandidateOfferDetailsModal({
                 </div>
               </div>
 
-              {!cleanText(form?.hiringRequirementId) && (
+              {!cleanText(form?.hiringRequirementId) && !isLoadingHiringNeeds && !loadError && (
                 <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-[10px] font-bold leading-5 text-amber-800">
-                  No approved Hiring Requirement matches this Role Title and Account. Use Reprofile to select an approved account before proceeding.
+                  The applicant's applied account is selected, but no approved Hiring Requirement currently matches this Role Title and Account. If the account is already full, use Reprofile to select another approved account before proceeding.
                 </div>
               )}
             </CandidateModalSection>

@@ -36,6 +36,7 @@ import {
 
 const ApplicantLeadsContext = createContext(null);
 const MOVED_TO_TALENT_POOL_STATUS = "Moved to Talent Pool Archive";
+const CONVERTED_TO_APPLICANT_STATUS = "Converted to Applicant";
 const EMPTY_STATUS_MODAL = {
   open: false,
   type: "success",
@@ -166,16 +167,33 @@ export function ApplicantLeadsProvider({ children }) {
     () => leads.filter(isMovedToTalentPoolLead),
     [leads],
   );
+  const convertedLeads = archivedLeads;
   const leadViewStatus = leadView.startsWith("status:")
     ? leadView.slice("status:".length)
     : "";
   const leadsForCurrentView = useMemo(() => {
-    const scopedLeads = leadView === "archive" ? archivedLeads : activeLeads;
+    if (leadViewStatus === CONVERTED_TO_APPLICANT_STATUS) {
+      return convertedLeads;
+    }
+
+    const scopedLeads =
+      leadView === "all"
+        ? leads
+        : leadView === "archive"
+          ? archivedLeads
+          : activeLeads;
 
     if (!leadViewStatus) return scopedLeads;
 
     return scopedLeads.filter((lead) => lead.status === leadViewStatus);
-  }, [activeLeads, archivedLeads, leadView, leadViewStatus]);
+  }, [
+    activeLeads,
+    archivedLeads,
+    convertedLeads,
+    leadView,
+    leadViewStatus,
+    leads,
+  ]);
 
   const filteredLeads = useMemo(
     () =>
@@ -551,6 +569,7 @@ export function ApplicantLeadsProvider({ children }) {
       leads,
       activeLeads,
       archivedLeads,
+      convertedLeads,
       filteredLeads,
       paginatedLeads,
       currentPage: safeCurrentPage,
@@ -586,6 +605,7 @@ export function ApplicantLeadsProvider({ children }) {
       setLeadView,
       activeLeadCount: activeLeads.length,
       archivedLeadCount: archivedLeads.length,
+      convertedLeadCount: convertedLeads.length,
 
       searchTerm,
       setSearchTerm,
@@ -623,6 +643,7 @@ export function ApplicantLeadsProvider({ children }) {
       editingLead,
       activeLeads,
       archivedLeads,
+      convertedLeads,
       channelSourceSummary,
       accountLeadSummary,
       filteredLeads,
