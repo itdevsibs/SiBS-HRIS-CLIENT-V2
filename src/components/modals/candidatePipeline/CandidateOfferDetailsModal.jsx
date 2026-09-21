@@ -173,13 +173,28 @@ function isInvalidMoney(value) {
   return !Number.isFinite(numericValue) || numericValue <= 0;
 }
 
-function optionMatchesAssignment(option = {}, { roleTitle = "", account = "" } = {}) {
+function optionMatchesAssignment(
+  option = {},
+  { roleTitle = "", account = "", accountId = "" } = {},
+) {
   const roleKey = normalizeKey(roleTitle);
   const accountKey = normalizeKey(account);
   const optionAccountKey = normalizeKey(option.account);
   const optionRoleKey = normalizeKey(option.roleTitle);
+  const requestedAccountId = cleanText(accountId);
+  const optionAccountId = cleanText(
+    option.accountId ||
+      option.account_id ||
+      option.raw?.accountId ||
+      option.raw?.account_id ||
+      "",
+  );
 
-  if (!accountKey || optionAccountKey !== accountKey) return false;
+  if (requestedAccountId && optionAccountId) {
+    if (requestedAccountId !== optionAccountId) return false;
+  } else if (!accountKey || optionAccountKey !== accountKey) {
+    return false;
+  }
 
   return !roleKey || !optionRoleKey || optionRoleKey === roleKey;
 }
@@ -190,15 +205,20 @@ function getSuggestedReprofileOption(
     hiringRequirementId = "",
     roleTitle = "",
     account = "",
+    accountId = "",
   } = {},
 ) {
   const requirementId = cleanText(hiringRequirementId);
 
   if (requirementId) {
+    /*
+     * An existing Hiring Requirement ID is authoritative here. The options
+     * list already contains approved Hiring Needs only, so do not reject an
+     * approved PRF just because its saved role/account label differs slightly
+     * from the candidate display value.
+     */
     const exactRequirement = options.find(
-      (option) =>
-        String(option.value) === String(requirementId) &&
-        optionMatchesAssignment(option, { roleTitle, account }),
+      (option) => String(option.value) === String(requirementId),
     );
 
     if (exactRequirement) {
@@ -208,7 +228,7 @@ function getSuggestedReprofileOption(
 
   return (
     options.find((option) =>
-      optionMatchesAssignment(option, { roleTitle, account }),
+      optionMatchesAssignment(option, { roleTitle, account, accountId }),
     ) || null
   );
 }
@@ -819,6 +839,16 @@ export default function CandidateOfferDetailsModal({
     form?.roleTitle || candidate?.roleTitle || candidate?.openPosition,
   );
 
+  const candidateAccountId = cleanText(
+    candidate?.accountId ||
+      candidate?.account_id ||
+      candidate?.leadAccountId ||
+      candidate?.lead_account_id ||
+      candidate?.metadata?.accountId ||
+      candidate?.metadata?.account_id ||
+      "",
+  );
+
   const reprofileOptions = useMemo(() => {
     return buildApprovedReprofileOptions({
       hiringNeeds: approvedHiringNeeds,
@@ -831,12 +861,14 @@ export default function CandidateOfferDetailsModal({
         hiringRequirementId: form?.hiringRequirementId,
         roleTitle: candidateRoleTitle,
         account: form?.account,
+        accountId: candidateAccountId,
       }),
     [
       reprofileOptions,
       form?.hiringRequirementId,
       form?.account,
       candidateRoleTitle,
+      candidateAccountId,
     ],
   );
 
@@ -851,13 +883,12 @@ export default function CandidateOfferDetailsModal({
       (option) => String(option.value) === String(currentRequirementId),
     );
 
-    if (
-      currentRequirement &&
-      optionMatchesAssignment(currentRequirement, {
-        roleTitle: candidateRoleTitle,
-        account: currentAccount,
-      })
-    ) {
+    /*
+     * Keep a currently linked PRF when it is still present in the approved
+     * Hiring Needs list. This prevents a valid approved requirement from being
+     * cleared solely because of a role/account display-label mismatch.
+     */
+    if (currentRequirement) {
       return;
     }
 
@@ -865,6 +896,7 @@ export default function CandidateOfferDetailsModal({
       optionMatchesAssignment(option, {
         roleTitle: candidateRoleTitle,
         account: currentAccount,
+        accountId: candidateAccountId,
       }),
     );
 
@@ -891,6 +923,7 @@ export default function CandidateOfferDetailsModal({
     form?.account,
     form?.hiringRequirementId,
     candidateRoleTitle,
+    candidateAccountId,
     setForm,
   ]);
 

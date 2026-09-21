@@ -98,6 +98,15 @@ function normalizePositionOption(item) {
     item.position_account_ghl_name ||
     "";
 
+  const hiringRequirementId =
+    item.hiringRequirementId ||
+    item.hiring_requirement_id ||
+    item.hiringNeedId ||
+    item.hiring_need_id ||
+    item.prfId ||
+    item.prf_id ||
+    "";
+
   const finalTitle = cleanText(positionTitle || positionId);
 
   if (!finalTitle) return null;
@@ -110,6 +119,7 @@ function normalizePositionOption(item) {
     accountId: cleanText(accountId),
     accountName: cleanText(accountName),
     accountGhlName: cleanText(accountGhlName),
+    hiringRequirementId: cleanText(hiringRequirementId),
   };
 }
 
@@ -656,6 +666,13 @@ export default function MoveToPipeLineModal() {
           pipelineTarget.positionId ||
           pipelineTarget.openPositionId ||
           matchedPosition?.positionId ||
+          "",
+        hiringRequirementId:
+          pipelineTarget.hiringRequirementId ||
+          pipelineTarget.hiring_requirement_id ||
+          pipelineTarget.hiringNeedId ||
+          pipelineTarget.hiring_need_id ||
+          matchedPosition?.hiringRequirementId ||
           "",
         leadDepartmentId:
           pipelineTarget.leadDepartmentId ||
