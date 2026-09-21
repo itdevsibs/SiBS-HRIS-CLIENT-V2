@@ -186,9 +186,20 @@ function normalizeOptionsPayload(payload) {
 }
 
 function normalizePosition(position = {}) {
+  const hiringNeedId =
+    position.hiringNeedId ||
+    position.hiring_need_id ||
+    position.hiringRequirementId ||
+    position.hiring_requirement_id ||
+    "";
+
   return {
     id: position.id || position.positionId || position.position_id,
     positionId: position.positionId || position.position_id || "",
+    hiringNeedId,
+    hiring_need_id: hiringNeedId,
+    hiringRequirementId: hiringNeedId,
+    hiring_requirement_id: hiringNeedId,
     positionTitle:
       position.positionTitle ||
       position.position_title ||
@@ -196,8 +207,13 @@ function normalizePosition(position = {}) {
       position.name ||
       "",
     department: position.department || "",
+    departmentId: position.departmentId || position.department_id || "",
     locationSite: position.locationSite || position.location_site || "",
     account: position.account || position.accountName || "",
+    accountName: position.accountName || position.account_name || position.account || "",
+    accountId: position.accountId || position.account_id || "",
+    accountGhlName: position.accountGhlName || position.account_ghl_name || "",
+    approvalStatus: position.approvalStatus || position.approval_status || "",
     status: position.status || "",
   };
 }
