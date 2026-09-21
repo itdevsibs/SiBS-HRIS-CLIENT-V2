@@ -1393,6 +1393,61 @@ export default function SiBSChat({ enabled = true }) {
 
   const activeConversation = chat?.activeConversation || null;
 
+  const seenMembersByMessageId = useMemo(() => {
+    const result = new Map();
+    const members = Array.isArray(activeConversation?.members)
+      ? activeConversation.members
+      : [];
+    const currentMessages = Array.isArray(chat?.messages) ? chat.messages : [];
+
+    if (!currentSibsId || !members.length || !currentMessages.length) {
+      return result;
+    }
+
+    const myVisibleMessages = currentMessages.filter((message) => {
+      const messageType = cleanText(message?.messageType).toUpperCase();
+
+      return (
+        cleanText(message?.senderSibsId) === currentSibsId &&
+        !message?.unsent &&
+        messageType !== "UNSENT" &&
+        messageType !== "MEMBER_ADDED" &&
+        messageType !== "MEMBER_REMOVED"
+      );
+    });
+
+    members.forEach((member) => {
+      const memberSibsId = cleanText(member?.sibsId);
+      const lastReadMessageId = Number(
+        member?.lastReadMessageId ?? member?.last_read_message_id ?? 0,
+      );
+
+      if (
+        !memberSibsId ||
+        memberSibsId === currentSibsId ||
+        !lastReadMessageId
+      ) {
+        return;
+      }
+
+      for (let index = myVisibleMessages.length - 1; index >= 0; index -= 1) {
+        const message = myVisibleMessages[index];
+        const messageId = Number(message?.id || 0);
+
+        if (!messageId || messageId > lastReadMessageId) continue;
+
+        if (!result.has(messageId)) {
+          result.set(messageId, []);
+        }
+
+        result.get(messageId).push(member);
+        break;
+      }
+    });
+
+    return result;
+  }, [activeConversation?.members, chat?.messages, currentSibsId]);
+
   useEffect(() => {
     if (!open || chat?.activeConversationId || !chat?.conversations?.length) return;
     void chat.selectConversation(chat.conversations[0].id);
@@ -1735,60 +1790,6 @@ export default function SiBSChat({ enabled = true }) {
     ? isMemberOnline(activeOtherMember)
     : false;
 
-  const seenMembersByMessageId = useMemo(() => {
-    const result = new Map();
-    const members = Array.isArray(activeConversation?.members)
-      ? activeConversation.members
-      : [];
-    const currentMessages = Array.isArray(chat?.messages) ? chat.messages : [];
-
-    if (!currentSibsId || !members.length || !currentMessages.length) {
-      return result;
-    }
-
-    const myVisibleMessages = currentMessages.filter((message) => {
-      const messageType = cleanText(message?.messageType).toUpperCase();
-
-      return (
-        cleanText(message?.senderSibsId) === currentSibsId &&
-        !message?.unsent &&
-        messageType !== "UNSENT" &&
-        messageType !== "MEMBER_ADDED" &&
-        messageType !== "MEMBER_REMOVED"
-      );
-    });
-
-    members.forEach((member) => {
-      const memberSibsId = cleanText(member?.sibsId);
-      const lastReadMessageId = Number(
-        member?.lastReadMessageId ?? member?.last_read_message_id ?? 0,
-      );
-
-      if (
-        !memberSibsId ||
-        memberSibsId === currentSibsId ||
-        !lastReadMessageId
-      ) {
-        return;
-      }
-
-      for (let index = myVisibleMessages.length - 1; index >= 0; index -= 1) {
-        const message = myVisibleMessages[index];
-        const messageId = Number(message?.id || 0);
-
-        if (!messageId || messageId > lastReadMessageId) continue;
-
-        if (!result.has(messageId)) {
-          result.set(messageId, []);
-        }
-
-        result.get(messageId).push(member);
-        break;
-      }
-    });
-
-    return result;
-  }, [activeConversation?.members, chat?.messages, currentSibsId]);
 
   return (
     <>
