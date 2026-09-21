@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   Check,
+  EyeOff,
   ImagePlus,
   Loader2,
   MessageCircleMore,
@@ -1352,6 +1353,7 @@ export default function SiBSChat({ enabled = true }) {
   const [sending, setSending] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [attachmentNotice, setAttachmentNotice] = useState("");
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [gifSearch, setGifSearch] = useState("");
@@ -1364,6 +1366,9 @@ export default function SiBSChat({ enabled = true }) {
   const [reactingMessageId, setReactingMessageId] = useState(null);
   const [unsendingMessageId, setUnsendingMessageId] = useState(null);
   const [unsendConfirmMessage, setUnsendConfirmMessage] = useState(null);
+  const [conversationActionId, setConversationActionId] = useState(null);
+  const [conversationActionBusyId, setConversationActionBusyId] = useState(null);
+  const [deleteConversationConfirm, setDeleteConversationConfirm] = useState(null);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
   const [launcherPosition, setLauncherPosition] = useState(null);
   const [launcherDragging, setLauncherDragging] = useState(false);
@@ -1381,6 +1386,9 @@ export default function SiBSChat({ enabled = true }) {
   const gifButtonRef = useRef(null);
   const gifSearchInputRef = useRef(null);
   const selectedImagesRef = useRef([]);
+  const typingStopTimerRef = useRef(null);
+  const typingLastSentAtRef = useRef(0);
+  const typingConversationIdRef = useRef(null);
   const previousOpenRef = useRef(false);
   const launcherRef = useRef(null);
   const launcherDragRef = useRef({
@@ -1489,6 +1497,43 @@ export default function SiBSChat({ enabled = true }) {
       document.removeEventListener("keydown", closeMessageActions);
     };
   }, [messageActionId]);
+
+  useEffect(() => {
+    if (!conversationActionId) return undefined;
+
+    function closeConversationActions(event) {
+      if (event.key === "Escape") {
+        setConversationActionId(null);
+        return;
+      }
+
+      if (event.type === "pointerdown") {
+        const element = event.target?.closest?.("[data-chat-conversation-actions]");
+        if (!element) setConversationActionId(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", closeConversationActions);
+    document.addEventListener("keydown", closeConversationActions);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeConversationActions);
+      document.removeEventListener("keydown", closeConversationActions);
+    };
+  }, [conversationActionId]);
+
+  useEffect(() => {
+    if (!deleteConversationConfirm) return undefined;
+
+    function handleDeleteConversationKeyDown(event) {
+      if (event.key === "Escape" && !conversationActionBusyId) {
+        setDeleteConversationConfirm(null);
+      }
+    }
+
+    document.addEventListener("keydown", handleDeleteConversationKeyDown);
+    return () => document.removeEventListener("keydown", handleDeleteConversationKeyDown);
+  }, [conversationActionBusyId, deleteConversationConfirm]);
 
   useEffect(() => {
     if (!reactionPickerMessageId) return undefined;
@@ -1645,6 +1690,46 @@ export default function SiBSChat({ enabled = true }) {
 
   const activeConversation = chat?.activeConversation || null;
 
+  const activeTypingMembers = useMemo(() => {
+    const conversationId = Number(activeConversation?.id || 0);
+    if (!conversationId) return [];
+
+    const typingIds = Array.isArray(chat?.typingByConversation?.[conversationId])
+      ? chat.typingByConversation[conversationId]
+      : [];
+
+    const members = Array.isArray(activeConversation?.members)
+      ? activeConversation.members
+      : [];
+
+    return typingIds
+      .map((sibsId) =>
+        members.find(
+          (member) => cleanText(member?.sibsId) === cleanText(sibsId),
+        ),
+      )
+      .filter(Boolean)
+      .filter((member) => cleanText(member?.sibsId) !== currentSibsId);
+  }, [
+    activeConversation,
+    chat?.typingByConversation,
+    currentSibsId,
+  ]);
+
+  const typingLabel = useMemo(() => {
+    const names = activeTypingMembers
+      .map((member) => getChatMemberDisplayName(member))
+      .filter(Boolean);
+
+    if (!names.length) return "";
+    if (names.length === 1) return `${names[0]} is typing...`;
+    if (names.length === 2) return `${names[0]} and ${names[1]} are typing...`;
+
+    return `${names[0]}, ${names[1]}, and ${names.length - 2} other${
+      names.length - 2 === 1 ? "" : "s"
+    } are typing...`;
+  }, [activeTypingMembers]);
+
   const mentionCandidates = useMemo(() => {
     if (!activeConversation?.isGroup || mentionStart === null) return [];
 
@@ -1743,6 +1828,17 @@ export default function SiBSChat({ enabled = true }) {
 
   useEffect(() => {
     if (!open || chat?.activeConversationId || !chat?.conversations?.length) return;
+
+    // On mobile, keep the conversation list visible until the user chooses a chat.
+    // Without this guard, pressing the mobile Back button clears the active chat,
+    // then this effect immediately re-opens the first conversation.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 639px)").matches
+    ) {
+      return;
+    }
+
     void chat.selectConversation(chat.conversations[0].id);
   }, [chat, open]);
 
@@ -1765,6 +1861,26 @@ export default function SiBSChat({ enabled = true }) {
   }, [selectedImages]);
 
   useEffect(() => {
+    if (!open && typingConversationIdRef.current) {
+      stopTypingIndicator(typingConversationIdRef.current);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const currentTypingConversationId = Number(
+      typingConversationIdRef.current || 0,
+    );
+    const nextConversationId = Number(activeConversation?.id || 0);
+
+    if (
+      currentTypingConversationId &&
+      currentTypingConversationId !== nextConversationId
+    ) {
+      stopTypingIndicator(currentTypingConversationId);
+    }
+  }, [activeConversation?.id]);
+
+  useEffect(() => {
     return () => {
       selectedImagesRef.current.forEach((item) =>
         URL.revokeObjectURL(item.previewUrl),
@@ -1779,11 +1895,72 @@ export default function SiBSChat({ enabled = true }) {
     setMentionActiveIndex(0);
   }, [chat?.activeConversationId]);
 
+  useEffect(() => {
+    if (!attachmentNotice) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setAttachmentNotice("");
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [attachmentNotice]);
+
   if (!visible) return null;
 
   function isMemberOnline(member) {
     if (!member?.sibsId) return false;
     return chat.presence?.[member.sibsId] ?? member.online ?? false;
+  }
+
+  function stopTypingIndicator(conversationId = null) {
+    if (typingStopTimerRef.current) {
+      window.clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
+    }
+
+    const targetConversationId = Number(
+      conversationId ||
+        typingConversationIdRef.current ||
+        activeConversation?.id ||
+        0,
+    );
+
+    if (targetConversationId) {
+      void chat?.setTypingStatus?.(targetConversationId, false);
+    }
+
+    typingConversationIdRef.current = null;
+    typingLastSentAtRef.current = 0;
+  }
+
+  function updateTypingIndicator(nextValue) {
+    const conversationId = Number(activeConversation?.id || 0);
+    if (!conversationId) return;
+
+    if (!String(nextValue ?? "").length) {
+      stopTypingIndicator(conversationId);
+      return;
+    }
+
+    const now = Date.now();
+    const changedConversation =
+      Number(typingConversationIdRef.current || 0) !== conversationId;
+    const heartbeatDue =
+      now - Number(typingLastSentAtRef.current || 0) >= 2500;
+
+    if (changedConversation || heartbeatDue) {
+      typingConversationIdRef.current = conversationId;
+      typingLastSentAtRef.current = now;
+      void chat?.setTypingStatus?.(conversationId, true);
+    }
+
+    if (typingStopTimerRef.current) {
+      window.clearTimeout(typingStopTimerRef.current);
+    }
+
+    typingStopTimerRef.current = window.setTimeout(() => {
+      stopTypingIndicator(conversationId);
+    }, 1600);
   }
 
   async function handleFiles(event) {
@@ -1799,7 +1976,12 @@ export default function SiBSChat({ enabled = true }) {
 
     for (const file of incoming.slice(0, availableSlots)) {
       if (file.size > MAX_ATTACHMENT_BYTES) {
-        setLocalError(`${file.name} is larger than 10 MB.`);
+        const sizeInMb = (file.size / (1024 * 1024)).toFixed(1);
+        const message =
+          `${file.name} is ${sizeInMb} MB. Maximum file size is 10 MB.`;
+
+        setLocalError(message);
+        setAttachmentNotice(message);
         continue;
       }
 
@@ -1880,6 +2062,7 @@ export default function SiBSChat({ enabled = true }) {
     const nextCaret = Math.min(mentionStart + replacement.length, nextDraft.length);
 
     setDraft(nextDraft);
+    updateTypingIndicator(nextDraft);
     closeMentionPicker();
 
     window.requestAnimationFrame(() => {
@@ -1899,6 +2082,7 @@ export default function SiBSChat({ enabled = true }) {
     const nextCaret = Math.min(selectionStart + emoji.length, nextDraft.length);
 
     setDraft(nextDraft);
+    updateTypingIndicator(nextDraft);
 
     window.requestAnimationFrame(() => {
       const textarea = textareaRef.current;
@@ -1923,6 +2107,7 @@ export default function SiBSChat({ enabled = true }) {
       });
 
       setReplyingToMessage(null);
+      stopTypingIndicator(activeConversation.id);
       setGifPickerOpen(false);
       setGifSearch("");
       setGifResults([]);
@@ -1955,6 +2140,7 @@ export default function SiBSChat({ enabled = true }) {
       selectedImages.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       setSelectedImages([]);
       setDraft("");
+      stopTypingIndicator(activeConversation.id);
       setEmojiPickerOpen(false);
       setGifPickerOpen(false);
       window.requestAnimationFrame(() => textareaRef.current?.focus());
@@ -2099,6 +2285,61 @@ export default function SiBSChat({ enabled = true }) {
       );
     } finally {
       setUnsendingMessageId(null);
+    }
+  }
+
+  async function handleHideConversation(conversation) {
+    const conversationId = Number(conversation?.id || 0);
+    if (!conversationId || conversation?.isGroup || !chat?.hidePrivateConversation) return;
+
+    try {
+      setConversationActionBusyId(conversationId);
+      setLocalError("");
+      await chat.hidePrivateConversation(conversationId);
+      setConversationActionId(null);
+    } catch (requestError) {
+      setLocalError(
+        requestError?.response?.data?.message ||
+          requestError?.message ||
+          "Unable to hide the conversation.",
+      );
+    } finally {
+      setConversationActionBusyId(null);
+    }
+  }
+
+  function handleDeleteConversation(conversation) {
+    if (!conversation?.id || conversation?.isGroup) return;
+    setConversationActionId(null);
+    setDeleteConversationConfirm(conversation);
+  }
+
+  async function confirmDeleteConversation() {
+    const conversation = deleteConversationConfirm;
+    const conversationId = Number(conversation?.id || 0);
+
+    if (
+      !conversationId ||
+      conversation?.isGroup ||
+      Number(conversationActionBusyId) === conversationId ||
+      !chat?.deletePrivateConversation
+    ) {
+      return;
+    }
+
+    try {
+      setConversationActionBusyId(conversationId);
+      setLocalError("");
+      await chat.deletePrivateConversation(conversationId);
+      setDeleteConversationConfirm(null);
+    } catch (requestError) {
+      setLocalError(
+        requestError?.response?.data?.message ||
+          requestError?.message ||
+          "Unable to delete the conversation.",
+      );
+    } finally {
+      setConversationActionBusyId(null);
     }
   }
 
@@ -2279,7 +2520,7 @@ export default function SiBSChat({ enabled = true }) {
 
       <section
         aria-label="SiBS Chat"
-        className={`font-jakarta fixed bottom-24 right-4 z-[89] flex h-[min(680px,calc(100vh-125px))] w-[min(760px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl transition duration-200 sm:right-6 ${
+        className={`font-jakarta fixed bottom-24 right-4 z-[89] flex h-[min(680px,calc(100dvh-7.75rem))] w-[min(760px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl transition duration-200 sm:right-6 max-sm:inset-x-4 max-sm:top-[12.5dvh] max-sm:bottom-auto max-sm:h-[75dvh] max-sm:w-auto max-sm:rounded-xl ${
           open
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
             : "pointer-events-none translate-y-3 scale-[0.98] opacity-0"
@@ -2297,7 +2538,9 @@ export default function SiBSChat({ enabled = true }) {
           </div>
         ) : null}
 
-        <aside className={`w-[280px] shrink-0 flex-col border-r border-sibs-border bg-white ${activeConversation ? "max-sm:hidden sm:flex" : "flex"}`}>
+        <aside className={`w-[280px] shrink-0 flex-col border-r border-sibs-border bg-white max-sm:w-full max-sm:border-r-0 ${
+          activeConversation || newChatOpen ? "max-sm:hidden sm:flex" : "flex"
+        }`}>
           <header className="bg-sibs-navy px-4 py-3.5 text-white">
             <div className="flex items-center gap-3">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-sibs-orange text-white">
@@ -2369,43 +2612,112 @@ export default function SiBSChat({ enabled = true }) {
                           ? "GIF"
                           : "No messages yet");
 
+                const actionMenuOpen =
+                  Number(conversationActionId) === Number(conversation.id);
+                const actionBusy =
+                  Number(conversationActionBusyId) === Number(conversation.id);
+
                 return (
-                  <button
+                  <div
                     key={conversation.id}
-                    type="button"
-                    onClick={() => void chat.selectConversation(conversation.id)}
-                    className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+                    className={`group relative mb-1 flex w-full items-center rounded-xl text-left transition ${
                       selected ? "bg-[#FFF0EA]" : "hover:bg-sibs-surface"
                     }`}
                   >
-                    <ChatAvatar
-                      employee={conversation.isGroup ? null : otherMember}
-                      initials={conversation.initials}
-                      online={online}
-                      group={conversation.isGroup}
-                      size="sm"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="truncate text-xs font-extrabold text-sibs-navy">
-                          {conversation.title}
-                        </span>
-                        <span className="shrink-0 text-[9px] font-semibold text-sibs-faint">
-                          {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
-                        </span>
-                      </span>
-                      <span className="mt-0.5 flex items-center gap-2">
-                        <span className={`min-w-0 flex-1 truncate text-[10px] ${conversation.unreadCount ? "font-extrabold text-sibs-navy" : "font-semibold text-sibs-muted"}`}>
-                          {preview}
-                        </span>
-                        {conversation.unreadCount > 0 ? (
-                          <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-sibs-orange px-1.5 py-0.5 text-[9px] font-black text-white">
-                            {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConversationActionId(null);
+                        void chat.selectConversation(conversation.id);
+                      }}
+                      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
+                    >
+                      <ChatAvatar
+                        employee={conversation.isGroup ? null : otherMember}
+                        initials={conversation.initials}
+                        online={online}
+                        group={conversation.isGroup}
+                        size="sm"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="truncate text-xs font-extrabold text-sibs-navy">
+                            {conversation.title}
                           </span>
-                        ) : null}
+                          <span className="shrink-0 text-[9px] font-semibold text-sibs-faint">
+                            {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
+                          </span>
+                        </span>
+                        <span className="mt-0.5 flex items-center gap-2">
+                          <span className={`min-w-0 flex-1 truncate text-[10px] ${conversation.unreadCount ? "font-extrabold text-sibs-navy" : "font-semibold text-sibs-muted"}`}>
+                            {preview}
+                          </span>
+                          {conversation.unreadCount > 0 ? (
+                            <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-sibs-orange px-1.5 py-0.5 text-[9px] font-black text-white">
+                              {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                            </span>
+                          ) : null}
+                        </span>
                       </span>
-                    </span>
-                  </button>
+                    </button>
+
+                    {!conversation.isGroup ? (
+                      <div
+                        data-chat-conversation-actions
+                        className="relative mr-1.5 shrink-0"
+                      >
+                        <button
+                          type="button"
+                          aria-label={`Conversation options for ${conversation.title}`}
+                          aria-haspopup="menu"
+                          aria-expanded={actionMenuOpen}
+                          disabled={actionBusy}
+                          onClick={() =>
+                            setConversationActionId((current) =>
+                              Number(current) === Number(conversation.id)
+                                ? null
+                                : conversation.id,
+                            )
+                          }
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sibs-faint transition hover:bg-white hover:text-sibs-navy disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {actionBusy ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <MoreHorizontal size={16} />
+                          )}
+                        </button>
+
+                        {actionMenuOpen ? (
+                          <div
+                            role="menu"
+                            className="absolute right-0 top-8 z-40 w-40 overflow-hidden rounded-xl border border-sibs-border bg-white p-1.5 shadow-[0_12px_32px_rgba(4,44,81,0.18)]"
+                          >
+                            <button
+                              type="button"
+                              role="menuitem"
+                              disabled={actionBusy}
+                              onClick={() => void handleHideConversation(conversation)}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <EyeOff size={14} />
+                              Hide conversation
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              disabled={actionBusy}
+                              onClick={() => handleDeleteConversation(conversation)}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-extrabold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Trash2 size={14} />
+                              Delete conversation
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
                 );
               })
             ) : (
@@ -2426,13 +2738,17 @@ export default function SiBSChat({ enabled = true }) {
           </div>
         </aside>
 
-        <div className={`relative min-w-0 flex-1 flex-col ${activeConversation ? "flex" : "max-sm:hidden sm:flex"}`}>
+        <div className={`relative min-w-0 flex-1 flex-col max-sm:w-full ${
+          activeConversation || newChatOpen ? "flex" : "max-sm:hidden sm:flex"
+        }`}>
           {activeConversation ? (
             <>
-              <header className="flex h-[68px] shrink-0 items-center gap-3 border-b border-sibs-border bg-white px-4">
+              <header className="flex h-[68px] shrink-0 items-center gap-3 border-b border-sibs-border bg-white px-4 max-sm:h-[58px] max-sm:gap-2 max-sm:px-2">
                 <button
                   type="button"
                   onClick={() => void chat.selectConversation(null)}
+                  aria-label="Back to chats"
+                  title="Back to chats"
                   className="hidden h-9 w-9 items-center justify-center rounded-xl text-sibs-muted hover:bg-sibs-surface max-sm:inline-flex"
                 >
                   <ArrowLeft size={18} />
@@ -3053,7 +3369,54 @@ export default function SiBSChat({ enabled = true }) {
                 )}
               </div>
 
-              <footer className="shrink-0 border-t border-sibs-border bg-white px-3 py-3">
+              {activeTypingMembers.length ? (
+                <div className="shrink-0 border-t border-[#EAF0F5] bg-[#F8FAFC] px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <ChatAvatar
+                      employee={activeTypingMembers[0]}
+                      initials={activeTypingMembers[0]?.initials}
+                      online={
+                        chat.presence?.[activeTypingMembers[0]?.sibsId] ??
+                        activeTypingMembers[0]?.online ??
+                        false
+                      }
+                      size="xs"
+                    />
+
+                    <span className="inline-flex items-center gap-1 rounded-full border border-sibs-border bg-white px-2.5 py-1.5 shadow-sm">
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sibs-muted [animation-delay:-0.30s]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sibs-muted [animation-delay:-0.15s]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sibs-muted" />
+                    </span>
+
+                    <span className="min-w-0 truncate text-[10px] font-semibold text-sibs-muted">
+                      {typingLabel}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              <footer className="shrink-0 border-t border-sibs-border bg-white px-3 py-3 max-sm:px-2 max-sm:py-2">
+                {attachmentNotice ? (
+                  <div
+                    role="alert"
+                    className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-semibold leading-4 text-red-700 shadow-sm"
+                  >
+                    <span className="min-w-0 flex-1">
+                      {attachmentNotice}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachmentNotice("")}
+                      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-red-500 transition hover:bg-red-100 hover:text-red-700"
+                      aria-label="Dismiss file size notification"
+                      title="Dismiss"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                ) : null}
+
                 {replyingToMessage ? (
                   <div className="mb-2 flex items-center gap-2 rounded-xl border border-sibs-border bg-[#F8FAFC] px-3 py-2">
                     <div className="min-w-0 flex-1 border-l-[3px] border-sibs-orange pl-2.5">
@@ -3379,6 +3742,7 @@ export default function SiBSChat({ enabled = true }) {
                       onChange={(event) => {
                         const nextValue = event.target.value.slice(0, 5000);
                         setDraft(nextValue);
+                        updateTypingIndicator(nextValue);
                         updateMentionPicker(
                           nextValue,
                           Math.min(event.target.selectionStart ?? nextValue.length, nextValue.length),
@@ -3400,6 +3764,7 @@ export default function SiBSChat({ enabled = true }) {
                         );
                       }}
                       onKeyDown={handleComposerKeyDown}
+                      onBlur={() => stopTypingIndicator(activeConversation?.id)}
                       rows={1}
                       placeholder={
                         activeConversation?.isGroup
@@ -3419,8 +3784,13 @@ export default function SiBSChat({ enabled = true }) {
                     {sending ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
                   </button>
                 </div>
-                <p className="mt-1.5 pl-[136px] pr-12 text-[9px] font-semibold text-sibs-faint">
-                  Images/Audio/Videos: JPG, PNG, WEBP, GIF, MP3, WAV, OGG, M4A, AAC, FLAC, MP4, WEBM, MOV, M4V · maximum 10 MB each
+                <p className="mt-1.5 pl-[136px] pr-12 text-[9px] font-semibold text-sibs-faint max-sm:px-1 max-sm:text-center max-sm:text-[8px] max-sm:leading-3">
+                  <span className="max-sm:hidden">
+                    Images/Audio/Videos: JPG, PNG, WEBP, GIF, MP3, WAV, OGG, M4A, AAC, FLAC, MP4, WEBM, MOV, M4V · maximum 10 MB each
+                  </span>
+                  <span className="hidden max-sm:inline">
+                    Images, audio &amp; video · maximum 10 MB each
+                  </span>
                 </p>
               </footer>
             </>
@@ -3464,6 +3834,77 @@ export default function SiBSChat({ enabled = true }) {
           />
         </div>
       </section>
+
+      {deleteConversationConfirm && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (
+                  event.target === event.currentTarget &&
+                  !conversationActionBusyId
+                ) {
+                  setDeleteConversationConfirm(null);
+                }
+              }}
+            >
+              <div
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="chat-delete-conversation-title"
+                aria-describedby="chat-delete-conversation-description"
+                className="w-full max-w-[390px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.28)]"
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <div className="px-5 pb-4 pt-5">
+                  <div className="flex items-start gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                      <Trash2 size={19} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3
+                        id="chat-delete-conversation-title"
+                        className="text-sm font-extrabold text-sibs-navy"
+                      >
+                        Delete conversation?
+                      </h3>
+                      <p
+                        id="chat-delete-conversation-description"
+                        className="mt-1.5 text-[11px] font-semibold leading-5 text-sibs-muted"
+                      >
+                        This removes your current personal chat history with {deleteConversationConfirm.title}. It does not remove the other employee&apos;s copy. New messages can make the conversation appear again.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 border-t border-sibs-border bg-[#F8FAFC] px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConversationConfirm(null)}
+                    disabled={Boolean(conversationActionBusyId)}
+                    className="inline-flex h-9 items-center justify-center rounded-xl border border-sibs-border bg-white px-4 text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void confirmDeleteConversation()}
+                    disabled={Boolean(conversationActionBusyId)}
+                    className="inline-flex h-9 min-w-[86px] items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-[11px] font-extrabold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {conversationActionBusyId ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : null}
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {unsendConfirmMessage && typeof document !== "undefined"
         ? createPortal(

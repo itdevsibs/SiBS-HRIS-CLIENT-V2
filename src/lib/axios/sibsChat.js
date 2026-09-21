@@ -105,6 +105,37 @@ export async function leaveGroupChat(conversationId) {
   return response.data;
 }
 
+export async function hidePrivateChat(conversationId) {
+  const response = await api.post(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/hide`,
+    {},
+  );
+
+  return response.data?.data || null;
+}
+
+export async function deletePrivateChat(conversationId) {
+  const response = await api.delete(
+    `/chat/conversations/${encodeURIComponent(conversationId)}`,
+  );
+
+  return response.data?.data || null;
+}
+
+export async function sendChatTypingStatus(
+  conversationId,
+  isTyping = false,
+) {
+  const response = await api.post(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/typing`,
+    {
+      isTyping: Boolean(isTyping),
+    },
+  );
+
+  return response.data?.data || null;
+}
+
 export async function getChatMessages(
   conversationId,
   { before = "", limit = 50 } = {},

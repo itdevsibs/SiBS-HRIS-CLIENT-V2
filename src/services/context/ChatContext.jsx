@@ -13,13 +13,16 @@ import {
   addGroupChatMembers,
   createGroupChat,
   createPrivateChat,
+  deletePrivateChat,
   getChatConversations,
+  hidePrivateChat,
   getChatMessages,
   leaveGroupChat,
   markChatRead,
   removeGroupChatMember,
   renameGroupChat,
   sendChatMessage,
+  sendChatTypingStatus,
   setChatMessageReaction,
   unsendChatMessage,
 } from "@/lib/axios/sibsChat";
@@ -78,37 +81,70 @@ function getChatReceiveAudioContext() {
 function scheduleChatReceiveSound(audioContext) {
   if (!audioContext) return;
 
-  const now = audioContext.currentTime;
+  // A short, soft two-note chime inspired by modern chat notifications.
+  // It is synthesized locally so there is no external audio asset to load.
+  const now = audioContext.currentTime + 0.01;
   const masterGain = audioContext.createGain();
+  const compressor = audioContext.createDynamicsCompressor();
+
+  compressor.threshold.setValueAtTime(-24, now);
+  compressor.knee.setValueAtTime(18, now);
+  compressor.ratio.setValueAtTime(4, now);
+  compressor.attack.setValueAtTime(0.003, now);
+  compressor.release.setValueAtTime(0.18, now);
 
   masterGain.gain.setValueAtTime(0.0001, now);
-  masterGain.gain.exponentialRampToValueAtTime(0.12, now + 0.012);
-  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
-  masterGain.connect(audioContext.destination);
+  masterGain.gain.exponentialRampToValueAtTime(0.2, now + 0.012);
+  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.46);
+  masterGain.connect(compressor);
+  compressor.connect(audioContext.destination);
 
   const tones = [
-    { frequency: 740, start: 0, duration: 0.12 },
-    { frequency: 980, start: 0.065, duration: 0.14 },
+    { frequency: 659.25, start: 0, duration: 0.22, volume: 0.72 },
+    { frequency: 987.77, start: 0.075, duration: 0.3, volume: 0.86 },
   ];
 
-  tones.forEach(({ frequency, start, duration }) => {
-    const oscillator = audioContext.createOscillator();
-    const toneGain = audioContext.createGain();
+  tones.forEach(({ frequency, start, duration, volume }) => {
     const startAt = now + start;
     const stopAt = startAt + duration;
+    const toneGain = audioContext.createGain();
+    const fundamental = audioContext.createOscillator();
+    const harmonic = audioContext.createOscillator();
+    const harmonicGain = audioContext.createGain();
 
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(frequency, startAt);
+    fundamental.type = "sine";
+    fundamental.frequency.setValueAtTime(frequency, startAt);
+    fundamental.frequency.exponentialRampToValueAtTime(
+      frequency * 1.012,
+      stopAt,
+    );
+
+    harmonic.type = "sine";
+    harmonic.frequency.setValueAtTime(frequency * 2, startAt);
 
     toneGain.gain.setValueAtTime(0.0001, startAt);
-    toneGain.gain.exponentialRampToValueAtTime(0.9, startAt + 0.01);
+    toneGain.gain.exponentialRampToValueAtTime(volume, startAt + 0.012);
     toneGain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
 
-    oscillator.connect(toneGain);
-    toneGain.connect(masterGain);
+    harmonicGain.gain.setValueAtTime(0.0001, startAt);
+    harmonicGain.gain.exponentialRampToValueAtTime(
+      volume * 0.14,
+      startAt + 0.008,
+    );
+    harmonicGain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      startAt + duration * 0.72,
+    );
 
-    oscillator.start(startAt);
-    oscillator.stop(stopAt + 0.01);
+    fundamental.connect(toneGain);
+    harmonic.connect(harmonicGain);
+    toneGain.connect(masterGain);
+    harmonicGain.connect(masterGain);
+
+    fundamental.start(startAt);
+    harmonic.start(startAt);
+    fundamental.stop(stopAt + 0.02);
+    harmonic.stop(stopAt + 0.02);
   });
 }
 
@@ -155,6 +191,7 @@ export function ChatProvider({ children }) {
   const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [presence, setPresence] = useState({});
+  const [typingByConversation, setTypingByConversation] = useState({});
   const [error, setError] = useState("");
   const [membershipNotice, setMembershipNotice] = useState(null);
 
@@ -163,6 +200,7 @@ export function ChatProvider({ children }) {
   const chatWindowOpenRef = useRef(false);
   const messagesRef = useRef([]);
   const fallbackSyncBusyRef = useRef(false);
+  const typingExpiryTimersRef = useRef(new Map());
 
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
@@ -510,10 +548,50 @@ export function ChatProvider({ children }) {
   const addGroupMembers = useCallback(
     async (conversationId, memberSibsIds) => {
       const result = await addGroupChatMembers(conversationId, memberSibsIds);
+      const targetConversationId = Number(conversationId || 0);
+
+      const activityMessage =
+        result?.activityMessage ||
+        result?.data?.activityMessage ||
+        null;
+
+      if (
+        activityMessage &&
+        targetConversationId &&
+        Number(activeConversationIdRef.current) === targetConversationId
+      ) {
+        setMessages((current) => {
+          if (
+            current.some(
+              (message) =>
+                Number(message?.id || 0) === Number(activityMessage?.id || 0),
+            )
+          ) {
+            return current;
+          }
+
+          return [...current, activityMessage];
+        });
+      }
+
       await refreshConversations();
+
+      /*
+       * The membership activity is persisted in the conversation JSON by
+       * the server. Reload the active conversation after an add operation so
+       * the "X added Y to the group" system message is guaranteed to appear
+       * even if the Socket.IO event or axios response shape was missed.
+       */
+      if (
+        targetConversationId &&
+        Number(activeConversationIdRef.current) === targetConversationId
+      ) {
+        await loadConversationMessages(targetConversationId);
+      }
+
       return result;
     },
-    [refreshConversations],
+    [loadConversationMessages, refreshConversations],
   );
 
   const removeGroupMember = useCallback(
@@ -539,6 +617,87 @@ export function ChatProvider({ children }) {
       await refreshConversations();
     },
     [refreshConversations],
+  );
+
+  const hidePrivateConversation = useCallback(
+    async (conversationId) => {
+      await hidePrivateChat(conversationId);
+
+      if (Number(activeConversationIdRef.current) === Number(conversationId)) {
+        activeConversationIdRef.current = null;
+        setActiveConversationId(null);
+        setMessages([]);
+        setHasMoreMessages(false);
+      }
+
+      await refreshConversations();
+    },
+    [refreshConversations],
+  );
+
+  const deletePrivateConversation = useCallback(
+    async (conversationId) => {
+      await deletePrivateChat(conversationId);
+
+      if (Number(activeConversationIdRef.current) === Number(conversationId)) {
+        activeConversationIdRef.current = null;
+        setActiveConversationId(null);
+        setMessages([]);
+        setHasMoreMessages(false);
+      }
+
+      await refreshConversations();
+    },
+    [refreshConversations],
+  );
+
+  const clearTypingMember = useCallback((conversationId, sibsId) => {
+    const id = Number(conversationId || 0);
+    const memberId = cleanText(sibsId);
+    if (!id || !memberId) return;
+
+    const timerKey = `${id}:${memberId}`;
+    const timerId = typingExpiryTimersRef.current.get(timerKey);
+
+    if (timerId) {
+      window.clearTimeout(timerId);
+      typingExpiryTimersRef.current.delete(timerKey);
+    }
+
+    setTypingByConversation((current) => {
+      const currentIds = Array.isArray(current?.[id]) ? current[id] : [];
+      const nextIds = currentIds.filter(
+        (value) => cleanText(value) !== memberId,
+      );
+
+      if (nextIds.length === currentIds.length) {
+        return current;
+      }
+
+      const next = { ...current };
+
+      if (nextIds.length) {
+        next[id] = nextIds;
+      } else {
+        delete next[id];
+      }
+
+      return next;
+    });
+  }, []);
+
+  const setTypingStatus = useCallback(
+    async (conversationId, isTyping) => {
+      const id = Number(conversationId || 0);
+      if (!id || !chatAllowed || !currentSibsId) return null;
+
+      try {
+        return await sendChatTypingStatus(id, Boolean(isTyping));
+      } catch {
+        return null;
+      }
+    },
+    [chatAllowed, currentSibsId],
   );
 
   const syncChatWithoutRefresh = useCallback(async () => {
@@ -657,6 +816,11 @@ export function ChatProvider({ children }) {
       setActiveConversationId(null);
       activeConversationIdRef.current = null;
       setPresence({});
+      setTypingByConversation({});
+      typingExpiryTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      typingExpiryTimersRef.current.clear();
       setMembershipNotice(null);
       chatSocket.disconnect();
       return undefined;
@@ -682,6 +846,45 @@ export function ChatProvider({ children }) {
         ...current,
         [id]: Boolean(online),
       }));
+    };
+
+    const handleTyping = ({ conversationId, sibsId, isTyping } = {}) => {
+      const id = Number(conversationId || 0);
+      const memberId = cleanText(sibsId);
+
+      if (!id || !memberId || memberId === currentSibsId) return;
+
+      const timerKey = `${id}:${memberId}`;
+      const previousTimer = typingExpiryTimersRef.current.get(timerKey);
+
+      if (previousTimer) {
+        window.clearTimeout(previousTimer);
+        typingExpiryTimersRef.current.delete(timerKey);
+      }
+
+      if (!isTyping) {
+        clearTypingMember(id, memberId);
+        return;
+      }
+
+      setTypingByConversation((current) => {
+        const currentIds = Array.isArray(current?.[id]) ? current[id] : [];
+
+        if (currentIds.some((value) => cleanText(value) === memberId)) {
+          return current;
+        }
+
+        return {
+          ...current,
+          [id]: [...currentIds, memberId],
+        };
+      });
+
+      const timerId = window.setTimeout(() => {
+        clearTypingMember(id, memberId);
+      }, 5000);
+
+      typingExpiryTimersRef.current.set(timerKey, timerId);
     };
 
     const handleConversationUpdate = () => {
@@ -734,6 +937,10 @@ export function ChatProvider({ children }) {
       const messageType = cleanText(message?.messageType).toUpperCase();
       const isMembershipActivity =
         messageType === "MEMBER_ADDED" || messageType === "MEMBER_REMOVED";
+
+      if (id && senderSibsId) {
+        clearTypingMember(id, senderSibsId);
+      }
 
       if (
         message &&
@@ -877,6 +1084,7 @@ export function ChatProvider({ children }) {
     chatSocket.on("disconnect", handleDisconnect);
     chatSocket.on("connect_error", handleConnectError);
     chatSocket.on("chat:presence", handlePresence);
+    chatSocket.on("chat:typing", handleTyping);
     chatSocket.on("chat:conversation-updated", handleConversationUpdate);
     chatSocket.on("chat:membership-notification", handleMembershipNotification);
     chatSocket.on("chat:message", handleNewMessage);
@@ -910,16 +1118,24 @@ export function ChatProvider({ children }) {
       chatSocket.off("disconnect", handleDisconnect);
       chatSocket.off("connect_error", handleConnectError);
       chatSocket.off("chat:presence", handlePresence);
+      chatSocket.off("chat:typing", handleTyping);
       chatSocket.off("chat:conversation-updated", handleConversationUpdate);
       chatSocket.off("chat:membership-notification", handleMembershipNotification);
       chatSocket.off("chat:message", handleNewMessage);
       chatSocket.off("chat:message-unsent", handleMessageUnsent);
       chatSocket.off("chat:reaction", handleReaction);
       chatSocket.off("chat:read", handleRead);
+
+      typingExpiryTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      typingExpiryTimersRef.current.clear();
+
       chatSocket.disconnect();
     };
   }, [
     chatAllowed,
+    clearTypingMember,
     currentSibsId,
     refreshConversations,
     syncChatWithoutRefresh,
@@ -957,12 +1173,14 @@ export function ChatProvider({ children }) {
       loadingOlderMessages,
       hasMoreMessages,
       presence,
+      typingByConversation,
       totalUnread,
       error,
       membershipNotice,
       clearError: () => setError(""),
       dismissMembershipNotice,
       setChatWindowOpen,
+      setTypingStatus,
       refreshConversations,
       selectConversation,
       loadOlderMessages,
@@ -975,6 +1193,8 @@ export function ChatProvider({ children }) {
       addGroupMembers,
       removeGroupMember,
       leaveGroup,
+      hidePrivateConversation,
+      deletePrivateConversation,
     }),
     [
       activeConversation,
@@ -987,6 +1207,8 @@ export function ChatProvider({ children }) {
       dismissMembershipNotice,
       error,
       leaveGroup,
+      hidePrivateConversation,
+      deletePrivateConversation,
       membershipNotice,
       messages,
       messagesLoading,
@@ -995,6 +1217,8 @@ export function ChatProvider({ children }) {
       loadOlderMessages,
       presence,
       setChatWindowOpen,
+      setTypingStatus,
+      typingByConversation,
       refreshConversations,
       removeGroupMember,
       renameGroup,
