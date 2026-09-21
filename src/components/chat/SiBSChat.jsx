@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -1384,13 +1385,32 @@ function MembershipNoticeCard({ notice, onOpenGroup, onDismiss }) {
   );
 }
 
-export default function SiBSChat({ enabled = true }) {
+export default function SiBSChat({
+  enabled = true,
+  isOpen: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+}) {
   const { user, loading: userLoading } = useUser() || {};
   const chat = useChat();
   const refreshChatConversations = chat?.refreshConversations;
   const selectChatConversation = chat?.selectConversation;
 
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+
+  const setOpen = useCallback(
+    (nextOpen) => {
+      const resolvedOpen =
+        typeof nextOpen === "function" ? nextOpen(open) : nextOpen;
+      if (!isControlled) {
+        setInternalOpen(resolvedOpen);
+      }
+      onOpenChange?.(resolvedOpen);
+    },
+    [isControlled, open, onOpenChange],
+  );
   const [newChatOpen, setNewChatOpen] = useState(false);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [conversationSearch, setConversationSearch] = useState("");
@@ -2774,7 +2794,9 @@ export default function SiBSChat({ enabled = true }) {
         <div
           className="fixed right-4 z-[88] w-[min(340px,calc(100vw-2rem))] sm:right-6"
           style={{
-            bottom: "calc(9.75rem + env(safe-area-inset-bottom, 0px))",
+            bottom: hideTrigger
+              ? "calc(5.5rem + env(safe-area-inset-bottom, 0px))"
+              : "calc(9.75rem + env(safe-area-inset-bottom, 0px))",
           }}
         >
           <MembershipNoticeCard
@@ -2785,46 +2807,48 @@ export default function SiBSChat({ enabled = true }) {
         </div>
       ) : null}
 
-      <button
-        ref={launcherRef}
-        type="button"
-        onClick={handleLauncherClick}
-        onPointerDown={handleLauncherPointerDown}
-        onPointerMove={handleLauncherPointerMove}
-        onPointerUp={finishLauncherDrag}
-        onPointerCancel={finishLauncherDrag}
-        aria-label={chat.totalUnread > 0 ? `Open SiBS Chat, ${chat.totalUnread} unread message${chat.totalUnread === 1 ? "" : "s"}` : "Open SiBS Chat"}
-        aria-expanded={open}
-        className={`fixed z-[88] inline-flex select-none items-center gap-2 rounded-2xl border border-white/10 bg-sibs-navy px-3 py-2.5 font-jakarta text-sm font-extrabold text-white shadow-xl transition hover:bg-sibs-tertiary-2 ${
-          launcherPosition ? "" : "right-4 sm:right-6"
-        } ${launcherDragging ? "cursor-grabbing" : "cursor-grab"} ${
-          open ? "opacity-0 pointer-events-none" : "opacity-100"
-        }`}
-        style={
-          launcherPosition
-            ? {
-                left: `${launcherPosition.left}px`,
-                top: `${launcherPosition.top}px`,
-                right: "auto",
-                bottom: "auto",
-                touchAction: "none",
-              }
-            : {
-                bottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
-                touchAction: "none",
-              }
-        }
-      >
-        <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-xl bg-sibs-orange">
-          <MessageCircleMore size={17} />
-          {chat.totalUnread > 0 ? (
-            <span className="absolute -right-2 -top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-600 px-1 text-[9px] font-black text-white">
-              {chat.totalUnread > 99 ? "99+" : chat.totalUnread}
-            </span>
-          ) : null}
-        </span>
-        <span className="hidden sm:inline">SiBS Chat</span>
-      </button>
+      {!hideTrigger ? (
+        <button
+          ref={launcherRef}
+          type="button"
+          onClick={handleLauncherClick}
+          onPointerDown={handleLauncherPointerDown}
+          onPointerMove={handleLauncherPointerMove}
+          onPointerUp={finishLauncherDrag}
+          onPointerCancel={finishLauncherDrag}
+          aria-label={chat.totalUnread > 0 ? `Open SiBS Chat, ${chat.totalUnread} unread message${chat.totalUnread === 1 ? "" : "s"}` : "Open SiBS Chat"}
+          aria-expanded={open}
+          className={`fixed z-[88] inline-flex select-none items-center gap-2 rounded-2xl border border-white/10 bg-sibs-navy px-3 py-2.5 font-jakarta text-sm font-extrabold text-white shadow-xl transition hover:bg-sibs-tertiary-2 ${
+            launcherPosition ? "" : "right-4 sm:right-6"
+          } ${launcherDragging ? "cursor-grabbing" : "cursor-grab"} ${
+            open ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
+          style={
+            launcherPosition
+              ? {
+                  left: `${launcherPosition.left}px`,
+                  top: `${launcherPosition.top}px`,
+                  right: "auto",
+                  bottom: "auto",
+                  touchAction: "none",
+                }
+              : {
+                  bottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))",
+                  touchAction: "none",
+                }
+          }
+        >
+          <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-xl bg-sibs-orange">
+            <MessageCircleMore size={17} />
+            {chat.totalUnread > 0 ? (
+              <span className="absolute -right-2 -top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-600 px-1 text-[9px] font-black text-white">
+                {chat.totalUnread > 99 ? "99+" : chat.totalUnread}
+              </span>
+            ) : null}
+          </span>
+          <span className="hidden sm:inline">SiBS Chat</span>
+        </button>
+      ) : null}
 
       <section
         aria-label="SiBS Chat"

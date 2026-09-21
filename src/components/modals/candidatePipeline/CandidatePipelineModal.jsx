@@ -18,6 +18,7 @@ import {
   Check,
   Loader2,
   RefreshCcw,
+  UserRound,
 } from "lucide-react";
 
 import DetailRow from "../../layout/common/DetailRow";
@@ -11599,9 +11600,31 @@ async function handleConfirmScheduleNho() {
                 </div>
 
                 <div className="min-w-0">
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Interview Remarks
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-1">
+                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                      Interview Remarks
+                    </p>
+                    {(activeCandidate.interviewNotesBy ||
+                      activeCandidate.interview_notes_by ||
+                      activeCandidate.interviewerName) &&
+                      (activeCandidate.interviewNotes ||
+                        activeCandidate.interviewerNotes ||
+                        activeCandidate.interview_notes) && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#667085]">
+                          <UserRound size={11} className="text-[#FF5C28]" />
+                          Added by{" "}
+                          {activeCandidate.interviewNotesBy ||
+                            activeCandidate.interview_notes_by ||
+                            activeCandidate.interviewerName}
+                          {(activeCandidate.interviewNotesAt ||
+                            activeCandidate.interview_notes_at) &&
+                            ` • ${formatCandidateDateOnly(
+                              activeCandidate.interviewNotesAt ||
+                                activeCandidate.interview_notes_at,
+                            )}`}
+                        </span>
+                      )}
+                  </div>
                   <p className="mt-0.5 whitespace-pre-line text-xs font-semibold leading-relaxed text-[#475467]">
                     {activeCandidate.interviewNotes ||
                       activeCandidate.interviewerNotes ||

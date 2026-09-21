@@ -7703,21 +7703,47 @@ export default function CandidateProfileModal() {
   }
 
   function renderRemarks() {
-  return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <SectionTitle
-        icon={FileText}
-        title="Notes"
-        description="Candidate profile notes and general remarks."
-      />
+    const remarksAuthor =
+      activeCandidate.remarksBy ||
+      activeCandidate.remarks_by ||
+      activeCandidate.currentTaOwner ||
+      activeCandidate.current_ta_owner ||
+      activeCandidate.taOwner ||
+      activeCandidate.ta_owner;
 
-      <ProfileTextarea
-        label="Notes"
-        value={activeCandidate.remarks || "No additional notes."}
-      />
-    </section>
-  );
-}
+    const remarksDate =
+      activeCandidate.remarksUpdatedAt ||
+      activeCandidate.remarks_updated_at;
+
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-2 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <SectionTitle
+            icon={FileText}
+            title="Notes"
+            description="Candidate profile notes and general remarks."
+          />
+          {remarksAuthor && activeCandidate.remarks ? (
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1.5 text-xs text-[#667085]">
+              <UserRound size={13} className="text-[#FF5C28]" />
+              <span>
+                Added/Updated by{" "}
+                <strong className="font-extrabold text-[#042C51]">
+                  {remarksAuthor}
+                </strong>
+                {remarksDate ? ` • ${formatUploadedDate(remarksDate)}` : ""}
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        <ProfileTextarea
+          label="Notes"
+          value={activeCandidate.remarks || "No additional notes."}
+        />
+      </section>
+    );
+  }
 
   function renderActiveTabContent() {
     if (activeTab === "personal.basic") return renderPersonalBasic();

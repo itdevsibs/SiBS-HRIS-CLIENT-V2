@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useUser } from "../../services/context/UserContext.jsx";
 import {
   AlertCircle,
   Award,
@@ -2876,8 +2877,10 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
 
 
 export function NotesSection({ employee, onCommitNote, onFeedback }) {
+  const { user } = useUser();
+  const currentUserName = user?.name || user?.fullName || user?.displayName || "HR Administrator";
   const existingHistory = Array.isArray(employee?.notesHistory) ? employee.notesHistory : [];
-  const seedHistory = existingHistory.length > 0 ? existingHistory : employee?.notes ? [{ id: "current_note", content: employee.notes, date: employee?.updatedAt || employee?.updated_at || "", author: employee?.updatedBy || "HR Administrator" }] : [];
+  const seedHistory = existingHistory.length > 0 ? existingHistory : employee?.notes ? [{ id: "current_note", content: employee.notes, date: employee?.updatedAt || employee?.updated_at || "", author: employee?.updatedBy || employee?.updated_by || currentUserName }] : [];
   const [history, setHistory] = useState(seedHistory);
   const [draft, setDraft] = useState("");
 
@@ -2887,7 +2890,7 @@ export function NotesSection({ employee, onCommitNote, onFeedback }) {
       onFeedback?.("Write a note before saving.", "error");
       return;
     }
-    const note = { id: `note_${Date.now()}`, content: draft.trim(), date: new Date().toISOString(), author: "Current HR User" };
+    const note = { id: `note_${Date.now()}`, content: draft.trim(), date: new Date().toISOString(), author: currentUserName };
     const nextHistory = [note, ...history];
     setHistory(nextHistory);
     setDraft("");

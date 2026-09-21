@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { CalendarDays, FileText, Lock, Save, Trash2, User } from "lucide-react";
 
+import { useUser } from "../../../../services/context/UserContext.jsx";
 import { cleanText, formatDisplayDate } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 import ProfileSectionHeader from "../shared/ProfileSectionHeader.jsx";
 import ProfilePanel from "../shared/ProfilePanel.jsx";
 import ProfileEmptyState from "../shared/ProfileEmptyState.jsx";
 
 export function NotesSection({ employee, onCommitNote, onFeedback, canEditDetails = false }) {
+  const { user } = useUser();
+  const currentUserName = user?.name || user?.fullName || user?.displayName || "HR Administrator";
   const existingHistory = Array.isArray(employee?.notesHistory) ? employee.notesHistory : [];
-  const seedHistory = existingHistory.length > 0 ? existingHistory : employee?.notes ? [{ id: "current_note", content: employee.notes, date: employee?.updatedAt || employee?.updated_at || "", author: employee?.updatedBy || "HR Administrator" }] : [];
+  const seedHistory = existingHistory.length > 0 ? existingHistory : employee?.notes ? [{ id: "current_note", content: employee.notes, date: employee?.updatedAt || employee?.updated_at || "", author: employee?.updatedBy || employee?.updated_by || currentUserName }] : [];
   const [history, setHistory] = useState(seedHistory);
   const [draft, setDraft] = useState("");
 
@@ -19,7 +22,7 @@ export function NotesSection({ employee, onCommitNote, onFeedback, canEditDetail
       onFeedback?.("Write a note before saving.", "error");
       return;
     }
-    const note = { id: `note_${Date.now()}`, content: draft.trim(), date: new Date().toISOString(), author: "Current HR User" };
+    const note = { id: `note_${Date.now()}`, content: draft.trim(), date: new Date().toISOString(), author: currentUserName };
     const nextHistory = [note, ...history];
     setHistory(nextHistory);
     setDraft("");
