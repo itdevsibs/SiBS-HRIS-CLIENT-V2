@@ -36,18 +36,157 @@ import { useUser } from "@/services/context/UserContext";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_ATTACHMENTS_PER_MESSAGE = 5;
-const ALLOWED_ATTACHMENT_TYPES = new Set([
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "video/mp4",
-  "video/webm",
-  "video/ogg",
-  "video/quicktime",
-  "video/x-m4v",
-]);
+
+function getFileExtension(value) {
+  const name = String(value ?? "").trim().toLowerCase();
+  const dotIndex = name.lastIndexOf(".");
+  return dotIndex >= 0 ? name.slice(dotIndex) : "";
+}
+
+function bytesToAscii(bytes, start, length) {
+  return String.fromCharCode(...bytes.slice(start, start + length));
+}
+
+function hasJpegEndMarker(bytes) {
+  const start = Math.max(2, bytes.length - 4096);
+  for (let index = bytes.length - 2; index >= start; index -= 1) {
+    if (bytes[index] === 0xff && bytes[index + 1] === 0xd9) return true;
+  }
+  return false;
+}
+
+function detectSupportedAttachmentMime(bytes, file = {}) {
+  if (!(bytes instanceof Uint8Array) || bytes.length < 4) return "";
+
+  const declaredMime = cleanText(file?.type).toLowerCase();
+  const extension = getFileExtension(file?.name);
+
+  // JPEG: SOI + EOI marker. This rejects truncated/corrupt .jpg files.
+  if (
+    bytes.length >= 4 &&
+    bytes[0] === 0xff &&
+    bytes[1] === 0xd8 &&
+    bytes[2] === 0xff &&
+    hasJpegEndMarker(bytes)
+  ) {
+    return "image/jpeg";
+  }
+
+  // PNG: signature + IHDR + IEND.
+  if (
+    bytes.length >= 33 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a &&
+    bytesToAscii(bytes, 12, 4) === "IHDR" &&
+    bytesToAscii(bytes, bytes.length - 8, 4) === "IEND"
+  ) {
+    return "image/png";
+  }
+
+  // GIF87a / GIF89a + trailer.
+  if (
+    bytes.length >= 14 &&
+    ["GIF87a", "GIF89a"].includes(bytesToAscii(bytes, 0, 6)) &&
+    bytes[bytes.length - 1] === 0x3b
+  ) {
+    return "image/gif";
+  }
+
+  // WEBP = RIFF....WEBP + a valid VP8 family chunk.
+  if (
+    bytes.length >= 16 &&
+    bytesToAscii(bytes, 0, 4) === "RIFF" &&
+    bytesToAscii(bytes, 8, 4) === "WEBP" &&
+    ["VP8 ", "VP8L", "VP8X"].includes(bytesToAscii(bytes, 12, 4))
+  ) {
+    return "image/webp";
+  }
+
+  // WAV = RIFF....WAVE.
+  if (
+    bytes.length >= 12 &&
+    bytesToAscii(bytes, 0, 4) === "RIFF" &&
+    bytesToAscii(bytes, 8, 4) === "WAVE"
+  ) {
+    return "audio/wav";
+  }
+
+  // OGG container. Keep the user's declared category when available.
+  if (bytesToAscii(bytes, 0, 4) === "OggS") {
+    return declaredMime.startsWith("video/") || extension === ".ogv"
+      ? "video/ogg"
+      : "audio/ogg";
+  }
+
+  // FLAC.
+  if (bytesToAscii(bytes, 0, 4) === "fLaC") {
+    return "audio/flac";
+  }
+
+  // MP3: ID3 tag or MPEG audio frame sync.
+  if (
+    bytesToAscii(bytes, 0, 3) === "ID3" ||
+    (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0 && extension === ".mp3")
+  ) {
+    return "audio/mpeg";
+  }
+
+  // AAC ADTS.
+  if (
+    bytes.length >= 7 &&
+    bytes[0] === 0xff &&
+    (bytes[1] & 0xf6) === 0xf0 &&
+    (declaredMime === "audio/aac" || extension === ".aac")
+  ) {
+    return "audio/aac";
+  }
+
+  // WEBM / Matroska EBML header.
+  if (
+    bytes.length >= 4 &&
+    bytes[0] === 0x1a &&
+    bytes[1] === 0x45 &&
+    bytes[2] === 0xdf &&
+    bytes[3] === 0xa3
+  ) {
+    return declaredMime.startsWith("audio/")
+      ? "audio/webm"
+      : "video/webm";
+  }
+
+  // ISO Base Media: MP4 / M4A / MOV / M4V.
+  if (bytes.length >= 12 && bytesToAscii(bytes, 4, 4) === "ftyp") {
+    if (declaredMime.startsWith("audio/") || extension === ".m4a") {
+      return "audio/mp4";
+    }
+    if (extension === ".mov" || declaredMime === "video/quicktime") {
+      return "video/quicktime";
+    }
+    if (extension === ".m4v" || declaredMime === "video/x-m4v") {
+      return "video/x-m4v";
+    }
+    return "video/mp4";
+  }
+
+  return "";
+}
+
+async function validateAttachmentBeforeSelection(file) {
+  if (!file || Number(file.size || 0) <= 0) return "";
+
+  try {
+    const buffer = await file.arrayBuffer();
+    return detectSupportedAttachmentMime(new Uint8Array(buffer), file);
+  } catch {
+    return "";
+  }
+}
 
 const CHAT_EMOJIS = [
   "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣",
@@ -1595,7 +1734,7 @@ export default function SiBSChat({ enabled = true }) {
     return chat.presence?.[member.sibsId] ?? member.online ?? false;
   }
 
-  function handleFiles(event) {
+  async function handleFiles(event) {
     const incoming = Array.from(event.target.files || []);
     event.target.value = "";
 
@@ -1607,18 +1746,22 @@ export default function SiBSChat({ enabled = true }) {
     const accepted = [];
 
     for (const file of incoming.slice(0, availableSlots)) {
-      if (!ALLOWED_ATTACHMENT_TYPES.has(file.type)) {
-        setLocalError("Only JPG, PNG, WEBP, GIF, MP4, WEBM, OGG, MOV, and M4V files are supported.");
-        continue;
-      }
-
       if (file.size > MAX_ATTACHMENT_BYTES) {
         setLocalError(`${file.name} is larger than 10 MB.`);
         continue;
       }
 
+      const detectedMimeType = await validateAttachmentBeforeSelection(file);
+      if (!detectedMimeType) {
+        setLocalError(
+          `${file.name} is not a supported or valid image, audio, or video file.`,
+        );
+        continue;
+      }
+
       accepted.push({
         file,
+        detectedMimeType,
         previewUrl: URL.createObjectURL(file),
       });
     }
@@ -1627,7 +1770,9 @@ export default function SiBSChat({ enabled = true }) {
       setLocalError(`You can attach up to ${MAX_ATTACHMENTS_PER_MESSAGE} files per message.`);
     }
 
-    setSelectedImages((current) => [...current, ...accepted]);
+    if (accepted.length) {
+      setSelectedImages((current) => [...current, ...accepted]);
+    }
   }
 
   function removeSelectedImage(index) {
@@ -2554,9 +2699,10 @@ export default function SiBSChat({ enabled = true }) {
                                     <div className={`grid gap-1 ${message.attachments.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                                       {message.attachments.map((attachment) => {
                                         const attachmentUrl = getChatAttachmentUrl(attachment.url);
-                                        const isVideo = cleanText(attachment.mimeType)
-                                          .toLowerCase()
-                                          .startsWith("video/");
+                                        const attachmentMimeType = cleanText(attachment.mimeType)
+                                          .toLowerCase();
+                                        const isVideo = attachmentMimeType.startsWith("video/");
+                                        const isAudio = attachmentMimeType.startsWith("audio/");
 
                                         if (isVideo) {
                                           return (
@@ -2573,6 +2719,24 @@ export default function SiBSChat({ enabled = true }) {
                                               >
                                                 Your browser does not support video playback.
                                               </video>
+                                            </div>
+                                          );
+                                        }
+
+                                        if (isAudio) {
+                                          return (
+                                            <div
+                                              key={attachment.id}
+                                              className="rounded-xl border border-sibs-border bg-white p-2"
+                                            >
+                                              <audio
+                                                src={attachmentUrl}
+                                                controls
+                                                preload="metadata"
+                                                className="w-full max-w-[320px]"
+                                              >
+                                                Your browser does not support audio playback.
+                                              </audio>
                                             </div>
                                           );
                                         }
@@ -2744,7 +2908,7 @@ export default function SiBSChat({ enabled = true }) {
                   <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
                     {selectedImages.map((item, index) => (
                       <div key={`${item.file.name}-${index}`} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface">
-                        {cleanText(item.file.type).toLowerCase().startsWith("video/") ? (
+                        {cleanText(item.detectedMimeType || item.file.type).toLowerCase().startsWith("video/") ? (
                           <video
                             src={item.previewUrl}
                             muted
@@ -2752,6 +2916,15 @@ export default function SiBSChat({ enabled = true }) {
                             preload="metadata"
                             className="h-full w-full bg-black object-cover"
                           />
+                        ) : cleanText(item.detectedMimeType || item.file.type).toLowerCase().startsWith("audio/") ? (
+                          <div className="flex h-full w-full items-center justify-center bg-sibs-surface px-1">
+                            <audio
+                              src={item.previewUrl}
+                              controls
+                              preload="metadata"
+                              className="w-full max-w-full"
+                            />
+                          </div>
                         ) : (
                           <img
                             src={item.previewUrl}
@@ -2775,7 +2948,7 @@ export default function SiBSChat({ enabled = true }) {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v"
+                    accept="image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac,audio/flac,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v"
                     multiple
                     onChange={handleFiles}
                     className="hidden"
@@ -2784,7 +2957,7 @@ export default function SiBSChat({ enabled = true }) {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={sending || selectedImages.length >= MAX_ATTACHMENTS_PER_MESSAGE}
-                    title="Attach image or video (max 10 MB each)"
+                    title="Attach image, audio, or video (max 10 MB each)"
                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-muted transition hover:bg-[#FFF0EA] hover:text-sibs-orange disabled:opacity-40"
                   >
                     <ImagePlus size={19} />
@@ -3075,7 +3248,7 @@ export default function SiBSChat({ enabled = true }) {
                   </button>
                 </div>
                 <p className="mt-1.5 pl-[136px] pr-12 text-[9px] font-semibold text-sibs-faint">
-                  Images/Videos: JPG, PNG, WEBP, GIF, MP4, WEBM, OGG, MOV, M4V · maximum 10 MB each
+                  Images/Audio/Videos: JPG, PNG, WEBP, GIF, MP3, WAV, OGG, M4A, AAC, FLAC, MP4, WEBM, MOV, M4V · maximum 10 MB each
                 </p>
               </footer>
             </>
