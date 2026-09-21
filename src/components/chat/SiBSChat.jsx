@@ -78,6 +78,63 @@ function getChatMemberDisplayName(member = {}) {
   );
 }
 
+function getChatMentionLabel(member = {}) {
+  if (member?.mentionEveryone === true) return "everyone";
+
+  return (
+    cleanText(member?.preferredName || member?.preferred_name) ||
+    cleanText(member?.firstName || member?.first_name || member?.gy_emp_fname) ||
+    cleanText(member?.displayName) ||
+    cleanText(member?.sibsId)
+  );
+}
+
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function renderChatMessageText(value, members = [], mine = false) {
+  const text = String(value ?? "");
+  if (!text) return null;
+
+  const groupMembers = Array.isArray(members) ? members : [];
+  const mentionLabels = [...new Set(
+    [
+      ...(groupMembers.length ? ["everyone"] : []),
+      ...groupMembers.map((member) => getChatMentionLabel(member)),
+    ].filter(Boolean),
+  )].sort((first, second) => second.length - first.length);
+
+  if (!mentionLabels.length) return text;
+
+  const mentionLookup = new Set(
+    mentionLabels.map((label) => `@${label}`.toLowerCase()),
+  );
+  const pattern = mentionLabels.map(escapeRegExp).join("|");
+  const parts = text.split(
+    new RegExp(`(@(?:${pattern}))(?=$|\\s|[.,!?;:()\\[\\]{}])`, "gi"),
+  );
+
+  return parts.map((part, index) => {
+    if (!mentionLookup.has(part.toLowerCase())) {
+      return <span key={`text-${index}`}>{part}</span>;
+    }
+
+    return (
+      <span
+        key={`mention-${index}`}
+        className={
+          mine
+            ? "rounded bg-white/20 px-0.5 font-extrabold text-white underline decoration-white/50 underline-offset-2"
+            : "rounded bg-[#FFF0EA] px-0.5 font-extrabold text-sibs-orange"
+        }
+      >
+        {part}
+      </span>
+    );
+  });
+}
+
 function getReactionPeopleLabel(reaction = {}) {
   const reactors = Array.isArray(reaction?.reactors) ? reaction.reactors : [];
   const names = reactors
@@ -309,7 +366,7 @@ function ChatAvatar({
   size = "md",
 }) {
   const sizeClass = {
-    xs: "h-6 w-6 text-[8px]",
+    xs: "h-[18px] w-[18px] text-[7px]",
     sm: "h-9 w-9 text-[11px]",
     md: "h-11 w-11 text-xs",
     lg: "h-12 w-12 text-sm",
@@ -1123,6 +1180,10 @@ export default function SiBSChat({ enabled = true }) {
   const [unsendConfirmMessage, setUnsendConfirmMessage] = useState(null);
   const [launcherPosition, setLauncherPosition] = useState(null);
   const [launcherDragging, setLauncherDragging] = useState(false);
+  const [mentionStart, setMentionStart] = useState(null);
+  const [mentionEnd, setMentionEnd] = useState(null);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionActiveIndex, setMentionActiveIndex] = useState(0);
 
   const messageScrollRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -1393,6 +1454,53 @@ export default function SiBSChat({ enabled = true }) {
 
   const activeConversation = chat?.activeConversation || null;
 
+  const mentionCandidates = useMemo(() => {
+    if (!activeConversation?.isGroup || mentionStart === null) return [];
+
+    const query = cleanText(mentionQuery).toLowerCase();
+    const members = Array.isArray(activeConversation?.members)
+      ? activeConversation.members
+      : [];
+
+    const everyoneCandidate = {
+      mentionEveryone: true,
+      sibsId: "__everyone__",
+      displayName: "Everyone",
+      initials: "ALL",
+    };
+
+    const candidates = [
+      everyoneCandidate,
+      ...members.filter((member) => cleanText(member?.sibsId) !== currentSibsId),
+    ];
+
+    return candidates
+      .filter((member) => {
+        if (!query) return true;
+
+        const haystack = member?.mentionEveryone
+          ? "everyone all group members"
+          : [
+              getChatMentionLabel(member),
+              getChatMemberDisplayName(member),
+              member?.sibsId,
+              member?.email,
+            ]
+              .map(cleanText)
+              .join(" ")
+              .toLowerCase();
+
+        return haystack.includes(query);
+      })
+      .slice(0, 8);
+  }, [
+    activeConversation?.isGroup,
+    activeConversation?.members,
+    currentSibsId,
+    mentionQuery,
+    mentionStart,
+  ]);
+
   const seenMembersByMessageId = useMemo(() => {
     const result = new Map();
     const members = Array.isArray(activeConversation?.members)
@@ -1400,15 +1508,14 @@ export default function SiBSChat({ enabled = true }) {
       : [];
     const currentMessages = Array.isArray(chat?.messages) ? chat.messages : [];
 
-    if (!currentSibsId || !members.length || !currentMessages.length) {
+    if (!members.length || !currentMessages.length) {
       return result;
     }
 
-    const myVisibleMessages = currentMessages.filter((message) => {
+    const visibleMessages = currentMessages.filter((message) => {
       const messageType = cleanText(message?.messageType).toUpperCase();
 
       return (
-        cleanText(message?.senderSibsId) === currentSibsId &&
         !message?.unsent &&
         messageType !== "UNSENT" &&
         messageType !== "MEMBER_ADDED" &&
@@ -1416,37 +1523,32 @@ export default function SiBSChat({ enabled = true }) {
       );
     });
 
-    members.forEach((member) => {
-      const memberSibsId = cleanText(member?.sibsId);
-      const lastReadMessageId = Number(
-        member?.lastReadMessageId ?? member?.last_read_message_id ?? 0,
-      );
+    visibleMessages.forEach((message) => {
+      const messageId = Number(message?.id || 0);
+      const senderSibsId = cleanText(message?.senderSibsId);
 
-      if (
-        !memberSibsId ||
-        memberSibsId === currentSibsId ||
-        !lastReadMessageId
-      ) {
-        return;
-      }
+      if (!messageId || !senderSibsId) return;
 
-      for (let index = myVisibleMessages.length - 1; index >= 0; index -= 1) {
-        const message = myVisibleMessages[index];
-        const messageId = Number(message?.id || 0);
+      const seenMembers = members.filter((member) => {
+        const memberSibsId = cleanText(member?.sibsId);
+        const lastReadMessageId = Number(
+          member?.lastReadMessageId ?? member?.last_read_message_id ?? 0,
+        );
 
-        if (!messageId || messageId > lastReadMessageId) continue;
+        return (
+          Boolean(memberSibsId) &&
+          memberSibsId !== senderSibsId &&
+          lastReadMessageId >= messageId
+        );
+      });
 
-        if (!result.has(messageId)) {
-          result.set(messageId, []);
-        }
-
-        result.get(messageId).push(member);
-        break;
+      if (seenMembers.length) {
+        result.set(messageId, seenMembers);
       }
     });
 
     return result;
-  }, [activeConversation?.members, chat?.messages, currentSibsId]);
+  }, [activeConversation?.members, chat?.messages]);
 
   useEffect(() => {
     if (!open || chat?.activeConversationId || !chat?.conversations?.length) return;
@@ -1478,6 +1580,13 @@ export default function SiBSChat({ enabled = true }) {
       );
     };
   }, []);
+
+  useEffect(() => {
+    setMentionStart(null);
+    setMentionEnd(null);
+    setMentionQuery("");
+    setMentionActiveIndex(0);
+  }, [chat?.activeConversationId]);
 
   if (!visible) return null;
 
@@ -1526,6 +1635,61 @@ export default function SiBSChat({ enabled = true }) {
       const target = current[index];
       if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
       return current.filter((_, currentIndex) => currentIndex !== index);
+    });
+  }
+
+  function closeMentionPicker() {
+    setMentionStart(null);
+    setMentionEnd(null);
+    setMentionQuery("");
+    setMentionActiveIndex(0);
+  }
+
+  function updateMentionPicker(nextValue, cursorPosition) {
+    if (!activeConversation?.isGroup) {
+      closeMentionPicker();
+      return;
+    }
+
+    const cursor = Math.max(0, Number(cursorPosition ?? nextValue.length));
+    const beforeCursor = nextValue.slice(0, cursor);
+    const match = /(^|\s)@([^\s@]*)$/.exec(beforeCursor);
+
+    if (!match) {
+      closeMentionPicker();
+      return;
+    }
+
+    const query = match[2] || "";
+    const atIndex = beforeCursor.length - query.length - 1;
+
+    setMentionStart(atIndex);
+    setMentionEnd(cursor);
+    setMentionQuery(query);
+    setMentionActiveIndex(0);
+  }
+
+  function insertMention(member) {
+    if (mentionStart === null) return;
+
+    const label = getChatMentionLabel(member);
+    if (!label) return;
+
+    const end = Number.isFinite(Number(mentionEnd))
+      ? Number(mentionEnd)
+      : mentionStart + 1 + mentionQuery.length;
+    const replacement = `@${label} `;
+    const nextDraft = `${draft.slice(0, mentionStart)}${replacement}${draft.slice(end)}`.slice(0, 5000);
+    const nextCaret = Math.min(mentionStart + replacement.length, nextDraft.length);
+
+    setDraft(nextDraft);
+    closeMentionPicker();
+
+    window.requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      textarea.focus();
+      textarea.setSelectionRange(nextCaret, nextCaret);
     });
   }
 
@@ -1605,6 +1769,40 @@ export default function SiBSChat({ enabled = true }) {
   }
 
   function handleComposerKeyDown(event) {
+    if (mentionStart !== null && mentionCandidates.length) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setMentionActiveIndex((current) =>
+          (current + 1) % mentionCandidates.length,
+        );
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setMentionActiveIndex((current) =>
+          (current - 1 + mentionCandidates.length) % mentionCandidates.length,
+        );
+        return;
+      }
+
+      if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        insertMention(
+          mentionCandidates[
+            Math.min(mentionActiveIndex, mentionCandidates.length - 1)
+          ],
+        );
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMentionPicker();
+        return;
+      }
+    }
+
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       void submitMessage();
@@ -2131,9 +2329,8 @@ export default function SiBSChat({ enabled = true }) {
                         !gifOnly &&
                         !message.attachments?.length &&
                         isEmojiOnlyMessage(message.messageText);
-                      const seenMembers = mine
-                        ? seenMembersByMessageId.get(Number(message.id)) || []
-                        : [];
+                      const seenMembers =
+                        seenMembersByMessageId.get(Number(message.id)) || [];
 
                       return (
                         <div key={message.id}>
@@ -2205,7 +2402,9 @@ export default function SiBSChat({ enabled = true }) {
 
                                 {Number(reactionPickerMessageId) === Number(message.id) ? (
                                   <div
-                                    className="absolute bottom-full left-0 z-40 mb-1 grid w-[224px] grid-cols-6 gap-1 rounded-2xl border border-sibs-border bg-white p-2 shadow-xl"
+                                    className={`absolute bottom-full z-40 mb-1 grid w-[224px] grid-cols-6 gap-1 rounded-2xl border border-sibs-border bg-white p-2 shadow-xl ${
+                                      mine ? "right-0" : "left-0"
+                                    }`}
                                   >
                                     {MESSAGE_REACTIONS.map((reaction) => (
                                       <button
@@ -2400,7 +2599,11 @@ export default function SiBSChat({ enabled = true }) {
 
                                   {message.messageText ? (
                                     <p className={`whitespace-pre-wrap break-words text-xs font-semibold leading-5 ${message.attachments?.length ? "px-1.5 pb-1 pt-2" : ""}`}>
-                                      {message.messageText}
+                                      {renderChatMessageText(
+                                        message.messageText,
+                                        activeConversation?.members || [],
+                                        mine,
+                                      )}
                                     </p>
                                   ) : null}
                                 </div>
@@ -2458,8 +2661,12 @@ export default function SiBSChat({ enabled = true }) {
                                 {formatMessageTime(message.createdAt, chatClockMs)}
                               </p>
 
-                              {mine && seenMembers.length ? (
-                                <div className="mt-1 flex items-center justify-end">
+                              {seenMembers.length ? (
+                                <div
+                                  className={`mt-1 flex items-center ${
+                                    mine ? "justify-end" : "justify-start"
+                                  }`}
+                                >
                                   <div className="flex items-center -space-x-1.5">
                                     {seenMembers.slice(0, 8).map((member) => {
                                       const memberName =
@@ -2495,7 +2702,7 @@ export default function SiBSChat({ enabled = true }) {
 
                                     {seenMembers.length > 8 ? (
                                       <span
-                                        className="relative z-10 inline-flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-[#F8FAFC] bg-sibs-navy px-1 text-[8px] font-extrabold text-white"
+                                        className="relative z-10 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-[#F8FAFC] bg-sibs-navy px-1 text-[7px] font-extrabold text-white"
                                         title={`${seenMembers.length - 8} more people have seen this message`}
                                       >
                                         +{seenMembers.length - 8}
@@ -2763,15 +2970,100 @@ export default function SiBSChat({ enabled = true }) {
                     ) : null}
                   </div>
 
-                  <textarea
-                    ref={textareaRef}
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value.slice(0, 5000))}
-                    onKeyDown={handleComposerKeyDown}
-                    rows={1}
-                    placeholder="Type a message..."
-                    className="max-h-28 min-h-10 flex-1 resize-none rounded-2xl border border-sibs-border bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold leading-5 text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
-                  />
+                  <div className="relative min-w-0 flex-1">
+                    {activeConversation?.isGroup &&
+                    mentionStart !== null &&
+                    mentionCandidates.length ? (
+                      <div className="absolute bottom-[calc(100%+8px)] left-0 z-[175] w-[min(320px,calc(100vw-5rem))] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)]">
+                        <div className="border-b border-sibs-border px-3 py-2">
+                          <p className="text-[10px] font-extrabold text-sibs-navy">
+                            Tag a group member
+                          </p>
+                          <p className="text-[9px] font-semibold text-sibs-faint">
+                            Type @ then a name, SIBS ID, or everyone
+                          </p>
+                        </div>
+                        <div className="sibs-scrollbar max-h-56 overflow-y-auto p-1.5">
+                          {mentionCandidates.map((member, index) => (
+                            <button
+                              key={`mention-${member.sibsId}`}
+                              type="button"
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => insertMention(member)}
+                              className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left transition ${
+                                index === mentionActiveIndex
+                                  ? "bg-[#FFF0EA]"
+                                  : "hover:bg-sibs-surface"
+                              }`}
+                            >
+                              {member?.mentionEveryone ? (
+                                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-navy text-white shadow-sm">
+                                  <UsersRound size={17} />
+                                </span>
+                              ) : (
+                                <ChatAvatar
+                                  employee={member}
+                                  initials={member.initials}
+                                  online={
+                                    chat.presence?.[member.sibsId] ??
+                                    member.online ??
+                                    false
+                                  }
+                                  size="sm"
+                                />
+                              )}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-[11px] font-extrabold text-sibs-navy">
+                                  @{getChatMentionLabel(member)}
+                                </span>
+                                <span className="block truncate text-[9px] font-semibold text-sibs-muted">
+                                  {member?.mentionEveryone
+                                    ? "Tag all members in this group"
+                                    : `${getChatMemberDisplayName(member)} · SIBS ID ${member.sibsId}`}
+                                </span>
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <textarea
+                      ref={textareaRef}
+                      value={draft}
+                      onChange={(event) => {
+                        const nextValue = event.target.value.slice(0, 5000);
+                        setDraft(nextValue);
+                        updateMentionPicker(
+                          nextValue,
+                          Math.min(event.target.selectionStart ?? nextValue.length, nextValue.length),
+                        );
+                      }}
+                      onClick={(event) =>
+                        updateMentionPicker(
+                          draft,
+                          event.currentTarget.selectionStart ?? draft.length,
+                        )
+                      }
+                      onKeyUp={(event) => {
+                        if (["ArrowUp", "ArrowDown", "Enter", "Tab", "Escape"].includes(event.key)) {
+                          return;
+                        }
+                        updateMentionPicker(
+                          draft,
+                          event.currentTarget.selectionStart ?? draft.length,
+                        );
+                      }}
+                      onKeyDown={handleComposerKeyDown}
+                      rows={1}
+                      placeholder={
+                        activeConversation?.isGroup
+                          ? "Type a message... use @ to tag"
+                          : "Type a message..."
+                      }
+                      className="max-h-28 min-h-10 w-full resize-none rounded-2xl border border-sibs-border bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold leading-5 text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
+                    />
+                  </div>
 
                   <button
                     type="button"
