@@ -161,10 +161,16 @@ export function ChatProvider({ children }) {
   const activeConversationIdRef = useRef(null);
   const mountedRef = useRef(true);
   const chatWindowOpenRef = useRef(false);
+  const messagesRef = useRef([]);
+  const fallbackSyncBusyRef = useRef(false);
 
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -234,13 +240,15 @@ export function ChatProvider({ children }) {
     });
   }, []);
 
-  const refreshConversations = useCallback(async () => {
+  const refreshConversations = useCallback(async ({ silent = false } = {}) => {
     if (!currentSibsId || !chatAllowed) {
       setConversations([]);
       return [];
     }
 
-    setConversationsLoading(true);
+    if (!silent) {
+      setConversationsLoading(true);
+    }
 
     try {
       const nextConversations = sortConversations(await getChatConversations());
@@ -262,7 +270,7 @@ export function ChatProvider({ children }) {
       }
       return [];
     } finally {
-      if (mountedRef.current) {
+      if (!silent && mountedRef.current) {
         setConversationsLoading(false);
       }
     }
@@ -532,6 +540,112 @@ export function ChatProvider({ children }) {
     [refreshConversations],
   );
 
+  const syncChatWithoutRefresh = useCallback(async () => {
+    if (
+      fallbackSyncBusyRef.current ||
+      !mountedRef.current ||
+      !currentSibsId ||
+      !chatAllowed
+    ) {
+      return;
+    }
+
+    fallbackSyncBusyRef.current = true;
+
+    try {
+      await refreshConversations({ silent: true });
+
+      const conversationId = Number(activeConversationIdRef.current || 0);
+      if (!conversationId || !chatWindowOpenRef.current) return;
+
+      const nextMessages = await getChatMessages(conversationId, {
+        limit: 75,
+      });
+
+      if (
+        !mountedRef.current ||
+        Number(activeConversationIdRef.current) !== conversationId
+      ) {
+        return;
+      }
+
+      const currentMessages = messagesRef.current || [];
+      const currentIds = new Set(
+        currentMessages.map((item) => Number(item?.id || 0)).filter(Boolean),
+      );
+
+      const newIncomingMessages = (nextMessages || []).filter((message) => {
+        const messageId = Number(message?.id || 0);
+        const senderSibsId = cleanText(
+          message?.senderSibsId || message?.sender_sibs_id,
+        );
+        const messageType = cleanText(message?.messageType).toUpperCase();
+        const isMembershipActivity =
+          messageType === "MEMBER_ADDED" || messageType === "MEMBER_REMOVED";
+
+        return (
+          messageId &&
+          !currentIds.has(messageId) &&
+          senderSibsId &&
+          senderSibsId !== currentSibsId &&
+          !isMembershipActivity
+        );
+      });
+
+      if (newIncomingMessages.length) {
+        playChatReceiveSound();
+      }
+
+      const currentFingerprint = currentMessages
+        .map((item) =>
+          [
+            Number(item?.id || 0),
+            cleanText(item?.messageText),
+            cleanText(item?.messageType),
+            cleanText(item?.unsentAt || item?.unsent_at),
+            JSON.stringify(item?.reactions || []),
+          ].join(":"),
+        )
+        .join("|");
+
+      const nextFingerprint = (nextMessages || [])
+        .map((item) =>
+          [
+            Number(item?.id || 0),
+            cleanText(item?.messageText),
+            cleanText(item?.messageType),
+            cleanText(item?.unsentAt || item?.unsent_at),
+            JSON.stringify(item?.reactions || []),
+          ].join(":"),
+        )
+        .join("|");
+
+      if (currentFingerprint !== nextFingerprint) {
+        messagesRef.current = nextMessages;
+        setMessages(nextMessages);
+      }
+
+      const latestMessageId = Number(nextMessages?.at(-1)?.id || 0);
+      if (latestMessageId) {
+        await markChatRead(conversationId, latestMessageId).catch(() => {});
+
+        if (mountedRef.current) {
+          setConversations((current) =>
+            current.map((conversation) =>
+              Number(conversation.id) === conversationId
+                ? { ...conversation, unreadCount: 0 }
+                : conversation,
+            ),
+          );
+        }
+      }
+    } catch {
+      // The next Socket.IO event / fallback sync will retry automatically.
+    } finally {
+      fallbackSyncBusyRef.current = false;
+    }
+  }, [chatAllowed, currentSibsId, refreshConversations]);
+
   useEffect(() => {
     if (userLoading || !currentSibsId || !chatAllowed) {
       setConversations([]);
@@ -546,7 +660,15 @@ export function ChatProvider({ children }) {
     }
 
     const handleConnect = () => {
-      void refreshConversations();
+      void syncChatWithoutRefresh();
+    };
+
+    const handleDisconnect = () => {
+      void syncChatWithoutRefresh();
+    };
+
+    const handleConnectError = () => {
+      void syncChatWithoutRefresh();
     };
 
     const handlePresence = ({ sibsId, online } = {}) => {
@@ -560,7 +682,7 @@ export function ChatProvider({ children }) {
     };
 
     const handleConversationUpdate = () => {
-      void refreshConversations();
+      void syncChatWithoutRefresh();
     };
 
     const handleMembershipNotification = (payload = {}) => {
@@ -598,7 +720,7 @@ export function ChatProvider({ children }) {
         setHasMoreMessages(false);
       }
 
-      void refreshConversations();
+      void syncChatWithoutRefresh();
     };
 
     const handleNewMessage = ({ conversationId, message } = {}) => {
@@ -648,7 +770,7 @@ export function ChatProvider({ children }) {
         // The chat window is closed, or the message belongs to another
         // conversation. Keep it unread so the floating SiBS Chat button and
         // conversation list can show the notification count.
-        void refreshConversations();
+        void syncChatWithoutRefresh();
       }
     };
 
@@ -667,7 +789,43 @@ export function ChatProvider({ children }) {
         );
       }
 
-      void refreshConversations();
+      void syncChatWithoutRefresh();
+    };
+
+    const handleRead = ({ conversationId, sibsId, messageId } = {}) => {
+      const id = Number(conversationId || 0);
+      const readerSibsId = cleanText(sibsId);
+      const lastReadMessageId = Number(messageId || 0);
+
+      if (!id || !readerSibsId || !lastReadMessageId) return;
+
+      setConversations((current) =>
+        current.map((conversation) => {
+          if (Number(conversation?.id || 0) !== id) return conversation;
+
+          const updateMemberReadState = (member) => {
+            if (cleanText(member?.sibsId) !== readerSibsId) return member;
+
+            return {
+              ...member,
+              lastReadMessageId: Math.max(
+                Number(member?.lastReadMessageId || 0),
+                lastReadMessageId,
+              ),
+            };
+          };
+
+          return {
+            ...conversation,
+            members: Array.isArray(conversation?.members)
+              ? conversation.members.map(updateMemberReadState)
+              : [],
+            otherMember: conversation?.otherMember
+              ? updateMemberReadState(conversation.otherMember)
+              : conversation?.otherMember,
+          };
+        }),
+      );
     };
 
     const handleReaction = ({ conversationId, messageId } = {}) => {
@@ -702,31 +860,68 @@ export function ChatProvider({ children }) {
         .catch(() => {});
     };
 
+    const handleWindowFocus = () => {
+      void syncChatWithoutRefresh();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void syncChatWithoutRefresh();
+      }
+    };
+
     chatSocket.on("connect", handleConnect);
+    chatSocket.on("disconnect", handleDisconnect);
+    chatSocket.on("connect_error", handleConnectError);
     chatSocket.on("chat:presence", handlePresence);
     chatSocket.on("chat:conversation-updated", handleConversationUpdate);
     chatSocket.on("chat:membership-notification", handleMembershipNotification);
     chatSocket.on("chat:message", handleNewMessage);
     chatSocket.on("chat:message-unsent", handleMessageUnsent);
     chatSocket.on("chat:reaction", handleReaction);
+    chatSocket.on("chat:read", handleRead);
+
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Socket.IO is still the primary realtime transport. The lightweight
+    // 2-second safety sync guarantees that a dropped/missed socket event never
+    // forces the user to refresh the browser to see a new chat or unread count.
+    const fallbackInterval = window.setInterval(() => {
+      void syncChatWithoutRefresh();
+    }, 2000);
 
     if (!chatSocket.connected) {
       chatSocket.connect();
+      void syncChatWithoutRefresh();
     } else {
       handleConnect();
     }
 
     return () => {
+      window.clearInterval(fallbackInterval);
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+
       chatSocket.off("connect", handleConnect);
+      chatSocket.off("disconnect", handleDisconnect);
+      chatSocket.off("connect_error", handleConnectError);
       chatSocket.off("chat:presence", handlePresence);
       chatSocket.off("chat:conversation-updated", handleConversationUpdate);
       chatSocket.off("chat:membership-notification", handleMembershipNotification);
       chatSocket.off("chat:message", handleNewMessage);
       chatSocket.off("chat:message-unsent", handleMessageUnsent);
       chatSocket.off("chat:reaction", handleReaction);
+      chatSocket.off("chat:read", handleRead);
       chatSocket.disconnect();
     };
-  }, [chatAllowed, currentSibsId, refreshConversations, userLoading]);
+  }, [
+    chatAllowed,
+    currentSibsId,
+    refreshConversations,
+    syncChatWithoutRefresh,
+    userLoading,
+  ]);
 
   const activeConversation = useMemo(
     () =>

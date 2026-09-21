@@ -34,14 +34,19 @@ import {
 import { useChat } from "@/services/context/ChatContext";
 import { useUser } from "@/services/context/UserContext";
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const MAX_IMAGES_PER_MESSAGE = 5;
-const ALLOWED_IMAGE_TYPES = new Set([
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENTS_PER_MESSAGE = 5;
+const ALLOWED_ATTACHMENT_TYPES = new Set([
   "image/jpeg",
   "image/jpg",
   "image/png",
   "image/webp",
   "image/gif",
+  "video/mp4",
+  "video/webm",
+  "video/ogg",
+  "video/quicktime",
+  "video/x-m4v",
 ]);
 
 const CHAT_EMOJIS = [
@@ -183,7 +188,17 @@ function formatMessageTime(value, nowMs = Date.now()) {
   const elapsedMs = Math.max(0, Number(nowMs) - timestamp);
   const minutesAgo = Math.max(1, Math.floor(elapsedMs / 60_000));
 
-  return `${clock} · ${minutesAgo}m ago`;
+  if (minutesAgo < 60) {
+    return `${clock} · ${minutesAgo}m ago`;
+  }
+
+  const hoursAgo = Math.floor(elapsedMs / 3_600_000);
+  if (hoursAgo < 24) {
+    return `${clock} · ${hoursAgo}h ago`;
+  }
+
+  const daysAgo = Math.floor(elapsedMs / 86_400_000);
+  return `${clock} · ${daysAgo}d ago`;
 }
 
 function formatConversationTime(value, nowMs = Date.now()) {
@@ -1424,16 +1439,16 @@ export default function SiBSChat({ enabled = true }) {
 
     setLocalError("");
 
-    const availableSlots = MAX_IMAGES_PER_MESSAGE - selectedImages.length;
+    const availableSlots = MAX_ATTACHMENTS_PER_MESSAGE - selectedImages.length;
     const accepted = [];
 
     for (const file of incoming.slice(0, availableSlots)) {
-      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-        setLocalError("Only JPG, PNG, WEBP, and GIF images are supported.");
+      if (!ALLOWED_ATTACHMENT_TYPES.has(file.type)) {
+        setLocalError("Only JPG, PNG, WEBP, GIF, MP4, WEBM, OGG, MOV, and M4V files are supported.");
         continue;
       }
 
-      if (file.size > MAX_IMAGE_BYTES) {
+      if (file.size > MAX_ATTACHMENT_BYTES) {
         setLocalError(`${file.name} is larger than 10 MB.`);
         continue;
       }
@@ -1445,7 +1460,7 @@ export default function SiBSChat({ enabled = true }) {
     }
 
     if (incoming.length > availableSlots) {
-      setLocalError(`You can attach up to ${MAX_IMAGES_PER_MESSAGE} images per message.`);
+      setLocalError(`You can attach up to ${MAX_ATTACHMENTS_PER_MESSAGE} files per message.`);
     }
 
     setSelectedImages((current) => [...current, ...accepted]);
@@ -1720,6 +1735,61 @@ export default function SiBSChat({ enabled = true }) {
     ? isMemberOnline(activeOtherMember)
     : false;
 
+  const seenMembersByMessageId = useMemo(() => {
+    const result = new Map();
+    const members = Array.isArray(activeConversation?.members)
+      ? activeConversation.members
+      : [];
+    const currentMessages = Array.isArray(chat?.messages) ? chat.messages : [];
+
+    if (!currentSibsId || !members.length || !currentMessages.length) {
+      return result;
+    }
+
+    const myVisibleMessages = currentMessages.filter((message) => {
+      const messageType = cleanText(message?.messageType).toUpperCase();
+
+      return (
+        cleanText(message?.senderSibsId) === currentSibsId &&
+        !message?.unsent &&
+        messageType !== "UNSENT" &&
+        messageType !== "MEMBER_ADDED" &&
+        messageType !== "MEMBER_REMOVED"
+      );
+    });
+
+    members.forEach((member) => {
+      const memberSibsId = cleanText(member?.sibsId);
+      const lastReadMessageId = Number(
+        member?.lastReadMessageId ?? member?.last_read_message_id ?? 0,
+      );
+
+      if (
+        !memberSibsId ||
+        memberSibsId === currentSibsId ||
+        !lastReadMessageId
+      ) {
+        return;
+      }
+
+      for (let index = myVisibleMessages.length - 1; index >= 0; index -= 1) {
+        const message = myVisibleMessages[index];
+        const messageId = Number(message?.id || 0);
+
+        if (!messageId || messageId > lastReadMessageId) continue;
+
+        if (!result.has(messageId)) {
+          result.set(messageId, []);
+        }
+
+        result.get(messageId).push(member);
+        break;
+      }
+    });
+
+    return result;
+  }, [activeConversation?.members, chat?.messages, currentSibsId]);
+
   return (
     <>
       {chat?.membershipNotice && !open ? (
@@ -1860,7 +1930,15 @@ export default function SiBSChat({ enabled = true }) {
                 const otherMember = conversation.otherMember;
                 const online = otherMember ? isMemberOnline(otherMember) : false;
                 const preview = conversation.lastMessageText ||
-                  (conversation.lastMessageType?.includes("IMAGE") ? "Sent an image" : "No messages yet");
+                  (conversation.lastMessageType?.includes("VIDEO")
+                    ? "Sent a video"
+                    : conversation.lastMessageType?.includes("MEDIA")
+                      ? "Sent media"
+                      : conversation.lastMessageType?.includes("IMAGE")
+                        ? "Sent an image"
+                        : conversation.lastMessageType === "GIF"
+                          ? "GIF"
+                          : "No messages yet");
 
                 return (
                   <button
@@ -2052,6 +2130,9 @@ export default function SiBSChat({ enabled = true }) {
                         !gifOnly &&
                         !message.attachments?.length &&
                         isEmojiOnlyMessage(message.messageText);
+                      const seenMembers = mine
+                        ? seenMembersByMessageId.get(Number(message.id)) || []
+                        : [];
 
                       return (
                         <div key={message.id}>
@@ -2272,17 +2353,40 @@ export default function SiBSChat({ enabled = true }) {
                                   {message.attachments?.length ? (
                                     <div className={`grid gap-1 ${message.attachments.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                                       {message.attachments.map((attachment) => {
-                                        const imageUrl = getChatAttachmentUrl(attachment.url);
+                                        const attachmentUrl = getChatAttachmentUrl(attachment.url);
+                                        const isVideo = cleanText(attachment.mimeType)
+                                          .toLowerCase()
+                                          .startsWith("video/");
+
+                                        if (isVideo) {
+                                          return (
+                                            <div
+                                              key={attachment.id}
+                                              className="overflow-hidden rounded-xl bg-black"
+                                            >
+                                              <video
+                                                src={attachmentUrl}
+                                                controls
+                                                playsInline
+                                                preload="metadata"
+                                                className="max-h-72 w-full bg-black object-contain"
+                                              >
+                                                Your browser does not support video playback.
+                                              </video>
+                                            </div>
+                                          );
+                                        }
+
                                         return (
                                           <button
                                             key={attachment.id}
                                             type="button"
-                                            onClick={() => window.open(imageUrl, "_blank", "noopener,noreferrer")}
+                                            onClick={() => window.open(attachmentUrl, "_blank", "noopener,noreferrer")}
                                             className="overflow-hidden rounded-xl bg-slate-100"
                                             title={attachment.originalName || "Open image"}
                                           >
                                             <img
-                                              src={imageUrl}
+                                              src={attachmentUrl}
                                               alt={attachment.originalName || "Chat attachment"}
                                               className="max-h-56 w-full object-cover"
                                               loading="lazy"
@@ -2352,6 +2456,53 @@ export default function SiBSChat({ enabled = true }) {
                               <p className={`mt-1 text-[9px] font-semibold text-sibs-faint ${mine ? "text-right" : "text-left"}`}>
                                 {formatMessageTime(message.createdAt, chatClockMs)}
                               </p>
+
+                              {mine && seenMembers.length ? (
+                                <div className="mt-1 flex items-center justify-end">
+                                  <div className="flex items-center -space-x-1.5">
+                                    {seenMembers.slice(0, 8).map((member) => {
+                                      const memberName =
+                                        cleanText(
+                                          member?.preferredName ||
+                                            member?.preferred_name,
+                                        ) ||
+                                        cleanText(member?.displayName) ||
+                                        `SIBS ID ${cleanText(member?.sibsId)}`;
+
+                                      return (
+                                        <span
+                                          key={`seen-${message.id}-${member.sibsId}`}
+                                          className="relative inline-flex rounded-full ring-2 ring-[#F8FAFC]"
+                                          title={`Seen by ${memberName}`}
+                                          aria-label={`Seen by ${memberName}`}
+                                        >
+                                          <ChatAvatar
+                                            employee={member}
+                                            initials={
+                                              member?.initials ||
+                                              cleanText(member?.sibsId)
+                                                .slice(0, 2)
+                                                .toUpperCase() ||
+                                              "U"
+                                            }
+                                            online={false}
+                                            size="xs"
+                                          />
+                                        </span>
+                                      );
+                                    })}
+
+                                    {seenMembers.length > 8 ? (
+                                      <span
+                                        className="relative z-10 inline-flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-[#F8FAFC] bg-sibs-navy px-1 text-[8px] font-extrabold text-white"
+                                        title={`${seenMembers.length - 8} more people have seen this message`}
+                                      >
+                                        +{seenMembers.length - 8}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                           )}
@@ -2385,7 +2536,21 @@ export default function SiBSChat({ enabled = true }) {
                   <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
                     {selectedImages.map((item, index) => (
                       <div key={`${item.file.name}-${index}`} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface">
-                        <img src={item.previewUrl} alt={item.file.name} className="h-full w-full object-cover" />
+                        {cleanText(item.file.type).toLowerCase().startsWith("video/") ? (
+                          <video
+                            src={item.previewUrl}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            className="h-full w-full bg-black object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={item.previewUrl}
+                            alt={item.file.name}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
                         <button
                           type="button"
                           onClick={() => removeSelectedImage(index)}
@@ -2402,7 +2567,7 @@ export default function SiBSChat({ enabled = true }) {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v"
                     multiple
                     onChange={handleFiles}
                     className="hidden"
@@ -2410,8 +2575,8 @@ export default function SiBSChat({ enabled = true }) {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={sending || selectedImages.length >= MAX_IMAGES_PER_MESSAGE}
-                    title="Attach image (max 10 MB each)"
+                    disabled={sending || selectedImages.length >= MAX_ATTACHMENTS_PER_MESSAGE}
+                    title="Attach image or video (max 10 MB each)"
                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-muted transition hover:bg-[#FFF0EA] hover:text-sibs-orange disabled:opacity-40"
                   >
                     <ImagePlus size={19} />
@@ -2617,7 +2782,7 @@ export default function SiBSChat({ enabled = true }) {
                   </button>
                 </div>
                 <p className="mt-1.5 pl-[136px] pr-12 text-[9px] font-semibold text-sibs-faint">
-                  Images: JPG, PNG, WEBP, GIF · maximum 10 MB each
+                  Images/Videos: JPG, PNG, WEBP, GIF, MP4, WEBM, OGG, MOV, M4V · maximum 10 MB each
                 </p>
               </footer>
             </>
