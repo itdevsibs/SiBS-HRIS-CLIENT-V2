@@ -968,8 +968,11 @@ export function OffersProvider({ children }) {
     }));
   }
 
-  const refreshOffers = useCallback(async () => {
-    setIsLoadingOffers(true);
+  const refreshOffers = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setIsLoadingOffers(true);
+    }
+
     setOffersLoadError("");
 
     try {
@@ -1005,7 +1008,9 @@ export function OffersProvider({ children }) {
 
       return [];
     } finally {
-      setIsLoadingOffers(false);
+      if (!silent) {
+        setIsLoadingOffers(false);
+      }
     }
   }, []);
 
@@ -1046,52 +1051,174 @@ export function OffersProvider({ children }) {
   }, [approvalRuleRevision, refreshOffers]);
 
   useEffect(() => {
-    function handleSyncEvent() {
+    function getEventCandidate(event) {
+      const detail = event?.detail;
+
+      if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
+        return null;
+      }
+
+      if (detail.removed) {
+        return null;
+      }
+
+      const candidate =
+        detail.candidate ||
+        detail.data?.candidate ||
+        detail.data ||
+        detail;
+
+      if (
+        !candidate ||
+        typeof candidate !== "object" ||
+        Array.isArray(candidate)
+      ) {
+        return null;
+      }
+
+      const normalizedCandidate = normalizeCandidateForOffers(candidate);
+
+      return getMergedCandidateKey(normalizedCandidate)
+        ? normalizedCandidate
+        : null;
+    }
+
+    function mergeCandidateImmediately(candidate) {
+      if (!candidate) return false;
+
+      setApiCandidates((previous) => {
+        const current = safeArray(previous);
+        const existingIndex = current.findIndex((item) =>
+          isSameOfferRecord(item, candidate),
+        );
+
+        if (existingIndex < 0) {
+          return dedupeCandidates([...current, candidate]);
+        }
+
+        const next = [...current];
+        next[existingIndex] = normalizeCandidateForOffers({
+          ...current[existingIndex],
+          ...candidate,
+          offerDetails: {
+            ...(current[existingIndex]?.offerDetails || {}),
+            ...(candidate.offerDetails || {}),
+          },
+          offerApprovals: {
+            ...(current[existingIndex]?.offerApprovals || {}),
+            ...(candidate.offerApprovals || {}),
+          },
+          approvals: {
+            ...(current[existingIndex]?.approvals || {}),
+            ...(candidate.approvals || {}),
+          },
+        });
+
+        return dedupeCandidates(next);
+      });
+
+      const storedCandidates = getStoredPipelineCandidates();
+      const storedIndex = storedCandidates.findIndex((item) =>
+        isSameOfferRecord(item, candidate),
+      );
+
+      const nextStoredCandidates =
+        storedIndex < 0
+          ? dedupeCandidates([...storedCandidates, candidate])
+          : storedCandidates.map((item, index) =>
+              index === storedIndex
+                ? normalizeCandidateForOffers({
+                    ...item,
+                    ...candidate,
+                    offerDetails: {
+                      ...(item?.offerDetails || {}),
+                      ...(candidate.offerDetails || {}),
+                    },
+                    offerApprovals: {
+                      ...(item?.offerApprovals || {}),
+                      ...(candidate.offerApprovals || {}),
+                    },
+                    approvals: {
+                      ...(item?.approvals || {}),
+                      ...(candidate.approvals || {}),
+                    },
+                  })
+                : item,
+            );
+
+      safeWriteArray(
+        PIPELINE_CANDIDATES_STORAGE_KEY,
+        nextStoredCandidates,
+      );
+      safeWriteArray(
+        OFFER_ELIGIBLE_STORAGE_KEY,
+        nextStoredCandidates.filter(isOfferStageCandidate),
+      );
+
       setOfferOverrides(readOfferOverrides());
       setStorageSyncTick((previous) => previous + 1);
-      refreshOffers();
+
+      return true;
     }
 
-    const refreshTimer = window.setInterval(() => {
-      if (
-        document.visibilityState === "visible" &&
-        !isLoadingOffers
-      ) {
-        refreshOffers();
-      }
-    }, 10000);
+    function handlePipelineUpdated(event) {
+      const candidate = getEventCandidate(event);
 
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        refreshOffers();
+      if (mergeCandidateImmediately(candidate)) {
+        return;
       }
+
+      // Keep compatibility with older callers that dispatch this event
+      // without candidate details, but do it silently so the Offers page
+      // never performs a visible refresh.
+      refreshOffers({ silent: true });
     }
 
-    document.addEventListener(
-      "visibilitychange",
-      handleVisibilityChange,
+    function handleOffersUpdated(event) {
+      if (event?.detail?.removed) {
+        setOfferOverrides(readOfferOverrides());
+        setStorageSyncTick((previous) => previous + 1);
+        return;
+      }
+
+      const candidate = getEventCandidate(event);
+
+      if (mergeCandidateImmediately(candidate)) {
+        return;
+      }
+
+      setOfferOverrides(readOfferOverrides());
+      setStorageSyncTick((previous) => previous + 1);
+    }
+
+    function handleStorageSync() {
+      setOfferOverrides(readOfferOverrides());
+      setStorageSyncTick((previous) => previous + 1);
+    }
+
+    function handleWindowFocus() {
+      // Quiet accuracy check only. It does not clear/reload the Offers UI.
+      refreshOffers({ silent: true });
+    }
+
+    window.addEventListener("storage", handleStorageSync);
+    window.addEventListener("focus", handleWindowFocus);
+    window.addEventListener(
+      "ta-pipeline-candidates-updated",
+      handlePipelineUpdated,
     );
-
-    window.addEventListener("storage", handleSyncEvent);
-    window.addEventListener("focus", handleSyncEvent);
-    window.addEventListener("ta-pipeline-candidates-updated", handleSyncEvent);
-    window.addEventListener("ta-offers-updated", handleSyncEvent);
+    window.addEventListener("ta-offers-updated", handleOffersUpdated);
 
     return () => {
-      window.clearInterval(refreshTimer);
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange,
-      );
-      window.removeEventListener("storage", handleSyncEvent);
-      window.removeEventListener("focus", handleSyncEvent);
+      window.removeEventListener("storage", handleStorageSync);
+      window.removeEventListener("focus", handleWindowFocus);
       window.removeEventListener(
         "ta-pipeline-candidates-updated",
-        handleSyncEvent,
+        handlePipelineUpdated,
       );
-      window.removeEventListener("ta-offers-updated", handleSyncEvent);
+      window.removeEventListener("ta-offers-updated", handleOffersUpdated);
     };
-  }, [isLoadingOffers, refreshOffers]);
+  }, [refreshOffers]);
 
   const currentApprovalUser = useMemo(() => {
     return findCurrentApprovalUser({
