@@ -7,6 +7,7 @@ import { useChat } from "@/services/context/ChatContext";
 export default function SiBSAssistantLauncher({
   enabled = true,
   onOpenAi,
+  onToggleAi,
   onOpenChat,
   onToggleChat,
   isAiOpen = false,
@@ -87,8 +88,18 @@ export default function SiBSAssistantLauncher({
   }, [menuOpen]);
 
   const toggleMenu = useCallback(() => {
+    if (isChatOpen) {
+      onToggleChat ? onToggleChat() : onOpenChat?.(false);
+      setMenuOpen(false);
+      return;
+    }
+    if (isAiOpen) {
+      onToggleAi ? onToggleAi() : onOpenAi?.(false);
+      setMenuOpen(false);
+      return;
+    }
     setMenuOpen((prev) => !prev);
-  }, []);
+  }, [isChatOpen, isAiOpen, onToggleChat, onOpenChat, onToggleAi, onOpenAi]);
 
   const handleSelectAi = useCallback(() => {
     setMenuOpen(false);

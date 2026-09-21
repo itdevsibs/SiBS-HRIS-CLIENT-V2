@@ -2795,7 +2795,7 @@ export default function SiBSChat({
           className="fixed right-4 z-[88] w-[min(340px,calc(100vw-2rem))] sm:right-6"
           style={{
             bottom: hideTrigger
-              ? "calc(5.5rem + env(safe-area-inset-bottom, 0px))"
+              ? "calc(4.75rem + env(safe-area-inset-bottom, 0px))"
               : "calc(9.75rem + env(safe-area-inset-bottom, 0px))",
           }}
         >
@@ -2857,6 +2857,13 @@ export default function SiBSChat({
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
             : "pointer-events-none translate-y-3 scale-[0.98] opacity-0"
         }`}
+        style={
+          hideTrigger
+            ? {
+                bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))",
+              }
+            : undefined
+        }
       >
         {chat?.membershipNotice && open ? (
           <div className="pointer-events-none absolute left-1/2 top-3 z-50 w-[min(340px,90%)] -translate-x-1/2">

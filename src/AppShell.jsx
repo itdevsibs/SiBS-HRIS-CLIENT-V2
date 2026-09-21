@@ -21,6 +21,11 @@ export default function AppShell({ children }) {
     setAiOpen(true);
   }, []);
 
+  const handleToggleAi = useCallback(() => {
+    setChatOpen(false);
+    setAiOpen((prev) => !prev);
+  }, []);
+
   const handleOpenChat = useCallback(() => {
     setAiOpen(false);
     setChatOpen(true);
@@ -74,6 +79,7 @@ export default function AppShell({ children }) {
       <SiBSAssistantLauncher
         enabled={!hideSidebar}
         onOpenAi={handleOpenAi}
+        onToggleAi={handleToggleAi}
         onOpenChat={handleOpenChat}
         onToggleChat={handleToggleChat}
         isAiOpen={aiOpen}
