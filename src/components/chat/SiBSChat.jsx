@@ -13,6 +13,7 @@ import {
   MessageCircleMore,
   MoreHorizontal,
   Plus,
+  Reply,
   Search,
   Send,
   Smile,
@@ -31,6 +32,7 @@ import {
   getTrendingChatGifs,
   searchChatGifs,
 } from "@/lib/axios/gifSearch";
+import ChatVideoPlayer from "@/components/chat/ChatVideoPlayer";
 import { useChat } from "@/services/context/ChatContext";
 import { useUser } from "@/services/context/UserContext";
 
@@ -215,6 +217,51 @@ function getChatMemberDisplayName(member = {}) {
     cleanText(member?.displayName) ||
     (cleanText(member?.sibsId) ? `SIBS ID ${cleanText(member.sibsId)}` : "Employee")
   );
+}
+
+function getReplySenderName(message = {}, currentSibsId = "") {
+  if (!message || message?.unavailable) return "Original message";
+
+  const senderSibsId = cleanText(message?.senderSibsId);
+  if (senderSibsId && senderSibsId === cleanText(currentSibsId)) return "You";
+
+  return getChatMemberDisplayName(message?.sender || { sibsId: senderSibsId });
+}
+
+function getReplyPreviewLabel(message = {}) {
+  if (!message || message?.unavailable) return "Original message is unavailable";
+  if (message?.unsent || cleanText(message?.messageType).toUpperCase() === "UNSENT") {
+    return "Message was unsent";
+  }
+
+  const text = cleanText(message?.messageText);
+  if (text) {
+    return text.length > 100 ? `${text.slice(0, 100)}…` : text;
+  }
+
+  const type = cleanText(message?.messageType).toUpperCase();
+  if (type === "GIF" || cleanText(message?.gifUrl)) return "GIF";
+
+  const attachments = Array.isArray(message?.attachments) ? message.attachments : [];
+  if (attachments.length) {
+    const mimeTypes = attachments.map((item) => cleanText(item?.mimeType).toLowerCase());
+    const hasVideo = mimeTypes.some((value) => value.startsWith("video/"));
+    const hasAudio = mimeTypes.some((value) => value.startsWith("audio/"));
+    const hasImage = mimeTypes.some((value) => value.startsWith("image/"));
+    const kinds = [hasVideo, hasAudio, hasImage].filter(Boolean).length;
+
+    if (kinds > 1 || attachments.length > 1) return "Media attachment";
+    if (hasVideo) return "Video";
+    if (hasAudio) return "Audio";
+    if (hasImage) return "Image";
+    return "Attachment";
+  }
+
+  if (type.includes("VIDEO")) return "Video";
+  if (type.includes("AUDIO")) return "Audio";
+  if (type.includes("IMAGE") || type.includes("MEDIA")) return "Media attachment";
+
+  return "Message";
 }
 
 function getChatMentionLabel(member = {}) {
@@ -1317,6 +1364,7 @@ export default function SiBSChat({ enabled = true }) {
   const [reactingMessageId, setReactingMessageId] = useState(null);
   const [unsendingMessageId, setUnsendingMessageId] = useState(null);
   const [unsendConfirmMessage, setUnsendConfirmMessage] = useState(null);
+  const [replyingToMessage, setReplyingToMessage] = useState(null);
   const [launcherPosition, setLauncherPosition] = useState(null);
   const [launcherDragging, setLauncherDragging] = useState(false);
   const [mentionStart, setMentionStart] = useState(null);
@@ -1353,6 +1401,10 @@ export default function SiBSChat({ enabled = true }) {
     Boolean(user) &&
     Boolean(chat) &&
     chat?.chatAllowed === true;
+
+  useEffect(() => {
+    setReplyingToMessage(null);
+  }, [chat?.activeConversationId]);
 
   useEffect(() => {
     if (!launcherPosition) return undefined;
@@ -1867,8 +1919,10 @@ export default function SiBSChat({ enabled = true }) {
 
       await chat.sendMessage({
         gifUrl,
+        replyToMessageId: replyingToMessage?.id || null,
       });
 
+      setReplyingToMessage(null);
       setGifPickerOpen(false);
       setGifSearch("");
       setGifResults([]);
@@ -1894,8 +1948,10 @@ export default function SiBSChat({ enabled = true }) {
       await chat.sendMessage({
         message: text,
         images: selectedImages.map((item) => item.file),
+        replyToMessageId: replyingToMessage?.id || null,
       });
 
+      setReplyingToMessage(null);
       selectedImages.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       setSelectedImages([]);
       setDraft("");
@@ -1952,6 +2008,35 @@ export default function SiBSChat({ enabled = true }) {
       event.preventDefault();
       void submitMessage();
     }
+  }
+
+  function handleReplyMessage(message) {
+    if (!message?.id || message?.unsent) return;
+
+    const messageType = cleanText(message?.messageType).toUpperCase();
+    if (messageType === "MEMBER_ADDED" || messageType === "MEMBER_REMOVED") {
+      return;
+    }
+
+    setReplyingToMessage(message);
+    setMessageActionId(null);
+    setReactionPickerMessageId(null);
+    setEmojiPickerOpen(false);
+    setGifPickerOpen(false);
+    closeMentionPicker();
+
+    window.requestAnimationFrame(() => textareaRef.current?.focus());
+  }
+
+  function scrollToRepliedMessage(messageId) {
+    const targetId = Number(messageId || 0);
+    const scroller = messageScrollRef.current;
+    if (!targetId || !scroller) return;
+
+    const target = scroller.querySelector(`[data-chat-message-id="${targetId}"]`);
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   async function handleMessageReaction(message, reaction) {
@@ -2459,6 +2544,7 @@ export default function SiBSChat({ enabled = true }) {
                         !unsent &&
                         !membershipActivity;
                       const canReact = !unsent && !membershipActivity;
+                      const canReply = !unsent && !membershipActivity;
                       const reactions = Array.isArray(message.reactions)
                         ? message.reactions.filter((item) => Number(item?.count || 0) > 0)
                         : [];
@@ -2478,7 +2564,7 @@ export default function SiBSChat({ enabled = true }) {
                         seenMembersByMessageId.get(Number(message.id)) || [];
 
                       return (
-                        <div key={message.id}>
+                        <div key={message.id} data-chat-message-id={message.id}>
                           {showDate ? (
                             <div className="my-3 flex items-center gap-3">
                               <span className="h-px flex-1 bg-sibs-border" />
@@ -2652,6 +2738,28 @@ export default function SiBSChat({ enabled = true }) {
                                 </div>
                               ) : null}
 
+                              <div className="flex items-center gap-1.5">
+                                <div className="min-w-0">
+                                  {message.replyTo ? (
+                                <button
+                                  type="button"
+                                  onClick={() => scrollToRepliedMessage(message.replyTo.id)}
+                                  className={`mb-1.5 block w-full overflow-hidden rounded-xl border-l-[3px] px-2.5 py-2 text-left shadow-sm transition hover:brightness-[0.98] ${
+                                    mine
+                                      ? "border-sibs-orange bg-orange-50 text-sibs-navy"
+                                      : "border-sibs-navy bg-slate-100 text-sibs-navy"
+                                  }`}
+                                  title="Go to replied message"
+                                >
+                                  <span className="block truncate text-[9px] font-extrabold text-sibs-orange">
+                                    {getReplySenderName(message.replyTo, currentSibsId)}
+                                  </span>
+                                  <span className="mt-0.5 block truncate text-[10px] font-semibold text-sibs-muted">
+                                    {getReplyPreviewLabel(message.replyTo)}
+                                  </span>
+                                </button>
+                              ) : null}
+
                               {unsent ? (
                                 <div className="rounded-2xl border border-sibs-border bg-white px-3 py-2 text-[11px] font-semibold italic text-sibs-muted">
                                   {mine
@@ -2706,20 +2814,10 @@ export default function SiBSChat({ enabled = true }) {
 
                                         if (isVideo) {
                                           return (
-                                            <div
+                                            <ChatVideoPlayer
                                               key={attachment.id}
-                                              className="overflow-hidden rounded-xl bg-black"
-                                            >
-                                              <video
-                                                src={attachmentUrl}
-                                                controls
-                                                playsInline
-                                                preload="metadata"
-                                                className="max-h-72 w-full bg-black object-contain"
-                                              >
-                                                Your browser does not support video playback.
-                                              </video>
-                                            </div>
+                                              attachment={attachment}
+                                            />
                                           );
                                         }
 
@@ -2773,6 +2871,21 @@ export default function SiBSChat({ enabled = true }) {
                                 </div>
                               )}
 
+                                </div>
+
+                                {canReply ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReplyMessage(message)}
+                                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-sibs-faint opacity-60 transition hover:bg-white hover:text-sibs-navy hover:shadow-sm group-hover/message:opacity-100"
+                                    title="Reply"
+                                    aria-label="Reply to message"
+                                  >
+                                    <Reply size={15} />
+                                  </button>
+                                ) : null}
+                              </div>
+
                               {reactions.length ? (
                                 <div
                                   className={`mt-1 flex flex-wrap items-center gap-1 ${
@@ -2825,13 +2938,24 @@ export default function SiBSChat({ enabled = true }) {
                                 {formatMessageTime(message.createdAt, chatClockMs)}
                               </p>
 
-                              {seenMembers.length ? (
-                                <div
-                                  className={`mt-1 flex items-center ${
-                                    mine ? "justify-end" : "justify-start"
-                                  }`}
-                                >
-                                  <div className="flex items-center -space-x-1.5">
+                              {seenMembers.length ? (() => {
+                                const seenNames = seenMembers.map((member) => {
+                                  const memberSibsId = cleanText(member?.sibsId);
+                                  if (memberSibsId === currentSibsId) return "You";
+
+                                  return (
+                                    cleanText(
+                                      member?.preferredName ||
+                                        member?.preferred_name,
+                                    ) ||
+                                    cleanText(member?.displayName) ||
+                                    `SIBS ID ${memberSibsId}`
+                                  );
+                                });
+                                const seenByLabel = `Seen by ${seenNames.join(", ")}`;
+
+                                const seenAvatars = (
+                                  <div className="flex shrink-0 items-center -space-x-1.5">
                                     {seenMembers.slice(0, 8).map((member) => {
                                       const memberName =
                                         cleanText(
@@ -2873,9 +2997,35 @@ export default function SiBSChat({ enabled = true }) {
                                       </span>
                                     ) : null}
                                   </div>
-                                </div>
-                              ) : null}
+                                );
+
+                                return (
+                                  <div
+                                    className={`mt-1 flex min-w-0 items-center gap-2 ${
+                                      mine ? "justify-end" : "justify-start"
+                                    }`}
+                                    title={seenByLabel}
+                                  >
+                                    {mine ? (
+                                      <>
+                                        <span className="max-w-[190px] truncate text-[8px] font-semibold text-sibs-faint">
+                                          {seenByLabel}
+                                        </span>
+                                        {seenAvatars}
+                                      </>
+                                    ) : (
+                                      <>
+                                        {seenAvatars}
+                                        <span className="max-w-[190px] truncate text-[8px] font-semibold text-sibs-faint">
+                                          {seenByLabel}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })() : null}
                             </div>
+
                           </div>
                           )}
                         </div>
@@ -2904,6 +3054,28 @@ export default function SiBSChat({ enabled = true }) {
               </div>
 
               <footer className="shrink-0 border-t border-sibs-border bg-white px-3 py-3">
+                {replyingToMessage ? (
+                  <div className="mb-2 flex items-center gap-2 rounded-xl border border-sibs-border bg-[#F8FAFC] px-3 py-2">
+                    <div className="min-w-0 flex-1 border-l-[3px] border-sibs-orange pl-2.5">
+                      <p className="truncate text-[10px] font-extrabold text-sibs-orange">
+                        Replying to {getReplySenderName(replyingToMessage, currentSibsId)}
+                      </p>
+                      <p className="mt-0.5 truncate text-[10px] font-semibold text-sibs-muted">
+                        {getReplyPreviewLabel(replyingToMessage)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setReplyingToMessage(null)}
+                      aria-label="Cancel reply"
+                      title="Cancel reply"
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sibs-faint transition hover:bg-white hover:text-sibs-navy"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : null}
+
                 {selectedImages.length ? (
                   <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
                     {selectedImages.map((item, index) => (

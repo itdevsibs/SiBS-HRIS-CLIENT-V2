@@ -5,9 +5,16 @@ function cleanText(value) {
 }
 
 export function getChatApiBaseUrl() {
-  return String(api?.defaults?.baseURL || "")
+  const rawBaseUrl =
+    api?.defaults?.baseURL ||
+    import.meta.env?.VITE_API_URL ||
+    import.meta.env?.VITE_API_BASE_URL ||
+    "http://localhost:5001";
+
+  return String(rawBaseUrl)
     .trim()
-    .replace(/\/+$/, "");
+    .replace(/\/+$/, "")
+    .replace(/\/api$/i, "");
 }
 
 export function getChatAttachmentUrl(value) {
@@ -117,13 +124,18 @@ export async function getChatMessages(
 
 export async function sendChatMessage(
   conversationId,
-  { message = "", images = [], gifUrl = "" } = {},
+  { message = "", images = [], gifUrl = "", replyToMessageId = null } = {},
 ) {
   const formData = new FormData();
   formData.append("message", String(message || ""));
 
   if (cleanText(gifUrl)) {
     formData.append("gifUrl", cleanText(gifUrl));
+  }
+
+  const replyId = Number(replyToMessageId || 0);
+  if (Number.isFinite(replyId) && replyId > 0) {
+    formData.append("replyToMessageId", String(replyId));
   }
 
   (Array.isArray(images) ? images : []).forEach((image) => {

@@ -416,7 +416,7 @@ export function ChatProvider({ children }) {
   );
 
   const sendMessage = useCallback(
-    async ({ message = "", images = [], gifUrl = "" } = {}) => {
+    async ({ message = "", images = [], gifUrl = "", replyToMessageId = null } = {}) => {
       const conversationId = Number(activeConversationIdRef.current || 0);
       if (!conversationId) return null;
 
@@ -424,6 +424,7 @@ export function ChatProvider({ children }) {
         message,
         images,
         gifUrl,
+        replyToMessageId,
       });
 
       if (sentMessage && mountedRef.current) {
@@ -604,6 +605,7 @@ export function ChatProvider({ children }) {
             cleanText(item?.messageType),
             cleanText(item?.unsentAt || item?.unsent_at),
             JSON.stringify(item?.reactions || []),
+            JSON.stringify(item?.replyTo || null),
           ].join(":"),
         )
         .join("|");
@@ -616,6 +618,7 @@ export function ChatProvider({ children }) {
             cleanText(item?.messageType),
             cleanText(item?.unsentAt || item?.unsent_at),
             JSON.stringify(item?.reactions || []),
+            JSON.stringify(item?.replyTo || null),
           ].join(":"),
         )
         .join("|");
