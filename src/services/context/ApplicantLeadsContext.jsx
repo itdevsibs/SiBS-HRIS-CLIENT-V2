@@ -389,6 +389,18 @@ export function ApplicantLeadsProvider({ children }) {
       return;
     }
 
+    if (
+      !formData.email.trim() ||
+      !formData.source.trim() ||
+      !formData.facebookName.trim() ||
+      !formData.facebookLink.trim()
+    ) {
+      showToast(
+        "Please enter Email Address, Sourcing Channel, Facebook Name, and Facebook Link.",
+      );
+      return;
+    }
+
     setIsSaving(true);
     const payload = buildApplicantLeadPayload(formData, user);
 
