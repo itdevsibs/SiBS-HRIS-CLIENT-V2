@@ -202,7 +202,6 @@ function TalentPoolPageContent() {
   } = useCombinedDropOffCandidates();
   const {
     archivedLeads,
-    archivedLeadCount,
     refreshApplicantLeads,
   } = useApplicantLeadsPage();
 
@@ -252,30 +251,24 @@ function TalentPoolPageContent() {
     setSelectedCandidate,
   ]);
 
-  const tabCounts = useMemo(() => ({
-    [TALENT_POOL_TABS.ALL]: filterTalentPoolCandidatesForTab(
-      candidateList,
-      TALENT_POOL_TABS.ALL,
-    ).length,
-    [TALENT_POOL_TABS.NEW_APPLICANT]: filterTalentPoolCandidatesForTab(
-      candidateList,
-      TALENT_POOL_TABS.NEW_APPLICANT,
-    ).length,
-    [TALENT_POOL_TABS.APPLICANT_PIPELINE]: filterTalentPoolCandidatesForTab(
-      candidateList,
-      TALENT_POOL_TABS.APPLICANT_PIPELINE,
-    ).length,
-    [TALENT_POOL_TABS.BELOW_18]: filterTalentPoolCandidatesForTab(
-      candidateList,
-      TALENT_POOL_TABS.BELOW_18,
-    ).length,
-    [TALENT_POOL_TABS.INCOMPLETE_REQUIREMENTS]: filterTalentPoolCandidatesForTab(
-      candidateList,
-      TALENT_POOL_TABS.INCOMPLETE_REQUIREMENTS,
-    ).length,
-    [TALENT_POOL_TABS.DROP_OFF]: dropOffCandidates.length,
-    [TALENT_POOL_TABS.LEADS_CONVERTED]: archivedLeadCount,
-  }), [candidateList, dropOffCandidates.length, archivedLeadCount]);
+  const newApplicantCount = useMemo(
+    () =>
+      filterTalentPoolCandidatesForTab(
+        candidateList,
+        TALENT_POOL_TABS.NEW_APPLICANT,
+      ).length,
+    [candidateList],
+  );
+
+  const tabCounts = useMemo(
+    () =>
+      newApplicantCount > 0
+        ? {
+            [TALENT_POOL_TABS.NEW_APPLICANT]: newApplicantCount,
+          }
+        : {},
+    [newApplicantCount],
+  );
 
   const tabCandidates = useMemo(() =>
     filterTalentPoolCandidatesForTab(filteredCandidates, activeTab),
