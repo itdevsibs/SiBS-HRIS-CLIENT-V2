@@ -13,6 +13,7 @@ import {
   Loader2,
   MessageCircleMore,
   MoreHorizontal,
+  Pencil,
   Plus,
   Reply,
   Search,
@@ -36,6 +37,7 @@ import {
 import ChatVideoPlayer from "@/components/chat/ChatVideoPlayer";
 import { useChat } from "@/services/context/ChatContext";
 import { useUser } from "@/services/context/UserContext";
+import { ensureSibsChatSystemNotifications } from "@/lib/sibsChatSystemNotifications";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_ATTACHMENTS_PER_MESSAGE = 5;
@@ -214,7 +216,15 @@ function cleanText(value) {
 
 function getChatMemberDisplayName(member = {}) {
   return (
+    cleanText(member?.chatNickname || member?.chat_nickname) ||
     cleanText(member?.preferredName || member?.preferred_name) ||
+    cleanText(member?.displayName) ||
+    (cleanText(member?.sibsId) ? `SIBS ID ${cleanText(member.sibsId)}` : "Employee")
+  );
+}
+
+function getChatMemberFullName(member = {}) {
+  return (
     cleanText(member?.displayName) ||
     (cleanText(member?.sibsId) ? `SIBS ID ${cleanText(member.sibsId)}` : "Employee")
   );
@@ -1369,6 +1379,9 @@ export default function SiBSChat({ enabled = true }) {
   const [conversationActionId, setConversationActionId] = useState(null);
   const [conversationActionBusyId, setConversationActionBusyId] = useState(null);
   const [deleteConversationConfirm, setDeleteConversationConfirm] = useState(null);
+  const [nicknameConversation, setNicknameConversation] = useState(null);
+  const [nicknameDraft, setNicknameDraft] = useState("");
+  const [nicknameSaving, setNicknameSaving] = useState(false);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
   const [launcherPosition, setLauncherPosition] = useState(null);
   const [launcherDragging, setLauncherDragging] = useState(false);
@@ -1450,6 +1463,76 @@ export default function SiBSChat({ enabled = true }) {
       }
     };
   }, [chat?.setChatWindowOpen, open]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    let cancelled = false;
+
+    const openChatConversation = async (conversationId) => {
+      const id = Number(conversationId || 0);
+      if (!id || cancelled) return;
+
+      setOpen(true);
+      setNewChatOpen(false);
+      setGroupInfoOpen(false);
+
+      try {
+        await chat?.refreshConversations?.();
+
+        if (!cancelled) {
+          await chat?.selectConversation?.(id);
+        }
+      } catch {
+        // The user can still open SiBS Chat manually if navigation fails.
+      }
+    };
+
+    const handleServiceWorkerMessage = (event) => {
+      const payload = event?.data || {};
+
+      if (payload?.type !== "SIBS_CHAT_OPEN_CONVERSATION") return;
+      void openChatConversation(payload?.conversationId);
+    };
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener(
+        "message",
+        handleServiceWorkerMessage,
+      );
+    }
+
+    const currentUrl = new URL(window.location.href);
+    const shouldOpenFromNotification =
+      currentUrl.searchParams.get("sibsChat") === "1";
+    const notificationConversationId = Number(
+      currentUrl.searchParams.get("conversationId") || 0,
+    );
+
+    if (shouldOpenFromNotification && notificationConversationId) {
+      currentUrl.searchParams.delete("sibsChat");
+      currentUrl.searchParams.delete("conversationId");
+
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
+      );
+
+      void openChatConversation(notificationConversationId);
+    }
+
+    return () => {
+      cancelled = true;
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.removeEventListener(
+          "message",
+          handleServiceWorkerMessage,
+        );
+      }
+    };
+  }, [chat?.refreshConversations, chat?.selectConversation]);
 
   useEffect(() => {
     const justOpened = open && !previousOpenRef.current;
@@ -1535,6 +1618,20 @@ export default function SiBSChat({ enabled = true }) {
     document.addEventListener("keydown", handleDeleteConversationKeyDown);
     return () => document.removeEventListener("keydown", handleDeleteConversationKeyDown);
   }, [conversationActionBusyId, deleteConversationConfirm]);
+
+  useEffect(() => {
+    if (!nicknameConversation) return undefined;
+
+    function handleNicknameKeyDown(event) {
+      if (event.key === "Escape" && !nicknameSaving) {
+        setNicknameConversation(null);
+        setNicknameDraft("");
+      }
+    }
+
+    document.addEventListener("keydown", handleNicknameKeyDown);
+    return () => document.removeEventListener("keydown", handleNicknameKeyDown);
+  }, [nicknameConversation, nicknameSaving]);
 
   useEffect(() => {
     if (!reactionPickerMessageId) return undefined;
@@ -2322,6 +2419,47 @@ export default function SiBSChat({ enabled = true }) {
     }
   }
 
+  function handleSetNickname(conversation) {
+    if (!conversation?.id || conversation?.isGroup) return;
+
+    setConversationActionId(null);
+    setNicknameConversation(conversation);
+    setNicknameDraft(
+      cleanText(
+        conversation?.otherMember?.chatNickname ||
+          conversation?.otherMember?.chat_nickname,
+      ),
+    );
+  }
+
+  async function savePrivateNickname() {
+    const conversationId = Number(nicknameConversation?.id || 0);
+    if (
+      !conversationId ||
+      nicknameConversation?.isGroup ||
+      nicknameSaving ||
+      !chat?.setPrivateNickname
+    ) {
+      return;
+    }
+
+    try {
+      setNicknameSaving(true);
+      setLocalError("");
+      await chat.setPrivateNickname(conversationId, nicknameDraft);
+      setNicknameConversation(null);
+      setNicknameDraft("");
+    } catch (requestError) {
+      setLocalError(
+        requestError?.response?.data?.message ||
+          requestError?.message ||
+          "Unable to update the nickname.",
+      );
+    } finally {
+      setNicknameSaving(false);
+    }
+  }
+
   async function handleHideConversation(conversation) {
     const conversationId = Number(conversation?.id || 0);
     if (!conversationId || conversation?.isGroup || !chat?.hidePrivateConversation) return;
@@ -2464,6 +2602,10 @@ export default function SiBSChat({ enabled = true }) {
       return;
     }
 
+    if (!open) {
+      void ensureSibsChatSystemNotifications();
+    }
+
     setOpen((current) => !current);
   }
 
@@ -2492,6 +2634,15 @@ export default function SiBSChat({ enabled = true }) {
   const activePrivateOnline = activeOtherMember
     ? isMemberOnline(activeOtherMember)
     : false;
+  const activePrivateNickname = cleanText(
+    activeOtherMember?.chatNickname || activeOtherMember?.chat_nickname,
+  );
+  const activePrivateFullName = activeOtherMember
+    ? getChatMemberFullName(activeOtherMember)
+    : "";
+  const activePrivateStatus = activePrivateOnline
+    ? "Active now"
+    : `SIBS ID ${activeOtherMember?.sibsId || ""}`;
 
 
   return (
@@ -2635,7 +2786,47 @@ export default function SiBSChat({ enabled = true }) {
                 const selected = Number(chat.activeConversationId) === Number(conversation.id);
                 const otherMember = conversation.otherMember;
                 const online = otherMember ? isMemberOnline(otherMember) : false;
-                const preview = conversation.lastMessageText ||
+                const conversationTypingIds = Array.isArray(
+                  chat?.typingByConversation?.[Number(conversation.id)],
+                )
+                  ? chat.typingByConversation[Number(conversation.id)]
+                  : [];
+
+                const conversationMembers = Array.isArray(conversation?.members)
+                  ? conversation.members
+                  : [];
+
+                const conversationTypingNames = conversationTypingIds
+                  .map((sibsId) =>
+                    conversationMembers.find(
+                      (member) =>
+                        cleanText(member?.sibsId) === cleanText(sibsId),
+                    ),
+                  )
+                  .filter(Boolean)
+                  .filter(
+                    (member) =>
+                      cleanText(member?.sibsId) !== cleanText(currentSibsId),
+                  )
+                  .map((member) => getChatMemberDisplayName(member))
+                  .filter(Boolean);
+
+                const conversationTypingLabel =
+                  conversationTypingNames.length === 1
+                    ? `${conversationTypingNames[0]} is typing...`
+                    : conversationTypingNames.length === 2
+                      ? `${conversationTypingNames[0]} and ${conversationTypingNames[1]} are typing...`
+                      : conversationTypingNames.length > 2
+                        ? `${conversationTypingNames[0]}, ${conversationTypingNames[1]}, and ${
+                            conversationTypingNames.length - 2
+                          } other${
+                            conversationTypingNames.length - 2 === 1 ? "" : "s"
+                          } are typing...`
+                        : "";
+
+                const preview =
+                  conversationTypingLabel ||
+                  conversation.lastMessageText ||
                   (conversation.lastMessageType?.includes("VIDEO")
                     ? "Sent a video"
                     : conversation.lastMessageType?.includes("MEDIA")
@@ -2676,14 +2867,29 @@ export default function SiBSChat({ enabled = true }) {
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center justify-between gap-2">
                           <span className="truncate text-xs font-extrabold text-sibs-navy">
-                            {conversation.title}
+                            {!conversation.isGroup
+                              ? cleanText(
+                                  otherMember?.chatNickname ||
+                                    otherMember?.chat_nickname,
+                                ) ||
+                                cleanText(otherMember?.displayName) ||
+                                conversation.title
+                              : conversation.title}
                           </span>
                           <span className="shrink-0 text-[9px] font-semibold text-sibs-faint">
                             {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
                           </span>
                         </span>
                         <span className="mt-0.5 flex items-center gap-2">
-                          <span className={`min-w-0 flex-1 truncate text-[10px] ${conversation.unreadCount ? "font-extrabold text-sibs-navy" : "font-semibold text-sibs-muted"}`}>
+                          <span
+                            className={`min-w-0 flex-1 truncate text-[10px] ${
+                              conversationTypingLabel
+                                ? "font-extrabold text-sibs-orange"
+                                : conversation.unreadCount
+                                  ? "font-extrabold text-sibs-navy"
+                                  : "font-semibold text-sibs-muted"
+                            }`}
+                          >
                             {preview}
                           </span>
                           {conversation.unreadCount > 0 ? (
@@ -2725,8 +2931,18 @@ export default function SiBSChat({ enabled = true }) {
                         {actionMenuOpen ? (
                           <div
                             role="menu"
-                            className="absolute right-0 top-8 z-40 w-40 overflow-hidden rounded-xl border border-sibs-border bg-white p-1.5 shadow-[0_12px_32px_rgba(4,44,81,0.18)]"
+                            className="absolute right-0 top-8 z-40 w-44 overflow-hidden rounded-xl border border-sibs-border bg-white p-1.5 shadow-[0_12px_32px_rgba(4,44,81,0.18)]"
                           >
+                            <button
+                              type="button"
+                              role="menuitem"
+                              disabled={actionBusy}
+                              onClick={() => handleSetNickname(conversation)}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Pencil size={14} />
+                              Set nickname
+                            </button>
                             <button
                               type="button"
                               role="menuitem"
@@ -2812,9 +3028,11 @@ export default function SiBSChat({ enabled = true }) {
                     </button>
                   ) : (
                     <p className="truncate text-[10px] font-semibold text-sibs-muted">
-                      {activePrivateOnline
-                        ? "Active now"
-                        : `SIBS ID ${activeOtherMember?.sibsId || ""}`}
+                      {activePrivateNickname &&
+                      activePrivateFullName &&
+                      activePrivateNickname !== activePrivateFullName
+                        ? `${activePrivateFullName} · ${activePrivateStatus}`
+                        : activePrivateStatus}
                     </p>
                   )}
                 </div>
@@ -3293,14 +3511,7 @@ export default function SiBSChat({ enabled = true }) {
                                   const memberSibsId = cleanText(member?.sibsId);
                                   if (memberSibsId === currentSibsId) return "You";
 
-                                  return (
-                                    cleanText(
-                                      member?.preferredName ||
-                                        member?.preferred_name,
-                                    ) ||
-                                    cleanText(member?.displayName) ||
-                                    `SIBS ID ${memberSibsId}`
-                                  );
+                                  return getChatMemberDisplayName(member);
                                 });
                                 const seenByLabel = `Seen by ${seenNames.join(", ")}`;
 
@@ -3308,12 +3519,7 @@ export default function SiBSChat({ enabled = true }) {
                                   <div className="flex shrink-0 items-center -space-x-1.5">
                                     {seenMembers.slice(0, 8).map((member) => {
                                       const memberName =
-                                        cleanText(
-                                          member?.preferredName ||
-                                            member?.preferred_name,
-                                        ) ||
-                                        cleanText(member?.displayName) ||
-                                        `SIBS ID ${cleanText(member?.sibsId)}`;
+                                        getChatMemberDisplayName(member);
 
                                       return (
                                         <span
@@ -3400,6 +3606,14 @@ export default function SiBSChat({ enabled = true }) {
                       <p className="mt-3 text-sm font-extrabold text-sibs-navy">
                         {activeConversation.title}
                       </p>
+                      {!activeConversation.isGroup &&
+                      activePrivateNickname &&
+                      activePrivateFullName &&
+                      activePrivateNickname !== activePrivateFullName ? (
+                        <p className="mt-1 text-[11px] font-semibold text-sibs-muted">
+                          {activePrivateFullName}
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-[11px] font-semibold text-sibs-muted">
                         Start the conversation.
                       </p>
@@ -3873,6 +4087,102 @@ export default function SiBSChat({ enabled = true }) {
           />
         </div>
       </section>
+
+      {nicknameConversation && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget && !nicknameSaving) {
+                  setNicknameConversation(null);
+                  setNicknameDraft("");
+                }
+              }}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="chat-nickname-title"
+                className="w-full max-w-[390px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.28)]"
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <div className="px-5 pb-4 pt-5">
+                  <div className="flex items-start gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EA] text-sibs-orange">
+                      <Pencil size={18} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3
+                        id="chat-nickname-title"
+                        className="text-sm font-extrabold text-sibs-navy"
+                      >
+                        Set nickname
+                      </h3>
+                      <p className="mt-1 text-[11px] font-semibold leading-5 text-sibs-muted">
+                        This nickname is only for your personal chat with {nicknameConversation?.otherMember?.displayName || nicknameConversation?.title}. Group chats continue using the employee&apos;s SiBS HRIS nickname.
+                      </p>
+                    </div>
+                  </div>
+
+                  <label className="mt-4 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
+                    Nickname
+                  </label>
+                  <input
+                    type="text"
+                    autoFocus
+                    maxLength={60}
+                    value={nicknameDraft}
+                    onChange={(event) => setNicknameDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void savePrivateNickname();
+                      }
+                    }}
+                    placeholder={
+                      cleanText(
+                        nicknameConversation?.otherMember?.preferredName ||
+                          nicknameConversation?.otherMember?.preferred_name,
+                      ) || "Enter nickname"
+                    }
+                    className="mt-1.5 h-10 w-full rounded-xl border border-sibs-border bg-white px-3 text-xs font-bold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-orange-100"
+                  />
+                  <div className="mt-1.5 flex items-center justify-between gap-3 text-[9px] font-semibold text-sibs-faint">
+                    <span>Leave it empty to use the employee&apos;s regular HRIS name.</span>
+                    <span>{nicknameDraft.length}/60</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 border-t border-sibs-border bg-[#F8FAFC] px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNicknameConversation(null);
+                      setNicknameDraft("");
+                    }}
+                    disabled={nicknameSaving}
+                    className="inline-flex h-9 items-center justify-center rounded-xl border border-sibs-border bg-white px-4 text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void savePrivateNickname()}
+                    disabled={nicknameSaving}
+                    className="inline-flex h-9 min-w-[92px] items-center justify-center gap-2 rounded-xl bg-sibs-orange px-4 text-[11px] font-extrabold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {nicknameSaving ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : null}
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {deleteConversationConfirm && typeof document !== "undefined"
         ? createPortal(

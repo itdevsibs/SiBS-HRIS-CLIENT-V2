@@ -122,6 +122,18 @@ export async function deletePrivateChat(conversationId) {
   return response.data?.data || null;
 }
 
+export async function setPrivateChatNickname(
+  conversationId,
+  nickname = "",
+) {
+  const response = await api.patch(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/nickname`,
+    { nickname: cleanText(nickname) },
+  );
+
+  return response.data?.data || null;
+}
+
 export async function getChatTypingStatus(conversationId) {
   const response = await api.get(
     `/chat/conversations/${encodeURIComponent(conversationId)}/typing`,

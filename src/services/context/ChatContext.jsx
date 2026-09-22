@@ -24,10 +24,12 @@ import {
   renameGroupChat,
   sendChatMessage,
   sendChatTypingStatus,
+  setPrivateChatNickname,
   setChatMessageReaction,
   unsendChatMessage,
 } from "@/lib/axios/sibsChat";
 import chatSocket from "@/lib/axios/chatSocket";
+import { showSibsChatSystemNotification } from "@/lib/sibsChatSystemNotifications";
 import { useUser } from "./UserContext";
 
 const ChatContext = createContext(null);
@@ -147,6 +149,46 @@ async function playChatReceiveSound() {
   }
 }
 
+function getChatSystemNotificationPreview(message = {}) {
+  const text = cleanText(message?.messageText);
+  if (text) {
+    return text.length > 180 ? `${text.slice(0, 180)}…` : text;
+  }
+
+  const type = cleanText(message?.messageType).toUpperCase();
+  const attachments = Array.isArray(message?.attachments)
+    ? message.attachments
+    : [];
+
+  if (type === "GIF" || cleanText(message?.gifUrl)) return "Sent a GIF";
+
+  if (attachments.length) {
+    const mimeTypes = attachments.map((item) =>
+      cleanText(item?.mimeType || item?.mime_type).toLowerCase(),
+    );
+
+    if (mimeTypes.some((value) => value.startsWith("video/"))) {
+      return attachments.length > 1 ? "Sent videos" : "Sent a video";
+    }
+
+    if (mimeTypes.some((value) => value.startsWith("audio/"))) {
+      return attachments.length > 1 ? "Sent audio files" : "Sent an audio message";
+    }
+
+    if (mimeTypes.some((value) => value.startsWith("image/"))) {
+      return attachments.length > 1 ? "Sent images" : "Sent an image";
+    }
+
+    return attachments.length > 1 ? "Sent attachments" : "Sent an attachment";
+  }
+
+  if (type.includes("VIDEO")) return "Sent a video";
+  if (type.includes("AUDIO")) return "Sent an audio message";
+  if (type.includes("IMAGE") || type.includes("MEDIA")) return "Sent media";
+
+  return "New message";
+}
+
 function sortConversations(items = []) {
   return [...items].sort((a, b) => {
     const aTime = new Date(a?.lastMessageAt || a?.updatedAt || 0).getTime();
@@ -179,6 +221,7 @@ export function ChatProvider({ children }) {
   const mountedRef = useRef(true);
   const chatWindowOpenRef = useRef(false);
   const messagesRef = useRef([]);
+  const conversationsRef = useRef([]);
   const fallbackSyncBusyRef = useRef(false);
   const typingSyncBusyRef = useRef(false);
   const typingExpiryTimersRef = useRef(new Map());
@@ -193,6 +236,10 @@ export function ChatProvider({ children }) {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -304,6 +351,40 @@ export function ChatProvider({ children }) {
       }
 
       void playChatReceiveSound();
+
+      const conversation = conversationsRef.current.find(
+        (item) => Number(item?.id || 0) === id,
+      );
+
+      const sender = message?.sender || {};
+      const senderName = conversation?.isGroup
+        ? cleanText(sender?.preferredName || sender?.preferred_name) ||
+          cleanText(sender?.displayName) ||
+          `SIBS ID ${senderSibsId}`
+        : cleanText(
+            conversation?.otherMember?.chatNickname ||
+              conversation?.otherMember?.chat_nickname,
+          ) ||
+          cleanText(
+            conversation?.otherMember?.preferredName ||
+              conversation?.otherMember?.preferred_name,
+          ) ||
+          cleanText(conversation?.otherMember?.displayName) ||
+          cleanText(sender?.preferredName || sender?.preferred_name) ||
+          cleanText(sender?.displayName) ||
+          `SIBS ID ${senderSibsId}`;
+
+      const notificationTitle = conversation?.isGroup
+        ? `${senderName} · ${cleanText(conversation?.title) || "Group Chat"}`
+        : senderName;
+
+      void showSibsChatSystemNotification({
+        title: notificationTitle || "SiBS Chat",
+        body: getChatSystemNotificationPreview(message),
+        conversationId: id,
+        messageId,
+      });
+
       return true;
     },
     [currentSibsId],
@@ -321,6 +402,7 @@ export function ChatProvider({ children }) {
 
     try {
       const nextConversations = sortConversations(await getChatConversations());
+      conversationsRef.current = nextConversations;
 
       // Local and production can be connected to separate Socket.IO processes.
       // Use the shared DB-backed conversation list as a change detector. When a
@@ -809,6 +891,30 @@ export function ChatProvider({ children }) {
     [refreshConversations],
   );
 
+  const setPrivateNickname = useCallback(
+    async (conversationId, nickname = "") => {
+      const targetConversationId = Number(conversationId || 0);
+      if (!targetConversationId) return null;
+
+      const result = await setPrivateChatNickname(
+        targetConversationId,
+        nickname,
+      );
+
+      await refreshConversations();
+
+      if (
+        Number(activeConversationIdRef.current) === targetConversationId &&
+        chatWindowOpenRef.current
+      ) {
+        await loadConversationMessages(targetConversationId);
+      }
+
+      return result;
+    },
+    [loadConversationMessages, refreshConversations],
+  );
+
   const clearTypingMember = useCallback((conversationId, sibsId) => {
     const id = Number(conversationId || 0);
     const memberId = cleanText(sibsId);
@@ -1042,6 +1148,7 @@ export function ChatProvider({ children }) {
   useEffect(() => {
     if (userLoading || !currentSibsId || !chatAllowed) {
       setConversations([]);
+      conversationsRef.current = [];
       setMessages([]);
       setHasMoreMessages(false);
       setActiveConversationId(null);
@@ -1440,6 +1547,7 @@ export function ChatProvider({ children }) {
       leaveGroup,
       hidePrivateConversation,
       deletePrivateConversation,
+      setPrivateNickname,
     }),
     [
       activeConversation,
@@ -1454,6 +1562,7 @@ export function ChatProvider({ children }) {
       leaveGroup,
       hidePrivateConversation,
       deletePrivateConversation,
+      setPrivateNickname,
       membershipNotice,
       messages,
       messagesLoading,
