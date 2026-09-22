@@ -30,7 +30,7 @@ self.addEventListener("push", (event) => {
       icon: iconUrl,
       badge: badgeUrl,
       tag: `sibs-chat-${conversationId || "conversation"}-${messageId || Date.now()}`,
-      renotify: true,
+      renotify: false,
       data: {
         type: "SIBS_CHAT_OPEN_CONVERSATION",
         conversationId,

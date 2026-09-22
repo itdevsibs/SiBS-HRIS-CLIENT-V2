@@ -126,3 +126,53 @@ export async function ensureSibsChatSystemNotifications() {
     return false;
   }
 }
+
+export async function showSibsChatSystemNotification({
+  title = "SiBS Chat",
+  body = "New message",
+  conversationId = null,
+  messageId = null,
+} = {}) {
+  if (
+    typeof window === "undefined" ||
+    typeof Notification === "undefined" ||
+    Notification.permission !== "granted" ||
+    !isLikelyMobileDevice() ||
+    !window.isSecureContext
+  ) {
+    return false;
+  }
+
+  try {
+    const registration = await getChatNotificationRegistration();
+    if (!registration) return false;
+
+    const id = Number(conversationId || 0) || null;
+    const msgId = Number(messageId || 0) || null;
+
+    await registration.showNotification(
+      String(title || "SiBS Chat").slice(0, 120),
+      {
+        body: String(body || "New message").slice(0, 220),
+        icon: `${import.meta.env.BASE_URL}SiBSLogoNavy.png`,
+        badge: `${import.meta.env.BASE_URL}favicon.svg`,
+        tag: `sibs-chat-${id || "conversation"}-${msgId || Date.now()}`,
+        renotify: false,
+        data: {
+          type: "SIBS_CHAT_OPEN_CONVERSATION",
+          conversationId: id,
+          messageId: msgId,
+        },
+      },
+    );
+
+    return true;
+  } catch (error) {
+    console.warn(
+      "Unable to display SiBS Chat system notification:",
+      error?.message || error,
+    );
+    return false;
+  }
+}
+
