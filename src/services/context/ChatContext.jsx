@@ -65,31 +65,75 @@ function getCurrentDepartmentId(user = {}) {
 const CHAT_RECEIVE_SOUND_URL =
   `${import.meta.env.BASE_URL}mama-rene-baterbonia-first-3-seconds.mp3`;
 
-let chatReceiveAudio = null;
+let chatReceiveAudioContext = null;
+let chatReceiveAudioBuffer = null;
+let chatReceiveAudioBufferPromise = null;
 
-function getChatReceiveAudio() {
+function getChatReceiveAudioContext() {
   if (typeof window === "undefined") return null;
 
-  if (!chatReceiveAudio) {
-    chatReceiveAudio = new Audio(CHAT_RECEIVE_SOUND_URL);
-    chatReceiveAudio.preload = "auto";
+  const AudioContextClass =
+    window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioContextClass) return null;
+
+  if (!chatReceiveAudioContext) {
+    chatReceiveAudioContext = new AudioContextClass();
   }
 
-  return chatReceiveAudio;
+  return chatReceiveAudioContext;
 }
 
-function playChatReceiveSound() {
+async function getChatReceiveAudioBuffer(audioContext) {
+  if (!audioContext) return null;
+  if (chatReceiveAudioBuffer) return chatReceiveAudioBuffer;
+
+  if (!chatReceiveAudioBufferPromise) {
+    chatReceiveAudioBufferPromise = fetch(CHAT_RECEIVE_SOUND_URL)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Unable to load chat receive sound: ${response.status}`);
+        }
+
+        return response.arrayBuffer();
+      })
+      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
+      .then((decodedBuffer) => {
+        chatReceiveAudioBuffer = decodedBuffer;
+        return decodedBuffer;
+      })
+      .catch((error) => {
+        chatReceiveAudioBufferPromise = null;
+        throw error;
+      });
+  }
+
+  return chatReceiveAudioBufferPromise;
+}
+
+async function playChatReceiveSound() {
   try {
-    const audio = getChatReceiveAudio();
-    if (!audio) return;
+    const audioContext = getChatReceiveAudioContext();
+    if (!audioContext) return;
 
-    audio.pause();
-    audio.currentTime = 0;
-
-    const playPromise = audio.play();
-    if (playPromise?.catch) {
-      void playPromise.catch(() => {});
+    if (audioContext.state === "suspended") {
+      await audioContext.resume().catch(() => {});
     }
+
+    const audioBuffer = await getChatReceiveAudioBuffer(audioContext);
+    if (!audioBuffer) return;
+
+    const source = audioContext.createBufferSource();
+    const gain = audioContext.createGain();
+
+    source.buffer = audioBuffer;
+    gain.gain.value = 1;
+
+    source.connect(gain);
+    gain.connect(audioContext.destination);
+
+    // Play only as a receive-message popup tone. No visible media player.
+    source.start(0);
   } catch {
     // Chat must continue working even if the browser blocks audio playback.
   }
@@ -152,8 +196,14 @@ export function ChatProvider({ children }) {
 
     const unlockChatReceiveSound = () => {
       try {
-        const audio = getChatReceiveAudio();
-        audio?.load();
+        const audioContext = getChatReceiveAudioContext();
+        if (!audioContext) return;
+
+        if (audioContext.state === "suspended") {
+          void audioContext.resume().catch(() => {});
+        }
+
+        void getChatReceiveAudioBuffer(audioContext).catch(() => {});
       } catch {
         // Ignore audio initialization errors.
       }
