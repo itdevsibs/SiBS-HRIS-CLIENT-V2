@@ -482,15 +482,26 @@ export function ChatProvider({ children }) {
         }
 
         const latestId = Number(nextMessages.at(-1)?.id || 0);
-        await markChatRead(conversationId, latestId || null).catch(() => {});
+        const isActivelyViewed =
+          chatWindowOpenRef.current &&
+          Number(activeConversationIdRef.current) === Number(conversationId);
 
-        setConversations((current) =>
-          current.map((conversation) =>
-            Number(conversation.id) === Number(conversationId)
-              ? { ...conversation, unreadCount: 0 }
-              : conversation,
-          ),
-        );
+        // Loading/syncing a conversation in the background must never clear
+        // its unread badge. A conversation becomes read only after SiBS Chat
+        // is actually open and that conversation is the one being viewed.
+        if (isActivelyViewed) {
+          await markChatRead(conversationId, latestId || null).catch(() => {});
+
+          if (mountedRef.current) {
+            setConversations((current) =>
+              current.map((conversation) =>
+                Number(conversation.id) === Number(conversationId)
+                  ? { ...conversation, unreadCount: 0 }
+                  : conversation,
+              ),
+            );
+          }
+        }
 
         return nextMessages;
       } catch (requestError) {
@@ -998,7 +1009,11 @@ export function ChatProvider({ children }) {
       }
 
       const latestMessageId = Number(nextMessages?.at(-1)?.id || 0);
-      if (latestMessageId) {
+      const isStillActivelyViewed =
+        chatWindowOpenRef.current &&
+        Number(activeConversationIdRef.current) === conversationId;
+
+      if (latestMessageId && isStillActivelyViewed) {
         await markChatRead(conversationId, latestMessageId).catch(() => {});
 
         if (mountedRef.current) {

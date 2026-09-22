@@ -1378,6 +1378,7 @@ export default function SiBSChat({ enabled = true }) {
   const [mentionActiveIndex, setMentionActiveIndex] = useState(0);
 
   const messageScrollRef = useRef(null);
+  const messageEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const emojiPickerRef = useRef(null);
@@ -1847,14 +1848,47 @@ export default function SiBSChat({ enabled = true }) {
   );
 
   useEffect(() => {
-    if (!open || !latestMessageId) return;
+    if (!open || chat?.messagesLoading || !latestMessageId) return undefined;
 
-    window.requestAnimationFrame(() => {
+    let cancelled = false;
+    let secondFrame = 0;
+
+    const scrollToLatest = () => {
+      if (cancelled) return;
+
       const element = messageScrollRef.current;
       if (!element) return;
+
+      // Use the container position as the primary scroll and the end marker as
+      // a second anchor. Repeating this briefly after render also accounts for
+      // avatars/media that can change the message list height after opening.
       element.scrollTop = element.scrollHeight;
+      messageEndRef.current?.scrollIntoView({
+        block: "end",
+        inline: "nearest",
+      });
+    };
+
+    const firstFrame = window.requestAnimationFrame(() => {
+      scrollToLatest();
+      secondFrame = window.requestAnimationFrame(scrollToLatest);
     });
-  }, [chat?.activeConversationId, latestMessageId, open]);
+    const settleTimer = window.setTimeout(scrollToLatest, 120);
+    const mediaSettleTimer = window.setTimeout(scrollToLatest, 350);
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+      window.clearTimeout(settleTimer);
+      window.clearTimeout(mediaSettleTimer);
+    };
+  }, [
+    chat?.activeConversationId,
+    chat?.messagesLoading,
+    latestMessageId,
+    open,
+  ]);
 
   useEffect(() => {
     selectedImagesRef.current = selectedImages;
@@ -3347,6 +3381,11 @@ export default function SiBSChat({ enabled = true }) {
                         </div>
                       );
                     })}
+                    <div
+                      ref={messageEndRef}
+                      aria-hidden="true"
+                      className="h-px w-full"
+                    />
                   </div>
                 ) : (
                   <div className="flex h-full items-center justify-center text-center">
