@@ -466,6 +466,29 @@ function formatMessageTime(value, nowMs = Date.now()) {
   return `${clock} · ${daysAgo}d ago`;
 }
 
+function formatChatLastSeen(value, nowMs = Date.now()) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  const timestamp = date.getTime();
+  if (Number.isNaN(timestamp)) return "";
+
+  const elapsedMs = Math.max(0, Number(nowMs) - timestamp);
+  const minutesAgo = Math.max(1, Math.floor(elapsedMs / 60_000));
+
+  if (minutesAgo < 60) {
+    return `${minutesAgo}m ago`;
+  }
+
+  const hoursAgo = Math.floor(elapsedMs / 3_600_000);
+  if (hoursAgo < 24) {
+    return `${hoursAgo}h ago`;
+  }
+
+  const daysAgo = Math.floor(elapsedMs / 86_400_000);
+  return `${daysAgo}d ago`;
+}
+
 function formatConversationTime(value, nowMs = Date.now()) {
   if (!value) return "";
   const date = new Date(value);
@@ -1377,6 +1400,7 @@ export default function SiBSChat({ enabled = true }) {
   const [actionBusy, setActionBusy] = useState(false);
   const [localError, setLocalError] = useState("");
   const [attachmentNotice, setAttachmentNotice] = useState("");
+  const [presenceClockMs, setPresenceClockMs] = useState(() => Date.now());
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [gifSearch, setGifSearch] = useState("");
@@ -2092,6 +2116,14 @@ export default function SiBSChat({ enabled = true }) {
     return () => window.clearTimeout(timer);
   }, [attachmentNotice]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setPresenceClockMs(Date.now());
+    }, 30_000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   if (!visible) return null;
 
   function isMemberOnline(member) {
@@ -2696,9 +2728,15 @@ export default function SiBSChat({ enabled = true }) {
   const activePrivateFullName = activeOtherMember
     ? getChatMemberFullName(activeOtherMember)
     : "";
+  const activePrivateLastSeen = formatChatLastSeen(
+    activeOtherMember?.lastSeenAt || activeOtherMember?.last_seen_at,
+    presenceClockMs,
+  );
   const activePrivateStatus = activePrivateOnline
     ? "Active now"
-    : `SIBS ID ${activeOtherMember?.sibsId || ""}`;
+    : activePrivateLastSeen
+      ? `Offline · ${activePrivateLastSeen}`
+      : "Offline";
 
 
   return (
