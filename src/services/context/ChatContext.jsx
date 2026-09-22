@@ -132,8 +132,16 @@ async function playChatReceiveSound() {
     source.connect(gain);
     gain.connect(audioContext.destination);
 
-    // Play only as a receive-message popup tone. No visible media player.
-    source.start(0);
+    // Queue every received message tone. If several messages arrive during the
+    // same fallback-sync cycle, each message still gets its own complete tone
+    // instead of all tones starting at the same instant and sounding like one.
+    const startAt = Math.max(
+      audioContext.currentTime + 0.01,
+      Number(playChatReceiveSound.nextPlayTime || 0),
+    );
+
+    source.start(startAt);
+    playChatReceiveSound.nextPlayTime = startAt + audioBuffer.duration;
   } catch {
     // Chat must continue working even if the browser blocks audio playback.
   }
@@ -174,6 +182,9 @@ export function ChatProvider({ children }) {
   const fallbackSyncBusyRef = useRef(false);
   const typingSyncBusyRef = useRef(false);
   const typingExpiryTimersRef = useRef(new Map());
+  const notifiedMessageIdsRef = useRef(new Set());
+  const conversationLastMessageIdsRef = useRef(new Map());
+  const conversationToneBaselineReadyRef = useRef(false);
 
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
@@ -255,6 +266,49 @@ export function ChatProvider({ children }) {
     });
   }, []);
 
+  const notifyIncomingMessage = useCallback(
+    (conversationId, message) => {
+      const id = Number(conversationId || 0);
+      const messageId = Number(message?.id || 0);
+      const senderSibsId = cleanText(
+        message?.senderSibsId || message?.sender_sibs_id,
+      );
+      const messageType = cleanText(message?.messageType).toUpperCase();
+      const isMembershipActivity =
+        messageType === "MEMBER_ADDED" || messageType === "MEMBER_REMOVED";
+
+      if (
+        !id ||
+        !message ||
+        !senderSibsId ||
+        senderSibsId === currentSibsId ||
+        isMembershipActivity
+      ) {
+        return false;
+      }
+
+      const notificationKey = messageId ? `${id}:${messageId}` : "";
+
+      if (notificationKey) {
+        if (notifiedMessageIdsRef.current.has(notificationKey)) {
+          return false;
+        }
+
+        notifiedMessageIdsRef.current.add(notificationKey);
+
+        // Keep the de-duplication set bounded during long-running HRIS sessions.
+        if (notifiedMessageIdsRef.current.size > 1000) {
+          const oldestKey = notifiedMessageIdsRef.current.values().next().value;
+          if (oldestKey) notifiedMessageIdsRef.current.delete(oldestKey);
+        }
+      }
+
+      void playChatReceiveSound();
+      return true;
+    },
+    [currentSibsId],
+  );
+
   const refreshConversations = useCallback(async ({ silent = false } = {}) => {
     if (!currentSibsId || !chatAllowed) {
       setConversations([]);
@@ -267,6 +321,79 @@ export function ChatProvider({ children }) {
 
     try {
       const nextConversations = sortConversations(await getChatConversations());
+
+      // Local and production can be connected to separate Socket.IO processes.
+      // Use the shared DB-backed conversation list as a change detector. When a
+      // conversation's last message advances, fetch that conversation and play
+      // one tone for every newly received message, even if the chat panel is
+      // closed or several messages arrived within one polling interval.
+      const previousLastMessageIds = new Map(conversationLastMessageIdsRef.current);
+      const baselineReady = conversationToneBaselineReadyRef.current;
+
+      nextConversations.forEach((conversation) => {
+        const conversationId = Number(conversation?.id || 0);
+        if (!conversationId) return;
+
+        conversationLastMessageIdsRef.current.set(
+          conversationId,
+          Number(conversation?.lastMessageId || 0),
+        );
+      });
+
+      if (!baselineReady) {
+        conversationToneBaselineReadyRef.current = true;
+      } else {
+        const changedIncomingConversations = nextConversations.filter(
+          (conversation) => {
+            const conversationId = Number(conversation?.id || 0);
+            const lastMessageId = Number(conversation?.lastMessageId || 0);
+            const previousLastMessageId = Number(
+              previousLastMessageIds.get(conversationId) || 0,
+            );
+            const lastMessageSenderSibsId = cleanText(
+              conversation?.lastMessageSenderSibsId,
+            );
+
+            return (
+              conversationId &&
+              lastMessageId > previousLastMessageId &&
+              lastMessageSenderSibsId &&
+              lastMessageSenderSibsId !== currentSibsId
+            );
+          },
+        );
+
+        await Promise.all(
+          changedIncomingConversations.map(async (conversation) => {
+            const conversationId = Number(conversation?.id || 0);
+            const previousLastMessageId = Number(
+              previousLastMessageIds.get(conversationId) || 0,
+            );
+            const latestLastMessageId = Number(conversation?.lastMessageId || 0);
+
+            try {
+              const latestMessages = await getChatMessages(conversationId, {
+                limit: 75,
+              });
+
+              (latestMessages || [])
+                .filter((message) => {
+                  const messageId = Number(message?.id || 0);
+                  return (
+                    messageId > previousLastMessageId &&
+                    messageId <= latestLastMessageId
+                  );
+                })
+                .sort((a, b) => Number(a?.id || 0) - Number(b?.id || 0))
+                .forEach((message) => {
+                  notifyIncomingMessage(conversationId, message);
+                });
+            } catch {
+              // The next 2-second refresh can retry without breaking chat.
+            }
+          }),
+        );
+      }
 
       if (mountedRef.current) {
         setConversations(nextConversations);
@@ -332,7 +459,7 @@ export function ChatProvider({ children }) {
         setConversationsLoading(false);
       }
     }
-  }, [chatAllowed, currentSibsId, refreshPresence]);
+  }, [chatAllowed, currentSibsId, notifyIncomingMessage, refreshPresence]);
 
   const loadConversationMessages = useCallback(
     async (conversationId) => {
@@ -835,9 +962,9 @@ export function ChatProvider({ children }) {
         );
       });
 
-      if (newIncomingMessages.length) {
-        playChatReceiveSound();
-      }
+      newIncomingMessages.forEach((message) => {
+        notifyIncomingMessage(conversationId, message);
+      });
 
       const currentFingerprint = currentMessages
         .map((item) =>
@@ -892,6 +1019,7 @@ export function ChatProvider({ children }) {
   }, [
     chatAllowed,
     currentSibsId,
+    notifyIncomingMessage,
     refreshConversations,
     syncTypingWithoutRefresh,
   ]);
@@ -909,6 +1037,9 @@ export function ChatProvider({ children }) {
         window.clearTimeout(timerId);
       });
       typingExpiryTimersRef.current.clear();
+      notifiedMessageIdsRef.current.clear();
+      conversationLastMessageIdsRef.current.clear();
+      conversationToneBaselineReadyRef.current = false;
       setMembershipNotice(null);
       chatSocket.disconnect();
       return undefined;
@@ -1036,7 +1167,7 @@ export function ChatProvider({ children }) {
         senderSibsId !== currentSibsId &&
         !isMembershipActivity
       ) {
-        playChatReceiveSound();
+        notifyIncomingMessage(id, message);
       }
 
       const isActiveConversation =
@@ -1234,6 +1365,7 @@ export function ChatProvider({ children }) {
     chatAllowed,
     clearTypingMember,
     currentSibsId,
+    notifyIncomingMessage,
     refreshConversations,
     syncChatWithoutRefresh,
     syncTypingWithoutRefresh,
