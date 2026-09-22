@@ -1946,7 +1946,7 @@ export default function SiBSChat({ enabled = true }) {
     const changedConversation =
       Number(typingConversationIdRef.current || 0) !== conversationId;
     const heartbeatDue =
-      now - Number(typingLastSentAtRef.current || 0) >= 2500;
+      now - Number(typingLastSentAtRef.current || 0) >= 800;
 
     if (changedConversation || heartbeatDue) {
       typingConversationIdRef.current = conversationId;
@@ -1960,7 +1960,7 @@ export default function SiBSChat({ enabled = true }) {
 
     typingStopTimerRef.current = window.setTimeout(() => {
       stopTypingIndicator(conversationId);
-    }, 1600);
+    }, 2200);
   }
 
   async function handleFiles(event) {

@@ -270,6 +270,49 @@ export function ChatProvider({ children }) {
 
       if (mountedRef.current) {
         setConversations(nextConversations);
+
+        // Cross-instance fallback: the conversations endpoint also carries the
+        // current DB-backed typing state. This makes local <-> production
+        // typing work even when each environment is connected to a different
+        // Socket.IO process or the dedicated typing poll misses a request.
+        setTypingByConversation((current) => {
+          const next = { ...current };
+
+          nextConversations.forEach((conversation) => {
+            const conversationId = Number(conversation?.id || 0);
+            if (!conversationId) return;
+
+            const payloadTypingIds = Array.isArray(conversation?.typingSibsIds)
+              ? conversation.typingSibsIds
+              : [];
+
+            const memberTypingIds = Array.isArray(conversation?.members)
+              ? conversation.members
+                  .filter((member) => Boolean(member?.isTyping))
+                  .map((member) => member?.sibsId)
+              : [];
+
+            const typingIds = [
+              ...new Set(
+                [...payloadTypingIds, ...memberTypingIds]
+                  .map((value) => cleanText(value))
+                  .filter(
+                    (value) =>
+                      Boolean(value) && value !== currentSibsId,
+                  ),
+              ),
+            ];
+
+            if (typingIds.length) {
+              next[conversationId] = typingIds;
+            } else {
+              delete next[conversationId];
+            }
+          });
+
+          return next;
+        });
+
         setError("");
       }
 
@@ -1153,7 +1196,7 @@ export function ChatProvider({ children }) {
     // they are connected to different Socket.IO server processes.
     const typingFallbackInterval = window.setInterval(() => {
       void syncTypingWithoutRefresh();
-    }, 1000);
+    }, 600);
 
     if (!chatSocket.connected) {
       chatSocket.connect();
