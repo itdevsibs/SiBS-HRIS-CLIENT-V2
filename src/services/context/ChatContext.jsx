@@ -49,21 +49,6 @@ function getCurrentSibsId(user = {}) {
   );
 }
 
-const CHAT_ALLOWED_DEPARTMENT_ID = 3;
-
-function getCurrentDepartmentId(user = {}) {
-  const value =
-    user?.departmentId ??
-    user?.department_id ??
-    user?.deptId ??
-    user?.gy_dept_id ??
-    user?.gyDeptId ??
-    null;
-
-  const departmentId = Number(value);
-  return Number.isFinite(departmentId) ? departmentId : null;
-}
-
 const CHAT_RECEIVE_SOUND_URL =
   `${import.meta.env.BASE_URL}mama-rene-baterbonia-first-3-seconds.mp3`;
 
@@ -217,9 +202,12 @@ function sortConversations(items = []) {
 export function ChatProvider({ children }) {
   const { user, loading: userLoading } = useUser() || {};
   const currentSibsId = useMemo(() => getCurrentSibsId(user), [user]);
+  // SiBS Chat is available to every authenticated HRIS user regardless of
+  // department, role, or access level. The authenticated SIBS ID is the only
+  // requirement for loading and using chat.
   const chatAllowed = useMemo(
-    () => getCurrentDepartmentId(user) === CHAT_ALLOWED_DEPARTMENT_ID,
-    [user],
+    () => Boolean(currentSibsId),
+    [currentSibsId],
   );
 
   const [conversations, setConversations] = useState([]);
