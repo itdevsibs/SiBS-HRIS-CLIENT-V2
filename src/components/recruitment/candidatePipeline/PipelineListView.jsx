@@ -303,10 +303,20 @@ const PipelineListView = ({
                           candidate.currentStage ||
                           candidate.stage ||
                           "Initial Screening";
-                      const interviewStatus =
-                        getDisplayInterviewStatus(candidate);
+                        const interviewStatus =
+                          getDisplayInterviewStatus(candidate);
+                        const isSuccessfulHeadcount =
+                          Boolean(
+                            candidate.isSuccessfulHeadcount ||
+                              candidate.is_successful_headcount,
+                          ) ||
+                          String(
+                            candidate.successfulHeadcountStatus ||
+                              candidate.successful_headcount_status ||
+                              "",
+                          ).toLowerCase() === "counted";
 
-                      return (
+                        return (
                         <tr
                           key={candidate.id || `${candidate.name}-${index}`}
                           role="button"
@@ -362,13 +372,20 @@ const PipelineListView = ({
                           </td>
 
                           <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">
-                            <span
-                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${getPrfStatusClass(
-                                candidate.prfStatus || "Review",
-                              )}`}
-                            >
-                              {candidate.prfStatus || "Review"}
-                            </span>
+                            <div className="flex flex-col items-start gap-1">
+                              <span
+                                className={`inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${getPrfStatusClass(
+                                  candidate.prfStatus || "Review",
+                                )}`}
+                              >
+                                {candidate.prfStatus || "Review"}
+                              </span>
+                              {isSuccessfulHeadcount && (
+                                <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-emerald-700">
+                                  Successful HC
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">

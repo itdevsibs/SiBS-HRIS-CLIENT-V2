@@ -14,8 +14,12 @@ import StatusFilterTabs from "../StatusFilterTabs";
 import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 import {
   getHiringNeedsDateOrWeek,
+  getHiringNeedsApprovalStatusLabel,
   getHiringNeedsDepartmentAccount,
   getHiringNeedsHeadcount,
+  getHiringNeedsSuccessfulHeadcount,
+  getHiringNeedsRemainingHeadcount,
+  getHiringNeedsFulfillmentStatus,
   getHiringNeedsJdLinkStatus,
   getHiringNeedsReason,
   getHiringNeedsRequestType,
@@ -36,6 +40,7 @@ const STATUS_TABS = [
   { label: "All PRFs", value: "All" },
   { label: "For Approval", value: "For Approval" },
   { label: "Approved", value: "Approved" },
+  { label: "Expired", value: "Expired" },
   { label: "Not Approved", value: "Not Approved" },
   {
     label: "Unlinked From Job Descriptions",
@@ -130,6 +135,7 @@ export default function HiringNeedsTable({
         All: 0,
         "For Approval": 0,
         Approved: 0,
+        Expired: 0,
         "Not Approved": 0,
         [UNLINKED_JD_STATUS]: 0,
       },
@@ -295,6 +301,8 @@ export default function HiringNeedsTable({
                         item.approvalStatus || item.approval_status,
                       );
 
+                      const statusLabel = getHiringNeedsApprovalStatusLabel(item);
+
                       const title = getHiringNeedsTitle(item);
                       const jdLinkStatus = getHiringNeedsJdLinkStatus(item);
                       const unlinked = isHiringNeedUnlinkedFromJd(item);
@@ -348,9 +356,26 @@ export default function HiringNeedsTable({
                           </td>
 
                           <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
-                            <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-[#F2F6FA] px-2.5 py-1 sibs-text-xs font-extrabold leading-none tabular-nums text-[#042C51]">
-                              {getHiringNeedsHeadcount(item)}
-                            </span>
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-[#F2F6FA] px-2.5 py-1 sibs-text-xs font-extrabold leading-none tabular-nums text-[#042C51]">
+                                {getHiringNeedsHeadcount(item)}
+                              </span>
+                              {requestType.toLowerCase() === "requisition" && (
+                                <>
+                                  <span className="whitespace-nowrap text-[9px] font-extrabold text-emerald-700">
+                                    Successful {getHiringNeedsSuccessfulHeadcount(item)}/{getHiringNeedsHeadcount(item)}
+                                  </span>
+                                  <span className="whitespace-nowrap text-[8px] font-semibold text-[#98A2B3]">
+                                    Remaining {getHiringNeedsRemainingHeadcount(item)}
+                                  </span>
+                                  {getHiringNeedsFulfillmentStatus(item) === "Filled" && (
+                                    <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[8px] font-extrabold uppercase text-emerald-700">
+                                      Filled
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </td>
 
                           <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
@@ -373,7 +398,7 @@ export default function HiringNeedsTable({
                                 status,
                               )}`}
                             >
-                              {status}
+                              {statusLabel}
                             </span>
                           </td>
 

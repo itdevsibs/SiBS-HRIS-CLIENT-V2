@@ -68,6 +68,15 @@ export default function PipelineMobileCard({
     candidate.candidateId || candidate.candidateApplicationId || "—";
   const email = candidate.email;
   const owner = candidate.taOwner || candidate.owner || "Unassigned";
+  const isSuccessfulHeadcount =
+    Boolean(
+      candidate.isSuccessfulHeadcount || candidate.is_successful_headcount,
+    ) ||
+    String(
+      candidate.successfulHeadcountStatus ||
+        candidate.successful_headcount_status ||
+        "",
+    ).toLowerCase() === "counted";
 
   const {
     nextStage,
@@ -142,6 +151,12 @@ export default function PipelineMobileCard({
         >
           PRF: {candidate.prfStatus || "Review"}
         </span>
+
+        {isSuccessfulHeadcount && (
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-emerald-700">
+            Successful HC
+          </span>
+        )}
 
         <span
           className={`rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${

@@ -6386,6 +6386,16 @@ const CandidatePipelineModal = ({
   const activePrfStatus = normalizePrfStatus(
     activeCandidate.prfStatus || activeCandidate.prf_status,
   );
+  const isSuccessfulHeadcount =
+    Boolean(
+      activeCandidate.isSuccessfulHeadcount ||
+        activeCandidate.is_successful_headcount,
+    ) ||
+    String(
+      activeCandidate.successfulHeadcountStatus ||
+        activeCandidate.successful_headcount_status ||
+        "",
+    ).toLowerCase() === "counted";
 
   const compactProfileSummary = useMemo(
     () => getCandidateCompactProfileSummary(activeCandidate),
@@ -10823,6 +10833,11 @@ async function handleConfirmScheduleNho() {
                 <span className="rounded-full border border-emerald-300/25 bg-emerald-400/15 px-2 py-0.5 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-emerald-100">
                   PRF: {activePrfStatus}
                 </span>
+                {isSuccessfulHeadcount && (
+                  <span className="rounded-full border border-emerald-200/40 bg-emerald-300/20 px-2 py-0.5 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-emerald-50">
+                    Successful HC
+                  </span>
+                )}
               </div>
 
               <h3 className="mt-0.5 truncate text-sm sm:text-base 2xl:text-lg font-extrabold text-white">

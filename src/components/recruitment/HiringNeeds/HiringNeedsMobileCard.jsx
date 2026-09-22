@@ -3,8 +3,13 @@ import { AlertTriangle, CheckCircle2, MinusCircle } from "lucide-react";
 import { DataCard } from "@/components/ui";
 import {
   getHiringNeedsDateOrWeek,
+  getHiringNeedsApprovalStatusLabel,
   getHiringNeedsJdLinkStatus,
   getHiringNeedsRequestType,
+  getHiringNeedsHeadcount,
+  getHiringNeedsSuccessfulHeadcount,
+  getHiringNeedsRemainingHeadcount,
+  getHiringNeedsFulfillmentStatus,
   isHiringNeedUnlinkedFromJd,
 } from "../../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 
@@ -16,6 +21,8 @@ function getStatusClass(status) {
       return "border-red-200 bg-red-50 text-red-700";
     case "For Approval":
       return "border-amber-200 bg-amber-50 text-amber-700";
+    case "Expired":
+      return "border-slate-300 bg-slate-100 text-slate-700";
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
@@ -48,7 +55,7 @@ export default function HiringNeedsMobileCard({ item, onView }) {
               item.approvalStatus,
             )}`}
           >
-            {item.approvalStatus}
+            {getHiringNeedsApprovalStatusLabel(item)}
           </span>
         }
       />
@@ -70,7 +77,7 @@ export default function HiringNeedsMobileCard({ item, onView }) {
       <DataCard.Metrics cols={3}>
         <DataCard.MetricItem
           label="Headcount"
-          value={item.headcount || 0}
+          value={getHiringNeedsHeadcount(item)}
           tone="primary"
         />
         <DataCard.MetricItem label="Request Type" value={requestType} />
@@ -79,6 +86,22 @@ export default function HiringNeedsMobileCard({ item, onView }) {
           value={item.locationSite || "—"}
         />
       </DataCard.Metrics>
+
+      {requestType.toLowerCase() === "requisition" && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-700">
+            Successful HC {getHiringNeedsSuccessfulHeadcount(item)}/{getHiringNeedsHeadcount(item)}
+          </span>
+          <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-slate-600">
+            Remaining HC {getHiringNeedsRemainingHeadcount(item)}
+          </span>
+          {getHiringNeedsFulfillmentStatus(item) === "Filled" && (
+            <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-800">
+              Filled
+            </span>
+          )}
+        </div>
+      )}
 
       {item.reasonForHiring ? (
         <div className="mt-2.5 rounded-lg border border-slate-100 bg-[#F8FAFC] px-2.5 py-1.5 text-left">

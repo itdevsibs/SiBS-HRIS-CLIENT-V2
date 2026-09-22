@@ -13,7 +13,14 @@ import {
 import { buildHiringNeedsAuditTrail } from "../../../lib/utils/hiringNeeds/hiringNeedsAuditTrail.js";
 import { useUser } from "../../../services/context/UserContext";
 import DropdownField from "../../recruitment/availablePositions/DropdownField";
-import { isHiringNeedUnlinkedFromJd } from "../../../lib/utils/hiringNeeds/hiringNeedsHelpers";
+import {
+  getHiringNeedsApprovalStatusLabel,
+  getHiringNeedsFulfillmentStatus,
+  getHiringNeedsHeadcount,
+  getHiringNeedsRemainingHeadcount,
+  getHiringNeedsSuccessfulHeadcount,
+  isHiringNeedUnlinkedFromJd,
+} from "../../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 
 const API_BASE_URL = String(
   import.meta.env.VITE_API_URL || "http://localhost:5000",
@@ -178,12 +185,40 @@ function getApprovalUserDisplayById(value = "", approvalUsers = []) {
 function formatDate(date) {
   if (!date) return "—";
 
+  const value = String(date).trim();
+  const isoDateMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+
+  if (isoDateMatch) {
+    const [, year, month, day] = isoDateMatch;
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const monthIndex = Number(month) - 1;
+    const dayNumber = Number(day);
+
+    if (monthIndex >= 0 && monthIndex <= 11 && dayNumber >= 1 && dayNumber <= 31) {
+      return `${monthNames[monthIndex]} ${dayNumber}, ${year}`;
+    }
+  }
+
   const parsed = new Date(date);
 
   if (Number.isNaN(parsed.getTime())) return "—";
 
   return parsed.toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });
@@ -217,6 +252,7 @@ function normalizeStatus(status) {
   }
 
   if (lowerValue === "approved") return "Approved";
+  if (lowerValue === "expired") return "Expired";
 
   if (
     lowerValue === "rejected" ||
@@ -232,7 +268,11 @@ function normalizeStatus(status) {
 function isFinalStatus(status) {
   const normalized = normalizeStatus(status);
 
-  return normalized === "Approved" || normalized === "Not Approved";
+  return (
+    normalized === "Approved" ||
+    normalized === "Not Approved" ||
+    normalized === "Expired"
+  );
 }
 
 function getStatusClass(status) {
@@ -243,6 +283,8 @@ function getStatusClass(status) {
       return "border-red-200 bg-red-50 text-red-700";
     case "For Approval":
       return "border-amber-200 bg-amber-50 text-amber-700";
+    case "Expired":
+      return "border-slate-300 bg-slate-100 text-slate-700";
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
@@ -579,6 +621,7 @@ export default function ViewHiringNeedsModal({
   const status = normalizeStatus(
     safeItem.approvalStatus || safeItem.approval_status,
   );
+  const statusLabel = getHiringNeedsApprovalStatusLabel(safeItem);
   const requestType = getRequestType(safeItem);
   const isDownsize = requestType === "Downsize";
   const isRelinkMode = !isDownsize && isHiringNeedUnlinkedFromJd(safeItem);
@@ -1020,6 +1063,29 @@ export default function ViewHiringNeedsModal({
                   valueClassName="text-sm font-extrabold text-[#042C51]"
                 />
 
+                {!isDownsize ? (
+                  <CompactDetail label="Successful Headcount">
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-700">
+                        Successful HC {getHiringNeedsSuccessfulHeadcount(safeItem)}/{getHiringNeedsHeadcount(safeItem)}
+                      </span>
+                      {getHiringNeedsFulfillmentStatus(safeItem) === "Filled" ? (
+                        <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-800">
+                          Filled
+                        </span>
+                      ) : null}
+                    </div>
+                  </CompactDetail>
+                ) : null}
+
+                {!isDownsize ? (
+                  <CompactDetail
+                    label="Remaining Headcount"
+                    value={`${getHiringNeedsRemainingHeadcount(safeItem)} slots`}
+                    valueClassName="text-sm font-extrabold text-[#042C51]"
+                  />
+                ) : null}
+
                 <CompactDetail
                   label="Primary Reason"
                   value={reasonDisplay}
@@ -1054,7 +1120,7 @@ export default function ViewHiringNeedsModal({
                       status,
                     )}`}
                   >
-                    {status}
+                    {statusLabel}
                   </span>
                 </CompactDetail>
 

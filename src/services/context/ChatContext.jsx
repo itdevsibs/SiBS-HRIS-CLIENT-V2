@@ -15,6 +15,7 @@ import {
   createPrivateChat,
   deletePrivateChat,
   getChatConversations,
+  getChatTypingStatus,
   hidePrivateChat,
   getChatMessages,
   leaveGroupChat,
@@ -61,107 +62,34 @@ function getCurrentDepartmentId(user = {}) {
   return Number.isFinite(departmentId) ? departmentId : null;
 }
 
-let chatReceiveAudioContext = null;
+const CHAT_RECEIVE_SOUND_URL =
+  `${import.meta.env.BASE_URL}mama-rene-baterbonia-first-3-seconds.mp3`;
 
-function getChatReceiveAudioContext() {
+let chatReceiveAudio = null;
+
+function getChatReceiveAudio() {
   if (typeof window === "undefined") return null;
 
-  const AudioContextClass =
-    window.AudioContext || window.webkitAudioContext;
-
-  if (!AudioContextClass) return null;
-
-  if (!chatReceiveAudioContext) {
-    chatReceiveAudioContext = new AudioContextClass();
+  if (!chatReceiveAudio) {
+    chatReceiveAudio = new Audio(CHAT_RECEIVE_SOUND_URL);
+    chatReceiveAudio.preload = "auto";
   }
 
-  return chatReceiveAudioContext;
-}
-
-function scheduleChatReceiveSound(audioContext) {
-  if (!audioContext) return;
-
-  // A short, soft two-note chime inspired by modern chat notifications.
-  // It is synthesized locally so there is no external audio asset to load.
-  const now = audioContext.currentTime + 0.01;
-  const masterGain = audioContext.createGain();
-  const compressor = audioContext.createDynamicsCompressor();
-
-  compressor.threshold.setValueAtTime(-24, now);
-  compressor.knee.setValueAtTime(18, now);
-  compressor.ratio.setValueAtTime(4, now);
-  compressor.attack.setValueAtTime(0.003, now);
-  compressor.release.setValueAtTime(0.18, now);
-
-  masterGain.gain.setValueAtTime(0.0001, now);
-  masterGain.gain.exponentialRampToValueAtTime(0.2, now + 0.012);
-  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.46);
-  masterGain.connect(compressor);
-  compressor.connect(audioContext.destination);
-
-  const tones = [
-    { frequency: 659.25, start: 0, duration: 0.22, volume: 0.72 },
-    { frequency: 987.77, start: 0.075, duration: 0.3, volume: 0.86 },
-  ];
-
-  tones.forEach(({ frequency, start, duration, volume }) => {
-    const startAt = now + start;
-    const stopAt = startAt + duration;
-    const toneGain = audioContext.createGain();
-    const fundamental = audioContext.createOscillator();
-    const harmonic = audioContext.createOscillator();
-    const harmonicGain = audioContext.createGain();
-
-    fundamental.type = "sine";
-    fundamental.frequency.setValueAtTime(frequency, startAt);
-    fundamental.frequency.exponentialRampToValueAtTime(
-      frequency * 1.012,
-      stopAt,
-    );
-
-    harmonic.type = "sine";
-    harmonic.frequency.setValueAtTime(frequency * 2, startAt);
-
-    toneGain.gain.setValueAtTime(0.0001, startAt);
-    toneGain.gain.exponentialRampToValueAtTime(volume, startAt + 0.012);
-    toneGain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
-
-    harmonicGain.gain.setValueAtTime(0.0001, startAt);
-    harmonicGain.gain.exponentialRampToValueAtTime(
-      volume * 0.14,
-      startAt + 0.008,
-    );
-    harmonicGain.gain.exponentialRampToValueAtTime(
-      0.0001,
-      startAt + duration * 0.72,
-    );
-
-    fundamental.connect(toneGain);
-    harmonic.connect(harmonicGain);
-    toneGain.connect(masterGain);
-    harmonicGain.connect(masterGain);
-
-    fundamental.start(startAt);
-    harmonic.start(startAt);
-    fundamental.stop(stopAt + 0.02);
-    harmonic.stop(stopAt + 0.02);
-  });
+  return chatReceiveAudio;
 }
 
 function playChatReceiveSound() {
   try {
-    const audioContext = getChatReceiveAudioContext();
-    if (!audioContext) return;
+    const audio = getChatReceiveAudio();
+    if (!audio) return;
 
-    if (audioContext.state === "suspended") {
-      void audioContext
-        .resume()
-        .then(() => scheduleChatReceiveSound(audioContext))
-        .catch(() => {});
-      return;
+    audio.pause();
+    audio.currentTime = 0;
+
+    const playPromise = audio.play();
+    if (playPromise?.catch) {
+      void playPromise.catch(() => {});
     }
-
-    scheduleChatReceiveSound(audioContext);
   } catch {
     // Chat must continue working even if the browser blocks audio playback.
   }
@@ -200,6 +128,7 @@ export function ChatProvider({ children }) {
   const chatWindowOpenRef = useRef(false);
   const messagesRef = useRef([]);
   const fallbackSyncBusyRef = useRef(false);
+  const typingSyncBusyRef = useRef(false);
   const typingExpiryTimersRef = useRef(new Map());
 
   useEffect(() => {
@@ -223,10 +152,8 @@ export function ChatProvider({ children }) {
 
     const unlockChatReceiveSound = () => {
       try {
-        const audioContext = getChatReceiveAudioContext();
-        if (audioContext?.state === "suspended") {
-          void audioContext.resume().catch(() => {});
-        }
+        const audio = getChatReceiveAudio();
+        audio?.load();
       } catch {
         // Ignore audio initialization errors.
       }
@@ -700,6 +627,67 @@ export function ChatProvider({ children }) {
     [chatAllowed, currentSibsId],
   );
 
+  const syncTypingWithoutRefresh = useCallback(async () => {
+    const conversationId = Number(activeConversationIdRef.current || 0);
+
+    if (
+      typingSyncBusyRef.current ||
+      !mountedRef.current ||
+      !currentSibsId ||
+      !chatAllowed ||
+      !chatWindowOpenRef.current ||
+      !conversationId
+    ) {
+      return;
+    }
+
+    typingSyncBusyRef.current = true;
+
+    try {
+      const result = await getChatTypingStatus(conversationId);
+      const typingIds = Array.isArray(result?.sibsIds)
+        ? result.sibsIds
+            .map((value) => cleanText(value))
+            .filter(
+              (value) =>
+                Boolean(value) && value !== currentSibsId,
+            )
+        : [];
+
+      if (
+        !mountedRef.current ||
+        Number(activeConversationIdRef.current) !== conversationId
+      ) {
+        return;
+      }
+
+      setTypingByConversation((current) => {
+        const currentIds = Array.isArray(current?.[conversationId])
+          ? current[conversationId]
+          : [];
+
+        const currentKey = currentIds.map(cleanText).filter(Boolean).sort().join("|");
+        const nextKey = [...typingIds].sort().join("|");
+
+        if (currentKey === nextKey) return current;
+
+        const next = { ...current };
+
+        if (typingIds.length) {
+          next[conversationId] = typingIds;
+        } else {
+          delete next[conversationId];
+        }
+
+        return next;
+      });
+    } catch {
+      // Socket.IO remains primary. The next lightweight typing poll retries.
+    } finally {
+      typingSyncBusyRef.current = false;
+    }
+  }, [chatAllowed, currentSibsId]);
+
   const syncChatWithoutRefresh = useCallback(async () => {
     if (
       fallbackSyncBusyRef.current ||
@@ -717,6 +705,8 @@ export function ChatProvider({ children }) {
 
       const conversationId = Number(activeConversationIdRef.current || 0);
       if (!conversationId || !chatWindowOpenRef.current) return;
+
+      void syncTypingWithoutRefresh();
 
       const nextMessages = await getChatMessages(conversationId, {
         limit: 75,
@@ -806,7 +796,12 @@ export function ChatProvider({ children }) {
     } finally {
       fallbackSyncBusyRef.current = false;
     }
-  }, [chatAllowed, currentSibsId, refreshConversations]);
+  }, [
+    chatAllowed,
+    currentSibsId,
+    refreshConversations,
+    syncTypingWithoutRefresh,
+  ]);
 
   useEffect(() => {
     if (userLoading || !currentSibsId || !chatAllowed) {
@@ -1102,6 +1097,14 @@ export function ChatProvider({ children }) {
       void syncChatWithoutRefresh();
     }, 2000);
 
+    // Typing status is also persisted briefly in the shared HRIS database.
+    // Polling it once per second lets a local/dev HRIS instance and the
+    // production HRIS instance see each other's typing indicator even when
+    // they are connected to different Socket.IO server processes.
+    const typingFallbackInterval = window.setInterval(() => {
+      void syncTypingWithoutRefresh();
+    }, 1000);
+
     if (!chatSocket.connected) {
       chatSocket.connect();
       void syncChatWithoutRefresh();
@@ -1111,6 +1114,7 @@ export function ChatProvider({ children }) {
 
     return () => {
       window.clearInterval(fallbackInterval);
+      window.clearInterval(typingFallbackInterval);
       window.removeEventListener("focus", handleWindowFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
 
@@ -1139,6 +1143,7 @@ export function ChatProvider({ children }) {
     currentSibsId,
     refreshConversations,
     syncChatWithoutRefresh,
+    syncTypingWithoutRefresh,
     userLoading,
   ]);
 
