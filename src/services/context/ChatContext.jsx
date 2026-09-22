@@ -70,6 +70,8 @@ const CHAT_RECEIVE_SOUND_URL =
 let chatReceiveAudioContext = null;
 let chatReceiveAudioBuffer = null;
 let chatReceiveAudioBufferPromise = null;
+let chatReceiveActiveSource = null;
+let chatReceivePlayRequestId = 0;
 
 function getChatReceiveAudioContext() {
   if (typeof window === "undefined") return null;
@@ -114,7 +116,23 @@ async function getChatReceiveAudioBuffer(audioContext) {
 }
 
 async function playChatReceiveSound() {
+  const requestId = ++chatReceivePlayRequestId;
+
   try {
+    // A new incoming chat always interrupts the tone that is currently
+    // playing. This makes the notification behave like a real message alert:
+    // stop the old tone immediately, then restart from the beginning for the
+    // newest received message.
+    if (chatReceiveActiveSource) {
+      try {
+        chatReceiveActiveSource.stop();
+      } catch {
+        // The previous source may already have ended.
+      }
+
+      chatReceiveActiveSource = null;
+    }
+
     const audioContext = getChatReceiveAudioContext();
     if (!audioContext) return;
 
@@ -123,7 +141,7 @@ async function playChatReceiveSound() {
     }
 
     const audioBuffer = await getChatReceiveAudioBuffer(audioContext);
-    if (!audioBuffer) return;
+    if (!audioBuffer || requestId !== chatReceivePlayRequestId) return;
 
     const source = audioContext.createBufferSource();
     const gain = audioContext.createGain();
@@ -134,16 +152,15 @@ async function playChatReceiveSound() {
     source.connect(gain);
     gain.connect(audioContext.destination);
 
-    // Queue every received message tone. If several messages arrive during the
-    // same fallback-sync cycle, each message still gets its own complete tone
-    // instead of all tones starting at the same instant and sounding like one.
-    const startAt = Math.max(
-      audioContext.currentTime + 0.01,
-      Number(playChatReceiveSound.nextPlayTime || 0),
-    );
+    chatReceiveActiveSource = source;
 
-    source.start(startAt);
-    playChatReceiveSound.nextPlayTime = startAt + audioBuffer.duration;
+    source.onended = () => {
+      if (chatReceiveActiveSource === source) {
+        chatReceiveActiveSource = null;
+      }
+    };
+
+    source.start(0);
   } catch {
     // Chat must continue working even if the browser blocks audio playback.
   }
