@@ -1353,6 +1353,8 @@ function MembershipNoticeCard({ notice, onOpenGroup, onDismiss }) {
 export default function SiBSChat({ enabled = true }) {
   const { user, loading: userLoading } = useUser() || {};
   const chat = useChat();
+  const refreshChatConversations = chat?.refreshConversations;
+  const selectChatConversation = chat?.selectConversation;
 
   const [open, setOpen] = useState(false);
   const [newChatOpen, setNewChatOpen] = useState(false);
@@ -1478,10 +1480,10 @@ export default function SiBSChat({ enabled = true }) {
       setGroupInfoOpen(false);
 
       try {
-        await chat?.refreshConversations?.();
+        await refreshChatConversations?.();
 
         if (!cancelled) {
-          await chat?.selectConversation?.(id);
+          await selectChatConversation?.(id);
         }
       } catch {
         // The user can still open SiBS Chat manually if navigation fails.
@@ -1532,7 +1534,25 @@ export default function SiBSChat({ enabled = true }) {
         );
       }
     };
-  }, [chat?.refreshConversations, chat?.selectConversation]);
+  }, [refreshChatConversations, selectChatConversation]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    // If permission was already granted, refresh/save the Push subscription
+    // whenever SiBS Chat opens. The launcher click below remains the user
+    // gesture that can request permission the first time.
+    void ensureSibsChatSystemNotifications();
+  }, [open]);
+
+  useEffect(() => {
+    if (
+      typeof Notification !== "undefined" &&
+      Notification.permission === "granted"
+    ) {
+      void ensureSibsChatSystemNotifications();
+    }
+  }, []);
 
   useEffect(() => {
     const justOpened = open && !previousOpenRef.current;

@@ -241,3 +241,24 @@ export async function markChatRead(conversationId, messageId = null) {
 
   return response.data?.data || null;
 }
+
+export async function getChatPushConfig() {
+  const response = await api.get("/chat/push/config");
+  return response.data?.data || { enabled: false, publicKey: "" };
+}
+
+export async function saveChatPushSubscription(subscription) {
+  const response = await api.post("/chat/push/subscriptions", {
+    subscription,
+  });
+
+  return response.data?.data || null;
+}
+
+export async function deleteChatPushSubscription(endpoint) {
+  const response = await api.delete("/chat/push/subscriptions", {
+    data: { endpoint },
+  });
+
+  return response.data?.data || null;
+}
