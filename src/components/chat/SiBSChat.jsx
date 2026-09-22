@@ -214,6 +214,17 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function isMobileChatDevice() {
+  if (typeof navigator === "undefined") return false;
+
+  if (navigator.userAgentData?.mobile === true) return true;
+
+  const userAgent = String(navigator.userAgent || "");
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(userAgent)) return true;
+
+  return /Macintosh/i.test(userAgent) && Number(navigator.maxTouchPoints || 0) > 1;
+}
+
 function getChatMemberDisplayName(member = {}) {
   return (
     cleanText(member?.chatNickname || member?.chat_nickname) ||
@@ -1465,6 +1476,31 @@ export default function SiBSChat({ enabled = true }) {
       }
     };
   }, [chat?.setChatWindowOpen, open]);
+
+  useEffect(() => {
+    if (typeof document === "undefined" || !isMobileChatDevice()) {
+      return undefined;
+    }
+
+    const handleMobileVisibilityChange = () => {
+      if (document.visibilityState === "visible") return;
+
+      // Locking/sleeping the phone should end the current "viewed" session.
+      // When the user wakes the phone, the unread badge stays until SiBS Chat
+      // is deliberately opened again.
+      setOpen(false);
+      chat?.setChatWindowOpen?.(false);
+    };
+
+    document.addEventListener("visibilitychange", handleMobileVisibilityChange);
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        handleMobileVisibilityChange,
+      );
+    };
+  }, [chat?.setChatWindowOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;

@@ -565,6 +565,8 @@ export function ChatProvider({ children }) {
 
         const latestId = Number(nextMessages.at(-1)?.id || 0);
         const isActivelyViewed =
+          typeof document !== "undefined" &&
+          document.visibilityState === "visible" &&
           chatWindowOpenRef.current &&
           Number(activeConversationIdRef.current) === Number(conversationId);
 
@@ -1116,6 +1118,8 @@ export function ChatProvider({ children }) {
 
       const latestMessageId = Number(nextMessages?.at(-1)?.id || 0);
       const isStillActivelyViewed =
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
         chatWindowOpenRef.current &&
         Number(activeConversationIdRef.current) === conversationId;
 
@@ -1294,7 +1298,10 @@ export function ChatProvider({ children }) {
       const isActiveConversation =
         id && Number(activeConversationIdRef.current) === id;
       const isActivelyViewed =
-        Boolean(isActiveConversation) && chatWindowOpenRef.current;
+        Boolean(isActiveConversation) &&
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible" &&
+        chatWindowOpenRef.current;
 
       if (isActivelyViewed && message) {
         setMessages((current) => {
@@ -1414,10 +1421,27 @@ export function ChatProvider({ children }) {
       void syncChatWithoutRefresh();
     };
 
+    const markChatWindowNotViewed = () => {
+      // Mobile browsers can preserve React state while the phone is locked.
+      // Once the page is hidden, the previously-open chat must no longer be
+      // treated as actively viewed. Otherwise a message received while the
+      // phone is asleep can be marked read immediately when the phone wakes.
+      chatWindowOpenRef.current = false;
+    };
+
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        void syncChatWithoutRefresh();
+      if (document.visibilityState !== "visible") {
+        markChatWindowNotViewed();
+        return;
       }
+
+      // Refresh unread counts after wake/resume, but do not mark anything read.
+      // The user must explicitly open SiBS Chat again.
+      void syncChatWithoutRefresh();
+    };
+
+    const handlePageHide = () => {
+      markChatWindowNotViewed();
     };
 
     chatSocket.on("connect", handleConnect);
@@ -1433,6 +1457,7 @@ export function ChatProvider({ children }) {
     chatSocket.on("chat:read", handleRead);
 
     window.addEventListener("focus", handleWindowFocus);
+    window.addEventListener("pagehide", handlePageHide);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Socket.IO is still the primary realtime transport. The lightweight
@@ -1461,6 +1486,7 @@ export function ChatProvider({ children }) {
       window.clearInterval(fallbackInterval);
       window.clearInterval(typingFallbackInterval);
       window.removeEventListener("focus", handleWindowFocus);
+      window.removeEventListener("pagehide", handlePageHide);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
 
       chatSocket.off("connect", handleConnect);
