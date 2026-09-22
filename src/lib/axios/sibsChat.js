@@ -122,6 +122,17 @@ export async function deletePrivateChat(conversationId) {
   return response.data?.data || null;
 }
 
+export async function getChatTypingStatus(conversationId) {
+  const response = await api.get(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/typing`,
+  );
+
+  return response.data?.data || {
+    conversationId: Number(conversationId || 0),
+    sibsIds: [],
+  };
+}
+
 export async function sendChatTypingStatus(
   conversationId,
   isTyping = false,

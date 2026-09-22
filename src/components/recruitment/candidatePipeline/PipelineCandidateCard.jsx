@@ -140,6 +140,15 @@ const PipelineCandidateCard = ({
           : "border-gray-200 bg-gray-50 text-gray-600";
 
   const resolvedAccountLabel = getPipelineAccountLabel(candidate) || accountLabel;
+  const isSuccessfulHeadcount =
+    Boolean(
+      candidate.isSuccessfulHeadcount || candidate.is_successful_headcount,
+    ) ||
+    String(
+      candidate.successfulHeadcountStatus ||
+        candidate.successful_headcount_status ||
+        "",
+    ).toLowerCase() === "counted";
 
   function openCandidate() {
     onViewCandidate?.(candidate);
@@ -191,7 +200,7 @@ const PipelineCandidateCard = ({
         <CandidateAvatar candidate={candidate} />
       </div>
 
-      <div className="mt-2.5 flex items-center justify-between gap-2">
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         <span
           title={`Acquisition source: ${candidate.source || "Pipeline"}`}
           className="inline-flex max-w-[120px] truncate rounded-md border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-tight text-blue-700"
@@ -201,10 +210,16 @@ const PipelineCandidateCard = ({
 
         <span
           title={`PRF status: ${candidate.prfStatus || "Review"}`}
-          className={`inline-flex max-w-[118px] truncate rounded-md border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-tight ${getReferencePrfStatusClass(candidate.prfStatus || "Review")}`}
+          className={`ml-auto inline-flex max-w-[118px] truncate rounded-md border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-tight ${getReferencePrfStatusClass(candidate.prfStatus || "Review")}`}
         >
           {candidate.prfStatus || "Review"}
         </span>
+
+        {isSuccessfulHeadcount && (
+          <span className="basis-full inline-flex w-fit rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-emerald-700">
+            Successful HC
+          </span>
+        )}
       </div>
 
       <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-lg border border-[#E9EEF4] bg-[#F8FAFC] px-2.5 py-2.5">

@@ -10,11 +10,39 @@ export function normalizeHiringNeedsStatus(status) {
   const value = cleanText(status);
 
   if (!value) return "For Approval";
+  if (/expired/i.test(value)) return "Expired";
   if (/not\s*approved|rejected|declined/i.test(value)) return "Not Approved";
   if (/approved/i.test(value)) return "Approved";
   if (/pending|for\s*approval|review/i.test(value)) return "For Approval";
 
   return value;
+}
+
+export function getHiringNeedsApprovalStatusLabel(item = {}) {
+  const effectiveStatus = normalizeHiringNeedsStatus(
+    item.approvalStatus ||
+      item.approval_status ||
+      item.hiringNeedStatus ||
+      item.hiring_need_status,
+  );
+
+  const decisionStatus = normalizeHiringNeedsStatus(
+    item.approvalDecisionStatus ||
+      item.approval_decision_status ||
+      item.originalApprovalStatus ||
+      item.original_approval_status,
+  );
+
+  const isExpired =
+    item.isExpired === true ||
+    item.is_expired === true ||
+    effectiveStatus === "Expired";
+
+  if (isExpired && decisionStatus === "Approved") {
+    return "Approved · Expired";
+  }
+
+  return effectiveStatus;
 }
 
 export function normalizeHiringNeedsJdLinkStatus(status) {
@@ -86,6 +114,10 @@ export function getHiringNeedsStatusClass(status) {
     return "border-red-200 bg-red-50 text-red-700";
   }
 
+  if (value === "Expired") {
+    return "border-slate-300 bg-slate-100 text-slate-700";
+  }
+
   return "border-amber-200 bg-amber-50 text-amber-700";
 }
 
@@ -148,6 +180,57 @@ export function getHiringNeedsHeadcount(item = {}) {
   );
 }
 
+export function getHiringNeedsSuccessfulHeadcount(item = {}) {
+  const value = firstValue(
+    item.successfulHeadcount,
+    item.successful_headcount,
+    item.fulfilledHeadcount,
+    item.fulfilled_headcount,
+  );
+
+  const count = Number(value || 0);
+  return Number.isFinite(count) && count >= 0 ? count : 0;
+}
+
+export function getHiringNeedsRemainingHeadcount(item = {}) {
+  const explicit = firstValue(
+    item.remainingHeadcount,
+    item.remaining_headcount,
+  );
+
+  if (cleanText(explicit)) {
+    const count = Number(explicit);
+    return Number.isFinite(count) && count >= 0 ? count : 0;
+  }
+
+  return Math.max(
+    Number(getHiringNeedsHeadcount(item) || 0) -
+      getHiringNeedsSuccessfulHeadcount(item),
+    0,
+  );
+}
+
+export function getHiringNeedsFulfillmentStatus(item = {}) {
+  return (
+    firstValue(
+      item.headcountFulfillmentStatus,
+      item.headcount_fulfillment_status,
+    ) ||
+    (getHiringNeedsRemainingHeadcount(item) === 0 &&
+    Number(getHiringNeedsHeadcount(item) || 0) > 0
+      ? "Filled"
+      : getHiringNeedsSuccessfulHeadcount(item) > 0
+        ? "In Progress"
+        : "Open")
+  );
+}
+
+export function getHiringNeedsSuccessfulHeadcountLabel(item = {}) {
+  const required = Number(getHiringNeedsHeadcount(item) || 0);
+  const successful = getHiringNeedsSuccessfulHeadcount(item);
+  return `Successful HC ${successful}/${required}`;
+}
+
 export function getHiringNeedsReason(item = {}) {
   return (
     firstValue(
@@ -173,18 +256,59 @@ export function getHiringNeedsSite(item = {}) {
   );
 }
 
+function formatHiringNeedsDate(value) {
+  const text = cleanText(value);
+
+  if (!text) return "";
+
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+
+  if (!match) return text;
+
+  const [, year, month, day] = match;
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const monthIndex = Number(month) - 1;
+  const dayNumber = Number(day);
+
+  if (
+    monthIndex < 0 ||
+    monthIndex > 11 ||
+    !Number.isInteger(dayNumber) ||
+    dayNumber < 1 ||
+    dayNumber > 31
+  ) {
+    return text;
+  }
+
+  return `${monthNames[monthIndex]} ${dayNumber}, ${year}`;
+}
+
 export function getHiringNeedsDateOrWeek(item = {}) {
-  return (
-    firstValue(
-      item.dateNeeded,
-      item.date_needed,
-      item.weekNeeded,
-      item.week_needed,
-      item.targetWeek,
-      item.target_week,
-      item.week,
-    ) || "--"
+  const value = firstValue(
+    item.dateNeeded,
+    item.date_needed,
+    item.weekNeeded,
+    item.week_needed,
+    item.targetWeek,
+    item.target_week,
+    item.week,
   );
+
+  return formatHiringNeedsDate(value) || "--";
 }
 
 export function getHiringNeedsSearchText(item = {}) {
@@ -195,6 +319,8 @@ export function getHiringNeedsSearchText(item = {}) {
     getHiringNeedsTitle(item),
     getHiringNeedsSubtitle(item),
     getHiringNeedsHeadcount(item),
+    getHiringNeedsSuccessfulHeadcountLabel(item),
+    getHiringNeedsFulfillmentStatus(item),
     getHiringNeedsReason(item),
     getHiringNeedsSite(item),
     getHiringNeedsDateOrWeek(item),
