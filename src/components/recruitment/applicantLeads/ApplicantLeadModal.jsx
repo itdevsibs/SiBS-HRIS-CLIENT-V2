@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   Check,
   CircleCheckBig,
@@ -17,7 +17,9 @@ import {
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 import { getApplicantLeadEditedFields } from "../../../lib/utils/applicantLeads/applicantLeadFormDirty";
+import DropdownField from "../availablePositions/DropdownField";
 import ApplicantLeadMovementHistoryDrawer from "./ApplicantLeadMovementHistoryDrawer";
+import { hearAboutUsOptions } from "../../../lib/utils/talentPool/talentPoolConstants";
 
 const INPUT_CLASS =
   "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
@@ -34,6 +36,10 @@ const AUTO_GROW_UPPERCASE_TEXTAREA_CLASS = `${AUTO_GROW_TEXTAREA_CLASS} uppercas
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function getOptionLabel(option) {
+  return String(option?.label || option?.name || option?.value || option || "");
 }
 
 function formatLeadCommentActor(item = {}) {
@@ -132,11 +138,14 @@ function EditedIndicator({ show }) {
   );
 }
 
-function FormSection({ title, subtitle, icon: Icon, children }) {
+function FormSection({ title, subtitle, icon: SectionIcon, children }) {
   return (
     <section className="rounded-2xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
       <div className="mb-3 2xl:mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
-        <Icon size={16} className="mt-0.5 shrink-0 text-[#FF5C28]" />
+        {React.createElement(SectionIcon, {
+          size: 16,
+          className: "mt-0.5 shrink-0 text-[#FF5C28]",
+        })}
         <div className="min-w-0">
           <h3 className="sibs-modal-section-title text-[#042C51]">
             {title}
@@ -154,7 +163,11 @@ function FormSection({ title, subtitle, icon: Icon, children }) {
 export default function ApplicantLeadModal() {
   const [copySuccessMessage, setCopySuccessMessage] = useState("");
   const [movementHistoryOpen, setMovementHistoryOpen] = useState(false);
+  const [movementHistoryVisible, setMovementHistoryVisible] = useState(false);
+  const [movementHistoryPosition, setMovementHistoryPosition] = useState(null);
+  const [movementHistoryArrowTop, setMovementHistoryArrowTop] = useState(-14);
   const movementHistoryTriggerRef = useRef(null);
+  const movementHistoryPanelRef = useRef(null);
   const {
     showLeadModal,
     editingLead,
@@ -177,10 +190,10 @@ export default function ApplicantLeadModal() {
     (item) => cleanText(item?.comment || item?.comment_text),
   );
 
-  if (!showLeadModal) return null;
-
   const isEditMode = Boolean(editingLead);
+  const showMovementHistoryPanel = movementHistoryOpen || movementHistoryVisible;
   const loggingAccount = editingLead?.inputtedBy || currentAccountName;
+  const noteAuthor = loggingAccount || "HR User";
   const referralCode =
     editingLead?.referralCode || editingLead?.referral_code || "";
   const canCopyReferralCode = Boolean(referralCode);
@@ -199,6 +212,80 @@ export default function ApplicantLeadModal() {
     !isCpNumberValid ||
     (editingLead && !isEditFormEdited);
 
+  const sourcingChannelOptions = useMemo(() => {
+    const currentSource = getOptionLabel(formData.source);
+    const sourceValues = [...hearAboutUsOptions, currentSource]
+      .map((source) => String(source || "").trim())
+      .filter(Boolean);
+
+    return [...new Set(sourceValues)]
+      .map((source) => ({
+        id: source,
+        value: source,
+        label: source,
+      }));
+  }, [formData.source]);
+
+  React.useEffect(() => {
+    if (!movementHistoryOpen) {
+      setMovementHistoryVisible(false);
+      return undefined;
+    }
+
+    const frameId = window.requestAnimationFrame(() =>
+      setMovementHistoryVisible(true),
+    );
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [movementHistoryOpen]);
+
+  React.useLayoutEffect(() => {
+    if (!showMovementHistoryPanel) return undefined;
+
+    function updateMovementHistoryPosition() {
+      const trigger = movementHistoryTriggerRef.current;
+      if (!trigger) return;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const panel = movementHistoryPanelRef.current;
+      const panelWidth = panel?.offsetWidth || Math.min(400, window.innerWidth * 0.36);
+      const panelHeight = panel?.offsetHeight || Math.min(680, window.innerHeight * 0.82);
+      const panelGap = 20;
+      const boundedLeft = Math.max(16, Math.min(
+        triggerRect.right + panelGap,
+        window.innerWidth - panelWidth - 16,
+      ));
+      const boundedTop = Math.max(16, Math.min(
+        triggerRect.top - 10,
+        window.innerHeight - panelHeight - 16,
+      ));
+      const arrowTop = Math.max(
+        8,
+        Math.min(
+          panelHeight - 20,
+          triggerRect.top + triggerRect.height / 2 - boundedTop - 8,
+        ),
+      );
+
+      setMovementHistoryPosition({
+        left: boundedLeft,
+        top: boundedTop,
+      });
+      setMovementHistoryArrowTop(arrowTop);
+    }
+
+    updateMovementHistoryPosition();
+    window.addEventListener("resize", updateMovementHistoryPosition);
+    window.addEventListener("scroll", updateMovementHistoryPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMovementHistoryPosition);
+      window.removeEventListener("scroll", updateMovementHistoryPosition, true);
+    };
+  }, [showMovementHistoryPanel]);
+
+  if (!showLeadModal) return null;
+
   async function handleCopyReferralCode() {
     if (!canCopyReferralCode) return;
     const copied = await copyTextToClipboard(referralCode);
@@ -213,7 +300,12 @@ export default function ApplicantLeadModal() {
 
   return (
     <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-4 font-jakarta">
-      <div className="sibs-modal-pop-in relative flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white shadow-2xl">
+      <div
+        className="flex h-[84vh] 2xl:h-[86vh] max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-2xl 2xl:max-w-3xl"
+      >
+        <div
+          className="sibs-modal-pop-in relative flex h-full min-w-0 max-h-[84vh] 2xl:max-h-[86vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        >
         {/* Modal Header */}
         <header className="shrink-0 bg-[#042C51] px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white">
           <div className="flex items-start justify-between gap-4">
@@ -436,10 +528,11 @@ export default function ApplicantLeadModal() {
 
                 <label className="block">
                   <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Email Address
+                    Email Address <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator show={editedFields.email} />
                   </span>
                   <input
+                    required
                     type="email"
                     value={formData.email}
                     onChange={(event) =>
@@ -450,27 +543,50 @@ export default function ApplicantLeadModal() {
                   />
                 </label>
 
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                    Applicant Source <span className="text-[#FF5C28]">*</span>
+                    <EditedIndicator show={editedFields.source} />
+                  </label>
+                  <DropdownField
+                    value={formData.source}
+                    onChange={(value) =>
+                      setFormData((current) => ({
+                        ...current,
+                        source: value,
+                        sourcingId: "",
+                      }))
+                    }
+                    options={sourcingChannelOptions}
+                    placeholder="Select sourcing channel..."
+                    searchable={true}
+                    className="w-full"
+                  />
+                </div>
+
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    Facebook Name
+                    Facebook Name <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator show={editedFields.facebookName} />
                   </span>
                   <input
+                    required
                     value={formData.facebookName}
                     onChange={(event) =>
                       updateFormField(setFormData, "facebookName", event.target.value)
                     }
                     placeholder="Enter Facebook Name"
-                    className={UPPERCASE_INPUT_CLASS}
+                    className={INPUT_CLASS}
                   />
                 </label>
 
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    Facebook Link
+                    Facebook Link <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator show={editedFields.facebookLink} />
                   </span>
                   <input
+                    required
                     value={formData.facebookLink}
                     onChange={(event) =>
                       updateFormField(setFormData, "facebookLink", event.target.value)
@@ -506,18 +622,24 @@ export default function ApplicantLeadModal() {
               icon={FileText}
             >
               <label className="block">
-                <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                  HR Notes
-                  <EditedIndicator show={editedFields.notes} />
+                  <span className="mb-1.5 flex items-center justify-between gap-2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <span>
+                    HR Notes <span className="text-[#FF5C28]">*</span>
+                    <EditedIndicator show={editedFields.notes} />
+                  </span>
+                  <span className="shrink-0 normal-case tracking-normal text-[#667085]">
+                    By: {noteAuthor}
+                  </span>
                 </span>
                 <textarea
                   rows={3}
+                  required
                   value={formData.notes}
                   onChange={(event) =>
                     updateFormField(setFormData, "notes", event.target.value)
                   }
                   placeholder="Record preliminary background, shift availability, or interview notes..."
-                  className={UPPERCASE_TEXTAREA_CLASS}
+                  className={TEXTAREA_CLASS}
                 />
               </label>
             </FormSection>
@@ -627,36 +749,54 @@ export default function ApplicantLeadModal() {
                 Cancel
               </button>
 
-              <button
-                type="submit"
-                disabled={isSubmitDisabled}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:border disabled:border-[#D6E0EA] disabled:bg-[#EEF3F8] disabled:text-[#6F8196] disabled:shadow-none"
-              >
-                {isSaving ? (
-                  <Loader2 size={13} className="animate-spin text-white" />
-                ) : (
-                  <Check size={13} className="text-white" />
-                )}
-                {isSaving
-                  ? "Saving..."
-                  : isEditMode
-                    ? "Update Lead"
-                    : "Save Applicant Lead"}
-              </button>
+              {(!isEditMode || isEditFormEdited) && (
+                <button
+                  type="submit"
+                  disabled={isSubmitDisabled}
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:border disabled:border-[#D6E0EA] disabled:bg-[#EEF3F8] disabled:text-[#6F8196] disabled:shadow-none"
+                >
+                  {isSaving ? (
+                    <Loader2 size={13} className="animate-spin text-white" />
+                  ) : (
+                    <Check size={13} className="text-white" />
+                  )}
+                  {isSaving
+                    ? "Saving..."
+                    : isEditMode
+                      ? "Update Lead"
+                      : "Save Applicant Lead"}
+                </button>
+              )}
             </div>
           </footer>
         </form>
 
-        <ApplicantLeadMovementHistoryDrawer
-          open={isEditMode && movementHistoryOpen}
-          lead={editingLead || {}}
-          history={leadHistory}
-          isLoading={isLeadHistoryLoading}
-          error={leadHistoryError}
-          onClose={() => setMovementHistoryOpen(false)}
-          triggerRef={movementHistoryTriggerRef}
-        />
+        </div>
+
       </div>
+
+      {isEditMode && showMovementHistoryPanel && movementHistoryPosition ? (
+        <div
+          ref={movementHistoryPanelRef}
+          className={`fixed z-[1100] flex origin-left transform-gpu h-[min(82vh,680px)] w-[min(400px,36vw)] drop-shadow-[0_24px_55px_rgba(4,24,45,0.32)] transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${movementHistoryVisible ? "translate-y-0 scale-100 opacity-100" : "translate-y-1.5 scale-90 opacity-0"}`}
+          style={movementHistoryPosition}
+        >
+            <span
+              aria-hidden="true"
+              className="absolute -left-[10px] z-0 h-0 w-0 border-y-[8px] border-y-transparent border-r-[10px] border-r-white"
+              style={{ top: movementHistoryArrowTop }}
+            />
+          <ApplicantLeadMovementHistoryDrawer
+            open
+            lead={editingLead || {}}
+            history={leadHistory}
+            isLoading={isLeadHistoryLoading}
+            error={leadHistoryError}
+            onClose={() => setMovementHistoryOpen(false)}
+            triggerRef={movementHistoryTriggerRef}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

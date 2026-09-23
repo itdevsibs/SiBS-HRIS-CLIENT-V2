@@ -56,6 +56,7 @@ import {
   normalizeApplicationFormQuestions,
   validateApplicationQuestionAnswers,
 } from "@/lib/utils/talentPool/publicApplicationQuestions";
+import { hearAboutUsOptions } from "@/lib/utils/talentPool/talentPoolConstants";
 
 const acceptedAudioTypes =
   ".mp3,.wav,.wave,.m4a,.aac,.ogg,.oga,.webm,.mp4,.mpeg,.mpga,.flac,.amr,.3gp,.opus,.aif,.aiff,.caf,.wma,audio/*,video/mp4,video/3gpp";
@@ -98,11 +99,10 @@ const acceptedDocumentExtensions = [
   ".gif",
 ];
 
-const OUTBOUND_SOURCE = "Outbound";
-const EXTERNAL_REFERRAL_LISTINGS_SOURCE = "External Referral Listings";
+const OTHERS_SOURCE = "Others";
 
 const defaultFormOptions = {
-  hearAboutUs: [EXTERNAL_REFERRAL_LISTINGS_SOURCE, OUTBOUND_SOURCE],
+  hearAboutUs: [...hearAboutUsOptions],
   locations: [],
   workExperience: [],
   lengthOfExperience: [],
@@ -814,12 +814,9 @@ function buildApplicantNameCheckKey({
 
 function hasCompleteApplicantNameForDuplicateCheck({
   firstName = "",
-  middleName = "",
   lastName = "",
 } = {}) {
-  return Boolean(
-    cleanText(firstName) && cleanText(middleName) && cleanText(lastName),
-  );
+  return Boolean(cleanText(firstName) && cleanText(lastName));
 }
 
 const uppercasePublicTextFields = new Set([
@@ -1161,18 +1158,15 @@ function sortHearAboutUsOptions(options = []) {
   });
 }
 
-function normalizeOptionsPayload(payload) {
+function normalizeOptionsPayload(payload, matchedReferralSource = "") {
   const data = payload && typeof payload === "object" ? payload : {};
+  const sourceOptions = matchedReferralSource
+    ? ensureOption(hearAboutUsOptions, matchedReferralSource)
+    : hearAboutUsOptions;
 
   return {
     hearAboutUs: sortHearAboutUsOptions(
-      ensureOption(
-        ensureOption(
-          Array.isArray(data.hearAboutUs) ? data.hearAboutUs : [],
-          EXTERNAL_REFERRAL_LISTINGS_SOURCE,
-        ),
-        OUTBOUND_SOURCE,
-      ),
+      ensureOption(sourceOptions, OTHERS_SOURCE),
     ),
     locations: Array.isArray(data.locations) ? data.locations : [],
     workExperience: Array.isArray(data.workExperience)
@@ -2852,7 +2846,6 @@ function MultiSelectCheckboxGroup({
   values,
   onChange,
   disabled = false,
-  required = false,
 }) {
   function toggleValue(optionValue) {
     if (disabled) return;
@@ -3421,6 +3414,7 @@ export default function PublicTalentPoolApplicationPage() {
 
       if (response?.success && response.data) {
         const prefill = response.data;
+        const leadSource = cleanText(prefill.leadSource || prefill.lead_source);
         const matchedPrefillValues = {
           firstName: cleanText(prefill.firstName),
           middleName: cleanText(prefill.middleName),
@@ -3429,10 +3423,20 @@ export default function PublicTalentPoolApplicationPage() {
           email: cleanText(prefill.email),
           phone1: cleanText(prefill.phone1),
           applyingLocation: cleanText(prefill.applyingLocation),
-          hearAboutUs: [EXTERNAL_REFERRAL_LISTINGS_SOURCE],
+          leadSource,
+          hearAboutUs: leadSource ? [leadSource] : [],
         };
 
         referralPrefillValuesRef.current = matchedPrefillValues;
+
+        if (leadSource) {
+          setFormOptions((previous) => ({
+            ...previous,
+            hearAboutUs: sortHearAboutUsOptions(
+              ensureOption(previous.hearAboutUs, leadSource),
+            ),
+          }));
+        }
 
         setForm((previous) => ({
           ...previous,
@@ -3559,7 +3563,12 @@ export default function PublicTalentPoolApplicationPage() {
           );
         }
 
-        setFormOptions(normalizeOptionsPayload(optionsResponse?.data));
+        setFormOptions(
+          normalizeOptionsPayload(
+            optionsResponse?.data,
+            referralPrefillValuesRef.current?.leadSource,
+          ),
+        );
 
         const approvedActivePositions = Array.isArray(
           openPositionsResponse?.data,
@@ -3981,10 +3990,15 @@ export default function PublicTalentPoolApplicationPage() {
         }
       });
 
+      const matchedLeadSource = cleanText(referralPrefillValues.leadSource);
+
       if (
-        Array.isArray(next.hearAboutUs) &&
-        next.hearAboutUs.length === 1 &&
-        next.hearAboutUs[0] === EXTERNAL_REFERRAL_LISTINGS_SOURCE
+        matchedLeadSource &&
+        next.hearAboutUs.some(
+          (value) =>
+            normalizeReferralSourceText(value) ===
+            normalizeReferralSourceText(matchedLeadSource),
+        )
       ) {
         next.hearAboutUs = [];
       }
@@ -5463,11 +5477,8 @@ export default function PublicTalentPoolApplicationPage() {
               </div>
 
               <div>
-                <FieldLabel>
-                  Middle Name <RequiredMark />
-                </FieldLabel>
+                <FieldLabel>Middle Name</FieldLabel>
                 <input
-                  required
                   value={form.middleName}
                   onChange={(e) =>
                     updateFormField("middleName", e.target.value)
@@ -5529,7 +5540,7 @@ export default function PublicTalentPoolApplicationPage() {
                 </div>
               ) : !isApplicantNameVerifiedAvailable ? (
                 <div className="md:col-span-4 -mt-1 rounded-[10px] border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-2.5 text-xs font-bold leading-5 text-[#667085]">
-                  Complete First Name, Middle Name, and Last Name to unlock the rest of the form.
+                  Complete First Name and Last Name to unlock the rest of the form.
                 </div>
               ) : null}
 

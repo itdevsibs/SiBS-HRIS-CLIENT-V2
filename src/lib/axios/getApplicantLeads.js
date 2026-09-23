@@ -106,6 +106,8 @@ export function normalizeApplicantLead(row = {}) {
       "",
     accountId: row.account_id || row.accountId || "",
     source:
+      row.lead_source ||
+      row.leadSource ||
       row.sourcing_name ||
       row.source ||
       row.sourcing ||
@@ -203,7 +205,7 @@ export function buildApplicantLeadPayload(formData = {}, user = {}) {
     school: cleanText(formData.school).toUpperCase(),
     department_id: formData.departmentId || formData.department_id || null,
     account_id: formData.accountId || formData.account_id || null,
-    sourcing_id: formData.sourcingId || formData.sourcing_id || null,
+    lead_source: cleanText(formData.source),
     preferred_location: cleanText(formData.preferredSite),
     status: cleanText(formData.status) || "New Lead",
     remarks: cleanText(formData.notes).toUpperCase(),
@@ -211,7 +213,6 @@ export function buildApplicantLeadPayload(formData = {}, user = {}) {
 
     department_name: cleanText(formData.department),
     account_name: cleanText(formData.specificAccount),
-    sourcing_name: cleanText(formData.source),
   };
 }
 

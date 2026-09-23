@@ -389,6 +389,19 @@ export function ApplicantLeadsProvider({ children }) {
       return;
     }
 
+    if (
+      !formData.email.trim() ||
+      !formData.source.trim() ||
+      !formData.facebookName.trim() ||
+      !formData.facebookLink.trim() ||
+      !formData.notes.trim()
+    ) {
+      showToast(
+        "Please enter Email Address, Sourcing Channel, Facebook Name, Facebook Link, and HR Notes.",
+      );
+      return;
+    }
+
     setIsSaving(true);
     const payload = buildApplicantLeadPayload(formData, user);
 
@@ -527,20 +540,10 @@ export function ApplicantLeadsProvider({ children }) {
       window.setTimeout(() => {
         setSendingApplicationLinkLead(null);
         setApplicationLinkSendStatus("");
-        showStatusModal({
-          type: "success",
-          title: "Application Link Sent",
-          message: result.message || `Application link email sent to ${lead.fullName}.`,
-        });
       }, 1400);
     } else {
       setSendingApplicationLinkLead(null);
       setApplicationLinkSendStatus("");
-      showStatusModal({
-        type: "success",
-        title: "Application Link Sent",
-        message: result.message || `Application link email sent to ${lead.fullName}.`,
-      });
     }
   }
 
