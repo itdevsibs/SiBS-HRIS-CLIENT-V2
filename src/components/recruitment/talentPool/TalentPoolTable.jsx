@@ -244,13 +244,11 @@ export default function TalentPoolTable({
                       const lastActivity = formatDate(
                         candidate.lastPipelineUpdate || candidate.lastActivity,
                       );
-                      const leadId = cleanText(
-                        candidate.leadId ||
-                          candidate.lead_id ||
-                          candidate.applicantLeadId ||
-                          candidate.applicant_lead_id ||
-                          candidate.sourceLeadId ||
-                          candidate.source_lead_id,
+                      const referralCode = cleanText(
+                        candidate.referralCode ||
+                          candidate.referral_code ||
+                          candidate.applicantReferralCode ||
+                          candidate.applicant_referral_code,
                       );
                       const talentPoolId =
                         candidate.candidateId ||
@@ -262,8 +260,9 @@ export default function TalentPoolTable({
                         candidate.talentPoolApplicationId ||
                         candidate.talent_pool_application_id ||
                         "";
-                      const showsLeadAndTalentPoolIds =
-                        Boolean(candidate.isConvertedLead) || Boolean(leadId);
+                      const showsReferralAndTalentPoolIds =
+                        Boolean(candidate.isConvertedLead) ||
+                        Boolean(referralCode);
 
                       return (
                         <tr
@@ -291,7 +290,7 @@ export default function TalentPoolTable({
                                 </p>
 
                                 {candidate.isPublicSubmission &&
-                                !showsLeadAndTalentPoolIds ? (
+                                !showsReferralAndTalentPoolIds ? (
                                   <span
                                     title="Public Submission"
                                     className="shrink-0 rounded border border-purple-200 bg-purple-50 px-1.5 py-0.2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-purple-700"
@@ -308,7 +307,7 @@ export default function TalentPoolTable({
                                 )}
                               </div>
 
-                              {showsLeadAndTalentPoolIds ? (
+                              {showsReferralAndTalentPoolIds ? (
                                 <div className="mt-0.5 space-y-0.5">
                                   <p
                                     title={talentPoolId}
@@ -317,10 +316,10 @@ export default function TalentPoolTable({
                                     Talent Pool ID: {talentPoolId || "—"}
                                   </p>
                                   <p
-                                    title={leadId}
+                                    title={referralCode}
                                     className="truncate font-mono text-[10px] 2xl:text-[10.5px] font-extrabold tabular-nums text-emerald-700 tracking-tight"
                                   >
-                                    Lead ID: {leadId || "—"}
+                                    Referral Code: {referralCode || "—"}
                                   </p>
                                 </div>
                               ) : (

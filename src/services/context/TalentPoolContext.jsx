@@ -367,6 +367,12 @@ function normalizeCandidateRecord(candidate = {}) {
       candidate.sourceLeadId ||
       candidate.source_lead_id ||
       "",
+    referralCode:
+      candidate.referralCode ||
+      candidate.referral_code ||
+      candidate.applicantReferralCode ||
+      candidate.applicant_referral_code ||
+      "",
     talentPoolApplicationId:
       candidate.talentPoolApplicationId ||
       candidate.talent_pool_application_id ||

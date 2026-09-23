@@ -49,14 +49,56 @@ function getCurrentSibsId(user = {}) {
   );
 }
 
-const CHAT_RECEIVE_SOUND_URL =
-  `${import.meta.env.BASE_URL}mama-rene-baterbonia-first-3-seconds.mp3`;
+const CHAT_ALLOWED_DEPARTMENT_ID = 3;
+
+function getCurrentDepartmentId(user = {}) {
+  const value =
+    user?.departmentId ??
+    user?.department_id ??
+    user?.deptId ??
+    user?.gy_dept_id ??
+    user?.gyDeptId ??
+    null;
+
+  const departmentId = Number(value);
+  return Number.isFinite(departmentId) ? departmentId : null;
+}
+
+const CHAT_RECEIVE_SOUNDS = [
+  {
+    url: `${import.meta.env.BASE_URL}renee-bituin-ng-mindanao.mp3`,
+    probability: 0.1,
+  },
+  {
+    url: `${import.meta.env.BASE_URL}mama-rene-baterbonia-first-3-seconds.mp3`,
+    probability: 0.1,
+  },
+  {
+    url: `${import.meta.env.BASE_URL}bubble-gum-popping.mp3`,
+    probability: 0.8,
+  },
+];
 
 let chatReceiveAudioContext = null;
-let chatReceiveAudioBuffer = null;
-let chatReceiveAudioBufferPromise = null;
+const chatReceiveAudioBuffers = new Map();
+const chatReceiveAudioBufferPromises = new Map();
 let chatReceiveActiveSource = null;
 let chatReceivePlayRequestId = 0;
+
+function getRandomChatReceiveSoundUrl() {
+  const roll = Math.random();
+  let cumulativeProbability = 0;
+
+  for (const sound of CHAT_RECEIVE_SOUNDS) {
+    cumulativeProbability += Number(sound.probability || 0);
+
+    if (roll < cumulativeProbability) {
+      return sound.url;
+    }
+  }
+
+  return CHAT_RECEIVE_SOUNDS[CHAT_RECEIVE_SOUNDS.length - 1]?.url || "";
+}
 
 function getChatReceiveAudioContext() {
   if (typeof window === "undefined") return null;
@@ -73,41 +115,48 @@ function getChatReceiveAudioContext() {
   return chatReceiveAudioContext;
 }
 
-async function getChatReceiveAudioBuffer(audioContext) {
-  if (!audioContext) return null;
-  if (chatReceiveAudioBuffer) return chatReceiveAudioBuffer;
+async function getChatReceiveAudioBuffer(audioContext, soundUrl) {
+  if (!audioContext || !soundUrl) return null;
 
-  if (!chatReceiveAudioBufferPromise) {
-    chatReceiveAudioBufferPromise = fetch(CHAT_RECEIVE_SOUND_URL)
+  if (chatReceiveAudioBuffers.has(soundUrl)) {
+    return chatReceiveAudioBuffers.get(soundUrl);
+  }
+
+  if (!chatReceiveAudioBufferPromises.has(soundUrl)) {
+    const bufferPromise = fetch(soundUrl)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`Unable to load chat receive sound: ${response.status}`);
+          throw new Error(
+            `Unable to load chat receive sound: ${response.status}`,
+          );
         }
 
         return response.arrayBuffer();
       })
       .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
       .then((decodedBuffer) => {
-        chatReceiveAudioBuffer = decodedBuffer;
+        chatReceiveAudioBuffers.set(soundUrl, decodedBuffer);
         return decodedBuffer;
       })
       .catch((error) => {
-        chatReceiveAudioBufferPromise = null;
+        chatReceiveAudioBufferPromises.delete(soundUrl);
         throw error;
       });
+
+    chatReceiveAudioBufferPromises.set(soundUrl, bufferPromise);
   }
 
-  return chatReceiveAudioBufferPromise;
+  return chatReceiveAudioBufferPromises.get(soundUrl);
 }
 
 async function playChatReceiveSound() {
   const requestId = ++chatReceivePlayRequestId;
+  const selectedSoundUrl = getRandomChatReceiveSoundUrl();
 
   try {
-    // A new incoming chat always interrupts the tone that is currently
-    // playing. This makes the notification behave like a real message alert:
-    // stop the old tone immediately, then restart from the beginning for the
-    // newest received message.
+    // Every incoming message gets a fresh random notification sound.
+    // If another message arrives while a tone is still playing, stop the
+    // previous tone immediately and play the newest message's selected tone.
     if (chatReceiveActiveSource) {
       try {
         chatReceiveActiveSource.stop();
@@ -119,13 +168,16 @@ async function playChatReceiveSound() {
     }
 
     const audioContext = getChatReceiveAudioContext();
-    if (!audioContext) return;
+    if (!audioContext || !selectedSoundUrl) return;
 
     if (audioContext.state === "suspended") {
       await audioContext.resume().catch(() => {});
     }
 
-    const audioBuffer = await getChatReceiveAudioBuffer(audioContext);
+    const audioBuffer = await getChatReceiveAudioBuffer(
+      audioContext,
+      selectedSoundUrl,
+    );
     if (!audioBuffer || requestId !== chatReceivePlayRequestId) return;
 
     const source = audioContext.createBufferSource();
@@ -202,12 +254,9 @@ function sortConversations(items = []) {
 export function ChatProvider({ children }) {
   const { user, loading: userLoading } = useUser() || {};
   const currentSibsId = useMemo(() => getCurrentSibsId(user), [user]);
-  // SiBS Chat is available to every authenticated HRIS user regardless of
-  // department, role, or access level. The authenticated SIBS ID is the only
-  // requirement for loading and using chat.
   const chatAllowed = useMemo(
-    () => Boolean(currentSibsId),
-    [currentSibsId],
+    () => getCurrentDepartmentId(user) === CHAT_ALLOWED_DEPARTMENT_ID,
+    [user],
   );
 
   const [conversations, setConversations] = useState([]);
