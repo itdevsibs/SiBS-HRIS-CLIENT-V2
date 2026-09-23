@@ -393,10 +393,11 @@ export function ApplicantLeadsProvider({ children }) {
       !formData.email.trim() ||
       !formData.source.trim() ||
       !formData.facebookName.trim() ||
-      !formData.facebookLink.trim()
+      !formData.facebookLink.trim() ||
+      !formData.notes.trim()
     ) {
       showToast(
-        "Please enter Email Address, Sourcing Channel, Facebook Name, and Facebook Link.",
+        "Please enter Email Address, Sourcing Channel, Facebook Name, Facebook Link, and HR Notes.",
       );
       return;
     }

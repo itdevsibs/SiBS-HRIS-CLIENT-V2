@@ -17,11 +17,8 @@ import {
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 import { getApplicantLeadEditedFields } from "../../../lib/utils/applicantLeads/applicantLeadFormDirty";
-<<<<<<< HEAD
-=======
 import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
 import DropdownField from "../availablePositions/DropdownField";
->>>>>>> 3051378 (updates)
 import ApplicantLeadMovementHistoryDrawer from "./ApplicantLeadMovementHistoryDrawer";
 
 const INPUT_CLASS =
@@ -39,6 +36,10 @@ const AUTO_GROW_UPPERCASE_TEXTAREA_CLASS = `${AUTO_GROW_TEXTAREA_CLASS} uppercas
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function getOptionLabel(option) {
+  return String(option?.label || option?.name || option?.value || option || "");
 }
 
 function formatLeadCommentActor(item = {}) {
@@ -137,11 +138,14 @@ function EditedIndicator({ show }) {
   );
 }
 
-function FormSection({ title, subtitle, icon: Icon, children }) {
+function FormSection({ title, subtitle, icon: SectionIcon, children }) {
   return (
     <section className="rounded-2xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
       <div className="mb-3 2xl:mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
-        <Icon size={16} className="mt-0.5 shrink-0 text-[#FF5C28]" />
+        {React.createElement(SectionIcon, {
+          size: 16,
+          className: "mt-0.5 shrink-0 text-[#FF5C28]",
+        })}
         <div className="min-w-0">
           <h3 className="sibs-modal-section-title text-[#042C51]">
             {title}
@@ -181,16 +185,11 @@ export default function ApplicantLeadModal() {
     isAddingLeadComment,
     handleAddLeadComment,
   } = useApplicantLeadsPage();
-<<<<<<< HEAD
 
   const leadComments = (Array.isArray(leadHistory) ? leadHistory : []).filter(
     (item) => cleanText(item?.comment || item?.comment_text),
   );
-
-  if (!showLeadModal) return null;
-=======
   const { sourceRows = [], sourcingOptions = [] } = useSourcingAnalytics();
->>>>>>> 3051378 (updates)
 
   const isEditMode = Boolean(editingLead);
   const showMovementHistoryPanel = movementHistoryOpen || movementHistoryVisible;
@@ -214,8 +213,6 @@ export default function ApplicantLeadModal() {
     !isCpNumberValid ||
     (editingLead && !isEditFormEdited);
 
-<<<<<<< HEAD
-=======
   const sourcingChannelOptions = useMemo(() => {
     const analyticsSources = Array.isArray(sourceRows)
       ? sourceRows.map((row) => row?.source)
@@ -264,8 +261,9 @@ export default function ApplicantLeadModal() {
       const panel = movementHistoryPanelRef.current;
       const panelWidth = panel?.offsetWidth || Math.min(400, window.innerWidth * 0.36);
       const panelHeight = panel?.offsetHeight || Math.min(680, window.innerHeight * 0.82);
+      const panelGap = 20;
       const boundedLeft = Math.max(16, Math.min(
-        triggerRect.right + 12,
+        triggerRect.right + panelGap,
         window.innerWidth - panelWidth - 16,
       ));
       const boundedTop = Math.max(16, Math.min(
@@ -299,11 +297,6 @@ export default function ApplicantLeadModal() {
 
   if (!showLeadModal) return null;
 
-  function isAnyEdited(...fields) {
-    return fields.some((field) => editedFields[field]);
-  }
-
->>>>>>> 3051378 (updates)
   async function handleCopyReferralCode() {
     if (!canCopyReferralCode) return;
     const copied = await copyTextToClipboard(referralCode);
@@ -640,9 +633,9 @@ export default function ApplicantLeadModal() {
               icon={FileText}
             >
               <label className="block">
-                <span className="mb-1.5 flex items-center justify-between gap-2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <span className="mb-1.5 flex items-center justify-between gap-2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                   <span>
-                    HR Notes
+                    HR Notes <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator show={editedFields.notes} />
                   </span>
                   <span className="shrink-0 normal-case tracking-normal text-[#667085]">
@@ -651,6 +644,7 @@ export default function ApplicantLeadModal() {
                 </span>
                 <textarea
                   rows={3}
+                  required
                   value={formData.notes}
                   onChange={(event) =>
                     updateFormField(setFormData, "notes", event.target.value)
@@ -793,12 +787,12 @@ export default function ApplicantLeadModal() {
       {isEditMode && showMovementHistoryPanel && movementHistoryPosition ? (
         <div
           ref={movementHistoryPanelRef}
-          className={`fixed z-[1100] flex h-[min(82vh,680px)] w-[min(400px,36vw)] transition-transform duration-300 ease-out ${movementHistoryVisible ? "translate-x-0" : "-translate-x-8"}`}
+          className={`fixed z-[1100] flex origin-left transform-gpu h-[min(82vh,680px)] w-[min(400px,36vw)] drop-shadow-[0_24px_55px_rgba(4,24,45,0.32)] transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${movementHistoryVisible ? "translate-y-0 scale-100 opacity-100" : "translate-y-1.5 scale-90 opacity-0"}`}
           style={movementHistoryPosition}
         >
             <span
               aria-hidden="true"
-              className="absolute -left-[10px] z-0 h-0 w-0 border-y-[8px] border-y-transparent border-r-[10px] border-r-[#FFFFFF]"
+              className="absolute -left-[10px] z-0 h-0 w-0 border-y-[8px] border-y-transparent border-r-[10px] border-r-white"
               style={{ top: movementHistoryArrowTop }}
             />
           <ApplicantLeadMovementHistoryDrawer

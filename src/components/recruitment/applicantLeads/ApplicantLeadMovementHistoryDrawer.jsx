@@ -77,7 +77,7 @@ export default function ApplicantLeadMovementHistoryDrawer({
       <aside
         aria-label="Applicant Lead Movement History"
         aria-hidden={!open}
-        className="relative z-10 flex h-full w-full flex-col overflow-hidden rounded-xl bg-white shadow-[0_24px_55px_rgba(4,24,45,0.32)]"
+        className="relative z-10 flex h-full w-full flex-col overflow-hidden rounded-xl bg-white"
       >
         <header className="shrink-0 border-b border-[#E6ECF2] bg-white px-4 py-2.5 text-[#042C51]">
           <div className="flex items-center justify-between gap-3">
@@ -138,17 +138,23 @@ export default function ApplicantLeadMovementHistoryDrawer({
             </div>
           ) : (
             <div className="relative pl-5 sm:pl-6">
-              <div className="absolute bottom-2 left-2 top-2 w-[2px] bg-[#E6ECF2]" />
-
               <div className="space-y-3">
                 {items.map((item, index) => {
                   const isLatest = index === 0;
                   const actorLabel = formatApplicantLeadHistoryActor(item);
+                  const hasNextItem = index < items.length - 1;
 
                   return (
                     <article key={item.id || `${item.activityLabel}-${index}`} className="relative">
+                      {hasNextItem ? (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute -left-[15px] top-[13px] bottom-[-25px] z-0 w-[2px] bg-[#E6ECF2] sm:-left-[19px]"
+                        />
+                      ) : null}
+
                       <span
-                        className={`absolute -left-[21px] top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-white sm:-left-[25px] ${
+                        className={`absolute -left-[21px] top-1.5 z-20 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-white sm:-left-[25px] ${
                           isLatest
                             ? "border-[#FF5C28] ring-4 ring-[#FFF0EB]"
                             : "border-[#98A2B3]"
@@ -219,24 +225,45 @@ export default function ApplicantLeadMovementHistoryDrawer({
                         {Array.isArray(item.changedFields) && item.changedFields.length ? (
                           <div className="mt-3 space-y-2">
                             {item.changedFields.map((change, changeIndex) => (
-                              <div
-                                key={`${item.id}-${change.field}-${changeIndex}`}
-                                className="overflow-hidden rounded-lg border border-[#E6ECF2] bg-[#F8FAFC]"
-                              >
-                                <div className="border-b border-[#E6ECF2] px-3 py-2 text-[9px] font-extrabold text-[#042C51] sm:text-[10px]">
-                                  {change.field || "Updated Field"}
-                                </div>
-                                <div className="grid grid-cols-[68px_minmax(0,1fr)] gap-2 px-3 py-2 text-[9px] sm:text-[10px]">
-                                  <span className="font-extrabold text-[#667085]">From:</span>
-                                  <span className="min-w-0 break-words font-semibold text-[#344054]">
-                                    {getHistoryDisplayValue(change.from)}
-                                  </span>
-                                  <span className="font-extrabold text-[#667085]">To:</span>
-                                  <span className="min-w-0 break-words font-semibold text-[#042C51]">
-                                    {getHistoryDisplayValue(change.to)}
-                                  </span>
-                                </div>
-                              </div>
+                              (() => {
+                                const isHrNote =
+                                  cleanText(change.field).toLowerCase() ===
+                                  "hr notes";
+
+                                return (
+                                  <div
+                                    key={`${item.id}-${change.field}-${changeIndex}`}
+                                    className="relative z-10 overflow-hidden rounded-lg border border-[#E6ECF2] bg-[#F8FAFC]"
+                                  >
+                                    <div className="border-b border-[#E6ECF2] px-3 py-2 text-[9px] font-extrabold text-[#042C51] sm:text-[10px]">
+                                      {change.field || "Updated Field"}
+                                    </div>
+                                    {isHrNote ? (
+                                      <div className="grid grid-cols-[68px_minmax(0,1fr)] gap-2 px-3 py-2 text-[9px] sm:text-[10px]">
+                                        <span className="font-extrabold text-[#667085]">Author:</span>
+                                        <span className="min-w-0 break-words font-semibold text-[#344054]">
+                                          {actorLabel}
+                                        </span>
+                                        <span className="font-extrabold text-[#667085]">Message:</span>
+                                        <span className="min-w-0 break-words font-semibold text-[#042C51]">
+                                          {getHistoryDisplayValue(change.to)}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="grid grid-cols-[68px_minmax(0,1fr)] gap-2 px-3 py-2 text-[9px] sm:text-[10px]">
+                                        <span className="font-extrabold text-[#667085]">From:</span>
+                                        <span className="min-w-0 break-words font-semibold text-[#344054]">
+                                          {getHistoryDisplayValue(change.from)}
+                                        </span>
+                                        <span className="font-extrabold text-[#667085]">To:</span>
+                                        <span className="min-w-0 break-words font-semibold text-[#042C51]">
+                                          {getHistoryDisplayValue(change.to)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()
                             ))}
                           </div>
                         ) : null}
