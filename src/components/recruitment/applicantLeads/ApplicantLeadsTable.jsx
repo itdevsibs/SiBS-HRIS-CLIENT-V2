@@ -11,7 +11,6 @@ import {
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import { isApplicantLeadApplicationLinkSent } from "../../../lib/utils/applicantLeads/applicantLeadEmailStatus";
-import StatusModal from "../../modals/StatusModal";
 import ApplicantLeadStatusBadge from "./ApplicantLeadStatusBadge";
 import ApplicantLeadMobileCard from "./ApplicantLeadMobileCard";
 import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
@@ -57,7 +56,6 @@ export default function ApplicantLeadsTable({
     setOverridePage(1);
   }
 
-  const [emailConfirmationLead, setEmailConfirmationLead] = useState(null);
   const overridePageSize = pageSize || 10;
   const overrideTotalPages = Math.max(
     1,
@@ -96,27 +94,8 @@ export default function ApplicantLeadsTable({
 
   function requestSendApplicationLink(event, lead) {
     event.stopPropagation();
-    setEmailConfirmationLead(lead);
-  }
-
-  function closeEmailConfirmation() {
-    setEmailConfirmationLead(null);
-  }
-
-  function confirmSendApplicationLink() {
-    if (!emailConfirmationLead) return;
-
-    const lead = emailConfirmationLead;
-    setEmailConfirmationLead(null);
     markApplicationLinkSent(lead);
   }
-
-  const confirmationLeadName = cleanText(
-    emailConfirmationLead?.fullName,
-    "this lead",
-  );
-  const confirmationLeadEmail = cleanText(emailConfirmationLead?.email);
-  const confirmationLeadPhone = cleanText(emailConfirmationLead?.cpNum);
 
   return (
     <div className="w-full">
@@ -403,19 +382,6 @@ export default function ApplicantLeadsTable({
         className="border-0 bg-transparent p-0 shadow-none"
       />
 
-      <StatusModal
-        open={Boolean(emailConfirmationLead)}
-        type="confirm"
-        title="Send Application Link?"
-        message={`Send the application link email to ${confirmationLeadName} at ${confirmationLeadEmail}${
-          confirmationLeadPhone !== "-" ? ` (${confirmationLeadPhone})` : ""
-        }?`}
-        confirmLabel="Send Email"
-        cancelLabel="Cancel"
-        confirmTone="brand"
-        onCancel={closeEmailConfirmation}
-        onConfirm={confirmSendApplicationLink}
-      />
     </div>
   );
 }

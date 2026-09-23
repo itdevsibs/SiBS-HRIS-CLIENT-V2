@@ -13,7 +13,6 @@ export const hearAboutUsOptions = [
   "Walk In",
   "Word of Mouth",
   "Institutional Partnership",
-  "External Referral Listings",
   "Job Fairs",
   "Employee Retention Program",
   "Outbound",
