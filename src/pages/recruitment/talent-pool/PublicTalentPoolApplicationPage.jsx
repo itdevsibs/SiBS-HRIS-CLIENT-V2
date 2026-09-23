@@ -56,6 +56,7 @@ import {
   normalizeApplicationFormQuestions,
   validateApplicationQuestionAnswers,
 } from "@/lib/utils/talentPool/publicApplicationQuestions";
+import { hearAboutUsOptions } from "@/lib/utils/talentPool/talentPoolConstants";
 
 const acceptedAudioTypes =
   ".mp3,.wav,.wave,.m4a,.aac,.ogg,.oga,.webm,.mp4,.mpeg,.mpga,.flac,.amr,.3gp,.opus,.aif,.aiff,.caf,.wma,audio/*,video/mp4,video/3gpp";
@@ -101,7 +102,7 @@ const acceptedDocumentExtensions = [
 const OTHERS_SOURCE = "Others";
 
 const defaultFormOptions = {
-  hearAboutUs: [OTHERS_SOURCE],
+  hearAboutUs: [...hearAboutUsOptions],
   locations: [],
   workExperience: [],
   lengthOfExperience: [],
@@ -813,12 +814,9 @@ function buildApplicantNameCheckKey({
 
 function hasCompleteApplicantNameForDuplicateCheck({
   firstName = "",
-  middleName = "",
   lastName = "",
 } = {}) {
-  return Boolean(
-    cleanText(firstName) && cleanText(middleName) && cleanText(lastName),
-  );
+  return Boolean(cleanText(firstName) && cleanText(lastName));
 }
 
 const uppercasePublicTextFields = new Set([
@@ -1162,10 +1160,9 @@ function sortHearAboutUsOptions(options = []) {
 
 function normalizeOptionsPayload(payload, matchedReferralSource = "") {
   const data = payload && typeof payload === "object" ? payload : {};
-  const hearAboutUs = Array.isArray(data.hearAboutUs) ? data.hearAboutUs : [];
   const sourceOptions = matchedReferralSource
-    ? ensureOption(hearAboutUs, matchedReferralSource)
-    : hearAboutUs;
+    ? ensureOption(hearAboutUsOptions, matchedReferralSource)
+    : hearAboutUsOptions;
 
   return {
     hearAboutUs: sortHearAboutUsOptions(
@@ -5480,11 +5477,8 @@ export default function PublicTalentPoolApplicationPage() {
               </div>
 
               <div>
-                <FieldLabel>
-                  Middle Name <RequiredMark />
-                </FieldLabel>
+                <FieldLabel>Middle Name</FieldLabel>
                 <input
-                  required
                   value={form.middleName}
                   onChange={(e) =>
                     updateFormField("middleName", e.target.value)
@@ -5546,7 +5540,7 @@ export default function PublicTalentPoolApplicationPage() {
                 </div>
               ) : !isApplicantNameVerifiedAvailable ? (
                 <div className="md:col-span-4 -mt-1 rounded-[10px] border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-2.5 text-xs font-bold leading-5 text-[#667085]">
-                  Complete First Name, Middle Name, and Last Name to unlock the rest of the form.
+                  Complete First Name and Last Name to unlock the rest of the form.
                 </div>
               ) : null}
 
