@@ -540,20 +540,10 @@ export function ApplicantLeadsProvider({ children }) {
       window.setTimeout(() => {
         setSendingApplicationLinkLead(null);
         setApplicationLinkSendStatus("");
-        showStatusModal({
-          type: "success",
-          title: "Application Link Sent",
-          message: result.message || `Application link email sent to ${lead.fullName}.`,
-        });
       }, 1400);
     } else {
       setSendingApplicationLinkLead(null);
       setApplicationLinkSendStatus("");
-      showStatusModal({
-        type: "success",
-        title: "Application Link Sent",
-        message: result.message || `Application link email sent to ${lead.fullName}.`,
-      });
     }
   }
 

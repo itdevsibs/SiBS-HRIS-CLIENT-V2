@@ -576,7 +576,7 @@ export default function ApplicantLeadModal() {
                       updateFormField(setFormData, "facebookName", event.target.value)
                     }
                     placeholder="Enter Facebook Name"
-                    className={UPPERCASE_INPUT_CLASS}
+                    className={INPUT_CLASS}
                   />
                 </label>
 
@@ -639,7 +639,7 @@ export default function ApplicantLeadModal() {
                     updateFormField(setFormData, "notes", event.target.value)
                   }
                   placeholder="Record preliminary background, shift availability, or interview notes..."
-                  className={UPPERCASE_TEXTAREA_CLASS}
+                  className={TEXTAREA_CLASS}
                 />
               </label>
             </FormSection>
@@ -749,22 +749,24 @@ export default function ApplicantLeadModal() {
                 Cancel
               </button>
 
-              <button
-                type="submit"
-                disabled={isSubmitDisabled}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:border disabled:border-[#D6E0EA] disabled:bg-[#EEF3F8] disabled:text-[#6F8196] disabled:shadow-none"
-              >
-                {isSaving ? (
-                  <Loader2 size={13} className="animate-spin text-white" />
-                ) : (
-                  <Check size={13} className="text-white" />
-                )}
-                {isSaving
-                  ? "Saving..."
-                  : isEditMode
-                    ? "Update Lead"
-                    : "Save Applicant Lead"}
-              </button>
+              {(!isEditMode || isEditFormEdited) && (
+                <button
+                  type="submit"
+                  disabled={isSubmitDisabled}
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:border disabled:border-[#D6E0EA] disabled:bg-[#EEF3F8] disabled:text-[#6F8196] disabled:shadow-none"
+                >
+                  {isSaving ? (
+                    <Loader2 size={13} className="animate-spin text-white" />
+                  ) : (
+                    <Check size={13} className="text-white" />
+                  )}
+                  {isSaving
+                    ? "Saving..."
+                    : isEditMode
+                      ? "Update Lead"
+                      : "Save Applicant Lead"}
+                </button>
+              )}
             </div>
           </footer>
         </form>
