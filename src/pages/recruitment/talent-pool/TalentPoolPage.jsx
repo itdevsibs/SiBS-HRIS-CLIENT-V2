@@ -94,6 +94,12 @@ function cleanText(value) {
 
 function mapConvertedLeadToTalentPoolCandidate(lead = {}, talentPoolCandidate = {}) {
   const leadId = cleanText(lead.leadId || lead.lead_id || lead.id);
+  const referralCode = cleanText(
+    talentPoolCandidate.referralCode ||
+      talentPoolCandidate.referral_code ||
+      lead.referralCode ||
+      lead.referral_code,
+  );
   const talentPoolApplicationDbId = cleanText(
     talentPoolCandidate.id ||
       talentPoolCandidate.talentPoolApplicationId ||
@@ -134,6 +140,8 @@ function mapConvertedLeadToTalentPoolCandidate(lead = {}, talentPoolCandidate = 
     name: fullName,
     candidateId: talentPoolPublicId,
     leadId,
+    referralCode,
+    referral_code: referralCode,
     talentPoolApplicationId: talentPoolApplicationDbId,
     openPosition: appliedPosition,
     roleCapability: appliedPosition,

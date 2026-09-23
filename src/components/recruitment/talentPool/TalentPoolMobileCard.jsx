@@ -58,13 +58,11 @@ export default function TalentPoolMobileCard({ candidate, index = 0 }) {
     candidate.public_talent_pool_id ||
     "Candidate";
 
-  const leadId = cleanText(
-    candidate.leadId ||
-      candidate.lead_id ||
-      candidate.applicantLeadId ||
-      candidate.applicant_lead_id ||
-      candidate.sourceLeadId ||
-      candidate.source_lead_id,
+  const referralCode = cleanText(
+    candidate.referralCode ||
+      candidate.referral_code ||
+      candidate.applicantReferralCode ||
+      candidate.applicant_referral_code,
   );
 
   const lastActivityDate = formatDate(
@@ -92,9 +90,9 @@ export default function TalentPoolMobileCard({ candidate, index = 0 }) {
               <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
                 {candidateId}
               </span>
-              {leadId && (
+              {referralCode && (
                 <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-text-muted">
-                  Lead: {leadId}
+                  Referral Code: {referralCode}
                 </span>
               )}
             </div>

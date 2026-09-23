@@ -33,6 +33,9 @@ export default function ApplicantLeadMobileCard({
   const inputtedBy = cleanText(lead.inputtedBy);
   const dateLogged = cleanText(lead.dateLogged);
   const applicationLinkSent = isApplicantLeadApplicationLinkSent(lead);
+  const isConvertedApplicant =
+    String(lead.status || "").trim().toLowerCase() ===
+    "converted to applicant";
   const talentPoolApplicationId = cleanText(lead.talentPoolApplicationId, "");
 
   return (
@@ -121,7 +124,7 @@ export default function ApplicantLeadMobileCard({
         />
       </DataCard.Metrics>
 
-      {activeLeadView !== "archive" && (
+      {activeLeadView !== "archive" && !isConvertedApplicant && (
         <DataCard.Footer>
           <div className="flex w-full items-center justify-between gap-2">
             <span className="text-[10px] font-medium text-[#98A2B3]">
