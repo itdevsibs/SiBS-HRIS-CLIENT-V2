@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
+import { useUser } from "../../../services/context/UserContext.jsx";
 import { ACTION_ITEM_SOURCE_ROUTES } from "../../../lib/utils/actionItems/actionItemsConstants.js";
 import {
   formatDate,
@@ -62,6 +63,14 @@ export default function ActionItemDetailsModal({
   onComplete,
 }) {
   const { updateActionItem, addActionProgressNote } = useActionItems();
+  const { user } = useUser();
+  const currentUserName =
+    user?.name ||
+    user?.fullName ||
+    user?.displayName ||
+    user?.username ||
+    item?.owner ||
+    "Authorized User";
   const [note, setNote] = useState("");
 
   useEffect(() => {
@@ -119,14 +128,14 @@ export default function ActionItemDetailsModal({
       status,
       historyEntry: {
         action: `Status changed from ${item.status} to ${status}.`,
-        user: item.owner || "Current User",
+        user: currentUserName,
       },
     });
   }
 
   function handleAddNote() {
     if (!note.trim()) return;
-    addActionProgressNote(item, note, item.owner || "Current User");
+    addActionProgressNote(item, note, currentUserName);
     setNote("");
   }
 

@@ -262,3 +262,66 @@ export async function deleteChatPushSubscription(endpoint) {
 
   return response.data?.data || null;
 }
+
+export async function getChatThemePresets() {
+  const response = await api.get("/chat/themes/presets");
+  return response.data?.data || [];
+}
+
+export async function getChatConversationTheme(conversationId) {
+  const response = await api.get(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/theme`,
+  );
+  return response.data?.data || null;
+}
+
+export async function setChatConversationTheme(conversationId, {
+  themeType = "DEFAULT",
+  themeKey = null,
+  themeColor = null,
+} = {}) {
+  const response = await api.patch(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/theme`,
+    {
+      themeType: cleanText(themeType),
+      themeKey: cleanText(themeKey) || null,
+      themeColor: cleanText(themeColor) || null,
+    },
+  );
+  return response.data?.data || null;
+}
+
+export async function uploadChatThemeImage(conversationId, file) {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const response = await api.post(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/theme-image`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
+  );
+  return response.data?.data || null;
+}
+
+export async function resetChatConversationTheme(conversationId) {
+  const response = await api.delete(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/theme`,
+  );
+  return response.data?.data || null;
+}
+
+export async function getChatThemeImageBlob(imageUrl) {
+  const url = cleanText(imageUrl);
+  if (!url) return null;
+
+  const requestPath = url.replace(/^\/api\//i, "/");
+  const response = await api.get(requestPath, {
+    responseType: "blob",
+  });
+  return response.data || null;
+}
+

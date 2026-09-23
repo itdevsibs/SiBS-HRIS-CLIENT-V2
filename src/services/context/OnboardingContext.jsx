@@ -790,20 +790,29 @@ export const OnboardingProvider = ({ children }) => {
     const showRate =
       activeTotal > 0 ? Math.round((trueHires / activeTotal) * 100) : 0;
 
+    const trueHiresPct = total > 0 ? Math.round((trueHires / total) * 100) : 0;
+    const pendingStartPct = total > 0 ? Math.round((pending / total) * 100) : 0;
+    const noShowPct = total > 0 ? Math.round((noShow / total) * 100) : 0;
+    const withdrawalPct = total > 0 ? Math.round((withdrawals / total) * 100) : 0;
+
     return {
       total,
 
       trueHires,
       trueHire: trueHires,
+      trueHiresPct,
 
       pending,
       pendingStart: pending,
+      pendingStartPct,
 
       noShow,
       noShows: noShow,
+      noShowPct,
 
       withdrawals,
       preStartWithdrawals: withdrawals,
+      withdrawalPct,
 
       show,
       pendingShow,

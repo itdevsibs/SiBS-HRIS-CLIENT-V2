@@ -54,6 +54,8 @@ const IGNORE_AUTH_REDIRECT_ROUTES = [
   "/api/candidate-pipeline/public/offer-response",
   "/api/candidate-pipeline/public/nho-response",
   "/api/public/candidate-experience",
+  "/api/audit-notifications/clock",
+  "/audit-notifications/clock",
 ];
 
 function getCurrentPathname() {

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion as framerMotion } from "framer-motion";
 import {
   Activity,
@@ -10,6 +10,7 @@ import {
   Building2,
   Calendar,
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleUser,
@@ -45,6 +46,12 @@ import { getAvailablePositions } from "../../lib/axios/getAvailablePosition";
 import { isHiringNeedUnlinkedFromJd } from "../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 import { buildSidebarBadgeText } from "../../lib/utils/sidebarNotifications";
 import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
+import {
+  getVisibleSidebarGroups,
+  hasSidebarGroupAttention,
+  isSidebarGroupActive,
+  isSidebarGroupOpen,
+} from "../../lib/utils/sidebarNavigation";
 import {
   DASHBOARD_ACCESS,
   getDefaultDashboardPath,
@@ -478,6 +485,11 @@ export default function Sidebar() {
 
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [openGroupIds, setOpenGroupIds] = useState({});
+  const [closedActiveGroup, setClosedActiveGroup] = useState(null);
+  const [flyoutGroupId, setFlyoutGroupId] = useState(null);
+  const flyoutRef = useRef(null);
+  const sidebarRef = useRef(null);
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 1024 : false,
   );
@@ -781,6 +793,40 @@ export default function Sidebar() {
   }, [mobileOpen, mounted]);
 
   useEffect(() => {
+    if (!flyoutGroupId) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setFlyoutGroupId(null);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [flyoutGroupId]);
+
+  useEffect(() => {
+    if (!flyoutGroupId) return undefined;
+
+    const dismissOnOutsidePointer = (event) => {
+      if (!sidebarRef.current?.contains(event.target)) {
+        setFlyoutGroupId(null);
+      }
+    };
+
+    document.addEventListener("pointerdown", dismissOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", dismissOnOutsidePointer);
+  }, [flyoutGroupId]);
+
+  useEffect(() => {
+    if (!flyoutGroupId) return;
+
+    const focusTimer = window.setTimeout(() => {
+      flyoutRef.current?.querySelector("a")?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [flyoutGroupId]);
+
+  useEffect(() => {
     if (!mounted || loading || !user) return;
 
     if (!ADMIN_ROLES.includes(normalizeRole(user.role))) {
@@ -1076,6 +1122,45 @@ export default function Sidebar() {
     },
   ];
 
+  const adminNavigationGroups = [
+    {
+      id: "workforce-planning",
+      name: "Workforce Planning",
+      icon: CalendarDays,
+      items: recruitmentMenu.slice(0, 5),
+    },
+    {
+      id: "recruitment-pipeline",
+      name: "Recruitment Pipeline",
+      icon: Users,
+      items: recruitmentMenu.slice(6, 11).concat(recruitmentMenu.slice(13)),
+    },
+    {
+      id: "recruitment-operations",
+      name: "Recruitment Operations",
+      icon: Activity,
+      items: [recruitmentMenu[5], recruitmentMenu[11], recruitmentMenu[12]],
+    },
+    {
+      id: "insights-finance",
+      name: "Insights & Finance",
+      icon: BarChart3,
+      items: analyticsMenu,
+    },
+    {
+      id: "administration",
+      name: "Administration",
+      icon: Building2,
+      items: administrationMenu.concat(communicationMenu),
+    },
+    {
+      id: "settings",
+      name: "Settings",
+      icon: FileCog,
+      items: settingsMenu,
+    },
+  ];
+
   const isAdminSide = ADMIN_ROLES.includes(normalizeRole(user?.role));
   const coreMenu = isAdminSide ? adminCoreMenu : employeeCoreMenu;
   const coreSectionTitle = isAdminSide ? "CORE HR" : "EMPLOYEE ACCESS";
@@ -1088,13 +1173,19 @@ export default function Sidebar() {
         : true,
     );
 
+  const visibleAdminGroups = getVisibleSidebarGroups(
+    adminNavigationGroups,
+    getAdminAccess(user),
+  );
+
   const handleLinkClick = () => {
+    setFlyoutGroupId(null);
     if (isMobile) {
       setMobileOpen(false);
     }
   };
 
-  const renderMenu = (items) =>
+  const renderMenu = (items, { nested = false, forceExpanded = false } = {}) =>
     getVisibleItems(items).map((item, index) => {
       const Icon = item.icon;
 
@@ -1134,7 +1225,7 @@ export default function Sidebar() {
         .filter(Boolean)
         .join(". ");
 
-      const isCollapsedMode = !isMobile && collapsed;
+      const isCollapsedMode = !forceExpanded && !isMobile && collapsed;
       const isNumericBadge = /^\d+\+?$/.test(badgeText);
 
       return (
@@ -1158,7 +1249,9 @@ export default function Sidebar() {
             "group relative flex select-none items-center font-semibold transition-all duration-300 rounded-xl",
             isCollapsedMode
               ? "mx-auto h-10 w-10 2xl:h-11 2xl:w-11 items-center justify-center p-0 overflow-visible"
-              : "w-full justify-between gap-2.5 px-3 py-2 2xl:py-2.5 text-left sibs-text-xs overflow-hidden",
+              : nested
+                ? "w-full justify-between gap-2.5 px-3 py-2 text-left sibs-text-xs overflow-hidden"
+                : "w-full justify-between gap-2.5 px-3 py-2 2xl:py-2.5 text-left sibs-text-xs overflow-hidden",
             isActive
               ? "bg-sibs-primary-2 text-white font-bold shadow-md shadow-sibs-primary-2/20 cursor-default hover:bg-sibs-primary-2 hover:text-white"
               : "text-slate-300 hover:bg-[#063560] hover:text-white",
@@ -1266,6 +1359,144 @@ export default function Sidebar() {
       );
     });
 
+  const sidebarNotificationState = Object.fromEntries(
+    [
+      "workforceHiringOverview",
+      "jobDescriptionApprovals",
+      "hiringNeedsApprovals",
+      "availablePositionApprovals",
+      "hiringNeedsUnlinkedJd",
+      "availablePositionsUnlinkedJd",
+    ].map((key) => [
+      key,
+      typeof getNotification === "function" ? getNotification(key) : null,
+    ]),
+  );
+
+  const renderNavigationGroup = (group) => {
+    const GroupIcon = group.icon;
+    const isActive = isSidebarGroupActive(group, pathname);
+    const isOpen = isSidebarGroupOpen(
+      group,
+      pathname,
+      openGroupIds,
+      closedActiveGroup,
+    );
+    const isCollapsedMode = !isMobile && collapsed;
+    const hasAttention = hasSidebarGroupAttention(
+      group,
+      sidebarNotificationState,
+    );
+    const groupContentId = `sidebar-group-${group.id}`;
+
+    const toggleGroup = () => {
+      if (isCollapsedMode) {
+        setFlyoutGroupId((current) =>
+          current === group.id ? null : group.id,
+        );
+        return;
+      }
+
+      if (isActive) {
+        setClosedActiveGroup((current) =>
+          current?.groupId === group.id && current?.pathname === pathname
+            ? null
+            : { groupId: group.id, pathname },
+        );
+        return;
+      }
+
+      setOpenGroupIds((current) => ({
+        ...current,
+        [group.id]: !current[group.id],
+      }));
+    };
+
+    const handleGroupKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setFlyoutGroupId(null);
+        event.currentTarget.focus();
+      }
+
+      if (event.key === "ArrowDown" && !isCollapsedMode) {
+        event.preventDefault();
+        if (!isOpen) toggleGroup();
+        window.setTimeout(() => {
+          document
+            .getElementById(groupContentId)
+            ?.querySelector("a")
+            ?.focus();
+        }, 0);
+      }
+    };
+
+    return (
+      <div key={group.id} className="relative">
+        <button
+          type="button"
+          onClick={toggleGroup}
+          onKeyDown={handleGroupKeyDown}
+          aria-expanded={isCollapsedMode ? flyoutGroupId === group.id : isOpen}
+          aria-controls={groupContentId}
+          aria-label={`${group.name}${hasAttention ? ", has notifications" : ""}`}
+          title={isCollapsedMode ? group.name : undefined}
+          className={[
+            "group flex w-full select-none items-center font-semibold transition-all duration-200 rounded-xl",
+            isCollapsedMode
+              ? "mx-auto h-10 w-10 2xl:h-11 2xl:w-11 justify-center"
+              : "justify-between gap-2.5 px-3 py-2 2xl:py-2.5 text-left sibs-text-xs",
+            isActive || (isCollapsedMode && flyoutGroupId === group.id)
+              ? "bg-[#063560] text-white"
+              : "text-slate-300 hover:bg-[#063560] hover:text-white",
+          ].join(" ")}
+        >
+          <span className="relative flex min-w-0 items-center">
+            <GroupIcon
+              strokeWidth={1.9}
+              className="h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 text-slate-400 transition group-hover:text-[#FF5C28]"
+            />
+            {hasAttention && (
+              <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-[#FF5C28] ring-2 ring-sibs-primary-1" />
+            )}
+            {!isCollapsedMode && <span className="ml-3 truncate">{group.name}</span>}
+          </span>
+          {!isCollapsedMode && (
+            <ChevronDown
+              size={15}
+              className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            />
+          )}
+        </button>
+
+        {!isCollapsedMode && isOpen && (
+          <div id={groupContentId} className="ml-4 mt-1 border-l border-[#083A69] pl-2">
+            {renderMenu(group.items, { nested: true })}
+          </div>
+        )}
+
+        {isCollapsedMode && flyoutGroupId === group.id && (
+          <div
+            ref={flyoutRef}
+            id={groupContentId}
+            className="fixed left-[96px] top-24 z-[2000] w-[245px] rounded-xl border border-[#083A69] bg-sibs-primary-1 p-2 shadow-2xl 2xl:left-[102px]"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                setFlyoutGroupId(null);
+                event.currentTarget.parentElement?.querySelector("button")?.focus();
+              }
+            }}
+          >
+            <p className="px-2 py-1.5 sibs-text-micro font-bold uppercase tracking-wider text-slate-400">
+              {group.name}
+            </p>
+            {renderMenu(group.items, { forceExpanded: true })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const showMenu = mounted && !loading && !!user;
 
   return (
@@ -1280,6 +1511,7 @@ export default function Sidebar() {
       )}
 
       <aside
+        ref={sidebarRef}
         draggable={false}
         onDragStart={(event) => event.preventDefault()}
         className={[
@@ -1356,57 +1588,13 @@ export default function Sidebar() {
             </Section>
 
             {isAdminSide && (
-              <>
-                {getVisibleItems(recruitmentMenu).length > 0 && (
-                  <Section
-                    title="RECRUITMENT"
-                    short="REC"
-                    collapsed={!isMobile && collapsed}
-                  >
-                    {renderMenu(recruitmentMenu)}
-                  </Section>
-                )}
-
-                {getVisibleItems(communicationMenu).length > 0 && (
-                  <Section
-                    title="COMMUNICATIONS"
-                    short="COM"
-                    collapsed={!isMobile && collapsed}
-                  >
-                    {renderMenu(communicationMenu)}
-                  </Section>
-                )}
-
-                {getVisibleItems(analyticsMenu).length > 0 && (
-                  <Section
-                    title="ANALYTICS"
-                    short="ANA"
-                    collapsed={!isMobile && collapsed}
-                  >
-                    {renderMenu(analyticsMenu)}
-                  </Section>
-                )}
-
-                {getVisibleItems(administrationMenu).length > 0 && (
-                  <Section
-                    title="ADMINISTRATION"
-                    short="ADM"
-                    collapsed={!isMobile && collapsed}
-                  >
-                    {renderMenu(administrationMenu)}
-                  </Section>
-                )}
-
-                {getVisibleItems(settingsMenu).length > 0 && (
-                  <Section
-                    title="SETTINGS"
-                    short="SET"
-                    collapsed={!isMobile && collapsed}
-                  >
-                    {renderMenu(settingsMenu)}
-                  </Section>
-                )}
-              </>
+              <Section
+                title="WORKSPACES"
+                short="WKS"
+                collapsed={!isMobile && collapsed}
+              >
+                {visibleAdminGroups.map(renderNavigationGroup)}
+              </Section>
             )}
           </div>
         )}

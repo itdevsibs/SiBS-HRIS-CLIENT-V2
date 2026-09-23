@@ -63,3 +63,4 @@ test/
 src/test/
 tests/
 *.test.*
+!src/lib/utils/sidebarNavigation.test.jsx

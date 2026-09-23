@@ -15,7 +15,10 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getAuditNotifications } from "../../lib/axios/getAuditNotifications";
+import {
+  getAuditNotifications,
+  markAuditNotificationRead,
+} from "../../lib/axios/getAuditNotifications";
 import {
   canUseAuditNotifications,
   formatAuditNotificationTime,
@@ -325,7 +328,24 @@ export default function AuditNotificationBell({ user }) {
   }
 
   function handleOpenAuditNotification(notification) {
-    if (!notification?.targetPath) return;
+    if (!notification) return;
+
+    if (notification.auditLogId && !notification.isRead) {
+      void markAuditNotificationRead(notification.auditLogId)
+        .then((result) => {
+          if (!result?.success) return;
+          setAuditNotifications((previous) =>
+            previous.map((item) =>
+              item.auditLogId === notification.auditLogId
+                ? { ...item, isRead: true }
+                : item,
+            ),
+          );
+        })
+        .catch(() => {});
+    }
+
+    if (!notification.targetPath) return;
 
     setOpen(false);
     navigate(notification.targetPath);

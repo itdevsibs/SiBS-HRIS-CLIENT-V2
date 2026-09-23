@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Bot,
@@ -23,14 +23,14 @@ const SUGGESTED_PROMPTS = [
   "What is my profile?",
   "How was my attendance this month?",
   "What is my leave balance?",
-  "What is my schedule this week?",
+  "Summarize the recent applicant leads.",
 ];
 
+const VIEWPORT_PADDING = 16;
 const DRAG_THRESHOLD = 6;
-const VIEWPORT_PADDING = 8;
 
 function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), Math.max(min, max));
+  return Math.min(Math.max(value, min), max);
 }
 
 function InsightList({ title, items, icon, tone = "default" }) {
@@ -119,9 +119,28 @@ function UserMessage({ message }) {
   );
 }
 
-export default function SiBSAIAssistant({ enabled = true }) {
+export default function SiBSAIAssistant({
+  enabled = true,
+  isOpen: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+}) {
   const { user, loading: userLoading } = useUser() || {};
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+
+  const setOpen = useCallback(
+    (nextOpen) => {
+      const resolvedOpen =
+        typeof nextOpen === "function" ? nextOpen(open) : nextOpen;
+      if (!isControlled) {
+        setInternalOpen(resolvedOpen);
+      }
+      onOpenChange?.(resolvedOpen);
+    },
+    [isControlled, open, onOpenChange],
+  );
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState("");
@@ -376,43 +395,45 @@ export default function SiBSAIAssistant({ enabled = true }) {
   return (
     <>
       {/* Floating Launcher Button with safe-area support */}
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={handleTriggerClick}
-        onPointerDown={handleTriggerPointerDown}
-        onPointerMove={handleTriggerPointerMove}
-        onPointerUp={handleTriggerPointerUp}
-        onPointerCancel={handleTriggerPointerCancel}
-        aria-label="Open Ask SiBS AI"
-        aria-expanded={open}
-        className={`font-jakarta fixed z-[120] transform-gpu inline-flex select-none items-center gap-2 sm:gap-2.5 rounded-2xl bg-sibs-navy p-2 sm:px-4 sm:py-3 font-heading text-sm font-bold tracking-tight text-white shadow-xl border border-white/10 transition-[transform,background-color,box-shadow,opacity] duration-200 hover:bg-sibs-tertiary-2 focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 ${
-          triggerPosition ? "" : "right-4 sm:right-6"
-        } ${
-          triggerDragging
-            ? "cursor-grabbing"
-            : "cursor-grab hover:-translate-y-0.5 active:scale-[0.98]"
-        } ${open ? "pointer-events-none opacity-0" : "opacity-100"}`}
-        style={
-          triggerPosition
-            ? {
-                left: `${triggerPosition.left}px`,
-                top: `${triggerPosition.top}px`,
-                right: "auto",
-                bottom: "auto",
-                touchAction: "none",
-              }
-            : {
-                bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
-                touchAction: "none",
-              }
-        }
-      >
-        <span className="inline-flex h-8 w-8 sm:h-7 sm:w-7 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
-          <Sparkles size={16} />
-        </span>
-        <span className="hidden xs:inline sm:inline pr-1">Ask SiBS AI</span>
-      </button>
+      {!hideTrigger ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={handleTriggerClick}
+          onPointerDown={handleTriggerPointerDown}
+          onPointerMove={handleTriggerPointerMove}
+          onPointerUp={handleTriggerPointerUp}
+          onPointerCancel={handleTriggerPointerCancel}
+          aria-label="Open Ask SiBS AI"
+          aria-expanded={open}
+          className={`font-jakarta fixed z-[120] transform-gpu inline-flex select-none items-center gap-2 sm:gap-2.5 rounded-2xl bg-sibs-navy p-2 sm:px-4 sm:py-3 font-heading text-sm font-bold tracking-tight text-white shadow-xl border border-white/10 transition-[transform,background-color,box-shadow,opacity] duration-200 hover:bg-sibs-tertiary-2 focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 ${
+            triggerPosition ? "" : "right-4 sm:right-6"
+          } ${
+            triggerDragging
+              ? "cursor-grabbing"
+              : "cursor-grab hover:-translate-y-0.5 active:scale-[0.98]"
+          } ${open ? "pointer-events-none opacity-0" : "opacity-100"}`}
+          style={
+            triggerPosition
+              ? {
+                  left: `${triggerPosition.left}px`,
+                  top: `${triggerPosition.top}px`,
+                  right: "auto",
+                  bottom: "auto",
+                  touchAction: "none",
+                }
+              : {
+                  bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
+                  touchAction: "none",
+                }
+          }
+        >
+          <span className="inline-flex h-8 w-8 sm:h-7 sm:w-7 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
+            <Sparkles size={16} />
+          </span>
+          <span className="hidden xs:inline sm:inline pr-1">Ask SiBS AI</span>
+        </button>
+      ) : null}
 
       {/* Drawer Overlay & Panel */}
       <div

@@ -27,6 +27,18 @@ export async function getAuditNotifications({
   };
 }
 
+export async function markAuditNotificationRead(auditLogId) {
+  const safeAuditLogId = Number(auditLogId);
+  if (!Number.isFinite(safeAuditLogId) || safeAuditLogId <= 0) {
+    return { success: false };
+  }
+
+  const response = await api.post(
+    `/api/audit-notifications/${Math.trunc(safeAuditLogId)}/read`,
+  );
+  return response?.data || { success: false };
+}
+
 export async function getManilaClock() {
   const response = await api.get("/api/audit-notifications/clock");
 

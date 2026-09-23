@@ -622,15 +622,18 @@ export default function ApplicantLeadModal() {
               icon={FileText}
             >
               <label className="block">
-                  <span className="mb-1.5 flex items-center justify-between gap-2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                  <span>
-                    HR Notes <span className="text-[#FF5C28]">*</span>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    HR Notes
                     <EditedIndicator show={editedFields.notes} />
                   </span>
-                  <span className="shrink-0 normal-case tracking-normal text-[#667085]">
-                    By: {noteAuthor}
-                  </span>
-                </span>
+                  {(editingLead?.logged_by_name || editingLead?.loggedByName) && (
+                    <span className="text-[9px] font-semibold text-[#667085] flex items-center gap-1">
+                      <UserRound size={11} className="text-[#FF5C28]" />
+                      Logged by {editingLead.logged_by_name || editingLead.loggedByName}
+                    </span>
+                  )}
+                </div>
                 <textarea
                   rows={3}
                   required

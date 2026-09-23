@@ -96,6 +96,7 @@ export function normalizeAuditNotificationsResponse(payload = {}) {
         httpStatus: Number(item.httpStatus || 0),
         occurredAt: cleanText(item.occurredAt),
         targetPath: cleanText(item.targetPath) || null,
+        isRead: Boolean(item.isRead),
       };
     });
 }

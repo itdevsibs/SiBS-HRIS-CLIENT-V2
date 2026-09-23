@@ -13,7 +13,10 @@ import { useUser } from "./UserContext";
 import { getLeavesSummary } from "../../lib/axios/getLeaves";
 import { getCandidatePipelineCandidates } from "../../lib/axios/getCandidatePipeline";
 import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
-import { getAuditNotifications } from "../../lib/axios/getAuditNotifications";
+import {
+  getAuditNotifications,
+  markAuditNotificationRead,
+} from "../../lib/axios/getAuditNotifications";
 import {
   buildCandidatePipelineNotifications,
   buildHiringNeedsNotifications,
@@ -156,6 +159,8 @@ function mapAuditNotifications(payload = {}) {
 
     return {
       id: item.id || `audit-${item.auditLogId}`,
+      auditLogId: item.auditLogId,
+      isRead: item.isRead,
       category: isApproval ? "approvals" : "system",
       type:
         item.tone === "danger" || item.tone === "warning"
@@ -553,13 +558,20 @@ export function SidebarNotificationProvider({ children }) {
   const markAsRead = useCallback(
     (id) => {
       if (!id) return;
+      const auditItem = [
+        ...auditNotifications,
+        ...auditHistoryNotifications,
+      ].find((item) => item.id === id);
+      if (auditItem?.auditLogId) {
+        void markAuditNotificationRead(auditItem.auditLogId).catch(() => {});
+      }
       setReadNotifIds((previous) => {
         const next = { ...previous, [id]: true };
         writeStorage(readNotifsStorageKey, next);
         return next;
       });
     },
-    [readNotifsStorageKey],
+    [auditHistoryNotifications, auditNotifications, readNotifsStorageKey],
   );
 
   // Mark all system notifications as read
@@ -619,7 +631,7 @@ export function SidebarNotificationProvider({ children }) {
       .filter((n) => !dismissedNotifIds[n.id])
       .map((n) => ({
         ...n,
-        isRead: Boolean(readNotifIds[n.id]),
+        isRead: Boolean(n.isRead || readNotifIds[n.id]),
       }));
   }, [
     dynamicNotifications,
@@ -646,7 +658,7 @@ export function SidebarNotificationProvider({ children }) {
       .filter((n) => !dismissedNotifIds[n.id])
       .map((n) => ({
         ...n,
-        isRead: Boolean(readNotifIds[n.id]),
+        isRead: Boolean(n.isRead || readNotifIds[n.id]),
       }));
   }, [
     dynamicNotifications,
