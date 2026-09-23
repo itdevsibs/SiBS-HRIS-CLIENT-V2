@@ -2647,31 +2647,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={handleReset}
-                disabled={isSubmitting}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Reset
-              </button>
-
-              <button
-                type="submit"
-                form="add-hiring-needs-form"
-                disabled={isSubmitting}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-              >
-                {isSubmitting ? (
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                ) : (
-                  <Save className="h-3.5 w-3.5" />
-                )}
-                {isSubmitting ? "Submitting..." : "Submit for Approval"}
-              </button>
-
+            <div className="flex shrink-0 items-center justify-end">
               <button
                 type="button"
                 onClick={onClose}
@@ -3282,6 +3258,53 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
             ) : null}
           </div>
         </div>
+
+        <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={isSubmitting}
+                className="sibs-modal-btn-secondary w-full sm:w-auto"
+                title="Reset requisition inputs"
+              >
+                <RotateCcw size={14} />
+                <span>Reset</span>
+              </button>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="sibs-modal-btn-secondary w-full sm:w-auto"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="add-hiring-needs-form"
+                disabled={isSubmitting}
+                className="sibs-modal-btn-primary w-full sm:w-auto"
+                title="Submit for Approval"
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={14} />
+                    <span>Submit for Approval</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </footer>
       </form>
     </div>
   );

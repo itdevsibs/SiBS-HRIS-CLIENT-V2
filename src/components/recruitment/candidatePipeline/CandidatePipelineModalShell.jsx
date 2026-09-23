@@ -58,13 +58,17 @@ export function CandidateModalSection({
 }) {
   return (
     <section
-      className={`rounded-xl border border-[#E6ECF2] bg-white p-3 sm:p-3.5 2xl:p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)] ${className}`}
+      className={`sibs-card p-3.5 sm:p-4 2xl:p-4.5 ${className}`}
     >
       {title || subtitle ? (
-        <div className="mb-4 flex flex-col gap-3 border-b border-[#EEF2F6] pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mb-3.5 flex flex-col gap-3 border-b border-sibs-border pb-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-2.5">
-            {icon ? <span className="mt-0.5 shrink-0">{icon}</span> : null}
-            <div className="min-w-0">
+            {icon ? (
+              <span className="sibs-tone-navy-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
+                {icon}
+              </span>
+            ) : null}
+            <div className="min-w-0 pt-0.5">
               {title ? (
                 <h3 className="sibs-modal-section-title text-[#042C51]">
                   {title}
@@ -333,11 +337,12 @@ export default function CandidatePipelineModalShell({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`sibs-modal-pop-in relative flex max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-sm:max-h-[calc(100dvh-1rem)]`}
+        className={`sibs-modal-pop-in relative flex max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl max-sm:max-h-[calc(100dvh-1rem)]`}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#042C51] px-3.5 py-2 text-white sm:px-5 2xl:py-2.5">
-          <div className="flex items-center justify-between gap-3">
+        <header className="relative shrink-0 overflow-hidden bg-sibs-primary-1 px-3.5 py-2.5 text-white sm:px-5 2xl:py-3">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/10" />
+          <div className="relative flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               {headerContent ? (
                 <>
@@ -349,8 +354,8 @@ export default function CandidatePipelineModalShell({
               ) : (
                 <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
                   {Icon ? (
-                    <span className="inline-flex h-7.5 w-7.5 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
-                      <Icon size={15} />
+                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-[#FF5C28] text-white shadow-[0_6px_16px_rgba(255,92,40,0.28)] 2xl:h-9 2xl:w-9">
+                      <Icon size={16} />
                     </span>
                   ) : null}
 
@@ -364,7 +369,7 @@ export default function CandidatePipelineModalShell({
                       </h2>
 
                       {badge ? (
-                        <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white/90">
+                        <span className="rounded-full border border-white/15 bg-white/[0.09] px-2.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-[0.08em] text-white/90 2xl:text-[9px]">
                           {badge}
                         </span>
                       ) : null}
@@ -394,10 +399,10 @@ export default function CandidatePipelineModalShell({
                       ? "Close Movement History"
                       : `Open Movement History, ${movementHistoryItems.length} records`
                   }
-                  className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[9px] 2xl:text-[10px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 ${
+                  className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border px-2.5 text-[9px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 2xl:h-8.5 2xl:text-[10px] ${
                     movementHistoryOpen
-                      ? "border-[#FF5C28] bg-[#0D4676] shadow-[0_0_12px_rgba(255,92,40,0.2)]"
-                      : "border-white/15 bg-[#063560] hover:border-[#FF5C28]/60 hover:bg-[#0D4676]"
+                      ? "border-[#FF8A61]/70 bg-white/10 shadow-[0_0_14px_rgba(255,92,40,0.16)]"
+                      : "border-white/15 bg-white/[0.06] hover:border-[#FF8A61]/55 hover:bg-white/10"
                   }`}
                 >
                   <History size={12} className="text-[#FF5C28]" />
@@ -419,12 +424,12 @@ export default function CandidatePipelineModalShell({
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-2.5 sm:p-3.5 2xl:p-5 sibs-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-sibs-tertiary-10 p-3 sm:p-4 2xl:p-5 sibs-scrollbar">
           {children}
         </div>
 
         {footer ? (
-          <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-3.5 py-2 sm:px-5 2xl:py-2.5">
+          <footer className="shrink-0 border-t border-sibs-border bg-white px-3.5 py-2.5 shadow-[0_-8px_24px_rgba(4,44,81,0.035)] sm:px-5 2xl:py-3">
             {footer}
           </footer>
         ) : null}

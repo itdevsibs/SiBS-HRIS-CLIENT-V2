@@ -946,105 +946,7 @@ export default function PositionFormModal({
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-              {isRelinkMode ? (
-                <button
-                  type="submit"
-                  disabled={isSaving || !relinkJdSelected}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:bg-[#6D7785] disabled:text-white/60 disabled:shadow-none active:scale-[0.98]"
-                >
-                  {isSaving ? (
-                    <Loader2 size={13} className="animate-spin" />
-                  ) : (
-                    <Link2 size={13} />
-                  )}
-
-                  {isSaving ? "Relinking..." : "Relink Job Description"}
-                </button>
-              ) : (
-                <>
-                  {showApprovalActions ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleApprove}
-                        disabled={approvalActionsDisabled}
-                        className="inline-flex h-8.5 2xl:h-10 min-w-[92px] items-center justify-center gap-1.5 rounded-lg bg-[#00A878] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#00976D] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                      >
-                        <CheckCircle2 size={14} strokeWidth={2} />
-                        Approve
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleReject}
-                        disabled={approvalActionsDisabled}
-                        className="inline-flex h-8.5 2xl:h-10 min-w-[82px] items-center justify-center gap-1.5 rounded-lg bg-[#F00046] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#D9003F] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                      >
-                        <XCircle size={14} strokeWidth={2} />
-                        Reject
-                      </button>
-                    </>
-                  ) : null}
-
-                  {showEditButton ? (
-                    <button
-                      type="button"
-                      onClick={handleEnableEdit}
-                      disabled={isSaving}
-                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]"
-                    >
-                      <Pencil size={13} />
-                      Edit Position
-                    </button>
-                  ) : null}
-
-                  {!isViewMode ? (
-                    <>
-                      {isEditMode ? (
-                        <button
-                          type="button"
-                          onClick={handleCancelEdit}
-                          disabled={isSaving}
-                          className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                        >
-                          <X size={13} />
-                          Cancel Edit
-                        </button>
-                      ) : null}
-
-                      <button
-                        type="button"
-                        onClick={onReset}
-                        disabled={isSaving}
-                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                      >
-                        <RotateCcw size={13} />
-                        Reset
-                      </button>
-
-                      <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="sibs-modal-btn-primary"
-                      >
-                        {isSaving ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : (
-                          <Save size={13} />
-                        )}
-
-                        {isSaving
-                          ? "Saving..."
-                          : isEditMode
-                            ? "Update Position"
-                            : "Save Position"}
-                      </button>
-                    </>
-                  ) : null}
-                </>
-              )}
-
+            <div className="flex shrink-0 items-center justify-end">
               <button
                 type="button"
                 onClick={onClose}
@@ -1312,34 +1214,147 @@ export default function PositionFormModal({
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-[#DCE6F1] bg-white px-4 py-3 sm:px-5 2xl:px-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
-              <span>
-                Position ID:{" "}
-                <span className="font-extrabold text-[#042C51] font-mono">
-                  {displayPositionId}
+        <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="min-w-0 text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
+                <span>
+                  Position ID:{" "}
+                  <span className="font-extrabold text-[#042C51] font-mono">
+                    {displayPositionId}
+                  </span>
                 </span>
-              </span>
 
-              <span className="mx-1.5">•</span>
+                <span className="mx-1.5">•</span>
 
-              <span>
-                Last Updated:{" "}
-                <span className="font-extrabold text-[#042C51]">
-                  {lastUpdated ? formatDate(lastUpdated) : "—"}
+                <span>
+                  Last Updated:{" "}
+                  <span className="font-extrabold text-[#042C51]">
+                    {lastUpdated ? formatDate(lastUpdated) : "—"}
+                  </span>
                 </span>
-              </span>
+              </div>
+
+              {!isViewMode && !isRelinkMode ? (
+                <button
+                  type="button"
+                  onClick={onReset}
+                  disabled={isSaving}
+                  className="sibs-modal-btn-secondary"
+                  title="Reset position inputs"
+                >
+                  <RotateCcw size={13} />
+                  <span>Reset</span>
+                </button>
+              ) : null}
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSaving}
-              className="sibs-modal-btn-secondary"
-            >
-              Close
-            </button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {isRelinkMode ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={isSaving}
+                    className="sibs-modal-btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving || !relinkJdSelected}
+                    className="sibs-modal-btn-primary"
+                  >
+                    {isSaving ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Link2 size={13} />
+                    )}
+                    <span>{isSaving ? "Relinking..." : "Relink Job Description"}</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {showApprovalActions ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleApprove}
+                        disabled={approvalActionsDisabled}
+                        className="inline-flex h-8.5 2xl:h-10 min-w-[92px] items-center justify-center gap-1.5 rounded-lg bg-[#00A878] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#00976D] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                      >
+                        <CheckCircle2 size={14} strokeWidth={2} />
+                        <span>Approve</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleReject}
+                        disabled={approvalActionsDisabled}
+                        className="inline-flex h-8.5 2xl:h-10 min-w-[82px] items-center justify-center gap-1.5 rounded-lg bg-[#F00046] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#D9003F] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                      >
+                        <XCircle size={14} strokeWidth={2} />
+                        <span>Reject</span>
+                      </button>
+                    </>
+                  ) : null}
+
+                  {showEditButton ? (
+                    <button
+                      type="button"
+                      onClick={handleEnableEdit}
+                      disabled={isSaving}
+                      className="sibs-modal-btn-primary"
+                    >
+                      <Pencil size={13} />
+                      <span>Edit Position</span>
+                    </button>
+                  ) : null}
+
+                  {isEditMode ? (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                      className="sibs-modal-btn-secondary"
+                    >
+                      <X size={13} />
+                      <span>Cancel Edit</span>
+                    </button>
+                  ) : null}
+
+                  {!isViewMode ? (
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="sibs-modal-btn-primary"
+                    >
+                      {isSaving ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Save size={13} />
+                      )}
+                      <span>
+                        {isSaving
+                          ? "Saving..."
+                          : isEditMode
+                            ? "Update Position"
+                            : "Save Position"}
+                      </span>
+                    </button>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={isSaving}
+                    className="sibs-modal-btn-secondary"
+                  >
+                    Close
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </footer>
       </form>

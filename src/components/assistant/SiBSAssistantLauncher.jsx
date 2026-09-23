@@ -3,6 +3,13 @@ import { ChevronRight, MessageCircleMore, Sparkles, X } from "lucide-react";
 
 import { useUser } from "@/services/context/UserContext";
 import { useChat } from "@/services/context/ChatContext";
+import {
+  clamp,
+  isAssistantLauncherVisible,
+} from "@/lib/utils/assistant/assistantLauncherVisibility";
+
+const VIEWPORT_PADDING = 16;
+const DRAG_THRESHOLD = 6;
 
 export default function SiBSAssistantLauncher({
   enabled = true,
@@ -17,29 +24,103 @@ export default function SiBSAssistantLauncher({
   const chat = useChat();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [triggerPosition, setTriggerPosition] = useState(null);
+  const [triggerDragging, setTriggerDragging] = useState(false);
+  const [chatSurfaceOpen, setChatSurfaceOpen] = useState(() =>
+    typeof window !== "undefined" ? Boolean(window.__SIBS_CHAT_OPEN__) : false,
+  );
+
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const firstItemRef = useRef(null);
+  const dragStateRef = useRef(null);
+  const suppressTriggerClickRef = useRef(false);
 
   const totalUnread = Number(chat?.totalUnread || 0);
   const isChatAllowed = chat?.chatAllowed === true;
+  const effectiveChatOpen = Boolean(
+    isChatOpen || chatSurfaceOpen || chat?.isChatWindowOpen,
+  );
 
-  const isVisible = enabled && !userLoading && Boolean(user);
+  const isDrawerOpen = Boolean(isAiOpen || effectiveChatOpen);
+  const isVisible = isAssistantLauncherVisible({
+    enabled,
+    userLoading,
+    user,
+    isAiOpen,
+    isChatOpen,
+    chatSurfaceOpen,
+    isChatWindowOpen: chat?.isChatWindowOpen,
+  });
 
   // Close menu when an assistant drawer transitions to open
   const prevAiOpenRef = useRef(isAiOpen);
-  const prevChatOpenRef = useRef(isChatOpen);
+  const prevChatOpenRef = useRef(effectiveChatOpen);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const syncChatSurfaceState = (event) => {
+      const nextOpen = Boolean(
+        event?.detail?.open ?? window.__SIBS_CHAT_OPEN__,
+      );
+      setChatSurfaceOpen(nextOpen);
+    };
+
+    setChatSurfaceOpen(Boolean(window.__SIBS_CHAT_OPEN__));
+    window.addEventListener("sibs-chat-open-change", syncChatSurfaceState);
+
+    return () => {
+      window.removeEventListener("sibs-chat-open-change", syncChatSurfaceState);
+    };
+  }, []);
 
   useEffect(() => {
     if (
       (!prevAiOpenRef.current && isAiOpen) ||
-      (!prevChatOpenRef.current && isChatOpen)
+      (!prevChatOpenRef.current && effectiveChatOpen)
     ) {
       setMenuOpen(false);
     }
     prevAiOpenRef.current = isAiOpen;
-    prevChatOpenRef.current = isChatOpen;
-  }, [isAiOpen, isChatOpen]);
+    prevChatOpenRef.current = effectiveChatOpen;
+  }, [isAiOpen, effectiveChatOpen]);
+
+  // Keep launcher within viewport on resize
+  useEffect(() => {
+    function keepTriggerInsideViewport() {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+
+      setTriggerPosition((current) => {
+        if (!current) return current;
+
+        const nextLeft = clamp(
+          current.left,
+          VIEWPORT_PADDING,
+          window.innerWidth - rect.width - VIEWPORT_PADDING,
+        );
+        const nextTop = clamp(
+          current.top,
+          VIEWPORT_PADDING,
+          window.innerHeight - rect.height - VIEWPORT_PADDING,
+        );
+
+        if (nextLeft === current.left && nextTop === current.top) {
+          return current;
+        }
+
+        return { left: nextLeft, top: nextTop };
+      });
+    }
+
+    window.addEventListener("resize", keepTriggerInsideViewport);
+    return () => {
+      window.removeEventListener("resize", keepTriggerInsideViewport);
+    };
+  }, []);
 
   // Click outside listener to close menu
   useEffect(() => {
@@ -87,7 +168,92 @@ export default function SiBSAssistantLauncher({
     }
   }, [menuOpen]);
 
+  function handleTriggerPointerDown(event) {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+      width: rect.width,
+      height: rect.height,
+      dragging: false,
+    };
+
+    suppressTriggerClickRef.current = false;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function handleTriggerPointerMove(event) {
+    const dragState = dragStateRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+    const distance = Math.hypot(deltaX, deltaY);
+
+    if (!dragState.dragging && distance < DRAG_THRESHOLD) return;
+
+    if (!dragState.dragging) {
+      dragState.dragging = true;
+      suppressTriggerClickRef.current = true;
+      setTriggerDragging(true);
+    }
+
+    event.preventDefault();
+
+    setTriggerPosition({
+      left: clamp(
+        dragState.startLeft + deltaX,
+        VIEWPORT_PADDING,
+        window.innerWidth - dragState.width - VIEWPORT_PADDING,
+      ),
+      top: clamp(
+        dragState.startTop + deltaY,
+        VIEWPORT_PADDING,
+        window.innerHeight - dragState.height - VIEWPORT_PADDING,
+      ),
+    });
+  }
+
+  function finishTriggerDrag(event, cancelled = false) {
+    const dragState = dragStateRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    suppressTriggerClickRef.current = cancelled
+      ? false
+      : Boolean(dragState.dragging);
+
+    if (event.currentTarget?.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    dragStateRef.current = null;
+    setTriggerDragging(false);
+  }
+
+  function handleTriggerPointerUp(event) {
+    finishTriggerDrag(event);
+  }
+
+  function handleTriggerPointerCancel(event) {
+    finishTriggerDrag(event, true);
+  }
+
   const toggleMenu = useCallback(() => {
+    if (suppressTriggerClickRef.current) {
+      suppressTriggerClickRef.current = false;
+      return;
+    }
     if (isChatOpen) {
       onToggleChat ? onToggleChat() : onOpenChat?.(false);
       setMenuOpen(false);
@@ -116,16 +282,42 @@ export default function SiBSAssistantLauncher({
     }
   }, [isChatAllowed, isChatOpen, onToggleChat, onOpenChat]);
 
-  if (!isVisible) return null;
+  if (!isVisible || isAiOpen || effectiveChatOpen) return null;
+
+  const isUpperHalf = triggerPosition
+    ? triggerPosition.top < (typeof window !== "undefined" ? window.innerHeight / 2 : 400)
+    : false;
+  const isLeftHalf = triggerPosition
+    ? triggerPosition.left < (typeof window !== "undefined" ? window.innerWidth / 2 : 400)
+    : false;
+
+  const popoverPositionClass = `${
+    isUpperHalf
+      ? "top-[calc(100%+0.75rem)]"
+      : "bottom-[calc(100%+0.75rem)]"
+  } ${isLeftHalf ? "left-0" : "right-0"}`;
 
   return (
     <aside
       ref={containerRef}
       aria-label="SiBS Assistant Navigation"
-      className="fixed z-[100] font-jakarta right-4 sm:right-6"
-      style={{
-        bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
-      }}
+      className={`fixed z-[100] font-jakarta transform-gpu ${
+        triggerPosition ? "" : "right-4 sm:right-6"
+      }`}
+      style={
+        triggerPosition
+          ? {
+              left: `${triggerPosition.left}px`,
+              top: `${triggerPosition.top}px`,
+              right: "auto",
+              bottom: "auto",
+              touchAction: "none",
+            }
+          : {
+              bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
+              touchAction: "none",
+            }
+      }
     >
       {/* Floating Menu Popover */}
       {menuOpen ? (
@@ -133,7 +325,7 @@ export default function SiBSAssistantLauncher({
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="sibs-assistant-trigger"
-          className="absolute bottom-[calc(100%+0.75rem)] right-0 w-[calc(100vw-2rem)] max-w-xs sm:max-w-sm rounded-2xl border border-sibs-border bg-white p-2.5 shadow-2xl transition-all duration-200 ease-out"
+          className={`absolute w-[calc(100vw-2rem)] max-w-xs sm:max-w-sm rounded-2xl border border-sibs-border bg-white p-2.5 shadow-2xl transition-all duration-200 ease-out ${popoverPositionClass}`}
         >
           {/* Menu Header */}
           <div className="flex items-center justify-between border-b border-sibs-border px-2.5 pb-2 pt-1">
@@ -234,6 +426,10 @@ export default function SiBSAssistantLauncher({
         id="sibs-assistant-trigger"
         type="button"
         onClick={toggleMenu}
+        onPointerDown={handleTriggerPointerDown}
+        onPointerMove={handleTriggerPointerMove}
+        onPointerUp={handleTriggerPointerUp}
+        onPointerCancel={handleTriggerPointerCancel}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-label={
@@ -241,7 +437,11 @@ export default function SiBSAssistantLauncher({
             ? `SiBS Assistant, ${totalUnread} unread message${totalUnread === 1 ? "" : "s"}`
             : "SiBS Assistant"
         }
-        className="inline-flex select-none items-center gap-2 rounded-2xl border border-white/10 bg-sibs-navy px-2.5 py-2 sm:px-3 sm:py-2.5 font-jakarta text-[13px] font-bold tracking-tight text-white shadow-xl transition-all duration-200 hover:bg-sibs-tertiary-2 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-sibs-orange/25 active:scale-[0.98]"
+        className={`inline-flex select-none items-center gap-2 rounded-2xl border border-white/10 bg-sibs-navy px-2.5 py-2 sm:px-3 sm:py-2.5 font-jakarta text-[13px] font-bold tracking-tight text-white shadow-xl transition-all duration-200 hover:bg-sibs-tertiary-2 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-sibs-orange/25 ${
+          triggerDragging
+            ? "cursor-grabbing scale-[0.98]"
+            : "cursor-grab hover:-translate-y-0.5 active:scale-[0.98]"
+        }`}
       >
         <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
           <Sparkles size={15} />

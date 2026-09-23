@@ -22,11 +22,14 @@ import {
   markChatRead,
   removeGroupChatMember,
   renameGroupChat,
+  resetChatConversationTheme,
   sendChatMessage,
   sendChatTypingStatus,
+  setChatConversationTheme,
   setPrivateChatNickname,
   setChatMessageReaction,
   unsendChatMessage,
+  uploadChatThemeImage,
 } from "@/lib/axios/sibsChat";
 import chatSocket from "@/lib/axios/chatSocket";
 import { showSibsChatSystemNotification } from "@/lib/sibsChatSystemNotifications";
@@ -270,6 +273,7 @@ export function ChatProvider({ children }) {
   const [typingByConversation, setTypingByConversation] = useState({});
   const [error, setError] = useState("");
   const [membershipNotice, setMembershipNotice] = useState(null);
+  const [isChatWindowOpen, setIsChatWindowOpen] = useState(false);
 
   const activeConversationIdRef = useRef(null);
   const mountedRef = useRef(true);
@@ -337,7 +341,9 @@ export function ChatProvider({ children }) {
   }, []);
 
   const setChatWindowOpen = useCallback((isOpen) => {
-    chatWindowOpenRef.current = Boolean(isOpen);
+    const nextState = Boolean(isOpen);
+    chatWindowOpenRef.current = nextState;
+    setIsChatWindowOpen(nextState);
   }, []);
 
   const dismissMembershipNotice = useCallback(() => {
@@ -971,6 +977,69 @@ export function ChatProvider({ children }) {
     [loadConversationMessages, refreshConversations],
   );
 
+  const setConversationTheme = useCallback(
+    async (conversationId, themePayload) => {
+      const targetId = Number(conversationId || 0);
+      if (!targetId) return null;
+
+      const result = await setChatConversationTheme(targetId, themePayload);
+
+      if (result) {
+        setConversations((current) =>
+          current.map((c) =>
+            Number(c.id) === targetId ? { ...c, theme: result } : c
+          )
+        );
+      }
+
+      await refreshConversations();
+      return result;
+    },
+    [refreshConversations],
+  );
+
+  const uploadConversationThemeImage = useCallback(
+    async (conversationId, file) => {
+      const targetId = Number(conversationId || 0);
+      if (!targetId || !file) return null;
+
+      const result = await uploadChatThemeImage(targetId, file);
+
+      if (result) {
+        setConversations((current) =>
+          current.map((c) =>
+            Number(c.id) === targetId ? { ...c, theme: result } : c
+          )
+        );
+      }
+
+      await refreshConversations();
+      return result;
+    },
+    [refreshConversations],
+  );
+
+  const resetConversationTheme = useCallback(
+    async (conversationId) => {
+      const targetId = Number(conversationId || 0);
+      if (!targetId) return null;
+
+      const result = await resetChatConversationTheme(targetId);
+
+      if (result) {
+        setConversations((current) =>
+          current.map((c) =>
+            Number(c.id) === targetId ? { ...c, theme: result } : c
+          )
+        );
+      }
+
+      await refreshConversations();
+      return result;
+    },
+    [refreshConversations],
+  );
+
   const clearTypingMember = useCallback((conversationId, sibsId) => {
     const id = Number(conversationId || 0);
     const memberId = cleanText(sibsId);
@@ -1289,6 +1358,17 @@ export function ChatProvider({ children }) {
       void syncChatWithoutRefresh();
     };
 
+    const handleThemeUpdate = ({ conversationId, theme } = {}) => {
+      const targetId = Number(conversationId || 0);
+      if (!targetId || !theme) return;
+
+      setConversations((current) =>
+        current.map((c) =>
+          Number(c.id) === targetId ? { ...c, theme } : c
+        )
+      );
+    };
+
     const handleMembershipNotification = (payload = {}) => {
       const action = cleanText(payload?.action).toLowerCase();
       const conversationId = Number(payload?.conversationId || 0);
@@ -1509,6 +1589,7 @@ export function ChatProvider({ children }) {
     chatSocket.on("chat:message-unsent", handleMessageUnsent);
     chatSocket.on("chat:reaction", handleReaction);
     chatSocket.on("chat:read", handleRead);
+    chatSocket.on("chat:conversation:theme", handleThemeUpdate);
 
     window.addEventListener("focus", handleWindowFocus);
     window.addEventListener("pagehide", handlePageHide);
@@ -1554,6 +1635,7 @@ export function ChatProvider({ children }) {
       chatSocket.off("chat:message-unsent", handleMessageUnsent);
       chatSocket.off("chat:reaction", handleReaction);
       chatSocket.off("chat:read", handleRead);
+      chatSocket.off("chat:conversation:theme", handleThemeUpdate);
 
       typingExpiryTimersRef.current.forEach((timerId) => {
         window.clearTimeout(timerId);
@@ -1610,6 +1692,7 @@ export function ChatProvider({ children }) {
       membershipNotice,
       clearError: () => setError(""),
       dismissMembershipNotice,
+      isChatWindowOpen,
       setChatWindowOpen,
       setTypingStatus,
       refreshConversations,
@@ -1627,6 +1710,9 @@ export function ChatProvider({ children }) {
       hidePrivateConversation,
       deletePrivateConversation,
       setPrivateNickname,
+      setConversationTheme,
+      uploadConversationThemeImage,
+      resetConversationTheme,
     }),
     [
       activeConversation,
@@ -1638,10 +1724,14 @@ export function ChatProvider({ children }) {
       chatAllowed,
       dismissMembershipNotice,
       error,
+      isChatWindowOpen,
       leaveGroup,
       hidePrivateConversation,
       deletePrivateConversation,
       setPrivateNickname,
+      setConversationTheme,
+      uploadConversationThemeImage,
+      resetConversationTheme,
       membershipNotice,
       messages,
       messagesLoading,

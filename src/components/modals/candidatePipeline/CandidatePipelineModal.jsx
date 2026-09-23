@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
+  BarChart3,
+  BriefcaseBusiness,
+  Building2,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
@@ -10,6 +13,15 @@ import {
   ClipboardCheck,
   Mail,
   CirclePlay,
+  CheckCircle2,
+  Database,
+  DollarSign,
+  IdCard,
+  Link2,
+  MapPin,
+  MessageSquareText,
+  Phone,
+  Users,
   UploadCloud,
   FileText,
   FileImage,
@@ -18,7 +30,9 @@ import {
   Check,
   Loader2,
   RefreshCcw,
-  UserRound,
+  Route,
+  ShieldCheck,
+  UserCheck,
 } from "lucide-react";
 
 import DetailRow from "../../layout/common/DetailRow";
@@ -35,6 +49,7 @@ import NhoUploadModal from "./NhoUploadModal";
 import {
   offerApprovers,
   offerDecisionOptions,
+  pipelineStages,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineConstants";
 
 import {
@@ -999,7 +1014,7 @@ function getTimelineFinalInterviewScoreSummary(item = {}, candidate = {}) {
     item.final_interview_result ||
     item.interviewResult ||
     item.interview_result ||
-    item.extra?.finalInterviewResult ||
+item.extra?.finalInterviewResult ||
     item.extra?.final_interview_result ||
     item.extra?.interviewResult ||
     item.extra?.interview_result ||
@@ -1999,7 +2014,7 @@ function normalizeUploadedFile(file = {}, candidateId = "") {
       file.updatedAt ||
       file.updated_at ||
       "",
-    uploadedBy:
+uploadedBy:
       file.uploadedBy ||
       file.uploaded_by ||
       file.createdBy ||
@@ -2999,7 +3014,7 @@ function getCandidateTimeline(candidate = {}) {
     : safeJsonParseValue(rawTimeline, []);
 
   return Array.isArray(parsedTimeline)
-    ? parsedTimeline.filter(Boolean)
+? parsedTimeline.filter(Boolean)
     : [];
 }
 
@@ -3998,7 +4013,6 @@ function formatPreviewDeadline(value) {
     year: "numeric",
   });
 }
-
 const assessmentEmailMonthNames = [
   "January",
   "February",
@@ -5423,7 +5437,7 @@ function NhoScheduleModal({
           !isSelectableNhoFriday(selectedDate) ||
           !isNhoTimeWithinAvailableWindow(timeValue)
         }
-        className="min-w-[132px]"
+className="min-w-[132px]"
       >
         {isSaving ? (
           <Loader2 size={16} className="animate-spin" />
@@ -6386,6 +6400,264 @@ function buildEmploymentOfferPdfUrl(
   )}/offer-versions/${encodeURIComponent(version)}/pdf`;
 }
 
+
+const DETAIL_ICON_TONES = {
+  navy: "border-blue-100 bg-[#F2F7FC] text-[#174A7C]",
+  orange: "border-orange-100 bg-[#FFF3EE] text-[#FF5C28]",
+  emerald: "border-emerald-100 bg-emerald-50 text-emerald-700",
+  amber: "border-amber-100 bg-amber-50 text-amber-700",
+  red: "border-red-100 bg-red-50 text-red-700",
+};
+
+function getPipelineStageName(stage) {
+  if (typeof stage === "string" || typeof stage === "number") {
+    return cleanText(stage);
+  }
+
+  return cleanText(
+    stage?.value ||
+      stage?.label ||
+      stage?.name ||
+      stage?.stage ||
+      stage?.title,
+  );
+}
+
+function getJourneyStages() {
+  const seen = new Set();
+
+  return [
+    ...(Array.isArray(pipelineStages) ? pipelineStages : []),
+    INCOMPLETE_ONBOARDING_STAGE,
+    ONBOARDING_STAGE,
+    "Hired / Active",
+  ]
+    .map(getPipelineStageName)
+    .filter(Boolean)
+    .filter((stage) => normalizePipelineStageForVisibility(stage) !== "Drop-off")
+    .filter((stage) => {
+      const key = normalizePipelineStageForVisibility(stage) || stage;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function getStatusTone(value = "") {
+  const key = cleanText(value).toLowerCase();
+
+  if (
+    key.includes("rejected") ||
+    key.includes("not matched") ||
+    key.includes("not fit") ||
+    key.includes("drop-off") ||
+    key.includes("drop off")
+  ) {
+    return "red";
+  }
+
+  if (
+    key.includes("matched") ||
+    key.includes("fit") ||
+    key.includes("pass") ||
+    key.includes("complete") ||
+    key.includes("approved") ||
+    key.includes("accepted") ||
+    key.includes("hired") ||
+    key === "taken"
+  ) {
+    return "emerald";
+  }
+
+  if (
+    key.includes("pending") ||
+    key.includes("review") ||
+    key.includes("scheduled") ||
+    key.includes("reassessment")
+  ) {
+    return "amber";
+  }
+
+  return "navy";
+}
+
+function getOutcomePillClass(value = "") {
+  const tone = getStatusTone(value);
+
+  if (tone === "emerald") {
+    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  }
+  if (tone === "red") {
+    return "border-red-100 bg-red-50 text-red-700";
+  }
+  if (tone === "amber") {
+    return "border-amber-100 bg-amber-50 text-amber-700";
+  }
+
+  return "border-blue-100 bg-blue-50 text-[#174A7C]";
+}
+
+function CandidateDetailItem({
+  icon: Icon,
+  label,
+  value,
+  children,
+  tone = "navy",
+  className = "",
+}) {
+  const displayValue = displayValueOrNA(value);
+
+  return (
+    <div className={`flex min-w-0 items-start gap-3 py-2.5 ${className}`}>
+      <span
+        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
+          DETAIL_ICON_TONES[tone] || DETAIL_ICON_TONES.navy
+        }`}
+      >
+        <Icon size={17} />
+      </span>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <p className="text-[9.5px] font-semibold leading-tight text-[#71839A] 2xl:text-[10px]">
+          {label}
+        </p>
+        {children || (
+          <p
+            title={String(displayValue)}
+            className={`mt-1 min-w-0 truncate text-[11.5px] font-extrabold leading-tight 2xl:text-xs ${
+              tone === "orange" ? "text-[#FF5C28]" : "text-[#042C51]"
+            }`}
+          >
+            {displayValue}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CandidateStageJourney({ currentStage = "" }) {
+  const stages = getJourneyStages();
+  const normalizedCurrent =
+    normalizePipelineStageForVisibility(currentStage) || cleanText(currentStage);
+  const currentIndex = stages.findIndex(
+    (stage) =>
+      (normalizePipelineStageForVisibility(stage) || stage) === normalizedCurrent,
+  );
+  const isDropOff = normalizedCurrent === "Drop-off";
+  const stageCount = stages.length;
+  const progressPercent =
+    currentIndex > 0 && stageCount > 1
+      ? Math.min(100, (currentIndex / (stageCount - 1)) * 100)
+      : 0;
+  const edgeInsetPercent = stageCount > 0 ? 50 / stageCount : 0;
+
+  if (!stages.length) return null;
+
+  return (
+    <section className="sibs-card relative overflow-hidden p-3.5 sm:p-4 2xl:p-4.5">
+      <div className="sibs-top-accent" />
+
+      <div className="mb-3 flex flex-col gap-2.5 border-b border-sibs-border pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span className="sibs-tone-navy-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
+            <Route size={15} />
+          </span>
+
+          <div className="min-w-0 pt-0.5">
+            <h3 className="sibs-modal-section-title">Recruitment Journey</h3>
+            <p className="sibs-modal-section-subtitle mt-0.5">
+              {isDropOff
+                ? "Candidate is outside the active recruitment pipeline."
+                : "Progress through the candidate recruitment pipeline."}
+            </p>
+          </div>
+        </div>
+
+        {!isDropOff ? (
+          <div className="flex shrink-0 items-center gap-2 sm:pt-0.5">
+            <span className="sibs-kicker">Current Stage</span>
+            <span className="sibs-badge-info normal-case tracking-normal">
+              {normalizedCurrent || "No stage"}
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      {isDropOff ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 sibs-text-xs font-bold text-rose-700">
+          Candidate is currently outside the active recruitment pipeline.
+        </div>
+      ) : (
+        <div className="relative w-full pt-0.5">
+          {stageCount > 1 ? (
+            <div
+              className="pointer-events-none absolute top-[12px] h-px bg-sibs-border"
+              style={{
+                left: `${edgeInsetPercent}%`,
+                right: `${edgeInsetPercent}%`,
+              }}
+              aria-hidden="true"
+            >
+              <div
+                className="h-full bg-sibs-navy transition-[width] duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          ) : null}
+
+          <div
+            className="relative grid w-full items-start"
+            style={{
+              gridTemplateColumns: `repeat(${stageCount}, minmax(0, 1fr))`,
+            }}
+          >
+            {stages.map((stage, index) => {
+              const normalizedStage =
+                normalizePipelineStageForVisibility(stage) || stage;
+              const isActive = normalizedStage === normalizedCurrent;
+              const isComplete = currentIndex >= 0 && index < currentIndex;
+
+              return (
+                <div
+                  key={`${normalizedStage}-${index}`}
+                  className="min-w-0 px-0.5 text-center sm:px-1"
+                >
+                  <div className="flex justify-center">
+                    <span
+                      className={`relative z-[1] inline-flex h-6 w-6 items-center justify-center rounded-full border text-[8.5px] font-extrabold shadow-xs transition 2xl:h-7 2xl:w-7 2xl:text-[9px] ${
+                        isActive
+                          ? "border-sibs-orange bg-sibs-orange text-white shadow-[0_4px_10px_rgba(255,92,40,0.18)]"
+                          : isComplete
+                            ? "border-sibs-navy bg-sibs-navy text-white"
+                            : "border-sibs-border-subtle bg-white text-sibs-faint"
+                      }`}
+                    >
+                      {isComplete ? <Check size={11} /> : index + 1}
+                    </span>
+                  </div>
+
+                  <p
+                    title={stage}
+                    className={`mt-1.5 break-words px-0.5 font-jakarta text-[7.5px] font-extrabold leading-[1.2] 2xl:text-[9px] ${
+                      isActive
+                        ? "text-sibs-navy"
+                        : isComplete
+                          ? "text-sibs-navy"
+                          : "text-sibs-muted"
+                    }`}
+                  >
+                    {stage}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 const CandidatePipelineModal = ({
   open,
   candidate,
@@ -6431,7 +6703,7 @@ const CandidatePipelineModal = ({
 
     const openedIdentity =
       getCandidateNhoUploadIdentity(
-        rawOpenedCandidate || {},
+rawOpenedCandidate || {},
       );
 
     const openedCandidate =
@@ -7433,7 +7705,7 @@ const CandidatePipelineModal = ({
         if (
           isActive &&
           !abortController.signal.aborted
-        ) {
+) {
           setIsLoadingNhoFiles(false);
         }
       }
@@ -8443,7 +8715,7 @@ const CandidatePipelineModal = ({
     try {
       const response = await api.post(
         `/api/candidate-pipeline/${encodeURIComponent(
-          candidateId,
+candidateId,
         )}/offer-revisions`,
         {
           basicDailyRate: revisedOffer.basicDailyRate,
@@ -9443,7 +9715,7 @@ const CandidatePipelineModal = ({
               activeCandidate.currentPipelineStage,
             pipelineStage:
               routedStage ||
-              saveCandidate.pipelineStage ||
+saveCandidate.pipelineStage ||
               activeCandidate.pipelineStage,
             stage:
               routedStage ||
@@ -10480,8 +10752,7 @@ async function handleConfirmScheduleNho() {
         latestCandidate.finalInterviewFormId ||
         latestCandidate.final_interview_form_id ||
         "";
-
-      const concretePreferredFinalInterviewFormId =
+const concretePreferredFinalInterviewFormId =
         cleanText(preferredFinalInterviewFormId) &&
         cleanText(preferredFinalInterviewFormId) !==
           "default-job-evaluation"
@@ -11295,150 +11566,192 @@ async function handleConfirmScheduleNho() {
       <CandidatePipelineModalShell
         open={open}
         title="Candidate Pipeline Record"
-        onClose={onClose}
-        closeDisabled={isCandidateProcessRunning}
-        maxWidth="max-w-3xl 2xl:max-w-4xl"
-        zIndex="z-[9999]"
-        movementHistoryCandidate={activeCandidate}
-        onBeforeOpenMovementHistory={handleRefreshMovementHistory}
-        footer={recordFooter}
         headerContent={
-          <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-            <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-xs font-black text-white shadow-sm">
-              {String(activeCandidate.name || "?")
-                .split(/\s+/)
-                .filter(Boolean)
-                .map((part) => part[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase()}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[8.5px] font-extrabold uppercase tracking-wider text-white/60">
-                  Candidate Pipeline Record
-                </span>
-                <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-white/90">
-                  {currentStage}
-                </span>
-                <span className="rounded-full border border-emerald-300/25 bg-emerald-400/15 px-2 py-0.5 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-emerald-100">
-                  PRF: {activePrfStatus}
-                </span>
-                {isSuccessfulHeadcount && (
-                  <span className="rounded-full border border-emerald-200/40 bg-emerald-300/20 px-2 py-0.5 text-[8px] sm:text-[8.5px] font-extrabold uppercase tracking-wide text-emerald-50">
-                    Successful HC
-                  </span>
-                )}
-              </div>
-
-              <h3 className="mt-0.5 truncate text-sm sm:text-base 2xl:text-lg font-extrabold text-white">
-                {activeCandidate.name || "Unnamed Candidate"}
-              </h3>
-            </div>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="truncate text-[11px] font-extrabold text-white sm:text-xs 2xl:text-sm">
+              Candidate Pipeline
+            </span>
+            <span className="text-white/40">/</span>
+            <span className="truncate text-[11px] font-bold text-white/85 sm:text-xs 2xl:text-sm">
+              Candidate Record
+            </span>
           </div>
         }
+        onClose={onClose}
+        closeDisabled={isCandidateProcessRunning}
+        maxWidth="max-w-[1180px]"
+        zIndex="z-[9999]"
+        movementHistoryCandidate={activeCandidate}
+        showMovementHistory
+        onBeforeOpenMovementHistory={handleRefreshMovementHistory}
+        footer={recordFooter}
       >
-        <div className="space-y-2.5 2xl:space-y-3.5">
-          <CandidateModalSection
-            title="Candidate Master Requisition & Profile Details"
-            subtitle="Headcount requisition alignment, PRF status, and complete candidate profile summary."
-            headerAction={
-              isInitialScreening ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#667085]">
-                    Lead PRF Action:
-                  </span>
-                  <div
-                    className="flex flex-wrap items-center gap-1.5"
-                    role="radiogroup"
-                    aria-label="Lead PRF Action"
-                  >
-                    {[
-                      { value: "Matched", label: "Matched" },
-                      { value: "Not Matched", label: "Unmatched" },
-                    ].map((option) => {
-                      const isChecked = activePrfStatus === option.value;
-                      return (
-                        <label
-                          key={option.value}
-                          className={`group inline-flex h-7 2xl:h-7.5 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold transition ${
-                            isChecked
-                              ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-2xs font-bold"
-                              : "border-[#DCE6F1] bg-white text-[#52637A] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="leadPrfAction"
-                            value={option.value}
-                            checked={isChecked}
-                            onChange={() => handleLocalPrfStatusUpdate(option.value)}
-                            className="h-3 w-3 shrink-0 cursor-pointer border-[#98A2B3] accent-[#FF5C28]"
-                          />
-                          <span className="whitespace-nowrap">{option.label}</span>
-                        </label>
-                      );
-                    })}
+        <div className="space-y-3 2xl:space-y-4">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.7fr)]">
+            <CandidateModalSummary
+              candidate={activeCandidate}
+              stage={currentStage}
+              statusClass={getStageClass(currentStage)}
+              compact
+              showAssignment={false}
+            />
+
+            <section className="relative overflow-hidden rounded-2xl border border-[#FFE0D4] bg-[linear-gradient(135deg,#FFF8F5_0%,#FFF1EB_100%)] p-4 shadow-[0_9px_24px_rgba(255,92,40,0.07)] sm:p-4.5">
+              <div className="pointer-events-none absolute -right-8 -bottom-10 h-28 w-28 rounded-full bg-[#FF5C28]/[0.07]" />
+              <div className="relative flex h-full items-center gap-3.5">
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#FFD2C2] bg-white text-[#FF5C28] shadow-sm">
+                  <ShieldCheck size={21} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[9.5px] font-semibold text-[#7C8DA4] 2xl:text-[10px]">
+                      Current PRF Status
+                    </p>
+                    {isSuccessfulHeadcount ? (
+                      <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[7.5px] font-extrabold uppercase tracking-wide text-emerald-700">
+                        Successful HC
+                      </span>
+                    ) : null}
                   </div>
-                </div>
-              ) : (
-                <div className="sibs-text-xs font-semibold text-[#667085]">
-                  Current PRF Status:{" "}
-                  <span className="font-extrabold text-[#FF5C28]">
-                    {activePrfStatus}
-                  </span>
-                </div>
-              )
-            }
-          >
-            <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-0.5 py-1 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                ["Applied Role", displayValueOrNA(activeCandidate.roleTitle || activeCandidate.roleAccount)],
-                ["Target Account", displayValueOrNA(activeCandidate.account)],
-                ["Email Address", displayValueOrNA(activeCandidate.email)],
-                ["Candidate ID", displayValueOrNA(activeCandidate.candidateId)],
-                ["Contact Number", displayValueOrNA(activeCandidate.phone || activeCandidate.contactNumber)],
-                ["Current Location", displayValueOrNA(compactProfileSummary.currentLocation || activeCandidate.applyingLocation)],
-                ["Source", displayValueOrNA(activeCandidate.source || activeCandidate.metadata?.source)],
-                ["PRF Status", activePrfStatus || "Review"],
-                [
-                  "Created Date",
-                  compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : EMPTY_DISPLAY_VALUE,
-                ],
-              ].map(([label, value]) => (
-                <div key={label} className="min-w-0">
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    {label}
-                  </p>
+
                   <p
-                    title={value}
-                    className={`mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight ${
-                      label === "PRF Status" ? "text-[#FF5C28]" : "text-[#042C51]"
+                    className={`mt-1 truncate text-xl font-black tracking-[-0.02em] 2xl:text-2xl ${
+                      getStatusTone(activePrfStatus) === "red"
+                        ? "text-red-600"
+                        : getStatusTone(activePrfStatus) === "emerald"
+                          ? "text-emerald-700"
+                          : "text-[#FF5C28]"
                     }`}
                   >
-                    {value}
+                    {activePrfStatus || "Review"}
+                  </p>
+
+                  <p className="mt-1 text-[9.5px] font-semibold text-[#71839A] 2xl:text-[10px]">
+                    Created on {compactCreatedDate ? formatCandidateDateOnly(compactCreatedDate) : EMPTY_DISPLAY_VALUE}
                   </p>
                 </div>
-              ))}
-            </div>
+              </div>
+            </section>
+          </div>
 
-            <div className="mt-2.5 flex justify-end">
+          <CandidateStageJourney currentStage={currentStage} />
+
+          <CandidateModalSection
+            icon={<UserCheck size={17} />}
+            title="Candidate Information"
+            subtitle="Master requisition and profile details."
+            headerAction={
               <CandidateModalSecondaryButton
                 type="button"
                 onClick={() => setShowTalentPoolDetails((previous) => !previous)}
-                className="w-full !h-7 2xl:!h-7.5 !text-[11px] !justify-between !border-[#FF5C28]/35 !text-[#FF5C28] hover:!bg-[#FFF0EB] sm:w-64"
+                className="!h-8 !rounded-xl !border-[#CAD8E7] !px-3 !text-[10px] !font-extrabold !text-[#174A7C] hover:!border-[#FF5C28]/35 hover:!bg-[#FFF7F3] hover:!text-[#FF5C28]"
               >
-                <span className="min-w-0 flex-1 truncate text-left font-extrabold text-[#FF5C28]">
-                  {showTalentPoolDetails
-                    ? "Hide Full Submitted Profile"
-                    : "View Full Submitted Profile"}
+                <Eye size={14} />
+                <span className="whitespace-nowrap">
+                  {showTalentPoolDetails ? "Hide Full Profile" : "View Full Submitted Profile"}
                 </span>
-                <ChevronDown
-                  size={13}
-                  className={`text-[#FF5C28] transition-transform ${showTalentPoolDetails ? "rotate-180" : ""}`}
-                />
               </CandidateModalSecondaryButton>
+            }
+          >
+            {isInitialScreening ? (
+              <div className="mb-3 flex flex-col gap-2 rounded-xl border border-[#E8EEF5] bg-[#F8FAFC] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-[10px] font-bold text-[#667085]">Lead PRF Action</span>
+                <div
+                  className="flex flex-wrap items-center gap-1.5"
+                  role="radiogroup"
+                  aria-label="Lead PRF Action"
+                >
+                  {[
+                    { value: "Matched", label: "Matched" },
+                    { value: "Not Matched", label: "Unmatched" },
+                  ].map((option) => {
+                    const isChecked = activePrfStatus === option.value;
+                    return (
+                      <label
+                        key={option.value}
+                        className={`group inline-flex h-7 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 text-[10px] font-semibold transition ${
+                          isChecked
+                            ? "border-[#FF5C28] bg-[#FFF0EB] font-bold text-[#FF5C28]"
+                            : "border-[#DCE6F1] bg-white text-[#52637A] hover:border-[#FF5C28]/40 hover:text-[#FF5C28]"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="leadPrfAction"
+                          value={option.value}
+                          checked={isChecked}
+                          onChange={() => handleLocalPrfStatusUpdate(option.value)}
+                          className="h-3 w-3 shrink-0 cursor-pointer border-[#98A2B3] accent-[#FF5C28]"
+                        />
+                        <span className="whitespace-nowrap">{option.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  label: "Applied Role",
+                  value: displayValueOrNA(activeCandidate.roleTitle || activeCandidate.roleAccount),
+                  icon: BriefcaseBusiness,
+                },
+                {
+                  label: "Target Account",
+                  value: displayValueOrNA(activeCandidate.account),
+                  icon: Building2,
+                },
+                {
+                  label: "Email Address",
+                  value: displayValueOrNA(activeCandidate.email),
+                  icon: Mail,
+                },
+                {
+                  label: "Candidate ID",
+                  value: displayValueOrNA(activeCandidate.candidateId),
+                  icon: IdCard,
+                },
+                {
+                  label: "Contact Number",
+                  value: displayValueOrNA(activeCandidate.phone || activeCandidate.contactNumber),
+                  icon: Phone,
+                },
+                {
+                  label: "Current Location",
+                  value: displayValueOrNA(compactProfileSummary.currentLocation || activeCandidate.applyingLocation),
+                  icon: MapPin,
+                },
+                {
+                  label: "Source",
+                  value: displayValueOrNA(activeCandidate.source || activeCandidate.metadata?.source),
+                  icon: Database,
+                },
+                {
+                  label: "PRF Status",
+                  value: activePrfStatus || "Review",
+                  icon: ClipboardCheck,
+                  tone: "orange",
+                },
+                {
+                  label: "Created Date",
+                  value: compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : EMPTY_DISPLAY_VALUE,
+                  icon: CalendarDays,
+                },
+              ].map((item, index) => (
+                <CandidateDetailItem
+                  key={item.label}
+                  icon={item.icon}
+                  label={item.label}
+                  value={item.value}
+                  tone={item.tone}
+                  className={`${
+                    index % 3 !== 2 ? "lg:border-r lg:border-[#E7EDF4] lg:pr-4" : ""
+                  } ${index % 3 !== 0 ? "lg:pl-4" : ""} border-b border-[#EEF2F6] last:border-b-0 lg:border-b-0`}
+                />
+              ))}
             </div>
           </CandidateModalSection>
 
@@ -11450,104 +11763,136 @@ async function handleConfirmScheduleNho() {
 
           {hasAssessmentDetailAccess && (
             <CandidateModalSection
+              icon={<ClipboardCheck size={17} />}
               title="Assessment Summary"
+              subtitle="Online assessment result and attached files."
               headerAction={
-                <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-[10px] font-extrabold sm:text-xs">
-                  <span className="text-[#667085]">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <span className="text-[9.5px] font-bold text-[#667085] 2xl:text-[10px]">
                     {getAssessmentSummaryTestType(activeCandidate)}
                   </span>
-                  <span className="text-[#98A2B3]">·</span>
-                  <span className="text-[#042C51]">{assessmentSummaryScore}</span>
-                  <span className="text-[#98A2B3]">·</span>
+                  <span
+                    className={`rounded-lg border px-3 py-1 text-xs font-black tabular-nums ${getOutcomePillClass(
+                      assessmentSummaryOutcome,
+                    )}`}
+                  >
+                    {assessmentSummaryScore}
+                  </span>
                   <span className={getSummaryOutcomeTextClass(assessmentSummaryOutcome)}>
-                    {assessmentSummaryOutcome}
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold sm:text-xs">
+                      <span className="h-2 w-2 rounded-full bg-current" />
+                      {assessmentSummaryOutcome}
+                    </span>
                   </span>
                 </div>
               }
             >
-              <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-0.5 py-1 sm:grid-cols-2">
-                {[
-                  [
-                    "Status",
+              <div className="grid grid-cols-1 rounded-xl border border-[#E5EEE9] bg-[linear-gradient(90deg,#FBFFFD_0%,#F7FBFF_100%)] px-2 sm:grid-cols-3 sm:px-3">
+                <CandidateDetailItem
+                  icon={CheckCircle2}
+                  label="Status"
+                  value={
+                    activeCandidate.assessmentStatus ||
+                    activeCandidate.assessment_status ||
+                    (getAssessmentResult(activeCandidate) ? "Taken" : "Not Take")
+                  }
+                  tone={getStatusTone(
                     activeCandidate.assessmentStatus ||
                       activeCandidate.assessment_status ||
                       (getAssessmentResult(activeCandidate) ? "Taken" : "Not Take"),
-                  ],
-                  [
-                    "Attachment",
-                    activeCandidate.assessmentFileName ||
-                      activeCandidate.assessment_file_name ||
-                      activeCandidate.assessmentAttachmentName ||
-                      activeCandidate.assessment_attachment_name ||
-                      EMPTY_DISPLAY_VALUE,
-                  ],
-                ].map(([label, value]) => (
-                  <div key={label} className="min-w-0">
-                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                      {label}
-                    </p>
-                    <p title={value} className="mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
-                      {value}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  )}
+                  className="border-b border-[#E7EFEB] sm:border-b-0 sm:border-r sm:border-[#DDE8E2] sm:pr-4"
+                />
 
-              <div className="mt-2.5 px-0.5 py-1">
-                <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                  Remarks
-                </p>
-                <p className="mt-0.5 text-xs font-semibold leading-relaxed text-[#475467]">
-                  {displayValueOrNA(activeCandidate.assessmentRemarks || activeCandidate.assessment_remarks)}
-                </p>
+                <CandidateDetailItem
+                  icon={FileText}
+                  label="Attachment"
+                  value={
+                    activeCandidate.assessmentFileName ||
+                    activeCandidate.assessment_file_name ||
+                    activeCandidate.assessmentAttachmentName ||
+                    activeCandidate.assessment_attachment_name ||
+                    EMPTY_DISPLAY_VALUE
+                  }
+                  className="border-b border-[#E7EFEB] sm:border-b-0 sm:border-r sm:border-[#DDE8E2] sm:px-4"
+                />
+
+                <CandidateDetailItem
+                  icon={MessageSquareText}
+                  label="Remarks"
+                  value={displayValueOrNA(
+                    activeCandidate.assessmentRemarks || activeCandidate.assessment_remarks,
+                  )}
+                  className="sm:pl-4"
+                />
               </div>
             </CandidateModalSection>
           )}
 
           {hasInterviewDetailAccess && (
             <CandidateModalSection
+              icon={<Users size={17} />}
               title="Interview Summary"
+              subtitle="Details of the final interview and evaluation."
               headerAction={
-                <div className="flex flex-col items-end gap-1 text-[10px] font-extrabold sm:text-xs">
-                  <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
-                    <span className="text-[#667085]">Final Interview</span>
-                    <span className="text-[#98A2B3]">·</span>
-                    <span className="text-[#042C51]">{interviewSummaryScore}</span>
-                    <span className="text-[#98A2B3]">·</span>
+                <div className="flex flex-col items-end gap-1.5">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <span className="text-[9.5px] font-bold text-[#667085] 2xl:text-[10px]">
+                      Final Interview
+                    </span>
+                    <span
+                      className={`rounded-lg border px-2.5 py-1 text-[10px] font-black tabular-nums sm:text-xs ${getOutcomePillClass(
+                        interviewSummaryResult,
+                      )}`}
+                    >
+                      {interviewSummaryScore}
+                    </span>
                     <span className={getSummaryOutcomeTextClass(interviewSummaryResult)}>
-                      {interviewSummaryResult}
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold sm:text-xs">
+                        <span className="h-2 w-2 rounded-full bg-current" />
+                        {interviewSummaryResult}
+                      </span>
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
-                    <span className="text-[#667085]">Job Evaluation</span>
-                    <span className="text-[#98A2B3]">·</span>
-                    <span className="text-[#042C51]">{jobEvaluationSummaryScore}</span>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <span className="text-[9.5px] font-bold text-[#667085] 2xl:text-[10px]">
+                      Job Evaluation
+                    </span>
+                    <span className="text-[10px] font-extrabold text-[#042C51] sm:text-xs">
+                      {jobEvaluationSummaryScore}
+                    </span>
                   </div>
                 </div>
               }
             >
-              <div className="grid grid-cols-1 gap-x-6 gap-y-2 px-0.5 py-1 sm:grid-cols-3">
-                {[
-                  ["Date / Time", displayValueOrNA(formatDateTime(activeCandidate.interviewDate))],
-                  ["Interview Type", displayValueOrNA(getDisplayInterviewType(activeCandidate))],
-                  ["Interview Status", displayValueOrNA(getDisplayInterviewStatus(activeCandidate))],
-                ].map(([label, value]) => (
-                  <div key={label} className="min-w-0">
-                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                      {label}
-                    </p>
-                    <p title={value} className="mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
-                      {value}
-                    </p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <CandidateDetailItem
+                  icon={CalendarDays}
+                  label="Date / Time"
+                  value={displayValueOrNA(formatDateTime(activeCandidate.interviewDate))}
+                  className="border-b border-[#EEF2F6] sm:border-r sm:border-[#E7EDF4] sm:pr-4 lg:border-b-0"
+                />
+                <CandidateDetailItem
+                  icon={Users}
+                  label="Interview Type"
+                  value={displayValueOrNA(getDisplayInterviewType(activeCandidate))}
+                  className="border-b border-[#EEF2F6] sm:pl-4 lg:border-r lg:border-[#E7EDF4] lg:pr-4 lg:border-b-0"
+                />
+                <CandidateDetailItem
+                  icon={CheckCircle2}
+                  label="Interview Status"
+                  value={displayValueOrNA(getDisplayInterviewStatus(activeCandidate))}
+                  tone={getStatusTone(getDisplayInterviewStatus(activeCandidate))}
+                  className="border-b border-[#EEF2F6] sm:border-r sm:border-[#E7EDF4] sm:pr-4 lg:border-r-0 lg:border-b-0 lg:pl-4"
+                />
               </div>
 
-              <div className="mt-2.5 grid grid-cols-1 gap-x-6 gap-y-3 px-0.5 py-1 sm:grid-cols-4">
-                <div className="min-w-0">
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Interview Link
-                  </p>
+              <div className="mt-1 grid grid-cols-1 border-t border-[#EEF2F6] pt-1 sm:grid-cols-2 lg:grid-cols-4">
+                <CandidateDetailItem
+                  icon={Link2}
+                  label="Interview Link"
+                  className="border-b border-[#EEF2F6] sm:border-r sm:border-[#E7EDF4] sm:pr-4 lg:border-b-0"
+                >
                   {displayValueOrNA(
                     normalizeOnlineInterviewLink(
                       activeCandidate.onlineInterviewLink ||
@@ -11565,7 +11910,7 @@ async function handleConfirmScheduleNho() {
                         activeCandidate.onlineInterviewLink ||
                           activeCandidate.online_interview_link,
                       )}
-                      className="mt-0.5 block max-w-full truncate text-left text-[11px] 2xl:text-xs font-extrabold text-blue-600 underline"
+                      className="mt-1 block max-w-full truncate text-[11.5px] font-extrabold text-blue-600 underline 2xl:text-xs"
                     >
                       {normalizeOnlineInterviewLink(
                         activeCandidate.onlineInterviewLink ||
@@ -11573,78 +11918,59 @@ async function handleConfirmScheduleNho() {
                       )}
                     </a>
                   ) : (
-                    <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
+                    <p className="mt-1 text-[11.5px] font-extrabold text-[#042C51] 2xl:text-xs">
                       {EMPTY_DISPLAY_VALUE}
                     </p>
                   )}
-                </div>
+                </CandidateDetailItem>
 
-                <div className="min-w-0">
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Job Evaluation Link
-                  </p>
+                <CandidateDetailItem
+                  icon={FileText}
+                  label="Job Evaluation Link"
+                  className="border-b border-[#EEF2F6] sm:pl-4 lg:border-r lg:border-[#E7EDF4] lg:pr-4 lg:border-b-0"
+                >
                   {displayValueOrNA(jobEvaluationSummaryLink) !== EMPTY_DISPLAY_VALUE ? (
                     <button
                       type="button"
                       title={jobEvaluationSummaryLink}
                       onClick={() => window.open(jobEvaluationSummaryLink, "_blank", "noopener,noreferrer")}
-                      className="mt-0.5 block max-w-full truncate text-left text-[11px] 2xl:text-xs font-extrabold text-blue-600 underline"
+                      className="mt-1 block max-w-full truncate text-left text-[11.5px] font-extrabold text-blue-600 underline 2xl:text-xs"
                     >
                       View Job Evaluation
                     </button>
                   ) : (
-                    <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
+                    <p className="mt-1 text-[11.5px] font-extrabold text-[#042C51] 2xl:text-xs">
                       {EMPTY_DISPLAY_VALUE}
                     </p>
                   )}
-                </div>
+                </CandidateDetailItem>
 
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center justify-between gap-1">
-                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                      Interview Remarks
-                    </p>
-                    {(activeCandidate.interviewNotesBy ||
-                      activeCandidate.interview_notes_by ||
-                      activeCandidate.interviewerName) &&
-                      (activeCandidate.interviewNotes ||
-                        activeCandidate.interviewerNotes ||
-                        activeCandidate.interview_notes) && (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#667085]">
-                          <UserRound size={11} className="text-[#FF5C28]" />
-                          Added by{" "}
-                          {activeCandidate.interviewNotesBy ||
-                            activeCandidate.interview_notes_by ||
-                            activeCandidate.interviewerName}
-                          {(activeCandidate.interviewNotesAt ||
-                            activeCandidate.interview_notes_at) &&
-                            ` • ${formatCandidateDateOnly(
-                              activeCandidate.interviewNotesAt ||
-                                activeCandidate.interview_notes_at,
-                            )}`}
-                        </span>
-                      )}
-                  </div>
-                  <p className="mt-0.5 whitespace-pre-line text-xs font-semibold leading-relaxed text-[#475467]">
+                <CandidateDetailItem
+                  icon={MessageSquareText}
+                  label="Interview Remarks"
+                  className="border-b border-[#EEF2F6] sm:border-r sm:border-[#E7EDF4] sm:pr-4 lg:border-b-0 lg:pl-4"
+                >
+                  <p className="mt-1 whitespace-pre-line break-words text-[11.5px] font-semibold leading-5 text-[#344054] 2xl:text-xs">
                     {activeCandidate.interviewNotes ||
                       activeCandidate.interviewerNotes ||
                       activeCandidate.interview_notes ||
                       EMPTY_DISPLAY_VALUE}
                   </p>
-                </div>
+                </CandidateDetailItem>
 
-                <div className="min-w-0">
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Job Evaluation Remarks
-                  </p>
-                  <p className="mt-0.5 whitespace-pre-line text-xs font-semibold leading-relaxed text-[#475467]">
+                <CandidateDetailItem
+                  icon={BarChart3}
+                  label="Job Evaluation Remarks"
+                  className="sm:pl-4"
+                >
+                  <p className="mt-1 whitespace-pre-line break-words text-[11.5px] font-semibold leading-5 text-[#344054] 2xl:text-xs">
                     {jobEvaluationSummaryRemarks}
                   </p>
-                </div>
+                </CandidateDetailItem>
               </div>
 
               {isInterviewScheduled && candidateHasSchedule && (
-                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-[#EEF2F6] pt-3">
                   {isInterviewRescheduled &&
                     canApproveInterviewRescheduleAccess && (
                       <CandidateModalPrimaryButton
@@ -11677,46 +12003,76 @@ async function handleConfirmScheduleNho() {
           )}
 
           {hasOfferDetailAccess && (
-            <CandidateModalSection title="Offer Summary">
-              <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-0.5 py-1 sm:grid-cols-2 lg:grid-cols-3">
+            <CandidateModalSection
+              icon={<DollarSign size={17} />}
+              title="Offer Summary"
+              subtitle="Final assignment, compensation, approval, and candidate response."
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {[
-                  ["Final Role", displayValueOrNA(activeCandidate.offerDetails?.roleTitle || activeCandidate.roleTitle)],
-                  ["Final Account", displayValueOrNA(activeCandidate.offerDetails?.account || activeCandidate.account)],
-                  [
-                    "Hiring Requirement / PRF",
-                    displayValueOrNA(activeCandidate.offerDetails?.hiringRequirementId || activeCandidate.hiringRequirementId),
-                  ],
-                  ["Basic Daily Rate", formatCurrency(currentOfferBasicDailyRate)],
-                  ["Daily De Minimis", formatCurrency(currentOfferDailyDeMinimis)],
-                  [
-                    "Total Daily Rate",
-                    formatCurrency(currentOfferBasicDailyRate + currentOfferDailyDeMinimis),
-                  ],
-                  [
-                    "Approval Status",
-                    activeCandidate.offerApprovalStatus || getOfferApprovalSummary(activeCandidate) || "For Review",
-                  ],
-                  [
-                    "Candidate Response",
-                    activeCandidate.offerDecision || activeCandidate.offer_decision || "Pending",
-                  ],
-                  [
-                    "Start Date",
-                    formatCandidateDateOnly(
+                  {
+                    label: "Final Role",
+                    value: displayValueOrNA(activeCandidate.offerDetails?.roleTitle || activeCandidate.roleTitle),
+                    icon: BriefcaseBusiness,
+                  },
+                  {
+                    label: "Final Account",
+                    value: displayValueOrNA(activeCandidate.offerDetails?.account || activeCandidate.account),
+                    icon: Building2,
+                  },
+                  {
+                    label: "Hiring Requirement / PRF",
+                    value: displayValueOrNA(activeCandidate.offerDetails?.hiringRequirementId || activeCandidate.hiringRequirementId),
+                    icon: IdCard,
+                  },
+                  {
+                    label: "Basic Daily Rate",
+                    value: formatCurrency(currentOfferBasicDailyRate),
+                    icon: DollarSign,
+                  },
+                  {
+                    label: "Daily De Minimis",
+                    value: formatCurrency(currentOfferDailyDeMinimis),
+                    icon: DollarSign,
+                  },
+                  {
+                    label: "Total Daily Rate",
+                    value: formatCurrency(currentOfferBasicDailyRate + currentOfferDailyDeMinimis),
+                    icon: DollarSign,
+                    tone: "orange",
+                  },
+                  {
+                    label: "Approval Status",
+                    value: activeCandidate.offerApprovalStatus || getOfferApprovalSummary(activeCandidate) || "For Review",
+                    icon: ShieldCheck,
+                    tone: getStatusTone(activeCandidate.offerApprovalStatus || getOfferApprovalSummary(activeCandidate) || "For Review"),
+                  },
+                  {
+                    label: "Candidate Response",
+                    value: activeCandidate.offerDecision || activeCandidate.offer_decision || "Pending",
+                    icon: CheckCircle2,
+                    tone: getStatusTone(activeCandidate.offerDecision || activeCandidate.offer_decision || "Pending"),
+                  },
+                  {
+                    label: "Start Date",
+                    value: formatCandidateDateOnly(
                       activeCandidate.offerDetails?.startDate ||
                         activeCandidate.offerStartDate ||
                         activeCandidate.offer_start_date,
                     ),
-                  ],
-                ].map(([label, value]) => (
-                  <div key={label} className="min-w-0">
-                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                      {label}
-                    </p>
-                    <p title={value} className="mt-0.5 truncate text-[11px] 2xl:text-xs font-extrabold leading-tight text-[#344054]">
-                      {displayValueOrNA(value)}
-                    </p>
-                  </div>
+                    icon: CalendarDays,
+                  },
+                ].map((item, index) => (
+                  <CandidateDetailItem
+                    key={item.label}
+                    icon={item.icon}
+                    label={item.label}
+                    value={item.value}
+                    tone={item.tone}
+                    className={`${
+                      index % 3 !== 2 ? "lg:border-r lg:border-[#E7EDF4] lg:pr-4" : ""
+                    } ${index % 3 !== 0 ? "lg:pl-4" : ""} border-b border-[#EEF2F6] last:border-b-0 lg:border-b-0`}
+                  />
                 ))}
               </div>
 
@@ -11841,10 +12197,13 @@ async function handleConfirmScheduleNho() {
           )}
 
           {hasNhoDetailAccess && (
-            <CandidateModalSection title="Pre-Employment Requirements">
+            <CandidateModalSection
+              icon={<UploadCloud size={15} />}
+              title="Pre-Employment Requirements"
+            >
               <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-0.5 py-1 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Major Requirements
                   </p>
                   <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
@@ -11852,7 +12211,7 @@ async function handleConfirmScheduleNho() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Overall Requirements
                   </p>
                   <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
@@ -11860,7 +12219,7 @@ async function handleConfirmScheduleNho() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     NHO Schedule
                   </p>
                   <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
@@ -11873,7 +12232,7 @@ async function handleConfirmScheduleNho() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                     Routing
                   </p>
                   <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">{currentStage}</p>

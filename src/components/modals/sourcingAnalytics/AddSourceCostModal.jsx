@@ -756,39 +756,16 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={handleReset}
-                disabled={isSubmitting}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <RotateCcw size={13} />
-                Reset
-              </button>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="sibs-modal-btn-primary"
-              >
-                {isSubmitting ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Save size={13} />
-                )}
-
-                {isSubmitting ? "Saving..." : "Save Cost Entry"}
-              </button>
-
+            <div className="flex shrink-0 items-center justify-end">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
                 className="sibs-modal-close-btn"
                 aria-label="Close source cost modal"
+                title="Close"
               >
-                <X size={16} />
+                <X size={17} />
               </button>
             </div>
           </div>
@@ -913,6 +890,52 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
             </p>
           </section>
         </div>
+
+        <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={isSubmitting}
+                className="sibs-modal-btn-secondary w-full sm:w-auto"
+                title="Reset cost entry form"
+              >
+                <RotateCcw size={14} />
+                <span>Reset</span>
+              </button>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="sibs-modal-btn-secondary w-full sm:w-auto"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="sibs-modal-btn-primary w-full sm:w-auto"
+                title="Save this cost entry"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={14} />
+                    <span>Save Cost Entry</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </footer>
       </form>
     </div>
   );

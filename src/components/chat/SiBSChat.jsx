@@ -14,9 +14,11 @@ import {
   Loader2,
   MessageCircleMore,
   MoreHorizontal,
+  Music,
   Pencil,
   Plus,
   Reply,
+  Palette,
   Search,
   Send,
   Smile,
@@ -30,15 +32,31 @@ import {
 import {
   getChatAttachmentUrl,
   getChatParticipants,
+  getChatThemeImageBlob,
 } from "@/lib/axios/sibsChat";
 import {
   getTrendingChatGifs,
   searchChatGifs,
 } from "@/lib/axios/gifSearch";
 import ChatVideoPlayer from "@/components/chat/ChatVideoPlayer";
+import ChatAudioPlayer from "@/components/chat/ChatAudioPlayer";
+import ChatTypingIndicator from "@/components/chat/ChatTypingIndicator";
+import ChatThemeModal from "@/components/chat/ChatThemeModal";
 import { useChat } from "@/services/context/ChatContext";
 import { useUser } from "@/services/context/UserContext";
 import { ensureSibsChatSystemNotifications } from "@/lib/sibsChatSystemNotifications";
+import { calculateSeenMembersByMessageId } from "@/lib/utils/chat/chatSeenReceipts";
+import {
+  calculatePixelLuminanceIsDark,
+  getChatThemeBackgroundStyle,
+  isChatThemeCustom,
+  isChatThemeDark,
+} from "@/lib/utils/chat/chatTheme";
+import {
+  calculatePrependScrollTop,
+  checkIsNearBottom,
+  shouldSnapToBottom,
+} from "@/lib/utils/chat/chatScroll";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_ATTACHMENTS_PER_MESSAGE = 5;
@@ -335,7 +353,7 @@ function renderChatMessageText(value, members = [], mine = false) {
         className={
           mine
             ? "rounded bg-white/20 px-0.5 font-extrabold text-white underline decoration-white/50 underline-offset-2"
-            : "rounded bg-[#FFF0EA] px-0.5 font-extrabold text-sibs-orange"
+            : "rounded bg-sibs-cream-light px-1 font-extrabold text-sibs-orange border border-sibs-orange/20"
         }
       >
         {part}
@@ -398,6 +416,20 @@ function getEmojiOnlySizeClass(value) {
   if (emojiCount <= 1) return "text-[46px]";
   if (emojiCount <= 3) return "text-[40px]";
   return "text-[32px]";
+}
+
+function getMessageBubbleRadiusClass({ mine, groupStart, groupEnd }) {
+  if (groupStart && groupEnd) return "rounded-[18px]";
+
+  if (mine) {
+    if (groupStart) return "rounded-[18px] rounded-br-md";
+    if (groupEnd) return "rounded-[18px] rounded-tr-md";
+    return "rounded-[18px] rounded-r-md";
+  }
+
+  if (groupStart) return "rounded-[18px] rounded-bl-md";
+  if (groupEnd) return "rounded-[18px] rounded-tl-md";
+  return "rounded-[18px] rounded-l-md";
 }
 
 function formatClock(value) {
@@ -544,6 +576,51 @@ function isSameDay(firstValue, secondValue) {
   );
 }
 
+function formatMessengerCenterTimestamp(currentValue, previousValue) {
+  if (!currentValue) return "";
+  const date = new Date(currentValue);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const clock = formatClock(currentValue);
+  if (!clock) return "";
+
+  // If there is a previous message on the same calendar day, this header was triggered by a >= 15m gap
+  if (previousValue && isSameDay(previousValue, currentValue)) {
+    return clock;
+  }
+
+  // Cross-day or first message: include date context
+  const now = new Date();
+  if (isSameDay(date, now)) {
+    return `Today · ${clock}`;
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (isSameDay(date, yesterday)) {
+    return `Yesterday · ${clock}`;
+  }
+
+  const elapsedDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
+  if (elapsedDays >= 0 && elapsedDays < 7) {
+    const weekday = new Intl.DateTimeFormat("en-PH", {
+      timeZone: "Asia/Manila",
+      weekday: "short",
+    }).format(date);
+    return `${weekday} · ${clock}`;
+  }
+
+  const sameYear = date.getFullYear() === now.getFullYear();
+  const dateStr = new Intl.DateTimeFormat("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  }).format(date);
+
+  return `${dateStr} · ${clock}`;
+}
+
 function getChatProfilePictureUrl(employee = {}) {
   const directUrl = cleanText(
     employee?.profilePictureUrl || employee?.profile_picture_url,
@@ -599,13 +676,14 @@ function ChatAvatar({
 }) {
   const sizeClass = {
     xs: "h-[18px] w-[18px] text-[7px]",
+    chat: "h-7 w-7 text-[10px]",
     sm: "h-9 w-9 text-[11px]",
     md: "h-11 w-11 text-xs",
     lg: "h-12 w-12 text-sm",
   }[size] || "h-11 w-11 text-xs";
 
   const onlineDotClass =
-    size === "xs"
+    size === "xs" || size === "chat"
       ? "h-2.5 w-2.5 border-[1.5px]"
       : "h-3 w-3 border-2";
 
@@ -654,7 +732,7 @@ function ChatAvatar({
     typeof document !== "undefined"
       ? createPortal(
           <span
-            className="pointer-events-none fixed z-[9999] rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            className="pointer-events-none fixed z-[9999] rounded-2xl border border-sibs-border bg-white p-2 shadow-2xl"
             style={{
               left: previewPosition.left,
               top: previewPosition.top,
@@ -721,9 +799,9 @@ function ChatAvatar({
 
 function EmptyChatState({ onNewChat }) {
   return (
-    <div className="flex min-h-0 flex-1 items-center justify-center bg-[#F8FAFC] px-8 text-center">
+    <div className="flex min-h-0 flex-1 items-center justify-center bg-sibs-canvas px-8 text-center">
       <div className="max-w-sm">
-        <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF0EA] text-sibs-orange">
+        <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-sibs-cream-light border border-sibs-orange/20 text-sibs-orange">
           <MessageCircleMore size={27} />
         </span>
         <h3 className="mt-4 font-heading text-lg font-extrabold text-sibs-navy">
@@ -906,7 +984,7 @@ function NewChatOverlay({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search name, SIBS ID, or email..."
-            className="h-10 w-full rounded-xl border border-sibs-border bg-[#F8FAFC] pl-9 pr-3 text-sm font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
+            className="h-10 w-full rounded-xl border border-sibs-border bg-sibs-surface pl-9 pr-3 text-sm font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
           />
         </label>
       </div>
@@ -1168,7 +1246,7 @@ function GroupInfoOverlay({
           </div>
         ) : null}
 
-        <section className="rounded-2xl border border-sibs-border bg-[#F8FAFC] p-4">
+        <section className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
           <label className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-sibs-faint">
             Group Name
           </label>
@@ -1201,7 +1279,7 @@ function GroupInfoOverlay({
               <button
                 type="button"
                 onClick={() => setAddingMembers((current) => !current)}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-extrabold text-sibs-orange transition hover:bg-[#FFF0EA]"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-extrabold text-sibs-orange transition hover:bg-sibs-cream-light"
               >
                 <UserPlus size={14} />
                 Add Member
@@ -1218,7 +1296,7 @@ function GroupInfoOverlay({
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search employees..."
-                  className="h-9 w-full rounded-xl border border-sibs-border bg-[#F8FAFC] pl-9 pr-3 text-xs font-semibold outline-none focus:border-sibs-orange"
+                  className="h-9 w-full rounded-xl border border-sibs-border bg-sibs-surface pl-9 pr-3 text-xs font-semibold outline-none focus:border-sibs-orange"
                 />
               </label>
 
@@ -1413,6 +1491,7 @@ export default function SiBSChat({
   );
   const [newChatOpen, setNewChatOpen] = useState(false);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+  const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [conversationSearch, setConversationSearch] = useState("");
   const [draft, setDraft] = useState("");
   const [selectedImages, setSelectedImages] = useState([]);
@@ -1448,7 +1527,13 @@ export default function SiBSChat({
   const [mentionActiveIndex, setMentionActiveIndex] = useState(0);
 
   const messageScrollRef = useRef(null);
+  const messagesListContentRef = useRef(null);
   const messageEndRef = useRef(null);
+  const isInitialConversationLoadRef = useRef(true);
+  const isNearBottomRef = useRef(true);
+  const prevLoadingOlderRef = useRef(false);
+  const olderMessagesScrollHeightRef = useRef(0);
+  const olderMessagesScrollTopRef = useRef(0);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const emojiPickerRef = useRef(null);
@@ -1514,12 +1599,30 @@ export default function SiBSChat({
   useEffect(() => {
     chat?.setChatWindowOpen?.(open);
 
+    if (typeof window !== "undefined") {
+      window.__SIBS_CHAT_OPEN__ = Boolean(open);
+      window.dispatchEvent(
+        new CustomEvent("sibs-chat-open-change", {
+          detail: { open: Boolean(open) },
+        }),
+      );
+    }
+  }, [chat?.setChatWindowOpen, open]);
+
+  useEffect(() => {
     return () => {
-      if (open) {
-        chat?.setChatWindowOpen?.(false);
+      chat?.setChatWindowOpen?.(false);
+
+      if (typeof window !== "undefined") {
+        window.__SIBS_CHAT_OPEN__ = false;
+        window.dispatchEvent(
+          new CustomEvent("sibs-chat-open-change", {
+            detail: { open: false },
+          }),
+        );
       }
     };
-  }, [chat?.setChatWindowOpen, open]);
+  }, [chat?.setChatWindowOpen]);
 
   useEffect(() => {
     if (typeof document === "undefined" || !isMobileChatDevice()) {
@@ -1827,6 +1930,15 @@ export default function SiBSChat({
   }, [gifPickerOpen]);
 
   useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const nextHeight = Math.min(Math.max(textarea.scrollHeight, 40), 112);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > 112 ? "auto" : "hidden";
+  }, [draft]);
+
+  useEffect(() => {
     if (!gifPickerOpen) return undefined;
 
     const controller = new AbortController();
@@ -1975,54 +2087,38 @@ export default function SiBSChat({
     mentionStart,
   ]);
 
-  const seenMembersByMessageId = useMemo(() => {
-    const result = new Map();
+  const seenMembersByMessageId = useMemo(
+    () =>
+      calculateSeenMembersByMessageId({
+        members: activeConversation?.members,
+        currentMessages: chat?.messages,
+        currentSibsId,
+      }),
+    [activeConversation?.members, chat?.messages, currentSibsId],
+  );
+
+  const membersBySibsId = useMemo(() => {
+    const map = new Map();
     const members = Array.isArray(activeConversation?.members)
       ? activeConversation.members
       : [];
-    const currentMessages = Array.isArray(chat?.messages) ? chat.messages : [];
 
-    if (!members.length || !currentMessages.length) {
-      return result;
-    }
-
-    const visibleMessages = currentMessages.filter((message) => {
-      const messageType = cleanText(message?.messageType).toUpperCase();
-
-      return (
-        !message?.unsent &&
-        messageType !== "UNSENT" &&
-        messageType !== "MEMBER_ADDED" &&
-        messageType !== "MEMBER_REMOVED"
-      );
-    });
-
-    visibleMessages.forEach((message) => {
-      const messageId = Number(message?.id || 0);
-      const senderSibsId = cleanText(message?.senderSibsId);
-
-      if (!messageId || !senderSibsId) return;
-
-      const seenMembers = members.filter((member) => {
-        const memberSibsId = cleanText(member?.sibsId);
-        const lastReadMessageId = Number(
-          member?.lastReadMessageId ?? member?.last_read_message_id ?? 0,
-        );
-
-        return (
-          Boolean(memberSibsId) &&
-          memberSibsId !== senderSibsId &&
-          lastReadMessageId >= messageId
-        );
-      });
-
-      if (seenMembers.length) {
-        result.set(messageId, seenMembers);
+    members.forEach((member) => {
+      const sibsId = cleanText(member?.sibsId);
+      if (sibsId) {
+        map.set(sibsId, member);
       }
     });
 
-    return result;
-  }, [activeConversation?.members, chat?.messages]);
+    if (activeConversation?.otherMember?.sibsId) {
+      map.set(
+        cleanText(activeConversation.otherMember.sibsId),
+        activeConversation.otherMember,
+      );
+    }
+
+    return map;
+  }, [activeConversation?.members, activeConversation?.otherMember]);
 
   useEffect(() => {
     if (!open || chat?.activeConversationId || !chat?.conversations?.length) return;
@@ -2040,79 +2136,114 @@ export default function SiBSChat({
     void chat.selectConversation(chat.conversations[0].id);
   }, [chat, open]);
 
+  const scrollToLatest = useCallback(() => {
+    const scroller = messageScrollRef.current;
+    if (!scroller) return;
+    scroller.scrollTop = scroller.scrollHeight;
+  }, []);
+
+  // When active conversation changes, mark as initial load and lock nearBottom
+  useEffect(() => {
+    isInitialConversationLoadRef.current = true;
+    isNearBottomRef.current = true;
+  }, [chat?.activeConversationId]);
+
+  // Adjust scroll position after prepending older messages
+  useEffect(() => {
+    if (prevLoadingOlderRef.current && !chat?.loadingOlderMessages) {
+      const scroller = messageScrollRef.current;
+      if (scroller && olderMessagesScrollHeightRef.current > 0) {
+        scroller.scrollTop = calculatePrependScrollTop(
+          olderMessagesScrollTopRef.current,
+          olderMessagesScrollHeightRef.current,
+          scroller.scrollHeight,
+        );
+      }
+    }
+    prevLoadingOlderRef.current = Boolean(chat?.loadingOlderMessages);
+  }, [chat?.loadingOlderMessages]);
+
   const latestMessageId = Number(
     chat?.messages?.[chat.messages.length - 1]?.id || 0,
   );
 
-  function navigateToLatestMessageAfterSend() {
-    const scrollToBottom = () => {
-      const element = messageScrollRef.current;
-      if (!element) return;
-
-      element.scrollTop = element.scrollHeight;
-
-      messageEndRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "end",
-        inline: "nearest",
-      });
-    };
-
-    // Run repeatedly because the newly-sent message, seen-by row, avatar,
-    // image/GIF preview, or attachment can change the final scroll height
-    // after the first React render.
-    window.requestAnimationFrame(() => {
-      scrollToBottom();
-      window.requestAnimationFrame(scrollToBottom);
-    });
-
-    window.setTimeout(scrollToBottom, 80);
-    window.setTimeout(scrollToBottom, 180);
-    window.setTimeout(scrollToBottom, 350);
-  }
-
+  // Synchronous and multi-pass bottom anchoring effect on message updates
   useEffect(() => {
     if (!open || chat?.messagesLoading || !latestMessageId) return undefined;
 
     let cancelled = false;
-    let secondFrame = 0;
 
-    const scrollToLatest = () => {
+    const performScroll = () => {
       if (cancelled) return;
-
-      const element = messageScrollRef.current;
-      if (!element) return;
-
-      // Use the container position as the primary scroll and the end marker as
-      // a second anchor. Repeating this briefly after render also accounts for
-      // avatars/media that can change the message list height after opening.
-      element.scrollTop = element.scrollHeight;
-      messageEndRef.current?.scrollIntoView({
-        block: "end",
-        inline: "nearest",
-      });
+      if (shouldSnapToBottom(isInitialConversationLoadRef.current, isNearBottomRef.current)) {
+        scrollToLatest();
+      }
     };
 
-    const firstFrame = window.requestAnimationFrame(() => {
-      scrollToLatest();
-      secondFrame = window.requestAnimationFrame(scrollToLatest);
+    // Immediate attempt
+    performScroll();
+
+    // Multi-frame settling
+    const frameId1 = window.requestAnimationFrame(() => {
+      performScroll();
+      const frameId2 = window.requestAnimationFrame(performScroll);
+      return () => window.cancelAnimationFrame(frameId2);
     });
-    const settleTimer = window.setTimeout(scrollToLatest, 120);
-    const mediaSettleTimer = window.setTimeout(scrollToLatest, 350);
+
+    const timer1 = window.setTimeout(performScroll, 60);
+    const timer2 = window.setTimeout(performScroll, 180);
+    const timer3 = window.setTimeout(performScroll, 350);
 
     return () => {
       cancelled = true;
-      window.cancelAnimationFrame(firstFrame);
-      if (secondFrame) window.cancelAnimationFrame(secondFrame);
-      window.clearTimeout(settleTimer);
-      window.clearTimeout(mediaSettleTimer);
+      window.cancelAnimationFrame(frameId1);
+      window.clearTimeout(timer1);
+      window.clearTimeout(timer2);
+      window.clearTimeout(timer3);
     };
   }, [
     chat?.activeConversationId,
     chat?.messagesLoading,
     latestMessageId,
     open,
+    scrollToLatest,
   ]);
+
+  // ResizeObserver to track asynchronous height shifts (images, GIFs, media decoding, reactions)
+  useEffect(() => {
+    const contentEl = messagesListContentRef.current;
+    const scrollerEl = messageScrollRef.current;
+    if (!contentEl || !scrollerEl) return undefined;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (shouldSnapToBottom(isInitialConversationLoadRef.current, isNearBottomRef.current)) {
+        scrollerEl.scrollTop = scrollerEl.scrollHeight;
+      }
+    });
+
+    resizeObserver.observe(contentEl);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [chat?.activeConversationId, chat?.messages?.length]);
+
+  const handleMessagesScroll = useCallback((event) => {
+    const target = event.currentTarget;
+    if (!target) return;
+
+    const nearBottom = checkIsNearBottom(
+      target.scrollTop,
+      target.scrollHeight,
+      target.clientHeight,
+      80,
+    );
+    isNearBottomRef.current = nearBottom;
+
+    if (!nearBottom) {
+      isInitialConversationLoadRef.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     selectedImagesRef.current = selectedImages;
@@ -2787,6 +2918,88 @@ export default function SiBSChat({
       ? `Offline · ${activePrivateLastSeen}`
       : "Offline";
 
+  const conversationTheme = activeConversation?.theme;
+  const isCustomTheme = isChatThemeCustom(conversationTheme);
+  const [imageLuminanceIsDark, setImageLuminanceIsDark] = useState(null);
+
+  useEffect(() => {
+    if (conversationTheme?.type !== "IMAGE" || !conversationTheme?.imageUrl) {
+      setImageLuminanceIsDark(null);
+      return;
+    }
+
+    let isMounted = true;
+    let objectUrl = null;
+
+    async function analyzeWallpaperLuminance() {
+      try {
+        const timestamp = conversationTheme.updatedAt
+          ? new Date(conversationTheme.updatedAt).getTime()
+          : "";
+        const separator = conversationTheme.imageUrl.includes("?") ? "&" : "?";
+        const cacheBustedPath =
+          timestamp && !conversationTheme.imageUrl.includes("t=") && !conversationTheme.imageUrl.includes("v=")
+            ? `${conversationTheme.imageUrl}${separator}t=${timestamp}`
+            : conversationTheme.imageUrl;
+
+        const blob = await getChatThemeImageBlob(cacheBustedPath);
+        if (!isMounted || !blob) return;
+
+        objectUrl = URL.createObjectURL(blob);
+        const img = new Image();
+
+        img.onload = () => {
+          if (!isMounted) return;
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            if (!ctx) return;
+            ctx.drawImage(img, 0, 0, 32, 32);
+            const data = ctx.getImageData(0, 0, 32, 32).data;
+            const isDark = calculatePixelLuminanceIsDark(data);
+            setImageLuminanceIsDark(isDark);
+          } catch {
+            setImageLuminanceIsDark(false);
+          } finally {
+            if (objectUrl) {
+              URL.revokeObjectURL(objectUrl);
+              objectUrl = null;
+            }
+          }
+        };
+
+        img.onerror = () => {
+          if (isMounted) setImageLuminanceIsDark(false);
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+          }
+        };
+
+        img.src = objectUrl;
+      } catch {
+        if (isMounted) setImageLuminanceIsDark(false);
+      }
+    }
+
+    void analyzeWallpaperLuminance();
+
+    return () => {
+      isMounted = false;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [conversationTheme?.imageUrl, conversationTheme?.type, conversationTheme?.updatedAt]);
+
+  const isThemeDark = isChatThemeDark(conversationTheme, imageLuminanceIsDark);
+  const themeBackgroundStyle = useMemo(
+    () => getChatThemeBackgroundStyle(conversationTheme),
+    [conversationTheme],
+  );
+
 
   return (
     <>
@@ -2807,7 +3020,7 @@ export default function SiBSChat({
         </div>
       ) : null}
 
-      {!hideTrigger ? (
+      {!hideTrigger && !open ? (
         <button
           ref={launcherRef}
           type="button"
@@ -2852,7 +3065,9 @@ export default function SiBSChat({
 
       <section
         aria-label="SiBS Chat"
-        className={`font-jakarta fixed bottom-24 right-4 z-[89] flex h-[min(680px,calc(100dvh-7.75rem))] w-[min(760px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl transition duration-200 sm:right-6 max-sm:inset-x-4 max-sm:top-[12.5dvh] max-sm:bottom-auto max-sm:h-[75dvh] max-sm:w-auto max-sm:rounded-xl ${
+        className={`font-jakarta fixed right-4 z-[89] flex h-[min(720px,calc(100vh-3rem))] w-[min(960px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl transition duration-200 sm:right-6 ${
+          hideTrigger ? "" : "bottom-24"
+        } ${
           open
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
             : "pointer-events-none translate-y-3 scale-[0.98] opacity-0"
@@ -2860,7 +3075,7 @@ export default function SiBSChat({
         style={
           hideTrigger
             ? {
-                bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))",
+                bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
               }
             : undefined
         }
@@ -2877,24 +3092,24 @@ export default function SiBSChat({
           </div>
         ) : null}
 
-        <aside className={`w-[280px] shrink-0 flex-col border-r border-sibs-border bg-white max-sm:w-full max-sm:border-r-0 ${
+        <aside className={`w-[300px] shrink-0 flex-col border-r border-sibs-border bg-white max-sm:w-full max-sm:border-r-0 ${
           activeConversation || newChatOpen ? "max-sm:hidden sm:flex" : "flex"
         }`}>
-          <header className="bg-sibs-navy px-4 py-3.5 text-white">
+          <header className="border-b border-white/10 bg-sibs-navy px-4 py-3.5 text-white">
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-sibs-orange text-white">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
                 <MessageCircleMore size={20} />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h2 className="font-heading text-base font-extrabold">SiBS Chat</h2>
+                  <h2 className="font-heading text-base font-extrabold text-white">SiBS Chat</h2>
                   {chat.totalUnread > 0 ? (
-                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-extrabold">
+                    <span className="rounded-full bg-sibs-orange px-2 py-0.5 text-[10px] font-extrabold text-white">
                       {chat.totalUnread}
                     </span>
                   ) : null}
                 </div>
-                <p className="text-[10px] font-semibold text-white/65">
+                <p className="text-[10px] font-semibold text-white/70">
                   Private & group messaging
                 </p>
               </div>
@@ -2925,7 +3140,7 @@ export default function SiBSChat({
                 value={conversationSearch}
                 onChange={(event) => setConversationSearch(event.target.value)}
                 placeholder="Search chats..."
-                className="h-9 w-full rounded-xl border border-sibs-border bg-[#F8FAFC] pl-9 pr-3 text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white"
+                className="h-10 w-full rounded-xl border border-sibs-border bg-sibs-surface pl-9 pr-3 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-border focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
               />
             </label>
           </div>
@@ -2999,8 +3214,10 @@ export default function SiBSChat({
                 return (
                   <div
                     key={conversation.id}
-                    className={`group relative mb-1 flex w-full items-center rounded-xl text-left transition ${
-                      selected ? "bg-[#FFF0EA]" : "hover:bg-sibs-surface"
+                    className={`group relative mb-1 flex w-full items-center rounded-xl border-l-[3px] transition ${
+                      selected
+                        ? "border-l-sibs-orange bg-sibs-cream-subtle border-y border-r border-sibs-border/60"
+                        : "border-l-transparent hover:bg-sibs-surface"
                     }`}
                   >
                     <button
@@ -3016,11 +3233,11 @@ export default function SiBSChat({
                         initials={conversation.initials}
                         online={online}
                         group={conversation.isGroup}
-                        size="sm"
+                        size="md"
                       />
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center justify-between gap-2">
-                          <span className="truncate text-xs font-extrabold text-sibs-navy">
+                          <span className="truncate text-sm font-bold text-sibs-navy">
                             {!conversation.isGroup
                               ? cleanText(
                                   otherMember?.chatNickname ||
@@ -3030,18 +3247,18 @@ export default function SiBSChat({
                                 conversation.title
                               : conversation.title}
                           </span>
-                          <span className="shrink-0 text-[9px] font-semibold text-sibs-faint">
+                          <span className="shrink-0 text-[11px] font-medium text-sibs-faint">
                             {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
                           </span>
                         </span>
                         <span className="mt-0.5 flex items-center gap-2">
                           <span
-                            className={`min-w-0 flex-1 truncate text-[10px] ${
+                            className={`min-w-0 flex-1 truncate text-xs ${
                               conversationTypingLabel
                                 ? "font-extrabold text-sibs-orange"
                                 : conversation.unreadCount
                                   ? "font-extrabold text-sibs-navy"
-                                  : "font-semibold text-sibs-muted"
+                                  : "font-normal text-sibs-muted"
                             }`}
                           >
                             {preview}
@@ -3147,13 +3364,11 @@ export default function SiBSChat({
         }`}>
           {activeConversation ? (
             <>
-              <header className="flex h-[68px] shrink-0 items-center gap-3 border-b border-sibs-border bg-white px-4 max-sm:h-[58px] max-sm:gap-2 max-sm:px-2">
+              <header className="flex h-[68px] shrink-0 items-center gap-3 border-b border-white/10 bg-sibs-navy px-4 text-white shadow-xs">
                 <button
                   type="button"
                   onClick={() => void chat.selectConversation(null)}
-                  aria-label="Back to chats"
-                  title="Back to chats"
-                  className="hidden h-9 w-9 items-center justify-center rounded-xl text-sibs-muted hover:bg-sibs-surface max-sm:inline-flex"
+                  className="hidden h-9 w-9 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white max-sm:inline-flex"
                 >
                   <ArrowLeft size={18} />
                 </button>
@@ -3165,7 +3380,7 @@ export default function SiBSChat({
                   size="sm"
                 />
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-sm font-extrabold text-sibs-navy">
+                  <h3 className="truncate font-heading text-sm sm:text-base font-extrabold text-white">
                     {activeConversation.title}
                   </h3>
                   {activeConversation.isGroup ? (
@@ -3173,7 +3388,7 @@ export default function SiBSChat({
                       type="button"
                       onClick={() => setGroupInfoOpen(true)}
                       title="View group members"
-                      className="mt-0.5 inline-flex items-center gap-1 text-left text-[10px] font-semibold text-sibs-muted transition hover:text-sibs-navy"
+                      className="mt-0.5 inline-flex items-center gap-1 text-left text-[10px] font-semibold text-white/75 transition hover:text-white"
                     >
                       <span>
                         {activeConversation.members?.length || 0} member
@@ -3181,33 +3396,37 @@ export default function SiBSChat({
                       </span>
                     </button>
                   ) : (
-                    <p className="truncate text-[10px] font-semibold text-sibs-muted">
-                      {activePrivateNickname &&
-                      activePrivateFullName &&
-                      activePrivateNickname !== activePrivateFullName
-                        ? `${activePrivateFullName} · ${activePrivateStatus}`
-                        : activePrivateStatus}
+                    <p className="truncate text-[10px] font-semibold text-white/75">
+                      {activePrivateStatus}
                     </p>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setThemeModalOpen(true)}
+                  title="Chat theme & wallpaper"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                >
+                  <Palette size={17} />
+                </button>
                 {activeConversation.isGroup ? (
                   <button
                     type="button"
                     onClick={() => setGroupInfoOpen(true)}
                     title="Group info"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-sibs-muted transition hover:bg-sibs-surface hover:text-sibs-navy"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
                   >
                     <Settings2 size={17} />
                   </button>
                 ) : (
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-sibs-faint">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/50">
                     <MoreHorizontal size={18} />
                   </span>
                 )}
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-sibs-muted transition hover:bg-sibs-surface hover:text-sibs-navy"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
                 >
                   <X size={17} />
                 </button>
@@ -3220,20 +3439,43 @@ export default function SiBSChat({
               ) : null}
 
               <div
-                ref={messageScrollRef}
-                className="sibs-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#F8FAFC] px-4 py-4"
+                data-chat-custom-theme={isCustomTheme ? "true" : "false"}
+                data-chat-theme-dark={isThemeDark ? "true" : "false"}
+                className={`relative flex min-h-0 flex-1 flex-col overflow-hidden transition-colors duration-300 ${
+                  isCustomTheme ? "" : "bg-sibs-canvas"
+                }`}
+                style={themeBackgroundStyle}
               >
+                {isCustomTheme ? (
+                  <div
+                    className="pointer-events-none absolute inset-0 bg-slate-900/10 dark:bg-slate-950/20 backdrop-blur-[0.5px]"
+                    aria-hidden="true"
+                  />
+                ) : null}
+
+                <div
+                  ref={messageScrollRef}
+                  onScroll={handleMessagesScroll}
+                  className="sibs-scrollbar relative z-10 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 sm:px-5 [overflow-anchor:auto]"
+                >
                 {chat.messagesLoading ? (
                   <div className="flex h-full items-center justify-center text-sibs-muted">
                     <Loader2 size={22} className="animate-spin" />
                   </div>
                 ) : chat.messages.length ? (
-                  <div className="space-y-1">
+                  <div ref={messagesListContentRef} className="flex flex-col">
                     {chat.hasMoreMessages ? (
-                      <div className="mb-3 flex justify-center">
+                      <div className="mb-3 flex justify-center [overflow-anchor:none]">
                         <button
                           type="button"
-                          onClick={() => void chat.loadOlderMessages()}
+                          onClick={() => {
+                            const scroller = messageScrollRef.current;
+                            if (scroller) {
+                              olderMessagesScrollHeightRef.current = scroller.scrollHeight;
+                              olderMessagesScrollTopRef.current = scroller.scrollTop;
+                            }
+                            void chat.loadOlderMessages();
+                          }}
                           disabled={chat.loadingOlderMessages}
                           className="inline-flex items-center gap-2 rounded-full border border-sibs-border bg-white px-3 py-1.5 text-[10px] font-extrabold text-sibs-muted shadow-sm transition hover:text-sibs-navy disabled:opacity-50"
                         >
@@ -3247,17 +3489,63 @@ export default function SiBSChat({
                     {chat.messages.map((message, index) => {
                       const mine = cleanText(message.senderSibsId) === currentSibsId;
                       const previous = chat.messages[index - 1];
-                      const showDate = !previous || !isSameDay(previous.createdAt, message.createdAt);
-                      const showSender =
-                        activeConversation.isGroup &&
-                        !mine &&
-                        (!previous || previous.senderSibsId !== message.senderSibsId || showDate);
+                      const next = chat.messages[index + 1];
+                      const showDate =
+                        !previous || !isSameDay(previous.createdAt, message.createdAt);
+                      const prevTimestamp = previous ? new Date(previous.createdAt).getTime() : 0;
+                      const currTimestamp = new Date(message.createdAt).getTime();
+                      const timeGapMs =
+                        prevTimestamp && currTimestamp
+                          ? Math.max(0, currTimestamp - prevTimestamp)
+                          : 0;
+                      const isSignificantGap = timeGapMs >= 15 * 60 * 1000;
+                      const shouldShowCenterTime = showDate || isSignificantGap;
                       const normalizedMessageType = cleanText(
                         message.messageType,
                       ).toUpperCase();
                       const membershipActivity =
                         normalizedMessageType === "MEMBER_ADDED" ||
                         normalizedMessageType === "MEMBER_REMOVED";
+                      const previousMessageType = cleanText(
+                        previous?.messageType,
+                      ).toUpperCase();
+                      const nextMessageType = cleanText(
+                        next?.messageType,
+                      ).toUpperCase();
+                      const previousMembershipActivity =
+                        previousMessageType === "MEMBER_ADDED" ||
+                        previousMessageType === "MEMBER_REMOVED";
+                      const nextMembershipActivity =
+                        nextMessageType === "MEMBER_ADDED" ||
+                        nextMessageType === "MEMBER_REMOVED";
+                      const sameSenderAsPrevious =
+                        Boolean(previous) &&
+                        !showDate &&
+                        !isSignificantGap &&
+                        !membershipActivity &&
+                        !previousMembershipActivity &&
+                        cleanText(previous?.senderSibsId) ===
+                          cleanText(message.senderSibsId);
+                      const nextTimestamp = next ? new Date(next.createdAt).getTime() : 0;
+                      const nextGapMs =
+                        nextTimestamp && currTimestamp
+                          ? Math.max(0, nextTimestamp - currTimestamp)
+                          : 0;
+                      const nextSignificantGap = nextGapMs >= 15 * 60 * 1000;
+                      const sameSenderAsNext =
+                        Boolean(next) &&
+                        !membershipActivity &&
+                        !nextMembershipActivity &&
+                        !nextSignificantGap &&
+                        isSameDay(message.createdAt, next?.createdAt) &&
+                        cleanText(next?.senderSibsId) ===
+                          cleanText(message.senderSibsId);
+                      const groupStart = !sameSenderAsPrevious;
+                      const groupEnd = !sameSenderAsNext;
+                      const showSender =
+                        activeConversation.isGroup &&
+                        !mine &&
+                        groupStart;
                       const unsent =
                         Boolean(message.unsent) ||
                         normalizedMessageType === "UNSENT";
@@ -3284,16 +3572,42 @@ export default function SiBSChat({
                         isEmojiOnlyMessage(message.messageText);
                       const seenMembers =
                         seenMembersByMessageId.get(Number(message.id)) || [];
+                      const senderEmployee =
+                        membersBySibsId.get(cleanText(message.senderSibsId)) ||
+                        message.sender ||
+                        null;
+                      const senderDisplayName =
+                        cleanText(
+                          senderEmployee?.preferredName ||
+                            senderEmployee?.preferred_name ||
+                            message.sender?.preferredName ||
+                            message.sender?.preferred_name,
+                        ) ||
+                        senderEmployee?.displayName ||
+                        message.sender?.displayName ||
+                        `SIBS ID ${message.senderSibsId}`;
+                      const senderInitials =
+                        senderEmployee?.initials ||
+                        cleanText(senderDisplayName).slice(0, 2).toUpperCase() ||
+                        "U";
 
                       return (
-                        <div key={message.id} data-chat-message-id={message.id}>
-                          {showDate ? (
-                            <div className="my-3 flex items-center gap-3">
-                              <span className="h-px flex-1 bg-sibs-border" />
-                              <span className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
-                                {formatMessageDay(message.createdAt)}
+                        <div
+                          key={message.id}
+                          data-chat-message-id={message.id}
+                          className={
+                            membershipActivity
+                              ? "my-2"
+                              : groupStart
+                                ? "mt-2.5"
+                                : "mt-0.5"
+                          }
+                        >
+                          {shouldShowCenterTime ? (
+                            <div className="my-2.5 flex items-center justify-center">
+                              <span className="chat-theme-date-pill">
+                                {formatMessengerCenterTimestamp(message.createdAt, previous?.createdAt)}
                               </span>
-                              <span className="h-px flex-1 bg-sibs-border" />
                             </div>
                           ) : null}
 
@@ -3314,159 +3628,38 @@ export default function SiBSChat({
                               </div>
                             </div>
                           ) : (
-                          <div
-                            className={`group/message flex items-end gap-1.5 ${
-                              mine ? "justify-end" : "justify-start"
-                            }`}
-                          >
-                            {canReact ? (
+                            <>
                               <div
-                                className="relative mb-4 shrink-0"
-                                data-chat-reaction-picker
+                                className={`group/message flex items-end gap-2 ${
+                                  mine ? "justify-end" : "justify-start"
+                                }`}
                               >
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setReactionPickerMessageId((current) =>
-                                      Number(current) === Number(message.id)
-                                        ? null
-                                        : Number(message.id),
-                                    )
-                                  }
-                                  disabled={
-                                    Number(reactingMessageId) === Number(message.id)
-                                  }
-                                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-white hover:text-sibs-orange hover:shadow-sm disabled:opacity-40 ${
-                                    Number(reactionPickerMessageId) === Number(message.id) || myReaction
-                                      ? "bg-white text-sibs-orange shadow-sm"
-                                      : "text-sibs-faint opacity-60 group-hover/message:opacity-100"
-                                  }`}
-                                  title={myReaction ? `Your reaction: ${myReaction}` : "React"}
-                                  aria-label="React to message"
-                                >
-                                  {Number(reactingMessageId) === Number(message.id) ? (
-                                    <Loader2 size={14} className="animate-spin" />
-                                  ) : myReaction ? (
-                                    <span className="text-sm leading-none">{myReaction}</span>
-                                  ) : (
-                                    <Smile size={15} />
-                                  )}
-                                </button>
-
-                                {Number(reactionPickerMessageId) === Number(message.id) ? (
-                                  <div
-                                    className={`absolute bottom-full z-40 mb-1 grid w-[224px] grid-cols-6 gap-1 rounded-2xl border border-sibs-border bg-white p-2 shadow-xl ${
-                                      mine ? "right-0" : "left-0"
-                                    }`}
-                                  >
-                                    {MESSAGE_REACTIONS.map((reaction) => (
-                                      <button
-                                        key={reaction}
-                                        type="button"
-                                        onClick={() => void handleMessageReaction(message, reaction)}
-                                        disabled={
-                                          Number(reactingMessageId) === Number(message.id)
-                                        }
-                                        className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none transition hover:scale-110 hover:bg-sibs-surface disabled:opacity-40 ${
-                                          myReaction === reaction
-                                            ? "bg-[#FFF0EA] ring-1 ring-sibs-orange/40"
-                                            : ""
-                                        }`}
-                                        title={
-                                          myReaction === reaction
-                                            ? `Remove ${reaction} reaction`
-                                            : `React ${reaction}`
-                                        }
-                                      >
-                                        {reaction}
-                                      </button>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              </div>
-                            ) : null}
-
-                            {canUnsend ? (
-                              <div
-                                className="relative mb-4 shrink-0"
-                                data-chat-message-actions
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setMessageActionId((current) =>
-                                      Number(current) === Number(message.id)
-                                        ? null
-                                        : Number(message.id),
-                                    )
-                                  }
-                                  disabled={
-                                    Number(unsendingMessageId) === Number(message.id)
-                                  }
-                                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sibs-faint transition hover:bg-white hover:text-sibs-navy hover:shadow-sm disabled:opacity-40 ${
-                                    Number(messageActionId) === Number(message.id)
-                                      ? "bg-white text-sibs-navy shadow-sm"
-                                      : "opacity-0 group-hover/message:opacity-100"
-                                  }`}
-                                  title="Message options"
-                                  aria-label="Message options"
-                                >
-                                  {Number(unsendingMessageId) === Number(message.id) ? (
-                                    <Loader2 size={14} className="animate-spin" />
-                                  ) : (
-                                    <MoreHorizontal size={15} />
-                                  )}
-                                </button>
-
-                                {Number(messageActionId) === Number(message.id) ? (
-                                  <div className="absolute bottom-full right-0 z-30 mb-1 min-w-[118px] rounded-xl border border-sibs-border bg-white p-1.5 shadow-xl">
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleUnsendMessage(message)}
-                                      className="flex w-full items-center rounded-lg px-3 py-2 text-left text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
-                                    >
-                                      Unsend message
-                                    </button>
-                                  </div>
-                                ) : null}
-                              </div>
-                            ) : null}
-
-                            <div className="max-w-[78%]">
-                              {showSender ? (
-                                <div className="mb-1 ml-1 flex items-center gap-1.5">
+                            {/* Avatar on LEFT for incoming messages */}
+                            {!mine ? (
+                              <div className="flex h-7 w-7 shrink-0 items-end self-end mb-0.5">
+                                {groupEnd ? (
                                   <ChatAvatar
-                                    employee={message.sender}
-                                    initials={
-                                      message.sender?.initials ||
-                                      cleanText(message.senderSibsId).slice(0, 2).toUpperCase() ||
-                                      "U"
-                                    }
-                                    online={
-                                      chat.presence?.[message.senderSibsId] ??
-                                      message.sender?.online ??
-                                      false
-                                    }
-                                    size="sm"
+                                    employee={senderEmployee}
+                                    initials={senderInitials}
+                                    size="chat"
                                   />
-                                  <p className="min-w-0 truncate text-[11px] font-extrabold text-sibs-muted 2xl:text-xs">
-                                    {cleanText(
-                                      message.sender?.preferredName ||
-                                        message.sender?.preferred_name,
-                                    ) ||
-                                      message.sender?.displayName ||
-                                      `SIBS ID ${message.senderSibsId}`}
-                                  </p>
-                                </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+
+                            {/* Message content container */}
+                            <div className={`max-w-[70%] sm:max-w-[68%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                              {showSender ? (
+                                <p className="chat-theme-sender-name truncate">
+                                  {senderDisplayName}
+                                </p>
                               ) : null}
 
-                              <div className="flex items-center gap-1.5">
-                                <div className="min-w-0">
-                                  {message.replyTo ? (
+                              {message.replyTo ? (
                                 <button
                                   type="button"
                                   onClick={() => scrollToRepliedMessage(message.replyTo.id)}
-                                  className={`mb-1.5 block w-full overflow-hidden rounded-xl border-l-[3px] px-2.5 py-2 text-left shadow-sm transition hover:brightness-[0.98] ${
+                                  className={`mb-1.5 block max-w-full overflow-hidden rounded-xl border-l-[3px] px-2.5 py-2 text-left shadow-sm transition hover:brightness-[0.98] ${
                                     mine
                                       ? "border-sibs-orange bg-orange-50 text-sibs-navy"
                                       : "border-sibs-navy bg-slate-100 text-sibs-navy"
@@ -3482,8 +3675,147 @@ export default function SiBSChat({
                                 </button>
                               ) : null}
 
-                              {unsent ? (
-                                <div className="rounded-2xl border border-sibs-border bg-white px-3 py-2 text-[11px] font-semibold italic text-sibs-muted">
+                              {/* Bubble + Actions Flex Row */}
+                              <div className={`flex items-center gap-1.5 ${mine ? "justify-end" : "justify-start"}`}>
+                                {/* Actions on LEFT for outgoing messages */}
+                                {mine && (canReact || canReply || canUnsend) ? (
+                                  <div
+                                    className={`flex items-center gap-0.5 shrink-0 transition ${
+                                      Number(reactionPickerMessageId) === Number(message.id) ||
+                                      Number(messageActionId) === Number(message.id) ||
+                                      myReaction
+                                        ? "opacity-100"
+                                        : "opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100"
+                                    }`}
+                                  >
+                                    {canUnsend ? (
+                                      <div
+                                        className="relative shrink-0"
+                                        data-chat-message-actions
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setMessageActionId((current) =>
+                                              Number(current) === Number(message.id)
+                                                ? null
+                                                : Number(message.id),
+                                            )
+                                          }
+                                          disabled={
+                                            Number(unsendingMessageId) === Number(message.id)
+                                          }
+                                          className={`chat-theme-action-btn disabled:opacity-40 ${
+                                            Number(messageActionId) === Number(message.id)
+                                              ? "bg-white text-sibs-navy shadow-sm"
+                                              : ""
+                                          }`}
+                                          title="Message options"
+                                          aria-label="Message options"
+                                        >
+                                          {Number(unsendingMessageId) === Number(message.id) ? (
+                                            <Loader2 size={14} className="animate-spin" />
+                                          ) : (
+                                            <MoreHorizontal size={15} />
+                                          )}
+                                        </button>
+
+                                        {Number(messageActionId) === Number(message.id) ? (
+                                          <div className="absolute bottom-full right-0 z-30 mb-1 min-w-[118px] rounded-xl border border-sibs-border bg-white p-1.5 shadow-xl">
+                                            <button
+                                              type="button"
+                                              onClick={() => void handleUnsendMessage(message)}
+                                              className="flex w-full items-center rounded-lg px-3 py-2 text-left text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
+                                            >
+                                              Unsend message
+                                            </button>
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    ) : null}
+
+                                    {canReply ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleReplyMessage(message)}
+                                        className="chat-theme-action-btn shrink-0"
+                                        title="Reply"
+                                        aria-label="Reply to message"
+                                      >
+                                        <Reply size={15} />
+                                      </button>
+                                    ) : null}
+
+                                    {canReact ? (
+                                      <div
+                                        className="relative shrink-0"
+                                        data-chat-reaction-picker
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setReactionPickerMessageId((current) =>
+                                              Number(current) === Number(message.id)
+                                                ? null
+                                                : Number(message.id),
+                                            )
+                                          }
+                                          disabled={
+                                            Number(reactingMessageId) === Number(message.id)
+                                          }
+                                          className={`chat-theme-action-btn disabled:opacity-40 ${
+                                            Number(reactionPickerMessageId) === Number(message.id) || myReaction
+                                              ? "bg-white text-sibs-orange shadow-sm"
+                                              : ""
+                                          }`}
+                                          title={myReaction ? `Your reaction: ${myReaction}` : "React"}
+                                          aria-label="React to message"
+                                        >
+                                          {Number(reactingMessageId) === Number(message.id) ? (
+                                            <Loader2 size={14} className="animate-spin" />
+                                          ) : myReaction ? (
+                                            <span className="text-sm leading-none">{myReaction}</span>
+                                          ) : (
+                                            <Smile size={15} />
+                                          )}
+                                        </button>
+
+                                        {Number(reactionPickerMessageId) === Number(message.id) ? (
+                                          <div className="absolute bottom-full right-0 z-40 mb-1 grid w-[224px] grid-cols-6 gap-1 rounded-2xl border border-sibs-border bg-white p-2 shadow-xl">
+                                            {MESSAGE_REACTIONS.map((reaction) => (
+                                              <button
+                                                key={reaction}
+                                                type="button"
+                                                onClick={() => void handleMessageReaction(message, reaction)}
+                                                disabled={
+                                                  Number(reactingMessageId) === Number(message.id)
+                                                }
+                                                className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none transition hover:scale-110 hover:bg-sibs-surface disabled:opacity-40 ${
+                                                  myReaction === reaction
+                                                    ? "bg-sibs-cream-light ring-1 ring-sibs-orange/40"
+                                                    : ""
+                                                }`}
+                                                title={
+                                                  myReaction === reaction
+                                                    ? `Remove ${reaction} reaction`
+                                                    : `React ${reaction}`
+                                                }
+                                              >
+                                                {reaction}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+
+                                {unsent ? (
+                                <div
+                                  title={formatMessageTime(message.createdAt, chatClockMs)}
+                                  className="rounded-2xl border border-sibs-border bg-white px-3 py-2 text-[11px] font-semibold italic text-sibs-muted"
+                                >
                                   {mine
                                     ? "You unsent a message"
                                     : "This message was unsent"}
@@ -3495,21 +3827,27 @@ export default function SiBSChat({
                                     window.open(gifUrl, "_blank", "noopener,noreferrer")
                                   }
                                   className="block max-w-full overflow-hidden rounded-2xl bg-slate-100 shadow-sm"
-                                  title="Open GIF"
+                                  title={formatMessageTime(message.createdAt, chatClockMs)}
                                 >
                                   <img
                                     src={gifUrl}
                                     alt="GIF"
                                     className="max-h-64 w-auto max-w-full object-contain"
                                     loading="lazy"
+                                    onLoad={() => {
+                                      if (shouldSnapToBottom(isInitialConversationLoadRef.current, isNearBottomRef.current)) {
+                                        scrollToLatest();
+                                      }
+                                    }}
                                   />
                                 </button>
                               ) : emojiOnly ? (
                                 <div
-                                  className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                                  title={formatMessageTime(message.createdAt, chatClockMs)}
+                                  className="px-0.5 py-0.5"
                                 >
                                   <p
-                                    className={`max-w-full whitespace-pre-wrap break-words px-0.5 py-0.5 leading-none ${getEmojiOnlySizeClass(
+                                    className={`leading-none ${getEmojiOnlySizeClass(
                                       message.messageText,
                                     )}`}
                                     aria-label={message.messageText}
@@ -3519,10 +3857,15 @@ export default function SiBSChat({
                                 </div>
                               ) : (
                                 <div
-                                  className={`overflow-hidden rounded-2xl ${
+                                  title={formatMessageTime(message.createdAt, chatClockMs)}
+                                  className={`overflow-hidden min-w-[34px] ${getMessageBubbleRadiusClass({
+                                    mine,
+                                    groupStart,
+                                    groupEnd,
+                                  })} ${
                                     mine
-                                      ? "rounded-br-md bg-sibs-orange text-white"
-                                      : "rounded-bl-md border border-sibs-border bg-white text-sibs-navy"
+                                      ? "bg-sibs-orange text-white"
+                                      : "border border-sibs-border bg-white text-sibs-navy shadow-xs"
                                   } ${message.attachments?.length ? "p-1.5" : "px-3 py-2"}`}
                                 >
                                   {message.attachments?.length ? (
@@ -3545,19 +3888,11 @@ export default function SiBSChat({
 
                                         if (isAudio) {
                                           return (
-                                            <div
+                                            <ChatAudioPlayer
                                               key={attachment.id}
-                                              className="rounded-xl border border-sibs-border bg-white p-2"
-                                            >
-                                              <audio
-                                                src={attachmentUrl}
-                                                controls
-                                                preload="metadata"
-                                                className="w-full max-w-[320px]"
-                                              >
-                                                Your browser does not support audio playback.
-                                              </audio>
-                                            </div>
+                                              attachment={attachment}
+                                              mine={mine}
+                                            />
                                           );
                                         }
 
@@ -3574,6 +3909,11 @@ export default function SiBSChat({
                                               alt={attachment.originalName || "Chat attachment"}
                                               className="max-h-56 w-full object-cover"
                                               loading="lazy"
+                                              onLoad={() => {
+                                                if (shouldSnapToBottom(isInitialConversationLoadRef.current, isNearBottomRef.current)) {
+                                                  scrollToLatest();
+                                                }
+                                              }}
                                             />
                                           </button>
                                         );
@@ -3593,20 +3933,94 @@ export default function SiBSChat({
                                 </div>
                               )}
 
-                                </div>
+                              {/* Actions on RIGHT for incoming messages */}
+                              {!mine && (canReact || canReply) ? (
+                                <div
+                                  className={`flex items-center gap-0.5 shrink-0 transition ${
+                                    Number(reactionPickerMessageId) === Number(message.id) ||
+                                    Number(messageActionId) === Number(message.id) ||
+                                    myReaction
+                                      ? "opacity-100"
+                                      : "opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100"
+                                  }`}
+                                >
+                                  {canReact ? (
+                                    <div
+                                      className="relative shrink-0"
+                                      data-chat-reaction-picker
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setReactionPickerMessageId((current) =>
+                                            Number(current) === Number(message.id)
+                                              ? null
+                                              : Number(message.id),
+                                          )
+                                        }
+                                        disabled={
+                                          Number(reactingMessageId) === Number(message.id)
+                                        }
+                                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-white hover:text-sibs-orange hover:shadow-sm disabled:opacity-40 ${
+                                          Number(reactionPickerMessageId) === Number(message.id) || myReaction
+                                            ? "bg-white text-sibs-orange shadow-sm"
+                                            : "text-sibs-faint"
+                                        }`}
+                                        title={myReaction ? `Your reaction: ${myReaction}` : "React"}
+                                        aria-label="React to message"
+                                      >
+                                        {Number(reactingMessageId) === Number(message.id) ? (
+                                          <Loader2 size={14} className="animate-spin" />
+                                        ) : myReaction ? (
+                                          <span className="text-sm leading-none">{myReaction}</span>
+                                        ) : (
+                                          <Smile size={15} />
+                                        )}
+                                      </button>
 
-                                {canReply ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleReplyMessage(message)}
-                                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-full text-sibs-faint opacity-60 transition hover:bg-white hover:text-sibs-navy hover:shadow-sm group-hover/message:opacity-100"
-                                    title="Reply"
-                                    aria-label="Reply to message"
-                                  >
-                                    <Reply size={15} />
-                                  </button>
-                                ) : null}
-                              </div>
+                                      {Number(reactionPickerMessageId) === Number(message.id) ? (
+                                        <div className="absolute bottom-full left-0 z-40 mb-1 grid w-[224px] grid-cols-6 gap-1 rounded-2xl border border-sibs-border bg-white p-2 shadow-xl">
+                                          {MESSAGE_REACTIONS.map((reaction) => (
+                                            <button
+                                              key={reaction}
+                                              type="button"
+                                              onClick={() => void handleMessageReaction(message, reaction)}
+                                              disabled={
+                                                Number(reactingMessageId) === Number(message.id)
+                                              }
+                                              className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none transition hover:scale-110 hover:bg-sibs-surface disabled:opacity-40 ${
+                                                myReaction === reaction
+                                                  ? "bg-sibs-cream-light ring-1 ring-sibs-orange/40"
+                                                  : ""
+                                              }`}
+                                              title={
+                                                myReaction === reaction
+                                                  ? `Remove ${reaction} reaction`
+                                                  : `React ${reaction}`
+                                              }
+                                            >
+                                              {reaction}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
+
+                                  {canReply ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReplyMessage(message)}
+                                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sibs-faint transition hover:bg-white hover:text-sibs-navy hover:shadow-sm"
+                                      title="Reply"
+                                      aria-label="Reply to message"
+                                    >
+                                      <Reply size={15} />
+                                    </button>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                            </div>
 
                               {reactions.length ? (
                                 <div
@@ -3630,7 +4044,7 @@ export default function SiBSChat({
                                           }
                                           className={`inline-flex h-6 items-center gap-1 rounded-full border bg-white px-2 text-[10px] font-bold shadow-sm transition hover:border-sibs-orange/50 disabled:opacity-40 ${
                                             item.reactedByMe
-                                              ? "border-sibs-orange/40 bg-[#FFF7F3] text-sibs-orange"
+                                              ? "border-sibs-orange/40 bg-sibs-cream-subtle text-sibs-orange"
                                               : "border-sibs-border text-sibs-muted"
                                           }`}
                                           aria-label={`${item.reaction} reacted by ${reactedBy}`}
@@ -3656,91 +4070,84 @@ export default function SiBSChat({
                                 </div>
                               ) : null}
 
-                              <p className={`mt-1 text-[9px] font-semibold text-sibs-faint ${mine ? "text-right" : "text-left"}`}>
-                                {formatMessageTime(message.createdAt, chatClockMs)}
-                              </p>
-
-                              {seenMembers.length ? (() => {
-                                const seenNames = seenMembers.map((member) => {
-                                  const memberSibsId = cleanText(member?.sibsId);
-                                  if (memberSibsId === currentSibsId) return "You";
-
-                                  return getChatMemberDisplayName(member);
-                                });
-                                const seenByLabel = `Seen by ${seenNames.join(", ")}`;
-
-                                const seenAvatars = (
-                                  <div className="flex shrink-0 items-center -space-x-1.5">
-                                    {seenMembers.slice(0, 8).map((member) => {
-                                      const memberName =
-                                        getChatMemberDisplayName(member);
-
-                                      return (
-                                        <span
-                                          key={`seen-${message.id}-${member.sibsId}`}
-                                          className="relative inline-flex rounded-full ring-2 ring-[#F8FAFC]"
-                                          title={`Seen by ${memberName}`}
-                                          aria-label={`Seen by ${memberName}`}
-                                        >
-                                          <ChatAvatar
-                                            employee={member}
-                                            initials={
-                                              member?.initials ||
-                                              cleanText(member?.sibsId)
-                                                .slice(0, 2)
-                                                .toUpperCase() ||
-                                              "U"
-                                            }
-                                            online={false}
-                                            size="xs"
-                                          />
-                                        </span>
-                                      );
-                                    })}
-
-                                    {seenMembers.length > 8 ? (
-                                      <span
-                                        className="relative z-10 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-[#F8FAFC] bg-sibs-navy px-1 text-[7px] font-extrabold text-white"
-                                        title={`${seenMembers.length - 8} more people have seen this message`}
-                                      >
-                                        +{seenMembers.length - 8}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                );
-
-                                return (
-                                  <div
-                                    className={`mt-1 flex min-w-0 items-center gap-2 ${
-                                      mine ? "justify-end" : "justify-start"
-                                    }`}
-                                    title={seenByLabel}
-                                  >
-                                    {mine ? (
-                                      <>
-                                        <span className="max-w-[190px] truncate text-[8px] font-semibold text-sibs-faint">
-                                          {seenByLabel}
-                                        </span>
-                                        {seenAvatars}
-                                      </>
-                                    ) : (
-                                      <>
-                                        {seenAvatars}
-                                        <span className="max-w-[190px] truncate text-[8px] font-semibold text-sibs-faint">
-                                          {seenByLabel}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                );
-                              })() : null}
                             </div>
-
                           </div>
-                          )}
+
+                          {(mine || activeConversation?.isGroup) && seenMembers.length ? (
+                            <div
+                              className="mt-0.5 flex items-center justify-end pr-1"
+                              title={`Seen by ${seenMembers
+                                .map((member) =>
+                                  cleanText(
+                                    member?.preferredName ||
+                                      member?.preferred_name ||
+                                      member?.displayName ||
+                                      member?.sibsId,
+                                  ),
+                                )
+                                .filter(Boolean)
+                                .join(", ")}`}
+                            >
+                              <span className="flex items-center -space-x-1.5">
+                                {seenMembers.slice(0, 5).map((member) => {
+                                  const memberName = cleanText(
+                                    member?.preferredName ||
+                                      member?.preferred_name ||
+                                      member?.displayName ||
+                                      member?.sibsId,
+                                  );
+
+                                  return (
+                                    <span
+                                      key={`seen-${message.id}-${member.sibsId}`}
+                                      className="relative inline-flex rounded-full ring-2 ring-sibs-canvas"
+                                      title={memberName}
+                                    >
+                                      <ChatAvatar
+                                        employee={member}
+                                        initials={
+                                          member?.initials ||
+                                          cleanText(member?.sibsId)
+                                            .slice(0, 2)
+                                            .toUpperCase() ||
+                                          "U"
+                                        }
+                                        online={false}
+                                        size="xs"
+                                      />
+                                    </span>
+                                  );
+                                })}
+                                {seenMembers.length > 5 ? (
+                                  <span className="relative z-10 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-sibs-canvas bg-sibs-navy px-1 text-[7px] font-extrabold text-white">
+                                    +{seenMembers.length - 5}
+                                  </span>
+                                ) : null}
+                              </span>
+                            </div>
+                          ) : null}
+                        </>
+                      )}
                         </div>
                       );
                     })}
+                    <ChatTypingIndicator
+                      activeTypingMembers={activeTypingMembers}
+                      typingLabel={typingLabel}
+                      renderAvatar={(member) => (
+                        <ChatAvatar
+                          employee={member}
+                          initials={member?.initials}
+                          online={
+                            chat.presence?.[member?.sibsId] ??
+                            member?.online ??
+                            false
+                          }
+                          size="xs"
+                        />
+                      )}
+                      className="mt-2"
+                    />
                     <div
                       ref={messageEndRef}
                       aria-hidden="true"
@@ -3757,51 +4164,42 @@ export default function SiBSChat({
                         group={activeConversation.isGroup}
                         size="lg"
                       />
-                      <p className="mt-3 text-sm font-extrabold text-sibs-navy">
+                      <p className="chat-theme-empty-title mt-3 text-sm font-extrabold text-sibs-navy">
                         {activeConversation.title}
                       </p>
                       {!activeConversation.isGroup &&
                       activePrivateNickname &&
                       activePrivateFullName &&
                       activePrivateNickname !== activePrivateFullName ? (
-                        <p className="mt-1 text-[11px] font-semibold text-sibs-muted">
+                        <p className="chat-theme-empty-subtitle mt-1 text-[11px] font-semibold text-sibs-muted">
                           {activePrivateFullName}
                         </p>
                       ) : null}
-                      <p className="mt-1 text-[11px] font-semibold text-sibs-muted">
+                      <p className="chat-theme-empty-subtitle mt-1 text-[11px] font-semibold text-sibs-muted">
                         Start the conversation.
                       </p>
+                      <ChatTypingIndicator
+                        activeTypingMembers={activeTypingMembers}
+                        typingLabel={typingLabel}
+                        renderAvatar={(member) => (
+                          <ChatAvatar
+                            employee={member}
+                            initials={member?.initials}
+                            online={
+                              chat.presence?.[member?.sibsId] ??
+                              member?.online ??
+                              false
+                            }
+                            size="xs"
+                          />
+                        )}
+                        className="mt-4 justify-center"
+                      />
                     </div>
                   </div>
                 )}
               </div>
-
-              {activeTypingMembers.length ? (
-                <div className="shrink-0 border-t border-[#EAF0F5] bg-[#F8FAFC] px-4 py-2">
-                  <div className="flex items-center gap-2">
-                    <ChatAvatar
-                      employee={activeTypingMembers[0]}
-                      initials={activeTypingMembers[0]?.initials}
-                      online={
-                        chat.presence?.[activeTypingMembers[0]?.sibsId] ??
-                        activeTypingMembers[0]?.online ??
-                        false
-                      }
-                      size="xs"
-                    />
-
-                    <span className="inline-flex items-center gap-1 rounded-full border border-sibs-border bg-white px-2.5 py-1.5 shadow-sm">
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sibs-muted [animation-delay:-0.30s]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sibs-muted [animation-delay:-0.15s]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sibs-muted" />
-                    </span>
-
-                    <span className="min-w-0 truncate text-[10px] font-semibold text-sibs-muted">
-                      {typingLabel}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
+            </div>
 
               <footer className="shrink-0 border-t border-sibs-border bg-white px-3 py-3 max-sm:px-2 max-sm:py-2">
                 {attachmentNotice ? (
@@ -3825,7 +4223,7 @@ export default function SiBSChat({
                 ) : null}
 
                 {replyingToMessage ? (
-                  <div className="mb-2 flex items-center gap-2 rounded-xl border border-sibs-border bg-[#F8FAFC] px-3 py-2">
+                  <div className="mb-2 flex items-center gap-2 rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2">
                     <div className="min-w-0 flex-1 border-l-[3px] border-sibs-orange pl-2.5">
                       <p className="truncate text-[10px] font-extrabold text-sibs-orange">
                         Replying to {getReplySenderName(replyingToMessage, currentSibsId)}
@@ -3848,45 +4246,72 @@ export default function SiBSChat({
 
                 {selectedImages.length ? (
                   <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
-                    {selectedImages.map((item, index) => (
-                      <div key={`${item.file.name}-${index}`} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface">
-                        {cleanText(item.detectedMimeType || item.file.type).toLowerCase().startsWith("video/") ? (
-                          <video
-                            src={item.previewUrl}
-                            muted
-                            playsInline
-                            preload="metadata"
-                            className="h-full w-full bg-black object-cover"
-                          />
-                        ) : cleanText(item.detectedMimeType || item.file.type).toLowerCase().startsWith("audio/") ? (
-                          <div className="flex h-full w-full items-center justify-center bg-sibs-surface px-1">
-                            <audio
-                              src={item.previewUrl}
-                              controls
-                              preload="metadata"
-                              className="w-full max-w-full"
-                            />
+                    {selectedImages.map((item, index) => {
+                      const isAudio = cleanText(item.detectedMimeType || item.file.type).toLowerCase().startsWith("audio/");
+                      const isVideo = cleanText(item.detectedMimeType || item.file.type).toLowerCase().startsWith("video/");
+
+                      if (isAudio) {
+                        return (
+                          <div
+                            key={`${item.file.name}-${index}`}
+                            className="relative flex h-16 min-w-[200px] max-w-[260px] shrink-0 items-center gap-2.5 rounded-xl border border-sibs-border bg-white px-3 py-2 shadow-xs"
+                          >
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-sibs-orange">
+                              <Music size={18} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-bold text-sibs-navy" title={item.file.name}>
+                                {item.file.name}
+                              </p>
+                              <p className="text-[10px] font-semibold text-sibs-muted">
+                                {(item.file.size / 1024 / 1024).toFixed(2)} MB · Audio
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeSelectedImage(index)}
+                              className="absolute right-1.5 top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/60 text-white hover:bg-slate-900 transition"
+                            >
+                              <X size={11} />
+                            </button>
                           </div>
-                        ) : (
-                          <img
-                            src={item.previewUrl}
-                            alt={item.file.name}
-                            className="h-full w-full object-cover"
-                          />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeSelectedImage(index)}
-                          className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white"
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={`${item.file.name}-${index}`}
+                          className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface"
                         >
-                          <X size={11} />
-                        </button>
-                      </div>
-                    ))}
+                          {isVideo ? (
+                            <video
+                              src={item.previewUrl}
+                              muted
+                              playsInline
+                              preload="metadata"
+                              className="h-full w-full bg-black object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={item.previewUrl}
+                              alt={item.file.name}
+                              className="h-full w-full object-cover"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeSelectedImage(index)}
+                            className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white"
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : null}
 
-                <div className="flex items-end gap-2">
+                <div className="relative flex items-end gap-2">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -3899,13 +4324,14 @@ export default function SiBSChat({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={sending || selectedImages.length >= MAX_ATTACHMENTS_PER_MESSAGE}
-                    title="Attach image, audio, or video (max 10 MB each)"
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-muted transition hover:bg-[#FFF0EA] hover:text-sibs-orange disabled:opacity-40"
+                    title="Add attachment · up to 5 files, 10 MB each"
+                    aria-label="Add attachment"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-orange transition hover:bg-sibs-cream-light active:scale-[0.96] disabled:opacity-40"
                   >
-                    <ImagePlus size={19} />
+                    <Plus size={19} />
                   </button>
 
-                  <div className="relative shrink-0">
+                  <div className="relative h-10 shrink-0">
                     <button
                       ref={emojiButtonRef}
                       type="button"
@@ -3917,10 +4343,10 @@ export default function SiBSChat({
                       title="Choose emoji"
                       aria-label="Choose emoji"
                       aria-expanded={emojiPickerOpen}
-                      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition disabled:opacity-40 ${
+                      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition active:scale-[0.96] disabled:opacity-40 ${
                         emojiPickerOpen
-                          ? "bg-[#FFF0EA] text-sibs-orange"
-                          : "text-sibs-muted hover:bg-[#FFF0EA] hover:text-sibs-orange"
+                          ? "bg-sibs-cream-subtle text-sibs-orange border border-sibs-orange/30"
+                          : "text-sibs-muted hover:bg-sibs-cream-light hover:text-sibs-orange"
                       }`}
                     >
                       <Smile size={19} />
@@ -3929,7 +4355,7 @@ export default function SiBSChat({
                     {emojiPickerOpen ? (
                       <div
                         ref={emojiPickerRef}
-                        className="absolute bottom-[calc(100%+10px)] left-0 z-[160] w-[300px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)]"
+                        className="absolute bottom-[calc(100%+10px)] left-0 z-[160] w-[300px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl"
                       >
                         <div className="flex items-center justify-between border-b border-sibs-border px-3 py-2.5">
                           <div>
@@ -3955,7 +4381,7 @@ export default function SiBSChat({
                               key={`${emoji}-${index}`}
                               type="button"
                               onClick={() => insertEmoji(emoji)}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[20px] leading-none transition hover:bg-[#FFF0EA] hover:scale-110"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[20px] leading-none transition hover:bg-sibs-cream-light hover:scale-110"
                               title={`Insert ${emoji}`}
                               aria-label={`Insert ${emoji}`}
                             >
@@ -3967,7 +4393,7 @@ export default function SiBSChat({
                     ) : null}
                   </div>
 
-                  <div className="relative shrink-0">
+                  <div className="relative h-10 shrink-0">
                     <button
                       ref={gifButtonRef}
                       type="button"
@@ -3987,19 +4413,19 @@ export default function SiBSChat({
                       title="Search GIFs online"
                       aria-label="Search GIFs online"
                       aria-expanded={gifPickerOpen}
-                      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition disabled:opacity-40 ${
+                      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition active:scale-[0.96] disabled:opacity-40 ${
                         gifPickerOpen
-                          ? "bg-[#FFF0EA] text-sibs-orange"
-                          : "text-sibs-muted hover:bg-[#FFF0EA] hover:text-sibs-orange"
+                          ? "bg-sibs-cream-subtle text-sibs-orange border border-sibs-orange/30"
+                          : "text-sibs-muted hover:bg-sibs-cream-light hover:text-sibs-orange"
                       }`}
                     >
-                      <span className="text-[10px] font-black tracking-[-0.04em]">GIF</span>
+                      <span className="text-[11px] font-black tracking-[-0.03em]">GIF</span>
                     </button>
 
                     {gifPickerOpen ? (
                       <div
                         ref={gifPickerRef}
-                        className="absolute bottom-[calc(100%+10px)] left-0 z-[160] w-[340px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)]"
+                        className="absolute bottom-[calc(100%+10px)] left-0 z-[160] w-[340px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl"
                       >
                         <div className="flex items-center justify-between border-b border-sibs-border px-3 py-2.5">
                           <div>
@@ -4020,7 +4446,7 @@ export default function SiBSChat({
                         </div>
 
                         <div className="border-b border-sibs-border p-2.5">
-                          <div className="flex h-9 items-center gap-2 rounded-xl border border-sibs-border bg-[#F8FAFC] px-3 focus-within:border-sibs-orange focus-within:bg-white">
+                          <div className="flex h-9 items-center gap-2 rounded-xl border border-sibs-border bg-sibs-surface px-3 focus-within:border-sibs-orange focus-within:bg-white">
                             <Search size={14} className="shrink-0 text-sibs-faint" />
                             <input
                               ref={gifSearchInputRef}
@@ -4085,7 +4511,7 @@ export default function SiBSChat({
                     ) : null}
                   </div>
 
-                  <div className="relative min-w-0 flex-1">
+                  <div className="relative min-w-0 flex-1 self-end">
                     {activeConversation?.isGroup &&
                     mentionStart !== null &&
                     mentionCandidates.length ? (
@@ -4107,8 +4533,8 @@ export default function SiBSChat({
                               onClick={() => insertMention(member)}
                               className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left transition ${
                                 index === mentionActiveIndex
-                                  ? "bg-[#FFF0EA]"
-                                  : "hover:bg-sibs-surface"
+                                  ? "bg-sibs-cream-light text-sibs-orange font-bold"
+                                  : "hover:bg-sibs-surface text-sibs-navy"
                               }`}
                             >
                               {member?.mentionEveryone ? (
@@ -4178,7 +4604,7 @@ export default function SiBSChat({
                           ? "Type a message... use @ to tag"
                           : "Type a message..."
                       }
-                      className="max-h-28 min-h-10 w-full resize-none rounded-2xl border border-sibs-border bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold leading-5 text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
+                      className="block max-h-28 min-h-10 w-full resize-none rounded-xl border border-sibs-border-subtle bg-sibs-surface px-3.5 py-2 text-xs font-medium leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-border focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10 overflow-y-hidden no-scrollbar sibs-no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                     />
                   </div>
 
@@ -4186,19 +4612,11 @@ export default function SiBSChat({
                     type="button"
                     onClick={submitMessage}
                     disabled={sending || (!cleanText(draft) && !selectedImages.length)}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="relative z-[1] inline-flex h-10 w-10 shrink-0 self-end items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.96] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-faint disabled:shadow-none disabled:opacity-100"
                   >
-                    {sending ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
+                    {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                   </button>
                 </div>
-                <p className="mt-1.5 pl-[136px] pr-12 text-[9px] font-semibold text-sibs-faint max-sm:px-1 max-sm:text-center max-sm:text-[8px] max-sm:leading-3">
-                  <span className="max-sm:hidden">
-                    Images/Audio/Videos: JPG, PNG, WEBP, GIF, MP3, WAV, OGG, M4A, AAC, FLAC, MP4, WEBM, MOV, M4V · maximum 10 MB each
-                  </span>
-                  <span className="hidden max-sm:inline">
-                    Images, audio &amp; video · maximum 10 MB each
-                  </span>
-                </p>
               </footer>
             </>
           ) : (
@@ -4239,6 +4657,12 @@ export default function SiBSChat({
               })
             }
           />
+
+          <ChatThemeModal
+            open={themeModalOpen}
+            onClose={() => setThemeModalOpen(false)}
+            conversation={activeConversation}
+          />
         </div>
       </section>
 
@@ -4258,7 +4682,7 @@ export default function SiBSChat({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="chat-nickname-title"
-                className="w-full max-w-[390px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.28)]"
+                className="w-full max-w-[390px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.28)] font-jakarta"
                 onMouseDown={(event) => event.stopPropagation()}
               >
                 <div className="px-5 pb-4 pt-5">
@@ -4269,7 +4693,7 @@ export default function SiBSChat({
                     <div className="min-w-0 flex-1">
                       <h3
                         id="chat-nickname-title"
-                        className="text-sm font-extrabold text-sibs-navy"
+                        className="font-heading text-sm font-extrabold text-sibs-navy"
                       >
                         Set nickname
                       </h3>
@@ -4357,7 +4781,7 @@ export default function SiBSChat({
                 aria-modal="true"
                 aria-labelledby="chat-delete-conversation-title"
                 aria-describedby="chat-delete-conversation-description"
-                className="w-full max-w-[390px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.28)]"
+                className="w-full max-w-[390px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.28)] font-jakarta"
                 onMouseDown={(event) => event.stopPropagation()}
               >
                 <div className="px-5 pb-4 pt-5">
@@ -4368,7 +4792,7 @@ export default function SiBSChat({
                     <div className="min-w-0 flex-1">
                       <h3
                         id="chat-delete-conversation-title"
-                        className="text-sm font-extrabold text-sibs-navy"
+                        className="font-heading text-sm font-extrabold text-sibs-navy"
                       >
                         Delete conversation?
                       </h3>
@@ -4428,18 +4852,18 @@ export default function SiBSChat({
                 aria-modal="true"
                 aria-labelledby="chat-unsend-title"
                 aria-describedby="chat-unsend-description"
-                className="w-full max-w-[390px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.28)]"
+                className="w-full max-w-[390px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.28)] font-jakarta"
                 onMouseDown={(event) => event.stopPropagation()}
               >
                 <div className="px-5 pb-4 pt-5">
                   <div className="flex items-start gap-3">
-                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EA] text-sibs-orange">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-cream-light border border-sibs-orange/20 text-sibs-orange">
                       <MessageCircleMore size={20} />
                     </span>
                     <div className="min-w-0 flex-1">
                       <h3
                         id="chat-unsend-title"
-                        className="text-sm font-extrabold text-sibs-navy"
+                        className="font-heading text-sm font-extrabold text-sibs-navy"
                       >
                         Unsend message?
                       </h3>
@@ -4454,7 +4878,7 @@ export default function SiBSChat({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 border-t border-sibs-border bg-[#F8FAFC] px-4 py-3">
+                <div className="flex items-center justify-end gap-2 border-t border-sibs-border bg-sibs-surface px-4 py-3">
                   <button
                     type="button"
                     onClick={() => setUnsendConfirmMessage(null)}

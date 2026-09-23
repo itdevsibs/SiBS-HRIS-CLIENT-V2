@@ -816,22 +816,28 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
   }, [candidate, baseProfile, remoteProfile]);
 
   return (
-    <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)] sm:p-5">
-      <div className="mb-4 border-b border-[#EEF2F6] pb-3">
-        <h3 className="sibs-text-sm font-extrabold text-sibs-primary-1">
-          Talent Pool Submitted Details
-        </h3>
-        <p className="mt-1 sibs-text-xs font-semibold leading-5 text-[#667085]">
-          Complete submitted profile from the Talent Pool / Public Form.
-        </p>
-        {isLoadingProfile && (
-          <p className="mt-2 text-[10px] font-bold text-[#667085]">
-            Loading full Talent Pool profile...
+    <section className="relative overflow-hidden rounded-2xl border border-[#DDE6EF] bg-[linear-gradient(180deg,#FFFFFF_0%,#FBFCFE_100%)] p-3.5 shadow-[0_10px_28px_rgba(4,44,81,0.05)] sm:p-4 2xl:p-5">
+      <div className="pointer-events-none absolute -right-12 -top-14 h-28 w-28 rounded-full bg-[#4B9DFE]/[0.045] blur-2xl" />
+      <div className="relative mb-4 flex items-start gap-2.5 border-b border-[#EDF2F7] pb-3.5">
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#DDE7F0] bg-[#F4F8FD] text-[#174A7C]">
+          <Sparkles size={15} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="sibs-text-sm font-extrabold text-sibs-primary-1">
+            Talent Pool Submitted Details
+          </h3>
+          <p className="mt-0.5 sibs-text-xs font-semibold leading-5 text-[#667085]">
+            Complete submitted profile from the Talent Pool / Public Form.
           </p>
-        )}
+          {isLoadingProfile && (
+            <p className="mt-1.5 text-[10px] font-bold text-[#667085]">
+              Loading full Talent Pool profile...
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="relative space-y-3.5">
         {/* 1. Profile Hero Summary */}
         <CandidateProfileHero data={data} />
 
