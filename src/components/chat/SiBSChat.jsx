@@ -2024,6 +2024,33 @@ export default function SiBSChat({ enabled = true }) {
     chat?.messages?.[chat.messages.length - 1]?.id || 0,
   );
 
+  function navigateToLatestMessageAfterSend() {
+    const scrollToBottom = () => {
+      const element = messageScrollRef.current;
+      if (!element) return;
+
+      element.scrollTop = element.scrollHeight;
+
+      messageEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+        inline: "nearest",
+      });
+    };
+
+    // Run repeatedly because the newly-sent message, seen-by row, avatar,
+    // image/GIF preview, or attachment can change the final scroll height
+    // after the first React render.
+    window.requestAnimationFrame(() => {
+      scrollToBottom();
+      window.requestAnimationFrame(scrollToBottom);
+    });
+
+    window.setTimeout(scrollToBottom, 80);
+    window.setTimeout(scrollToBottom, 180);
+    window.setTimeout(scrollToBottom, 350);
+  }
+
   useEffect(() => {
     if (!open || chat?.messagesLoading || !latestMessageId) return undefined;
 
@@ -2325,6 +2352,7 @@ export default function SiBSChat({ enabled = true }) {
         replyToMessageId: replyingToMessage?.id || null,
       });
 
+      navigateToLatestMessageAfterSend();
       setReplyingToMessage(null);
       stopTypingIndicator(activeConversation.id);
       setGifPickerOpen(false);
@@ -2355,6 +2383,7 @@ export default function SiBSChat({ enabled = true }) {
         replyToMessageId: replyingToMessage?.id || null,
       });
 
+      navigateToLatestMessageAfterSend();
       setReplyingToMessage(null);
       selectedImages.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       setSelectedImages([]);

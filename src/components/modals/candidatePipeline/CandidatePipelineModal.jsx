@@ -4449,6 +4449,409 @@ function formatNhoScheduleDateDisplay(
   );
 }
 
+function normalizeNhoTimeInput(value = "") {
+  const text = cleanText(value);
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(text);
+
+  if (!match) return "";
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return "";
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function formatNhoScheduleTimeDisplay(value = "") {
+  const normalized = normalizeNhoTimeInput(value);
+  if (!normalized) return "Time not set";
+
+  const [hours, minutes] = normalized.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 || 12;
+
+  return `${displayHour}:${String(minutes).padStart(2, "0")} ${period}`;
+}
+
+const NHO_MIN_TIME_MINUTES = 8 * 60;
+const NHO_MAX_TIME_MINUTES = 18 * 60;
+
+const NHO_TIME_MINUTE_OPTIONS = [
+  "00",
+  "05",
+  "10",
+  "15",
+  "20",
+  "25",
+  "30",
+  "35",
+  "40",
+  "45",
+  "50",
+  "55",
+].map((minute) => ({
+  value: minute,
+  label: minute,
+}));
+
+const NHO_TIME_HOUR_OPTIONS = Array.from({ length: 12 }, (_, index) => {
+  const hour = index + 1;
+
+  return {
+    value: hour,
+    label: String(hour).padStart(2, "0"),
+  };
+});
+
+function toNhoHour24(hour12, period) {
+  let hour = Number(hour12);
+
+  if (period === "AM" && hour === 12) hour = 0;
+  if (period === "PM" && hour !== 12) hour += 12;
+
+  return hour;
+}
+
+function isNhoTimePartsAvailable(hour12, minute, period) {
+  const hour24 = toNhoHour24(hour12, period);
+  const minuteNumber = Number(minute);
+  const totalMinutes = hour24 * 60 + minuteNumber;
+
+  return (
+    Number.isFinite(totalMinutes) &&
+    totalMinutes >= NHO_MIN_TIME_MINUTES &&
+    totalMinutes <= NHO_MAX_TIME_MINUTES
+  );
+}
+
+function isNhoTimeWithinAvailableWindow(value = "") {
+  const normalized = normalizeNhoTimeInput(value);
+  if (!normalized) return false;
+
+  const [hours, minutes] = normalized.split(":").map(Number);
+  const totalMinutes = hours * 60 + minutes;
+
+  return (
+    totalMinutes >= NHO_MIN_TIME_MINUTES &&
+    totalMinutes <= NHO_MAX_TIME_MINUTES
+  );
+}
+
+function getNhoTimeParts(value = "") {
+  const normalized = normalizeNhoTimeInput(value) || "08:00";
+  const [hour24, minute] = normalized.split(":").map(Number);
+
+  return {
+    hour12: hour24 % 12 || 12,
+    minute: String(minute).padStart(2, "0"),
+    period: hour24 >= 12 ? "PM" : "AM",
+  };
+}
+
+function buildNhoTimeValue(hour12, minute, period) {
+  const hour24 = toNhoHour24(hour12, period);
+
+  return `${String(hour24).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function NhoTimeDropdown({
+  dropdownId = "",
+  openDropdown = "",
+  setOpenDropdown,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  disabled = false,
+}) {
+  const dropdownRef = useRef(null);
+  const open = openDropdown === dropdownId;
+
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value),
+  );
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current?.contains(event.target)) {
+        setOpenDropdown?.("");
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpenDropdown?.("");
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [setOpenDropdown]);
+
+  function handleSelect(option) {
+    if (disabled || option.disabled) return;
+
+    onChange?.(option.value);
+    setOpenDropdown?.("");
+  }
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpenDropdown?.(open ? "" : dropdownId)}
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-[#F8FAFC] px-3 text-left sibs-text-xs font-bold outline-none transition ${
+          open
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-[#F2F4F7] text-[#98A2B3] opacity-70"
+            : "text-[#042C51]"
+        }`}
+      >
+        <span className="truncate">
+          {selectedOption?.label || placeholder}
+        </span>
+
+        <ChevronDown
+          size={15}
+          className={`shrink-0 text-[#315B7E] transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[13000] max-h-[220px] w-full overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]">
+          <div className="max-h-[220px] overflow-y-auto py-1">
+            {options.map((option) => {
+              const active =
+                String(option.value) === String(value);
+
+              return (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  disabled={option.disabled}
+                  onClick={() => handleSelect(option)}
+                  className={`flex min-h-[38px] w-full items-center justify-between gap-2 px-3 text-left sibs-text-xs font-semibold transition ${
+                    option.disabled
+                      ? "cursor-not-allowed bg-white text-[#C8D2DE]"
+                      : active
+                        ? "bg-[#FFF4EF] text-[#FF5C28]"
+                        : "bg-white text-[#31465B] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  {active && !option.disabled && <Check size={14} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NhoTimePicker({
+  value = "",
+  disabled = false,
+  onChange,
+}) {
+  const [openDropdown, setOpenDropdown] = useState("");
+  const { hour12, minute, period } = getNhoTimeParts(value);
+
+  function commitTime(nextHour = hour12, nextMinute = minute, nextPeriod = period) {
+    let safeHour = Number(nextHour);
+    let safeMinute = String(nextMinute).padStart(2, "0");
+    let safePeriod = nextPeriod;
+
+    if (!isNhoTimePartsAvailable(safeHour, safeMinute, safePeriod)) {
+      if (safePeriod === "AM") {
+        safeHour = 8;
+        safeMinute = "00";
+      } else if (safePeriod === "PM") {
+        if (safeHour === 6) {
+          safeMinute = "00";
+        } else if (
+          !isNhoTimePartsAvailable(safeHour, "00", safePeriod)
+        ) {
+          safeHour = 12;
+          safeMinute = "00";
+        }
+      }
+    }
+
+    const nextValue = buildNhoTimeValue(
+      safeHour,
+      safeMinute,
+      safePeriod,
+    );
+
+    onChange?.(nextValue);
+  }
+
+  function handleHourChange(nextHour) {
+    commitTime(nextHour, minute, period);
+  }
+
+  function handleMinuteChange(nextMinute) {
+    commitTime(hour12, nextMinute, period);
+  }
+
+  function handlePeriodChange(nextPeriod) {
+    commitTime(hour12, minute, nextPeriod);
+    setOpenDropdown("");
+  }
+
+  return (
+    <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="sibs-kicker text-[#667085]">NHO Time</p>
+          <p className="mt-1 sibs-text-xs font-extrabold text-sibs-primary-1">
+            {formatNhoScheduleTimeDisplay(value)}
+          </p>
+        </div>
+
+      </div>
+
+      <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+        <div>
+          <label className="mb-1 block sibs-kicker text-[#7D8FA5]">
+            Hour
+          </label>
+
+          <NhoTimeDropdown
+            dropdownId="nho-hour"
+            openDropdown={openDropdown}
+            setOpenDropdown={setOpenDropdown}
+            value={hour12}
+            options={NHO_TIME_HOUR_OPTIONS.map((option) => ({
+              ...option,
+              disabled: !isNhoTimePartsAvailable(
+                option.value,
+                period === "PM" && option.value === 6 ? "00" : minute,
+                period,
+              ),
+            }))}
+            onChange={handleHourChange}
+            placeholder="Hour"
+            disabled={disabled}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block sibs-kicker text-[#7D8FA5]">
+            Minute
+          </label>
+
+          <NhoTimeDropdown
+            dropdownId="nho-minute"
+            openDropdown={openDropdown}
+            setOpenDropdown={setOpenDropdown}
+            value={minute}
+            options={NHO_TIME_MINUTE_OPTIONS.map((option) => ({
+              ...option,
+              disabled: !isNhoTimePartsAvailable(
+                hour12,
+                option.value,
+                period,
+              ),
+            }))}
+            onChange={handleMinuteChange}
+            placeholder="Minute"
+            disabled={disabled}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block sibs-kicker text-[#7D8FA5]">
+            AM/PM
+          </label>
+
+          <div className="flex h-10 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white">
+            {["AM", "PM"].map((item) => (
+              <button
+                key={item}
+                type="button"
+                disabled={disabled}
+                onClick={() => handlePeriodChange(item)}
+                className={`w-12 sibs-text-micro font-bold transition ${
+                  period === item
+                    ? "bg-[#FF5C28] text-white"
+                    : "bg-white text-[#315B7E] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-3 sibs-text-xs font-semibold text-[#667085]">
+        Available NHO time is from 8:00 AM through 6:00 PM.
+      </p>
+    </div>
+  );
+}
+
+function formatNhoScheduleSummaryDisplay(dateValue, timeValue = "") {
+  const date = parseDateInputValue(dateValue);
+
+  if (!date) return "Not Scheduled";
+
+  const dateDisplay = date.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const normalizedTime = normalizeNhoTimeInput(timeValue);
+
+  return normalizedTime
+    ? `${dateDisplay}, ${formatNhoScheduleTimeDisplay(normalizedTime)}`
+    : dateDisplay;
+}
+
+function getCandidateNhoTimeInput(candidate = {}) {
+  const schedule =
+    candidate.nhoSchedule ||
+    candidate.nho_schedule ||
+    {};
+
+  return (
+    normalizeNhoTimeInput(
+      schedule.startTime ||
+        schedule.start_time ||
+        schedule.time ||
+        candidate.nhoStartTime ||
+        candidate.nho_start_time ||
+        candidate.nhoTime ||
+        candidate.nho_time,
+    ) || "08:00"
+  );
+}
+
 function getCandidateNhoStartDateInput(
   candidate = {},
 ) {
@@ -4643,9 +5046,12 @@ function NhoInternalRescheduleModal({
   open,
   candidate,
   currentValue,
+  currentTime = "",
   value,
+  timeValue = "",
   isSaving = false,
   onChange,
+  onTimeChange,
   onClose,
   onSubmit,
 }) {
@@ -4717,7 +5123,8 @@ function NhoInternalRescheduleModal({
         disabled={
           isSaving ||
           !selectedDate ||
-          !isSelectableInternalNhoDate(selectedDate)
+          !isSelectableInternalNhoDate(selectedDate) ||
+          !isNhoTimeWithinAvailableWindow(timeValue)
         }
         className="min-w-[190px]"
       >
@@ -4736,7 +5143,7 @@ function NhoInternalRescheduleModal({
       open={open}
       icon={CalendarDays}
       title="Reschedule NHO"
-      subtitle="Choose a new NHO date. Today and future weekdays are available; Saturdays and Sundays are disabled."
+      subtitle="Choose a new NHO date and time. Today and future weekdays are available; Saturdays and Sundays are disabled."
       badge="For NHO"
       onClose={handleClose}
       closeDisabled={isSaving}
@@ -4758,7 +5165,7 @@ function NhoInternalRescheduleModal({
 
         <CandidateModalSection
           title="New NHO Schedule"
-          subtitle="HR, TA, HR Admin, and Super Admin may select any weekday from today onward. Holidays remain selectable."
+          subtitle="HR, TA, HR Admin, and Super Admin may select any weekday from today onward and set the NHO time."
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
@@ -4766,12 +5173,18 @@ function NhoInternalRescheduleModal({
               <p className="mt-1 sibs-text-sm font-extrabold text-sibs-primary-1">
                 {formatNhoScheduleDateDisplay(currentValue)}
               </p>
+              <p className="mt-1 sibs-text-xs font-bold text-[#667085]">
+                {formatNhoScheduleTimeDisplay(currentTime)}
+              </p>
             </div>
 
             <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
               <p className="sibs-kicker text-emerald-700">New NHO Date</p>
               <p className="mt-1 sibs-text-sm font-extrabold text-emerald-800">
                 {formatNhoScheduleDateDisplay(value)}
+              </p>
+              <p className="mt-1 sibs-text-xs font-bold text-emerald-700">
+                {formatNhoScheduleTimeDisplay(timeValue)}
               </p>
             </div>
           </div>
@@ -4880,10 +5293,18 @@ function NhoInternalRescheduleModal({
             </div>
           </div>
 
+          <div className="mt-4">
+            <NhoTimePicker
+              value={timeValue}
+              disabled={isSaving}
+              onChange={onTimeChange}
+            />
+          </div>
+
           <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
             <p className="sibs-text-xs font-bold leading-5 text-sibs-primary-1">
               Available dates start today. Saturdays and Sundays are disabled.
-              Philippine holidays are still selectable for HR/TA rescheduling.
+              Select an available NHO time from 8:00 AM through 6:00 PM before sending the updated schedule.
             </p>
           </div>
         </CandidateModalSection>
@@ -4896,8 +5317,10 @@ function NhoScheduleModal({
   open,
   candidate,
   value,
+  timeValue = "",
   isSaving = false,
   onChange,
+  onTimeChange,
   onClose,
   onSubmit,
 }) {
@@ -4996,7 +5419,8 @@ function NhoScheduleModal({
         disabled={
           isSaving ||
           !selectedDate ||
-          !isSelectableNhoFriday(selectedDate)
+          !isSelectableNhoFriday(selectedDate) ||
+          !isNhoTimeWithinAvailableWindow(timeValue)
         }
         className="min-w-[132px]"
       >
@@ -5015,7 +5439,7 @@ function NhoScheduleModal({
       open={open}
       icon={CalendarDays}
       title="Schedule NHO"
-      subtitle="Choose the candidate's NHO start date. Only upcoming Fridays are available."
+      subtitle="Choose the candidate's NHO date and time. Only upcoming Fridays are available."
       badge="NHO"
       onClose={handleClose}
       closeDisabled={isSaving}
@@ -5152,6 +5576,14 @@ function NhoScheduleModal({
             <p className="mt-1 sibs-text-sm font-extrabold text-emerald-800">
               {formatNhoScheduleDateDisplay(value)}
             </p>
+          </div>
+
+          <div className="mt-4">
+            <NhoTimePicker
+              value={timeValue}
+              disabled={isSaving}
+              onChange={onTimeChange}
+            />
           </div>
         </CandidateModalSection>
       </div>
@@ -6069,10 +6501,12 @@ const CandidatePipelineModal = ({
   const [nhoScheduleDate, setNhoScheduleDate] = useState(() =>
     toDateInputValue(getFirstSelectableNhoFriday()),
   );
+  const [nhoScheduleTime, setNhoScheduleTime] = useState("08:00");
   const [showNhoRescheduleModal, setShowNhoRescheduleModal] = useState(false);
   const [nhoRescheduleDate, setNhoRescheduleDate] = useState(() =>
     toDateInputValue(getFirstSelectableInternalNhoDate()),
   );
+  const [nhoRescheduleTime, setNhoRescheduleTime] = useState("08:00");
   const [isSchedulingNho, setIsSchedulingNho] = useState(false);
   const [isReschedulingNho, setIsReschedulingNho] = useState(false);
   const [isAcceptingNhoReschedule, setIsAcceptingNhoReschedule] = useState(false);
@@ -7033,6 +7467,16 @@ const CandidatePipelineModal = ({
         activeCandidate?.nhoDate ||
         activeCandidate?.nho_date ||
         "",
+      startTime:
+        normalizeNhoTimeInput(
+          schedule.startTime ||
+            schedule.start_time ||
+            schedule.time ||
+            activeCandidate?.nhoStartTime ||
+            activeCandidate?.nho_start_time ||
+            activeCandidate?.nhoTime ||
+            activeCandidate?.nho_time,
+        ),
       account:
         schedule.account ||
         activeCandidate?.nhoAccount ||
@@ -9234,6 +9678,9 @@ const CandidatePipelineModal = ({
         activeCandidate,
       ),
     );
+    setNhoScheduleTime(
+      getCandidateNhoTimeInput(activeCandidate),
+    );
 
     setShowNhoScheduleModal(true);
   }
@@ -9356,6 +9803,9 @@ const CandidatePipelineModal = ({
     setNhoRescheduleDate(
       getCandidateNhoRescheduleDateInput(activeCandidate),
     );
+    setNhoRescheduleTime(
+      getCandidateNhoTimeInput(activeCandidate),
+    );
     setShowNhoRescheduleModal(true);
   }
 
@@ -9394,6 +9844,17 @@ const CandidatePipelineModal = ({
       return;
     }
 
+    const selectedTime = normalizeNhoTimeInput(nhoRescheduleTime);
+
+    if (!isNhoTimeWithinAvailableWindow(selectedTime)) {
+      showStatusModal({
+        type: "error",
+        title: "Invalid NHO Time",
+        message: "Select an NHO time from 8:00 AM through 6:00 PM.",
+      });
+      return;
+    }
+
     setIsReschedulingNho(true);
 
     try {
@@ -9404,6 +9865,9 @@ const CandidatePipelineModal = ({
         {
           startDate: nhoRescheduleDate,
           date: nhoRescheduleDate,
+          startTime: selectedTime,
+          start_time: selectedTime,
+          time: selectedTime,
         },
         {
           withCredentials: true,
@@ -9602,6 +10066,20 @@ async function handleConfirmScheduleNho() {
       return;
     }
 
+    const selectedTime = normalizeNhoTimeInput(nhoScheduleTime);
+
+    if (!isNhoTimeWithinAvailableWindow(selectedTime)) {
+      setShowNhoScheduleModal(false);
+
+      showStatusModal({
+        type: "error",
+        title: "Invalid NHO Time",
+        message: "Please select an NHO time from 8:00 AM through 6:00 PM.",
+      });
+
+      return;
+    }
+
     setIsSchedulingNho(true);
 
     try {
@@ -9623,6 +10101,9 @@ async function handleConfirmScheduleNho() {
           candidateNhoUploadIdentity.candidateEmail,
         startDate: nhoScheduleDate,
         date: nhoScheduleDate,
+        startTime: selectedTime,
+        start_time: selectedTime,
+        time: selectedTime,
         account:
           activeCandidate
             ?.offerDetails
@@ -9659,7 +10140,7 @@ async function handleConfirmScheduleNho() {
           "—",
         status: "Scheduled",
         remarks:
-          `NHO scheduled for ${selectedDateDisplay}.`,
+          `NHO scheduled for ${selectedDateDisplay} at ${formatNhoScheduleTimeDisplay(selectedTime)}.`,
       };
 
       const response = await api.post(
@@ -10491,7 +10972,17 @@ async function handleConfirmScheduleNho() {
           <div className="mt-4 rounded-xl bg-white p-4">
             <DetailRow
               label="Start Date"
-              value={displayValueOrNA(formatDateTime(nhoScheduleDetails.startDate))}
+              value={displayValueOrNA(
+                formatNhoScheduleDateDisplay(nhoScheduleDetails.startDate),
+              )}
+            />
+            <DetailRow
+              label="NHO Time"
+              value={displayValueOrNA(
+                nhoScheduleDetails.startTime
+                  ? formatNhoScheduleTimeDisplay(nhoScheduleDetails.startTime)
+                  : "",
+              )}
             />
             <DetailRow label="Account" value={displayValueOrNA(nhoScheduleDetails.account)} />
             <DetailRow label="Trainer" value={displayValueOrNA(nhoScheduleDetails.trainer)} />
@@ -11350,7 +11841,12 @@ async function handleConfirmScheduleNho() {
                     NHO Schedule
                   </p>
                   <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
-                    {hasNhoSchedule ? formatDateTime(nhoScheduleDetails.startDate) : "Not Scheduled"}
+                    {hasNhoSchedule
+                      ? formatNhoScheduleSummaryDisplay(
+                          nhoScheduleDetails.startDate,
+                          nhoScheduleDetails.startTime,
+                        )
+                      : "Not Scheduled"}
                   </p>
                 </div>
                 <div>
@@ -11495,8 +11991,10 @@ async function handleConfirmScheduleNho() {
         open={showNhoScheduleModal}
         candidate={activeCandidate}
         value={nhoScheduleDate}
+        timeValue={nhoScheduleTime}
         isSaving={isSchedulingNho}
         onChange={setNhoScheduleDate}
+        onTimeChange={setNhoScheduleTime}
         onClose={() => {
           if (!isSchedulingNho) {
             setShowNhoScheduleModal(false);
@@ -11509,9 +12007,12 @@ async function handleConfirmScheduleNho() {
         open={showNhoRescheduleModal}
         candidate={activeCandidate}
         currentValue={nhoScheduleDetails.startDate}
+        currentTime={nhoScheduleDetails.startTime}
         value={nhoRescheduleDate}
+        timeValue={nhoRescheduleTime}
         isSaving={isReschedulingNho}
         onChange={setNhoRescheduleDate}
+        onTimeChange={setNhoRescheduleTime}
         onClose={() => {
           if (!isReschedulingNho) {
             setShowNhoRescheduleModal(false);

@@ -562,11 +562,45 @@ function isWeekendDateValue(value) {
   return !!date && (date.getDay() === 0 || date.getDay() === 6);
 }
 
+function getDefaultNhoFridayDate(referenceDate = new Date()) {
+  const date = new Date(referenceDate);
+  date.setHours(0, 0, 0, 0);
+
+  const day = date.getDay();
+  const daysUntilNextMonday = day === 0 ? 1 : 8 - day;
+
+  date.setDate(date.getDate() + daysUntilNextMonday + 4);
+  return date;
+}
+
+function getExpectedEmploymentStartDate(referenceDate = new Date()) {
+  const nhoFriday = getDefaultNhoFridayDate(referenceDate);
+  const startDate = new Date(nhoFriday);
+  startDate.setDate(startDate.getDate() + 3);
+  return startDate;
+}
+
+function isAllowedOfferStartDate(value) {
+  const date = parseDateValue(value);
+  if (!date) return false;
+
+  date.setHours(0, 0, 0, 0);
+
+  const expectedStartDate = getExpectedEmploymentStartDate();
+  expectedStartDate.setHours(0, 0, 0, 0);
+
+  // The Monday after NHO is the suggested/minimum employment start date.
+  // HR/TA may select that date or any later calendar date.
+  return date.getTime() >= expectedStartDate.getTime();
+}
+
 function StartDatePicker({ value, onChange, hasError = false, inputRef = null }) {
   const wrapperRef = useRef(null);
   const selectedDate = parseDateValue(value);
   const [open, setOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
+  const [viewDate, setViewDate] = useState(
+    () => selectedDate || getExpectedEmploymentStartDate(),
+  );
 
   useEffect(() => {
     if (selectedDate) setViewDate(selectedDate);
@@ -580,8 +614,7 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const expectedStartDate = getExpectedEmploymentStartDate();
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
@@ -620,7 +653,8 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
             {cells.map((date, index) => {
               if (!date) return <span key={`blank-${index}`} />;
               const dateValue = toDateValue(date);
-              const disabled = date < today || date.getDay() === 0 || date.getDay() === 6;
+              const disabled =
+                date.getTime() < expectedStartDate.getTime();
               const active = dateValue === value;
               return (
                 <button
@@ -629,14 +663,20 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
                   disabled={disabled}
                   onClick={() => { onChange(dateValue); setOpen(false); }}
                   className={`h-9 rounded-lg text-sm font-bold transition ${active ? "bg-sibs-primary-1 text-white" : disabled ? "cursor-not-allowed bg-gray-50 text-gray-300" : "text-sibs-primary-1 hover:bg-[#EAF4FF]"}`}
-                  title={date.getDay() === 0 || date.getDay() === 6 ? "Saturday and Sunday are unavailable" : undefined}
+                  title={
+                    disabled
+                      ? "Start date cannot be earlier than the suggested date after NHO."
+                      : "Available employment start date"
+                  }
                 >
                   {date.getDate()}
                 </button>
               );
             })}
           </div>
-          <p className="mt-3 text-xs font-semibold text-sibs-tertiary-5">Saturdays and Sundays are unavailable.</p>
+          <p className="mt-3 text-xs font-semibold text-sibs-tertiary-5">
+            The Monday immediately after NHO is the suggested earliest start date. You may select that date or any later date.
+          </p>
         </div>
       )}
     </div>
@@ -764,14 +804,16 @@ export default function CandidateOfferDetailsModal({
      *
      * Keep role/account/remarks and the rest of the parent form unchanged.
      */
+    const expectedStartDate = toDateValue(getExpectedEmploymentStartDate());
+
     setForm((previous) => ({
       ...previous,
       basicPay: "",
       deminimisDailyRate: "",
-      startDate: "",
+      startDate: expectedStartDate,
     }));
 
-    setStartDateInitiated(false);
+    setStartDateInitiated(true);
     setValidationErrors({});
   }, [open, setForm]);
 
@@ -997,8 +1039,7 @@ export default function CandidateOfferDetailsModal({
       account: !cleanText(form?.account),
       basicPay: isInvalidMoney(form?.basicPay),
       deminimisDailyRate: isInvalidMoney(form?.deminimisDailyRate),
-      startDate:
-        cleanText(form?.startDate) && isWeekendDateValue(form.startDate),
+      startDate: !isAllowedOfferStartDate(form?.startDate),
     };
 
     const hasValidationError = Object.values(nextValidationErrors).some(Boolean);
@@ -1199,22 +1240,10 @@ export default function CandidateOfferDetailsModal({
 
           <CandidateModalSection title="Start Date & Remarks">
             <div className="space-y-4 pb-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (startDateInitiated) {
-                    updateForm({ startDate: "" });
-                    clearValidationError("startDate");
-                    setStartDateInitiated(false);
-                    return;
-                  }
-                  setStartDateInitiated(true);
-                }}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
-              >
+              <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1">
                 <CalendarDays size={14} />
-                {startDateInitiated ? "Hide Start Date" : "Add Start Date"}
-              </button>
+                Suggested Start Date Based on NHO
+              </div>
 
               {startDateInitiated && (
                 <div className="max-w-md">
@@ -1225,14 +1254,14 @@ export default function CandidateOfferDetailsModal({
                     hasError={validationErrors.startDate}
                     onChange={(startDate) => {
                       updateForm({ startDate });
-                      if (!isWeekendDateValue(startDate)) {
+                      if (isAllowedOfferStartDate(startDate)) {
                         clearValidationError("startDate");
                       }
                     }}
                   />
                   {validationErrors.startDate && (
                     <p className="mt-1.5 text-[10px] font-bold text-red-600">
-                      Select a weekday start date.
+                      Start date cannot be earlier than the suggested date after NHO.
                     </p>
                   )}
                 </div>
