@@ -17,9 +17,9 @@ import {
 
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 import { getApplicantLeadEditedFields } from "../../../lib/utils/applicantLeads/applicantLeadFormDirty";
-import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
 import DropdownField from "../availablePositions/DropdownField";
 import ApplicantLeadMovementHistoryDrawer from "./ApplicantLeadMovementHistoryDrawer";
+import { hearAboutUsOptions } from "../../../lib/utils/talentPool/talentPoolConstants";
 
 const INPUT_CLASS =
   "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
@@ -189,7 +189,6 @@ export default function ApplicantLeadModal() {
   const leadComments = (Array.isArray(leadHistory) ? leadHistory : []).filter(
     (item) => cleanText(item?.comment || item?.comment_text),
   );
-  const { sourceRows = [], sourcingOptions = [] } = useSourcingAnalytics();
 
   const isEditMode = Boolean(editingLead);
   const showMovementHistoryPanel = movementHistoryOpen || movementHistoryVisible;
@@ -214,28 +213,18 @@ export default function ApplicantLeadModal() {
     (editingLead && !isEditFormEdited);
 
   const sourcingChannelOptions = useMemo(() => {
-    const analyticsSources = Array.isArray(sourceRows)
-      ? sourceRows.map((row) => row?.source)
-      : [];
-    const configuredSources = Array.isArray(sourcingOptions)
-      ? sourcingOptions.map(getOptionLabel)
-      : [];
     const currentSource = getOptionLabel(formData.source);
-    const sourceValues = [
-      ...(analyticsSources.length > 0 ? analyticsSources : configuredSources),
-      currentSource,
-    ]
+    const sourceValues = [...hearAboutUsOptions, currentSource]
       .map((source) => String(source || "").trim())
       .filter(Boolean);
 
     return [...new Set(sourceValues)]
-      .sort((left, right) => left.localeCompare(right))
       .map((source) => ({
         id: source,
         value: source,
         label: source,
       }));
-  }, [formData.source, sourceRows, sourcingOptions]);
+  }, [formData.source]);
 
   React.useEffect(() => {
     if (!movementHistoryOpen) {
@@ -556,7 +545,7 @@ export default function ApplicantLeadModal() {
 
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    How did you first hear about us? <span className="text-[#FF5C28]">*</span>
+                    Applicant Source <span className="text-[#FF5C28]">*</span>
                     <EditedIndicator show={editedFields.source} />
                   </label>
                   <DropdownField
