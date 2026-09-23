@@ -73,7 +73,7 @@ export default function PublicOfferResponsePage() {
     <main className="min-h-screen bg-slate-100 px-4 py-10 font-jakarta">
       <section className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
         <header className="bg-[#042C51] px-6 py-5 text-white">
-          <img src="/SiBSLogoNavy.png" alt="SiBS" className="mx-auto max-h-20 max-w-full rounded bg-white p-2" />
+          <img src="/SiBSLogoWhite.png" alt="SiBS" className="mx-auto h-24 w-auto max-w-[360px] sm:h-28" />
           <h1 className="mt-4 text-center text-2xl font-extrabold">Employment Offer Response</h1>
         </header>
         <div className="p-6 sm:p-8">

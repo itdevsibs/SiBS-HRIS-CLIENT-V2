@@ -65,6 +65,63 @@ function getVersionTone(status = "") {
   return "border-blue-100 bg-blue-50 text-sibs-primary-1";
 }
 
+function getAlignedInternalRemarkLines(value) {
+  const text = cleanText(value);
+  if (!text) return [];
+
+  const normalized = text
+    .replaceAll("\r\n", "\n")
+    .replaceAll("\r", "\n");
+
+  if (normalized.includes("\n")) {
+    return normalized
+      .split("\n")
+      .map((line) => cleanText(line))
+      .filter(Boolean);
+  }
+
+  return normalized
+    .split(/,\s*(?=[A-Z][A-Za-z0-9/() .#&-]*:)/)
+    .map((line) => cleanText(line))
+    .filter(Boolean);
+}
+
+function InternalRemarkContent({ value }) {
+  const lines = getAlignedInternalRemarkLines(value);
+
+  if (!lines.length) {
+    return (
+      <p className="mt-1.5 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-[#344054]">
+        —
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1.5 space-y-1.5">
+      {lines.map((line, index) => {
+        const colonIndex = line.indexOf(":");
+        const hasLabel = colonIndex > 0;
+        const label = hasLabel ? cleanText(line.slice(0, colonIndex)) : "";
+        const content = hasLabel ? cleanText(line.slice(colonIndex + 1)) : line;
+
+        return (
+          <div key={`${line}-${index}`} className="sibs-text-xs font-semibold leading-relaxed text-[#344054]">
+            {hasLabel ? (
+              <>
+                <span className="font-extrabold text-[#042C51]">{label}:</span>{" "}
+                <span>{content || "—"}</span>
+              </>
+            ) : (
+              <span>{content || "—"}</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function EvaluationResultItem({ label, value, detail = "" }) {
   return (
     <div className="rounded-xl border border-[#E6ECF2] bg-white p-2.5 2xl:p-3">
@@ -248,16 +305,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   );
 
   /*
-   * The newest offer version is the single source of truth for this modal.
-   * Older versions remain stored for audit purposes but are intentionally not
-   * displayed here, so the left offer card and right Offer Summary can never
-   * show values from different revisions.
+   * Keep the newest offer version as the single source of truth for the
+   * summary/current status, but display every saved offer version in the
+   * Negotiation History for a complete audit trail.
    */
   const latestOfferVersion = offerHistory[0] || null;
-
-  const displayedOfferHistory = latestOfferVersion
-    ? [latestOfferVersion]
-    : [];
+  const displayedOfferHistory = offerHistory;
 
   if (!open || !offer) return null;
 
@@ -624,7 +677,8 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   </div>
 
                   <span className="w-fit rounded-full border border-blue-100 bg-blue-50 px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-[#042C51]">
-                    Current Offer
+                    {displayedOfferHistory.length} Offer Version
+                    {displayedOfferHistory.length === 1 ? "" : "s"}
                   </span>
                 </div>
 
@@ -636,7 +690,10 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 ) : null}
 
                 <div className="mt-4 space-y-3.5">
-                  {displayedOfferHistory.map((version) => (
+                  {displayedOfferHistory.map((version, versionIndex) => {
+                    const isCurrentVersion = versionIndex === 0;
+
+                    return (
                     <article
                       key={`${version.id || "version"}-${version.versionNumber}`}
                       className="rounded-2xl border border-[#D9E2EC] bg-white p-3.5 2xl:p-4"
@@ -645,7 +702,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="rounded-full bg-[#042C51] px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
-                              Current Offer
+                              Offer Version {version.versionNumber || displayedOfferHistory.length - versionIndex}
                             </span>
                             <span
                               className={`rounded-full border px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase ${getVersionTone(
@@ -655,7 +712,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                               {version.approvalStatus || "For Review"}
                             </span>
                             <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-[#667085]">
-                              Previous Offer → Current Offer
+                              {isCurrentVersion ? "Current Offer" : "Previous Offer"}
                             </span>
                           </div>
 
@@ -699,9 +756,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                           <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]">
                             Internal Remark
                           </p>
-                          <p className="mt-1.5 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-[#344054]">
-                            {version.internalRemarks || "—"}
-                          </p>
+                          <InternalRemarkContent value={version.internalRemarks} />
                         </div>
                       </div>
 
@@ -780,7 +835,8 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         </button>
                       ) : null}
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
 
