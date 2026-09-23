@@ -98,11 +98,10 @@ const acceptedDocumentExtensions = [
   ".gif",
 ];
 
-const OUTBOUND_SOURCE = "Outbound";
-const EXTERNAL_REFERRAL_LISTINGS_SOURCE = "External Referral Listings";
+const OTHERS_SOURCE = "Others";
 
 const defaultFormOptions = {
-  hearAboutUs: [EXTERNAL_REFERRAL_LISTINGS_SOURCE, OUTBOUND_SOURCE],
+  hearAboutUs: [OTHERS_SOURCE],
   locations: [],
   workExperience: [],
   lengthOfExperience: [],
@@ -1161,18 +1160,16 @@ function sortHearAboutUsOptions(options = []) {
   });
 }
 
-function normalizeOptionsPayload(payload) {
+function normalizeOptionsPayload(payload, matchedReferralSource = "") {
   const data = payload && typeof payload === "object" ? payload : {};
+  const hearAboutUs = Array.isArray(data.hearAboutUs) ? data.hearAboutUs : [];
+  const sourceOptions = matchedReferralSource
+    ? ensureOption(hearAboutUs, matchedReferralSource)
+    : hearAboutUs;
 
   return {
     hearAboutUs: sortHearAboutUsOptions(
-      ensureOption(
-        ensureOption(
-          Array.isArray(data.hearAboutUs) ? data.hearAboutUs : [],
-          EXTERNAL_REFERRAL_LISTINGS_SOURCE,
-        ),
-        OUTBOUND_SOURCE,
-      ),
+      ensureOption(sourceOptions, OTHERS_SOURCE),
     ),
     locations: Array.isArray(data.locations) ? data.locations : [],
     workExperience: Array.isArray(data.workExperience)
@@ -2852,7 +2849,6 @@ function MultiSelectCheckboxGroup({
   values,
   onChange,
   disabled = false,
-  required = false,
 }) {
   function toggleValue(optionValue) {
     if (disabled) return;
@@ -3421,6 +3417,7 @@ export default function PublicTalentPoolApplicationPage() {
 
       if (response?.success && response.data) {
         const prefill = response.data;
+        const leadSource = cleanText(prefill.leadSource || prefill.lead_source);
         const matchedPrefillValues = {
           firstName: cleanText(prefill.firstName),
           middleName: cleanText(prefill.middleName),
@@ -3429,10 +3426,20 @@ export default function PublicTalentPoolApplicationPage() {
           email: cleanText(prefill.email),
           phone1: cleanText(prefill.phone1),
           applyingLocation: cleanText(prefill.applyingLocation),
-          hearAboutUs: [EXTERNAL_REFERRAL_LISTINGS_SOURCE],
+          leadSource,
+          hearAboutUs: leadSource ? [leadSource] : [],
         };
 
         referralPrefillValuesRef.current = matchedPrefillValues;
+
+        if (leadSource) {
+          setFormOptions((previous) => ({
+            ...previous,
+            hearAboutUs: sortHearAboutUsOptions(
+              ensureOption(previous.hearAboutUs, leadSource),
+            ),
+          }));
+        }
 
         setForm((previous) => ({
           ...previous,
@@ -3559,7 +3566,12 @@ export default function PublicTalentPoolApplicationPage() {
           );
         }
 
-        setFormOptions(normalizeOptionsPayload(optionsResponse?.data));
+        setFormOptions(
+          normalizeOptionsPayload(
+            optionsResponse?.data,
+            referralPrefillValuesRef.current?.leadSource,
+          ),
+        );
 
         const approvedActivePositions = Array.isArray(
           openPositionsResponse?.data,
@@ -3981,10 +3993,15 @@ export default function PublicTalentPoolApplicationPage() {
         }
       });
 
+      const matchedLeadSource = cleanText(referralPrefillValues.leadSource);
+
       if (
-        Array.isArray(next.hearAboutUs) &&
-        next.hearAboutUs.length === 1 &&
-        next.hearAboutUs[0] === EXTERNAL_REFERRAL_LISTINGS_SOURCE
+        matchedLeadSource &&
+        next.hearAboutUs.some(
+          (value) =>
+            normalizeReferralSourceText(value) ===
+            normalizeReferralSourceText(matchedLeadSource),
+        )
       ) {
         next.hearAboutUs = [];
       }
