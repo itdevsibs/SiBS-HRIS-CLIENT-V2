@@ -89,6 +89,12 @@ describe("ChatAudioPlayer", () => {
     Object.defineProperty(audio, "error", { configurable: true, value: { code: 4 } });
     fireEvent.error(audio);
 
+    await waitFor(() =>
+      expect(audio.getAttribute("src")).toContain("/api/chat/attachments/42"),
+    );
+    Object.defineProperty(audio, "error", { configurable: true, value: { code: 4 } });
+    fireEvent.error(audio);
+
     expect(screen.getByText("This audio format can’t be played in this browser.")).toBeInTheDocument();
   });
 
@@ -116,5 +122,42 @@ describe("ChatAudioPlayer", () => {
 
     await waitFor(() => expect(createObjectURL).toHaveBeenCalled());
     expect(createObjectURL.mock.calls[0][0].type).toBe("audio/mpeg");
+  });
+
+  it("falls back to the server's native range stream when the full-file blob is rejected", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob(["mp3-bytes"], { type: "audio/mpeg" }),
+      }),
+    );
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: vi.fn(() => "blob:chat-audio"),
+      revokeObjectURL: vi.fn(),
+    });
+
+    const { container } = render(
+      <ChatAudioPlayer
+        attachment={{
+          id: 42,
+          url: "/api/chat/attachments/42",
+          originalName: "renee-bituin-ng-mindanao.mp3",
+          mimeType: "audio/mpeg",
+        }}
+      />,
+    );
+
+    const audio = container.querySelector("audio");
+    await waitFor(() => expect(audio).toHaveAttribute("src", "blob:chat-audio"));
+    fireEvent.error(audio);
+
+    await waitFor(() =>
+      expect(audio.getAttribute("src")).toContain("/api/chat/attachments/42"),
+    );
+    expect(audio.getAttribute("src")).not.toContain("full=1");
+    expect(audio.getAttribute("src")).not.toContain("blob:");
+    expect(screen.queryByText("This audio format can’t be played in this browser.")).not.toBeInTheDocument();
   });
 });
