@@ -91,4 +91,30 @@ describe("ChatAudioPlayer", () => {
 
     expect(screen.getByText("This audio format can’t be played in this browser.")).toBeInTheDocument();
   });
+
+  it("uses the saved audio MIME when the attachment response has a generic MIME", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob(["mp3-bytes"], { type: "application/octet-stream" }),
+      }),
+    );
+    const createObjectURL = vi.fn(() => "blob:chat-audio");
+    vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL: vi.fn() });
+
+    render(
+      <ChatAudioPlayer
+        attachment={{
+          id: 42,
+          url: "/api/chat/attachments/42",
+          originalName: "renee-bituin-ng-mindanao.mp3",
+          mimeType: "audio/mpeg",
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalled());
+    expect(createObjectURL.mock.calls[0][0].type).toBe("audio/mpeg");
+  });
 });

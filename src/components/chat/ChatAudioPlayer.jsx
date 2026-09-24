@@ -30,7 +30,36 @@ function formatFileSize(bytes) {
   return `${(safeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-async function fetchCompleteAudio(sourceUrl, signal) {
+function getAttachmentAudioMimeType(attachment) {
+  const storedMimeType = cleanText(
+    attachment?.mimeType || attachment?.mime_type,
+  )
+    .toLowerCase()
+    .split(";")[0];
+  const normalizedStoredMimeType = {
+    "audio/mp3": "audio/mpeg",
+    "audio/x-wav": "audio/wav",
+    "audio/x-m4a": "audio/mp4",
+  }[storedMimeType] || storedMimeType;
+
+  if (normalizedStoredMimeType.startsWith("audio/")) {
+    return normalizedStoredMimeType;
+  }
+
+  const fileName = cleanText(attachment?.originalName || attachment?.file_name);
+  const extension = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+  return {
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".webm": "audio/webm",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".flac": "audio/flac",
+  }[extension] || "";
+}
+
+async function fetchCompleteAudio(sourceUrl, signal, expectedMimeType) {
   const requestOptions = {
     credentials: "include",
     cache: "no-store",
@@ -59,7 +88,12 @@ async function fetchCompleteAudio(sourceUrl, signal) {
   if (!blob.size) {
     throw new Error("The audio file is empty.");
   }
-  return blob;
+
+  const responseMimeType = cleanText(blob.type).toLowerCase().split(";")[0];
+  const mimeType = expectedMimeType || responseMimeType;
+  return mimeType && responseMimeType !== mimeType
+    ? new Blob([blob], { type: mimeType })
+    : blob;
 }
 
 export default function ChatAudioPlayer({ attachment, mine = false }) {
@@ -79,6 +113,10 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
     if (!url) return "";
     return `${url}${url.includes("?") ? "&" : "?"}full=1`;
   }, [attachment?.url]);
+  const expectedMimeType = useMemo(
+    () => getAttachmentAudioMimeType(attachment),
+    [attachment?.file_name, attachment?.mime_type, attachment?.mimeType, attachment?.originalName],
+  );
 
   const fileName = useMemo(() => {
     return (
@@ -103,7 +141,7 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
     setLoading(true);
     setError("");
 
-    fetchCompleteAudio(sourceUrl, abortController.signal)
+    fetchCompleteAudio(sourceUrl, abortController.signal, expectedMimeType)
       .then((blob) => {
         if (objectUrlRef.current) {
           URL.revokeObjectURL(objectUrlRef.current);
@@ -136,7 +174,7 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
         objectUrlRef.current = "";
       }
     };
-  }, [sourceUrl]);
+  }, [expectedMimeType, sourceUrl]);
 
   async function togglePlayback() {
     const audio = audioRef.current;
