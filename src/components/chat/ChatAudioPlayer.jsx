@@ -43,7 +43,16 @@ async function fetchCompleteAudio(sourceUrl, signal) {
 
   const response = await fetch(sourceUrl, requestOptions);
   if (!response.ok) {
-    throw new Error(`Unable to load audio (${response.status}).`);
+    const messagesByStatus = {
+      401: "Your session expired. Sign in again to play this audio.",
+      403: "You don’t have access to this audio.",
+      404: "This audio attachment is no longer available.",
+      503: "Audio storage is temporarily unavailable.",
+    };
+    throw new Error(
+      messagesByStatus[response.status] ||
+        `Could not load audio (HTTP ${response.status}).`,
+    );
   }
 
   const blob = await response.blob();
@@ -106,15 +115,17 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
       })
       .catch((fetchError) => {
         if (abortController.signal.aborted) return;
-        // Graceful fallback to direct URL if blob fetch fails
         if (objectUrlRef.current) {
           URL.revokeObjectURL(objectUrlRef.current);
           objectUrlRef.current = "";
         }
-        setAudioUrl(sourceUrl);
+        setAudioUrl("");
         setLoading(false);
         if (fetchError?.name !== "AbortError") {
-          // If direct URL also fails, onError on <audio> will set the visible error
+          setError(
+            fetchError?.message ||
+              "Could not reach chat audio. Check your connection and try again.",
+          );
         }
       });
 
@@ -193,7 +204,17 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
         }}
         onError={() => {
           setLoading(false);
-          setError("Audio unavailable");
+          const mediaErrorCode = audioRef.current?.error?.code;
+          const messageByCode = {
+            1: "Audio playback was interrupted. Try playing it again.",
+            2: "Audio playback lost its connection. Try again.",
+            3: "This audio file could not be decoded.",
+            4: "This audio format can’t be played in this browser.",
+          };
+          setError(
+            messageByCode[mediaErrorCode] ||
+              "Audio could not be played. Try reloading the chat.",
+          );
         }}
       />
 

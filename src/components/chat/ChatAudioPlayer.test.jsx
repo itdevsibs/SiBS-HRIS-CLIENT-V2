@@ -1,6 +1,6 @@
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import ChatAudioPlayer from "./ChatAudioPlayer";
 
 afterEach(() => {
@@ -33,5 +33,62 @@ describe("ChatAudioPlayer", () => {
       ),
     );
     expect(renderedEmptySourceWarning).toBe(false);
+  });
+
+  it("shows the attachment request failure instead of hiding it behind a generic player error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 503 }),
+    );
+
+    render(
+      <ChatAudioPlayer
+        attachment={{
+          id: 42,
+          url: "/api/chat/attachments/42",
+          originalName: "voice-message.mp3",
+          mimeType: "audio/mpeg",
+        }}
+      />,
+    );
+
+    expect(await screen.findByText("Audio storage is temporarily unavailable.")).toBeInTheDocument();
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+      expect.stringContaining("/api/chat/attachments/42?full=1"),
+      expect.objectContaining({ credentials: "include" }),
+    );
+  });
+
+  it("explains when the browser cannot decode the audio format", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob(["audio"], { type: "audio/mpeg" }),
+      }),
+    );
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: vi.fn(() => "blob:chat-audio"),
+      revokeObjectURL: vi.fn(),
+    });
+
+    const { container } = render(
+      <ChatAudioPlayer
+        attachment={{
+          id: 42,
+          url: "/api/chat/attachments/42",
+          originalName: "voice-message.mp3",
+          mimeType: "audio/mpeg",
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(container.querySelector("audio")).toHaveAttribute("src", "blob:chat-audio"));
+    const audio = container.querySelector("audio");
+    Object.defineProperty(audio, "error", { configurable: true, value: { code: 4 } });
+    fireEvent.error(audio);
+
+    expect(screen.getByText("This audio format can’t be played in this browser.")).toBeInTheDocument();
   });
 });
