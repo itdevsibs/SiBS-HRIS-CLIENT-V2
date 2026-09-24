@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Music, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { getChatAttachmentUrl } from "@/lib/axios/sibsChat";
@@ -172,7 +173,7 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
     >
       <audio
         ref={audioRef}
-        src={audioUrl}
+        src={audioUrl || undefined}
         preload="metadata"
         onLoadedMetadata={(event) => {
           const nextDuration = Number(event.currentTarget.duration || 0);
