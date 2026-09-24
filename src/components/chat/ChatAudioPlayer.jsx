@@ -99,6 +99,7 @@ async function fetchCompleteAudio(sourceUrl, signal, expectedMimeType) {
 export default function ChatAudioPlayer({ attachment, mine = false }) {
   const audioRef = useRef(null);
   const objectUrlRef = useRef("");
+  const nativeFallbackAttemptedRef = useRef(false);
 
   const [audioUrl, setAudioUrl] = useState("");
   const [loading, setLoading] = useState(true);
@@ -108,11 +109,13 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
 
-  const sourceUrl = useMemo(() => {
-    const url = getChatAttachmentUrl(attachment?.url);
-    if (!url) return "";
-    return `${url}${url.includes("?") ? "&" : "?"}full=1`;
+  const directSourceUrl = useMemo(() => {
+    return getChatAttachmentUrl(attachment?.url);
   }, [attachment?.url]);
+  const sourceUrl = useMemo(() => {
+    if (!directSourceUrl) return "";
+    return `${directSourceUrl}${directSourceUrl.includes("?") ? "&" : "?"}full=1`;
+  }, [directSourceUrl]);
   const expectedMimeType = useMemo(
     () => getAttachmentAudioMimeType(attachment),
     [attachment?.file_name, attachment?.mime_type, attachment?.mimeType, attachment?.originalName],
@@ -138,6 +141,7 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
     }
 
     const abortController = new AbortController();
+    nativeFallbackAttemptedRef.current = false;
     setLoading(true);
     setError("");
 
@@ -242,6 +246,22 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
         }}
         onError={() => {
           setLoading(false);
+          if (
+            !nativeFallbackAttemptedRef.current &&
+            directSourceUrl &&
+            audioUrl.startsWith("blob:")
+          ) {
+            nativeFallbackAttemptedRef.current = true;
+            if (objectUrlRef.current) {
+              URL.revokeObjectURL(objectUrlRef.current);
+              objectUrlRef.current = "";
+            }
+            setError("");
+            setLoading(true);
+            setAudioUrl(directSourceUrl);
+            return;
+          }
+
           const mediaErrorCode = audioRef.current?.error?.code;
           const messageByCode = {
             1: "Audio playback was interrupted. Try playing it again.",
