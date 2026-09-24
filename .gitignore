@@ -64,3 +64,6 @@ src/test/
 tests/
 *.test.*
 !src/lib/utils/sidebarNavigation.test.jsx
+!src/components/chat/ChatAudioPlayer.test.jsx
+!src/components/recruitment/candidatePipeline/ExpandableCandidateRemark.test.jsx
+!src/lib/utils/chat/chatWindowLayout.test.jsx

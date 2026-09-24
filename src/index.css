@@ -1237,6 +1237,19 @@
     @apply sticky top-0 z-[70] flex h-[74px] 2xl:h-[86px] shrink-0 items-center border-b border-sibs-border-subtle bg-sibs-surface px-4 font-jakarta shadow-xs sm:px-6 lg:px-7;
   }
 
+  .t-resize {
+    --resize-dur: 300ms;
+    --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform var(--resize-dur) var(--resize-ease), opacity 200ms ease;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .t-resize {
+      transition: none !important;
+    }
+  }
+
   .sibs-dashboard-header-inner {
     @apply mx-auto flex h-full w-full max-w-[1700px] min-w-0 flex-1 items-center justify-between gap-2 sm:gap-3 2xl:gap-4;
   }

@@ -1,18 +1,22 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Check,
   EyeOff,
   ImagePlus,
   Loader2,
+  Maximize2,
   MessageCircleMore,
+  Minimize2,
   MoreHorizontal,
   Music,
   Pencil,
@@ -46,6 +50,10 @@ import { useChat } from "@/services/context/ChatContext";
 import { useUser } from "@/services/context/UserContext";
 import { ensureSibsChatSystemNotifications } from "@/lib/sibsChatSystemNotifications";
 import { calculateSeenMembersByMessageId } from "@/lib/utils/chat/chatSeenReceipts";
+import {
+  getChatLayoutFlip,
+  getExpandedChatBounds,
+} from "@/lib/utils/chat/chatWindowLayout";
 import {
   calculatePixelLuminanceIsDark,
   getChatThemeBackgroundStyle,
@@ -1469,6 +1477,7 @@ export default function SiBSChat({
   onOpenChange,
   hideTrigger = false,
 }) {
+  const location = useLocation();
   const { user, loading: userLoading } = useUser() || {};
   const chat = useChat();
   const refreshChatConversations = chat?.refreshConversations;
@@ -1477,6 +1486,11 @@ export default function SiBSChat({
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedBounds, setExpandedBounds] = useState(null);
+  const chatPanelRef = useRef(null);
+  const layoutStartRef = useRef(null);
+  const layoutAnimationRef = useRef(null);
 
   const setOpen = useCallback(
     (nextOpen) => {
@@ -1565,6 +1579,215 @@ export default function SiBSChat({
     Boolean(user) &&
     Boolean(chat) &&
     chat?.chatAllowed === true;
+  const conversationTheme = chat?.activeConversation?.theme;
+  const [imageLuminanceIsDark, setImageLuminanceIsDark] = useState(null);
+
+  useEffect(() => {
+    if (conversationTheme?.type !== "IMAGE" || !conversationTheme?.imageUrl) {
+      setImageLuminanceIsDark(null);
+      return;
+    }
+
+    let isMounted = true;
+    let objectUrl = null;
+
+    async function analyzeWallpaperLuminance() {
+      try {
+        const timestamp = conversationTheme.updatedAt
+          ? new Date(conversationTheme.updatedAt).getTime()
+          : "";
+        const separator = conversationTheme.imageUrl.includes("?") ? "&" : "?";
+        const cacheBustedPath =
+          timestamp && !conversationTheme.imageUrl.includes("t=") && !conversationTheme.imageUrl.includes("v=")
+            ? `${conversationTheme.imageUrl}${separator}t=${timestamp}`
+            : conversationTheme.imageUrl;
+
+        const blob = await getChatThemeImageBlob(cacheBustedPath);
+        if (!isMounted || !blob) return;
+
+        objectUrl = URL.createObjectURL(blob);
+        const img = new Image();
+
+        img.onload = () => {
+          if (!isMounted) return;
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            if (!ctx) return;
+            ctx.drawImage(img, 0, 0, 32, 32);
+            const data = ctx.getImageData(0, 0, 32, 32).data;
+            setImageLuminanceIsDark(calculatePixelLuminanceIsDark(data));
+          } catch {
+            setImageLuminanceIsDark(false);
+          } finally {
+            if (objectUrl) {
+              URL.revokeObjectURL(objectUrl);
+              objectUrl = null;
+            }
+          }
+        };
+
+        img.onerror = () => {
+          if (isMounted) setImageLuminanceIsDark(false);
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+          }
+        };
+
+        img.src = objectUrl;
+      } catch {
+        if (isMounted) setImageLuminanceIsDark(false);
+      }
+    }
+
+    void analyzeWallpaperLuminance();
+
+    return () => {
+      isMounted = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [conversationTheme?.imageUrl, conversationTheme?.type, conversationTheme?.updatedAt]);
+
+  const themeBackgroundStyle = useMemo(
+    () => getChatThemeBackgroundStyle(conversationTheme),
+    [conversationTheme],
+  );
+
+  const updateExpandedBounds = useCallback(() => {
+    const pageHeaderCard = document.querySelector("main .sibs-page-header-in");
+    const pageContentBounds =
+      pageHeaderCard?.closest("main .mx-auto[class*='max-w-']") ||
+      document.querySelector("main .mx-auto[class*='max-w-']");
+    const contentBounds =
+      pageContentBounds ||
+      pageHeaderCard ||
+      document.querySelector(".sibs-dashboard-header-inner") ||
+      document.querySelector(".app-header-inner") ||
+      document.querySelector("main");
+    const headerBounds =
+      pageHeaderCard ||
+      document.querySelector(".sibs-dashboard-header") ||
+      document.querySelector(".sibs-dashboard-header-skeleton") ||
+      document.querySelector(".app-header");
+    const contentRect = contentBounds?.getBoundingClientRect();
+    const headerRect = headerBounds?.getBoundingClientRect();
+    const workspace = contentRect
+      ? { left: contentRect.left, width: contentRect.width }
+      : { left: 0, width: window.innerWidth };
+
+    setExpandedBounds(
+      getExpandedChatBounds({
+        workspace,
+        top: pageContentBounds
+          ? contentRect?.top ?? headerRect?.top ?? 0
+          : pageHeaderCard
+          ? headerRect?.top ?? 0
+          : headerRect?.bottom ?? 0,
+        viewportHeight: window.innerHeight,
+        gutter: contentRect ? 0 : 16,
+      }),
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!isExpanded || !open) return undefined;
+
+    const pageHeaderCard = document.querySelector("main .sibs-page-header-in");
+    const pageContentBounds =
+      pageHeaderCard?.closest("main .mx-auto[class*='max-w-']") ||
+      document.querySelector("main .mx-auto[class*='max-w-']");
+    const contentBounds =
+      pageContentBounds ||
+      pageHeaderCard ||
+      document.querySelector(".sibs-dashboard-header-inner") ||
+      document.querySelector(".app-header-inner") ||
+      document.querySelector("main");
+    const headerBounds =
+      pageHeaderCard ||
+      document.querySelector(".sibs-dashboard-header") ||
+      document.querySelector(".sibs-dashboard-header-skeleton") ||
+      document.querySelector(".app-header");
+    updateExpandedBounds();
+    window.addEventListener("resize", updateExpandedBounds);
+
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(updateExpandedBounds)
+        : null;
+    if (contentBounds) resizeObserver?.observe(contentBounds);
+    if (headerBounds && headerBounds !== contentBounds) {
+      resizeObserver?.observe(headerBounds);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateExpandedBounds);
+      resizeObserver?.disconnect();
+    };
+  }, [isExpanded, location.pathname, open, updateExpandedBounds]);
+
+  useEffect(() => {
+    if (!open) {
+      setIsExpanded(false);
+      setExpandedBounds(null);
+    }
+  }, [open]);
+
+  useLayoutEffect(() => {
+    const panel = chatPanelRef.current;
+    const from = layoutStartRef.current;
+    if (!panel || !from) return;
+
+    layoutStartRef.current = null;
+    const to = panel.getBoundingClientRect();
+    if (
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ||
+      typeof panel.animate !== "function"
+    ) {
+      return;
+    }
+
+    const { translateX, translateY, scaleX, scaleY } = getChatLayoutFlip(from, to);
+    const styles = window.getComputedStyle(panel);
+    const duration = Number.parseFloat(styles.getPropertyValue("--resize-dur")) || 300;
+    const easing =
+      styles.getPropertyValue("--resize-ease").trim() ||
+      "cubic-bezier(0.22, 1, 0.36, 1)";
+
+    layoutAnimationRef.current = panel.animate(
+      [
+        {
+          transformOrigin: "top left",
+          transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`,
+        },
+        {
+          transformOrigin: "top left",
+          transform: "translate(0px, 0px) scale(1, 1)",
+        },
+      ],
+      { duration, easing },
+    );
+    layoutAnimationRef.current.onfinish = () => {
+      layoutAnimationRef.current = null;
+    };
+  }, [expandedBounds, isExpanded]);
+
+  const toggleExpanded = useCallback(() => {
+    const panel = chatPanelRef.current;
+    layoutStartRef.current = panel?.getBoundingClientRect() ?? null;
+    layoutAnimationRef.current?.cancel();
+    layoutAnimationRef.current = null;
+
+    if (isExpanded) {
+      setIsExpanded(false);
+      return;
+    }
+
+    updateExpandedBounds();
+    setIsExpanded(true);
+  }, [isExpanded, updateExpandedBounds]);
 
   useEffect(() => {
     setReplyingToMessage(null);
@@ -2141,6 +2364,12 @@ export default function SiBSChat({
     if (!scroller) return;
     scroller.scrollTop = scroller.scrollHeight;
   }, []);
+
+  function navigateToLatestMessageAfterSend() {
+    isInitialConversationLoadRef.current = false;
+    isNearBottomRef.current = true;
+    window.requestAnimationFrame(scrollToLatest);
+  }
 
   // When active conversation changes, mark as initial load and lock nearBottom
   useEffect(() => {
@@ -2918,87 +3147,8 @@ export default function SiBSChat({
       ? `Offline · ${activePrivateLastSeen}`
       : "Offline";
 
-  const conversationTheme = activeConversation?.theme;
   const isCustomTheme = isChatThemeCustom(conversationTheme);
-  const [imageLuminanceIsDark, setImageLuminanceIsDark] = useState(null);
-
-  useEffect(() => {
-    if (conversationTheme?.type !== "IMAGE" || !conversationTheme?.imageUrl) {
-      setImageLuminanceIsDark(null);
-      return;
-    }
-
-    let isMounted = true;
-    let objectUrl = null;
-
-    async function analyzeWallpaperLuminance() {
-      try {
-        const timestamp = conversationTheme.updatedAt
-          ? new Date(conversationTheme.updatedAt).getTime()
-          : "";
-        const separator = conversationTheme.imageUrl.includes("?") ? "&" : "?";
-        const cacheBustedPath =
-          timestamp && !conversationTheme.imageUrl.includes("t=") && !conversationTheme.imageUrl.includes("v=")
-            ? `${conversationTheme.imageUrl}${separator}t=${timestamp}`
-            : conversationTheme.imageUrl;
-
-        const blob = await getChatThemeImageBlob(cacheBustedPath);
-        if (!isMounted || !blob) return;
-
-        objectUrl = URL.createObjectURL(blob);
-        const img = new Image();
-
-        img.onload = () => {
-          if (!isMounted) return;
-          try {
-            const canvas = document.createElement("canvas");
-            canvas.width = 32;
-            canvas.height = 32;
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
-            if (!ctx) return;
-            ctx.drawImage(img, 0, 0, 32, 32);
-            const data = ctx.getImageData(0, 0, 32, 32).data;
-            const isDark = calculatePixelLuminanceIsDark(data);
-            setImageLuminanceIsDark(isDark);
-          } catch {
-            setImageLuminanceIsDark(false);
-          } finally {
-            if (objectUrl) {
-              URL.revokeObjectURL(objectUrl);
-              objectUrl = null;
-            }
-          }
-        };
-
-        img.onerror = () => {
-          if (isMounted) setImageLuminanceIsDark(false);
-          if (objectUrl) {
-            URL.revokeObjectURL(objectUrl);
-            objectUrl = null;
-          }
-        };
-
-        img.src = objectUrl;
-      } catch {
-        if (isMounted) setImageLuminanceIsDark(false);
-      }
-    }
-
-    void analyzeWallpaperLuminance();
-
-    return () => {
-      isMounted = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [conversationTheme?.imageUrl, conversationTheme?.type, conversationTheme?.updatedAt]);
-
   const isThemeDark = isChatThemeDark(conversationTheme, imageLuminanceIsDark);
-  const themeBackgroundStyle = useMemo(
-    () => getChatThemeBackgroundStyle(conversationTheme),
-    [conversationTheme],
-  );
 
 
   return (
@@ -3064,8 +3214,15 @@ export default function SiBSChat({
       ) : null}
 
       <section
+        ref={chatPanelRef}
+        id="sibs-chat-panel"
         aria-label="SiBS Chat"
-        className={`font-jakarta fixed right-4 z-[89] flex h-[min(720px,calc(100vh-3rem))] w-[min(960px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl transition duration-200 sm:right-6 ${
+        data-expanded={isExpanded}
+        className={`font-jakarta t-resize fixed right-4 z-[89] flex ${
+          hideTrigger
+            ? "h-[min(720px,calc(100vh-3rem))]"
+            : "h-[min(720px,calc(100vh-9rem))]"
+        } w-[min(960px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl sm:right-6 ${
           hideTrigger ? "" : "bottom-24"
         } ${
           open
@@ -3073,7 +3230,16 @@ export default function SiBSChat({
             : "pointer-events-none translate-y-3 scale-[0.98] opacity-0"
         }`}
         style={
-          hideTrigger
+          isExpanded && expandedBounds
+            ? {
+                left: `${expandedBounds.left}px`,
+                right: "auto",
+                top: `${expandedBounds.top}px`,
+                bottom: "auto",
+                width: `${expandedBounds.width}px`,
+                height: `${expandedBounds.height}px`,
+              }
+            : hideTrigger
             ? {
                 bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
               }
@@ -3120,6 +3286,17 @@ export default function SiBSChat({
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
               >
                 <Plus size={17} />
+              </button>
+              <button
+                type="button"
+                onClick={toggleExpanded}
+                title={isExpanded ? "Restore chat size" : "Expand chat"}
+                aria-label={isExpanded ? "Restore chat size" : "Expand chat"}
+                aria-expanded={isExpanded}
+                aria-controls="sibs-chat-panel"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
               <button
                 type="button"
@@ -4075,7 +4252,7 @@ export default function SiBSChat({
 
                           {(mine || activeConversation?.isGroup) && seenMembers.length ? (
                             <div
-                              className="mt-0.5 flex items-center justify-end pr-1"
+                              className="mt-1 flex items-center justify-end"
                               title={`Seen by ${seenMembers
                                 .map((member) =>
                                   cleanText(
@@ -4100,7 +4277,7 @@ export default function SiBSChat({
                                   return (
                                     <span
                                       key={`seen-${message.id}-${member.sibsId}`}
-                                      className="relative inline-flex rounded-full ring-2 ring-sibs-canvas"
+                                      className="relative inline-flex rounded-full ring-1 ring-sibs-canvas"
                                       title={memberName}
                                     >
                                       <ChatAvatar

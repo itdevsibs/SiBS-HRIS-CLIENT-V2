@@ -43,6 +43,7 @@ import CandidatePipelineModalShell, {
 } from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
 import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline/CandidateTalentPoolDetailsPanel";
+import ExpandableCandidateRemark from "../../recruitment/candidatePipeline/ExpandableCandidateRemark";
 import DropdownField from "../../recruitment/availablePositions/DropdownField";
 import NhoUploadModal from "./NhoUploadModal";
 
@@ -11567,14 +11568,27 @@ const concretePreferredFinalInterviewFormId =
         open={open}
         title="Candidate Pipeline Record"
         headerContent={
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="truncate text-[11px] font-extrabold text-white sm:text-xs 2xl:text-sm">
-              Candidate Pipeline
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-[#FF5C28] text-white shadow-[0_6px_16px_rgba(255,92,40,0.28)] 2xl:h-9 2xl:w-9">
+              <BriefcaseBusiness size={16} aria-hidden="true" />
             </span>
-            <span className="text-white/40">/</span>
-            <span className="truncate text-[11px] font-bold text-white/85 sm:text-xs 2xl:text-sm">
-              Candidate Record
-            </span>
+            <nav
+              aria-label="Breadcrumb"
+              className="flex min-w-0 items-center gap-2"
+            >
+              <span className="truncate text-[11px] font-semibold text-white/75 sm:text-xs 2xl:text-sm">
+                Candidate Pipeline
+              </span>
+              <span aria-hidden="true" className="shrink-0 text-white/40">
+                /
+              </span>
+              <span
+                aria-current="page"
+                className="truncate text-[11px] font-extrabold text-white sm:text-xs 2xl:text-sm"
+              >
+                Candidate Record
+              </span>
+            </nav>
           </div>
         }
         onClose={onClose}
@@ -11820,11 +11834,15 @@ const concretePreferredFinalInterviewFormId =
                 <CandidateDetailItem
                   icon={MessageSquareText}
                   label="Remarks"
-                  value={displayValueOrNA(
-                    activeCandidate.assessmentRemarks || activeCandidate.assessment_remarks,
-                  )}
                   className="sm:pl-4"
-                />
+                >
+                  <ExpandableCandidateRemark
+                    value={displayValueOrNA(
+                      activeCandidate.assessmentRemarks ||
+                        activeCandidate.assessment_remarks,
+                    )}
+                  />
+                </CandidateDetailItem>
               </div>
             </CandidateModalSection>
           )}
@@ -12177,13 +12195,13 @@ const concretePreferredFinalInterviewFormId =
                   <p className="mt-0.5 text-[10px] font-semibold leading-relaxed text-[#667085]">
                     Use only when the candidate cannot access the email response link.
                   </p>
-                  <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                  <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:justify-end">
                     {offerDecisionOptions.map((decision) => (
                       <button
                         key={decision}
                         type="button"
                         onClick={() => onOfferDecision?.(activeCandidate, decision)}
-                        className={`inline-flex h-8 items-center justify-center rounded-lg border px-3 text-xs font-bold transition ${getOfferDecisionClass(
+                        className={`inline-flex h-8 w-full items-center justify-center rounded-lg border px-3 text-xs font-bold transition sm:w-24 ${getOfferDecisionClass(
                           decision,
                         )}`}
                       >
