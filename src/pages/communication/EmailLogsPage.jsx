@@ -11,7 +11,6 @@ import {
   RotateCcw,
   Search,
   Send,
-  UserRound,
   XCircle,
 } from "lucide-react";
 
@@ -30,6 +29,7 @@ import { EMAIL_STATUS_TABS } from "@/lib/utils/emailLogs/emailLogsData";
 import { isEmailLogActivationKey } from "@/lib/utils/emailLogs/emailLogsHelpers";
 import EmailLogDetailsDrawer from "./emailLogs/EmailLogDetailsDrawer";
 import EmailLogCategoryDropdown from "./emailLogs/EmailLogCategoryDropdown";
+import CandidateEmailHistoryDrawer from "./emailLogs/CandidateEmailHistoryDrawer";
 
 const STATUS_STYLES = {
   delivered: {
@@ -132,19 +132,19 @@ function MetricCard({ label, value, description, icon: Icon, tone = "navy", inde
   );
 }
 
-function DesktopTable({ records, onView }) {
+function DesktopTable({ candidates, onView }) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-[1150px] w-full border-collapse text-left">
         <thead className="bg-sibs-surface">
           <tr className="border-b border-sibs-border">
             {[
-              "Recipient & Message ID",
-              "Email Address & Role",
-              "Subject & Category",
+              "Candidate",
+              "Email Address",
               "Position & Account",
-              "Status",
-              "Dispatched By",
+              "Email Activity",
+              "Latest Status",
+              "Last Email",
             ].map((label) => (
               <th key={label} className="px-4 py-3 text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted last:text-right">
                 {label}
@@ -153,92 +153,111 @@ function DesktopTable({ records, onView }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-sibs-border">
-          {records.map((record) => (
+          {candidates.map((candidate) => {
+            const latestRecord = candidate.latestRecord;
+
+            return (
             <tr
-              key={record.id}
+              key={candidate.key}
               role="button"
               tabIndex={0}
-              aria-label={`View email details for ${record.recipient}`}
-              onClick={() => onView(record)}
+              aria-label={`View all emails for ${candidate.candidateName}`}
+              onClick={() => onView(candidate)}
               onKeyDown={(event) => {
                 if (!isEmailLogActivationKey(event.key)) return;
                 event.preventDefault();
-                onView(record);
+                onView(candidate);
               }}
               className="cursor-pointer transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40"
             >
-              <td className="w-[190px] px-4 py-3.5 align-middle">
-                <p className="block max-w-[190px] truncate text-left text-[11px] font-extrabold text-sibs-orange">
-                  {record.recipient}
-                </p>
-                <p className="mt-0.5 font-mono text-[9px] font-bold text-sibs-faint">LOG ID: {record.id}</p>
-              </td>
               <td className="w-[220px] px-4 py-3.5 align-middle">
-                <p className="flex items-center gap-1.5 truncate text-[10.5px] font-semibold text-sibs-secondary">
-                  <Mail className="h-3.5 w-3.5 shrink-0 text-sibs-tertiary-7" />
-                  {record.email}
+                <p className="block max-w-[215px] truncate text-left text-[11px] font-extrabold text-sibs-orange">
+                  {candidate.candidateName}
                 </p>
-                <div className="mt-1 flex items-center gap-2 text-[9px] font-semibold text-sibs-faint">
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-sibs-secondary">{record.role}</span>
-                  <span className="truncate">{record.site}</span>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[8.5px] font-bold text-sibs-faint">
+                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-sibs-secondary">{candidate.role || "Candidate"}</span>
+                  {candidate.candidateId ? <span className="font-mono">ID: {candidate.candidateId}</span> : null}
                 </div>
               </td>
-              <td className="w-[330px] px-4 py-3.5 align-middle">
-                <span className={`inline-flex rounded px-2 py-0.5 text-[8.5px] font-extrabold uppercase ${CATEGORY_STYLES[record.category] || "bg-slate-100 text-slate-700"}`}>
-                  {record.category}
-                </span>
-                <p className="mt-1 max-w-[320px] truncate text-[10.5px] font-bold text-sibs-navy">{record.subject}</p>
-                <p className="mt-1 max-w-[320px] truncate text-[9px] font-medium text-sibs-faint">{record.preview}</p>
+              <td className="w-[250px] px-4 py-3.5 align-middle">
+                <div className="space-y-1">
+                  {(candidate.emailAddresses?.length
+                    ? candidate.emailAddresses
+                    : [candidate.email]
+                  ).map((email) => (
+                    <p
+                      key={email}
+                      className="flex items-center gap-1.5 truncate text-[10.5px] font-semibold text-sibs-secondary"
+                    >
+                      <Mail className="h-3.5 w-3.5 shrink-0 text-sibs-tertiary-7" />
+                      {email}
+                    </p>
+                  ))}
+                </div>
+                <p className="mt-1 truncate text-[9px] font-semibold text-sibs-faint">{candidate.site}</p>
               </td>
               <td className="w-[210px] px-4 py-3.5 align-middle">
-                <p className="max-w-[205px] truncate text-[10px] font-bold text-sibs-secondary">{record.position}</p>
-                <p className="mt-1 max-w-[205px] truncate text-[9px] font-medium text-sibs-muted">Account: <span className="text-sibs-secondary">{record.account}</span></p>
+                <p className="max-w-[205px] truncate text-[10px] font-bold text-sibs-secondary">{candidate.position}</p>
+                <p className="mt-1 max-w-[205px] truncate text-[9px] font-medium text-sibs-muted">Account: <span className="text-sibs-secondary">{candidate.account}</span></p>
+              </td>
+              <td className="w-[280px] px-4 py-3.5 align-middle">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-sibs-navy px-2 py-1 text-[9px] font-extrabold text-white">
+                    {candidate.emailCount}
+                  </span>
+                  <span className="text-[10px] font-extrabold text-sibs-navy">
+                    {candidate.emailCount === 1 ? "email" : "emails"}
+                  </span>
+                </div>
+                <p className="mt-1.5 max-w-[270px] truncate text-[9px] font-semibold text-sibs-muted">
+                  Latest: <span className="text-sibs-secondary">{latestRecord.subject}</span>
+                </p>
               </td>
               <td className="w-[140px] px-4 py-3.5 align-middle">
-                <StatusBadge status={record.status} />
-                {record.statusDetail ? <p className="mt-1 max-w-[140px] truncate text-[8px] font-bold text-rose-600">{record.statusDetail}</p> : null}
+                <StatusBadge status={latestRecord.status} />
               </td>
-              <td className="w-[190px] px-4 py-3.5 align-middle">
-                <p className="flex items-center gap-1.5 truncate text-[10px] font-extrabold text-sibs-navy">
-                  <UserRound className="h-3.5 w-3.5 shrink-0 text-sibs-orange" />
-                  {record.dispatchedBy}
-                </p>
-                <p className="mt-1 text-[9px] font-medium text-sibs-faint">{formatDispatchDate(record.dispatchedAt)}</p>
+              <td className="w-[190px] px-4 py-3.5 align-middle text-right">
+                <p className="text-[9px] font-semibold text-sibs-secondary">{formatDispatchDate(candidate.lastDispatchedAt)}</p>
+                <p className="mt-1 truncate text-[8.5px] font-semibold text-sibs-faint">{latestRecord.dispatchedBy}</p>
               </td>
             </tr>
-          ))}
+          );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
 
-function MobileCards({ records, onView }) {
+function MobileCards({ candidates, onView }) {
   return (
     <div className="space-y-3 p-3">
-      {records.map((record, index) => (
-        <DataCard key={record.id} index={index} interactive onClick={() => onView(record)}>
+      {candidates.map((candidate, index) => (
+        <DataCard key={candidate.key} index={index} interactive onClick={() => onView(candidate)}>
           <DataCard.Header
-            kicker={record.id}
-            title={record.recipient}
-            subtitle={record.email}
+            kicker={`${candidate.emailCount} ${candidate.emailCount === 1 ? "EMAIL" : "EMAILS"}`}
+            title={candidate.candidateName}
+            subtitle={(candidate.emailAddresses?.length
+              ? candidate.emailAddresses
+              : [candidate.email]
+            ).join(" • ")}
           />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-            <span className={`inline-flex rounded px-2 py-0.5 text-[9px] font-extrabold uppercase ${CATEGORY_STYLES[record.category] || "bg-slate-100 text-slate-700"}`}>
-              {record.category}
+            <span className={`inline-flex rounded px-2 py-0.5 text-[9px] font-extrabold uppercase ${CATEGORY_STYLES[candidate.latestRecord.category] || "bg-slate-100 text-slate-700"}`}>
+              {candidate.latestRecord.category}
             </span>
-            <StatusBadge status={record.status} />
+            <StatusBadge status={candidate.latestRecord.status} />
           </div>
           <div className="mt-2">
-            <p className="mt-1.5 line-clamp-2 text-xs font-bold text-sibs-navy">{record.subject}</p>
+            <p className="mt-1.5 line-clamp-2 text-xs font-bold text-sibs-navy">{candidate.latestRecord.subject}</p>
           </div>
           <DataCard.ContextRow>
-            <span className="min-w-0 truncate font-bold">{record.position}</span>
-            <span className="shrink-0 text-sibs-muted">{record.account}</span>
+            <span className="min-w-0 truncate font-bold">{candidate.position}</span>
+            <span className="shrink-0 text-sibs-muted">{candidate.account}</span>
           </DataCard.ContextRow>
           <DataCard.Footer>
-            <span className="truncate">{record.dispatchedBy} · {formatDispatchDate(record.dispatchedAt)}</span>
-            <span className="shrink-0 font-extrabold text-sibs-orange">View details</span>
+            <span className="truncate">Last email · {formatDispatchDate(candidate.lastDispatchedAt)}</span>
+            <span className="shrink-0 font-extrabold text-sibs-orange">View all emails</span>
           </DataCard.Footer>
         </DataCard>
       ))}
@@ -248,6 +267,7 @@ function MobileCards({ records, onView }) {
 
 export default function EmailLogsPage() {
   const logs = useEmailLogsPage();
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [testEmailSent, setTestEmailSent] = useState(false);
@@ -261,6 +281,11 @@ export default function EmailLogsPage() {
   const [testEmailResult, setTestEmailResult] = useState(null);
   const showingStart = logs.totalRecords ? (logs.page - 1) * logs.pageSize + 1 : 0;
   const showingEnd = Math.min(logs.page * logs.pageSize, logs.totalRecords);
+
+  const handlePageChange = (nextPage) => {
+    logs.setPage(nextPage);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  };
 
   const metricCards = useMemo(() => [
     { label: "Total Emails", value: logs.metrics.total, description: "Active Dispatch Roster", icon: Mail, tone: "navy" },
@@ -367,11 +392,11 @@ export default function EmailLogsPage() {
         <section className="mt-5 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-sibs-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div>
-              <h2 className="sibs-card-title">Email Communication Directory</h2>
-              <p className="sibs-card-subtitle">Search and filter email dispatches by status, template category, position, account, and recipient.</p>
+              <h2 className="sibs-card-title">Candidate Email Directory</h2>
+              <p className="sibs-card-subtitle">One row per candidate. Open a candidate to review their complete email communication history.</p>
             </div>
             <span className="self-start rounded-lg border border-sibs-border bg-sibs-surface px-3 py-1.5 text-[10px] font-extrabold text-sibs-secondary sm:self-auto">
-              Showing {logs.totalRecords} of {logs.records.length} emails
+              {logs.totalRecords} candidates · {logs.filteredEmailCount} matching emails · {logs.totalEmails} total emails
             </span>
           </div>
 
@@ -384,7 +409,7 @@ export default function EmailLogsPage() {
                   value={logs.search}
                   onChange={(event) => logs.setSearch(event.target.value)}
                   className="sibs-dashboard-input pl-9 pr-3"
-                  placeholder="Search recipient, email, subject, position, account, message ID..."
+                  placeholder="Search candidate, email, subject, position, account, message ID..."
                 />
               </span>
             </label>
@@ -435,16 +460,16 @@ export default function EmailLogsPage() {
             </div>
           </div>
 
-          {logs.visibleRecords.length ? (
+          {logs.visibleCandidates.length ? (
             <ResponsiveTableShell
-              desktopContent={<DesktopTable records={logs.visibleRecords} onView={setSelectedRecord} />}
-              mobileContent={<MobileCards records={logs.visibleRecords} onView={setSelectedRecord} />}
+              desktopContent={<DesktopTable candidates={logs.visibleCandidates} onView={setSelectedCandidate} />}
+              mobileContent={<MobileCards candidates={logs.visibleCandidates} onView={setSelectedCandidate} />}
             />
           ) : (
             <div className="px-4 py-12 text-center">
               <Mail className="mx-auto h-9 w-9 text-sibs-tertiary-8" />
-              <h3 className="mt-3 text-sm font-extrabold text-sibs-navy">No email logs found</h3>
-              <p className="mt-1 text-xs font-semibold text-sibs-muted">Adjust your filters or clear them to restore all records.</p>
+              <h3 className="mt-3 text-sm font-extrabold text-sibs-navy">No candidates found</h3>
+              <p className="mt-1 text-xs font-semibold text-sibs-muted">Adjust your filters or clear them to restore the candidate email directory.</p>
             </div>
           )}
 
@@ -453,13 +478,21 @@ export default function EmailLogsPage() {
               currentPage={logs.page}
               totalPages={logs.totalPages}
               totalRecords={logs.totalRecords}
-              loadedCount={logs.visibleRecords.length ? `${showingStart}–${showingEnd}` : 0}
-              recordLabel="email records"
-              onPageChange={logs.setPage}
+              loadedCount={logs.visibleCandidates.length ? `${showingStart}–${showingEnd}` : 0}
+              recordLabel="candidates"
+              onPageChange={handlePageChange}
             />
           </div>
         </section>
       </main>
+
+      {selectedCandidate ? (
+        <CandidateEmailHistoryDrawer
+          candidate={selectedCandidate}
+          onClose={() => setSelectedCandidate(null)}
+          onViewEmail={setSelectedRecord}
+        />
+      ) : null}
 
       {selectedRecord ? (
         <EmailLogDetailsDrawer
@@ -473,6 +506,21 @@ export default function EmailLogsPage() {
                 ? { ...current, status: "delivered", statusDetail: undefined }
                 : current
             ));
+            setSelectedCandidate((current) => {
+              if (!current) return current;
+
+              const nextRecords = current.records.map((record) => (
+                record.id === recordId && ["bounced", "failed"].includes(record.status)
+                  ? { ...record, status: "delivered", statusDetail: undefined }
+                  : record
+              ));
+
+              return {
+                ...current,
+                records: nextRecords,
+                latestRecord: nextRecords[0] || current.latestRecord,
+              };
+            });
           }}
         />
       ) : null}
