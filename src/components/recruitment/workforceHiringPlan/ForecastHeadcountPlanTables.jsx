@@ -48,7 +48,7 @@ function formatDisplayDate(value, includeYear = true) {
   if (!date) return "—";
 
   return date.toLocaleDateString("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
     ...(includeYear ? { year: "numeric" } : {}),
   });

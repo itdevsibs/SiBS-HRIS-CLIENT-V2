@@ -57,6 +57,11 @@ export default function TalentPoolTabs({ activeTab, onChange, counts = {} }) {
       tabs={tabs}
       activeValue={activeTab}
       counts={visibleCounts}
+      countKeys={
+        newApplicantCount > 0
+          ? [TALENT_POOL_TABS.NEW_APPLICANT]
+          : []
+      }
       onChange={onChange}
       layoutId="talentPoolTabIndicator"
     />

@@ -5,7 +5,7 @@ export function getTodayDate() {
 export function getCurrentTimestamp() {
   return new Date().toLocaleString("en-PH", {
     year: "numeric",
-    month: "short",
+    month: "long",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",

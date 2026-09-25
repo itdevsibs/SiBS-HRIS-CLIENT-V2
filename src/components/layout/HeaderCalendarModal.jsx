@@ -365,7 +365,7 @@ function formatDayLabel(dateKey, options = {}) {
   if (Number.isNaN(date.getTime())) return "";
 
   return date.toLocaleDateString("en-US", {
-    month: options.month || "short",
+    month: options.month || "long",
     day: "numeric",
     ...(options.weekday ? { weekday: options.weekday } : {}),
     ...(options.year ? { year: "numeric" } : {}),
@@ -413,11 +413,11 @@ function buildRangeLabel(cells = []) {
   const sameMonth = firstDate.getMonth() === lastDate.getMonth();
 
   const firstLabel = firstDate.toLocaleDateString("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
   });
   const lastLabel = lastDate.toLocaleDateString("en-US", {
-    month: sameMonth ? undefined : "short",
+    month: sameMonth ? undefined : "long",
     day: "numeric",
     year: sameYear ? undefined : "numeric",
   });
@@ -1592,10 +1592,10 @@ function AgendaCalendarView({
             >
               <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[12px] bg-[#06325E] text-white">
                 <span className="text-[10px] font-black uppercase">
-                  {formatDayLabel(event.date, { month: "short" }).split(" ")[0]}
+                  {formatDayLabel(event.date, { month: "long" }).split(" ")[0]}
                 </span>
                 <span className="text-xl font-black">
-                  {formatDayLabel(event.date, { month: "short" }).split(" ")[1]}
+                  {formatDayLabel(event.date, { month: "long" }).split(" ")[1]}
                 </span>
               </div>
 

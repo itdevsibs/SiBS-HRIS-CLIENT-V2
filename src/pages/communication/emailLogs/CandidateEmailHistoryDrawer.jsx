@@ -265,8 +265,8 @@ function formatDispatchDate(value) {
   return new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
     year: "numeric",
-    month: "short",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,

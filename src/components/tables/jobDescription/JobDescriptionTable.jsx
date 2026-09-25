@@ -300,7 +300,7 @@ function formatDate(value) {
 
   return parsed.toLocaleDateString("en-PH", {
     year: "numeric",
-    month: "short",
+    month: "long",
     day: "numeric",
   });
 }

@@ -242,7 +242,7 @@ function formatDate(value) {
   }
 
   return date.toLocaleDateString("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

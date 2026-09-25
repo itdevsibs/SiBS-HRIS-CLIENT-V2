@@ -204,8 +204,8 @@ function formatDateTimeDisplay(value) {
 
   return parsed.toLocaleString("en-PH", {
     year: "numeric",
-    month: "short",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });

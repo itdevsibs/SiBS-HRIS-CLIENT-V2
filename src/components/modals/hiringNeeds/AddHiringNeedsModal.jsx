@@ -874,7 +874,7 @@ function formatShortDate(value) {
   if (Number.isNaN(parsed.getTime())) return "";
 
   return parsed.toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

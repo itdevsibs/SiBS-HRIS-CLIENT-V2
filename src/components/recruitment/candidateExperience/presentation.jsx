@@ -6,7 +6,7 @@ export function formatExperienceDate(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" });
 }
 
 export function surveyStatusTone(status) {

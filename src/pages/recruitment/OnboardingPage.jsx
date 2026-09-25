@@ -16,7 +16,7 @@ const formatDate = (dateValue) =>
   !dateValue
     ? "—"
     : new Date(dateValue).toLocaleDateString("en-PH", {
-        month: "short",
+        month: "long",
         day: "numeric",
         year: "numeric",
       });

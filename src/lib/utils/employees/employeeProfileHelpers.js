@@ -118,7 +118,7 @@ export function formatDisplayDate(value) {
 
   return parsed.toLocaleDateString("en-PH", {
     timeZone: "Asia/Manila",
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

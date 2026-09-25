@@ -139,6 +139,22 @@ function normalizeId(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function formatFinalInterviewDateTime(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleString("en-PH", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 function formatReapplyEligibilityDate(value) {
   const text = String(value || "").trim();
   const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -3432,7 +3448,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
                 {draftSavedAt && (
                   <p className="mt-1 text-xs font-bold text-emerald-700/80">
-                    Submitted at: {new Date(draftSavedAt).toLocaleString("en-PH")}
+                    Submitted at: {formatFinalInterviewDateTime(draftSavedAt)}
                   </p>
                 )}
               </div>
@@ -3456,7 +3472,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
                 {draftSavedAt && (
                   <p className="text-xs font-bold text-sibs-tertiary-5">
-                    Last saved: {new Date(draftSavedAt).toLocaleString("en-PH")}
+                    Last saved: {formatFinalInterviewDateTime(draftSavedAt)}
                   </p>
                 )}
               </div>
@@ -3465,11 +3481,12 @@ export default function FinalInterviewForms({ publicMode = false }) {
             {savedSubmission && (
               <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
                 Submitted by {savedSubmission.submittedBy || "Candidate"} ·{" "}
-                {savedSubmission.submittedAt ||
-                  savedSubmission.submitted_at ||
-                  savedSubmission.updatedAt ||
-                  savedSubmission.updated_at ||
-                  "—"}
+                {formatFinalInterviewDateTime(
+                  savedSubmission.submittedAt ||
+                    savedSubmission.submitted_at ||
+                    savedSubmission.updatedAt ||
+                    savedSubmission.updated_at,
+                )}
               </p>
             )}
           </section>

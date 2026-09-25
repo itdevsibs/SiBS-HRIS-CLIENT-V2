@@ -633,7 +633,7 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
       >
         <span className={value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"}>
           {selectedDate
-            ? selectedDate.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "2-digit" })
+            ? selectedDate.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })
             : "Select start date"}
         </span>
         <CalendarDays size={18} className="shrink-0" />

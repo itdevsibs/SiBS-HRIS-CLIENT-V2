@@ -184,7 +184,7 @@ function formatDateDisplay(value) {
   const date = parseDateInputValue(value);
   if (!date) return "";
   return date.toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

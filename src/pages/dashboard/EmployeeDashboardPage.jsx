@@ -174,6 +174,23 @@ function formatLeaveValue(value) {
       });
 }
 
+function formatDashboardDateTime(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 export default function EmployeeDashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -764,7 +781,7 @@ export default function EmployeeDashboardPage() {
                                 {log.type || "Activity"}
                               </td>
                               <td className="px-3 2xl:px-3.5 py-2 font-mono text-[10px] 2xl:text-[11px]">
-                                {log.timestamp || "—"}
+                                {formatDashboardDateTime(log.timestamp)}
                               </td>
                               <td className="px-3 2xl:px-3.5 py-2 text-[11px] 2xl:text-xs">
                                 {log.location || "—"}

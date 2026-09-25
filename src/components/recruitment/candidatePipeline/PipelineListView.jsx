@@ -424,9 +424,9 @@ const PipelineListView = ({
                               {candidate.taOwner || candidate.owner || "—"}
                             </p>
                             <p className="mt-0.5 text-[9px] font-semibold text-[#98A2B3]">
-                              {candidate.dateMoved ||
-                                candidate.updatedAt ||
-                                "—"}
+                              {candidate.dateMoved || candidate.updatedAt
+                                ? formatDateTime(candidate.dateMoved || candidate.updatedAt)
+                                : "—"}
                             </p>
                           </td>
 

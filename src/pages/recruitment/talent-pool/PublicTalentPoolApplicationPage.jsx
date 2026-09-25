@@ -935,7 +935,7 @@ function formatDateDisplay(value) {
   if (!date) return "";
 
   return date.toLocaleDateString("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

@@ -43,7 +43,7 @@ export function formatDate(value) {
 
   return date.toLocaleDateString("en-PH", {
     timeZone: "Asia/Manila",
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

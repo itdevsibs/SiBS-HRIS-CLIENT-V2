@@ -55,7 +55,7 @@ function formatDateDisplay(value) {
   if (Number.isNaN(date.getTime())) return cleanText(value) || "—";
 
   return date.toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

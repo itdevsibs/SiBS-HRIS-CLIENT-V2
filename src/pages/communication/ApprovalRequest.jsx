@@ -402,8 +402,8 @@ function formatDate(dateValue) {
   }
 
   return new Intl.DateTimeFormat("en-PH", {
-    month: "short",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
     year: "numeric",
   }).format(date);
 }

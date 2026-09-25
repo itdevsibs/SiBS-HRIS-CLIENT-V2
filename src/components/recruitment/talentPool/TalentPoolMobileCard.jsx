@@ -107,11 +107,15 @@ export default function TalentPoolMobileCard({ candidate, index = 0 }) {
         badge={
           <span
             title={displayStatus}
-            className={`inline-flex max-w-[150px] shrink-0 items-center justify-center rounded-lg border px-2.5 py-1 text-center text-[10px] font-extrabold leading-4 ${getTalentPoolStatusClass(
+            className={`inline-flex max-w-[150px] shrink-0 items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1 text-center text-[10px] font-extrabold leading-4 ${getTalentPoolStatusClass(
               displayStatus,
             )}`}
           >
-            <span className="line-clamp-2 break-words">
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full bg-current"
+              aria-hidden="true"
+            />
+            <span className={`line-clamp-2 break-words ${String(displayStatus).trim().toLowerCase() === "new applicant" ? "uppercase" : ""}`}>
               {getTalentPoolStatusLabel(displayStatus)}
             </span>
           </span>

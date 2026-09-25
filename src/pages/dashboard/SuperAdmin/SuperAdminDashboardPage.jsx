@@ -382,7 +382,7 @@ export default function SuperAdminDashboardPage() {
     setActivityLogs((current) => [
       {
         id: `LOG-${String(Date.now()).slice(-6)}`,
-        timestamp: new Date().toLocaleString("en-PH"),
+        timestamp: new Date().toLocaleString("en-PH", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }),
         actor: user?.email || "Super Admin",
         accessLevel: "7 - Super Admin",
         module: "Access Governance",

@@ -119,7 +119,7 @@ function getIsoWeekNumber(date) {
 
 function formatShortDate(date, includeYear = false) {
   return date.toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     ...(includeYear ? { year: "numeric" } : {}),
   });

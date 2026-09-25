@@ -147,7 +147,7 @@ export function formatDate(date) {
   if (!date) return "—";
 
   return new Date(date).toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });
@@ -220,7 +220,7 @@ export function getStatusClass(status) {
       return "border-red-200 bg-red-50 text-red-700";
 
     case "New Applicant":
-      return "border-purple-200 bg-purple-50 text-purple-700";
+      return "border-blue-200 bg-blue-50 text-blue-700";
 
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";

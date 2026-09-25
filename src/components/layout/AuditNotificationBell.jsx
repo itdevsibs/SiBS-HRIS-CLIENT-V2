@@ -58,8 +58,9 @@ function formatSidebarNotificationTime(value) {
 
   return new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
-    month: "short",
+    month: "long",
     day: "numeric",
+    year: "numeric",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
