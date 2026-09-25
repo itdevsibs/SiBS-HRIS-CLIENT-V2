@@ -277,6 +277,9 @@ export function ChatProvider({ children }) {
 
   const activeConversationIdRef = useRef(null);
   const mountedRef = useRef(true);
+  const chatWindowUiOpenRef = useRef(false);
+  // This flag is also cleared when the page is hidden, so backgrounded chats
+  // can receive messages without being marked read.
   const chatWindowOpenRef = useRef(false);
   const messagesRef = useRef([]);
   const conversationsRef = useRef([]);
@@ -342,8 +345,23 @@ export function ChatProvider({ children }) {
 
   const setChatWindowOpen = useCallback((isOpen) => {
     const nextState = Boolean(isOpen);
+    chatWindowUiOpenRef.current = nextState;
     chatWindowOpenRef.current = nextState;
     setIsChatWindowOpen(nextState);
+  }, []);
+
+  const appendMessageToTimeline = useCallback((message) => {
+    const messageId = Number(message?.id || 0);
+    if (!messageId) return;
+
+    const current = messagesRef.current || [];
+    if (current.some((item) => Number(item?.id || 0) === messageId)) return;
+
+    const next = [...current, message].sort(
+      (first, second) => Number(first?.id || 0) - Number(second?.id || 0),
+    );
+    messagesRef.current = next;
+    setMessages(next);
   }, []);
 
   const dismissMembershipNotice = useCallback(() => {
@@ -618,6 +636,7 @@ export function ChatProvider({ children }) {
         });
 
         if (mountedRef.current && Number(activeConversationIdRef.current) === Number(conversationId)) {
+          messagesRef.current = nextMessages;
           setMessages(nextMessages);
           setHasMoreMessages(nextMessages.length >= 75);
           setError("");
@@ -671,6 +690,7 @@ export function ChatProvider({ children }) {
       const id = Number(conversationId || 0) || null;
       activeConversationIdRef.current = id;
       setActiveConversationId(id);
+      messagesRef.current = [];
       setMessages([]);
       setHasMoreMessages(false);
 
@@ -768,18 +788,15 @@ export function ChatProvider({ children }) {
       });
 
       if (sentMessage && mountedRef.current) {
-        setMessages((current) => {
-          if (current.some((item) => Number(item.id) === Number(sentMessage.id))) {
-            return current;
-          }
-          return [...current, sentMessage];
-        });
+        appendMessageToTimeline(sentMessage);
       }
 
-      await refreshConversations();
+      // The conversation list can refresh independently; don't keep the
+      // sender's text in the composer while an unrelated list request runs.
+      void refreshConversations({ silent: true });
       return sentMessage;
     },
-    [refreshConversations],
+    [appendMessageToTimeline, refreshConversations],
   );
 
   const unsendMessage = useCallback(
@@ -1166,7 +1183,7 @@ export function ChatProvider({ children }) {
       await refreshConversations({ silent: true });
 
       const conversationId = Number(activeConversationIdRef.current || 0);
-      if (!conversationId || !chatWindowOpenRef.current) return;
+      if (!conversationId || !chatWindowUiOpenRef.current) return;
 
       void syncTypingWithoutRefresh();
 
@@ -1208,6 +1225,22 @@ export function ChatProvider({ children }) {
         notifyIncomingMessage(conversationId, message);
       });
 
+      // Keep socket-delivered messages that arrived while this request was in
+      // flight, and retain any older page already loaded in the timeline.
+      // The REST response remains authoritative for records it includes.
+      const reconciledById = new Map(
+        (nextMessages || []).map((message) => [Number(message?.id || 0), message]),
+      );
+      currentMessages.forEach((message) => {
+        const messageId = Number(message?.id || 0);
+        if (messageId && !reconciledById.has(messageId)) {
+          reconciledById.set(messageId, message);
+        }
+      });
+      const reconciledMessages = [...reconciledById.values()].sort(
+        (first, second) => Number(first?.id || 0) - Number(second?.id || 0),
+      );
+
       const currentFingerprint = currentMessages
         .map((item) =>
           [
@@ -1221,7 +1254,7 @@ export function ChatProvider({ children }) {
         )
         .join("|");
 
-      const nextFingerprint = (nextMessages || [])
+      const nextFingerprint = reconciledMessages
         .map((item) =>
           [
             Number(item?.id || 0),
@@ -1235,8 +1268,8 @@ export function ChatProvider({ children }) {
         .join("|");
 
       if (currentFingerprint !== nextFingerprint) {
-        messagesRef.current = nextMessages;
-        setMessages(nextMessages);
+        messagesRef.current = reconciledMessages;
+        setMessages(reconciledMessages);
       }
 
       const latestMessageId = Number(nextMessages?.at(-1)?.id || 0);
@@ -1437,26 +1470,26 @@ export function ChatProvider({ children }) {
         document.visibilityState === "visible" &&
         chatWindowOpenRef.current;
 
-      if (isActivelyViewed && message) {
-        setMessages((current) => {
-          if (current.some((item) => Number(item.id) === Number(message.id))) {
-            return current;
-          }
+      if (isActiveConversation && message) {
+        appendMessageToTimeline(message);
 
-          return [...current, message];
-        });
+        if (isActivelyViewed) {
+          setConversations((current) =>
+            current.map((conversation) =>
+              Number(conversation.id) === id
+                ? { ...conversation, unreadCount: 0 }
+                : conversation,
+            ),
+          );
 
-        setConversations((current) =>
-          current.map((conversation) =>
-            Number(conversation.id) === id
-              ? { ...conversation, unreadCount: 0 }
-              : conversation,
-          ),
-        );
-
-        void markChatRead(id, message.id)
-          .then(() => refreshConversations())
-          .catch(() => {});
+          void markChatRead(id, message.id)
+            .then(() => refreshConversations())
+            .catch(() => {});
+        } else {
+          // Keep the message visible in the selected conversation, but don't
+          // mark it read if the page is hidden or chat hasn't been reopened.
+          void syncChatWithoutRefresh();
+        }
       } else {
         // The chat window is closed, or the message belongs to another
         // conversation. Keep it unread so the floating SiBS Chat button and
@@ -1645,6 +1678,7 @@ export function ChatProvider({ children }) {
       chatSocket.disconnect();
     };
   }, [
+    appendMessageToTimeline,
     chatAllowed,
     clearTypingMember,
     currentSibsId,

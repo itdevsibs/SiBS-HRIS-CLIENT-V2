@@ -1468,9 +1468,20 @@ export default function Sidebar() {
           )}
         </button>
 
-        {!isCollapsedMode && isOpen && (
-          <div id={groupContentId} className="ml-4 mt-1 border-l border-[#083A69] pl-2">
-            {renderMenu(group.items, { nested: true })}
+        {!isCollapsedMode && (
+          <div
+            id={groupContentId}
+            aria-hidden={!isOpen}
+            inert={!isOpen}
+            className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+              isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            }`}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <div className="ml-4 mt-1 border-l ring-sibs-primary-1 pl-2">
+                {renderMenu(group.items, { nested: true })}
+              </div>
+            </div>
           </div>
         )}
 

@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Music, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { getChatAttachmentUrl } from "@/lib/axios/sibsChat";
@@ -29,7 +30,36 @@ function formatFileSize(bytes) {
   return `${(safeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-async function fetchCompleteAudio(sourceUrl, signal) {
+function getAttachmentAudioMimeType(attachment) {
+  const storedMimeType = cleanText(
+    attachment?.mimeType || attachment?.mime_type,
+  )
+    .toLowerCase()
+    .split(";")[0];
+  const normalizedStoredMimeType = {
+    "audio/mp3": "audio/mpeg",
+    "audio/x-wav": "audio/wav",
+    "audio/x-m4a": "audio/mp4",
+  }[storedMimeType] || storedMimeType;
+
+  if (normalizedStoredMimeType.startsWith("audio/")) {
+    return normalizedStoredMimeType;
+  }
+
+  const fileName = cleanText(attachment?.originalName || attachment?.file_name);
+  const extension = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+  return {
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".webm": "audio/webm",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".flac": "audio/flac",
+  }[extension] || "";
+}
+
+async function fetchCompleteAudio(sourceUrl, signal, expectedMimeType) {
   const requestOptions = {
     credentials: "include",
     cache: "no-store",
@@ -42,19 +72,34 @@ async function fetchCompleteAudio(sourceUrl, signal) {
 
   const response = await fetch(sourceUrl, requestOptions);
   if (!response.ok) {
-    throw new Error(`Unable to load audio (${response.status}).`);
+    const messagesByStatus = {
+      401: "Your session expired. Sign in again to play this audio.",
+      403: "You don’t have access to this audio.",
+      404: "This audio attachment is no longer available.",
+      503: "Audio storage is temporarily unavailable.",
+    };
+    throw new Error(
+      messagesByStatus[response.status] ||
+        `Could not load audio (HTTP ${response.status}).`,
+    );
   }
 
   const blob = await response.blob();
   if (!blob.size) {
     throw new Error("The audio file is empty.");
   }
-  return blob;
+
+  const responseMimeType = cleanText(blob.type).toLowerCase().split(";")[0];
+  const mimeType = expectedMimeType || responseMimeType;
+  return mimeType && responseMimeType !== mimeType
+    ? new Blob([blob], { type: mimeType })
+    : blob;
 }
 
 export default function ChatAudioPlayer({ attachment, mine = false }) {
   const audioRef = useRef(null);
   const objectUrlRef = useRef("");
+  const nativeFallbackAttemptedRef = useRef(false);
 
   const [audioUrl, setAudioUrl] = useState("");
   const [loading, setLoading] = useState(true);
@@ -64,11 +109,17 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
 
-  const sourceUrl = useMemo(() => {
-    const url = getChatAttachmentUrl(attachment?.url);
-    if (!url) return "";
-    return `${url}${url.includes("?") ? "&" : "?"}full=1`;
+  const directSourceUrl = useMemo(() => {
+    return getChatAttachmentUrl(attachment?.url);
   }, [attachment?.url]);
+  const sourceUrl = useMemo(() => {
+    if (!directSourceUrl) return "";
+    return `${directSourceUrl}${directSourceUrl.includes("?") ? "&" : "?"}full=1`;
+  }, [directSourceUrl]);
+  const expectedMimeType = useMemo(
+    () => getAttachmentAudioMimeType(attachment),
+    [attachment?.file_name, attachment?.mime_type, attachment?.mimeType, attachment?.originalName],
+  );
 
   const fileName = useMemo(() => {
     return (
@@ -90,10 +141,11 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
     }
 
     const abortController = new AbortController();
+    nativeFallbackAttemptedRef.current = false;
     setLoading(true);
     setError("");
 
-    fetchCompleteAudio(sourceUrl, abortController.signal)
+    fetchCompleteAudio(sourceUrl, abortController.signal, expectedMimeType)
       .then((blob) => {
         if (objectUrlRef.current) {
           URL.revokeObjectURL(objectUrlRef.current);
@@ -105,15 +157,17 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
       })
       .catch((fetchError) => {
         if (abortController.signal.aborted) return;
-        // Graceful fallback to direct URL if blob fetch fails
         if (objectUrlRef.current) {
           URL.revokeObjectURL(objectUrlRef.current);
           objectUrlRef.current = "";
         }
-        setAudioUrl(sourceUrl);
+        setAudioUrl("");
         setLoading(false);
         if (fetchError?.name !== "AbortError") {
-          // If direct URL also fails, onError on <audio> will set the visible error
+          setError(
+            fetchError?.message ||
+              "Could not reach chat audio. Check your connection and try again.",
+          );
         }
       });
 
@@ -124,7 +178,7 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
         objectUrlRef.current = "";
       }
     };
-  }, [sourceUrl]);
+  }, [expectedMimeType, sourceUrl]);
 
   async function togglePlayback() {
     const audio = audioRef.current;
@@ -172,7 +226,7 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
     >
       <audio
         ref={audioRef}
-        src={audioUrl}
+        src={audioUrl || undefined}
         preload="metadata"
         onLoadedMetadata={(event) => {
           const nextDuration = Number(event.currentTarget.duration || 0);
@@ -192,7 +246,33 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
         }}
         onError={() => {
           setLoading(false);
-          setError("Audio unavailable");
+          if (
+            !nativeFallbackAttemptedRef.current &&
+            directSourceUrl &&
+            audioUrl.startsWith("blob:")
+          ) {
+            nativeFallbackAttemptedRef.current = true;
+            if (objectUrlRef.current) {
+              URL.revokeObjectURL(objectUrlRef.current);
+              objectUrlRef.current = "";
+            }
+            setError("");
+            setLoading(true);
+            setAudioUrl(directSourceUrl);
+            return;
+          }
+
+          const mediaErrorCode = audioRef.current?.error?.code;
+          const messageByCode = {
+            1: "Audio playback was interrupted. Try playing it again.",
+            2: "Audio playback lost its connection. Try again.",
+            3: "This audio file could not be decoded.",
+            4: "This audio format can’t be played in this browser.",
+          };
+          setError(
+            messageByCode[mediaErrorCode] ||
+              "Audio could not be played. Try reloading the chat.",
+          );
         }}
       />
 
