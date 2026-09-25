@@ -569,19 +569,24 @@ export function detectActivityModule(action = "", details = "") {
 }
 
 function formatAuditTimestamp(rawTimestamp) {
-  if (!rawTimestamp || rawTimestamp === "Recently") {
-    const now = new Date();
-    const pad = (n) => String(n).padStart(2, "0");
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  }
+  const date =
+    !rawTimestamp || rawTimestamp === "Recently"
+      ? new Date()
+      : new Date(rawTimestamp);
 
-  const date = new Date(rawTimestamp);
   if (Number.isNaN(date.getTime())) {
-    return String(rawTimestamp);
+    return String(rawTimestamp || "—");
   }
 
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return date.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 export function formatLogDate(dateVal) {
@@ -590,7 +595,7 @@ export function formatLogDate(dateVal) {
     if (Number.isNaN(dateVal.getTime())) return null;
     return dateVal.toLocaleDateString("en-PH", {
       timeZone: "Asia/Manila",
-      month: "short",
+      month: "long",
       day: "numeric",
       year: "numeric",
     });
@@ -601,7 +606,7 @@ export function formatLogDate(dateVal) {
   if (isoMatch) {
     const d = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
     return d.toLocaleDateString("en-PH", {
-      month: "short",
+      month: "long",
       day: "numeric",
       year: "numeric",
     });
@@ -611,7 +616,7 @@ export function formatLogDate(dateVal) {
   if (!Number.isNaN(d.getTime())) {
     return d.toLocaleDateString("en-PH", {
       timeZone: "Asia/Manila",
-      month: "short",
+      month: "long",
       day: "numeric",
       year: "numeric",
     });
@@ -759,8 +764,9 @@ export function normalizeAssignedAdminUsers(users = []) {
       const d = new Date(user.updatedAt || user.updated_at);
       if (!Number.isNaN(d.getTime())) {
         lastActive = d.toLocaleDateString("en-PH", {
-          month: "short",
+          month: "long",
           day: "numeric",
+          year: "numeric",
         });
       }
     }

@@ -116,7 +116,7 @@ function formatDate(value) {
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleDateString("en-PH", {
     timeZone: "Asia/Manila",
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

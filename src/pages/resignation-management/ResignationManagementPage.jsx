@@ -759,7 +759,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const label = d.toLocaleDateString("en-PH", {
-        month: "short",
+        month: "long",
         timeZone: "Asia/Manila",
       });
       monthLabels.push(label);
@@ -775,7 +775,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
       if (Number.isNaN(date.getTime())) return;
 
       const label = date.toLocaleDateString("en-PH", {
-        month: "short",
+        month: "long",
         timeZone: "Asia/Manila",
       });
 

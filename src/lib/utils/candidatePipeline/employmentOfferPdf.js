@@ -9,7 +9,7 @@ function formatLongDate(value) {
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
-    day: "2-digit",
+    day: "numeric",
     year: "numeric",
   }).format(date);
 }

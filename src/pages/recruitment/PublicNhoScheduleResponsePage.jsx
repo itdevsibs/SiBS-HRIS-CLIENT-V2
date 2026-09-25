@@ -469,7 +469,7 @@ function formatDatePickerValue(value = "") {
   if (!date) return "Select date";
 
   return date.toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

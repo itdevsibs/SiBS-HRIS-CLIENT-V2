@@ -37,6 +37,199 @@ const STATUS_LABELS = {
   failed: "Failed",
 };
 
+const SIBS_EMAIL_LOGO_PREVIEW_URL = `${String(
+  import.meta.env.BASE_URL || "/",
+).replace(/\/?$/, "/")}SiBSLogoNavy.png`;
+
+function resolveStoredEmailInlineImages(html = "") {
+  return String(html).replace(/<img\b[^>]*>/gi, (tag) => {
+    const sourceMatch = tag.match(/\bsrc\s*=\s*(["'])(.*?)\1/i);
+
+    if (!sourceMatch) return tag;
+
+    const source = String(sourceMatch[2] || "").trim();
+
+    if (!/^cid:/i.test(source)) return tag;
+
+    const altMatch = tag.match(/\balt\s*=\s*(["'])(.*?)\1/i);
+    const altText = String(altMatch?.[2] || "");
+    const inlineImageIdentity = `${source} ${altText}`;
+
+    // Candidate emails send the SiBS logo as an inline CID attachment.
+    // A browser cannot resolve cid: URLs, so the Email Logs preview swaps only
+    // the SiBS inline logo to the exact same public PNG used by the client.
+    if (!/(sibs|logo|candidate-outcome)/i.test(inlineImageIdentity)) {
+      return tag;
+    }
+
+    return tag.replace(
+      sourceMatch[0],
+      `src="${SIBS_EMAIL_LOGO_PREVIEW_URL}"`,
+    );
+  });
+}
+
+function ensureStoredEmailHasSibsLogo(html = "") {
+  const resolvedHtml = resolveStoredEmailInlineImages(html);
+  if (!resolvedHtml) return "";
+
+  if (typeof DOMParser === "undefined") {
+    if (/<img\b[^>]*(?:src|alt)\s*=\s*(["'])[^"']*(?:sibs|logo)[^"']*\1[^>]*>/i.test(resolvedHtml)) {
+      return resolvedHtml;
+    }
+
+    return `<div style="text-align:center;margin:0 0 24px 0;"><img src="${SIBS_EMAIL_LOGO_PREVIEW_URL}" alt="SiBS" width="360" style="display:block;width:100%;max-width:360px;height:auto;margin:0 auto;border:0;outline:none;text-decoration:none;" /></div>${resolvedHtml}`;
+  }
+
+  const parser = new DOMParser();
+  const document = parser.parseFromString(resolvedHtml, "text/html");
+  const existingLogo = Array.from(document.querySelectorAll("img")).some((image) => {
+    const identity = `${image.getAttribute("src") || ""} ${image.getAttribute("alt") || ""}`;
+    return /(sibs|logo)/i.test(identity);
+  });
+
+  if (existingLogo) {
+    return document.body.innerHTML;
+  }
+
+  const logoImage = document.createElement("img");
+  logoImage.setAttribute("src", SIBS_EMAIL_LOGO_PREVIEW_URL);
+  logoImage.setAttribute("alt", "SiBS");
+  logoImage.setAttribute("width", "360");
+  logoImage.setAttribute(
+    "style",
+    "display:block;width:100%;max-width:360px;height:auto;margin:0 auto;border:0;outline:none;text-decoration:none;",
+  );
+
+  const centeredCells = Array.from(document.querySelectorAll('td[align="center"]'));
+  const emptyLogoCell = centeredCells.find(
+    (cell) => !cell.querySelector("img") && !String(cell.textContent || "").trim(),
+  );
+
+  if (emptyLogoCell) {
+    emptyLogoCell.appendChild(logoImage);
+    return document.body.innerHTML;
+  }
+
+  const wrapper = document.createElement("div");
+  wrapper.setAttribute("style", "text-align:center;margin:0 0 24px 0;");
+  wrapper.appendChild(logoImage);
+
+  const firstBodyElement = document.body.firstElementChild;
+  let contentContainer = null;
+
+  if (firstBodyElement?.tagName === "DIV") {
+    const firstNestedElement = firstBodyElement.firstElementChild;
+    contentContainer = firstNestedElement?.tagName === "DIV"
+      ? firstNestedElement
+      : firstBodyElement;
+  } else if (firstBodyElement?.tagName === "TABLE") {
+    contentContainer = firstBodyElement.querySelector("td") || firstBodyElement;
+  } else {
+    contentContainer = firstBodyElement;
+  }
+
+  if (contentContainer) {
+    contentContainer.insertBefore(wrapper, contentContainer.firstChild);
+  } else {
+    document.body.appendChild(wrapper);
+  }
+
+  return document.body.innerHTML;
+}
+
+
+function removeStoredEmailShellBackgrounds(html = "") {
+  const markup = String(html || "").trim();
+  if (!markup || typeof DOMParser === "undefined") return markup;
+
+  const clearBackground = (element) => {
+    if (!element || typeof element.getAttribute !== "function") return;
+
+    element.removeAttribute("bgcolor");
+    element.removeAttribute("background");
+
+    const styleValue = element.getAttribute("style");
+    if (!styleValue) return;
+
+    const cleanedStyle = styleValue
+      .split(";")
+      .map((rule) => rule.trim())
+      .filter(Boolean)
+      .filter((rule) => {
+        const property = rule.split(":", 1)[0]?.trim().toLowerCase();
+        return !["background", "background-color", "background-image"].includes(property);
+      })
+      .join(";");
+
+    if (cleanedStyle) {
+      element.setAttribute("style", `${cleanedStyle};`);
+    } else {
+      element.removeAttribute("style");
+    }
+  };
+
+  const clearTableShell = (table) => {
+    if (!table) return;
+
+    clearBackground(table);
+
+    Array.from(table.children).forEach((section) => {
+      const tag = section.tagName?.toLowerCase();
+
+      if (["tbody", "thead", "tfoot"].includes(tag)) {
+        clearBackground(section);
+
+        Array.from(section.children).forEach((row) => {
+          if (row.tagName?.toLowerCase() !== "tr") return;
+          clearBackground(row);
+
+          Array.from(row.children).forEach((cell) => {
+            if (["td", "th"].includes(cell.tagName?.toLowerCase())) {
+              clearBackground(cell);
+            }
+          });
+        });
+      } else if (tag === "tr") {
+        clearBackground(section);
+
+        Array.from(section.children).forEach((cell) => {
+          if (["td", "th"].includes(cell.tagName?.toLowerCase())) {
+            clearBackground(cell);
+          }
+        });
+      }
+    });
+  };
+
+  try {
+    const parser = new DOMParser();
+    const document = parser.parseFromString(markup, "text/html");
+
+    clearBackground(document.body);
+
+    // Remove only the email template shell/background. The first table is the
+    // full-width email canvas and the second table is the main email container.
+    // Nested content tables (schedule cards, buttons, etc.) keep their styling.
+    const tables = Array.from(document.body.querySelectorAll("table"));
+    clearTableShell(tables[0]);
+    clearTableShell(tables[1]);
+
+    const firstElement = document.body.firstElementChild;
+    if (firstElement?.tagName?.toLowerCase() === "div") {
+      clearBackground(firstElement);
+      const nestedWrapper = firstElement.firstElementChild;
+      if (nestedWrapper?.tagName?.toLowerCase() === "div") {
+        clearBackground(nestedWrapper);
+      }
+    }
+
+    return document.body.innerHTML.trim() || markup;
+  } catch {
+    return markup;
+  }
+}
+
 function formatDrawerDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -101,10 +294,13 @@ function MetadataPanel({ record }) {
 
 function RenderedPreview({ record, preview }) {
   const storedHtml = getEmailLogRenderedHtml(record);
-  const sanitizedHtml = useMemo(
-    () => (storedHtml ? DOMPurify.sanitize(storedHtml) : ""),
-    [storedHtml],
-  );
+  const sanitizedHtml = useMemo(() => {
+    if (!storedHtml) return "";
+
+    return DOMPurify.sanitize(
+      removeStoredEmailShellBackgrounds(ensureStoredEmailHasSibsLogo(storedHtml)),
+    );
+  }, [storedHtml]);
   const fullTextBody = String(record.textBody ?? record.text_body ?? "").trim();
 
   if (sanitizedHtml) {
@@ -194,6 +390,13 @@ function RenderedPreview({ record, preview }) {
         <div className="border-b border-sibs-border px-4 py-3">
           <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Rendered Email Content</p>
         </div>
+        <div className="bg-white px-5 pt-5">
+          <img
+            src={SIBS_EMAIL_LOGO_PREVIEW_URL}
+            alt="SiBS"
+            className="mx-auto h-auto w-full max-w-[360px]"
+          />
+        </div>
         <pre className="whitespace-pre-wrap break-words p-5 font-sans text-xs leading-relaxed text-sibs-secondary">
           {fullTextBody}
         </pre>
@@ -209,9 +412,13 @@ function RenderedPreview({ record, preview }) {
       </div>
       <div className="p-3 sm:p-4">
         <div className="overflow-hidden rounded-xl border border-sibs-border">
-          <div className="bg-sibs-navy px-5 py-6 text-white">
-            <p className="text-base font-extrabold tracking-wide">SiBS TALENT ACQUISITION</p>
-            <p className="mt-1 text-[10px] font-medium text-blue-100">Official Candidate Communication System</p>
+          <div className="border-b border-sibs-border bg-white px-5 py-6 text-center">
+            <img
+              src={SIBS_EMAIL_LOGO_PREVIEW_URL}
+              alt="SiBS"
+              className="mx-auto h-auto w-full max-w-[360px]"
+            />
+            <p className="mt-3 text-[10px] font-semibold text-sibs-muted">Official Candidate Communication System</p>
           </div>
           <div className="space-y-5 bg-white px-5 py-6 text-xs leading-relaxed text-sibs-secondary">
             <div>

@@ -113,10 +113,10 @@ const InterviewCalendar = ({ candidates, onViewCandidate }) => {
       const firstDay = weekDays[0];
       const lastDay = weekDays[weekDays.length - 1];
       return `${firstDay.toLocaleDateString("en-PH", {
-        month: "short",
+        month: "long",
         day: "numeric",
       })} - ${lastDay.toLocaleDateString("en-PH", {
-        month: "short",
+        month: "long",
         day: "numeric",
         year: "numeric",
       })}`;

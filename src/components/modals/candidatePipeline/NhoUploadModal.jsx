@@ -188,7 +188,7 @@ function formatUploadedDate(value = "") {
   if (Number.isNaN(date.getTime())) return String(value);
 
   return date.toLocaleString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
     hour: "numeric",

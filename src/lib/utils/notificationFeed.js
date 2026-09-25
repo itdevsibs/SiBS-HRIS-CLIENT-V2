@@ -77,7 +77,7 @@ export function formatNotificationTime(value, now = Date.now()) {
   }
 
   return new Date(timestamp).toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

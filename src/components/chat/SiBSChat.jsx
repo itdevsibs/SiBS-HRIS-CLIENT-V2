@@ -543,8 +543,9 @@ function formatConversationTime(value, nowMs = Date.now()) {
 
   return new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
-    month: "short",
+    month: "long",
     day: "numeric",
+    year: "numeric",
   }).format(date);
 }
 
@@ -556,8 +557,9 @@ function formatMessageDay(value) {
   return new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
     weekday: "short",
-    month: "short",
+    month: "long",
     day: "numeric",
+    year: "numeric",
   }).format(date);
 }
 
@@ -621,7 +623,7 @@ function formatMessengerCenterTimestamp(currentValue, previousValue) {
   const sameYear = date.getFullYear() === now.getFullYear();
   const dateStr = new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
-    month: "short",
+    month: "long",
     day: "numeric",
     ...(sameYear ? {} : { year: "numeric" }),
   }).format(date);

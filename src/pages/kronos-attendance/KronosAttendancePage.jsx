@@ -44,8 +44,8 @@ function formatDate(value) {
 
   return parsed.toLocaleDateString("en-PH", {
     year: "numeric",
-    month: "short",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
   });
 }
 
@@ -83,8 +83,8 @@ function formatDateDisplay(value, fallback = "Select date") {
   if (!parsed) return fallback;
 
   return parsed.toLocaleDateString("en-PH", {
-    month: "short",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
     year: "numeric",
   });
 }

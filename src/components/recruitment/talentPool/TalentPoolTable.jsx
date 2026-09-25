@@ -29,6 +29,19 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function formatFullMonthDate(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleDateString("en-PH", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function getTalentPoolStatusClass(status = "") {
   const value = String(status || "").trim().toLowerCase();
 
@@ -91,9 +104,43 @@ export default function TalentPoolTable({
     page: 1,
   });
 
-  const displayedCandidates = Array.isArray(candidates)
-    ? candidates
-    : filteredCandidates;
+  const displayedCandidates = useMemo(() => {
+    const sourceCandidates = Array.isArray(candidates)
+      ? candidates
+      : filteredCandidates;
+
+    return [...sourceCandidates].sort((leftCandidate, rightCandidate) => {
+      const leftCreatedAt =
+        leftCandidate?.createdAt ||
+        leftCandidate?.created_at ||
+        leftCandidate?.submittedAt ||
+        leftCandidate?.submitted_at ||
+        "";
+
+      const rightCreatedAt =
+        rightCandidate?.createdAt ||
+        rightCandidate?.created_at ||
+        rightCandidate?.submittedAt ||
+        rightCandidate?.submitted_at ||
+        "";
+
+      const leftTimestamp = Date.parse(leftCreatedAt);
+      const rightTimestamp = Date.parse(rightCreatedAt);
+
+      const leftHasCreatedDate = Number.isFinite(leftTimestamp);
+      const rightHasCreatedDate = Number.isFinite(rightTimestamp);
+
+      if (leftHasCreatedDate && rightHasCreatedDate) {
+        return rightTimestamp - leftTimestamp;
+      }
+
+      if (leftHasCreatedDate) return -1;
+      if (rightHasCreatedDate) return 1;
+
+      return 0;
+    });
+  }, [candidates, filteredCandidates]);
+
   const totalCandidates = displayedCandidates.length;
   const totalPages = Math.max(1, Math.ceil(totalCandidates / PAGE_SIZE));
 
@@ -192,30 +239,33 @@ export default function TalentPoolTable({
               }
               desktopContent={
                 <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
-                  <table className="w-full min-w-[980px] 2xl:min-w-[1060px] table-fixed border-separate border-spacing-0 text-left">
+                  <table className="w-full min-w-[1080px] 2xl:min-w-[1160px] table-fixed border-separate border-spacing-0 text-left">
                 <thead className="sibs-data-table-head">
                   <tr className="sibs-data-table-head-row">
-                    <th className="sibs-data-table-th w-[23%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                    <th className="sibs-data-table-th w-[20%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
                       Candidate
                     </th>
-                    <th className="sibs-data-table-th w-[22%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                    <th className="sibs-data-table-th w-[18%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
                       Applied Position
                     </th>
-                    <th className="sibs-data-table-th w-[25%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                    <th className="sibs-data-table-th w-[22%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
                       Preferred Location / Final Account
                     </th>
-                    <th className="sibs-data-table-th w-[15%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                    <th className="sibs-data-table-th w-[13%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
                       Status
                     </th>
-                    <th className="sibs-data-table-th w-[15%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                    <th className="sibs-data-table-th w-[13%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
                       Last Activity
+                    </th>
+                    <th className="sibs-data-table-th w-[14%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center sibs-text-micro font-black uppercase tracking-wider text-sibs-navy">
+                      Date Created
                     </th>
                   </tr>
                 </thead>
 
                 <tbody key={statusFilter || "All"}>
                   {isLoading ? (
-                    <TableSkeletonRows count={10} columns={5} />
+                    <TableSkeletonRows count={10} columns={6} />
                   ) : paginatedCandidates.length > 0 ? (
                     paginatedCandidates.map((candidate, index) => {
                       const appliedPosition =
@@ -241,7 +291,14 @@ export default function TalentPoolTable({
                       const shortStatus =
                         getTalentPoolStatusLabel(displayStatus);
 
-                      const lastActivity = formatDate(
+                      const createdDate = formatFullMonthDate(
+                        candidate.createdAt ||
+                          candidate.created_at ||
+                          candidate.submittedAt ||
+                          candidate.submitted_at,
+                      );
+
+                      const lastActivity = formatFullMonthDate(
                         candidate.lastPipelineUpdate || candidate.lastActivity,
                       );
                       const referralCode = cleanText(
@@ -293,7 +350,7 @@ export default function TalentPoolTable({
                                 !showsReferralAndTalentPoolIds ? (
                                   <span
                                     title="Public Submission"
-                                    className="shrink-0 rounded border border-purple-200 bg-purple-50 px-1.5 py-0.2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-purple-700"
+                                    className="shrink-0 rounded border border-blue-200 bg-blue-50 px-1.5 py-0.2 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-blue-700"
                                   >
                                     Public
                                   </span>
@@ -366,11 +423,21 @@ export default function TalentPoolTable({
                           <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
                             <span
                               title={displayStatus}
-                              className={`mx-auto inline-flex max-w-[195px] items-center justify-center rounded-lg border px-2.5 py-1 text-center text-[10px] 2xl:text-[10.5px] font-extrabold leading-tight shadow-2xs ${getTalentPoolStatusClass(
+                              className={`mx-auto inline-flex max-w-[195px] items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1 text-center text-[10px] 2xl:text-[10.5px] font-extrabold leading-tight shadow-2xs ${getTalentPoolStatusClass(
                                 displayStatus,
                               )}`}
                             >
-                              <span className="line-clamp-2 break-words">
+                              <span
+                                className="h-1.5 w-1.5 shrink-0 rounded-full bg-current"
+                                aria-hidden="true"
+                              />
+                              <span
+                                className={`line-clamp-2 break-words ${
+                                  String(displayStatus).trim().toLowerCase() === "new applicant"
+                                    ? "uppercase"
+                                    : ""
+                                }`}
+                              >
                                 {shortStatus}
                               </span>
                             </span>
@@ -384,12 +451,21 @@ export default function TalentPoolTable({
                               {lastActivity}
                             </p>
                           </td>
+
+                          <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
+                            <p
+                              title={createdDate}
+                              className="truncate sibs-text-xs font-semibold tabular-nums text-sibs-secondary whitespace-nowrap"
+                            >
+                              {createdDate}
+                            </p>
+                          </td>
                         </tr>
                       );
                     })
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-5 py-12">
+                      <td colSpan={6} className="px-5 py-12">
                         <div className="flex flex-col items-center text-center text-sibs-muted">
                           <UsersRound className="h-6 w-6" />
                           <p className="mt-2 text-[13px] font-extrabold">

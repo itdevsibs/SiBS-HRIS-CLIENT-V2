@@ -5,7 +5,7 @@ function formatDate(date) {
   if (!date) return "—";
 
   return new Date(date).toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

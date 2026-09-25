@@ -1018,8 +1018,8 @@ export default function Header() {
     const formatter = new Intl.DateTimeFormat("en-PH", {
       timeZone: "Asia/Manila",
       year: "numeric",
-      month: "short",
-      day: "2-digit",
+      month: "long",
+      day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",

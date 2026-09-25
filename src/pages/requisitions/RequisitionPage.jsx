@@ -12,6 +12,7 @@ import {
   TableSkeletonRows,
 } from "@/components/ui";
 import { getDepartments, getRequisitions } from "@/lib/axios/getRequisition";
+import { formatDate } from "@/lib/axios/dateFormatter";
 
 export default function RequisitionPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -314,7 +315,7 @@ export default function RequisitionPage() {
                               />
                               <DataCard.MetricItem
                                 label="Date Created"
-                                value={req.date || req.createdAt || "Recent"}
+                                value={req.date || req.createdAt ? formatDate(req.date || req.createdAt) : "Recent"}
                               />
                             </DataCard.Metrics>
 
@@ -404,7 +405,7 @@ export default function RequisitionPage() {
                                   {req.createdBy || req.hiringManager || "HR"}
                                 </td>
                                 <td className="px-4 py-3.5 text-xs font-medium text-slate-500">
-                                  {req.date || req.createdAt || "Recent"}
+                                  {req.date || req.createdAt ? formatDate(req.date || req.createdAt) : "Recent"}
                                 </td>
                                 <td className="px-4 py-3.5 text-center">
                                   <StatusBadge status={status} />

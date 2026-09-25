@@ -40,6 +40,23 @@ function isSameSibsId(a, b) {
   return cleanA === cleanB || normalizeSibsId(cleanA) === normalizeSibsId(cleanB);
 }
 
+function formatFallbackDateTime(value) {
+  if (!value) return "N/A";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 function formatPerson(sibsId, fullName) {
   if (!sibsId && !fullName) return "N/A";
   return `${sibsId || "N/A"} - ${fullName || "N/A"}`;
@@ -1102,7 +1119,7 @@ export default function AttritionModal({
                     ? `Submitted At: ${
                         formatDateTime
                           ? formatDateTime(data?.createdAt)
-                          : data?.createdAt || "N/A"
+                          : formatFallbackDateTime(data?.createdAt)
                       }`
                     : "Employee uploaded file only. Uploading a new file is disabled."}
                 </p>

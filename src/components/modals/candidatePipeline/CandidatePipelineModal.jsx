@@ -1860,8 +1860,8 @@ function getFileIcon(fileName = "") {
 function getCurrentTimestamp() {
   return new Date().toLocaleString("en-PH", {
     year: "numeric",
-    month: "short",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -4837,7 +4837,7 @@ function formatNhoScheduleSummaryDisplay(dateValue, timeValue = "") {
   if (!date) return "Not Scheduled";
 
   const dateDisplay = date.toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

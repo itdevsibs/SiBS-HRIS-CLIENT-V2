@@ -57,7 +57,7 @@ function formatForecastWeekDate(value, includeYear = false) {
   if (Number.isNaN(date.getTime())) return "";
 
   return date.toLocaleDateString("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
     ...(includeYear ? { year: "numeric" } : {}),
   });

@@ -6,6 +6,7 @@ import {
   FileText,
   Link as LinkIcon,
 } from "lucide-react";
+import { formatDateTime } from "../candidatePipelineFormatters";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -568,7 +569,7 @@ function TimelineLinkCard({ link }) {
             <p className="mt-2 truncate text-[11px] font-semibold text-[#667085]">
               {link.submittedBy ? `Submitted by ${link.submittedBy}` : ""}
               {link.submittedBy && link.submittedAt ? " • " : ""}
-              {link.submittedAt || ""}
+              {link.submittedAt ? formatDateTime(link.submittedAt) : ""}
             </p>
           )}
         </div>

@@ -21,6 +21,19 @@ function cleanText(value, fallback = "-") {
   return text || fallback;
 }
 
+function formatFullMonthDate(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return cleanText(value, "—");
+
+  return date.toLocaleDateString("en-PH", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function ApplicantLeadsTable({
   leadsOverride = null,
   leadViewOverride = "",
@@ -173,29 +186,24 @@ export default function ApplicantLeadsTable({
             <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
               <table
                 className={`w-full border-collapse text-left ${
-                  isConvertedApplicantTab ? "min-w-[920px]" : "min-w-[980px]"
+                  isConvertedApplicantTab ? "min-w-[720px]" : "min-w-[800px]"
                 }`}
               >
             <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
               <tr className="border-b border-[#E6ECF2]">
-                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[26%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Referral Code &amp; Name
                 </th>
 
-                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[28%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   CP Number / Email
                 </th>
 
-                <th className="w-[28%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
-                  Department &amp; Account / Client
-                </th>
-
-
-                <th className="w-[14%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Status
                 </th>
 
-                <th className="w-[12%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
                   Inputted By
                 </th>
 
@@ -209,10 +217,10 @@ export default function ApplicantLeadsTable({
 
             <tbody className="divide-y divide-[#E6ECF2] bg-white">
               {isLoading ? (
-                <TableSkeletonRows count={6} columns={isConvertedApplicantTab ? 5 : 6} />
+                <TableSkeletonRows count={6} columns={isConvertedApplicantTab ? 4 : 5} />
               ) : errorMessage ? (
                 <tr>
-                  <td colSpan={isConvertedApplicantTab ? 5 : 6} className="px-5 py-8 text-center text-xs text-red-500 font-bold">
+                  <td colSpan={isConvertedApplicantTab ? 4 : 5} className="px-5 py-8 text-center text-xs text-red-500 font-bold">
                     {errorMessage}
                   </td>
                 </tr>
@@ -228,10 +236,8 @@ export default function ApplicantLeadsTable({
                   const fullName = cleanText(lead.fullName, "Unnamed Applicant");
                   const phone = cleanText(lead.cpNum);
                   const email = cleanText(lead.email);
-                  const department = cleanText(lead.department);
-                  const account = cleanText(lead.specificAccount);
                   const inputtedBy = cleanText(lead.inputtedBy);
-                  const dateLogged = cleanText(lead.dateLogged);
+                  const dateLogged = formatFullMonthDate(lead.dateLogged);
                   const applicationLinkSent = isApplicantLeadApplicationLinkSent(lead);
                   const isConvertedApplicant =
                     String(lead.status || "").trim().toLowerCase() ===
@@ -302,18 +308,6 @@ export default function ApplicantLeadsTable({
                               {email}
                             </span>
                           </div>
-                        </div>
-                      </td>
-
-                      {/* DEPARTMENT / ACCOUNT */}
-                      <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                        <div className="min-w-0">
-                          <p className="truncate sibs-text-xs font-bold text-sibs-navy">
-                            {department}
-                          </p>
-                          <p className="mt-0.5 truncate text-[10px] 2xl:text-[11px] font-medium text-sibs-text-muted">
-                            {account}
-                          </p>
                         </div>
                       </td>
 
@@ -398,7 +392,7 @@ export default function ApplicantLeadsTable({
                 })
               ) : (
                 <tr>
-                  <td colSpan={isConvertedApplicantTab ? 5 : 6} className="px-5 py-14 text-center">
+                  <td colSpan={isConvertedApplicantTab ? 4 : 5} className="px-5 py-14 text-center">
                     <div className="flex flex-col items-center justify-center text-[#667085]">
                       <UsersRound className="h-6 w-6 text-[#98A2B3]" />
                       <p className="mt-2 text-[13px] font-extrabold text-[#042C51]">

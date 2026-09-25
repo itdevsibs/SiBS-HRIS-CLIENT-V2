@@ -195,7 +195,7 @@ export default function PipelineMobileCard({
             </p>
             {(candidate.dateMoved || candidate.updatedAt) && (
               <p className="mt-0.5 truncate text-[9px] font-medium text-[#98A2B3]">
-                Updated: {candidate.dateMoved || candidate.updatedAt}
+                Updated: {formatDateTime(candidate.dateMoved || candidate.updatedAt)}
               </p>
             )}
           </div>

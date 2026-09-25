@@ -222,8 +222,8 @@ function formatDate(value) {
 
   return new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Manila",
-    month: "short",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
     year: "numeric",
   }).format(parsed);
 }

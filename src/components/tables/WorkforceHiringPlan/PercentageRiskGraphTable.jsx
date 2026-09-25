@@ -311,7 +311,7 @@ function getWeekStartDate(activeWeek) {
 
 function formatWeekDate(date) {
   return date.toLocaleDateString("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });
@@ -1412,8 +1412,9 @@ export default function PercentageRiskGraphTable({
 
   const trendLabels = planRows.map((row) =>
     row.weekDate.toLocaleDateString("en-US", {
-      month: "short",
+      month: "long",
       day: "numeric",
+      year: "numeric",
     }),
   );
 

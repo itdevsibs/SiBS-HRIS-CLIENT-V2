@@ -4,6 +4,11 @@ function normalize(value) {
   return String(value ?? "").trim().toLowerCase();
 }
 
+function looksLikeEmail(value) {
+  const text = String(value ?? "").trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text);
+}
+
 function matchesFilter(value, filter) {
   const normalizedFilter = normalize(filter);
   return !normalizedFilter || normalizedFilter === ALL_FILTER || normalize(value) === normalizedFilter;
@@ -61,6 +66,17 @@ export function buildEmailLogCategories(records = []) {
 
 
 export function normalizeEmailLogRecord(record = {}) {
+  const recipient = String(
+    record.recipient ??
+      record.recipient_name ??
+      record.email ??
+      record.recipient_email ??
+      "Recipient",
+  ).trim();
+  const rawCandidateName = String(
+    record.candidateName ?? record.candidate_name ?? "",
+  ).trim();
+
   const normalizeStatus = (value) => {
     const status = normalize(value).replace(/[\s_-]+/g, " ");
 
@@ -76,7 +92,7 @@ export function normalizeEmailLogRecord(record = {}) {
   return {
     ...record,
     id: String(record.id ?? record.log_id ?? record.email_log_id ?? "").trim(),
-    recipient: String(record.recipient ?? record.recipient_name ?? record.email ?? record.recipient_email ?? "Recipient").trim(),
+    recipient,
     email: String(record.email ?? record.recipient_email ?? "").trim(),
     role: String(record.role ?? record.recipient_role ?? "Recipient").trim(),
     site: String(record.site ?? record.location ?? "—").trim() || "—",
@@ -92,9 +108,204 @@ export function normalizeEmailLogRecord(record = {}) {
     senderEmail: String(record.senderEmail ?? record.sender_email ?? "").trim(),
     replyTo: String(record.replyTo ?? record.reply_to ?? "").trim(),
     attachments: Array.isArray(record.attachments) ? record.attachments : [],
+    providerMessageId: String(
+      record.providerMessageId ??
+        record.provider_message_id ??
+        record.smtp_message_id ??
+        record.message_id ??
+        "",
+    ).trim(),
+    direction: String(record.direction ?? "outgoing").trim() || "outgoing",
+    isCandidateReply: Boolean(record.isCandidateReply ?? record.is_candidate_reply),
+    gmailMessageId: String(record.gmailMessageId ?? record.gmail_message_id ?? "").trim(),
+    gmailThreadId: String(record.gmailThreadId ?? record.gmail_thread_id ?? "").trim(),
+    senderName: String(record.senderName ?? record.sender_name ?? "").trim(),
+    fromAddress: String(record.fromAddress ?? record.from_address ?? "").trim(),
+    toAddress: String(record.toAddress ?? record.to_address ?? "").trim(),
+    sourceModule: String(record.sourceModule ?? record.source_module ?? "").trim(),
+    sourceAction: String(record.sourceAction ?? record.source_action ?? "").trim(),
+    relatedEntityType: String(record.relatedEntityType ?? record.related_entity_type ?? "").trim(),
+    relatedEntityId: String(record.relatedEntityId ?? record.related_entity_id ?? "").trim(),
+    candidatePipelineId: String(
+      record.candidatePipelineId ??
+        record.candidate_pipeline_id ??
+        record.pipelineId ??
+        "",
+    ).trim(),
+    candidateId: String(record.candidateId ?? record.candidate_id ?? "").trim(),
+    candidateName:
+      rawCandidateName || (!looksLikeEmail(recipient) ? recipient : ""),
+    candidateEmail: String(
+      record.candidateEmail ??
+        record.candidate_email ??
+        record.email ??
+        record.recipient_email ??
+        "",
+    ).trim(),
+    talentPoolApplicationId: String(
+      record.talentPoolApplicationId ??
+        record.talent_pool_application_id ??
+        record.sourceTalentPoolId ??
+        record.source_talent_pool_id ??
+        "",
+    ).trim(),
+    talentPoolEmail: String(
+      record.talentPoolEmail ??
+        record.talent_pool_email ??
+        "",
+    ).trim(),
+    candidateMatched: Boolean(record.candidateMatched ?? record.candidate_matched),
     dispatchedBy: String(record.dispatchedBy ?? record.dispatched_by ?? record.sent_by ?? "SiBS HRIS").trim(),
     dispatchedAt: record.dispatchedAt ?? record.dispatched_at ?? record.sent_at ?? record.created_at ?? "",
   };
+}
+
+function emailLogTimestamp(record = {}) {
+  const timestamp = Date.parse(record.dispatchedAt);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function candidateGroupKey(record = {}) {
+  const talentPoolApplicationId = normalize(record.talentPoolApplicationId);
+  if (talentPoolApplicationId) return `talent-pool:${talentPoolApplicationId}`;
+
+  const pipelineId = normalize(record.candidatePipelineId);
+  if (pipelineId) return `pipeline:${pipelineId}`;
+
+  const candidateId = normalize(record.candidateId);
+  if (candidateId) return `candidate:${candidateId}`;
+
+  // The directory is candidate-based, not email-based. Multiple candidate
+  // records may intentionally reuse the same email address, so an email alone
+  // is never a safe grouping key.
+  return "";
+}
+
+function firstMeaningfulValue(records = [], field, fallback = "—") {
+  for (const record of records) {
+    const value = String(record?.[field] ?? "").trim();
+    if (value && value !== "—") return value;
+  }
+  return fallback;
+}
+
+function firstMeaningfulNonEmailValue(records = [], field, fallback = "") {
+  for (const record of records) {
+    const value = String(record?.[field] ?? "").trim();
+    if (value && value !== "—" && !looksLikeEmail(value)) return value;
+  }
+  return fallback;
+}
+
+function buildCandidateEmailAddresses(records = []) {
+  const addresses = [];
+  const seen = new Set();
+
+  const addAddress = (value) => {
+    const email = String(value ?? "").trim();
+    const key = normalize(email);
+
+    if (!email || !looksLikeEmail(email) || seen.has(key)) return;
+
+    seen.add(key);
+    addresses.push(email);
+  };
+
+  // Keep the current Candidate Pipeline address first, then include the
+  // original Talent Pool address when it differs.
+  for (const record of records) addAddress(record?.candidateEmail);
+  for (const record of records) addAddress(record?.talentPoolEmail);
+
+  // Include any historical candidate-recipient address stored on Email Logs.
+  // Internal approval/manager recipients are deliberately excluded.
+  for (const record of records) {
+    if (
+      record?.candidateMatched &&
+      normalize(record?.role) === "candidate"
+    ) {
+      addAddress(record?.email);
+    }
+  }
+
+  return addresses;
+}
+
+export function buildCandidateEmailGroups(filteredRecords = [], allRecords = filteredRecords) {
+  const allByKey = new Map();
+
+  for (const record of allRecords) {
+    const key = candidateGroupKey(record);
+    if (!key) continue;
+    if (!allByKey.has(key)) allByKey.set(key, []);
+    allByKey.get(key).push(record);
+  }
+
+  for (const records of allByKey.values()) {
+    records.sort((left, right) => emailLogTimestamp(right) - emailLogTimestamp(left));
+  }
+
+  const matchedKeys = [];
+  const seen = new Set();
+
+  for (const record of filteredRecords) {
+    const key = candidateGroupKey(record);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    matchedKeys.push(key);
+  }
+
+  return matchedKeys
+    .map((key) => {
+      const records = allByKey.get(key) || [];
+      const latestRecord = records[0];
+      if (!latestRecord) return null;
+
+      const candidateName =
+        firstMeaningfulNonEmailValue(records, "candidateName", "") ||
+        firstMeaningfulNonEmailValue(records, "recipient", "") ||
+        "Candidate";
+      const emailAddresses = buildCandidateEmailAddresses(records);
+      const email =
+        emailAddresses[0] ||
+        firstMeaningfulValue(records, "candidateEmail", "") ||
+        firstMeaningfulValue(records, "email", "—");
+      const candidateId = firstMeaningfulValue(records, "candidateId", "");
+      const candidatePipelineId = firstMeaningfulValue(records, "candidatePipelineId", "");
+      const talentPoolApplicationId = firstMeaningfulValue(
+        records,
+        "talentPoolApplicationId",
+        "",
+      );
+      const categories = [...new Set(records.map((record) => record.category).filter(Boolean))];
+      const statuses = [...new Set(records.map((record) => record.status).filter(Boolean))];
+
+      return {
+        key,
+        candidateName,
+        recipient: candidateName,
+        email,
+        emailAddresses,
+        candidateId,
+        candidatePipelineId,
+        talentPoolApplicationId,
+        role: records.some(
+          (record) => record.candidateMatched || normalize(record.role) === "candidate",
+        )
+          ? "Candidate"
+          : firstMeaningfulValue(records, "role", "Recipient"),
+        site: firstMeaningfulValue(records, "site"),
+        position: firstMeaningfulValue(records, "position"),
+        account: firstMeaningfulValue(records, "account"),
+        emailCount: records.length,
+        categories,
+        statuses,
+        latestRecord,
+        lastDispatchedAt: latestRecord.dispatchedAt,
+        records,
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => emailLogTimestamp(right.latestRecord) - emailLogTimestamp(left.latestRecord));
 }
 
 export function filterEmailLogs(records = [], filters = {}) {
@@ -105,6 +316,12 @@ export function filterEmailLogs(records = [], filters = {}) {
       record.id,
       record.recipient,
       record.email,
+      record.candidateName,
+      record.candidateEmail,
+      record.candidateId,
+      record.candidatePipelineId,
+      record.talentPoolApplicationId,
+      record.talentPoolEmail,
       record.role,
       record.subject,
       record.category,

@@ -16,6 +16,19 @@ function cleanText(value, fallback = "-") {
   return text || fallback;
 }
 
+function formatFullMonthDate(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return cleanText(value, "—");
+
+  return date.toLocaleDateString("en-PH", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function ApplicantLeadMobileCard({
   lead,
   activeLeadView,
@@ -27,11 +40,9 @@ export default function ApplicantLeadMobileCard({
   const fullName = cleanText(lead.fullName, "Unnamed Applicant");
   const phone = cleanText(lead.cpNum);
   const email = cleanText(lead.email);
-  const department = cleanText(lead.department);
-  const account = cleanText(lead.specificAccount);
   const site = cleanText(lead.preferredSite);
   const inputtedBy = cleanText(lead.inputtedBy);
-  const dateLogged = cleanText(lead.dateLogged);
+  const dateLogged = formatFullMonthDate(lead.dateLogged);
   const applicationLinkSent = isApplicantLeadApplicationLinkSent(lead);
   const isConvertedApplicant =
     String(lead.status || "").trim().toLowerCase() ===
@@ -86,25 +97,14 @@ export default function ApplicantLeadMobileCard({
         )}
       </div>
 
-      <DataCard.ContextRow>
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px]">
-          <span className="font-extrabold text-sibs-navy">{department}</span>
-          {account && account !== "-" && (
-            <>
-              <span className="text-sibs-text-faint">•</span>
-              <span className="text-sibs-text-muted">
-                Account: <span className="font-semibold text-sibs-text-secondary">{account}</span>
-              </span>
-            </>
-          )}
-        </div>
-        {site && site !== "-" && (
+      {site && site !== "-" ? (
+        <DataCard.ContextRow>
           <span className="inline-flex shrink-0 items-center gap-1 text-[10.5px] font-semibold text-sibs-text-muted">
             <MapPin size={11} className="shrink-0 text-sibs-text-faint" />
             {site}
           </span>
-        )}
-      </DataCard.ContextRow>
+        </DataCard.ContextRow>
+      ) : null}
 
       <DataCard.Metrics cols={2}>
         <DataCard.MetricItem

@@ -32,7 +32,7 @@ function formatDate(date) {
   if (Number.isNaN(parsedDate.getTime())) return "—";
 
   return parsedDate.toLocaleDateString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });

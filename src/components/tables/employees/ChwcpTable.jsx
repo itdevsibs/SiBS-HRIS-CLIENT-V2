@@ -322,7 +322,7 @@ function formatRequestDate(value) {
 
   const formatted = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Manila",
-    month: "short",
+    month: "long",
     day: "2-digit",
     year: "numeric",
     hour: "numeric",

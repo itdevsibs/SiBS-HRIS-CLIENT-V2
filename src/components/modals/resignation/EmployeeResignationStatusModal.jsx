@@ -36,7 +36,7 @@ function formatDateTime(value) {
 
   return date.toLocaleString("en-PH", {
     timeZone: "Asia/Manila",
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
     hour: "numeric",

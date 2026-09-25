@@ -40,7 +40,7 @@ export function formatDateTime(dateString) {
   return date.toLocaleString("en-PH", {
     timeZone: "Asia/Manila",
     year: "numeric",
-    month: "short",
+    month: "long",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",

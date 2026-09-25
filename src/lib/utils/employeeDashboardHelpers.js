@@ -18,7 +18,7 @@ export function formatDashboardDate(value, fallback = "—") {
   return date.toLocaleDateString("en-US", {
     timeZone: MANILA_TIME_ZONE,
     year: "numeric",
-    month: "short",
+    month: "long",
     day: "numeric",
   });
 }
@@ -525,11 +525,12 @@ export function getWeeklyScheduleFromResponse({
     const isToday = dateKey === todayKey;
     const isWeekend = index === 5 || index === 6;
 
-    const shortMonth = currentDay.toLocaleDateString("en-US", {
+    const dateLabel = currentDay.toLocaleDateString("en-US", {
       timeZone: "UTC",
-      month: "short",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
-    const dateLabel = `${shortMonth} ${currentDay.getUTCDate()}`;
 
     // Find any backend record matching this date
     const record = rawRecords.find((item) => {

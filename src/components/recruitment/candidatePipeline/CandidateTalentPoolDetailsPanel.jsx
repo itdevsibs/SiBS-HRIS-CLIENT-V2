@@ -211,8 +211,8 @@ function formatDateValue(value) {
 
   return date.toLocaleDateString("en-PH", {
     year: "numeric",
-    month: "short",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
   });
 }
 
