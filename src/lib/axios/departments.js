@@ -40,19 +40,29 @@ export async function getDepartmentAccountEmployees(accountId) {
   const cleanAccountId = String(accountId ?? "").trim();
 
   if (!cleanAccountId) {
-    return [];
+    return {
+      employees: [],
+      summary: { totalEmployees: 0, activeEmployees: 0, inactiveEmployees: 0 },
+    };
   }
 
   try {
     const response = await api.get(
-      `${BASE_PATH}/accounts/${encodeURIComponent(cleanAccountId)}/employees`,
+      `/api/departments/accounts/${encodeURIComponent(cleanAccountId)}/employees`,
       { withCredentials: true },
     );
 
-    return Array.isArray(response.data?.data) ? response.data.data : [];
+    return {
+      employees: Array.isArray(response.data?.data) ? response.data.data : [],
+      summary: response.data?.summary || {
+        totalEmployees: 0,
+        activeEmployees: 0,
+        inactiveEmployees: 0,
+      },
+    };
   } catch (error) {
     throw new Error(
-      getErrorMessage(error, "Unable to load active employees for this account."),
+      getErrorMessage(error, "Unable to load employees for this account."),
     );
   }
 }
