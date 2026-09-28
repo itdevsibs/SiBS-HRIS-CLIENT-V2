@@ -70,3 +70,4 @@ tests/
 !src/lib/utils/employeeDashboardHelpers.test.jsx
 !src/lib/utils/employees/employeeDirectoryHelpers.test.jsx
 !src/lib/utils/attendance/attendanceHelpers.test.jsx
+!src/lib/axios/getNotifications.test.jsx

@@ -56,6 +56,8 @@ const IGNORE_AUTH_REDIRECT_ROUTES = [
   "/api/public/candidate-experience",
   "/api/audit-notifications/clock",
   "/audit-notifications/clock",
+  "/api/notifications",
+  "/notifications",
 ];
 
 function getCurrentPathname() {
