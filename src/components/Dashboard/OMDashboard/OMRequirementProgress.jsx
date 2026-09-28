@@ -8,21 +8,21 @@ export default function OMRequirementProgress({ roles = [], delay = 0 }) {
 
   return (
     <section
-      className="sibs-page-card-in sibs-card font-jakarta flex h-full flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
+      className="sibs-page-card-in sibs-card font-jakarta flex h-full flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm 2xl:p-6"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div>
-        <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+        <h3 className="sibs-card-title">
           Approved Requirement vs Filled Progress
         </h3>
-        <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+        <p className="sibs-card-subtitle mt-1">
           Current hiring progress for manager-accessible roles
         </p>
       </div>
 
-      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3 max-h-[380px] overflow-y-auto sibs-scrollbar">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl border border-sibs-border-panel bg-sibs-surface p-3 max-h-[380px] overflow-y-auto sibs-scrollbar">
         {roles.length === 0 ? (
-          <div className="sibs-empty-panel rounded-xl border border-dashed border-[#D6E0EA] bg-white px-5 py-10 text-center text-xs font-bold text-[#667085]">
+          <div className="sibs-empty-panel rounded-xl border border-dashed border-sibs-subtle-border bg-white px-5 py-10 text-center text-xs font-bold text-sibs-muted">
             No accessible hiring roles were found.
           </div>
         ) : (
@@ -33,19 +33,19 @@ export default function OMRequirementProgress({ roles = [], delay = 0 }) {
                 ? "bg-rose-500"
                 : role.status === "At Risk"
                   ? "bg-amber-400"
-                  : "bg-[#FF5C28]";
+                  : "bg-sibs-orange";
 
             const dotClass =
               role.status === "Delayed"
                 ? "bg-rose-500"
                 : role.status === "At Risk"
                   ? "bg-amber-400"
-                  : "bg-[#FF5C28]";
+                  : "bg-sibs-orange";
 
             return (
               <article
                 key={role.id || role.roleAccount}
-                className="rounded-lg border border-[#DDE5EE] bg-white px-3.5 py-3 shadow-2xs transition hover:border-[#FF5C28]/40 hover:shadow-xs"
+                className="rounded-lg border border-sibs-border-panel bg-white px-3.5 py-3 shadow-2xs transition hover:border-sibs-orange/40 hover:shadow-xs"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap sm:gap-3">
                   <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-extrabold text-sibs-navy">
@@ -80,24 +80,24 @@ export default function OMRequirementProgress({ roles = [], delay = 0 }) {
 
       <div className="mt-3 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/70 px-3.5 py-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-[#042C51]">
-            <Target className="h-3.5 w-3.5 text-[#FF5C28]" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-sibs-navy">
+            <Target className="h-3.5 w-3.5 text-sibs-orange" />
           </span>
           <div>
             <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-blue-900">
               Overall Fulfillment
             </p>
-            <p className="sibs-text-xs font-black text-[#042C51]">
+            <p className="sibs-text-xs font-black text-sibs-navy">
               Approved Requirements
             </p>
           </div>
         </div>
 
         <div className="text-right">
-          <span className="block text-base font-black leading-none text-[#042C51]">
+          <span className="font-heading block text-base 2xl:text-lg font-bold leading-none tabular-nums text-sibs-navy">
             {totalFilled} / {totalReq}
           </span>
-          <span className="mt-1 block sibs-text-micro font-bold text-[#FF5C28]">
+          <span className="mt-1 block sibs-text-micro font-bold text-sibs-orange">
             {overallPercentage}% fulfilled
           </span>
         </div>

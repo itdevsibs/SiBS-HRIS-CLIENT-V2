@@ -27,10 +27,10 @@ export default function AdminDashboardActivity({
     >
       <div className="flex items-start justify-between gap-4 border-b border-sibs-border pb-3 2xl:pb-4">
         <div className="min-w-0 space-y-0.5">
-          <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+          <h2 className="sibs-card-title text-sm 2xl:text-base">
             Recent Activity
           </h2>
-          <p className="sibs-text-xs font-semibold text-sibs-muted">
+          <p className="sibs-card-subtitle sibs-text-xs">
             Latest system and employee activity logs
           </p>
         </div>
@@ -39,7 +39,7 @@ export default function AdminDashboardActivity({
           type="button"
           onClick={onSync}
           disabled={isSyncing}
-          className="inline-flex h-8 2xl:h-8.5 items-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-2.5 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-wait disabled:opacity-60"
+          className="sibs-btn-secondary !h-8 2xl:!h-8.5 !px-2.5 sibs-text-xs disabled:cursor-wait disabled:opacity-60"
         >
           <RefreshCw
             className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin text-sibs-orange" : ""}`}
@@ -60,7 +60,7 @@ export default function AdminDashboardActivity({
           activities.slice(0, 6).map((activity, index) => (
             <article
               key={activity.id}
-              className="sibs-page-card-in flex items-start gap-2.5 2xl:gap-3 px-1 py-2 2xl:py-3 transition hover:bg-slate-50/70"
+              className="sibs-page-card-in flex items-start gap-2.5 2xl:gap-3 px-1 py-2 2xl:py-3 transition hover:bg-sibs-cream-subtle/50"
               style={{
                 animationDelay: `${index * 35}ms`,
                 animationFillMode: "both",

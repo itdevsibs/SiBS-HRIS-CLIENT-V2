@@ -32,10 +32,10 @@ export default function OMWeeklyMovement({ movement = {}, delay = 0 }) {
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div>
-        <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+        <h2 className="sibs-card-title">
           Weekly Movement Pipeline
         </h2>
-        <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+        <p className="sibs-card-subtitle mt-0.5">
           Candidate progression for the manager&apos;s accessible hiring scope
         </p>
 
@@ -60,11 +60,11 @@ export default function OMWeeklyMovement({ movement = {}, delay = 0 }) {
         </div>
       </div>
 
-      <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 2xl:p-3.5">
-        <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-[#042C51]" />
-        <p className="sibs-text-xs font-semibold leading-relaxed text-[#667085]">
+      <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-sibs-border bg-sibs-surface p-3 2xl:p-3.5">
+        <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-sibs-navy" />
+        <p className="sibs-text-xs font-semibold leading-relaxed text-sibs-muted">
           Conversion from Sourced to Hired is{" "}
-          <strong className="text-[#042C51]">{conversion}%</strong>. Roles
+          <strong className="text-sibs-navy">{conversion}%</strong>. Roles
           marked At Risk or Delayed require additional sourcing buffers before
           the next hiring call.
         </p>

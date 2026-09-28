@@ -22,6 +22,7 @@ import {
   Network,
   Phone,
   RefreshCcw,
+  Save,
   ShieldCheck,
   Sparkles,
   StickyNote,
@@ -84,6 +85,10 @@ import {
   isUnder18Candidate,
   shouldShowMoveToPipelineAction,
 } from "../../../lib/utils/talentPool/talentPoolTabs";
+import {
+  getTalentPoolEditableSectionLabel,
+  updateTalentPoolCandidateEducationDetails,
+} from "../../../lib/utils/talentPool/candidateProfileEdit";
 
 const TALENT_POOL_ROUTE = "/recruitment/talent-pool";
 const CANDIDATE_PIPELINE_ROUTE = "/recruitment/candidate-pipeline";
@@ -3382,6 +3387,40 @@ function ProfileDetail({ label, value, mono = false, className = "" }) {
   );
 }
 
+function CandidateDraftField({
+  label,
+  value = "",
+  onChange,
+  type = "text",
+  multiline = false,
+  rows = 3,
+  className = "",
+}) {
+  const controlClass =
+    "w-full rounded-lg border border-[#D6E0EA] bg-white px-3 py-2 text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#042C51] focus:ring-2 focus:ring-[#042C51]/10";
+
+  return (
+    <label className={`block min-w-0 ${className}`}>
+      <FieldLabel>{label}</FieldLabel>
+      {multiline ? (
+        <textarea
+          value={value ?? ""}
+          rows={rows}
+          onChange={(event) => onChange(event.target.value)}
+          className={`${controlClass} min-h-20 resize-y leading-5`}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value ?? ""}
+          onChange={(event) => onChange(event.target.value)}
+          className={controlClass}
+        />
+      )}
+    </label>
+  );
+}
+
 function NhoRequirementCard({
   requirement,
   files = [],
@@ -4076,6 +4115,15 @@ export default function CandidateProfileModal() {
   const {
     selectedCandidate,
     setSelectedCandidate,
+    openEditCandidate,
+    editCandidate,
+    candidateForm: draftCandidateForm,
+    setCandidateForm: setDraftCandidateForm,
+    closeEditCandidate,
+    submitEditCandidate,
+    handleCandidateFileChange,
+    emptyExperience,
+    isSaving: isCandidateSaving,
     currentTaOwner,
     openMoveToPipeline,
     refreshTalentPool,
@@ -4086,6 +4134,8 @@ export default function CandidateProfileModal() {
     useState(false);
   const [activeTab, setActiveTab] = useState("personal.basic");
   const [tabAnimationKey, setTabAnimationKey] = useState(0);
+  const [editSaveError, setEditSaveError] = useState("");
+  const [isStartingCandidateEdit, setIsStartingCandidateEdit] = useState(false);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -4872,6 +4922,20 @@ export default function CandidateProfileModal() {
       !isAlreadyOnboarding,
   );
 
+  const canEditTalentPoolCandidate = [
+    "ta", "hr", "hr_admin", "finance", "manager", "executive", "super_admin",
+  ].includes(normalizeAuditRole(
+    user?.resolvedRole ||
+      user?.resolved_role ||
+      user?.role ||
+      user?.userRole ||
+      user?.user_role ||
+      user?.adminRole ||
+      user?.admin_role ||
+      user?.roleName ||
+      user?.role_name,
+  ));
+
   const shouldShowLinkedButton = Boolean(
     hasActivePipelineLink &&
       !isIncompleteRequirementsStage &&
@@ -5027,12 +5091,85 @@ export default function CandidateProfileModal() {
   function handleProfileTabChange(tabId) {
     if (activeTab === tabId) return;
 
+    if (editCandidate) {
+      setEditSaveError("Save or cancel your candidate draft before opening another section.");
+      return;
+    }
+
     setActiveTab(tabId);
+    setEditSaveError("");
     setTabAnimationKey((previous) => previous + 1);
   }
 
   function handleCloseCandidateProfile() {
+    if (editCandidate) {
+      setEditSaveError("Save or cancel your candidate draft before closing the profile.");
+      return;
+    }
+
     setSelectedCandidate(null);
+  }
+
+  async function handleOpenEditCandidate() {
+    if (
+      !talentPoolApplicationId ||
+      !canEditTalentPoolCandidate ||
+      !getTalentPoolEditableSectionLabel(activeTab)
+    ) return;
+
+    setEditSaveError("");
+    setIsStartingCandidateEdit(true);
+    try {
+      const response = await getTalentPoolApplicationAnswers(talentPoolApplicationId);
+      if (!response?.success) {
+        setStatusModal({
+          open: true,
+          type: "error",
+          title: "Unable to load application answers",
+          message: response?.message || "The candidate’s application answers could not be loaded. Please try again.",
+          closeProfileOnClose: false,
+        });
+        return;
+      }
+
+      openEditCandidate(activeCandidate, safeObject(response.data), { inline: true });
+    } catch (error) {
+      setStatusModal({
+        open: true,
+        type: "error",
+        title: "Unable to load application answers",
+        message: error?.message || "The candidate’s application answers could not be loaded. Please try again.",
+        closeProfileOnClose: false,
+      });
+    } finally {
+      setIsStartingCandidateEdit(false);
+    }
+  }
+
+  function handleCancelCandidateEdit() {
+    if (isCandidateSaving) return;
+    closeEditCandidate();
+    setEditSaveError("");
+  }
+
+  async function handleSaveCandidateEdit() {
+    if (!editCandidate || isCandidateSaving) return;
+
+    setEditSaveError("");
+    const result = await submitEditCandidate({ preventDefault() {} });
+    if (!result?.success) {
+      setEditSaveError(result?.message || "Unable to save the candidate profile. Your draft is still available.");
+      return;
+    }
+
+    if (result.candidate) {
+      setTalentPoolCandidateDetails((current) => ({
+        ...safeObject(current),
+        ...safeObject(result.candidate),
+      }));
+    }
+    setEditSaveError("");
+    await loadTalentPoolCandidateDetails();
   }
 
   async function handleGenerateResume() {
@@ -5847,6 +5984,394 @@ export default function CandidateProfileModal() {
         <ProfileDetail label="Weight" value={activeCandidate.weight} />
       </div>
     );
+  }
+
+  function setCandidateDraftField(field, value) {
+    setDraftCandidateForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function setCandidateDraftExperience(index, field, value) {
+    setDraftCandidateForm((current) => ({
+      ...current,
+      workExperiences: safeArray(current.workExperiences).map((experience, itemIndex) =>
+        itemIndex === index ? { ...experience, [field]: value } : experience,
+      ),
+    }));
+  }
+
+  function renderInlineCandidateEditSection() {
+    const gridClass = "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3";
+    const field = (label, name, props = {}) => (
+      <CandidateDraftField
+        key={name}
+        label={label}
+        value={draftCandidateForm[name]}
+        onChange={(value) => setCandidateDraftField(name, value)}
+        {...props}
+      />
+    );
+    const select = (label, name, options) => (
+      <label key={name} className="block min-w-0">
+        <FieldLabel>{label}</FieldLabel>
+        <select
+          value={draftCandidateForm[name] === true
+            ? "Yes"
+            : draftCandidateForm[name] === false
+              ? "No"
+              : draftCandidateForm[name] || ""}
+          onChange={(event) => setCandidateDraftField(name, event.target.value)}
+          className="w-full rounded-lg border border-[#D6E0EA] bg-white px-3 py-2 text-xs font-semibold text-[#042C51] outline-none focus:border-[#042C51] focus:ring-2 focus:ring-[#042C51]/10"
+        >
+          <option value="">Choose option</option>
+          {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+      </label>
+    );
+    const listField = (label, name) => (
+      <CandidateDraftField
+        label={label}
+        value={Array.isArray(draftCandidateForm[name])
+          ? draftCandidateForm[name].join(", ")
+          : draftCandidateForm[name] || ""}
+        onChange={(value) => setCandidateDraftField(
+          name,
+          value.split(",").map((item) => item.trim()).filter(Boolean),
+        )}
+      />
+    );
+
+    if (activeTab === "personal.basic") {
+      return (
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+          {field("First Name", "firstName")}
+          {field("Middle Name", "middleName")}
+          {field("Last Name", "lastName")}
+          {field("Name Extension", "suffix")}
+          {field("Preferred Name", "nickname")}
+          {field("Birth Date", "dateOfBirth", {
+            type: "date",
+            value: String(draftCandidateForm.dateOfBirth || "").slice(0, 10),
+          })}
+          <ProfileDetail
+            label="Place of Birth"
+            value={firstCandidateValue(
+              activeCandidate.placeOfBirth,
+              activeCandidate.place_of_birth,
+              activeCandidate.birthPlace,
+            )}
+          />
+          <ProfileDetail label="Gender" value={activeCandidate.gender} />
+          <ProfileDetail
+            label="Civil Status"
+            value={firstCandidateValue(
+              activeCandidate.civilStatus,
+              activeCandidate.civil_status,
+              activeCandidate.maritalStatus,
+            )}
+          />
+          <ProfileDetail
+            label="Citizenship"
+            value={firstCandidateValue(
+              activeCandidate.citizenship,
+              activeCandidate.nationality,
+            )}
+          />
+          <ProfileDetail
+            label="Blood Type"
+            value={firstCandidateValue(
+              activeCandidate.bloodType,
+              activeCandidate.blood_type,
+            )}
+          />
+          <ProfileDetail label="Height" value={activeCandidate.height} />
+          <ProfileDetail label="Weight" value={activeCandidate.weight} />
+        </div>
+      );
+    }
+
+    if (activeTab === "personal.contact") {
+      return (
+        <div className={gridClass}>
+          {field("Email", "email", { type: "email" })}
+          {field("Mobile Number", "phoneNumber1", { type: "tel" })}
+          {field("Telephone", "phoneNumber2", { type: "tel" })}
+        </div>
+      );
+    }
+
+    if (activeTab === "personal.address") {
+      return (
+        <div className="space-y-3">
+          {field("Residential Address", "physicalAddress", { multiline: true, rows: 3 })}
+          <div className={gridClass}>
+            {field("Preferred Location", "applyingLocation")}
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === "application.overview") {
+      const audioName = draftCandidateForm.audioFile?.name || draftCandidateForm.audioFileName || activeCandidate.audioFileName || activeCandidate.audio_file_name;
+      const attachmentName = draftCandidateForm.attachmentFile?.name || draftCandidateForm.attachmentFileName || activeCandidate.attachmentFileName || activeCandidate.attachment_file_name;
+
+      return (
+        <div className="space-y-4">
+          <div className={gridClass}>
+            <div className="block min-w-0">
+              <FieldLabel>Applied Position</FieldLabel>
+              <div className="flex min-h-[34px] items-center rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold text-[#667085]">
+                {draftCandidateForm.openPosition || "—"}
+              </div>
+            </div>
+            {field("Preferred Location", "applyingLocation")}
+            {listField("How did you hear about us? (comma separated)", "hearAboutUs")}
+            {field("Referred By", "referredBy")}
+            {field("Employee ID", "employeeId")}
+            {field("Availability", "availability")}
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {[{ kind: "audio", label: "Replace audio response", name: audioName, accept: "audio/*" }, { kind: "attachment", label: "Replace attachment", name: attachmentName, accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png" }].map((item) => (
+              <label key={item.kind} className="block min-w-0 rounded-lg border border-[#D6E0EA] bg-[#F8FAFC] p-3">
+                <FieldLabel>{item.label}</FieldLabel>
+                <span className="mb-2 block truncate text-xs font-semibold text-[#667085]">Current: {item.name || "No file attached"}</span>
+                <input
+                  type="file"
+                  accept={item.accept}
+                  onChange={(event) => handleCandidateFileChange(event, item.kind, draftCandidateForm, setDraftCandidateForm)}
+                  className="block w-full text-xs font-semibold text-[#344054] file:mr-3 file:rounded-lg file:border-0 file:bg-[#E9F0FC] file:px-3 file:py-1.5 file:text-xs file:font-extrabold file:text-[#042C51] hover:file:bg-[#DCE8FA]"
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === "education") {
+      const educationCandidate = {
+        ...activeCandidate,
+        ...draftCandidateForm,
+      };
+      const educationRecords = getCandidateEducationRecords(educationCandidate);
+
+      const updateEducationRecord = (sectionKey, name, value) => {
+        setDraftCandidateForm((current) => {
+          const currentDetails = getCandidateEducationDetails({
+            ...activeCandidate,
+            ...current,
+          });
+
+          return {
+            ...current,
+            educationDetails: updateTalentPoolCandidateEducationDetails(
+              currentDetails,
+              sectionKey,
+              name,
+              value,
+            ),
+          };
+        });
+      };
+
+      return (
+        <section className="space-y-4">
+          <SectionTitle
+            icon={GraduationCap}
+            title="Educational Background"
+            description="Candidate educational attainment and complete academic history."
+          />
+
+          <div className={gridClass}>
+            <CandidateDraftField
+              label="Highest Educational Attainment"
+              value={draftCandidateForm.educationalAttainment}
+              onChange={(value) =>
+                setDraftCandidateForm((current) => ({
+                  ...current,
+                  educationalAttainment: value,
+                  highestEducationalAttainment: value,
+                }))
+              }
+            />
+            {listField("Affiliations / Certifications (comma separated)", "affiliations")}
+          </div>
+
+          {educationRecords.length > 0 ? (
+            <div className="space-y-4">
+              {educationRecords.map((record, index) => {
+                const canEditRecord = record.source === "educationDetails";
+                const recordField = (label, name, options = {}) =>
+                  canEditRecord ? (
+                    <CandidateDraftField
+                      key={`${record.sectionKey}-${name}`}
+                      label={label}
+                      value={record[name]}
+                      onChange={(value) =>
+                        updateEducationRecord(record.sectionKey, name, value)
+                      }
+                      {...options}
+                    />
+                  ) : (
+                    <ProfileDetail
+                      key={`${record.sectionKey}-${name}`}
+                      label={label}
+                      value={record[name]}
+                    />
+                  );
+
+                return (
+                  <article
+                    key={`${record.sectionKey || record.level || "education"}-${record.schoolName || index}-${index}`}
+                    className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white"
+                  >
+                    <div className="flex items-start gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:px-5">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FB] text-sibs-primary-1">
+                        <GraduationCap size={19} />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/60 sm:text-[11px]">
+                          Academic Record {index + 1}
+                        </p>
+                        <h4 className="mt-1 break-words text-sm font-extrabold text-[#101828] sm:text-base">
+                          {record.level || "Educational Background"}
+                        </h4>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 p-4 sm:p-5">
+                      <div className="grid min-w-0 grid-cols-1 gap-x-2.5 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {recordField("School Name", "schoolName")}
+
+                        {hasCandidateValue(record.course) &&
+                          recordField("Course / Program", "course")}
+
+                        {hasCandidateValue(record.schoolYearGraduated) &&
+                          recordField("School Year Graduated", "schoolYearGraduated")}
+                      </div>
+
+                      {hasCandidateValue(record.address) &&
+                        recordField("School Address", "address", {
+                          multiline: true,
+                          rows: 3,
+                        })}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState title="No education information provided." />
+          )}
+        </section>
+      );
+    }
+
+    if (activeTab === "training") {
+      return field("Training Attended", "trainingAttended", { multiline: true, rows: 4 });
+    }
+
+    if (activeTab === "application.readiness") {
+      return (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {[
+            ["Fully Vaccinated", "fullyVaccinated"],
+            ["Comfortable Working On-site", "comfortableOnSite"],
+            ["Willing to Work Graveyard Shift", "willingGraveyard"],
+            ["Employment Interest", "employmentInterest"],
+            ["Has Remote Work Access", "remoteWorkAccess"],
+            ["Willing to Take a Drug Test", "willingDrugTest"],
+            ["Consents to Background Check", "willingBackgroundCheck"],
+          ].map(([label, name]) => select(label, name, ["Yes", "No"]))}
+        </div>
+      );
+    }
+
+    if (activeTab === "experience") {
+      const experiences = safeArray(draftCandidateForm.workExperiences);
+      return (
+        <div className="space-y-3">
+          {field("Work Experience Summary", "workExperience")}
+          {experiences.map((experience, index) => (
+            <div key={`draft-experience-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:grid-cols-2 xl:grid-cols-3">
+              <CandidateDraftField label={`Role ${index + 1}`} value={experience.role} onChange={(value) => setCandidateDraftExperience(index, "role", value)} />
+              <CandidateDraftField label="Company" value={experience.company} onChange={(value) => setCandidateDraftExperience(index, "company", value)} />
+              <CandidateDraftField label="Industry / Relevant Experience" value={experience.industryRelevantExperience || experience.industry} onChange={(value) => setCandidateDraftExperience(index, "industryRelevantExperience", value)} />
+              <CandidateDraftField label="Length of Experience" value={experience.lengthOfWorkExperience} onChange={(value) => setCandidateDraftExperience(index, "lengthOfWorkExperience", value)} />
+              <CandidateDraftField label="Years" type="number" value={experience.years} onChange={(value) => setCandidateDraftExperience(index, "years", value)} />
+              <CandidateDraftField label="Monthly Compensation" value={experience.monthlyCompensation} onChange={(value) => setCandidateDraftExperience(index, "monthlyCompensation", value)} />
+              <CandidateDraftField label="Reason for Leaving" value={experience.reasonForLeaving} onChange={(value) => setCandidateDraftExperience(index, "reasonForLeaving", value)} className="sm:col-span-2" />
+              <label className="block min-w-0">
+                <FieldLabel>Other Experience Available</FieldLabel>
+                <select value={experience.hasOtherExperience || "No"} onChange={(event) => setCandidateDraftExperience(index, "hasOtherExperience", event.target.value)} className="w-full rounded-lg border border-[#D6E0EA] bg-white px-3 py-2 text-xs font-semibold text-[#042C51] outline-none focus:border-[#042C51] focus:ring-2 focus:ring-[#042C51]/10">
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </label>
+              <button type="button" onClick={() => setDraftCandidateForm((current) => ({ ...current, workExperiences: safeArray(current.workExperiences).filter((_, itemIndex) => itemIndex !== index) }))} className="w-fit text-xs font-bold text-red-700 hover:text-red-800">Remove experience</button>
+            </div>
+          ))}
+          <button type="button" onClick={() => setDraftCandidateForm((current) => ({ ...current, workExperiences: [...safeArray(current.workExperiences), { ...emptyExperience }] }))} className="inline-flex h-8 items-center rounded-lg border border-[#D6E0EA] bg-white px-3 text-xs font-extrabold text-[#042C51] hover:border-[#FF5C28]/50 hover:text-[#FF5C28]">Add experience</button>
+        </div>
+      );
+    }
+
+    if (activeTab === "references") {
+      return (
+        <div className="space-y-3">
+          {safeArray(draftCandidateForm.references).map((reference, index) => (
+            <div key={`draft-reference-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:grid-cols-2">
+              <CandidateDraftField label={`Reference ${index + 1} Name`} value={reference.name} onChange={(value) => setDraftCandidateForm((current) => ({ ...current, references: safeArray(current.references).map((item, itemIndex) => itemIndex === index ? { ...item, name: value } : item) }))} />
+              <CandidateDraftField label="Phone" value={reference.phone} onChange={(value) => setDraftCandidateForm((current) => ({ ...current, references: safeArray(current.references).map((item, itemIndex) => itemIndex === index ? { ...item, phone: value } : item) }))} />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (activeTab === "skills.skills") {
+      return <div className={gridClass}>{field("Skills / Language", "skillsLanguage", { multiline: true, rows: 4 })}</div>;
+    }
+
+    if (activeTab === "answers") {
+      const answerItems = safeArray(applicationAnswers.answers);
+      return (
+        <div className="space-y-3">
+          {answerItems.map((answer, index) => {
+            const questionId = answer.questionId || answer.question_id;
+            const draftAnswerIndex = safeArray(draftCandidateForm.applicationFormAnswers).findIndex((item) => String(item.questionId) === String(questionId));
+            const draftAnswer = safeArray(draftCandidateForm.applicationFormAnswers)[draftAnswerIndex];
+            return (
+              <CandidateDraftField
+                key={answer.id || `${questionId}-${index}`}
+                label={answer.questionText || `Application question ${index + 1}`}
+                value={draftAnswer?.textAnswer || ""}
+                onChange={(value) => setDraftCandidateForm((current) => ({
+                  ...current,
+                  applicationFormAnswers: draftAnswerIndex >= 0
+                    ? safeArray(current.applicationFormAnswers).map((item, itemIndex) => itemIndex === draftAnswerIndex ? { ...item, textAnswer: value } : item)
+                    : [...safeArray(current.applicationFormAnswers), {
+                        questionId,
+                        questionKey: answer.questionKey || answer.question_key || "",
+                        answerType: "Text",
+                        textAnswer: value,
+                      }],
+                }))}
+                multiline
+                rows={3}
+              />
+            );
+          })}
+          {!answerItems.length && <EmptyState title="No application answers are available to edit." />}
+        </div>
+      );
+    }
+
+    if (activeTab === "notes") {
+      return field("Remarks", "remarks", { multiline: true, rows: 6 });
+    }
+
+    return null;
   }
 
   function renderPersonalContact() {
@@ -7746,6 +8271,10 @@ export default function CandidateProfileModal() {
   }
 
   function renderActiveTabContent() {
+    if (editCandidate && getTalentPoolEditableSectionLabel(activeTab)) {
+      return renderInlineCandidateEditSection();
+    }
+
     if (activeTab === "personal.basic") return renderPersonalBasic();
     if (activeTab === "personal.contact") return renderPersonalContact();
     if (activeTab === "personal.address") return renderPersonalAddress();
@@ -7821,6 +8350,7 @@ export default function CandidateProfileModal() {
             <button
               type="button"
               onClick={handleCloseCandidateProfile}
+              disabled={Boolean(editCandidate)}
               aria-label="Close candidate profile"
               className="inline-flex h-7 w-7 xl:h-8.5 xl:w-8.5 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -7894,7 +8424,40 @@ export default function CandidateProfileModal() {
                   </div>
 
                   <div className="flex w-full shrink-0 flex-row items-center justify-end gap-1.5 sm:w-auto">
-                    <button
+                    {editCandidate ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleSaveCandidateEdit}
+                          disabled={isCandidateSaving}
+                          className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white transition hover:bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isCandidateSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                          {isCandidateSaving ? "Saving..." : "Save Profile"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelCandidateEdit}
+                          disabled={isCandidateSaving}
+                          className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-slate-100 px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : canEditTalentPoolCandidate && (
+                      <button
+                        type="button"
+                        onClick={handleOpenEditCandidate}
+                        disabled={isStartingCandidateEdit || !getTalentPoolEditableSectionLabel(activeTab)}
+                        title={!getTalentPoolEditableSectionLabel(activeTab) ? "Choose an editable profile section first." : "Edit this candidate profile"}
+                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isStartingCandidateEdit ? <Loader2 size={13} className="animate-spin text-sibs-orange" /> : <UserRoundPen size={13} className="text-sibs-orange" />}
+                        <span>{isStartingCandidateEdit ? "Loading..." : "Edit Profile Record"}</span>
+                      </button>
+                    )}
+
+                    {!editCandidate && <button
                       type="button"
                       onClick={handleGenerateResume}
                       disabled={!talentPoolApplicationId || isGeneratingResume}
@@ -7911,16 +8474,16 @@ export default function CandidateProfileModal() {
                           <span>Generate PDS</span>
                         </>
                       )}
-                    </button>
+                    </button>}
 
-                    <button
+                    {!editCandidate && <button
                       type="button"
                       onClick={handleUpdateCandidateStatus}
                       className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-navy/90"
                     >
                       <RefreshCcw size={13} className="text-sibs-orange" />
                       Status
-                    </button>
+                    </button>}
                   </div>
                 </div>
 
@@ -7951,12 +8514,17 @@ export default function CandidateProfileModal() {
                           ? ` - ${activeProfileChild.label}`
                           : ""}
                       </h3>
+                      <p className="mt-0.5 text-[9px] sm:text-[9.5px] xl:text-[10px] font-semibold text-sibs-text-muted">
+                        {editCandidate
+                          ? "Editable input mode. Save the candidate profile to apply these updates."
+                          : "Official candidate details and application records."}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-sibs-navy" />
+                      <span className={`h-1.5 w-1.5 rounded-full ${editCandidate ? "animate-pulse bg-amber-400" : "bg-sibs-navy"}`} />
                       <span className="text-[9px] sm:text-[9.5px] xl:text-[10px] font-extrabold uppercase text-sibs-text-muted">
-                        Official Profile Record
+                        {editCandidate ? "Modified Draft" : "Official Profile Record"}
                       </span>
                     </div>
                   </div>
@@ -7964,6 +8532,29 @@ export default function CandidateProfileModal() {
                   <AnimatedProfileTabPanel key={`${activeTab}-${tabAnimationKey}`}>
                     {renderActiveTabContent()}
                   </AnimatedProfileTabPanel>
+
+                  {editCandidate && (
+                    <>
+                      {editSaveError && (
+                        <div role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+                          {editSaveError}
+                        </div>
+                      )}
+                      <div className="sticky bottom-2 z-40 mt-5 flex flex-col gap-3 rounded-xl border border-sibs-border bg-white/95 px-4 py-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2 text-[11px] font-extrabold text-sibs-navy">
+                          <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+                          {isCandidateSaving ? "Saving candidate profile..." : `Modified draft: ${getTalentPoolEditableSectionLabel(activeTab)}`}
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={handleCancelCandidateEdit} disabled={isCandidateSaving} className="h-8 rounded-lg bg-slate-100 px-3 text-[11px] font-black text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
+                          <button type="button" onClick={handleSaveCandidateEdit} disabled={isCandidateSaving} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-4 text-[11px] font-black text-white transition hover:bg-[#063560] disabled:cursor-not-allowed disabled:opacity-60">
+                            {isCandidateSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} className="text-sibs-orange" />}
+                            {isCandidateSaving ? "Saving..." : "Save Changes"}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </section>
               </div>
             </div>
@@ -8007,12 +8598,13 @@ export default function CandidateProfileModal() {
               <button
                 type="button"
                 onClick={handleCloseCandidateProfile}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30"
+                disabled={Boolean(editCandidate)}
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Close
               </button>
 
-              {!isAlreadyInPipeline &&
+              {!editCandidate && !isAlreadyInPipeline &&
                 !isDoNotReprocess &&
                 !isDropOffCandidate && (
                 <button
@@ -8026,7 +8618,7 @@ export default function CandidateProfileModal() {
                 </button>
               )}
 
-              {canMoveToOnboarding && (
+              {!editCandidate && canMoveToOnboarding && (
                 <button
                   type="button"
                   disabled={isMovingToOnboarding}
@@ -8042,7 +8634,7 @@ export default function CandidateProfileModal() {
                 </button>
               )}
 
-              {shouldShowLinkedButton && (
+              {!editCandidate && shouldShowLinkedButton && (
                 <button
                   type="button"
                   onClick={handleOpenLinkedCandidateDestination}
@@ -8053,7 +8645,7 @@ export default function CandidateProfileModal() {
                 </button>
               )}
 
-              {shouldShowMoveToPipeline && (
+              {!editCandidate && shouldShowMoveToPipeline && (
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}

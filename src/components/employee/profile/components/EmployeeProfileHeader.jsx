@@ -8,6 +8,8 @@ import {
   CheckCircle2,
   Edit3,
   FileCheck2,
+  FileDown,
+  Loader2,
   MapPin,
   MoreHorizontal,
   RefreshCw,
@@ -106,6 +108,8 @@ export default function EmployeeProfileHeader({
   moreOpen,
   morePanel,
   onAvatarClick,
+  onGeneratePds,
+  isGeneratingPds = false,
 }) {
   const fullName = getFullName(employee) || "Employee Name";
   const role = firstValue(
@@ -205,6 +209,32 @@ export default function EmployeeProfileHeader({
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center shrink-0">
+          {onGeneratePds ? (
+            <button
+              type="button"
+              onClick={onGeneratePds}
+              disabled={isGeneratingPds}
+              className="inline-flex h-8 2xl:h-9 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isGeneratingPds ? (
+                <>
+                  <Loader2
+                    size={13}
+                    className="animate-spin text-sibs-orange 2xl:h-[14px] 2xl:w-[14px]"
+                  />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <FileDown
+                    size={13}
+                    className="text-sibs-orange 2xl:h-[14px] 2xl:w-[14px]"
+                  />
+                  <span>Generate PDS</span>
+                </>
+              )}
+            </button>
+          ) : null}
           {canEdit ? (
             isEditing ? (
               <>
@@ -230,7 +260,7 @@ export default function EmployeeProfileHeader({
               <button
                 type="button"
                 onClick={onEdit}
-                className="inline-flex h-8 2xl:h-9 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-2.5 2xl:px-3 text-[11px] 2xl:text-xs font-black text-white shadow-sm transition hover:bg-sibs-tertiary-2"
+                className="inline-flex h-8 2xl:h-9 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3 sibs-text-xs font-black text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
               >
                 <Edit3 size={13} className="text-sibs-orange 2xl:h-[14px] 2xl:w-[14px]" />
                 Edit Profile Record

@@ -91,13 +91,13 @@ function SuperAdminMetricCard({ item, value, onClick, delay = 0 }) {
         <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
           <div>
             <p
-              className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${tone.label}`}
+              className={`m-0 truncate sibs-kpi-kicker ${tone.label}`}
             >
               {item?.label}
             </p>
 
             <div className="mt-1.5 2xl:mt-2 flex flex-wrap items-baseline gap-1.5 2xl:gap-2">
-              <span className="font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-sibs-navy">
+              <span className="sibs-kpi-value tabular-nums">
                 {value}
               </span>
 
@@ -111,7 +111,7 @@ function SuperAdminMetricCard({ item, value, onClick, delay = 0 }) {
             </div>
           </div>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-4 text-sibs-muted">
+          <p className="mt-1 line-clamp-1 truncate sibs-kpi-desc">
             {item?.description}
           </p>
         </div>

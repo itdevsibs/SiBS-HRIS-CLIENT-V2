@@ -59,10 +59,10 @@ export default function AdminDashboardNotifications({
     >
       <div className="border-b border-sibs-border pb-3 2xl:pb-4">
         <div className="min-w-0 space-y-0.5">
-          <h2 className="font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+          <h2 className="sibs-card-title text-sm 2xl:text-base">
             Notifications
           </h2>
-          <p className="sibs-text-xs font-semibold text-[#667085]">
+          <p className="sibs-card-subtitle sibs-text-xs">
             Important updates and pending items requiring attention
           </p>
         </div>
@@ -75,7 +75,7 @@ export default function AdminDashboardNotifications({
             <p className="mt-2 sibs-text-xs font-extrabold text-sibs-navy">
               All caught up!
             </p>
-            <p className="mt-0.5 sibs-text-micro text-[#667085]">
+            <p className="mt-0.5 sibs-text-micro text-sibs-muted">
               No new administrative notifications
             </p>
           </div>
@@ -101,13 +101,13 @@ export default function AdminDashboardNotifications({
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <span className="sibs-text-micro font-bold text-[#667085]">
+                  <span className="sibs-text-micro font-bold text-sibs-muted">
                     {notification.time}
                   </span>
                   <h3 className="sibs-text-xs font-extrabold text-sibs-navy">
                     {notification.title}
                   </h3>
-                  <p className="sibs-text-xs leading-snug text-[#344054]">
+                  <p className="sibs-text-xs leading-snug text-sibs-text-secondary">
                     {notification.message}
                   </p>
 
@@ -125,7 +125,7 @@ export default function AdminDashboardNotifications({
                 <button
                   type="button"
                   onClick={() => handleDismiss(notification.id)}
-                  className="flex h-5.5 w-5.5 2xl:h-7 2xl:w-7 shrink-0 items-center justify-center rounded-md text-[#667085] transition hover:bg-white/70 hover:text-sibs-orange"
+                  className="flex h-5.5 w-5.5 2xl:h-7 2xl:w-7 shrink-0 items-center justify-center rounded-md text-sibs-muted transition hover:bg-white/70 hover:text-sibs-orange"
                   aria-label={`Dismiss ${notification.title}`}
                 >
                   <X className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" />
@@ -137,7 +137,7 @@ export default function AdminDashboardNotifications({
       </div>
 
       {activeNotifications.length > 0 ? (
-        <div className="mt-3 2xl:mt-4 flex justify-end border-t border-[#F1F5F9] pt-2.5 2xl:pt-3">
+        <div className="mt-3 2xl:mt-4 flex justify-end border-t border-sibs-border pt-2.5 2xl:pt-3">
           <button
             type="button"
             onClick={onViewAll}

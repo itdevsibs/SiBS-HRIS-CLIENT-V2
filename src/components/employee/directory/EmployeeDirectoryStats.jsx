@@ -31,7 +31,7 @@ function SummaryCard({ item, delay = 0 }) {
             {item.count}
           </p>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-4 text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-4 text-sibs-muted">
             {item.description}
           </p>
         </div>

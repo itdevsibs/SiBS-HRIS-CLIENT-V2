@@ -35,7 +35,7 @@ export default function SuperAdminActivity({
         <button
           type="button"
           onClick={onExport}
-          className="inline-flex h-8.5 2xl:h-9 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
+          className="sibs-btn-secondary"
         >
           <Download className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-orange" />
           Export Activity Log
@@ -137,12 +137,12 @@ export default function SuperAdminActivity({
                     <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Result</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#EEF2F6]">
+                <tbody className="divide-y divide-sibs-border">
                   {items.length > 0 ? (
                     items.map((item, index) => (
                       <tr
                         key={item.id}
-                        className="sibs-data-table-row sibs-page-card-in"
+                        className="sibs-data-table-row sibs-page-card-in hover:bg-sibs-cream-light/60 transition-colors"
                         style={{
                           animationDelay: `${index * 35}ms`,
                           animationFillMode: "both",
@@ -181,7 +181,7 @@ export default function SuperAdminActivity({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-xs font-bold text-[#667085]">
+                      <td colSpan={7} className="px-4 py-10 text-center text-xs font-bold text-sibs-muted">
                         No activity logs match the active filters.
                       </td>
                     </tr>

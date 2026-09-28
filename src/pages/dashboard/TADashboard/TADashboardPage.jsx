@@ -417,8 +417,8 @@ export default function TADashboardPage() {
           ) : null}
 
           {refreshing ? (
-            <div className="flex items-center justify-end gap-2 text-xs font-bold text-[#667085]">
-              <LoaderCircle className="h-3.5 w-3.5 animate-spin text-[#FF5C28]" />
+            <div className="flex items-center justify-end gap-2 text-xs font-bold text-sibs-muted">
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin text-sibs-orange" />
               Refreshing live recruitment data...
             </div>
           ) : null}

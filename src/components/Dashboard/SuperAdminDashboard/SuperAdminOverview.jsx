@@ -21,7 +21,7 @@ export default function SuperAdminOverview({
           return (
             <article
               key={card.label}
-              className="sibs-page-card-in group flex h-[104px] 2xl:h-[116px] flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 sm:p-3 2xl:p-3.5 transition-all hover:border-sibs-orange/40 hover:bg-sibs-cream-light shadow-2xs"
+              className="sibs-page-card-in group flex h-[104px] 2xl:h-[116px] flex-col justify-between rounded-xl border border-sibs-border bg-slate-50/80 p-2.5 sm:p-3 2xl:p-3.5 transition-all hover:border-sibs-orange/40 hover:bg-sibs-cream-light shadow-2xs"
               style={{
                 animationDelay: `${index * 55}ms`,
                 animationFillMode: "both",
@@ -38,7 +38,7 @@ export default function SuperAdminOverview({
                 </h3>
                 <p
                   title={card.details}
-                  className="mt-0.5 line-clamp-1 truncate sibs-text-micro font-bold text-[#667085] leading-normal"
+                  className="mt-0.5 line-clamp-1 truncate sibs-text-micro font-bold text-sibs-muted leading-normal"
                 >
                   {card.details}
                 </p>
@@ -81,7 +81,7 @@ export default function SuperAdminOverview({
             <button
               type="button"
               onClick={onOpenExceptions}
-              className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg 2xl:rounded-xl bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition-all hover:bg-sibs-orange/90 active:bg-sibs-orange hover:shadow-sm"
+              className="sibs-btn-primary"
             >
               View Risk Desk
               <ArrowRight size={13} />
@@ -89,7 +89,7 @@ export default function SuperAdminOverview({
             <button
               type="button"
               onClick={() => onNavigate("/approval-request")}
-              className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl border border-white/20 bg-white/10 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition-all hover:bg-white/20"
+              className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-3.5 2xl:px-4 text-[11.5px] 2xl:text-[12px] font-extrabold text-white transition-all hover:bg-white/20 active:scale-[0.98]"
             >
               Review Approval Queue
             </button>

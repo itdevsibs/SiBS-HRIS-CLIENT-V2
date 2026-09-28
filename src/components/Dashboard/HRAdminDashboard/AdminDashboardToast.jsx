@@ -4,8 +4,8 @@ export default function AdminDashboardToast({ toast, onClose }) {
   if (!toast) return null;
 
   return (
-    <div className="sibs-toast-in fixed right-4 top-20 z-[1200] flex max-w-[360px] items-start gap-3 rounded-r-xl border-l-4 border-[#FF5C28] bg-[#042C51] px-4 py-3 text-white shadow-2xl sm:right-6">
-      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
+    <div className="sibs-toast-in fixed right-4 top-20 z-[1200] flex max-w-[360px] items-start gap-3 rounded-r-xl border-l-4 border-sibs-orange bg-sibs-navy px-4 py-3 text-white shadow-2xl sm:right-6">
+      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-sibs-orange" />
 
       <div className="min-w-0 flex-1">
         <p className="text-xs font-extrabold">

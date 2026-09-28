@@ -12,7 +12,7 @@ export default function AdminDashboardWorkforceKpi({
 
   return (
     <section
-      className="sibs-page-card-in rounded-2xl border border-blue-400/20 bg-gradient-to-br from-[#042C51] to-[#031D36] p-3 2xl:p-5 text-white shadow-md"
+      className="sibs-page-card-in rounded-2xl border border-blue-400/20 bg-gradient-to-br from-sibs-navy to-slate-900 p-3 2xl:p-5 text-white shadow-md"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",

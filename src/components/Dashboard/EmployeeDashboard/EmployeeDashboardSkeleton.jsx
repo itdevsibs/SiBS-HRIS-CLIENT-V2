@@ -20,12 +20,12 @@ export default function EmployeeDashboardSkeleton() {
           {/* Welcome Hero Banner */}
           <section
             data-testid="employee-skeleton-welcome"
-            className="relative min-h-[150px] overflow-hidden rounded-2xl border border-[#084075] bg-[#042C51] p-4 text-white sm:p-5 2xl:p-6"
+            className="relative min-h-[150px] overflow-hidden rounded-2xl border border-sibs-navy bg-sibs-navy p-4 text-white sm:p-5 2xl:p-6"
           >
             <div className="relative z-10 flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <p className="m-0 text-xs font-extrabold uppercase tracking-wider text-[#FF5C28]">
+                  <p className="m-0 text-xs font-extrabold uppercase tracking-wider text-sibs-orange">
                     SIBS Employee Portal
                   </p>
                 </div>
@@ -57,7 +57,7 @@ export default function EmployeeDashboardSkeleton() {
                     <h2 className="m-0 text-base font-extrabold text-sibs-navy">
                       Attendance & Live Timecard
                     </h2>
-                    <p className="m-0 sibs-text-micro font-semibold text-[#667085]">
+                    <p className="m-0 sibs-text-micro font-semibold text-sibs-muted">
                       Today’s attendance status, punch information, and recorded activity.
                     </p>
                   </div>
@@ -67,17 +67,17 @@ export default function EmployeeDashboardSkeleton() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-3.5 2xl:p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div className="grid grid-cols-1 gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:p-3.5 2xl:p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                    <div className="rounded-lg border border-[#E6ECF2] bg-white p-2.5 text-center">
+                    <div className="rounded-lg border border-sibs-border bg-white p-2.5 text-center">
                       <p className="m-0 text-[11px] font-bold text-slate-500">Clock In</p>
                       <Skeleton className="mx-auto mt-1.5 h-5 w-16" />
                     </div>
-                    <div className="rounded-lg border border-[#E6ECF2] bg-white p-2.5 text-center">
+                    <div className="rounded-lg border border-sibs-border bg-white p-2.5 text-center">
                       <p className="m-0 text-[11px] font-bold text-slate-500">Clock Out</p>
                       <Skeleton className="mx-auto mt-1.5 h-5 w-16" />
                     </div>
-                    <div className="rounded-lg border border-[#E6ECF2] bg-white p-2.5 text-center">
+                    <div className="rounded-lg border border-sibs-border bg-white p-2.5 text-center">
                       <p className="m-0 text-[11px] font-bold text-slate-500">Rendered Hours</p>
                       <Skeleton className="mx-auto mt-1.5 h-5 w-14" />
                     </div>
@@ -99,7 +99,7 @@ export default function EmployeeDashboardSkeleton() {
                     <h2 className="m-0 text-base font-extrabold text-sibs-navy">
                       Work Schedule & Weekly Timeline
                     </h2>
-                    <p className="m-0 sibs-text-micro font-semibold text-[#667085]">
+                    <p className="m-0 sibs-text-micro font-semibold text-sibs-muted">
                       Weekly shift pattern and current roster.
                     </p>
                   </div>
@@ -132,7 +132,7 @@ export default function EmployeeDashboardSkeleton() {
                   <h2 className="m-0 text-base font-extrabold text-sibs-navy">
                     Performance & Appraisal Center
                   </h2>
-                  <p className="m-0 sibs-text-micro font-semibold text-[#667085]">
+                  <p className="m-0 sibs-text-micro font-semibold text-sibs-muted">
                     Appraisal records, metrics, and developmental feedback.
                   </p>
                 </div>
@@ -162,7 +162,7 @@ export default function EmployeeDashboardSkeleton() {
                   <h2 className="m-0 text-base font-extrabold text-sibs-navy">
                     My Profile & Summary
                   </h2>
-                  <p className="m-0 sibs-text-micro font-semibold text-[#667085]">
+                  <p className="m-0 sibs-text-micro font-semibold text-sibs-muted">
                     Employee details and direct service links.
                   </p>
                 </div>
@@ -192,7 +192,7 @@ export default function EmployeeDashboardSkeleton() {
                     <h2 className="m-0 text-base font-extrabold text-sibs-navy">
                       Leaves & Time Off
                     </h2>
-                    <p className="m-0 sibs-text-micro font-semibold text-[#667085]">
+                    <p className="m-0 sibs-text-micro font-semibold text-sibs-muted">
                       Credits balance and active filings.
                     </p>
                   </div>
@@ -221,7 +221,7 @@ export default function EmployeeDashboardSkeleton() {
                   <h2 className="m-0 text-base font-extrabold text-sibs-navy">
                     Announcements & Holidays
                   </h2>
-                  <p className="m-0 sibs-text-micro font-semibold text-[#667085]">
+                  <p className="m-0 sibs-text-micro font-semibold text-sibs-muted">
                     Upcoming company events and holidays.
                   </p>
                 </div>

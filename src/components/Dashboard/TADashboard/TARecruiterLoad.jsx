@@ -24,10 +24,10 @@ export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div>
-        <h3 className="font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+        <h3 className="sibs-card-title">
           Recruiter Load
         </h3>
-        <p className="mt-1 text-xs font-semibold text-sibs-muted">
+        <p className="sibs-card-subtitle mt-1">
           Active roles handled versus output parameters
         </p>
       </div>

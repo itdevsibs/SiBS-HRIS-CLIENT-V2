@@ -16,10 +16,10 @@ export default function AdminDashboardQuickActions({
     >
       <div className="border-b border-sibs-border pb-2.5 2xl:pb-3">
         <div className="min-w-0 space-y-0.5">
-          <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+          <h2 className="sibs-card-title text-sm 2xl:text-base">
             Quick Actions
           </h2>
-          <p className="sibs-text-xs font-semibold text-[#667085]">
+          <p className="sibs-card-subtitle sibs-text-xs">
             Instant shortcuts for common admin tasks
           </p>
         </div>
@@ -31,7 +31,7 @@ export default function AdminDashboardQuickActions({
             key={action.id}
             type="button"
             onClick={() => onAction?.(action)}
-            className="group sibs-page-card-in flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 2xl:p-3 text-left transition-all hover:border-sibs-orange/50 hover:bg-sibs-cream-subtle"
+            className="group sibs-page-card-in flex w-full items-center gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-2.5 2xl:p-3 text-left transition-all hover:border-sibs-orange/50 hover:bg-sibs-cream-subtle"
             style={{
               animationDelay: `${index * 40}ms`,
               animationFillMode: "both",
@@ -45,7 +45,7 @@ export default function AdminDashboardQuickActions({
               <span className="block sibs-text-xs font-extrabold text-sibs-navy transition group-hover:text-sibs-orange">
                 {action.title}
               </span>
-              <span className="mt-0.5 block sibs-text-micro text-[#667085]">
+              <span className="mt-0.5 block sibs-text-micro text-sibs-muted">
                 {action.description}
               </span>
             </span>

@@ -115,9 +115,9 @@ function getEmployeeDepartments(employee = {}) {
 
 
 const AVATAR_TONES = [
-  "border-orange-100 bg-orange-50 text-[#FF5C28]",
+  "border-orange-100 bg-orange-50 text-sibs-orange",
   "border-emerald-100 bg-emerald-50 text-emerald-700",
-  "border-blue-100 bg-blue-50 text-[#042C51]",
+  "border-blue-100 bg-blue-50 text-sibs-navy",
   "border-pink-100 bg-pink-50 text-pink-700",
   "border-violet-100 bg-violet-50 text-violet-700",
 ];
@@ -225,7 +225,7 @@ function EmployeeAvatar({ employee, size = "md" }) {
     previewVisible && previewPosition && typeof document !== "undefined"
       ? createPortal(
           <span
-            className="employee-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            className="employee-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
             style={{
               left: previewPosition.left,
               top: previewPosition.top,
@@ -394,9 +394,9 @@ function getProgressState(stageKey) {
 
 function progressClass(state) {
   if (state === "done") return "bg-emerald-500";
-  if (state === "current") return "bg-[#D7E34F]";
+  if (state === "current") return "bg-lime-400";
   if (state === "terminal") return "bg-red-400";
-  return "bg-[#C6D3E1]";
+  return "bg-slate-300";
 }
 
 function statusBadgeClass(stageKey) {
@@ -409,10 +409,10 @@ function statusBadgeClass(stageKey) {
   }
 
   if (stageKey === "finance" || stageKey === "board_of_directors") {
-    return "border-amber-100 bg-amber-50 text-[#7A6400]";
+    return "border-amber-200 bg-amber-50 text-amber-800";
   }
 
-  return "border-blue-100 bg-[#F2F6FA] text-[#042C51]";
+  return "border-blue-100 bg-blue-50/70 text-sibs-navy";
 }
 
 function StatusProgress({ row }) {
@@ -456,7 +456,7 @@ function ChwcpMobileCard({ row, onOpen }) {
         avatar={<EmployeeAvatar employee={row} />}
         title={safeText(row.employeeName)}
         subtitle={
-          <span className="text-[10px] font-extrabold text-[#FF5C28]">
+          <span className="text-[10px] font-extrabold text-sibs-orange">
             {safeText(row.sibsId)}
           </span>
         }
@@ -476,14 +476,14 @@ function ChwcpMobileCard({ row, onOpen }) {
           {getEmployeeAccounts(row).map((account) => (
             <span
               key={account}
-              className="inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]"
+              className="inline-flex max-w-full rounded border border-blue-100 bg-blue-50/70 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy"
             >
               <span className="whitespace-normal break-words">{account}</span>
             </span>
           ))}
         </div>
-        <div className="flex items-center gap-1 text-[10px] font-semibold text-[#667085]">
-          <MapPin size={12} className="shrink-0 text-[#98A2B3]" />
+        <div className="flex items-center gap-1 text-[10px] font-semibold text-sibs-muted">
+          <MapPin size={12} className="shrink-0 text-sibs-faint" />
           <span className="break-words">{safeText(row.site)}</span>
         </div>
       </DataCard.ContextRow>
@@ -501,14 +501,14 @@ function ChwcpMobileCard({ row, onOpen }) {
       </DataCard.Metrics>
 
       <div className="mt-2 flex flex-col gap-1 border-t border-slate-100 pt-2">
-        <div className="text-[10px] font-semibold text-[#667085]">
-          <span className="font-bold text-[#042C51]">Department: </span>
+        <div className="text-[10px] font-semibold text-sibs-muted">
+          <span className="font-bold text-sibs-navy">Department: </span>
           {getEmployeeDepartments(row).join(", ") || "N/A"}
         </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] font-semibold text-[#667085]">
-        <span className="text-[11px] text-[#536887]">
+      <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] font-semibold text-sibs-muted">
+        <span className="text-[11px] text-sibs-secondary">
           {formatRequestDate(row.requestDate)}
         </span>
         <div className="flex w-20 items-center gap-1" aria-label={row.status}>
@@ -548,13 +548,13 @@ function WorkflowFilter({
         disabled={refreshing}
         title="Refresh CHWCP requests"
         aria-label="Refresh CHWCP requests"
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-white hover:text-[#FF5C28] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+        className="sibs-btn-icon !h-10 !w-10 !rounded-[10px] shrink-0"
       >
         <RefreshCcw size={15} className={refreshing ? "animate-spin" : ""} />
       </button>
 
       <div className="min-w-0 flex-1 overflow-x-auto sibs-scrollbar xl:flex-none">
-        <div className="flex w-max items-center rounded-[10px] border border-[#FF5C28]/70 bg-white p-0.5">
+        <div className="flex w-max items-center rounded-[10px] border border-sibs-orange/70 bg-white p-0.5">
           {STAGE_OPTIONS.map((option) => {
             const isActive = stage === option.value;
 
@@ -565,8 +565,8 @@ function WorkflowFilter({
                 onClick={() => onStageChange(option.value)}
                 className={`h-9 shrink-0 rounded-lg px-3 text-[10px] font-extrabold transition-all duration-200 active:scale-[0.98] sm:px-4 ${
                   isActive
-                    ? "bg-[#042C51] text-white shadow-sm"
-                    : "text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                    ? "bg-sibs-navy text-white shadow-sm"
+                    : "text-sibs-secondary hover:bg-sibs-cream-light hover:text-sibs-orange"
                 }`}
               >
                 {option.label}
@@ -749,11 +749,11 @@ export default function ChwcpTable({
         }
       `}</style>
 
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+      <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           CHWCP Records
         </h3>
-        <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+        <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
           Review employee CHWCP compliance requests and approval records.
         </p>
 
@@ -807,13 +807,13 @@ export default function ChwcpTable({
                     <p className="text-sm font-extrabold text-red-600">
                       Unable to load CHWCP requests
                     </p>
-                    <p className="mx-auto mt-1 max-w-xl text-xs font-semibold text-[#667085]">
+                    <p className="mx-auto mt-1 max-w-xl text-xs font-semibold text-sibs-muted">
                       {error}
                     </p>
                     <button
                       type="button"
                       onClick={() => loadRows()}
-                      className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#0A3B68] active:scale-[0.98]"
+                      className="mt-4 sibs-btn-primary !h-9 px-4 text-xs font-extrabold"
                     >
                       <RefreshCcw size={14} />
                       Retry
@@ -851,30 +851,30 @@ export default function ChwcpTable({
                 className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar"
               >
                 <table className="w-full min-w-[1500px] table-fixed border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="border-b border-[#E6ECF2]">
-                      <th className="w-[7%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                  <thead className="sticky top-0 z-10 bg-sibs-surface">
+                    <tr className="border-b border-sibs-border">
+                      <th className="w-[7%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
                         SIBS ID
                       </th>
-                      <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                      <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
                         EMPLOYEE FULL NAME
                       </th>
-                      <th className="w-[14%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                      <th className="w-[14%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
                         ACCOUNT / SITE
                       </th>
-                      <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                      <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
                         DEPARTMENT
                       </th>
-                      <th className="w-[8%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                      <th className="w-[8%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
                         FORM TYPE
                       </th>
-                      <th className="w-[17%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:px-4 2xl:py-3">
+                      <th className="w-[17%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
                         SERVICE
                       </th>
-                      <th className="w-[16%] pl-3 pr-6 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:pl-4 2xl:pr-8 2xl:py-3">
+                      <th className="w-[16%] pl-3 pr-6 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:pl-4 2xl:pr-8 2xl:py-3">
                         REQUEST DATE
                       </th>
-                      <th className="w-[12%] pl-5 pr-3 py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-[#7B8DB3] 2xl:pl-6 2xl:pr-4 2xl:py-3">
+                      <th className="w-[12%] pl-5 pr-3 py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:pl-6 2xl:pr-4 2xl:py-3">
                         STATUS
                       </th>
                     </tr>
@@ -882,7 +882,7 @@ export default function ChwcpTable({
 
                   <tbody
                     key={`${currentPage}-${search}-${stage}`}
-                    className="divide-y divide-[#EEF2F6]"
+                    className="divide-y divide-sibs-border"
                   >
                     {loading ? (
                       <LoadingRows />
@@ -892,13 +892,13 @@ export default function ChwcpTable({
                           <p className="text-sm font-extrabold text-red-600">
                             Unable to load CHWCP requests
                           </p>
-                          <p className="mx-auto mt-1 max-w-xl text-xs font-semibold text-[#667085]">
+                          <p className="mx-auto mt-1 max-w-xl text-xs font-semibold text-sibs-muted">
                             {error}
                           </p>
                           <button
                             type="button"
                             onClick={() => loadRows()}
-                            className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#0A3B68] active:scale-[0.98]"
+                            className="mt-4 sibs-btn-primary !h-9 px-4 text-xs font-extrabold"
                           >
                             <RefreshCcw size={14} />
                             Retry
@@ -914,12 +914,12 @@ export default function ChwcpTable({
                           onClick={() => openRequestDetails(row)}
                           onKeyDown={(event) => handleRequestRowKeyDown(event, row)}
                           aria-label={`Open ${safeText(row.formType)} request for ${safeText(row.employeeName)}`}
-                          className="group sibs-employee-row-reveal cursor-pointer bg-white transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                          className="group sibs-employee-row-reveal cursor-pointer bg-white transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
                           style={{
                             animationDelay: `${Math.min(index, 10) * 36}ms`,
                           }}
                         >
-                          <td className="whitespace-nowrap px-3 py-2 align-middle text-xs font-extrabold text-[#FF5C28] 2xl:px-4 2xl:py-2.5">
+                          <td className="whitespace-nowrap px-3 py-2 align-middle text-xs font-extrabold text-sibs-orange 2xl:px-4 2xl:py-2.5">
                             {safeText(row.sibsId)}
                           </td>
 
@@ -927,7 +927,7 @@ export default function ChwcpTable({
                             <div className="flex min-w-0 items-center gap-3">
                               <EmployeeAvatar employee={row} />
 
-                              <p className="min-w-0 break-words text-xs font-extrabold leading-tight text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
+                              <p className="min-w-0 break-words text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange">
                                 {safeText(row.employeeName)}
                               </p>
                             </div>
@@ -939,7 +939,7 @@ export default function ChwcpTable({
                                 <span
                                   key={account}
                                   title={account}
-                                  className="inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]"
+                                  className="inline-flex max-w-full rounded border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy"
                                 >
                                   <span className="whitespace-normal break-words">
                                     {account}
@@ -948,8 +948,8 @@ export default function ChwcpTable({
                               ))}
                             </div>
 
-                            <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#667085]">
-                              <MapPin size={12} className="shrink-0 text-[#98A2B3]" />
+                            <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-sibs-muted">
+                              <MapPin size={12} className="shrink-0 text-sibs-faint" />
                               <span className="break-words">{safeText(row.site)}</span>
                             </div>
                           </td>
@@ -963,11 +963,11 @@ export default function ChwcpTable({
                                 >
                                   <span
                                     aria-hidden="true"
-                                    className="shrink-0 text-xs font-extrabold leading-tight text-[#667085]"
+                                    className="shrink-0 text-xs font-extrabold leading-tight text-sibs-muted"
                                   >
                                     •
                                   </span>
-                                  <span className="min-w-0 break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                                  <span className="min-w-0 break-words text-xs font-extrabold leading-tight text-sibs-navy">
                                     {department}
                                   </span>
                                 </div>
@@ -975,15 +975,15 @@ export default function ChwcpTable({
                             </div>
                           </td>
 
-                          <td className="px-3 py-2 align-middle text-xs font-semibold text-[#344054] 2xl:px-4 2xl:py-2.5">
+                          <td className="px-3 py-2 align-middle text-xs font-semibold text-sibs-secondary 2xl:px-4 2xl:py-2.5">
                             {safeText(row.formType)}
                           </td>
 
-                          <td className="px-3 py-2 align-middle text-xs font-semibold leading-snug text-[#344054] 2xl:px-4 2xl:py-2.5">
+                          <td className="px-3 py-2 align-middle text-xs font-semibold leading-snug text-sibs-secondary 2xl:px-4 2xl:py-2.5">
                             {safeText(row.service)}
                           </td>
 
-                          <td className="whitespace-nowrap pl-3 pr-6 py-2 align-middle text-[11px] font-semibold text-[#536887] 2xl:pl-4 2xl:pr-8 2xl:py-2.5">
+                          <td className="whitespace-nowrap pl-3 pr-6 py-2 align-middle text-[11px] font-semibold text-sibs-secondary 2xl:pl-4 2xl:pr-8 2xl:py-2.5">
                             {formatRequestDate(row.requestDate)}
                           </td>
 
@@ -995,11 +995,11 @@ export default function ChwcpTable({
                     ) : (
                       <tr>
                         <td colSpan={8} className="px-5 py-16 text-center">
-                          <FileCheck2 size={34} className="mx-auto text-[#C6D3E1]" />
-                          <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                          <FileCheck2 size={34} className="mx-auto text-slate-300" />
+                          <p className="mt-3 text-sm font-extrabold text-sibs-navy">
                             No CHWCP requests found
                           </p>
-                          <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                          <p className="mt-1 text-xs font-semibold text-sibs-faint">
                             No request matches the current search and workflow filter.
                           </p>
                         </td>

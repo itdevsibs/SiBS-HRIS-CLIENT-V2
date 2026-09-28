@@ -8,11 +8,12 @@ import { X } from "lucide-react";
  * - createPortal mounting to document.body
  * - Backdrop blur & keyframe fade in (.sibs-modal-blur, .sibs-modal-backdrop-in)
  * - Container pop-in (.sibs-modal-pop-in)
- * - Gradient top accent bar (.sibs-top-accent)
+ * - Standardized SiBS Navy header (default) or White header variant
+ * - Gradient top accent bar (.sibs-top-accent) on white variant
  * - ESC key and backdrop click listeners
  * - Body scroll locking with clean restoration
  * - Standardized header with title, subtitle, optional icon & close button
- * - Optional footer slot with standardized action buttons (.sibs-modal-btn-*)
+ * - Optional footer slot with standardized action buttons
  */
 export default function ModalShell({
   open = false,
@@ -32,6 +33,7 @@ export default function ModalShell({
   headerClassName = "",
   footerClassName = "",
   hideCloseButton = false,
+  variant = "navy",
 }) {
   const previousOverflowRef = useRef({
     body: "",
@@ -70,13 +72,15 @@ export default function ModalShell({
     };
   }, [open, onClose, closeOnEscape, lockScroll]);
 
-  if (typeof document === "undefined" || !open) return null;
+  if (!open || typeof document === "undefined") return null;
+
+  const isNavy = variant === "navy";
 
   return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto font-jakarta"
     >
       {/* Backdrop */}
       <div
@@ -87,43 +91,74 @@ export default function ModalShell({
 
       {/* Dialog container */}
       <div
-        className={`relative z-10 w-full ${maxWidth} max-sm:max-h-[92dvh] max-sm:rounded-b-none overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-2xl sibs-modal-pop-in ${className}`}
+        className={`relative z-10 w-full ${maxWidth} max-sm:max-h-[92dvh] max-sm:rounded-b-none overflow-hidden rounded-2xl border border-sibs-border bg-white font-jakarta shadow-2xl sibs-modal-pop-in ${className}`}
       >
-        <span className="sibs-top-accent" aria-hidden="true" />
+        {!isNavy && <span className="sibs-top-accent" aria-hidden="true" />}
 
         {/* Header */}
         {(title || subtitle || !hideCloseButton) && (
           <div
-            className={`flex items-start justify-between gap-4 border-b border-[#EEF2F6] px-5 py-4 2xl:px-6 2xl:py-5 ${headerClassName}`}
+            className={
+              isNavy
+                ? `flex items-center justify-between gap-4 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5 ${headerClassName}`
+                : `flex items-start justify-between gap-4 border-b border-sibs-border px-5 py-4 2xl:px-6 2xl:py-5 ${headerClassName}`
+            }
           >
-            <div className="min-w-0 space-y-1">
-              {badge && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    {badge}
-                  </span>
-                </div>
+            <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+              {Icon && (
+                <span
+                  className={
+                    isNavy
+                      ? "flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-sm"
+                      : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-cream-subtle text-sibs-orange"
+                  }
+                >
+                  <Icon size={16} />
+                </span>
               )}
 
-              <div className="flex items-center gap-2.5">
-                {Icon && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FFF0EB] text-sibs-orange">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                )}
-                {title && (
-                  <h2 className="font-heading text-lg 2xl:text-xl font-bold tracking-tight text-sibs-navy">
-                    {title}
-                  </h2>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {title && (
+                    <h2
+                      className={
+                        isNavy
+                          ? "sibs-modal-title truncate text-white"
+                          : "font-heading text-lg 2xl:text-xl font-bold tracking-tight text-sibs-navy"
+                      }
+                    >
+                      {title}
+                    </h2>
+                  )}
+
+                  {badge && (
+                    <span
+                      className={
+                        isNavy
+                          ? "rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white/90"
+                          : "inline-flex items-center gap-1.5 rounded border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy"
+                      }
+                    >
+                      {!isNavy && (
+                        <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
+                      )}
+                      {badge}
+                    </span>
+                  )}
+                </div>
+
+                {subtitle && (
+                  <p
+                    className={
+                      isNavy
+                        ? "sibs-modal-subtitle mt-0.5 truncate text-white/75 sm:text-clip"
+                        : "sibs-text-xs font-semibold leading-relaxed text-sibs-muted"
+                    }
+                  >
+                    {subtitle}
+                  </p>
                 )}
               </div>
-
-              {subtitle && (
-                <p className="sibs-text-xs font-semibold leading-relaxed text-[#667085]">
-                  {subtitle}
-                </p>
-              )}
             </div>
 
             {!hideCloseButton && onClose && (
@@ -131,9 +166,13 @@ export default function ModalShell({
                 type="button"
                 onClick={onClose}
                 aria-label="Close modal"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#667085] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-[0.98]"
+                className={
+                  isNavy
+                    ? "sibs-modal-close-btn"
+                    : "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-muted shadow-xs outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98]"
+                }
               >
-                <X className="h-4 w-4" />
+                <X size={18} />
               </button>
             )}
           </div>
@@ -145,7 +184,7 @@ export default function ModalShell({
         {/* Footer */}
         {footer && (
           <div
-            className={`flex flex-wrap items-center justify-end gap-2.5 border-t border-[#EEF2F6] bg-[#F8FAFC] px-5 py-3.5 2xl:px-6 2xl:py-4 ${footerClassName}`}
+            className={`flex flex-wrap items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3.5 2xl:px-6 2xl:py-4 ${footerClassName}`}
           >
             {footer}
           </div>

@@ -528,21 +528,27 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   return (
     <>
       <div
-        className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4 font-jakarta"
+        className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[13000] flex h-dvh items-center justify-center p-2 sm:p-4 font-jakarta"
         onClick={handleClose}
       >
       <div
-        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white font-jakarta shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-white font-jakarta shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
-          <div>
-            <h2 className="sibs-modal-title truncate text-white">
-              Offer Details
-            </h2>
-            <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
-              Approval, evaluation results, and complete offer negotiation history.
-            </p>
+        <div className="flex items-center justify-between bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <FileText size={16} />
+            </span>
+
+            <div className="min-w-0">
+              <h2 className="sibs-modal-title truncate text-white">
+                Offer Details
+              </h2>
+              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75 sm:text-clip">
+                Approval, evaluation results, and complete offer negotiation history.
+              </p>
+            </div>
           </div>
 
           <button
@@ -556,7 +562,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 2xl:p-6">
           <div className="grid grid-cols-1 gap-4 2xl:gap-5 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="min-w-0 space-y-5">
               <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 sm:p-5 shadow-sm">
@@ -647,7 +653,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     type="button"
                     disabled={isBusy}
                     onClick={submitRevision}
-                    className="mt-4 inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-5 sibs-text-xs font-extrabold text-white transition hover:bg-[#E94F1F] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-4 inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-5 sibs-text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {savingRevision ? (
                       <Loader2 size={15} className="animate-spin" />
@@ -828,9 +834,9 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                               )}/pdf`,
                             });
                           }}
-                          className="mt-3 inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-blue-100"
+                          className="mt-3 inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90"
                         >
-                          <FileText size={15} />
+                          <FileText size={15} className="text-[#FF5C28]" />
                           Open Employment Offer PDF
                         </button>
                       ) : null}
@@ -1004,12 +1010,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   type="button"
                   disabled={isBusy}
                   onClick={() => handleOfferApproval("Approved")}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-primary-1 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {approvalAction === "Approved" ? (
                     <Loader2 size={15} className="animate-spin" />
                   ) : (
-                    <Check size={15} />
+                    <Check size={15} className="text-[#FF5C28]" />
                   )}
                   {approvalAction === "Approved" ? "Approving..." : "Approve"}
                 </button>

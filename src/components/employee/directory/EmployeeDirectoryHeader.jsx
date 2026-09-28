@@ -11,7 +11,7 @@ export default function EmployeeDirectoryHeader({
       <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+            <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-sibs-surface px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
               <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
               Core HR View
             </span>

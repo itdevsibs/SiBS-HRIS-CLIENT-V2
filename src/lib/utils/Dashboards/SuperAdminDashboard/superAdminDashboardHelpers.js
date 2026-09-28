@@ -192,7 +192,7 @@ export function getAccessLevelClass(accessLevel) {
   const lower = str.toLowerCase();
 
   if (str.startsWith("7") || lower.includes("super_admin") || lower.includes("super admin")) {
-    return "bg-[#042C51] text-white border border-[#042C51]";
+    return "bg-sibs-navy text-white border border-sibs-navy";
   }
   if (str.startsWith("6") || lower.includes("executive")) {
     return "bg-purple-100 text-purple-800 border border-purple-200";
@@ -216,7 +216,7 @@ export function getAccessLevelClass(accessLevel) {
     return "bg-emerald-100 text-emerald-800 border border-emerald-200";
   }
   if (str.startsWith("1") || lower.includes("ta")) {
-    return "bg-orange-100 text-[#FF5C28] border border-orange-200";
+    return "bg-orange-100 text-sibs-orange border border-orange-200";
   }
 
   return "bg-slate-100 text-slate-700 border border-slate-200";

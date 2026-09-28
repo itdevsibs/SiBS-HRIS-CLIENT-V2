@@ -3366,7 +3366,10 @@ export default function AddCandidateModal() {
     setCandidateForm,
     closeAddCandidateModal,
     resetCandidateForm,
+    resetEditCandidateForm,
     addCandidate,
+    editCandidate,
+    submitEditCandidate,
     handleCandidateFileChange,
     formOptions,
     activePositionOptions,
@@ -3385,7 +3388,7 @@ export default function AddCandidateModal() {
   const [hasReferralCode, setHasReferralCode] = useState("");
   const [referralLookupStatus, setReferralLookupStatus] = useState("");
   const [referralLookupMessage, setReferralLookupMessage] = useState("");
-  const [isLoadingReferralPrefill, setIsLoadingReferralPrefill] = useState(false);
+  const [, setIsLoadingReferralPrefill] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isPageOneComplete, setIsPageOneComplete] = useState(false);
   const [applicationForm, setApplicationForm] = useState(null);
@@ -3405,6 +3408,7 @@ export default function AddCandidateModal() {
 
   const isReferralCodeMatched = referralLookupStatus === "matched";
   const shouldShowApplicationFields =
+    Boolean(editCandidate) ||
     hasReferralCode === "No" ||
     (hasReferralCode === "Yes" && isReferralCodeMatched);
   const currentApplicantNameCheckKey = buildApplicantNameCheckKey({
@@ -3434,7 +3438,25 @@ export default function AddCandidateModal() {
     setIsPageOneComplete(false);
     setApplicationForm(null);
     setApplicationQuestions([]);
-    setApplicationQuestionAnswers({});
+    setApplicationQuestionAnswers(
+      editCandidate
+        ? (Array.isArray(candidateForm.applicationFormAnswers)
+            ? candidateForm.applicationFormAnswers
+            : []
+          ).reduce((answers, answer) => {
+            const questionId = answer.questionId || answer.question_id;
+            if (questionId) {
+              answers[String(questionId)] = {
+                questionId: Number(questionId),
+                questionKey: answer.questionKey || answer.question_key || "",
+                answerType: "Text",
+                textAnswer: answer.textAnswer || answer.text_answer || "",
+              };
+            }
+            return answers;
+          }, {})
+        : {},
+    );
     setApplicationQuestionsError("");
     setIsLoadingApplicationQuestions(false);
     setReferralLookupStatus("");
@@ -3447,8 +3469,14 @@ export default function AddCandidateModal() {
       source: null,
     });
     referralPrefillValuesRef.current = null;
-    setHasReferralCode(cleanText(candidateForm.referralCode) ? "Yes" : "");
-  }, [showAddModal]);
+    setHasReferralCode(
+      editCandidate
+        ? cleanText(candidateForm.referralCode) ? "Yes" : "No"
+        : cleanText(candidateForm.referralCode) ? "Yes" : "",
+    );
+    // Initialize once when opening; later form edits must not clear answers or reset paging.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddModal, editCandidate]);
 
   useEffect(() => {
     if (!showAddModal) return undefined;
@@ -3506,7 +3534,7 @@ export default function AddCandidateModal() {
   useEffect(() => {
     const referralCode = cleanText(candidateForm.referralCode).toUpperCase();
 
-    if (!showAddModal || hasReferralCode !== "Yes") {
+    if (editCandidate || !showAddModal || hasReferralCode !== "Yes") {
       setReferralLookupStatus("");
       setReferralLookupMessage("");
       setIsLoadingReferralPrefill(false);
@@ -3584,6 +3612,7 @@ export default function AddCandidateModal() {
     };
   }, [
     candidateForm.referralCode,
+    editCandidate,
     hasReferralCode,
     setCandidateForm,
     showAddModal,
@@ -3594,6 +3623,21 @@ export default function AddCandidateModal() {
       setApplicantNameCheck({
         status: "idle",
         key: "",
+        duplicate: false,
+        source: null,
+      });
+      return undefined;
+    }
+
+    if (editCandidate) {
+      const nameKey = buildApplicantNameCheckKey({
+        firstName: candidateForm.firstName,
+        middleName: candidateForm.middleName,
+        lastName: candidateForm.lastName,
+      });
+      setApplicantNameCheck({
+        status: "available",
+        key: nameKey,
         duplicate: false,
         source: null,
       });
@@ -3661,6 +3705,7 @@ export default function AddCandidateModal() {
     candidateForm.firstName,
     candidateForm.middleName,
     candidateForm.lastName,
+    editCandidate,
     shouldShowApplicationFields,
     showAddModal,
   ]);
@@ -3692,6 +3737,18 @@ export default function AddCandidateModal() {
     if (!validatePageTwo()) return;
 
     try {
+      if (editCandidate) {
+        const result = await submitEditCandidate(event);
+        if (!result?.success) {
+          showStatusModal({
+            type: "error",
+            title: "Save Failed",
+            message: result?.message || "Failed to update candidate. Your edits are still available.",
+          });
+        }
+        return;
+      }
+
       await addCandidate(event);
 
       showStatusModal({
@@ -3714,7 +3771,9 @@ export default function AddCandidateModal() {
   }
 
   function handleResetCandidate() {
-    resetCandidateForm();
+    let resetForm = null;
+    if (editCandidate) resetForm = resetEditCandidateForm();
+    else resetCandidateForm();
     setHasReferralCode("");
     setReferralLookupStatus("");
     setReferralLookupMessage("");
@@ -3730,7 +3789,25 @@ export default function AddCandidateModal() {
     setIsPageOneComplete(false);
     setApplicationForm(null);
     setApplicationQuestions([]);
-    setApplicationQuestionAnswers({});
+    setApplicationQuestionAnswers(
+      editCandidate
+        ? (Array.isArray(resetForm?.applicationFormAnswers)
+            ? resetForm.applicationFormAnswers
+            : []
+          ).reduce((answers, answer) => {
+            const questionId = answer.questionId || answer.question_id;
+            if (questionId) {
+              answers[String(questionId)] = {
+                questionId: Number(questionId),
+                questionKey: answer.questionKey || answer.question_key || "",
+                answerType: "Text",
+                textAnswer: answer.textAnswer || answer.text_answer || "",
+              };
+            }
+            return answers;
+          }, {})
+        : {},
+    );
     setApplicationQuestionsError("");
     setIsLoadingApplicationQuestions(false);
 
@@ -4191,7 +4268,7 @@ export default function AddCandidateModal() {
   }
 
   function validatePageOne({ silent = false } = {}) {
-    if (!hasReferralCode) {
+    if (!editCandidate && !hasReferralCode) {
       if (!silent) showStatusModal({
         type: "error",
         title: "Referral selection required",
@@ -4200,7 +4277,7 @@ export default function AddCandidateModal() {
       return false;
     }
 
-    if (hasReferralCode === "Yes" && !cleanText(candidateForm.referralCode)) {
+    if (!editCandidate && hasReferralCode === "Yes" && !cleanText(candidateForm.referralCode)) {
       if (!silent) showStatusModal({
         type: "error",
         title: "Referral code required",
@@ -4209,7 +4286,7 @@ export default function AddCandidateModal() {
       return false;
     }
 
-    if (hasReferralCode === "Yes" && !isReferralCodeMatched) {
+    if (!editCandidate && hasReferralCode === "Yes" && !isReferralCodeMatched) {
       if (!silent) showStatusModal({
         type: "error",
         title: "Referral code not matched",
@@ -4323,7 +4400,7 @@ export default function AddCandidateModal() {
       return false;
     }
 
-    if (!candidateForm.audioFile) {
+    if (!editCandidate && !candidateForm.audioFile) {
       fileSectionRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -4336,7 +4413,7 @@ export default function AddCandidateModal() {
       return false;
     }
 
-    if (!candidateForm.attachmentFile) {
+    if (!editCandidate && !candidateForm.attachmentFile) {
       fileSectionRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -4349,7 +4426,7 @@ export default function AddCandidateModal() {
       return false;
     }
 
-    if (!candidateForm.consent) {
+    if (!editCandidate && !candidateForm.consent) {
       consentRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -4506,14 +4583,16 @@ export default function AddCandidateModal() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="sibs-modal-title truncate text-white">
-                    Add Candidate
+                    {editCandidate ? "Edit Candidate" : "Add Candidate"}
                   </h2>
                   <span className="rounded bg-sibs-orange px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-normal text-white">
                     Registration
                   </span>
                 </div>
                 <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
-                  Create a reusable candidate profile using database options and backend storage.
+                  {editCandidate
+                    ? "Update this applicant’s profile, answers, remarks, and files."
+                    : "Create a reusable candidate profile using database options and backend storage."}
                 </p>
               </div>
             </div>
@@ -4549,7 +4628,7 @@ export default function AddCandidateModal() {
                     ? "Loading..."
                     : currentPage === 1
                       ? "Next"
-                      : "Save Candidate"}
+                      : editCandidate ? "Save Changes" : "Save Candidate"}
               </button>
               ) : null}
 
@@ -5634,7 +5713,7 @@ export default function AddCandidateModal() {
                     ? "Loading Questions..."
                     : currentPage === 1
                       ? "Next"
-                      : "Save Candidate"}
+                      : editCandidate ? "Save Changes" : "Save Candidate"}
               </button>
               ) : null}
             </div>

@@ -1,6 +1,7 @@
-import { useEffect } from "react";
-import { Target, X } from "lucide-react";
+import React from "react";
+import { Target } from "lucide-react";
 
+import { ModalShell } from "@/components/ui";
 import {
   formatDate,
   safePercentage,
@@ -19,155 +20,116 @@ function getStatusClass(status) {
 }
 
 export default function OMRoleDetailsModal({ role, onClose }) {
-  useEffect(() => {
-    if (!role) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") onClose?.();
-    };
-
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [role, onClose]);
-
   if (!role) return null;
 
   const progress = safePercentage(role.filled, role.req);
 
   return (
-    <div
-      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1200] flex items-center justify-center p-2 font-jakarta sm:p-4"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose?.();
-      }}
+    <ModalShell
+      open={Boolean(role)}
+      onClose={onClose}
+      variant="navy"
+      icon={Target}
+      title="Role KPI Details"
+      subtitle="Manager-accessible recruitment analytics"
+      maxWidth="max-w-[700px] 2xl:max-w-3xl"
+      className="flex flex-col max-h-[88vh]"
+      bodyClassName="flex-1 space-y-2.5 2xl:space-y-3.5 overflow-y-auto p-3.5 2xl:p-5 text-sibs-navy"
+      footer={
+        <button
+          type="button"
+          onClick={onClose}
+          className="sibs-btn-primary !h-8.5 2xl:!h-10 w-full sm:w-auto !px-4 sibs-text-xs"
+        >
+          Close Details
+        </button>
+      }
     >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="om-role-kpi-title"
-        className="sibs-modal-pop-in flex max-h-[84vh] w-full max-w-[700px] 2xl:max-w-3xl flex-col overflow-hidden rounded-xl bg-[#042C51] font-jakarta shadow-2xl sm:rounded-2xl"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
-          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
-              <Target size={16} />
-            </span>
-            <div className="min-w-0">
-              <h2 id="om-role-kpi-title" className="sibs-modal-title font-heading text-base sm:text-lg 2xl:text-xl font-bold tracking-tight text-white truncate">
-                Role KPI Details
-              </h2>
-              <p className="sibs-modal-subtitle font-jakarta sibs-text-xs font-semibold text-white/75 mt-0.5 truncate">
-                Manager-accessible recruitment analytics
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
-            aria-label="Close role details"
-          >
-            <X size={18} />
-          </button>
-        </header>
-
-        <div className="flex-1 space-y-2.5 2xl:space-y-3.5 overflow-y-auto bg-white p-3.5 2xl:p-5 sibs-scrollbar font-jakarta">
-          <div className="flex flex-col justify-between gap-2.5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 2xl:p-3.5 sm:flex-row sm:items-center">
-            <div className="min-w-0">
-              <h3 className="sibs-modal-section-title font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy break-words">
-                {role.roleTitle}
-              </h3>
-              <p className="font-jakarta mt-0.5 break-words sibs-text-micro font-semibold text-[#667085]">
-                {role.account} · {role.department}
-              </p>
-            </div>
-
-            <div className="text-left sm:text-right">
-              <span className="block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">
-                Progress
-              </span>
-              <p className="font-heading text-lg 2xl:text-xl font-bold tabular-nums text-[#FF5C28]">
-                {progress}%
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {[
-              ["Requirement", role.req],
-              ["Filled", role.filled],
-              ["Open", role.open],
-              ["Aging", `${role.aging}d`],
-            ].map(([label, value]) => (
-              <div key={label} className="sibs-info-tile rounded-xl border border-[#E6ECF2] bg-white p-2 2xl:p-2.5 text-center shadow-2xs">
-                <span className="block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">{label}</span>
-                <p className="font-heading mt-0.5 text-base 2xl:text-lg font-bold tabular-nums text-[#042C51]">
-                  {value}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div>
-            <p className="sibs-modal-section-title font-heading mb-1.5 text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy uppercase">
-              Movement Pipeline Stages
-            </p>
-            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
-              {Object.entries(role.movement || {}).map(([label, value]) => (
-                <div key={label} className="sibs-info-tile rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-2 text-center">
-                  <span className="block truncate font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]">
-                    {label}
-                  </span>
-                  <p className="font-heading mt-0.5 text-xs 2xl:text-sm font-bold tabular-nums text-[#042C51]">
-                    {value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
-            <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3">
-              <p className="sibs-modal-section-subtitle font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-blue-700">
-                Current Action Item
-              </p>
-              <p className="font-jakarta mt-1 sibs-text-xs font-semibold leading-relaxed text-blue-950">
-                {role.actionItem}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
-              <p className="sibs-modal-section-subtitle font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-amber-700">
-                Delivery Status
-              </p>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                <span
-                  className={`inline-flex rounded border px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide ${getStatusClass(
-                    role.status,
-                  )}`}
-                >
-                  {role.status}
-                </span>
-                <span className="font-jakarta sibs-text-xs font-bold text-amber-900">
-                  Risk: {role.riskFlag}
-                </span>
-              </div>
-              <p className="font-jakarta mt-1.5 sibs-text-xs font-semibold text-amber-900">
-                Due: <strong className="font-heading font-bold">{formatDate(role.dueDate)}</strong> · TA Owner: <strong className="font-heading font-bold">{role.taOwner}</strong>
-              </p>
-            </div>
-          </div>
+      <div className="flex flex-col justify-between gap-2.5 rounded-xl border border-sibs-border bg-sibs-surface p-3 2xl:p-3.5 sm:flex-row sm:items-center">
+        <div className="min-w-0">
+          <h3 className="sibs-modal-section-title font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy break-words">
+            {role.roleTitle}
+          </h3>
+          <p className="font-jakarta mt-0.5 break-words sibs-text-micro font-semibold text-sibs-muted">
+            {role.account} · {role.department}
+          </p>
         </div>
-      </section>
-    </div>
+
+        <div className="text-left sm:text-right">
+          <span className="block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
+            Progress
+          </span>
+          <p className="font-heading text-lg 2xl:text-xl font-bold tabular-nums text-sibs-orange">
+            {progress}%
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          ["Requirement", role.req],
+          ["Filled", role.filled],
+          ["Open", role.open],
+          ["Aging", `${role.aging}d`],
+        ].map(([label, value]) => (
+          <div key={label} className="sibs-info-tile rounded-xl border border-sibs-border bg-white p-2 2xl:p-2.5 text-center shadow-2xs">
+            <span className="block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">{label}</span>
+            <p className="font-heading mt-0.5 text-base 2xl:text-lg font-bold tabular-nums text-sibs-navy">
+              {value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <p className="sibs-modal-section-title font-heading mb-1.5 text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy uppercase">
+          Movement Pipeline Stages
+        </p>
+        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+          {Object.entries(role.movement || {}).map(([label, value]) => (
+            <div key={label} className="sibs-info-tile rounded-lg border border-sibs-border bg-sibs-surface p-2 text-center">
+              <span className="block truncate font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
+                {label}
+              </span>
+              <p className="font-heading mt-0.5 text-xs 2xl:text-sm font-bold tabular-nums text-sibs-navy">
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+        <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3">
+          <p className="sibs-modal-section-subtitle font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-blue-700">
+            Current Action Item
+          </p>
+          <p className="font-jakarta mt-1 sibs-text-xs font-semibold leading-relaxed text-blue-950">
+            {role.actionItem}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+          <p className="sibs-modal-section-subtitle font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-amber-700">
+            Delivery Status
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <span
+              className={`inline-flex rounded border px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide ${getStatusClass(
+                role.status,
+              )}`}
+            >
+              {role.status}
+            </span>
+            <span className="font-jakarta sibs-text-xs font-bold text-amber-900">
+              Risk: {role.riskFlag}
+            </span>
+          </div>
+          <p className="font-jakarta mt-1.5 sibs-text-xs font-semibold text-amber-900">
+            Due: <strong className="font-heading font-bold">{formatDate(role.dueDate)}</strong> · TA Owner: <strong className="font-heading font-bold">{role.taOwner}</strong>
+          </p>
+        </div>
+      </div>
+    </ModalShell>
   );
 }

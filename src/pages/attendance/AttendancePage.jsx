@@ -167,10 +167,10 @@ export default function AttendancePage() {
                 className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
               />
               <section
-                className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+                className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"
                 style={getAnimationStyle(80)}
               >
-                <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+                <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
                   <div className="h-5 w-44 animate-sibs-pulse rounded bg-sibs-tertiary-9 motion-reduce:animate-none" />
                   <div className="mt-2 h-3.5 w-80 animate-sibs-pulse rounded bg-sibs-tertiary-9 motion-reduce:animate-none" />
                 </div>

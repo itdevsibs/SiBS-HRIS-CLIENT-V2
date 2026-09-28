@@ -902,3 +902,78 @@ export async function getSupervisorAttritions() {
     };
   }
 }
+
+export async function getEmployeePdsPdf(sibsId) {
+  const safeId = String(sibsId || "").trim();
+  if (!safeId) {
+    return {
+      success: false,
+      data: null,
+      filename: "",
+      status: 400,
+      message: "A valid employee SIBS ID is required.",
+    };
+  }
+
+  try {
+    const response = await api.get(
+      `/api/employees/${encodeURIComponent(safeId)}/pds.pdf`,
+      { withCredentials: true, responseType: "blob" },
+    );
+    const contentType = String(response.headers?.["content-type"] || "");
+    if (
+      !contentType.toLowerCase().includes("application/pdf") ||
+      !response.data?.size
+    ) {
+      throw new Error("The server did not return a valid PDF.");
+    }
+
+    const contentDisposition = String(
+      response.headers?.["content-disposition"] || "",
+    );
+    const match = contentDisposition.match(
+      /filename\*?=(?:UTF-8''|"?)([^";]+)/i,
+    );
+    let filename = match?.[1] || "";
+    try {
+      filename = decodeURIComponent(filename);
+    } catch {
+      filename = "";
+    }
+    filename = filename.replace(/["\\/\r\n]/g, "").trim();
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._ -]*\.pdf$/i.test(filename)) {
+      filename = `${safeId}_Employee_PDS.pdf`;
+    }
+
+    return {
+      success: true,
+      data: response.data,
+      filename,
+      status: response.status,
+      message: "Employee PDS generated.",
+    };
+  } catch (error) {
+    let responseMessage = "";
+    const errorBlob = error?.response?.data;
+    if (errorBlob instanceof Blob) {
+      try {
+        const parsed = JSON.parse(await errorBlob.text());
+        responseMessage = parsed?.message || parsed?.error || "";
+      } catch {
+        responseMessage = "";
+      }
+    }
+
+    return {
+      success: false,
+      data: null,
+      filename: "",
+      status: error?.response?.status || 500,
+      message:
+        responseMessage ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Unable to generate the employee PDS.",
+    };
+  }
+}

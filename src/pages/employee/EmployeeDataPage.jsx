@@ -18,6 +18,7 @@ import ChwcpCoverageSection from "../../components/employee/profile/components/C
 import { useUser } from "../../services/context/UserContext";
 import {
   getEmployeeById,
+  getEmployeePdsPdf,
   getEmployeeProfileSections,
   updateEmployeeProfile,
   updateEmployeeProfileSection,
@@ -31,6 +32,7 @@ import {
 import {
   getActivePrimaryKey,
   getActiveProfileLabel,
+  getFullName,
   getProfileSibsId,
 } from "../../lib/utils/employees/employeeProfileHelpers.js";
 import { buildEditableEmployee as buildRawEditableEmployee } from "../../lib/utils/employees/employeeProfileNormalizer.js";
@@ -478,6 +480,7 @@ export default function EmployeeDataPage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingPds, setIsGeneratingPds] = useState(false);
   const [openProfilePictureModal, setOpenProfilePictureModal] = useState(false);
   const [openProfileDropdown, setOpenProfileDropdown] = useState(false);
   const [openAddResignation, setOpenAddResignation] = useState(false);
@@ -664,6 +667,60 @@ export default function EmployeeDataPage() {
 
     setOpenProfileDropdown(false);
     setSelectedResignation(item);
+  }
+
+  async function handleGeneratePds() {
+    const sibsId = getProfileSibsId(employee || displayEmployee);
+    if (!sibsId || isGeneratingPds) return;
+
+    const employeeName =
+      getFullName(displayEmployee || employee) || "Employee";
+    const previewWindow = window.open("", "_blank");
+    if (previewWindow) {
+      previewWindow.opener = null;
+      previewWindow.document.title = `Generating SiBS Employee PDS - ${employeeName}`;
+      previewWindow.document.body.textContent =
+        "Generating employee Personal Data Sheet (PDS)...";
+    }
+
+    setIsGeneratingPds(true);
+    try {
+      const result = await getEmployeePdsPdf(sibsId);
+      if (!result.success || !result.data) {
+        throw new Error(
+          result.message || "Unable to generate the employee PDS.",
+        );
+      }
+
+      const objectUrl = URL.createObjectURL(result.data);
+      if (previewWindow) {
+        previewWindow.location.replace(objectUrl);
+      } else {
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = result.filename || `${sibsId}_Employee_PDS.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showFeedback(
+          "The PDF preview was blocked, so the employee PDS was downloaded instead.",
+          "success",
+          "PDS Generated",
+        );
+      }
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      if (previewWindow && !previewWindow.closed) previewWindow.close();
+      showFeedback(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to generate the employee PDS.",
+        "error",
+        "PDS Generation Failed",
+      );
+    } finally {
+      setIsGeneratingPds(false);
+    }
   }
 
   function startEditing() {
@@ -972,6 +1029,8 @@ export default function EmployeeDataPage() {
               <EmployeeProfileHeader
                 employee={displayEmployee}
                 apiUrl={API_URL}
+                onGeneratePds={handleGeneratePds}
+                isGeneratingPds={isGeneratingPds}
                 canEdit={
                   canEditDetails &&
                   activeSectionSupportsSave &&

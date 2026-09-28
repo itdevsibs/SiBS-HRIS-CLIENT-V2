@@ -24,10 +24,10 @@ export default function OMRecruiterLoad({ recruiters = [], delay = 0 }) {
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div>
-        <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+        <h3 className="sibs-card-title">
           Recruiter Load
         </h3>
-        <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
+        <p className="sibs-card-subtitle mt-1">
           Active accessible roles versus recruiter output
         </p>
       </div>
