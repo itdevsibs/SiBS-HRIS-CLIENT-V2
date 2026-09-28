@@ -1,12 +1,12 @@
-import { useEffect } from "react";
+import React from "react";
 import {
   CheckCircle2,
   Link2,
   ShieldAlert,
   Target,
-  X,
 } from "lucide-react";
 
+import { ModalShell } from "../../ui";
 import {
   formatDate,
   safePercentage,
@@ -61,8 +61,8 @@ function getRiskClass(riskFlag) {
 
 function DeliveryDetail({ label, value }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-3 font-jakarta">
-      <span className="block font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <div className="rounded-xl border border-sibs-border bg-white p-3 font-jakarta">
+      <span className="block font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
         {label}
       </span>
       <span className="mt-1 block break-words font-heading font-bold text-sm 2xl:text-base text-sibs-navy">
@@ -73,24 +73,6 @@ function DeliveryDetail({ label, value }) {
 }
 
 export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") onClose?.();
-    };
-
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open, onClose]);
-
   if (!open || !role) return null;
 
   const progress = safePercentage(role.filled, role.req);
@@ -119,179 +101,27 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
   };
 
   return (
-    <div
-      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1200] flex items-center justify-center p-2 font-jakarta sm:p-4"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose?.();
-      }}
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="ta-role-kpi-title"
-        className="sibs-modal-pop-in flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl bg-[#042C51] font-jakarta shadow-2xl sm:max-h-[88vh]"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#042C51] px-5 py-3 text-white sm:gap-4 sm:px-6 2xl:py-3.5">
-          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
-              <Target size={16} />
-            </span>
-            <div className="min-w-0">
-              <h2
-                id="ta-role-kpi-title"
-                className="sibs-modal-title font-heading text-base sm:text-lg 2xl:text-xl font-bold tracking-tight text-white truncate"
-              >
-                Role KPI Details
-              </h2>
-              <p className="sibs-modal-subtitle font-jakarta sibs-text-xs font-semibold text-white/75 mt-0.5 truncate">
-                Recruitment dashboard analytics
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
-            aria-label="Close role details"
-          >
-            <X size={18} />
-          </button>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white p-3 text-[#101828] sm:p-6">
-          <div className="space-y-5">
-            <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-              <div className="min-w-0">
-                <h3 className="sibs-modal-section-title font-heading text-base sm:text-lg font-bold tracking-tight text-sibs-navy break-words">
-                  {safeValue(role.role, "Untitled Role")}
-                </h3>
-                <p className="font-jakarta mt-1 break-words text-xs font-semibold leading-relaxed text-[#667085]">
-                  {safeValue(role.roleAccount, role.account)}
-                </p>
-
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  <span
-                    className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${getStatusClass(
-                      role.status,
-                    )}`}
-                  >
-                    {safeValue(role.status, "Unknown")}
-                  </span>
-                  <span
-                    className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${getRiskClass(
-                      role.riskFlag,
-                    )}`}
-                  >
-                    Risk: {safeValue(role.riskFlag, "None")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="shrink-0 text-left sm:text-right">
-                <span className="block font-jakarta text-xs font-extrabold uppercase text-slate-400">
-                  Progress
-                </span>
-                <span className="mt-1 block font-heading text-3xl font-bold tabular-nums text-[#FF5C28]">
-                  {progress}%
-                </span>
-              </div>
-            </section>
-
-            <section>
-              <h3 className="sibs-modal-section-title font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
-                Weekly Movement Breakdown
-              </h3>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-3 lg:grid-cols-6">
-                {movementStages.map(([label, key]) => (
-                  <div
-                    key={key}
-                    className="rounded-lg border border-slate-100 bg-slate-50 p-2.5"
-                  >
-                    <span className="block font-jakarta text-[10px] font-bold uppercase leading-none text-slate-400">
-                      {label}
-                    </span>
-                    <span className="mt-1.5 block font-heading text-base font-bold tabular-nums text-[#042C51]">
-                      {Number(role.movement?.[key] || 0)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-blue-200/60 bg-blue-50/60 p-3.5">
-              <span className="sibs-modal-section-subtitle block font-jakarta text-[10px] font-extrabold uppercase text-blue-600">
-                Current Action Item
-              </span>
-              <p className="mt-1 font-jakarta text-xs font-semibold leading-relaxed text-blue-950">
-                {safeValue(role.actionItem, "No action item has been assigned.")}
-              </p>
-            </section>
-
-            <section className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-[#FF5C28]" />
-                <span className="sibs-modal-section-title block font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
-                  Role Delivery Details
-                </span>
-              </div>
-
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                <DeliveryDetail
-                  label="Role / Account"
-                  value={safeValue(role.roleAccount, role.account)}
-                />
-                <DeliveryDetail label="TA Owner" value={role.taOwner} />
-                <DeliveryDetail
-                  label="Due Date"
-                  value={formatDate(role.dueDate)}
-                />
-                <DeliveryDetail
-                  label="Aging"
-                  value={`${Number(role.aging || 0)} days`}
-                />
-                <DeliveryDetail label="Risk Flag" value={role.riskFlag} />
-                <DeliveryDetail label="Status" value={role.status} />
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5">
-              <span className="sibs-modal-section-title block font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
-                Role Snapshot KPI Matrix
-              </span>
-              <div className="mt-3 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
-                {[
-                  ["Requisition", role.req, "text-[#042C51]"],
-                  ["Filled", role.filled, "text-emerald-600"],
-                  ["Pending", role.open, "text-[#FF5C28]"],
-                  ["Drop-Offs", role.dropOffs, "text-rose-500"],
-                ].map(([label, value, tone]) => (
-                  <div key={label} className="rounded-lg bg-white p-3">
-                    <span className="block font-jakarta text-[10px] font-bold text-slate-400">
-                      {label}
-                    </span>
-                    <span
-                      className={`mt-1 block font-heading text-base 2xl:text-lg font-bold tabular-nums ${tone}`}
-                    >
-                      {Number(value || 0)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-        </div>
-
-        <footer className="flex shrink-0 flex-col gap-3 border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-2.5 2xl:py-3 font-jakarta sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p className="text-center font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3] sm:text-left">
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      variant="navy"
+      icon={Target}
+      title="Role KPI Details"
+      subtitle="Recruitment dashboard analytics"
+      maxWidth="max-w-4xl 2xl:max-w-5xl"
+      className="flex flex-col max-h-[calc(100dvh-1rem)] sm:max-h-[88vh]"
+      bodyClassName="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 text-sibs-navy"
+      footerClassName="justify-between sm:flex-row sm:items-center px-4 py-2.5 2xl:py-3 sm:px-6"
+      footer={
+        <>
+          <p className="text-center font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint sm:text-left">
             Frontend-only TA data. Values remain unchanged after applying the new theme.
           </p>
           <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
             <button
               type="button"
               onClick={handleShare}
-              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] sm:w-auto"
+              className="sibs-btn-secondary !h-8.5 2xl:!h-10 w-full sm:w-auto !px-3.5 2xl:!px-4 sibs-text-xs"
             >
               <Link2 size={13} />
               Share Link
@@ -299,14 +129,135 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28] active:scale-[0.98] sm:w-auto"
+              className="sibs-btn-primary !h-8.5 2xl:!h-10 w-full sm:w-auto !px-3.5 2xl:!px-4 sibs-text-xs"
             >
               <CheckCircle2 size={13} />
               Close Details
             </button>
           </div>
-        </footer>
-      </section>
-    </div>
+        </>
+      }
+    >
+      <div className="space-y-5">
+        <section className="flex flex-col gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+          <div className="min-w-0">
+            <h3 className="sibs-modal-section-title font-heading text-base sm:text-lg font-bold tracking-tight text-sibs-navy break-words">
+              {safeValue(role.role, "Untitled Role")}
+            </h3>
+            <p className="font-jakarta mt-1 break-words text-xs font-semibold leading-relaxed text-sibs-muted">
+              {safeValue(role.roleAccount, role.account)}
+            </p>
+
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span
+                className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${getStatusClass(
+                  role.status,
+                )}`}
+              >
+                {safeValue(role.status, "Unknown")}
+              </span>
+              <span
+                className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${getRiskClass(
+                  role.riskFlag,
+                )}`}
+              >
+                Risk: {safeValue(role.riskFlag, "None")}
+              </span>
+            </div>
+          </div>
+
+          <div className="shrink-0 text-left sm:text-right">
+            <span className="block font-jakarta text-xs font-extrabold uppercase text-sibs-muted">
+              Progress
+            </span>
+            <span className="mt-1 block font-heading text-3xl font-bold tabular-nums text-sibs-orange">
+              {progress}%
+            </span>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="sibs-modal-section-title font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+            Weekly Movement Breakdown
+          </h3>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-3 lg:grid-cols-6">
+            {movementStages.map(([label, key]) => (
+              <div
+                key={key}
+                className="rounded-lg border border-sibs-border bg-sibs-surface p-2.5"
+              >
+                <span className="block font-jakarta text-[10px] font-bold uppercase leading-none text-sibs-muted">
+                  {label}
+                </span>
+                <span className="mt-1.5 block font-heading text-base font-bold tabular-nums text-sibs-navy">
+                  {Number(role.movement?.[key] || 0)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-blue-200/60 bg-blue-50/60 p-3.5">
+          <span className="sibs-modal-section-subtitle block font-jakarta text-[10px] font-extrabold uppercase text-blue-600">
+            Current Action Item
+          </span>
+          <p className="mt-1 font-jakarta text-xs font-semibold leading-relaxed text-blue-950">
+            {safeValue(role.actionItem, "No action item has been assigned.")}
+          </p>
+        </section>
+
+        <section className="rounded-xl border border-sibs-border bg-sibs-surface/60 p-3.5">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-sibs-orange" />
+            <span className="sibs-modal-section-title block font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+              Role Delivery Details
+            </span>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <DeliveryDetail
+              label="Role / Account"
+              value={safeValue(role.roleAccount, role.account)}
+            />
+            <DeliveryDetail label="TA Owner" value={role.taOwner} />
+            <DeliveryDetail
+              label="Due Date"
+              value={formatDate(role.dueDate)}
+            />
+            <DeliveryDetail
+              label="Aging"
+              value={`${Number(role.aging || 0)} days`}
+            />
+            <DeliveryDetail label="Risk Flag" value={role.riskFlag} />
+            <DeliveryDetail label="Status" value={role.status} />
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-sibs-border bg-sibs-surface/60 p-3.5">
+          <span className="sibs-modal-section-title block font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+            Role Snapshot KPI Matrix
+          </span>
+          <div className="mt-3 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
+            {[
+              ["Requisition", role.req, "text-sibs-navy"],
+              ["Filled", role.filled, "text-emerald-600"],
+              ["Pending", role.open, "text-sibs-orange"],
+              ["Drop-Offs", role.dropOffs, "text-rose-500"],
+            ].map(([label, value, tone]) => (
+              <div key={label} className="rounded-lg border border-sibs-border bg-white p-3">
+                <span className="block font-jakarta text-[10px] font-bold text-sibs-muted">
+                  {label}
+                </span>
+                <span
+                  className={`mt-1 block font-heading text-base 2xl:text-lg font-bold tabular-nums ${tone}`}
+                >
+                  {Number(value || 0)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </ModalShell>
   );
 }

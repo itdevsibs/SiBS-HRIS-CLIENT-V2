@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { UserPlus, X } from "lucide-react";
+import React, { useState } from "react";
+import { UserPlus } from "lucide-react";
 
+import { ModalShell, SelectDropdown } from "@/components/ui";
 import {
   ACCESS_LEVELS,
   ACCOUNT_GROUPS,
@@ -14,37 +15,15 @@ const EMPTY_FORM = {
   accountGroup: "Internal HR Ops",
 };
 
-function SelectField({ label, value, options, onChange }) {
-  return (
-    <label className="block">
-      <span className="sibs-field-label font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
-        {label}
-      </span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
   const [form, setForm] = useState(EMPTY_FORM);
 
-  useEffect(() => {
-    if (!open) {
-      setForm(EMPTY_FORM);
-    }
-  }, [open]);
-
   if (!open) return null;
+
+  function handleClose() {
+    setForm(EMPTY_FORM);
+    onClose?.();
+  }
 
   function updateField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -65,110 +44,104 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
       lastActive: "Just created",
       status: "Active",
     });
+
+    handleClose();
   }
 
+  const inputClass =
+    "h-8.5 2xl:h-9 w-full rounded-xl border border-sibs-border-subtle bg-sibs-surface px-3 font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10";
+
   return (
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex items-center justify-center p-2 font-jakarta sm:p-4"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta">
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
-          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
-              <UserPlus size={16} />
-            </span>
-            <div className="min-w-0">
-              <h3 className="sibs-modal-title font-heading text-base sm:text-lg 2xl:text-xl font-bold tracking-tight text-white truncate">Add Admin User</h3>
-              <p className="sibs-modal-subtitle font-jakarta sibs-text-xs font-semibold text-white/75 mt-0.5 truncate">
-                Frontend account setup preview
-              </p>
-            </div>
-          </div>
+    <ModalShell
+      open={open}
+      onClose={handleClose}
+      title="Add Admin User"
+      subtitle="Frontend account setup and access tier preview"
+      icon={UserPlus}
+      maxWidth="max-w-md"
+      variant="navy"
+      footer={
+        <div className="flex w-full items-center justify-end gap-2.5">
           <button
             type="button"
-            onClick={onClose}
-            className="sibs-modal-close-btn"
-            aria-label="Close add admin modal"
+            onClick={handleClose}
+            className="sibs-modal-btn-secondary"
           >
-            <X size={18} />
+            Cancel
           </button>
-        </header>
+          <button
+            type="submit"
+            form="super-admin-add-user-form"
+            className="sibs-modal-btn-primary"
+          >
+            Save Admin Account
+          </button>
+        </div>
+      }
+    >
+      <form
+        id="super-admin-add-user-form"
+        onSubmit={handleSubmit}
+        className="space-y-3 font-jakarta"
+      >
+        <label className="block">
+          <span className="mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
+            Full Name <span className="text-sibs-orange">*</span>
+          </span>
+          <input
+            required
+            value={form.name}
+            onChange={(event) => updateField("name", event.target.value)}
+            placeholder="e.g. Maria Santos"
+            className={inputClass}
+          />
+        </label>
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col font-jakarta">
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar space-y-3">
-            <label className="block">
-              <span className="sibs-field-label font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
-                Full Name
-              </span>
-              <input
-                required
-                value={form.name}
-                onChange={(event) => updateField("name", event.target.value)}
-                placeholder="e.g. Maria Santos"
-                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
-              />
-            </label>
+        <label className="block">
+          <span className="mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
+            Work Email <span className="text-sibs-orange">*</span>
+          </span>
+          <input
+            required
+            type="email"
+            value={form.email}
+            onChange={(event) => updateField("email", event.target.value)}
+            placeholder="name@thesiblingssolutions.com"
+            className={inputClass}
+          />
+        </label>
 
-            <label className="block">
-              <span className="sibs-field-label font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
-                Work Email
-              </span>
-              <input
-                required
-                type="email"
-                value={form.email}
-                onChange={(event) => updateField("email", event.target.value)}
-                placeholder="name@thesiblingssolutions.com"
-                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
-              />
-            </label>
+        <div className="space-y-1">
+          <SelectDropdown
+            label="Grounded Access Level (1-7)"
+            value={form.accessLevel}
+            options={ACCESS_LEVELS}
+            onChange={(value) => updateField("accessLevel", value)}
+            searchable={false}
+          />
+        </div>
 
-            <SelectField
-              label="Grounded Access Level (1-7)"
-              value={form.accessLevel}
-              options={ACCESS_LEVELS}
-              onChange={(value) => updateField("accessLevel", value)}
-            />
+        <label className="block">
+          <span className="mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
+            Department
+          </span>
+          <input
+            value={form.department}
+            onChange={(event) => updateField("department", event.target.value)}
+            className={inputClass}
+          />
+        </label>
 
-            <label className="block">
-              <span className="sibs-field-label font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
-                Department
-              </span>
-              <input
-                value={form.department}
-                onChange={(event) => updateField("department", event.target.value)}
-                className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
-              />
-            </label>
-
-            <SelectField
-              label="Account Group"
-              value={form.accountGroup}
-              options={ACCOUNT_GROUPS}
-              onChange={(value) => updateField("accountGroup", value)}
-            />
-          </div>
-
-          <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="sibs-modal-btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="sibs-modal-btn-primary"
-            >
-              Save Admin Account
-            </button>
-          </div>
-        </form>
-      </section>
-    </div>
+        <div className="space-y-1">
+          <SelectDropdown
+            label="Account Group"
+            value={form.accountGroup}
+            options={ACCOUNT_GROUPS}
+            onChange={(value) => updateField("accountGroup", value)}
+            searchable={false}
+          />
+        </div>
+      </form>
+    </ModalShell>
   );
 }

@@ -31,8 +31,8 @@ export default function EmployeeProfileNavigation({
               aria-current={active ? "page" : undefined}
               className={`inline-flex h-8 2xl:h-9 min-w-max items-center justify-center gap-1.5 rounded-lg border px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold transition-all ${
                 active
-                  ? "border-[#BFD3F2] bg-[#E9F0FC] text-sibs-navy shadow-xs"
-                  : "border-transparent text-sibs-muted hover:bg-sibs-surface hover:text-sibs-navy"
+                  ? "border-sibs-orange/40 bg-sibs-cream text-sibs-orange shadow-2xs"
+                  : "border-transparent text-sibs-muted hover:bg-sibs-cream-subtle hover:text-sibs-navy"
               }`}
             >
               <Icon

@@ -585,8 +585,11 @@ export default function AdminDashboardPage() {
           />
 
           {overviewError ? (
-            <section className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-              <span className="font-extrabold">Dashboard data warning:</span>{" "}
+            <section
+              role="alert"
+              className="sibs-page-card-in rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 sibs-text-xs font-semibold text-amber-900 shadow-xs"
+            >
+              <span className="font-extrabold text-amber-950">Dashboard data warning:</span>{" "}
               {overviewError}. The last successful values remain visible.
             </section>
           ) : null}

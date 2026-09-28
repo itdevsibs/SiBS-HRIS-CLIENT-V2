@@ -488,7 +488,8 @@ export default function SuperAdminDashboardPage() {
             onTabChange={handleTabChange}
           />
 
-          <section className="sibs-page-card-in sibs-card overflow-hidden">
+          <section className="sibs-page-card-in sibs-card relative overflow-hidden">
+            <span className="sibs-top-accent" aria-hidden="true" />
             <SuperAdminTabs
               activeTab={activeTab}
               onChange={handleTabChange}

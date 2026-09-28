@@ -23,18 +23,18 @@ function MetricCard({ item, delay }) {
       <div className="flex h-full items-start justify-between gap-2 2xl:gap-2.5">
         <div className="min-w-0 flex-1 self-stretch">
           <p
-            className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${tone.label}`}
+            className={`sibs-kpi-kicker m-0 truncate ${tone.label}`}
           >
             {item.label}
           </p>
 
           <p
-            className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${tone.value}`}
+            className={`sibs-kpi-value text-2xl 2xl:text-3xl ${tone.value}`}
           >
             {item.value}
           </p>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-4 text-sibs-muted">
+          <p className="mt-1 line-clamp-1 truncate sibs-kpi-desc">
             {item.description}
           </p>
         </div>

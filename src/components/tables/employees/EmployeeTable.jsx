@@ -3,6 +3,8 @@ import { motion as Motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import {
   CalendarDays,
+  FileDown,
+  Loader2,
   Mail,
   MapPin,
   Phone,
@@ -12,7 +14,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { getEmployee } from "@/lib/axios/getEmployee";
+import { getEmployee, getEmployeePdsPdf } from "@/lib/axios/getEmployee";
+import StatusModal from "@/components/modals/StatusModal";
 import { useUser } from "@/services/context/UserContext";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "@/lib/utils/employees/employeeNameDisplay.js";
 import { usePagination } from "@/services/context/PaginationContext";
@@ -34,6 +37,7 @@ const columns = [
   "DEPARTMENT",
   "CONTACT & EMAIL",
   "HR METADATA",
+  "ACTIONS",
 ];
 
 const defaultDirectoryTabs = [
@@ -46,9 +50,9 @@ const defaultDirectoryTabs = [
 ];
 
 const AVATAR_TONES = [
-  "border-orange-100 bg-orange-50 text-[#FF5C28]",
+  "border-orange-100 bg-orange-50 text-sibs-orange",
   "border-emerald-100 bg-emerald-50 text-emerald-700",
-  "border-blue-100 bg-blue-50 text-[#042C51]",
+  "border-blue-100 bg-blue-50 text-sibs-navy",
   "border-pink-100 bg-pink-50 text-pink-700",
   "border-violet-100 bg-violet-50 text-violet-700",
 ];
@@ -413,7 +417,7 @@ function EmployeeDepartmentList({ employee, compact = false }) {
         >
           <span
             aria-hidden="true"
-            className={`shrink-0 font-extrabold leading-tight text-[#667085] ${
+            className={`shrink-0 font-extrabold leading-tight text-sibs-muted ${
               compact ? "text-[11px]" : "text-xs"
             }`}
           >
@@ -421,7 +425,7 @@ function EmployeeDepartmentList({ employee, compact = false }) {
           </span>
 
           <span
-            className={`min-w-0 break-words font-extrabold leading-tight text-[#042C51] ${
+            className={`min-w-0 break-words font-extrabold leading-tight text-sibs-navy ${
               compact ? "text-[11px]" : "text-xs"
             }`}
           >
@@ -442,7 +446,7 @@ function EmployeeAccountChips({ employee, compact = false }) {
         <span
           key={account}
           title={account}
-          className={`inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] font-extrabold uppercase tracking-wide text-[#042C51] ${
+          className={`inline-flex max-w-full rounded border border-blue-100 bg-blue-50/70 font-extrabold uppercase tracking-wide text-sibs-navy ${
             compact
               ? "px-2 py-0.5 text-[9px]"
               : "px-2.5 py-1 text-[10px]"
@@ -638,7 +642,7 @@ function EmployeeAvatar({ employee, size = "md" }) {
     previewVisible && previewPosition && typeof document !== "undefined"
       ? createPortal(
           <span
-            className="employee-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            className="employee-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
             style={{
               left: previewPosition.left,
               top: previewPosition.top,
@@ -709,15 +713,15 @@ function EmployeeAvatar({ employee, size = "md" }) {
 function EmptyState({ loading, message }) {
   return (
     <div className="flex flex-col items-center justify-center px-5 py-12 text-center">
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF2FB] text-[#042C51]">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sibs-surface text-sibs-navy">
         <UserRoundCheck size={22} />
       </div>
 
-      <h3 className="mt-3 text-sm font-extrabold text-[#042C51]">
+      <h3 className="mt-3 text-sm font-extrabold text-sibs-navy">
         {loading ? "Loading employees..." : "No employees found"}
       </h3>
 
-      <p className="mt-1 max-w-xl text-xs font-bold leading-4 text-[#667085]">
+      <p className="mt-1 max-w-xl text-xs font-bold leading-4 text-sibs-muted">
         {loading
           ? "Fetching the latest employee directory records."
           : message ||
@@ -731,8 +735,8 @@ function DetailLine({ icon, children, breakAll = false }) {
   const DetailIcon = icon;
 
   return (
-    <span className="flex min-w-0 items-start gap-1.5 text-[11px] font-semibold leading-4 text-[#667085]">
-      <DetailIcon size={13} className="mt-0.5 shrink-0 text-[#98A2B3]" />
+    <span className="flex min-w-0 items-start gap-1.5 text-[11px] font-semibold leading-4 text-sibs-muted">
+      <DetailIcon size={13} className="mt-0.5 shrink-0 text-sibs-faint" />
       <span className={
           breakAll
             ? "min-w-0 max-w-full break-words [overflow-wrap:anywhere]"
@@ -744,7 +748,7 @@ function DetailLine({ icon, children, breakAll = false }) {
   );
 }
 
-function MobileEmployeeCard({ employee, onOpen }) {
+function MobileEmployeeCard({ employee, onOpen, onGeneratePds, isGenerating }) {
   const preferredName = getPreferredName(employee);
 
   return (
@@ -792,11 +796,33 @@ function MobileEmployeeCard({ employee, onOpen }) {
         />
       </DataCard.Metrics>
 
-      <div className="mt-3 flex flex-col gap-1 border-t border-sibs-border pt-2.5">
-        <DetailLine icon={Mail} breakAll>
-          {getEmail(employee)}
-        </DetailLine>
-        <DetailLine icon={Phone}>{getContact(employee)}</DetailLine>
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-sibs-border pt-2.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <DetailLine icon={Mail} breakAll>
+            {getEmail(employee)}
+          </DetailLine>
+          <DetailLine icon={Phone}>{getContact(employee)}</DetailLine>
+        </div>
+        {onGeneratePds ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onGeneratePds(employee);
+            }}
+            disabled={isGenerating}
+            title={`Generate PDS for ${getEmployeeName(employee)}`}
+            aria-label={`Generate PDS for ${getEmployeeName(employee)}`}
+            className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-2.5 text-xs font-bold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isGenerating ? (
+              <Loader2 size={13} className="animate-spin text-sibs-orange" />
+            ) : (
+              <FileDown size={13} className="text-sibs-orange" />
+            )}
+            <span>PDS</span>
+          </button>
+        ) : null}
       </div>
     </DataCard>
   );
@@ -824,6 +850,70 @@ export default function EmployeeTable({
   const [accountOptions, setAccountOptions] = useState([]);
   const [employeeAccess, setEmployeeAccess] = useState(null);
   const [searchRequestKey, setSearchRequestKey] = useState(0);
+  const [generatingSibsId, setGeneratingSibsId] = useState(null);
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  async function handleGeneratePds(employee) {
+    const sibsId = getSibsId(employee);
+    if (!sibsId || generatingSibsId) return;
+
+    const employeeName = getEmployeeName(employee) || "Employee";
+    const previewWindow = window.open("", "_blank");
+    if (previewWindow) {
+      previewWindow.opener = null;
+      previewWindow.document.title = `Generating SiBS Employee PDS - ${employeeName}`;
+      previewWindow.document.body.textContent =
+        "Generating employee Personal Data Sheet (PDS)...";
+    }
+
+    setGeneratingSibsId(sibsId);
+    try {
+      const result = await getEmployeePdsPdf(sibsId);
+      if (!result.success || !result.data) {
+        throw new Error(
+          result.message || "Unable to generate the employee PDS.",
+        );
+      }
+
+      const objectUrl = URL.createObjectURL(result.data);
+      if (previewWindow) {
+        previewWindow.location.replace(objectUrl);
+      } else {
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = result.filename || `${sibsId}_Employee_PDS.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setStatusModal({
+          open: true,
+          type: "success",
+          title: "PDS generated",
+          message:
+            "The PDF preview was blocked, so the employee PDS was downloaded instead.",
+        });
+      }
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      if (previewWindow && !previewWindow.closed) previewWindow.close();
+      setStatusModal({
+        open: true,
+        type: "error",
+        title: "PDS generation failed",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Unable to generate the employee PDS.",
+      });
+    } finally {
+      setGeneratingSibsId(null);
+    }
+  }
 
   const accountFilterKey = useMemo(
     () => accountFilters.join("||"),
@@ -1134,13 +1224,13 @@ export default function EmployeeTable({
         }
       `}</style>
 
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+      <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           {activeTab === "Employees"
             ? "Employee Records"
             : `${activeTab} Records`}
         </h3>
-        <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+        <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
           {activeTabDescription}
         </p>
 
@@ -1190,7 +1280,7 @@ export default function EmployeeTable({
           type="button"
           onClick={submitSearch}
           disabled={loading}
-          className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E94F1F] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
+          className="sibs-btn-primary mt-4 inline-flex h-10 w-full items-center justify-center gap-2 text-xs font-extrabold lg:hidden"
         >
           <Search size={15} />
           Apply Search
@@ -1238,6 +1328,8 @@ export default function EmployeeTable({
                         <MobileEmployeeCard
                           employee={employee}
                           onOpen={goToEmployee}
+                          onGeneratePds={handleGeneratePds}
+                          isGenerating={generatingSibsId === getSibsId(employee)}
                         />
                       </div>
                     ))}
@@ -1249,32 +1341,35 @@ export default function EmployeeTable({
               <div className="overflow-hidden bg-white">
                 <div ref={tableScrollRef} className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar">
                 <table className="w-full min-w-[1100px] table-fixed border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="border-b border-[#E6ECF2]">
-                      <th scope="col" className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                  <thead className="sticky top-0 z-10 bg-sibs-surface">
+                    <tr className="border-b border-sibs-border">
+                      <th scope="col" className="w-[9%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                         SIBS ID
                       </th>
-                      <th scope="col" className="w-[24%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                      <th scope="col" className="w-[21%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                         EMPLOYEE NAME
                       </th>
-                      <th scope="col" className="w-[19%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                      <th scope="col" className="w-[17%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                         ACCOUNT / SITE
                       </th>
-                      <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                      <th scope="col" className="w-[16%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                         DEPARTMENT
                       </th>
-                      <th scope="col" className="w-[18%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                      <th scope="col" className="w-[17%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                         CONTACT & EMAIL
                       </th>
-                      <th scope="col" className="w-[11%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#7B8DB3]">
+                      <th scope="col" className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                         HR METADATA
+                      </th>
+                      <th scope="col" className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-right sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
+                        ACTIONS
                       </th>
                     </tr>
                   </thead>
 
                   <tbody
                     key={`${activeTab}-${currentPage}-${search}-${departmentFilter}-${accountFilterKey}`}
-                    className="divide-y divide-[#EEF2F6]"
+                    className="divide-y divide-sibs-border"
                   >
                     {loading ? (
                       <TableSkeletonRows
@@ -1300,12 +1395,12 @@ export default function EmployeeTable({
                             onClick={() => goToEmployee(employee)}
                             onKeyDown={(event) => handleRowKeyDown(event, employee)}
                             aria-label={`Open employee profile for ${getEmployeeName(employee)}`}
-                            className="group sibs-employee-row-reveal cursor-pointer transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                            className="group sibs-employee-row-reveal cursor-pointer transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
                             style={{
                               animationDelay: `${Math.min(index, 10) * 36}ms`,
                             }}
                           >
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-[#FF5C28]">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-sibs-orange">
                               {getSibsId(employee) || "N/A"}
                             </td>
 
@@ -1314,12 +1409,12 @@ export default function EmployeeTable({
                                 <EmployeeAvatar employee={employee} />
 
                                 <div className="min-w-0">
-                                  <p className="break-words sibs-text-xs font-extrabold leading-tight text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
+                                  <p className="break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange">
                                     {getEmployeeName(employee)}
                                   </p>
 
                                   {preferredName ? (
-                                    <p className="mt-0.5 sibs-text-micro font-semibold text-[#8A98B8]">
+                                    <p className="mt-0.5 sibs-text-micro font-semibold text-sibs-muted">
                                       Preferred: {preferredName}
                                     </p>
                                   ) : null}
@@ -1340,7 +1435,7 @@ export default function EmployeeTable({
                             <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                               <div className="min-w-[180px]">
                                 {getPosition(employee) ? (
-                                  <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                                  <p className="break-words text-xs font-extrabold leading-tight text-sibs-navy">
                                     {getPosition(employee)}
                                   </p>
                                 ) : null}
@@ -1361,16 +1456,45 @@ export default function EmployeeTable({
                             </td>
 
                             <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                              <div className="min-w-[120px] space-y-0.5 sibs-text-micro font-semibold leading-4 text-[#7B8DB3]">
+                              <div className="min-w-[120px] space-y-0.5 sibs-text-micro font-semibold leading-4 text-sibs-muted">
                                 <p>Gender: {getGender(employee)}</p>
                                 <p>Civil: {getCivilStatus(employee)}</p>
                                 <p>
                                   Hired:{" "}
-                                  <span className="font-extrabold text-[#536887]">
+                                  <span className="font-extrabold text-sibs-secondary">
                                     {formatCompactDate(getHireDate(employee))}
                                   </span>
                                 </p>
                               </div>
+                            </td>
+
+                            <td
+                              className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-right"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleGeneratePds(employee);
+                                }}
+                                disabled={generatingSibsId === getSibsId(employee)}
+                                title={`Generate PDS for ${getEmployeeName(employee)}`}
+                                aria-label={`Generate PDS for ${getEmployeeName(employee)}`}
+                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-2.5 sibs-text-xs font-bold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {generatingSibsId === getSibsId(employee) ? (
+                                  <>
+                                    <Loader2 size={13} className="animate-spin text-sibs-orange" />
+                                    <span className="hidden xl:inline">Generating...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <FileDown size={13} className="text-sibs-orange" />
+                                    <span className="hidden xl:inline">PDS</span>
+                                  </>
+                                )}
+                              </button>
                             </td>
                           </tr>
                         );
@@ -1400,6 +1524,14 @@ export default function EmployeeTable({
           className="border-0 bg-transparent p-0 shadow-none"
         />
       </div>
+
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onClose={() => setStatusModal((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

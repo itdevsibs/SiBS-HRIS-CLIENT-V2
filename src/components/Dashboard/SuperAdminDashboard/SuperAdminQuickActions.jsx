@@ -86,11 +86,11 @@ export default function SuperAdminQuickActions({
             <SlidersHorizontal size={14} className="text-sibs-orange" />
             Quick Actions
           </h2>
-          <p className="sibs-text-micro font-semibold text-[#667085]">
+          <p className="sibs-text-micro font-semibold text-sibs-muted">
             Instant shortcuts for common governance and admin tasks
           </p>
         </div>
-        <span className="hidden sibs-text-micro font-bold text-[#98A2B3] sm:block">
+        <span className="hidden sibs-text-micro font-bold text-sibs-faint sm:block">
           Direct Governance Links
         </span>
       </div>
@@ -101,7 +101,7 @@ export default function SuperAdminQuickActions({
             key={item.id}
             type="button"
             onClick={() => handleAction(item)}
-            className="group sibs-page-card-in flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-slate-200 bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-sibs-orange/50 hover:bg-sibs-cream/70"
+            className="group sibs-page-card-in flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-sibs-border bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-sibs-orange/50 hover:bg-sibs-cream-subtle"
             style={{
               animationDelay: `${160 + index * 40}ms`,
               animationFillMode: "both",
@@ -117,7 +117,7 @@ export default function SuperAdminQuickActions({
               <span className="block sibs-text-xs font-extrabold text-sibs-navy transition group-hover:text-sibs-orange">
                 {item.title}
               </span>
-              <span className="mt-0.5 block sibs-text-micro text-[#667085] line-clamp-1 truncate">
+              <span className="mt-0.5 block sibs-text-micro text-sibs-muted line-clamp-1 truncate">
                 {item.description}
               </span>
             </span>

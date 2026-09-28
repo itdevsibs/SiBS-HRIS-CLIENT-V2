@@ -12,17 +12,17 @@ export default function TARequirementProgress({ roles = [], delay = 0 }) {
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div>
-        <h3 className="font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+        <h3 className="sibs-card-title">
           Approved Requirement vs Filled Progress
         </h3>
-        <p className="mt-1 text-xs font-semibold text-[#667085]">
+        <p className="sibs-card-subtitle mt-1">
           Current filled positions compared with approved requirements
         </p>
       </div>
 
       <div className="mt-4 flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl border border-sibs-border-panel bg-sibs-surface p-3 max-h-[380px] overflow-y-auto sibs-scrollbar">
         {roles.length === 0 ? (
-          <div className="sibs-empty-panel rounded-xl border border-dashed border-sibs-subtle-border bg-white px-5 py-10 text-center text-xs font-bold text-[#667085]">
+          <div className="sibs-empty-panel rounded-xl border border-dashed border-sibs-subtle-border bg-white px-5 py-10 text-center text-xs font-bold text-sibs-muted">
             No hiring requirements are available.
           </div>
         ) : (

@@ -218,8 +218,8 @@ export default function OMDashboardPage() {
           ) : null}
 
           {refreshing ? (
-            <div className="flex justify-end gap-2 text-xs font-bold text-[#667085]">
-              <LoaderCircle className="h-4 w-4 animate-spin text-[#FF5C28]" />
+            <div className="flex items-center justify-end gap-2 text-xs font-bold text-sibs-muted">
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin text-sibs-orange" />
               Refreshing manager-scoped data...
             </div>
           ) : null}

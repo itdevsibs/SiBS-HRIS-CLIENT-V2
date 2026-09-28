@@ -79,8 +79,8 @@ function RoleMobileCard({ role, onViewRole, delay = 0 }) {
             Owner: <strong className="text-sibs-navy">{role.taOwner || "Unassigned"}</strong>
           </span>
           {role.dueDate ? (
-            <span className="ml-2 text-[#98A2B3]">
-              Due: <strong className="font-semibold text-[#536887]">{formatDate(role.dueDate)}</strong>
+            <span className="ml-2 text-sibs-faint">
+              Due: <strong className="font-semibold text-sibs-muted">{formatDate(role.dueDate)}</strong>
             </span>
           ) : null}
         </div>
@@ -116,13 +116,13 @@ export default function OMRoleHiringStatus({
       className="sibs-page-card-in sibs-card flex h-full w-full flex-col justify-between overflow-hidden"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
+      <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
-            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+            <h3 className="sibs-card-title">
               Role Hiring Status
             </h3>
-            <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+            <p className="sibs-card-subtitle mt-1">
               Role-level delivery, risk status, aging, and ownership
             </p>
           </div>
@@ -132,8 +132,8 @@ export default function OMRoleHiringStatus({
           </span>
         </div>
 
-        <div className="mt-3 rounded-xl border border-blue-100 bg-[#E9F0FC] px-3.5 py-2.5 sibs-text-xs font-semibold text-[#042C51]">
-          Viewing only: <strong className="font-extrabold text-[#042C51]">{scopeText || "manager-assigned scope"}</strong>
+        <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/70 px-3.5 py-2.5 sibs-text-xs font-semibold text-sibs-navy">
+          Viewing only: <strong className="font-extrabold text-sibs-navy">{scopeText || "manager-assigned scope"}</strong>
         </div>
 
         <PaginationTable
@@ -165,7 +165,7 @@ export default function OMRoleHiringStatus({
               type="button"
               onClick={onClearFilters}
               disabled={!hasActiveFilters}
-              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+              className="sibs-btn-secondary !h-10 !px-3 sibs-text-xs w-full xl:w-auto"
             >
               <RotateCcw size={14} />
               Clear
@@ -196,32 +196,32 @@ export default function OMRoleHiringStatus({
             )
           }
           desktopView={
-            <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+            <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
               <div className="max-h-[480px] overflow-auto sibs-scrollbar">
                 <table className="w-full min-w-[920px] border-collapse bg-white text-left text-xs">
                   <thead className="sibs-data-table-head">
                     <tr className="sibs-data-table-head-row">
-                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Role / Account</th>
-                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Req.</th>
-                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Filled</th>
-                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Open</th>
-                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Due Date</th>
-                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Status</th>
-                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">TA Owner</th>
-                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Aging</th>
+                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Role / Account</th>
+                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Req.</th>
+                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Filled</th>
+                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Open</th>
+                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Due Date</th>
+                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Status</th>
+                      <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">TA Owner</th>
+                      <th className="sibs-data-table-th text-center px-3 2xl:px-4 py-2.5 2xl:py-3">Aging</th>
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-[#E6ECF2]">
+                  <tbody className="divide-y divide-sibs-border">
                     {loading ? (
                       <tr>
-                        <td colSpan={8} className="px-5 py-12 text-center font-semibold text-[#667085]">
+                        <td colSpan={8} className="px-5 py-12 text-center font-semibold text-sibs-muted">
                           Loading accessible roles...
                         </td>
                       </tr>
                     ) : roles.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-5 py-12 text-center font-semibold text-[#667085]">
+                        <td colSpan={8} className="px-5 py-12 text-center font-semibold text-sibs-muted">
                           No roles match the current search and status filter.
                         </td>
                       </tr>
@@ -245,32 +245,32 @@ export default function OMRoleHiringStatus({
                           aria-label={`Open details for ${role.roleTitle}`}
                         >
                           <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                            <strong className="block text-xs font-extrabold leading-snug text-[#042C51]">
+                            <strong className="block text-xs font-extrabold leading-snug text-sibs-navy">
                               {role.roleTitle}
                             </strong>
-                            <span className="mt-0.5 block text-[11px] font-semibold leading-snug text-[#667085]">
+                            <span className="mt-0.5 block text-[11px] font-semibold leading-snug text-sibs-muted">
                               {role.account}
                             </span>
                           </td>
-                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#042C51]">
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-sibs-navy">
                             {role.req}
                           </td>
                           <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-emerald-600">
                             {role.filled}
                           </td>
-                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#FF5C28]">
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-sibs-orange">
                             {role.open}
                           </td>
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-[#344054]">
+                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-sibs-text-secondary">
                             {formatDate(role.dueDate)}
                           </td>
                           <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                             <StatusBadge status={role.status} />
                           </td>
-                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-[#344054]">
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-bold text-sibs-text-secondary">
                             {role.taOwner}
                           </td>
-                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-[#344054]">
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-sibs-text-secondary">
                             {role.aging}d
                           </td>
                         </tr>

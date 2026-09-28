@@ -21,6 +21,7 @@ import {
   updateTalentPoolCandidate,
 } from "../../lib/axios/getTalentPool";
 import { isUnder18Candidate } from "../../lib/utils/talentPool/talentPoolTabs";
+import { getTalentPoolCandidateEditValidationError } from "../../lib/utils/talentPool/candidateProfileEdit";
 
 const TalentPoolContext = createContext(null);
 
@@ -494,7 +495,7 @@ function normalizeCandidateRecord(candidate = {}) {
   };
 }
 
-function candidateToForm(candidate = {}) {
+function candidateToForm(candidate = {}, applicationAnswers = []) {
   const normalized = normalizeCandidateRecord(candidate);
 
   return {
@@ -514,7 +515,21 @@ function candidateToForm(candidate = {}) {
             { name: "", phone: "" },
             { name: "", phone: "" },
             { name: "", phone: "" },
-          ],
+      ],
+    positionId:
+      applicationAnswers?.form?.positionId ||
+      applicationAnswers?.form?.position_id ||
+      normalized.positionId ||
+      normalized.position_id ||
+      "",
+    applicationFormAnswers: normalizeArray(applicationAnswers?.answers).map(
+      (answer) => ({
+        questionId: answer.questionId || answer.question_id,
+        questionKey: answer.questionKey || answer.question_key || "",
+        answerType: "Text",
+        textAnswer: answer.textAnswer || answer.text_answer || "",
+      }),
+    ),
     consent: true,
     audioFile: null,
     attachmentFile: null,
@@ -811,7 +826,10 @@ export function TalentPoolProvider({ children }) {
   const [candidateForm, setCandidateForm] = useState(emptyCandidateForm);
 
   const [editCandidate, setEditCandidate] = useState(null);
+  const [editCandidateInline, setEditCandidateInline] = useState(false);
   const [editCandidateForm, setEditCandidateForm] =
+    useState(emptyCandidateForm);
+  const [editCandidateInitialForm, setEditCandidateInitialForm] =
     useState(emptyCandidateForm);
 
   const [statusTarget, setStatusTarget] = useState(null);
@@ -1177,6 +1195,7 @@ export function TalentPoolProvider({ children }) {
     setCandidateForm(emptyCandidateForm);
 
     setEditCandidate(null);
+    setEditCandidateInline(false);
     setEditCandidateForm(emptyCandidateForm);
 
     setStatusTarget(null);
@@ -1201,6 +1220,13 @@ export function TalentPoolProvider({ children }) {
 
   function closeAddCandidateModal() {
     setShowAddModal(false);
+    if (editCandidate) {
+      setSelectedCandidate(editCandidate);
+      setEditCandidate(null);
+      setEditCandidateInline(false);
+      setEditCandidateInitialForm(emptyCandidateForm);
+      setEditCandidateForm(emptyCandidateForm);
+    }
   }
 
   function resetCandidateForm() {
@@ -1209,7 +1235,8 @@ export function TalentPoolProvider({ children }) {
 
   function resetEditCandidateForm() {
     if (!editCandidate) return;
-    setEditCandidateForm(candidateToForm(editCandidate));
+    setEditCandidateForm(editCandidateInitialForm);
+    return editCandidateInitialForm;
   }
 
   function handleCandidateFileChange(
@@ -1240,10 +1267,10 @@ export function TalentPoolProvider({ children }) {
     });
   }
 
-  function validateCandidateForm(form) {
+  function validateCandidateForm(form, { allowUnderage = false } = {}) {
     const age = calculateAge(form.dateOfBirth);
 
-    if (age !== null && age < 18) {
+    if (!allowUnderage && age !== null && age < 18) {
       alert("Applicant is below 18 years old as of date of application.");
       return false;
     }
@@ -1314,22 +1341,34 @@ export function TalentPoolProvider({ children }) {
     }
   }
 
-  function openEditCandidate(candidate) {
+  function openEditCandidate(candidate, applicationAnswers = {}, { inline = false } = {}) {
+    const initialForm = candidateToForm(candidate, applicationAnswers);
     setEditCandidate(candidate);
-    setEditCandidateForm(candidateToForm(candidate));
-    setSelectedCandidate(null);
+    setEditCandidateInline(inline);
+    setEditCandidateInitialForm(initialForm);
+    setEditCandidateForm(initialForm);
+    setShowAddModal(!inline);
+    if (!inline) setSelectedCandidate(null);
   }
 
   function closeEditCandidate() {
+    if (!editCandidateInline && editCandidate) {
+      setSelectedCandidate(editCandidate);
+    }
+    setEditCandidateInline(false);
     setEditCandidate(null);
+    setEditCandidateInitialForm(emptyCandidateForm);
     setEditCandidateForm(emptyCandidateForm);
   }
 
   async function submitEditCandidate(event) {
     event.preventDefault();
 
-    if (!editCandidate) return;
-    if (!validateCandidateForm(editCandidateForm)) return;
+    if (!editCandidate) return { success: false, message: "Candidate not found." };
+    const editValidationError = getTalentPoolCandidateEditValidationError(editCandidateForm);
+    if (editValidationError) {
+      return { success: false, message: `${editValidationError} Your draft is still available.` };
+    }
 
     setIsSaving(true);
 
@@ -1340,21 +1379,22 @@ export function TalentPoolProvider({ children }) {
       );
 
       if (!response?.success) {
-        alert(response?.message || "Failed to update candidate.");
-        return;
+        return { success: false, message: response?.message || "Failed to update candidate." };
       }
 
-      const updatedCandidate =
-        getTalentPoolResponseCandidate(response) || {
-          ...editCandidate,
-          ...editCandidateForm,
-          name: buildFullName(editCandidateForm),
-        };
+      const updatedCandidate = {
+        ...editCandidate,
+        ...(getTalentPoolResponseCandidate(response) || {}),
+      };
 
       applyTalentPoolCandidateUpdate(updatedCandidate);
 
-      setSelectedCandidate(null);
-      closeAllTalentPoolModals();
+      setSelectedCandidate(updatedCandidate);
+      setShowAddModal(false);
+      setEditCandidateInline(false);
+      setEditCandidate(null);
+      setEditCandidateInitialForm(emptyCandidateForm);
+      setEditCandidateForm(emptyCandidateForm);
 
       window.dispatchEvent(
         new CustomEvent("ta-talent-pool-updated", {
@@ -1365,6 +1405,15 @@ export function TalentPoolProvider({ children }) {
       );
 
       refreshTalentPool({ silent: true });
+      return { success: true, candidate: updatedCandidate };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to update candidate. Your edits are still available.",
+      };
     } finally {
       setIsSaving(false);
     }
@@ -1691,10 +1740,11 @@ export function TalentPoolProvider({ children }) {
 
     showAddModal,
     setShowAddModal,
-    candidateForm,
-    setCandidateForm,
+    candidateForm: editCandidate ? editCandidateForm : candidateForm,
+    setCandidateForm: editCandidate ? setEditCandidateForm : setCandidateForm,
 
     editCandidate,
+    editCandidateInline,
     editCandidateForm,
     setEditCandidateForm,
 

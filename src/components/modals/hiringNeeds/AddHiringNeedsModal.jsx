@@ -2614,7 +2614,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
         aria-labelledby="add-hiring-needs-title"
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-[#F7F9FC] shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-[#F7F9FC] shadow-2xl font-jakarta"
       >
         <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">

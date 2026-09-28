@@ -22,6 +22,7 @@ import {
 
 import Header from "../../components/layout/Header";
 import EmployeeDashboardSkeleton from "../../components/Dashboard/EmployeeDashboard/EmployeeDashboardSkeleton";
+import { ModalShell } from "../../components/ui";
 import AdminLoginModal from "../../components/modals/AdminLoginModal";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
 import { ViewResignationModal } from "../../components/modals/resignation-management/ResignationManagementModal";
@@ -621,16 +622,16 @@ export default function EmployeeDashboardPage() {
 
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5 pb-8">
-          <section className="sibs-page-header-in relative overflow-hidden rounded-2xl border border-[#084075] bg-gradient-to-r from-[#042C51] via-[#063968] to-[#042C51] p-4 text-white shadow-sm sm:p-5 2xl:p-6">
+          <section className="sibs-page-header-in relative overflow-hidden rounded-2xl border border-sibs-navy bg-sibs-navy p-4 text-white shadow-sm sm:p-5 2xl:p-6">
             <div className="pointer-events-none absolute -bottom-16 -right-12 h-56 w-56 rounded-full bg-white/5" />
-            <div className="pointer-events-none absolute -top-16 right-36 h-40 w-40 rounded-full bg-[#FF5C28]/10" />
+            <div className="pointer-events-none absolute -top-16 right-36 h-40 w-40 rounded-full bg-sibs-orange/10" />
 
             <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex min-w-0 flex-col items-center gap-3.5 text-center sm:flex-row sm:text-left">
                 <button
                   type="button"
                   onClick={() => navigate(DASHBOARD_ROUTES.profile)}
-                  className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#FF5C28] bg-white/10 text-lg font-black text-white shadow-md transition hover:-translate-y-0.5 sm:h-16 sm:w-16 2xl:h-[72px] 2xl:w-[72px]"
+                  className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-sibs-orange bg-white/10 text-lg font-black text-white shadow-md transition hover:-translate-y-0.5 sm:h-16 sm:w-16 2xl:h-[72px] 2xl:w-[72px]"
                   title="Open My Profile"
                 >
                   {profilePicture ? (
@@ -644,12 +645,12 @@ export default function EmployeeDashboardPage() {
                     <span>{profile.initials}</span>
                   )}
 
-                  <span className="absolute bottom-0 right-0 h-3.5 w-3.5 2xl:h-4 2xl:w-4 rounded-full border-2 border-[#042C51] bg-emerald-500" />
+                  <span className="absolute bottom-0 right-0 h-3.5 w-3.5 2xl:h-4 2xl:w-4 rounded-full border-2 border-sibs-navy bg-emerald-500" />
                 </button>
 
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                    <span className="rounded-full border border-[#FF5C28]/30 bg-[#FF5C28]/15 px-2.5 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#FF8A63]">
+                    <span className="rounded-full border border-sibs-orange/30 bg-sibs-orange/15 px-2.5 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-orange">
                       SIBS Employee Portal
                     </span>
                     {profile.sibsId ? (
@@ -672,7 +673,7 @@ export default function EmployeeDashboardPage() {
 
               <div className="w-full shrink-0 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-center backdrop-blur-sm sm:w-[200px] 2xl:w-[220px] md:text-right">
                 <div className="flex items-center justify-center gap-1.5 sibs-text-xs font-medium text-slate-300 md:justify-end">
-                  <Clock size={13} className="text-[#FF5C28]" />
+                  <Clock size={13} className="text-sibs-orange" />
                   Current Time (PHT)
                 </div>
                 <p className="font-heading mt-0.5 text-xl 2xl:text-2xl font-bold tabular-nums tracking-tight text-white">
@@ -724,7 +725,7 @@ export default function EmployeeDashboardPage() {
                   />
                 ) : null}
 
-                <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-3.5 2xl:p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div className="grid grid-cols-1 gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:p-3.5 2xl:p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                     <MetricBox label="Clock In" value={attendance.clockIn} />
                     <MetricBox label="Clock Out" value={attendance.clockOut} />
@@ -738,7 +739,7 @@ export default function EmployeeDashboardPage() {
                   <button
                     type="button"
                     onClick={() => navigate(DASHBOARD_ROUTES.attendance)}
-                    className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04B1D]"
+                    className="sibs-btn-primary !h-8.5 2xl:!h-10 px-3.5 2xl:px-4 sibs-text-xs"
                   >
                     Open My Attendance
                     <ArrowUpRight size={13} />
@@ -747,7 +748,7 @@ export default function EmployeeDashboardPage() {
 
                 <div className="space-y-2">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                       Today&apos;s Punch Activity Log
                     </h3>
                     <span className="text-[10px] font-semibold text-slate-400">
@@ -756,10 +757,10 @@ export default function EmployeeDashboardPage() {
                   </div>
 
                   {attendance.logs.length ? (
-                    <div className="max-h-[220px] 2xl:max-h-[300px] overflow-y-auto overflow-x-auto rounded-xl border border-[#E6ECF2] sibs-scrollbar">
+                    <div className="max-h-[220px] 2xl:max-h-[300px] overflow-y-auto overflow-x-auto rounded-xl border border-sibs-border sibs-scrollbar">
                       <table className="w-full min-w-[640px] border-collapse text-left text-xs">
-                        <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                          <tr className="border-b border-[#CBD5E1] text-[10px] font-black uppercase text-[#042C51]">
+                        <thead className="sticky top-0 z-10 bg-sibs-surface">
+                          <tr className="border-b border-sibs-border text-[10px] font-black uppercase text-sibs-navy">
                             <th className="px-3 2xl:px-3.5 py-2">Activity</th>
                             <th className="px-3 2xl:px-3.5 py-2">Timestamp</th>
                             <th className="px-3 2xl:px-3.5 py-2">Location / IP</th>
@@ -767,7 +768,7 @@ export default function EmployeeDashboardPage() {
                             <th className="px-3 2xl:px-3.5 py-2 text-right">Device</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#E6ECF2] bg-white text-slate-600">
+                        <tbody className="divide-y divide-sibs-border bg-white text-slate-600">
                           {attendance.logs.map((log, index) => (
                             <tr
                               key={log.id}
@@ -777,7 +778,7 @@ export default function EmployeeDashboardPage() {
                                 animationFillMode: "both",
                               }}
                             >
-                              <td className="px-3 2xl:px-3.5 py-2 font-bold text-[#042C51]">
+                              <td className="px-3 2xl:px-3.5 py-2 font-bold text-sibs-navy">
                                 {log.type || "Activity"}
                               </td>
                               <td className="px-3 2xl:px-3.5 py-2 font-mono text-[10px] 2xl:text-[11px]">
@@ -818,7 +819,7 @@ export default function EmployeeDashboardPage() {
                     <button
                       type="button"
                       onClick={() => navigate(DASHBOARD_ROUTES.schedule)}
-                      className="inline-flex items-center gap-1 text-[10px] 2xl:text-[11px] font-black text-[#FF5C28] hover:underline"
+                      className="inline-flex items-center gap-1 text-[10px] 2xl:text-[11px] font-black text-sibs-orange hover:underline"
                     >
                       Open Schedule
                       <ArrowUpRight size={12} />
@@ -863,7 +864,7 @@ export default function EmployeeDashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                     Weekly Schedule Timeline
                   </h3>
 
@@ -873,7 +874,7 @@ export default function EmployeeDashboardPage() {
                         key={item.id}
                         className={`rounded-xl border p-2.5 text-center transition ${
                           item.isToday
-                            ? "border-[#042C51] bg-[#042C51] text-white shadow-sm ring-2 ring-[#FF5C28]"
+                            ? "border-sibs-navy bg-sibs-navy text-white shadow-sm ring-2 ring-sibs-orange"
                             : item.isOff
                               ? "border-slate-200 bg-slate-50 text-slate-400"
                               : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
@@ -881,14 +882,14 @@ export default function EmployeeDashboardPage() {
                       >
                         <p
                           className={`text-[9px] 2xl:text-[10px] font-black uppercase ${
-                            item.isToday ? "text-[#FF8A63]" : "text-slate-400"
+                            item.isToday ? "text-sibs-orange" : "text-slate-400"
                           }`}
                         >
                           {item.day || "Day"} · {item.date || "—"}
                         </p>
                         <p
                           className={`mt-1 min-h-7 text-[9px] 2xl:text-[10px] font-bold leading-3.5 2xl:leading-4 ${
-                            item.isToday ? "text-white" : "text-[#042C51]"
+                            item.isToday ? "text-white" : "text-sibs-navy"
                           }`}
                         >
                           {item.shift}
@@ -896,7 +897,7 @@ export default function EmployeeDashboardPage() {
                         <span
                           className={`mt-1.5 inline-flex rounded-md px-1.5 py-0.5 text-[8px] 2xl:text-[9px] font-black ${
                             item.isToday
-                              ? "bg-[#FF5C28] text-white"
+                              ? "bg-sibs-orange text-white"
                               : item.isOff
                                 ? "bg-slate-200 text-slate-600"
                                 : "bg-blue-50 text-blue-700"
@@ -913,10 +914,10 @@ export default function EmployeeDashboardPage() {
               <section className="sibs-page-card-in relative overflow-hidden rounded-2xl border border-dashed border-amber-300 bg-gradient-to-br from-white via-amber-50/20 to-amber-100/30 p-4 sm:p-5 shadow-xs">
                 <div className="flex flex-col gap-2.5 border-b border-amber-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <h2 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <h2 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-sibs-navy">
                       Performance & Appraisal Center
                     </h2>
-                    <p className="mt-0.5 text-[11px] 2xl:text-xs font-semibold text-[#667085]">
+                    <p className="mt-0.5 text-[11px] 2xl:text-xs font-semibold text-sibs-muted">
                       KPI scorecards, appraisal cycles, and employee goals.
                     </p>
                   </div>
@@ -977,7 +978,7 @@ export default function EmployeeDashboardPage() {
                   />
                 </div>
 
-                <div className="space-y-2 border-t border-[#E6ECF2] pt-3">
+                <div className="space-y-2 border-t border-sibs-border pt-3">
                   <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-slate-400">
                     Quick Action Shortcuts
                   </p>
@@ -1075,7 +1076,7 @@ export default function EmployeeDashboardPage() {
                     <button
                       type="button"
                       onClick={() => navigate(DASHBOARD_ROUTES.leaves)}
-                      className="inline-flex items-center gap-1 text-[10px] 2xl:text-[11px] font-black text-[#FF5C28] hover:underline"
+                      className="inline-flex items-center gap-1 text-[10px] 2xl:text-[11px] font-black text-sibs-orange hover:underline"
                     >
                       Open Leaves
                       <ArrowUpRight size={12} />
@@ -1129,7 +1130,7 @@ export default function EmployeeDashboardPage() {
                           className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] 2xl:text-xs"
                         >
                           <div className="min-w-0">
-                            <p className="truncate font-bold text-[#042C51]">
+                            <p className="truncate font-bold text-sibs-navy">
                               {item.type}
                             </p>
                             <p className="mt-0.5 truncate text-[9px] 2xl:text-[10px] text-slate-500">
@@ -1180,7 +1181,7 @@ export default function EmployeeDashboardPage() {
                         key={item.id}
                         type="button"
                         onClick={() => setSelectedAnnouncement(item)}
-                        className="w-full space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-left transition hover:border-blue-300 hover:bg-[#E9F0FC]/60"
+                        className="w-full space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-left transition hover:border-sibs-navy/30 hover:bg-sibs-surface"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span
@@ -1194,7 +1195,7 @@ export default function EmployeeDashboardPage() {
                             {formatDashboardDate(item.date, "")}
                           </span>
                         </div>
-                        <p className="line-clamp-1 text-[11px] 2xl:text-xs font-bold text-[#042C51]">
+                        <p className="line-clamp-1 text-[11px] 2xl:text-xs font-bold text-sibs-navy">
                           {item.title}
                         </p>
                         <p className="line-clamp-2 text-[9px] 2xl:text-[10px] font-medium leading-3.5 2xl:leading-4 text-slate-500">
@@ -1212,7 +1213,7 @@ export default function EmployeeDashboardPage() {
                   )}
                 </div>
 
-                <div className="space-y-2 border-t border-[#E6ECF2] pt-3">
+                <div className="space-y-2 border-t border-sibs-border pt-3">
                   <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-slate-400">
                     Upcoming Holidays
                   </p>
@@ -1240,8 +1241,8 @@ export default function EmployeeDashboardPage() {
                           className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-2 text-[11px] 2xl:text-xs"
                         >
                           <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-[#042C51] text-center text-white">
-                              <span className="text-[7px] 2xl:text-[8px] font-bold uppercase text-[#FF8A63]">
+                            <div className="flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-sibs-navy text-center text-white">
+                              <span className="text-[7px] 2xl:text-[8px] font-bold uppercase text-sibs-orange">
                                 {dayLabel}
                               </span>
                               <span className="font-mono text-[11px] 2xl:text-xs font-black leading-none">
@@ -1249,7 +1250,7 @@ export default function EmployeeDashboardPage() {
                               </span>
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate font-bold text-[#042C51]">
+                              <p className="truncate font-bold text-sibs-navy">
                                 {holiday.name}
                               </p>
                               <p className="truncate text-[9px] 2xl:text-[10px] text-slate-500">
@@ -1280,80 +1281,45 @@ export default function EmployeeDashboardPage() {
         </div>
       </main>
 
-      {selectedAnnouncement ? (
-        <div
-          className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex items-center justify-center p-2 font-jakarta sm:p-4"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setSelectedAnnouncement(null);
-            }
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="dashboard-announcement-title"
-            className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
+      <ModalShell
+        open={Boolean(selectedAnnouncement)}
+        onClose={() => setSelectedAnnouncement(null)}
+        variant="navy"
+        icon={Bell}
+        title={selectedAnnouncement?.category || "Company Announcement"}
+        subtitle="Official Employee Notice & Bulletin"
+        maxWidth="max-w-lg"
+        footer={
+          <button
+            type="button"
+            onClick={() => setSelectedAnnouncement(null)}
+            className="sibs-btn-secondary !h-8.5 2xl:!h-10 px-3.5 2xl:px-4 sibs-text-xs"
           >
-            <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
-              <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-                <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
-                  <Bell size={16} />
+            Close Notice
+          </button>
+        }
+      >
+        {selectedAnnouncement ? (
+          <div className="space-y-4">
+            <div>
+              <div className="flex flex-col gap-1 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  Issued: {formatDashboardDate(selectedAnnouncement.date)}
                 </span>
-                <div className="min-w-0">
-                  <h2
-                    id="dashboard-announcement-title"
-                    className="truncate text-base sm:text-lg 2xl:text-xl font-extrabold text-white"
-                  >
-                    {selectedAnnouncement.category || "Company Announcement"}
-                  </h2>
-                  <p className="mt-0.5 truncate sibs-text-xs font-semibold text-white/75">
-                    Official Employee Notice & Bulletin
-                  </p>
-                </div>
+                <span>By: {selectedAnnouncement.author}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedAnnouncement(null)}
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
-                aria-label="Close announcement"
-              >
-                <X size={18} />
-              </button>
-            </header>
-
-            <div className="min-h-0 flex-1 overflow-y-auto space-y-4 p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
-              <div>
-                <div className="flex flex-col gap-1 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3] sm:flex-row sm:items-center sm:justify-between">
-                  <span>
-                    Issued: {formatDashboardDate(selectedAnnouncement.date)}
-                  </span>
-                  <span>By: {selectedAnnouncement.author}</span>
-                </div>
-                <h3 className="mt-2 text-sm sm:text-base font-extrabold leading-snug text-[#042C51]">
-                  {selectedAnnouncement.title}
-                </h3>
-              </div>
-
-              <p className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5 2xl:p-4 sibs-text-xs font-medium leading-relaxed text-[#344054]">
-                {selectedAnnouncement.summary ||
-                  "No additional announcement details were supplied."}
-              </p>
+              <h3 className="mt-2 text-sm sm:text-base font-extrabold leading-snug text-sibs-navy">
+                {selectedAnnouncement.title}
+              </h3>
             </div>
 
-            <footer className="flex shrink-0 items-center justify-end border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
-              <button
-                type="button"
-                onClick={() => setSelectedAnnouncement(null)}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
-              >
-                Close Notice
-              </button>
-            </footer>
-          </section>
-        </div>
-      ) : null}
+            <p className="rounded-xl border border-sibs-border bg-sibs-surface p-3.5 2xl:p-4 sibs-text-xs font-medium leading-relaxed text-sibs-secondary">
+              {selectedAnnouncement.summary ||
+                "No additional announcement details were supplied."}
+            </p>
+          </div>
+        ) : null}
+      </ModalShell>
 
       <ResignationModal
         open={openResignation}
@@ -1414,7 +1380,7 @@ function DashboardSourceNotice({ message, loading = false }) {
 
 function DashboardCard({ children }) {
   return (
-    <section className="sibs-page-card-in space-y-3.5 2xl:space-y-4 rounded-2xl border border-[#E6ECF2] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-xs">
+    <section className="sibs-page-card-in space-y-3.5 2xl:space-y-4 rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-xs">
       {children}
     </section>
   );
@@ -1422,13 +1388,13 @@ function DashboardCard({ children }) {
 
 function DashboardCardHeader({ title, description, action }) {
   return (
-    <div className="flex flex-col gap-2.5 border-b border-[#E6ECF2] pb-2.5 sm:flex-row sm:items-start sm:justify-between font-jakarta">
+    <div className="flex flex-col gap-2.5 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-start sm:justify-between font-jakarta">
       <div className="min-w-0">
         <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           {title}
         </h2>
         {description ? (
-          <p className="mt-0.5 sibs-text-xs font-semibold leading-4 2xl:leading-5 text-[#667085]">
+          <p className="mt-0.5 sibs-text-xs font-semibold leading-4 2xl:leading-5 text-sibs-muted">
             {description}
           </p>
         ) : null}
@@ -1438,7 +1404,7 @@ function DashboardCardHeader({ title, description, action }) {
   );
 }
 
-function MetricBox({ label, value, valueClassName = "text-[#042C51]" }) {
+function MetricBox({ label, value, valueClassName = "text-sibs-navy" }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-2.5 2xl:p-3">
       <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-slate-400">
@@ -1458,14 +1424,14 @@ function SummaryTile({ tone = "light", label, value, detail, icon: Icon }) {
     <div
       className={`rounded-xl border p-3 2xl:p-3.5 ${
         dark
-          ? "border-[#042C51] bg-gradient-to-br from-slate-900 to-[#042C51] text-white"
-          : "border-slate-200 bg-slate-50 text-[#042C51]"
+          ? "border-sibs-navy bg-sibs-navy text-white"
+          : "border-slate-200 bg-slate-50 text-sibs-navy"
       }`}
     >
       <div className="flex items-center gap-1.5">
         <Icon
           size={14}
-          className={dark ? "text-[#FF8A63]" : "text-slate-500"}
+          className={dark ? "text-sibs-orange" : "text-slate-500"}
         />
         <p
           className={`sibs-text-micro font-extrabold uppercase tracking-wider ${
@@ -1477,7 +1443,7 @@ function SummaryTile({ tone = "light", label, value, detail, icon: Icon }) {
       </div>
       <p
         className={`font-heading mt-1.5 break-words text-xs 2xl:text-sm font-bold leading-4 2xl:leading-5 ${
-          dark ? "text-white" : "text-[#042C51]"
+          dark ? "text-white" : "text-sibs-navy"
         }`}
       >
         {value}
@@ -1500,7 +1466,7 @@ function FutureFeature({ icon: Icon, label }) {
         <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
           <Icon size={14} />
         </span>
-        <span className="sibs-text-xs font-extrabold text-[#042C51]">{label}</span>
+        <span className="sibs-text-xs font-extrabold text-sibs-navy">{label}</span>
       </div>
       <p className="mt-1.5 sibs-text-micro font-semibold leading-4 text-slate-500">
         Awaiting the connected performance data source.
@@ -1518,7 +1484,7 @@ function ProfileSummaryRow({ label, value, mono = false, last = false }) {
     >
       <span className="shrink-0 text-slate-500">{label}:</span>
       <strong
-        className={`min-w-0 break-words text-right font-bold text-[#042C51] ${
+        className={`min-w-0 break-words text-right font-bold text-sibs-navy ${
           mono ? "font-mono" : ""
         }`}
       >
@@ -1533,9 +1499,9 @@ function QuickAction({ icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-[64px] 2xl:min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-2 2xl:p-2.5 text-center text-slate-700 transition hover:border-blue-200 hover:bg-[#E9F0FC] hover:text-[#042C51]"
+      className="flex min-h-[64px] 2xl:min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-2 2xl:p-2.5 text-center text-slate-700 transition hover:border-sibs-navy/20 hover:bg-sibs-surface hover:text-sibs-navy"
     >
-      <Icon size={15} className="text-[#FF5C28]" />
+      <Icon size={15} className="text-sibs-orange" />
       <span className="sibs-text-micro font-extrabold">{label}</span>
     </button>
   );
@@ -1561,7 +1527,7 @@ function LeaveBalanceCard({ label, code, available, total, tone }) {
         <span>{label}</span>
         <span className="font-mono">{code}</span>
       </div>
-      <p className="font-heading mt-0.5 text-base 2xl:text-lg font-bold tabular-nums tracking-tight text-[#042C51]">
+      <p className="font-heading mt-0.5 text-base 2xl:text-lg font-bold tabular-nums tracking-tight text-sibs-navy">
         {formatLeaveValue(available)}
         <span className="ml-1 sibs-text-micro font-normal text-slate-500">
           / {formatLeaveValue(total)} Days
@@ -1574,7 +1540,7 @@ function LeaveBalanceCard({ label, code, available, total, tone }) {
       >
         <div
           className={`h-full rounded-full ${
-            emerald ? "bg-emerald-600" : "bg-[#042C51]"
+            emerald ? "bg-emerald-600" : "bg-sibs-navy"
           }`}
           style={{ width: `${progress}%` }}
         />
@@ -1599,7 +1565,7 @@ function DashboardEmptyState({
         size={compact ? 16 : 20}
         className="mx-auto text-slate-400"
       />
-      <p className="mt-1.5 sibs-text-xs font-extrabold text-[#042C51]">{title}</p>
+      <p className="mt-1.5 sibs-text-xs font-extrabold text-sibs-navy">{title}</p>
       <p className="mx-auto mt-0.5 max-w-xl sibs-text-micro font-semibold leading-4 text-slate-500">
         {message}
       </p>

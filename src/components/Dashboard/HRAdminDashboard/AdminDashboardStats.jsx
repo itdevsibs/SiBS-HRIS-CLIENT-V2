@@ -25,14 +25,12 @@ function AdminDashboardMetricCard({ item, onClick, delay = 0 }) {
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-4">
         <div className="min-w-0 flex-1">
-          <p
-            className={`sibs-text-micro font-extrabold uppercase tracking-wide ${tone.label}`}
-          >
+          <p className={`sibs-kpi-kicker ${tone.label}`}>
             {item?.label}
           </p>
 
           <div className="mt-2 2xl:mt-3 flex flex-wrap items-baseline gap-1.5 2xl:gap-2">
-            <span className="font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-sibs-navy">
+            <span className="sibs-kpi-value text-2xl 2xl:text-3xl">
               {item?.value}
             </span>
 
@@ -45,7 +43,7 @@ function AdminDashboardMetricCard({ item, onClick, delay = 0 }) {
             ) : null}
           </div>
 
-          <p className="mt-1 2xl:mt-1.5 sibs-text-micro font-bold leading-4 text-[#667085] line-clamp-1 truncate">
+          <p className="mt-1 2xl:mt-1.5 sibs-kpi-desc line-clamp-1 truncate">
             {item?.description}
           </p>
         </div>
@@ -62,7 +60,7 @@ function AdminDashboardMetricCard({ item, onClick, delay = 0 }) {
         </span>
       </div>
 
-      <ChevronRight className="absolute bottom-2.5 right-2.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 translate-x-1 text-[#FF5C28] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
+      <ChevronRight className="absolute bottom-2.5 right-2.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 translate-x-1 text-sibs-orange opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" />
     </button>
   );
 }

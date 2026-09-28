@@ -35,7 +35,7 @@ function OverviewSkeleton() {
         {Array.from({ length: 4 }, (_, index) => (
           <article
             key={`super-admin-overview-skeleton-${index}`}
-            className="flex h-[104px] flex-col justify-between rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 sm:p-3 2xl:h-[116px] 2xl:p-3.5"
+            className="flex h-[104px] flex-col justify-between rounded-xl border border-sibs-border bg-slate-50/80 p-2.5 sm:p-3 2xl:h-[116px] 2xl:p-3.5"
           >
             <div className="space-y-2">
               <Skeleton className="h-2.5 w-24" />
@@ -119,7 +119,7 @@ function TableSkeleton({ columns = 7 }) {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EEF2F6]">
+            <tbody className="divide-y divide-sibs-border">
               {Array.from({ length: TABLE_ROW_COUNT }, (_, rowIndex) => (
                 <tr key={`super-admin-table-row-skeleton-${rowIndex}`}>
                   {Array.from({ length: columns }, (_, columnIndex) => (
@@ -179,7 +179,7 @@ function ExceptionsSkeleton() {
         {Array.from({ length: 4 }, (_, index) => (
           <article
             key={`super-admin-exception-skeleton-${index}`}
-            className="space-y-3 rounded-xl border border-slate-200 bg-white p-3.5 2xl:p-4"
+            className="space-y-3 rounded-xl border border-sibs-border bg-white p-3.5 2xl:p-4"
           >
             <div className="flex flex-col gap-2.5 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 flex-1 space-y-2">
@@ -191,7 +191,7 @@ function ExceptionsSkeleton() {
               </div>
               <Skeleton className="h-3 w-40" />
             </div>
-            <div className="flex items-center justify-between gap-3 border-t border-[#EEF2F6] pt-2.5">
+            <div className="flex items-center justify-between gap-3 border-t border-sibs-border pt-2.5">
               <Skeleton className="h-3 w-36" />
               <div className="flex gap-2">
                 <Skeleton className="h-8 w-24" />
@@ -211,9 +211,9 @@ function SnapshotSkeleton() {
       {Array.from({ length: 4 }, (_, index) => (
         <article
           key={`super-admin-snapshot-skeleton-${index}`}
-          className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs 2xl:p-5"
+          className="rounded-xl border border-sibs-border bg-white p-4 shadow-xs 2xl:p-5"
         >
-          <div className="flex items-center justify-between border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
+          <div className="flex items-center justify-between border-b border-sibs-border pb-2.5 2xl:pb-3">
             <Skeleton className="h-5 w-40" />
             <Skeleton className="h-3 w-20" />
           </div>

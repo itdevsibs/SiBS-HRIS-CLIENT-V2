@@ -1,6 +1,8 @@
+import React from "react";
 import { CalendarDays } from "lucide-react";
 
 import { hasValue } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
+import SelectDropdown from "../../../ui/SelectDropdown.jsx";
 
 export function ProfileReadField({
   label,
@@ -40,10 +42,12 @@ export function ProfileFieldControl({
   className = "",
 }) {
   const common =
-    "w-full rounded-xl border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 sibs-text-xs 2xl:sibs-text-sm font-semibold text-sibs-secondary outline-none transition-all duration-150 placeholder:text-sibs-faint hover:border-sibs-border-subtle focus:border-sibs-navy focus:bg-white focus:ring-2 focus:ring-sibs-navy/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-[#EEF2F6] disabled:text-sibs-faint disabled:hover:border-sibs-border disabled:focus:border-sibs-border disabled:focus:bg-[#EEF2F6] disabled:focus:ring-0 font-jakarta";
+    "w-full rounded-xl border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 sibs-text-xs 2xl:sibs-text-sm font-semibold text-sibs-secondary outline-none transition-all duration-150 placeholder:text-sibs-faint hover:border-sibs-border-subtle focus:border-sibs-navy focus:bg-white focus:ring-2 focus:ring-sibs-navy/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-sibs-canvas disabled:text-sibs-faint disabled:hover:border-sibs-border disabled:focus:border-sibs-border disabled:focus:bg-sibs-canvas disabled:focus:ring-0 font-jakarta";
+
+  const Container = type === "select" ? "div" : "label";
 
   return (
-    <label className={`block min-w-0 font-jakarta ${className}`}>
+    <Container className={`block min-w-0 font-jakarta ${className}`}>
       <span className="mb-1 block sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
         {label} {required ? "*" : ""}
       </span>
@@ -58,19 +62,15 @@ export function ProfileFieldControl({
           className={`${common} min-h-[70px] 2xl:min-h-[80px] resize-y px-2.5 py-2 2xl:px-3 2xl:py-2.5`}
         />
       ) : type === "select" ? (
-        <select
-          disabled={disabled}
+        <SelectDropdown
+          label={label}
+          hideLabel
           value={value || ""}
-          onChange={(event) => onChange?.(event.target.value)}
-          className={`${common} h-8 2xl:h-9 cursor-pointer`}
-        >
-          <option value="">Choose option</option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+          onChange={(selectedValue) => onChange?.(selectedValue)}
+          options={options}
+          placeholder={placeholder || "Choose option"}
+          disabled={disabled}
+        />
       ) : type === "formatted-date" ? (
         <div className="relative">
           <input
@@ -108,6 +108,6 @@ export function ProfileFieldControl({
           className={`${common} h-8 2xl:h-9`}
         />
       )}
-    </label>
+    </Container>
   );
 }

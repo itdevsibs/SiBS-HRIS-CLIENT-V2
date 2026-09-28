@@ -3300,14 +3300,6 @@ export default function SiBSChat({
               >
                 {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                title="Close"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
-              >
-                <X size={17} />
-              </button>
             </div>
           </header>
 

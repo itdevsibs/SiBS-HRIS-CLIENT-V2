@@ -22,235 +22,36 @@ import {
   sanitizeDisplayFullName,
   sanitizeMiddleName,
 } from "../../lib/utils/employees/employeeNameDisplay.js";
-
-const PAGE_LIMIT = 15;
-const LATE_GRACE_MS = 60 * 1000;
+import {
+  PAGE_LIMIT,
+  LATE_GRACE_MS,
+  formatNumber,
+  normalizeStatus,
+  getNumberValue,
+  getValidDate,
+  getTimeOnlyParts,
+  buildDateTimeFromTrackerDate,
+  getHoursBetween,
+  getScheduleStart,
+  getScheduleEnd,
+  isLateBySchedule,
+  getBreakHours,
+  getComputedWorkHours,
+  capWorkHoursFromItem,
+  displayCappedWorkHours,
+  getLoginIndicator,
+  getLogoutIndicator,
+  getSiteBadgeClass,
+  getAssignedSite,
+} from "../../lib/utils/attendance/attendanceHelpers";
 
 const AVATAR_TONES = [
-  "border-orange-100 bg-orange-50 text-[#FF5C28]",
+  "border-orange-100 bg-orange-50 text-sibs-orange",
   "border-emerald-100 bg-emerald-50 text-emerald-700",
-  "border-blue-100 bg-blue-50 text-[#042C51]",
+  "border-blue-100 bg-blue-50 text-sibs-navy",
   "border-pink-100 bg-pink-50 text-pink-700",
   "border-violet-100 bg-violet-50 text-violet-700",
 ];
-
-function formatNumber(value) {
-  if (value === "..." || value === null || value === undefined) return "...";
-
-  return Number(value || 0).toLocaleString("en-PH", {
-    maximumFractionDigits: 2,
-  });
-}
-
-function normalizeStatus(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_]+/g, "-");
-}
-
-function getNumberValue(value) {
-  if (value === null || value === undefined || value === "") return 0;
-
-  const numberValue = Number(value);
-
-  if (Number.isNaN(numberValue)) return 0;
-
-  return numberValue;
-}
-
-function getValidDate(value) {
-  if (!value) return null;
-
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) return null;
-
-  return parsed;
-}
-
-function getTimeOnlyParts(value) {
-  if (!value) return null;
-
-  const raw = String(value).trim();
-
-  const amPmMatch = raw.match(
-    /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i,
-  );
-
-  if (amPmMatch) {
-    let hour = Number(amPmMatch[1]);
-    const minute = Number(amPmMatch[2]);
-    const second = Number(amPmMatch[3] || 0);
-    const meridiem = amPmMatch[4].toUpperCase();
-
-    if (meridiem === "PM" && hour !== 12) hour += 12;
-    if (meridiem === "AM" && hour === 12) hour = 0;
-
-    return { hour, minute, second };
-  }
-
-  const timeMatch = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-
-  if (timeMatch) {
-    return {
-      hour: Number(timeMatch[1]),
-      minute: Number(timeMatch[2]),
-      second: Number(timeMatch[3] || 0),
-    };
-  }
-
-  const parsed = getValidDate(raw);
-
-  if (!parsed) return null;
-
-  return {
-    hour: parsed.getHours(),
-    minute: parsed.getMinutes(),
-    second: parsed.getSeconds(),
-  };
-}
-
-function buildDateTimeFromTrackerDate(trackerDate, timeValue) {
-  const baseDate = getValidDate(trackerDate) || new Date();
-  const timeParts = getTimeOnlyParts(timeValue);
-
-  if (!timeParts) {
-    return getValidDate(timeValue);
-  }
-
-  const result = new Date(baseDate);
-
-  result.setHours(timeParts.hour, timeParts.minute, timeParts.second || 0, 0);
-
-  return result;
-}
-
-function getHoursBetween(startTime, endTime) {
-  if (!startTime || !endTime) return 0;
-
-  const start = getValidDate(startTime);
-  const end = getValidDate(endTime);
-
-  if (!start || !end) return 0;
-
-  let diffMs = end.getTime() - start.getTime();
-
-  if (diffMs < 0) {
-    diffMs += 24 * 60 * 60 * 1000;
-  }
-
-  return diffMs / (1000 * 60 * 60);
-}
-
-function getScheduleStart(item) {
-  return (
-    item?.schedule_start ||
-    item?.scheduleStart ||
-    item?.gy_schedule_start ||
-    item?.gy_sched_start ||
-    item?.gy_sched_timein ||
-    item?.gy_sched_in ||
-    item?.shift_start ||
-    item?.shiftStart ||
-    item?.schedStart ||
-    item?.sched_start ||
-    item?.gy_sched_login ||
-    null
-  );
-}
-
-function getScheduleEnd(item) {
-  return (
-    item?.schedule_end ||
-    item?.scheduleEnd ||
-    item?.gy_schedule_end ||
-    item?.gy_sched_end ||
-    item?.gy_sched_timeout ||
-    item?.gy_sched_out ||
-    item?.shift_end ||
-    item?.shiftEnd ||
-    item?.schedEnd ||
-    item?.sched_end ||
-    item?.gy_sched_logout ||
-    null
-  );
-}
-
-function isLateBySchedule(actualTime, scheduledTime) {
-  if (!actualTime || !scheduledTime) return false;
-
-  return actualTime.getTime() - scheduledTime.getTime() >= LATE_GRACE_MS;
-}
-
-function getBreakHours(item) {
-  if (item?.gy_tracker_breakout && item?.gy_tracker_breakin) {
-    return getHoursBetween(item.gy_tracker_breakout, item.gy_tracker_breakin);
-  }
-
-  return getNumberValue(item?.gy_tracker_bh);
-}
-
-function getComputedWorkHours(item) {
-  const savedWh = getNumberValue(item?.gy_tracker_wh);
-
-  const actualLogin = getValidDate(item?.gy_tracker_login);
-  const actualLogout = getValidDate(item?.gy_tracker_logout);
-
-  if (!actualLogin || !actualLogout) {
-    return savedWh;
-  }
-
-  const trackerDate = item?.gy_tracker_date;
-  const scheduleStartRaw = getScheduleStart(item);
-  const scheduleEndRaw = getScheduleEnd(item);
-
-  const scheduleStart = scheduleStartRaw
-    ? buildDateTimeFromTrackerDate(trackerDate, scheduleStartRaw)
-    : null;
-
-  const scheduleEnd = scheduleEndRaw
-    ? buildDateTimeFromTrackerDate(trackerDate, scheduleEndRaw)
-    : null;
-
-  if (
-    scheduleStart &&
-    scheduleEnd &&
-    scheduleEnd.getTime() <= scheduleStart.getTime()
-  ) {
-    scheduleEnd.setDate(scheduleEnd.getDate() + 1);
-  }
-
-  const effectiveStart =
-    scheduleStart && actualLogin.getTime() < scheduleStart.getTime()
-      ? scheduleStart
-      : actualLogin;
-
-  const effectiveEnd =
-    scheduleEnd && actualLogout.getTime() > scheduleEnd.getTime()
-      ? scheduleEnd
-      : actualLogout;
-
-  let totalHours = getHoursBetween(effectiveStart, effectiveEnd);
-
-  totalHours -= getBreakHours(item);
-
-  if (totalHours > 0) return Math.max(totalHours, 0);
-
-  return savedWh;
-}
-
-function capWorkHoursFromItem(item) {
-  return Math.min(getComputedWorkHours(item), 8);
-}
-
-function displayCappedWorkHours(item) {
-  const computedHours = getComputedWorkHours(item);
-
-  if (!computedHours) return "—";
-
-  return formatNumber(Math.min(computedHours, 8));
-}
 
 function formatEmployeeName(item) {
   const lastName = String(item?.gy_emp_lname || "").trim();
@@ -429,7 +230,7 @@ function AttendanceEmployeeAvatar({ item, employeeName, className = "h-9 w-9" })
     previewVisible && previewPosition && typeof document !== "undefined"
       ? createPortal(
           <span
-            className="attendance-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            className="attendance-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
             style={{
               position: "fixed",
               left: previewPosition.left,
@@ -732,26 +533,6 @@ function normalizeAccountOption(option) {
   };
 }
 
-function getAssignedSite(item) {
-  const value =
-    item?.site ??
-    item?.assignedSite ??
-    item?.gy_assignedloc ??
-    item?.assigned_loc ??
-    "";
-
-  const raw = String(value ?? "").trim();
-
-  if (!raw) return "—";
-
-  if (raw === "0") return "Tagum";
-  if (raw === "1") return "Davao";
-  if (raw === "2") return "Both Tagum and Davao";
-  if (raw === "3") return "Hybrid";
-
-  return raw;
-}
-
 function getAnimationStyle(delay = 0) {
   return {
     animationDelay: `${delay}ms`,
@@ -769,24 +550,24 @@ function StatCard({
 }) {
   const tones = {
     navy: {
-      label: "text-[#042C51]",
-      value: "text-[#042C51]",
-      icon: "bg-[#EAF2FB] text-[#042C51]",
+      label: "text-sibs-navy",
+      value: "text-sibs-navy",
+      icon: "bg-blue-50 text-sibs-navy",
     },
     emerald: {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      icon: "bg-[#ECFDF3] text-[#059669]",
+      label: "text-emerald-700",
+      value: "text-emerald-600",
+      icon: "bg-emerald-50 text-emerald-600",
     },
     amber: {
-      label: "text-[#B45309]",
-      value: "text-[#F59E0B]",
-      icon: "bg-[#FFFBEB] text-[#F59E0B]",
+      label: "text-amber-700",
+      value: "text-amber-600",
+      icon: "bg-amber-50 text-amber-600",
     },
     orange: {
-      label: "text-[#C2410C]",
-      value: "text-[#FF5C28]",
-      icon: "bg-[#FFF3ED] text-[#FF5C28]",
+      label: "text-sibs-orange",
+      value: "text-sibs-orange",
+      icon: "bg-sibs-cream-light text-sibs-orange",
     },
   };
 
@@ -814,7 +595,7 @@ function StatCard({
             </p>
           </div>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-sibs-muted">
             {description}
           </p>
         </div>
@@ -853,7 +634,7 @@ function TimeIndicator({ value, label, tone = "neutral" }) {
 
   return (
     <div className="flex min-w-[94px] flex-col">
-      <span className="text-xs font-extrabold tabular-nums text-[#042C51]">
+      <span className="text-xs font-extrabold tabular-nums text-sibs-navy">
         {value}
       </span>
       <span
@@ -864,61 +645,6 @@ function TimeIndicator({ value, label, tone = "neutral" }) {
       </span>
     </div>
   );
-}
-
-function getLoginIndicator(item) {
-  if (!item?.gy_tracker_login) {
-    return { label: "No clock-in", tone: "neutral" };
-  }
-
-  const actualLogin = getValidDate(item?.gy_tracker_login);
-  const scheduleStartRaw = getScheduleStart(item);
-  const scheduledLogin = scheduleStartRaw
-    ? buildDateTimeFromTrackerDate(item?.gy_tracker_date, scheduleStartRaw)
-    : null;
-
-  if (actualLogin && scheduledLogin) {
-    return isLateBySchedule(actualLogin, scheduledLogin)
-      ? { label: "Late clock-in", tone: "danger" }
-      : { label: "On-Time", tone: "success" };
-  }
-
-  const normalized = normalizeStatus(item?.login_status);
-  return normalized === "late"
-    ? { label: "Late clock-in", tone: "danger" }
-    : { label: "On-Time", tone: "success" };
-}
-
-function getLogoutIndicator(item) {
-  if (!item?.gy_tracker_logout) {
-    return { label: "No clock-out", tone: "neutral" };
-  }
-
-  const normalized = normalizeStatus(item?.logout_status);
-
-  if (normalized === "early-out" || normalized === "early") {
-    return { label: "Early logout", tone: "warning" };
-  }
-
-  return { label: "Full shift", tone: "success" };
-}
-
-function getSiteBadgeClass(site) {
-  const normalized = String(site || "").trim().toLowerCase();
-
-  if (normalized === "davao") {
-    return "border-violet-100 bg-violet-50 text-violet-700";
-  }
-
-  if (normalized === "tagum") {
-    return "border-blue-100 bg-blue-50 text-blue-700";
-  }
-
-  if (normalized === "hybrid") {
-    return "border-teal-100 bg-teal-50 text-teal-700";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-600";
 }
 
 function AttendanceStatusBadge({ status }) {
@@ -1528,14 +1254,14 @@ export default function AttendanceTable() {
       </section>
 
       <section
-        className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+        className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"
         style={getAnimationStyle(120)}
       >
-        <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+        <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
           <h3 className="font-heading text-sm sm:text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
             Attendance Records
           </h3>
-          <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-[#667085]">
+          <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-sibs-muted">
             {adminView
               ? "Review employee time entries, work hours, breaks, and approval status."
               : "Review your time entries, work hours, breaks, and approval status."}
@@ -1594,7 +1320,7 @@ export default function AttendanceTable() {
             type="button"
             onClick={handleAttendanceSearchSubmit}
             disabled={loading}
-            className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E94F1F] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
+            className="mt-4 sibs-btn-primary !h-10 w-full text-xs font-extrabold lg:hidden"
           >
             {loading ? (
               <Loader2 size={15} className="animate-spin" />
@@ -1608,7 +1334,7 @@ export default function AttendanceTable() {
         <div className="p-3 sm:p-5 2xl:p-6">
           <ResponsiveTableShell
             desktopContent={
-              <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+              <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
             <div
               ref={tableScrollRef}
               onMouseDown={handleDragStart}
@@ -1620,7 +1346,7 @@ export default function AttendanceTable() {
               }`}
             >
               <table className="w-full min-w-[1510px] border-collapse bg-white text-left">
-                <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
+                <thead className="sibs-data-table-head sticky top-0 z-10 bg-sibs-surface">
                   <tr className="sibs-data-table-head-row">
                       {adminView ? (
                         <th className="sibs-data-table-th">
@@ -1687,7 +1413,7 @@ export default function AttendanceTable() {
 
                   <tbody
                     key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilterKey}-${loading}`}
-                    className="divide-y divide-[#EEF2F6]"
+                    className="divide-y divide-sibs-border"
                   >
                     {loading ? (
                       <TableSkeletonRows
@@ -1699,7 +1425,7 @@ export default function AttendanceTable() {
                       <tr>
                         <td
                           colSpan={emptyColSpan}
-                          className="px-5 py-12 text-center sibs-text-xs font-bold text-[#667085]"
+                          className="px-5 py-12 text-center sibs-text-xs font-bold text-sibs-muted"
                         >
                           No attendance records found.
                         </td>
@@ -1728,13 +1454,13 @@ export default function AttendanceTable() {
                             key={`${
                               item.gy_tracker_id || item.gy_tracker_date || "row"
                             }-${index}`}
-                            className="sibs-data-table-row sibs-attendance-row-reveal"
+                            className="sibs-data-table-row sibs-attendance-row-reveal hover:bg-sibs-cream-light transition-colors"
                             style={{
                               animationDelay: `${Math.min(index, 10) * 36}ms`,
                             }}
                           >
                             {adminView ? (
-                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-[#FF5C28]">
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-sibs-orange">
                                 {item.gy_emp_code || "—"}
                               </td>
                             ) : null}
@@ -1746,7 +1472,7 @@ export default function AttendanceTable() {
                                     item={item}
                                     employeeName={employeeName}
                                   />
-                                  <p className="max-w-[190px] min-w-0 break-words sibs-text-xs font-extrabold leading-tight text-[#042C51]">
+                                  <p className="max-w-[190px] min-w-0 break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy">
                                     {employeeName}
                                   </p>
                                 </div>
@@ -1755,7 +1481,7 @@ export default function AttendanceTable() {
 
                             {attendanceFiltersView ? (
                               <td
-                                className="max-w-[190px] truncate px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#52637A]"
+                                className="max-w-[190px] truncate px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-secondary"
                                 title={item.department || "—"}
                               >
                                 {item.department || "—"}
@@ -1764,7 +1490,7 @@ export default function AttendanceTable() {
 
                             {attendanceFiltersView ? (
                               <td
-                                className="max-w-[160px] truncate px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]"
+                                className="max-w-[160px] truncate px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-secondary"
                                 title={item.gy_emp_account || "—"}
                               >
                                 {item.gy_emp_account || "—"}
@@ -1783,7 +1509,7 @@ export default function AttendanceTable() {
                               </td>
                             ) : null}
 
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#536887]">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-secondary">
                               {formatDate(item.gy_tracker_date)}
                             </td>
 
@@ -1795,11 +1521,11 @@ export default function AttendanceTable() {
                               />
                             </td>
 
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-sibs-muted">
                               {breakoutTime}
                             </td>
 
-                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                            <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-sibs-muted">
                               {breakinTime}
                             </td>
 
@@ -1811,11 +1537,11 @@ export default function AttendanceTable() {
                               />
                             </td>
 
-                            <td className="bg-slate-50/60 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#101828]">
+                            <td className="bg-slate-50/60 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-sibs-navy">
                               {displayCappedWorkHours(item)}
                             </td>
 
-                            <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold tabular-nums text-[#667085]">
+                            <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold tabular-nums text-sibs-muted">
                               {item.gy_tracker_bh ?? "—"}
                             </td>
 
@@ -1823,7 +1549,7 @@ export default function AttendanceTable() {
                               {ot > 0 ? `+${formatNumber(ot)}` : "—"}
                             </td>
 
-                            <td className="bg-orange-50/20 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#FF5C28]">
+                            <td className="bg-orange-50/20 px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-sibs-orange">
                               {ath > 0 ? formatNumber(ath) : "—"}
                             </td>
 
@@ -1883,7 +1609,7 @@ export default function AttendanceTable() {
                               className="h-9 w-9"
                             />
                           ) : (
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#042C51]">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sibs-navy">
                               <CalendarDays size={15} />
                             </span>
                           )
@@ -1892,7 +1618,7 @@ export default function AttendanceTable() {
                         subtitle={
                           adminView ? (
                             <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-[10px] font-extrabold text-[#FF5C28]">
+                              <span className="font-mono text-[10px] font-extrabold text-sibs-orange">
                                 {item.gy_emp_code || "—"}
                               </span>
                               <span className="text-[10px] text-slate-300">•</span>
@@ -1906,7 +1632,7 @@ export default function AttendanceTable() {
                       />
 
                       {(item.department || item.gy_emp_account || (getAssignedSite(item) && getAssignedSite(item) !== "—")) ? (
-                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-[#F0F4F8] pt-2">
+                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-sibs-border pt-2">
                           {item.department ? (
                             <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-700">
                               {item.department}
@@ -1948,7 +1674,7 @@ export default function AttendanceTable() {
                         />
                       </DataCard.Metrics>
 
-                      <div className="mt-2 grid grid-cols-4 divide-x divide-[#E6ECF2] rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] py-1.5 text-center">
+                      <div className="mt-2 grid grid-cols-4 divide-x divide-sibs-border rounded-lg border border-sibs-border bg-sibs-surface py-1.5 text-center">
                         <DataCard.MetricItem label="Break Out" value={breakoutTime} tone="dim" />
                         <DataCard.MetricItem label="Break In" value={breakinTime} tone="dim" />
                         <DataCard.MetricItem label="OT" value={ot > 0 ? `+${formatNumber(ot)}` : "—"} tone="blue" />

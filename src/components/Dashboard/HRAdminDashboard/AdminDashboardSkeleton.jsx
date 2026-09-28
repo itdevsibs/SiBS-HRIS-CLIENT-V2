@@ -40,7 +40,7 @@ export default function AdminDashboardSkeleton() {
                 <h1 className="text-xl sm:text-2xl 2xl:text-3xl font-extrabold text-sibs-navy tracking-tight">
                   Human Resource Dashboard
                 </h1>
-                <p className="mt-1 text-xs font-semibold text-[#667085]">
+                <p className="mt-1 text-xs font-semibold text-sibs-muted">
                   Manage organizational workforce, track attendance, and oversee hiring across operational hubs.
                 </p>
               </div>
@@ -105,7 +105,7 @@ export default function AdminDashboardSkeleton() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-base font-extrabold text-sibs-navy">Notifications</h2>
-                    <p className="m-0 text-xs font-semibold text-[#667085]">
+                    <p className="m-0 text-xs font-semibold text-sibs-muted">
                       System activity, pending approvals, and requests
                     </p>
                   </div>
@@ -133,13 +133,13 @@ export default function AdminDashboardSkeleton() {
               >
                 <div>
                   <h2 className="text-base font-extrabold text-sibs-navy">Quick Actions</h2>
-                  <p className="m-0 text-xs font-semibold text-[#667085]">
+                  <p className="m-0 text-xs font-semibold text-sibs-muted">
                     Frequently used shortcuts
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   {Array.from({ length: 4 }, (_, index) => (
-                    <div key={index} className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 space-y-2">
+                    <div key={index} className="rounded-xl border border-sibs-border bg-sibs-surface p-3 space-y-2">
                       <Skeleton className="h-7 w-7 rounded-lg" />
                       <Skeleton className="h-3.5 w-4/5" />
                       <Skeleton className="h-2.5 w-1/2" />
@@ -155,26 +155,26 @@ export default function AdminDashboardSkeleton() {
               >
                 <div>
                   <h2 className="text-base font-extrabold text-sibs-navy">Workforce KPIs</h2>
-                  <p className="m-0 text-xs font-semibold text-[#667085]">
+                  <p className="m-0 text-xs font-semibold text-sibs-muted">
                     Headcount fulfillment and stability
                   </p>
                 </div>
                 <div className="space-y-4 pt-2">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-2.5">
+                  <div className="rounded-xl border border-sibs-border bg-sibs-surface p-3.5 space-y-2.5">
                     <div className="flex justify-between">
                       <Skeleton className="h-3 w-28" />
                       <Skeleton className="h-3 w-12" />
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
+                    <div className="h-2 overflow-hidden rounded-full bg-sibs-border">
                       <Skeleton className="h-full w-full" />
                     </div>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-2.5">
+                  <div className="rounded-xl border border-sibs-border bg-sibs-surface p-3.5 space-y-2.5">
                     <div className="flex justify-between">
                       <Skeleton className="h-3 w-32" />
                       <Skeleton className="h-3 w-12" />
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
+                    <div className="h-2 overflow-hidden rounded-full bg-sibs-border">
                       <Skeleton className="h-full w-full" />
                     </div>
                   </div>

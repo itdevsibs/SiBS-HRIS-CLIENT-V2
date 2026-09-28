@@ -19,10 +19,10 @@ export default function SuperAdminExceptions({
   return (
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
       <div>
-        <h2 className="font-heading text-base 2xl:text-lg font-bold text-[#042C51] tracking-tight">
+        <h2 className="font-heading text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
           Risk &amp; Exception Escalation Desk ({totalItems})
         </h2>
-        <p className="sibs-text-xs font-semibold text-[#667085]">
+        <p className="sibs-text-xs font-semibold text-sibs-muted">
           System-wide exceptions for user mapping, resignations, leaves,
           attendance, hiring, and approval workflows.
         </p>
@@ -59,7 +59,7 @@ export default function SuperAdminExceptions({
           {items.map((item, index) => (
             <article
               key={item.id}
-              className="sibs-page-card-in rounded-xl border border-slate-200 bg-white p-3.5 2xl:p-4 transition hover:border-[#FF5C28]/40 hover:shadow-xs"
+              className="sibs-page-card-in rounded-xl border border-sibs-border bg-white p-3.5 2xl:p-4 transition hover:border-sibs-orange/40 hover:shadow-xs"
               style={{
                 animationDelay: `${index * 45}ms`,
                 animationFillMode: "both",
@@ -75,41 +75,41 @@ export default function SuperAdminExceptions({
                     >
                       {item.severity} Severity
                     </span>
-                    <span className="sibs-text-sm font-extrabold text-[#042C51]">
+                    <span className="sibs-text-sm font-extrabold text-sibs-navy">
                       {item.title}
                     </span>
                   </div>
-                  <p className="mt-1.5 sibs-text-xs font-semibold leading-relaxed text-[#667085]">
+                  <p className="mt-1.5 sibs-text-xs font-semibold leading-relaxed text-sibs-muted">
                     {item.description}
                   </p>
                 </div>
 
-                <div className="shrink-0 sibs-text-micro font-semibold text-[#667085]">
-                  Target: <strong className="text-[#042C51]">{item.moduleTarget}</strong> • Pending:{" "}
+                <div className="shrink-0 sibs-text-micro font-semibold text-sibs-muted">
+                  Target: <strong className="text-sibs-navy">{item.moduleTarget}</strong> • Pending:{" "}
                   <strong className="text-amber-700">
                     {item.daysPending} days
                   </strong>
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-col gap-2.5 border-t border-[#EEF2F6] pt-2.5 sm:flex-row sm:items-center sm:justify-between">
-                <span className="sibs-text-micro font-semibold text-[#667085]">
+              <div className="mt-3 flex flex-col gap-2.5 border-t border-sibs-border pt-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <span className="sibs-text-micro font-semibold text-sibs-muted">
                   Assigned:{" "}
-                  <strong className="text-[#042C51]">{item.assignedTo}</strong>
+                  <strong className="text-sibs-navy">{item.assignedTo}</strong>
                 </span>
 
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => onNavigate(item.path)}
-                    className="h-7.5 2xl:h-8 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 sibs-text-micro font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                    className="h-7.5 2xl:h-8 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 sibs-text-micro font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                   >
                     Open Module
                   </button>
                   <button
                     type="button"
                     onClick={() => onResolve(item.id)}
-                    className="h-7.5 2xl:h-8 rounded-lg bg-emerald-600 px-2.5 2xl:px-3 sibs-text-micro font-extrabold text-white transition hover:bg-emerald-700"
+                    className="h-7.5 2xl:h-8 rounded-lg bg-emerald-600 px-2.5 2xl:px-3 sibs-text-micro font-extrabold text-white transition hover:bg-emerald-700 active:scale-[0.98]"
                   >
                     Mark Resolved
                   </button>
@@ -121,10 +121,10 @@ export default function SuperAdminExceptions({
       ) : (
         <div className="sibs-empty-panel">
           <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-500" />
-          <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+          <p className="mt-3 text-sm font-extrabold text-sibs-navy">
             No Risk Exceptions Found
           </p>
-          <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+          <p className="mt-1 text-xs font-semibold text-sibs-faint">
             No records match the active search and module filters.
           </p>
         </div>

@@ -28,11 +28,11 @@ export default function SuperAdminAccessGovernance({
   return (
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
       <section
-        className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 2xl:p-3.5"
+        className="sibs-page-card-in rounded-xl border border-sibs-border bg-sibs-surface p-3 2xl:p-3.5"
         style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
         <h2 className="sibs-section-title flex items-center gap-1.5 2xl:gap-2">
-          <Lock size={14} className="text-[#FF5C28]" />
+          <Lock size={14} className="text-sibs-orange" />
           Grounded Admin Access Levels Hierarchy
         </h2>
 
@@ -45,8 +45,8 @@ export default function SuperAdminAccessGovernance({
                 key={level}
                 className={`sibs-page-card-in rounded-lg border p-1.5 2xl:p-2 text-center ${
                   superAdmin
-                    ? "border-[#042C51] bg-[#042C51] text-white"
-                    : "border-[#E6ECF2] bg-white text-[#042C51]"
+                    ? "border-sibs-navy bg-sibs-navy text-white"
+                    : "border-sibs-border bg-white text-sibs-navy"
                 }`}
                 style={{
                   animationDelay: `${index * 35}ms`,
@@ -55,14 +55,14 @@ export default function SuperAdminAccessGovernance({
               >
                 <span
                   className={`block text-[9px] 2xl:text-[10px] font-extrabold whitespace-nowrap truncate ${
-                    superAdmin ? "text-[#FF5C28]" : ""
+                    superAdmin ? "text-sibs-orange" : ""
                   }`}
                 >
                   {level}
                 </span>
                 <span
                   className={`mt-0.5 block text-[8px] 2xl:text-[9px] font-semibold leading-3.5 line-clamp-2 ${
-                    superAdmin ? "text-slate-200" : "text-[#667085]"
+                    superAdmin ? "text-slate-200" : "text-sibs-muted"
                   }`}
                 >
                   {description}
@@ -75,17 +75,17 @@ export default function SuperAdminAccessGovernance({
 
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-heading text-base 2xl:text-lg font-bold text-[#042C51] tracking-tight">
+          <h2 className="font-heading text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
             Admin Users &amp; Access Levels ({totalItems})
           </h2>
-          <p className="sibs-text-xs font-semibold text-[#667085]">
+          <p className="sibs-text-xs font-semibold text-sibs-muted">
             Review account-group mappings, access tiers, and user status.
           </p>
         </div>
         <button
           type="button"
           onClick={onAddUser}
-          className="inline-flex h-8.5 2xl:h-9 shrink-0 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-[#EB3800] active:bg-[#FF8450]"
+          className="sibs-btn-primary"
         >
           <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
           New Admin Account
@@ -182,7 +182,7 @@ export default function SuperAdminAccessGovernance({
                     <span>
                       Dept: <strong className="text-sibs-navy">{item.department || "—"}</strong>
                     </span>
-                    <span className="text-[9.5px] text-[#98A2B3]">
+                    <span className="text-[9.5px] text-sibs-faint">
                       Last active: {item.lastActive || "—"}
                     </span>
                   </div>
@@ -230,20 +230,20 @@ export default function SuperAdminAccessGovernance({
                     <th className="sibs-data-table-th text-right px-3 2xl:px-4 py-2.5 2xl:py-3">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#EEF2F6]">
+                <tbody className="divide-y divide-sibs-border">
                   {admins.length > 0 ? (
                     admins.map((item, index) => (
                       <tr
                         key={item.id}
-                        className="sibs-data-table-row sibs-page-card-in"
+                        className="sibs-data-table-row sibs-page-card-in hover:bg-sibs-cream-light/60 transition-colors"
                         style={{
                           animationDelay: `${index * 35}ms`,
                           animationFillMode: "both",
                         }}
                       >
                         <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
-                          <p className="font-extrabold text-[#042C51] truncate">{item.name}</p>
-                          <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3] truncate">
+                          <p className="font-extrabold text-sibs-navy truncate">{item.name}</p>
+                          <p className="mt-0.5 text-[10px] font-semibold text-sibs-faint truncate">
                             {item.email}
                           </p>
                         </td>
@@ -256,11 +256,11 @@ export default function SuperAdminAccessGovernance({
                             {item.accessLevel}
                           </span>
                         </td>
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-semibold text-[#344054] truncate">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-semibold text-sibs-secondary truncate">
                           {item.department}
                         </td>
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[#667085] truncate">{item.accountGroup}</td>
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] text-[#98A2B3] whitespace-nowrap">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-sibs-muted truncate">{item.accountGroup}</td>
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] text-sibs-faint whitespace-nowrap">
                           {item.lastActive}
                         </td>
                         <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
@@ -276,7 +276,7 @@ export default function SuperAdminAccessGovernance({
                           <button
                             type="button"
                             onClick={() => onEditAccess(item)}
-                            className="inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-[10px] 2xl:text-[11px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                            className="inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 text-[10px] 2xl:text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                           >
                             Edit Access
                           </button>
@@ -285,7 +285,7 @@ export default function SuperAdminAccessGovernance({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-xs font-bold text-[#667085]">
+                      <td colSpan={7} className="px-4 py-10 text-center text-xs font-bold text-sibs-muted">
                         No admin users match the active filters.
                       </td>
                     </tr>
