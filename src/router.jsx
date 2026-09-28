@@ -82,7 +82,7 @@ const FinalInterviewForms = lazyWithRetry(() => import("./components/recruitment
 
 // Settings
 const RecruitmentSettingsPage = lazyWithRetry(() => import("./pages/Settings/RecruitmentSettingsPage"));
-const AccountSettingsPage = lazyWithRetry(() => import("./pages/Settings/AccountSettingsPage"));
+const UserSettingsPage = lazyWithRetry(() => import("./pages/Settings/UserSettingsPage"));
 
 // Administration
 const DepartmentsPage = lazyWithRetry(() => import("./pages/administration/DepartmentsPage"));
@@ -537,12 +537,17 @@ function MainApplicationRoutes() {
       />
 
       <Route
-        path="/settings/account-settings"
+        path="/settings/user-settings"
         element={
           <PrivateRoute>
-            <AccountSettingsPage />
+            <UserSettingsPage />
           </PrivateRoute>
         }
+      />
+
+      <Route
+        path="/settings/account-settings"
+        element={<Navigate to="/settings/user-settings" replace />}
       />
 
       {/* COMMUNICATION */}

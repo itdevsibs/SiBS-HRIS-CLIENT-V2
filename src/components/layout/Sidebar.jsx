@@ -1056,9 +1056,9 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 6, 7],
     },
     {
-      name: "Account Settings",
+      name: "User Settings",
       icon: UserCog,
-      path: "/settings/account-settings",
+      path: "/settings/user-settings",
       allowedUsers: [7],
     },
   ];

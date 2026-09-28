@@ -19,7 +19,7 @@ function throwApiError(error, fallbackMessage) {
   throw wrappedError;
 }
 
-export async function getAccountSettingsSummary() {
+export async function getUserSettingsSummary() {
   try {
     const response = await api.get(`${BASE_PATH}/summary`, {
       withCredentials: true,
@@ -31,7 +31,7 @@ export async function getAccountSettingsSummary() {
   }
 }
 
-export async function getAccountSettingsUsers(params = {}) {
+export async function getUserSettingsUsers(params = {}) {
   try {
     const response = await api.get(`${BASE_PATH}/users`, {
       params,
@@ -58,7 +58,7 @@ export async function getAccountSettingsUsers(params = {}) {
   }
 }
 
-export async function getAccountSettingsAccounts() {
+export async function getUserSettingsAccounts() {
   try {
     const response = await api.get(`${BASE_PATH}/accounts`, {
       withCredentials: true,
@@ -70,7 +70,7 @@ export async function getAccountSettingsAccounts() {
   }
 }
 
-export async function getAccountSettingsDepartments() {
+export async function getUserSettingsDepartments() {
   try {
     const response = await api.get(`${BASE_PATH}/departments`, {
       withCredentials: true,
@@ -82,7 +82,7 @@ export async function getAccountSettingsDepartments() {
   }
 }
 
-export async function searchAccountSettingsEmployees(search) {
+export async function searchUserSettingsEmployees(search) {
   const keyword = String(search || "").trim();
 
   if (keyword.length < 2) {
@@ -101,7 +101,7 @@ export async function searchAccountSettingsEmployees(search) {
   }
 }
 
-export async function createAccountSettingsUser(payload) {
+export async function createUserSettingsUser(payload) {
   try {
     const response = await api.post(`${BASE_PATH}/users`, payload, {
       withCredentials: true,
@@ -113,7 +113,7 @@ export async function createAccountSettingsUser(payload) {
   }
 }
 
-export async function updateAccountSettingsUser(id, payload) {
+export async function updateUserSettingsUser(id, payload) {
   try {
     const response = await api.put(`${BASE_PATH}/users/${id}`, payload, {
       withCredentials: true,
@@ -125,7 +125,7 @@ export async function updateAccountSettingsUser(id, payload) {
   }
 }
 
-export async function deleteAccountSettingsUser(id) {
+export async function deleteUserSettingsUser(id) {
   try {
     const response = await api.delete(`${BASE_PATH}/users/${id}`, {
       withCredentials: true,

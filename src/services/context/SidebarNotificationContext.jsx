@@ -96,6 +96,7 @@ function getActionLabelByModule(module = "") {
       return "View Employee";
     case "users":
     case "account-settings":
+    case "user-settings":
     case "assigned-accounts":
       return "Manage Access";
     default:

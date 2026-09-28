@@ -42,15 +42,15 @@ import {
   TableSkeletonRows,
 } from "@/components/ui";
 import {
-  createAccountSettingsUser,
-  deleteAccountSettingsUser,
-  getAccountSettingsAccounts,
-  getAccountSettingsDepartments,
-  getAccountSettingsSummary,
-  getAccountSettingsUsers,
-  searchAccountSettingsEmployees,
-  updateAccountSettingsUser,
-} from "../../lib/axios/accountSettings";
+  createUserSettingsUser,
+  deleteUserSettingsUser,
+  getUserSettingsAccounts,
+  getUserSettingsDepartments,
+  getUserSettingsSummary,
+  getUserSettingsUsers,
+  searchUserSettingsEmployees,
+  updateUserSettingsUser,
+} from "../../lib/axios/userSettings";
 
 const PAGE_LIMIT = 15;
 const API_URL = (
@@ -1222,7 +1222,7 @@ function ModalShell({
         <section
           role="dialog"
           aria-modal="true"
-          aria-labelledby="account-settings-modal-title"
+          aria-labelledby="user-settings-modal-title"
           className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-2xl font-jakarta"
         >
           <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
@@ -1233,7 +1233,7 @@ function ModalShell({
 
               <div className="min-w-0">
                 <h2
-                  id="account-settings-modal-title"
+                  id="user-settings-modal-title"
                   className="sibs-modal-title truncate text-white"
                 >
                   {title}
@@ -1279,13 +1279,13 @@ function ModalShell({
       <section
         role="dialog"
         aria-modal="true"
-        aria-labelledby="account-settings-modal-title"
+        aria-labelledby="user-settings-modal-title"
         className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-2xl font-jakarta"
       >
         <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
           <div className="min-w-0">
             <h2
-              id="account-settings-modal-title"
+              id="user-settings-modal-title"
               className="sibs-modal-title truncate text-white"
             >
               {title}
@@ -1774,7 +1774,7 @@ function AccessModal({
     const timer = window.setTimeout(async () => {
       try {
         setEmployeeLoading(true);
-        const results = await searchAccountSettingsEmployees(keyword);
+        const results = await searchUserSettingsEmployees(keyword);
         if (!cancelled) setEmployeeResults(results);
       } catch (error) {
         if (!cancelled) {
@@ -1855,8 +1855,8 @@ function AccessModal({
       };
 
       const result = isEdit
-        ? await updateAccountSettingsUser(user.id, payload)
-        : await createAccountSettingsUser(payload);
+        ? await updateUserSettingsUser(user.id, payload)
+        : await createUserSettingsUser(payload);
 
       openStatus(
         "success",
@@ -2038,7 +2038,7 @@ function DeleteAccessModal({ target, onClose, onDeleted, openStatus }) {
   async function handleDelete() {
     try {
       setDeleting(true);
-      const result = await deleteAccountSettingsUser(target.id);
+      const result = await deleteUserSettingsUser(target.id);
 
       openStatus(
         "success",
@@ -2268,7 +2268,7 @@ function MobileUserCard({
 }) {
   return (
     <div
-      data-account-settings-sibs-id={safeText(user?.sibsId)}
+      data-user-settings-sibs-id={safeText(user?.sibsId)}
       className={`rounded-2xl transition-all duration-300 ${
         highlighted
           ? "ring-2 ring-[#FF5C28]/50 ring-offset-2 ring-offset-[#F8FAFC]"
@@ -2354,7 +2354,7 @@ function MobileUserCard({
   );
 }
 
-function AccountSettingsLoading() {
+function UserSettingsLoading() {
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <div className="shrink-0">
@@ -2388,7 +2388,7 @@ function AccountSettingsLoading() {
   );
 }
 
-export default function AccountSettingsPage() {
+export default function UserSettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: userLoading } = useUser();
@@ -2477,9 +2477,9 @@ export default function AccountSettingsPage() {
 
   const loadReferenceData = useCallback(async () => {
     const [summaryData, accounts, departments] = await Promise.all([
-      getAccountSettingsSummary(),
-      getAccountSettingsAccounts(),
-      getAccountSettingsDepartments(),
+      getUserSettingsSummary(),
+      getUserSettingsAccounts(),
+      getUserSettingsDepartments(),
     ]);
 
     setSummary({ ...EMPTY_SUMMARY, ...summaryData });
@@ -2492,7 +2492,7 @@ export default function AccountSettingsPage() {
       try {
         if (!quiet) setTableLoading(true);
 
-        const result = await getAccountSettingsUsers({
+        const result = await getUserSettingsUsers({
           page: currentPage,
           limit: PAGE_LIMIT,
           search: appliedSearch || undefined,
@@ -2577,7 +2577,11 @@ export default function AccountSettingsPage() {
   useEffect(() => {
     const state = location.state;
 
-    if (state?.source !== "account-settings-notification") {
+    if (
+      !["user-settings-notification", "account-settings-notification"].includes(
+        state?.source,
+      )
+    ) {
       return;
     }
 
@@ -2636,10 +2640,10 @@ export default function AccountSettingsPage() {
 
         const [summaryData, accounts, departments, userResult] =
           await Promise.all([
-            getAccountSettingsSummary(),
-            getAccountSettingsAccounts(),
-            getAccountSettingsDepartments(),
-            getAccountSettingsUsers({ page: 1, limit: PAGE_LIMIT }),
+            getUserSettingsSummary(),
+            getUserSettingsAccounts(),
+            getUserSettingsDepartments(),
+            getUserSettingsUsers({ page: 1, limit: PAGE_LIMIT }),
           ]);
 
         if (cancelled) return;
@@ -2735,18 +2739,18 @@ export default function AccountSettingsPage() {
 
     const frame = window.requestAnimationFrame(() => {
       const candidates = Array.from(
-        document.querySelectorAll("[data-account-settings-sibs-id]"),
+        document.querySelectorAll("[data-user-settings-sibs-id]"),
       );
 
       const targetElement =
         candidates.find(
           (element) =>
-            element.dataset.accountSettingsSibsId === highlightedSibsId &&
+            element.dataset.userSettingsSibsId === highlightedSibsId &&
             element.offsetParent !== null,
         ) ||
         candidates.find(
           (element) =>
-            element.dataset.accountSettingsSibsId === highlightedSibsId,
+            element.dataset.userSettingsSibsId === highlightedSibsId,
         );
 
       targetElement?.scrollIntoView({
@@ -2823,13 +2827,13 @@ export default function AccountSettingsPage() {
     !hasAuthenticatedUser ||
     !authorized
   ) {
-    return <AccountSettingsLoading />;
+    return <UserSettingsLoading />;
   }
 
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <style>{`
-        @keyframes sibsAccountSettingsRowReveal {
+        @keyframes sibsUserSettingsRowReveal {
           from {
             opacity: 0;
             transform: translateY(8px);
@@ -2841,13 +2845,13 @@ export default function AccountSettingsPage() {
           }
         }
 
-        .sibs-account-settings-row-reveal {
-          animation: sibsAccountSettingsRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        .sibs-user-settings-row-reveal {
+          animation: sibsUserSettingsRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
           will-change: opacity, transform;
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .sibs-account-settings-row-reveal {
+          .sibs-user-settings-row-reveal {
             animation: none !important;
             transform: none !important;
           }
@@ -2860,8 +2864,8 @@ export default function AccountSettingsPage() {
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-5">
           <PageHeaderHero
-            kicker="Account Settings View"
-            title="Account Settings"
+            kicker="User Settings View"
+            title="User Settings"
             description="Manage employee access levels, assigned accounts, and department access."
             actions={
               <button
@@ -2886,7 +2890,7 @@ export default function AccountSettingsPage() {
                 "Super Admins",
               ]}
               className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
-              ariaLabel="Loading account settings metrics"
+              ariaLabel="Loading user settings metrics"
             />
           ) : (
             <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -2947,7 +2951,7 @@ export default function AccountSettingsPage() {
                     onClick={() => reloadAll({ showRefresh: true })}
                     disabled={refreshing}
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:bg-[#F8FAFC] disabled:opacity-50"
-                    aria-label="Refresh account settings"
+                    aria-label="Refresh user settings"
                   >
                     <RefreshCw
                       size={15}
@@ -3082,7 +3086,7 @@ export default function AccountSettingsPage() {
                       users.map((assignedUser, index) => (
                         <tr
                           key={assignedUser.id}
-                          data-account-settings-sibs-id={safeText(
+                          data-user-settings-sibs-id={safeText(
                             assignedUser.sibsId,
                           )}
                           role="button"
@@ -3095,7 +3099,7 @@ export default function AccountSettingsPage() {
                             }
                           }}
                           aria-label={`Open access details for ${formatEmployeeName(assignedUser)}`}
-                          className={`sibs-data-table-row sibs-account-settings-row-reveal cursor-pointer border-b border-[#E6ECF2] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30 ${
+                          className={`sibs-data-table-row sibs-user-settings-row-reveal cursor-pointer border-b border-[#E6ECF2] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30 ${
                             safeText(assignedUser.sibsId) ===
                             safeText(highlightedSibsId)
                               ? "bg-[#FFF3ED] shadow-[inset_4px_0_0_#FF5C28] ring-2 ring-inset ring-[#FF5C28]/40"

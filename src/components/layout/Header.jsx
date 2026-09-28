@@ -403,14 +403,21 @@ const SEARCHABLE_MODULES = [
     keywords: ["recruitment settings", "settings", "approval settings"],
   },
   {
-    label: "Account Settings",
+    label: "User Settings",
     group: "Settings",
-    description: "User access and account configuration",
-    path: "/settings/account-settings",
+    description: "User access, assigned accounts, and department access",
+    path: "/settings/user-settings",
     scope: "admin",
     allowedUsers: [7],
     icon: UserCog,
-    keywords: ["account settings", "user access", "permissions", "settings"],
+    keywords: [
+      "user settings",
+      "account settings",
+      "user access",
+      "permissions",
+      "assigned accounts",
+      "settings",
+    ],
   },
 ];
 
