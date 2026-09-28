@@ -165,10 +165,27 @@ function AccountCard({ account, onViewEmployees }) {
     ? account.seniorOperationsManagers
     : [];
   const employeeCount = Number(account.employeeCount) || 0;
-  const activeEmployeeCount = Number(account.activeEmployeeCount) || 0;
+
+  function openEmployees() {
+    onViewEmployees?.(account);
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openEmployees();
+    }
+  }
 
   return (
-    <article className="overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={openEmployees}
+      onKeyDown={handleKeyDown}
+      title={`View all employees assigned to ${account.name}`}
+      className="group overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/40 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
+    >
       <div className="flex items-start justify-between gap-3 border-b border-sibs-border bg-white px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-xs font-extrabold text-sibs-navy">
@@ -181,18 +198,12 @@ function AccountCard({ account, onViewEmployees }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onViewEmployees?.(account)}
-            title={`View all employees assigned to ${account.name}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-[9px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-white hover:text-sibs-orange"
+          <span
+            className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-[9px] font-extrabold text-sibs-navy transition group-hover:border-sibs-orange/40 group-hover:bg-white group-hover:text-sibs-orange"
           >
             <UsersRound className="h-3.5 w-3.5" />
             {employeeCount} employee{employeeCount === 1 ? "" : "s"}
-            {employeeCount > 0 && activeEmployeeCount !== employeeCount ? (
-              <span className="font-semibold text-sibs-muted">· {activeEmployeeCount} active</span>
-            ) : null}
-          </button>
+          </span>
 
           <span
             className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[8px] font-extrabold uppercase ${
