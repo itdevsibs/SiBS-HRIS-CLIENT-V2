@@ -18,6 +18,13 @@ import {
   markAuditNotificationRead,
 } from "../../lib/axios/getAuditNotifications";
 import {
+  getNotifications,
+  markNotificationRead as apiMarkNotificationRead,
+  markAllNotificationsRead as apiMarkAllNotificationsRead,
+  dismissNotification as apiDismissNotification,
+} from "../../lib/axios/getNotifications";
+import { socket } from "../../lib/axios/socket";
+import {
   buildCandidatePipelineNotifications,
   buildHiringNeedsNotifications,
   sortNotificationsByNewest,
@@ -219,6 +226,8 @@ export function SidebarNotificationProvider({ children }) {
   const [leavePendingNotification, setLeavePendingNotification] = useState(null);
   const [operationalNotifications, setOperationalNotifications] = useState([]);
   const [auditNotifications, setAuditNotifications] = useState([]);
+  const [recipientNotifications, setRecipientNotifications] = useState([]);
+  const [serverUnreadCount, setServerUnreadCount] = useState(0);
   const [auditHistoryNotifications, setAuditHistoryNotifications] = useState([]);
   const [auditHistoryCursor, setAuditHistoryCursor] = useState(null);
   const [auditHistoryHasMore, setAuditHistoryHasMore] = useState(false);
@@ -414,10 +423,12 @@ export function SidebarNotificationProvider({ children }) {
           setAuditNotifications(mapped);
         }
       } catch (error) {
-        console.warn(
-          "[SidebarNotificationContext] live audit notifications failed:",
-          error?.message,
-        );
+        if (error?.response?.status !== 401) {
+          console.warn(
+            "[SidebarNotificationContext] live audit notifications failed:",
+            error?.message,
+          );
+        }
 
         if (!cancelled) {
           setAuditNotifications([]);
@@ -450,6 +461,123 @@ export function SidebarNotificationProvider({ children }) {
         "sibs-audit-notifications-refresh",
         handleRefresh,
       );
+    };
+  }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    function mapServerNotification(item = {}) {
+      const isApproval = item.category === "approvals" || item.type === "action";
+      return {
+        id: item.id || `notif-${item.auditLogId}`,
+        auditLogId: item.auditLogId,
+        notificationKey: item.notificationKey,
+        isRead: Boolean(item.isRead),
+        isResolved: Boolean(item.isResolved),
+        isDismissed: Boolean(item.isDismissed),
+        category: item.category || (isApproval ? "approvals" : "system"),
+        type: item.type || (isApproval ? "action" : "info"),
+        title: item.title,
+        message: item.message,
+        time: item.occurredAt
+          ? formatAuditNotificationTime(item.occurredAt)
+          : "Recently",
+        timestamp: item.occurredAt ? new Date(item.occurredAt).getTime() : Date.now(),
+        actionLabel: item.actionLabel || getActionLabelByModule(item.module),
+        actionPath: item.targetPath || "/dashboard",
+        ...(item.actionState ? { actionState: item.actionState } : {}),
+      };
+    }
+
+    async function refreshRecipientNotifications() {
+      if (!user) {
+        if (!cancelled) {
+          setRecipientNotifications([]);
+          setServerUnreadCount(0);
+        }
+        return;
+      }
+
+      try {
+        const payload = await getNotifications({ limit: 30 });
+        if (cancelled) return;
+        if (payload?.success) {
+          const mapped = (payload.notifications || []).map(mapServerNotification);
+          setRecipientNotifications(mapped);
+          setServerUnreadCount(Number(payload.unreadCount || 0));
+        }
+      } catch (error) {
+        if (error?.response?.status !== 401) {
+          console.warn(
+            "[SidebarNotificationContext] recipient notifications failed:",
+            error?.message,
+          );
+        }
+      }
+    }
+
+    refreshRecipientNotifications();
+
+    if (user) {
+      if (!socket.connected) {
+        socket.connect();
+      }
+
+      const handleNotificationNew = (newNotif) => {
+        if (!newNotif?.id) return;
+        const mapped = mapServerNotification(newNotif);
+        setRecipientNotifications((prev) => [
+          mapped,
+          ...prev.filter((n) => n.id !== mapped.id && n.auditLogId !== mapped.auditLogId),
+        ]);
+        setServerUnreadCount((c) => c + 1);
+      };
+
+      const handleNotificationUpdated = (update) => {
+        if (update.allRead) {
+          setRecipientNotifications((prev) =>
+            prev.map((n) => ({ ...n, isRead: true })),
+          );
+          setServerUnreadCount(0);
+          return;
+        }
+
+        if (update.auditLogId) {
+          setRecipientNotifications((prev) =>
+            prev
+              .map((n) => {
+                if (n.auditLogId === update.auditLogId || n.id === update.auditLogId) {
+                  return {
+                    ...n,
+                    ...(update.isRead !== undefined ? { isRead: update.isRead } : {}),
+                    ...(update.isDismissed !== undefined ? { isDismissed: update.isDismissed } : {}),
+                    ...(update.isResolved !== undefined ? { isResolved: update.isResolved } : {}),
+                  };
+                }
+                return n;
+              })
+              .filter((n) => !n.isDismissed),
+          );
+        }
+
+        if (typeof update.unreadCount === "number") {
+          setServerUnreadCount(update.unreadCount);
+        }
+      };
+
+      socket.on("notification:new", handleNotificationNew);
+      socket.on("notification:updated", handleNotificationUpdated);
+
+      return () => {
+        cancelled = true;
+        socket.off("notification:new", handleNotificationNew);
+        socket.off("notification:updated", handleNotificationUpdated);
+      };
+    }
+
+    return () => {
+      cancelled = true;
     };
   }, [user]);
 
@@ -558,6 +686,13 @@ export function SidebarNotificationProvider({ children }) {
   const markAsRead = useCallback(
     (id) => {
       if (!id) return;
+      const serverItem = recipientNotifications.find(
+        (item) => item.id === id || item.auditLogId === id,
+      );
+      if (serverItem?.auditLogId) {
+        void apiMarkNotificationRead(serverItem.auditLogId).catch(() => {});
+      }
+
       const auditItem = [
         ...auditNotifications,
         ...auditHistoryNotifications,
@@ -565,18 +700,38 @@ export function SidebarNotificationProvider({ children }) {
       if (auditItem?.auditLogId) {
         void markAuditNotificationRead(auditItem.auditLogId).catch(() => {});
       }
+
+      setRecipientNotifications((prev) =>
+        prev.map((n) =>
+          n.id === id || n.auditLogId === id ? { ...n, isRead: true } : n,
+        ),
+      );
+      setServerUnreadCount((c) => Math.max(0, c - 1));
+
       setReadNotifIds((previous) => {
         const next = { ...previous, [id]: true };
         writeStorage(readNotifsStorageKey, next);
         return next;
       });
     },
-    [auditHistoryNotifications, auditNotifications, readNotifsStorageKey],
+    [
+      auditHistoryNotifications,
+      auditNotifications,
+      recipientNotifications,
+      readNotifsStorageKey,
+    ],
   );
 
   // Mark all system notifications as read
   const markAllAsRead = useCallback(() => {
+    void apiMarkAllNotificationsRead().catch(() => {});
+    setRecipientNotifications((prev) =>
+      prev.map((n) => ({ ...n, isRead: true })),
+    );
+    setServerUnreadCount(0);
+
     const all = [
+      ...recipientNotifications,
       ...(leavePendingNotification ? [leavePendingNotification] : []),
       ...operationalNotifications,
       ...auditNotifications,
@@ -591,6 +746,7 @@ export function SidebarNotificationProvider({ children }) {
     setReadNotifIds(next);
     writeStorage(readNotifsStorageKey, next);
   }, [
+    recipientNotifications,
     dynamicNotifications,
     leavePendingNotification,
     operationalNotifications,
@@ -603,13 +759,23 @@ export function SidebarNotificationProvider({ children }) {
   const dismissNotification = useCallback(
     (id) => {
       if (!id) return;
+      const serverItem = recipientNotifications.find(
+        (n) => n.id === id || n.auditLogId === id,
+      );
+      if (serverItem?.auditLogId) {
+        void apiDismissNotification(serverItem.auditLogId).catch(() => {});
+      }
+      setRecipientNotifications((prev) =>
+        prev.filter((n) => n.id !== id && n.auditLogId !== id),
+      );
+
       setDismissedNotifIds((previous) => {
         const next = { ...previous, [id]: true };
         writeStorage(dismissedNotifsStorageKey, next);
         return next;
       });
     },
-    [dismissedNotifsStorageKey],
+    [dismissedNotifsStorageKey, recipientNotifications],
   );
 
   // Add a dynamic notification
@@ -621,19 +787,32 @@ export function SidebarNotificationProvider({ children }) {
   // Compute merged system notifications list
   const notificationsList = useMemo(() => {
     const combined = sortNotificationsByNewest([
+      ...recipientNotifications,
       ...dynamicNotifications,
       ...(leavePendingNotification ? [leavePendingNotification] : []),
-      ...operationalNotifications,
-      ...auditNotifications,
+      ...operationalNotifications.filter((op) => {
+        if (op.module === "hiring-needs") {
+          return !recipientNotifications.some(
+            (rn) => rn.module === "hiring-needs" && rn.recordId === op.recordId,
+          );
+        }
+        return true;
+      }),
+      ...auditNotifications.filter((an) => {
+        return !recipientNotifications.some(
+          (rn) => rn.auditLogId === an.auditLogId,
+        );
+      }),
       ...DEFAULT_SYSTEM_NOTIFICATIONS,
     ]);
     return combined
-      .filter((n) => !dismissedNotifIds[n.id])
+      .filter((n) => !dismissedNotifIds[n.id] && !dismissedNotifIds[n.auditLogId])
       .map((n) => ({
         ...n,
-        isRead: Boolean(n.isRead || readNotifIds[n.id]),
+        isRead: Boolean(n.isRead || readNotifIds[n.id] || readNotifIds[n.auditLogId]),
       }));
   }, [
+    recipientNotifications,
     dynamicNotifications,
     leavePendingNotification,
     operationalNotifications,
@@ -647,20 +826,33 @@ export function SidebarNotificationProvider({ children }) {
       ? auditHistoryNotifications
       : auditNotifications;
     const combined = sortNotificationsByNewest([
+      ...recipientNotifications,
       ...dynamicNotifications,
       ...(leavePendingNotification ? [leavePendingNotification] : []),
-      ...operationalNotifications,
-      ...auditSource,
+      ...operationalNotifications.filter((op) => {
+        if (op.module === "hiring-needs") {
+          return !recipientNotifications.some(
+            (rn) => rn.module === "hiring-needs" && rn.recordId === op.recordId,
+          );
+        }
+        return true;
+      }),
+      ...auditSource.filter((an) => {
+        return !recipientNotifications.some(
+          (rn) => rn.auditLogId === an.auditLogId,
+        );
+      }),
       ...DEFAULT_SYSTEM_NOTIFICATIONS,
     ]);
 
     return combined
-      .filter((n) => !dismissedNotifIds[n.id])
+      .filter((n) => !dismissedNotifIds[n.id] && !dismissedNotifIds[n.auditLogId])
       .map((n) => ({
         ...n,
-        isRead: Boolean(n.isRead || readNotifIds[n.id]),
+        isRead: Boolean(n.isRead || readNotifIds[n.id] || readNotifIds[n.auditLogId]),
       }));
   }, [
+    recipientNotifications,
     dynamicNotifications,
     leavePendingNotification,
     operationalNotifications,
@@ -713,6 +905,8 @@ export function SidebarNotificationProvider({ children }) {
       markAllAsRead,
       dismissNotification,
       addNotification,
+      recipientNotifications,
+      serverUnreadCount,
     }),
     [
       markNotificationSeen,
@@ -730,6 +924,8 @@ export function SidebarNotificationProvider({ children }) {
       markAllAsRead,
       dismissNotification,
       addNotification,
+      recipientNotifications,
+      serverUnreadCount,
     ],
   );
 
