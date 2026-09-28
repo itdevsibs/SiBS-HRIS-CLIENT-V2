@@ -275,6 +275,24 @@ function getOfferDecisionStatus(offer = {}) {
   );
 }
 
+function getOfferCandidateResponseStatus(offer = {}) {
+  const latestOfferVersion =
+    offer.latestOfferVersion ||
+    offer.latest_offer_version ||
+    {};
+
+  return cleanText(
+    latestOfferVersion.candidateResponse ||
+      latestOfferVersion.candidate_response ||
+      offer.offerResponseStatus ||
+      offer.offer_response_status ||
+      offer.candidateResponse ||
+      offer.candidate_response ||
+      offer.offerDecision ||
+      offer.offer_decision,
+  );
+}
+
 function normalizeTerminalOfferStatus(value = "") {
   const key = cleanText(value).toLowerCase();
 
@@ -366,6 +384,39 @@ function getOfferApprovalSummaryFromUsers(offer = {}, approvalUsers = []) {
   if (allApproved) return "Approved";
 
   return getDirectOfferApprovalStatus(offer) || "For Review";
+}
+
+function getOfferDisplayStatusFromUsers(offer = {}, approvalUsers = []) {
+  const responseStatus = getOfferCandidateResponseStatus(offer).toLowerCase();
+
+  if (
+    ["negotiate", "negotiation", "negotiation requested"].includes(
+      responseStatus,
+    )
+  ) {
+    return "Negotiation";
+  }
+
+  if (responseStatus === "accepted") {
+    return "Accepted";
+  }
+
+  if (responseStatus === "declined") {
+    return "Declined";
+  }
+
+  const contractSent = Boolean(
+    offer.offerEmailSent ||
+      offer.offer_email_sent ||
+      offer.contractSent ||
+      offer.contract_sent,
+  );
+
+  if (contractSent && (!responseStatus || responseStatus === "pending")) {
+    return "Contract Sent";
+  }
+
+  return getOfferApprovalSummaryFromUsers(offer, approvalUsers);
 }
 
 function findCurrentApprovalUser({
@@ -1291,7 +1342,10 @@ export function OffersProvider({ children }) {
     const keyword = search.trim().toLowerCase();
 
     return offerList.filter((offer) => {
-      const approvalStatus = getOfferApprovalStatus(offer);
+      const displayStatus = getOfferDisplayStatusFromUsers(
+        offer,
+        approvalUsers,
+      );
 
       const offerDetails = safeObject(offer.offerDetails);
 
@@ -1320,7 +1374,7 @@ export function OffersProvider({ children }) {
           .includes(keyword);
 
       const matchesStatus =
-        statusFilter === "All Status" || approvalStatus === statusFilter;
+        statusFilter === "All Status" || displayStatus === statusFilter;
 
       const matchesAccount =
         accountFilter === "All Accounts" ||
@@ -1347,6 +1401,12 @@ export function OffersProvider({ children }) {
         offer.status === "Contract Sent" ||
         offer.offerEmailSent ||
         offer.contractSent,
+    ).length;
+
+    const negotiation = offerList.filter(
+      (offer) =>
+        getOfferDisplayStatusFromUsers(offer, approvalUsers) ===
+        "Negotiation",
     ).length;
 
     const accepted = offerList.filter(
@@ -1377,6 +1437,7 @@ export function OffersProvider({ children }) {
       forReview,
       approved,
       contractSent,
+      negotiation,
       accepted,
       declined,
       acceptanceRate,
@@ -1726,6 +1787,8 @@ export function OffersProvider({ children }) {
 
     canCurrentUserApproveOffer,
     getOfferApprovalStatus,
+    getOfferDisplayStatus: (offer = {}) =>
+      getOfferDisplayStatusFromUsers(offer, approvalUsers),
     getApprovalRecordForUser: (offer, approvalUser) =>
       getApprovalRecordForUser(getApprovalsObject(offer), approvalUser),
 

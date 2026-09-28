@@ -19,6 +19,7 @@ export default function OfferMobileCards({
     handleApproval,
     canCurrentUserApproveOffer,
     getOfferApprovalStatus,
+    getOfferDisplayStatus,
   } = useOffers();
 
   const displayedOffers = Array.isArray(offersOverride)
@@ -61,6 +62,9 @@ export default function OfferMobileCards({
         const approvalStatus = getOfferApprovalStatus
           ? getOfferApprovalStatus(offer)
           : offer.offerApprovalStatus || offer.status || "For Review";
+        const displayStatus = getOfferDisplayStatus
+          ? getOfferDisplayStatus(offer)
+          : approvalStatus;
         const authorized =
           typeof canCurrentUserApproveOffer === "function"
             ? canCurrentUserApproveOffer(offer)
@@ -97,10 +101,10 @@ export default function OfferMobileCards({
               badge={
                 <span
                   className={`inline-flex shrink-0 items-center justify-center rounded-lg border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(
-                    approvalStatus,
+                    displayStatus,
                   )}`}
                 >
-                  {approvalStatus}
+                  {displayStatus}
                 </span>
               }
             />

@@ -4385,32 +4385,30 @@ function AssessmentDeadlineDatePicker({
 }
 
 
-function getFirstSelectableNhoFriday(referenceDate = new Date()) {
-  const sourceDate =
-    referenceDate instanceof Date
-      ? referenceDate
-      : new Date(referenceDate);
+function getSuggestedNhoFriday(referenceDate = new Date()) {
+  const result =
+    getManilaCalendarDate(referenceDate);
 
-  const safeDate = Number.isNaN(sourceDate.getTime())
-    ? new Date()
-    : sourceDate;
+  const weekday =
+    result.getDay();
 
-  const result = new Date(
-    safeDate.getFullYear(),
-    safeDate.getMonth(),
-    safeDate.getDate(),
-  );
+  // SiBS NHO is scheduled on the Friday of the NEXT calendar week.
+  //
+  // Examples:
+  // Monday, September 28, 2026 -> Friday, October 9, 2026
+  // Friday, October 2, 2026 -> Friday, October 9, 2026
+  // Sunday, October 4, 2026 -> Friday, October 9, 2026
+  const daysUntilNextMonday =
+    weekday === 0
+      ? 1
+      : 8 - weekday;
 
-  let daysUntilFriday =
-    (5 - result.getDay() + 7) % 7;
-
-  // If today is Friday, the next available NHO is NEXT Friday.
-  if (daysUntilFriday === 0) {
-    daysUntilFriday = 7;
-  }
+  const daysUntilNextWeekFriday =
+    daysUntilNextMonday + 4;
 
   result.setDate(
-    result.getDate() + daysUntilFriday,
+    result.getDate() +
+      daysUntilNextWeekFriday,
   );
 
   return result;
@@ -4433,15 +4431,18 @@ function isSelectableNhoFriday(
     date.getDate(),
   );
 
-  const earliestFriday =
-    getFirstSelectableNhoFriday(
+  const today =
+    getManilaCalendarDate(
       referenceDate,
     );
 
+  // The suggested NHO remains next week's Friday, but HR/TA may
+  // intentionally choose this week's Friday when the candidate
+  // can start NHO earlier. Only past Fridays are blocked.
   return (
     dateOnly.getDay() === 5 &&
     dateOnly.getTime() >=
-      earliestFriday.getTime()
+      today.getTime()
   );
 }
 
@@ -4899,7 +4900,7 @@ function getCandidateNhoStartDateInput(
   }
 
   return toDateInputValue(
-    getFirstSelectableNhoFriday(),
+    getSuggestedNhoFriday(),
   );
 }
 
@@ -5343,15 +5344,15 @@ function NhoScheduleModal({
   const selectedDate =
     parseDateInputValue(value);
 
-  const earliestFriday =
-    getFirstSelectableNhoFriday();
+  const suggestedFriday =
+    getSuggestedNhoFriday();
 
   const [
     displayDate,
     setDisplayDate,
   ] = useState(() => {
     const source =
-      selectedDate || earliestFriday;
+      selectedDate || suggestedFriday;
 
     return new Date(
       source.getFullYear(),
@@ -5365,7 +5366,7 @@ function NhoScheduleModal({
 
     const source =
       parseDateInputValue(value) ||
-      earliestFriday;
+      suggestedFriday;
 
     setDisplayDate(
       new Date(
@@ -5384,9 +5385,12 @@ function NhoScheduleModal({
     [displayDate],
   );
 
-  const earliestMonth = new Date(
-    earliestFriday.getFullYear(),
-    earliestFriday.getMonth(),
+  const today =
+    getManilaCalendarDate();
+
+  const currentMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
     1,
   );
 
@@ -5398,7 +5402,7 @@ function NhoScheduleModal({
 
   const disablePreviousMonth =
     displayedMonth.getTime() <=
-    earliestMonth.getTime();
+    currentMonth.getTime();
 
   if (!open) return null;
 
@@ -5477,14 +5481,14 @@ className="min-w-[132px]"
 
         <CandidateModalSection
           title="NHO Schedule"
-          subtitle="The next available Friday is used. If today is Friday, scheduling begins next Friday."
+          subtitle="The suggested NHO is Friday of next week. This week\'s upcoming Friday may still be selected for an earlier NHO."
         >
           <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
             <p className="sibs-text-xs font-bold leading-5 text-sibs-primary-1">
-              Earliest selectable date:{" "}
+              Suggested NHO date:{" "}
               <span className="font-extrabold">
                 {formatNhoScheduleDateDisplay(
-                  toDateInputValue(earliestFriday),
+                  toDateInputValue(suggestedFriday),
                 )}
               </span>
             </p>
@@ -6773,7 +6777,7 @@ rawOpenedCandidate || {},
   });
   const [showNhoScheduleModal, setShowNhoScheduleModal] = useState(false);
   const [nhoScheduleDate, setNhoScheduleDate] = useState(() =>
-    toDateInputValue(getFirstSelectableNhoFriday()),
+    toDateInputValue(getSuggestedNhoFriday()),
   );
   const [nhoScheduleTime, setNhoScheduleTime] = useState("08:00");
   const [showNhoRescheduleModal, setShowNhoRescheduleModal] = useState(false);
@@ -10314,7 +10318,7 @@ async function handleConfirmScheduleNho() {
         type: "error",
         title: "Invalid NHO Start Date",
         message:
-          "Please select an available Friday. If today is Friday, the earliest option is next Friday.",
+          "Please select an upcoming Friday. The suggested NHO is next week, but this week\'s Friday may be selected if the candidate can start earlier.",
       });
 
       return;
@@ -10454,20 +10458,32 @@ async function handleConfirmScheduleNho() {
         payload.nho_schedule ||
         schedulePayload;
 
+      const scheduledStage =
+        cleanText(
+          payload?.routedStage ||
+            payload?.routed_stage ||
+            apiCandidate?.currentStage ||
+            apiCandidate?.current_stage ||
+            apiCandidate?.currentPipelineStage ||
+            apiCandidate?.current_pipeline_stage ||
+            apiCandidate?.pipelineStage ||
+            apiCandidate?.pipeline_stage,
+        ) || "Accepted";
+
       const nextCandidate =
         lockCandidatePipelinePrimaryKey(
           {
             ...activeCandidate,
             ...apiCandidate,
-            currentStage: "For NHO",
-            current_stage: "For NHO",
+            currentStage: scheduledStage,
+            current_stage: scheduledStage,
             currentPipelineStage:
-              "For NHO",
+              scheduledStage,
             current_pipeline_stage:
-              "For NHO",
-            pipelineStage: "For NHO",
-            pipeline_stage: "For NHO",
-            stage: "For NHO",
+              scheduledStage,
+            pipelineStage: scheduledStage,
+            pipeline_stage: scheduledStage,
+            stage: scheduledStage,
             nhoSchedule:
               responseSchedule,
             nho_schedule:
@@ -10506,7 +10522,7 @@ async function handleConfirmScheduleNho() {
         title: "NHO Scheduled",
         message:
           payload?.message ||
-          `${activeCandidate.name || "Candidate"}'s NHO was scheduled successfully for ${selectedDateDisplay}.`,
+          `${activeCandidate.name || "Candidate"}'s NHO was proposed for ${selectedDateDisplay}. The candidate remains in Accepted until the NHO schedule is accepted.`,
         /*
          * Clicking OK closes Candidate Pipeline Details. The board was
          * already updated locally above, so no full pipeline reload is needed.

@@ -3,6 +3,7 @@ import {
   Clock3,
   FileText,
   Send,
+  RefreshCw,
   ShieldCheck,
   UserCheck,
   UserX,
@@ -55,16 +56,17 @@ export default function OfferSummaryCards({ isLoading: propIsLoading }) {
   if (isLoading) {
     return (
       <MetricGridSkeleton
-        count={6}
+        count={7}
         labels={[
           "Total Offers",
           "For Review",
           "Approved",
           "Contract Sent",
+          "Negotiation",
           "Accepted",
           "Declined",
         ]}
-        className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
+        className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-7"
         ariaLabel="Loading offer metrics"
       />
     );
@@ -72,7 +74,7 @@ export default function OfferSummaryCards({ isLoading: propIsLoading }) {
 
   return (
     <section aria-labelledby="offer-summary-title">
-      <div className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-7">
         <StatCard
           title="Total Offers"
           value={stats.total}
@@ -105,12 +107,20 @@ export default function OfferSummaryCards({ isLoading: propIsLoading }) {
           delay={180}
         />
         <StatCard
+          title="Negotiation"
+          value={stats.negotiation}
+          icon={RefreshCw}
+          description="Candidate requested changes"
+          tone="indigo"
+          delay={220}
+        />
+        <StatCard
           title="Accepted"
           value={stats.accepted}
           icon={UserCheck}
           description={`${stats.acceptanceRate ?? 0}% rate`}
           tone="green"
-          delay={240}
+          delay={280}
         />
         <StatCard
           title="Declined"
@@ -118,7 +128,7 @@ export default function OfferSummaryCards({ isLoading: propIsLoading }) {
           icon={UserX}
           description="With reasons"
           tone="red"
-          delay={300}
+          delay={340}
         />
       </div>
     </section>

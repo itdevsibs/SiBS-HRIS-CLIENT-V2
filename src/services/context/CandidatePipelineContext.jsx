@@ -48,6 +48,7 @@ import {
 
 import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
 import { generateEmploymentOfferPdf } from "../../lib/utils/candidatePipeline/employmentOfferPdf";
+import { getTalentPoolApplicationById } from "../../lib/axios/getTalentPool";
 import { STATIC_PIPELINE_CANDIDATES } from "../../lib/utils/candidatePipeline/mockPipelineCandidates";
 
 const CandidatePipelineContext = createContext(null);
@@ -256,6 +257,30 @@ function getLoggedInUserIdentifier(user) {
       user?.fullName ||
       user?.name,
   );
+}
+
+function getTalentPoolApplicationIdForOffer(candidate = {}) {
+  const metadata = candidate.metadata || {};
+  const candidateSnapshot =
+    metadata.candidateSnapshot ||
+    metadata.candidate ||
+    candidate.candidateSnapshot ||
+    {};
+
+  const value = cleanText(
+    candidate.sourceTalentPoolId ||
+      candidate.source_talent_pool_id ||
+      metadata.sourceTalentPoolId ||
+      metadata.source_talent_pool_id ||
+      candidateSnapshot.sourceTalentPoolId ||
+      candidateSnapshot.source_talent_pool_id ||
+      candidate.candidateApplicationId ||
+      candidate.candidate_application_id ||
+      candidate.applicationId ||
+      candidate.application_id,
+  );
+
+  return /^\d+$/.test(value) ? value : "";
 }
 
 /* ================================
@@ -2569,8 +2594,47 @@ export function CandidatePipelineProvider({ children }) {
 
     try {
       try {
+        let candidateForOfferPdf = offerCandidate;
+        const talentPoolApplicationId =
+          getTalentPoolApplicationIdForOffer(offerCandidate);
+
+        /*
+         * The Talent Pool physical_address field is the authoritative
+         * residential address for the Employment Offer PDF.
+         *
+         * Fetch it when the PDF is generated so existing Candidate
+         * Pipeline records also use the latest Talent Pool address.
+         */
+        if (talentPoolApplicationId) {
+          const talentPoolResponse =
+            await getTalentPoolApplicationById(talentPoolApplicationId);
+
+          const talentPoolCandidate =
+            talentPoolResponse?.data ||
+            talentPoolResponse?.candidate ||
+            null;
+
+          const physicalAddress = cleanText(
+            talentPoolCandidate?.physicalAddress ||
+              talentPoolCandidate?.physical_address,
+          );
+
+          if (physicalAddress) {
+            candidateForOfferPdf = {
+              ...offerCandidate,
+              physicalAddress,
+              physical_address: physicalAddress,
+              metadata: {
+                ...(offerCandidate.metadata || {}),
+                physicalAddress,
+                physical_address: physicalAddress,
+              },
+            };
+          }
+        }
+
         employmentOfferPdf = await generateEmploymentOfferPdf({
-          candidate: offerCandidate,
+          candidate: candidateForOfferPdf,
           offer: offerForm,
         });
       } catch (pdfError) {
