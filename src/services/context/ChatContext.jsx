@@ -67,41 +67,14 @@ function getCurrentDepartmentId(user = {}) {
   return Number.isFinite(departmentId) ? departmentId : null;
 }
 
-const CHAT_RECEIVE_SOUNDS = [
-  {
-    url: `${import.meta.env.BASE_URL}renee-bituin-ng-mindanao.mp3`,
-    probability: 0.1,
-  },
-  {
-    url: `${import.meta.env.BASE_URL}mama-rene-baterbonia-first-3-seconds.mp3`,
-    probability: 0.1,
-  },
-  {
-    url: `${import.meta.env.BASE_URL}bubble-gum-popping.mp3`,
-    probability: 0.8,
-  },
-];
+const CHAT_RECEIVE_SOUND_URL =
+  `${import.meta.env.BASE_URL}snapchat-sound.mp3`;
 
 let chatReceiveAudioContext = null;
 const chatReceiveAudioBuffers = new Map();
 const chatReceiveAudioBufferPromises = new Map();
 let chatReceiveActiveSource = null;
 let chatReceivePlayRequestId = 0;
-
-function getRandomChatReceiveSoundUrl() {
-  const roll = Math.random();
-  let cumulativeProbability = 0;
-
-  for (const sound of CHAT_RECEIVE_SOUNDS) {
-    cumulativeProbability += Number(sound.probability || 0);
-
-    if (roll < cumulativeProbability) {
-      return sound.url;
-    }
-  }
-
-  return CHAT_RECEIVE_SOUNDS[CHAT_RECEIVE_SOUNDS.length - 1]?.url || "";
-}
 
 function getChatReceiveAudioContext() {
   if (typeof window === "undefined") return null;
@@ -154,12 +127,12 @@ async function getChatReceiveAudioBuffer(audioContext, soundUrl) {
 
 async function playChatReceiveSound() {
   const requestId = ++chatReceivePlayRequestId;
-  const selectedSoundUrl = getRandomChatReceiveSoundUrl();
+  const selectedSoundUrl = CHAT_RECEIVE_SOUND_URL;
 
   try {
-    // Every incoming message gets a fresh random notification sound.
-    // If another message arrives while a tone is still playing, stop the
-    // previous tone immediately and play the newest message's selected tone.
+    // SiBS Chat uses snapchat-sound.mp3 for every incoming notification.
+    // If another message arrives while the sound is still playing, stop the
+    // previous sound immediately and play the newest notification sound.
     if (chatReceiveActiveSource) {
       try {
         chatReceiveActiveSource.stop();
@@ -323,7 +296,10 @@ export function ChatProvider({ children }) {
           void audioContext.resume().catch(() => {});
         }
 
-        void getChatReceiveAudioBuffer(audioContext).catch(() => {});
+        void getChatReceiveAudioBuffer(
+          audioContext,
+          CHAT_RECEIVE_SOUND_URL,
+        ).catch(() => {});
       } catch {
         // Ignore audio initialization errors.
       }

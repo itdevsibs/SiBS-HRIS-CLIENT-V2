@@ -14,6 +14,41 @@ function normalizeStatus(value) {
     : "inactive";
 }
 
+function normalizeProfileFields(row = {}) {
+  return {
+    employeeProfileId: toText(
+      row.employeeProfileId ?? row.employee_profile_id,
+    ),
+    employee_profile_id: toText(
+      row.employee_profile_id ?? row.employeeProfileId,
+    ),
+    profileFilename: toText(
+      row.profileFilename ?? row.profile_filename,
+    ),
+    profile_filename: toText(
+      row.profile_filename ?? row.profileFilename,
+    ),
+    profilePicture: toText(
+      row.profilePicture ??
+        row.profile_picture ??
+        row.profileFilename ??
+        row.profile_filename,
+    ),
+    profile_picture: toText(
+      row.profile_picture ??
+        row.profilePicture ??
+        row.profile_filename ??
+        row.profileFilename,
+    ),
+    profilePictureUrl: toText(
+      row.profilePictureUrl ?? row.profile_picture_url,
+    ),
+    profile_picture_url: toText(
+      row.profile_picture_url ?? row.profilePictureUrl,
+    ),
+  };
+}
+
 function normalizeDepartment(row = {}) {
   const lead = row.lead && typeof row.lead === "object"
     ? {
@@ -22,6 +57,7 @@ function normalizeDepartment(row = {}) {
         email: toText(row.lead.email),
         title: toText(row.lead.title, "Primary Department Supervisor"),
         supervisedStaff: toNumber(row.lead.supervisedStaff),
+        ...normalizeProfileFields(row.lead),
       }
     : null;
 
@@ -53,6 +89,53 @@ function normalizeDepartment(row = {}) {
           longName: toText(account.longName),
           status: normalizeStatus(account.status),
           statusCode: toNumber(account.statusCode),
+          employeeCount: toNumber(account.employeeCount),
+          activeEmployeeCount: toNumber(account.activeEmployeeCount),
+          teamLeaderCount: toNumber(
+            account.teamLeaderCount ??
+              (Array.isArray(account.teamLeaders) ? account.teamLeaders.length : 0),
+          ),
+          teamLeaders: Array.isArray(account.teamLeaders)
+            ? account.teamLeaders.map((leader) => ({
+                sibsId: toText(leader.sibsId),
+                userId: toNumber(leader.userId),
+                name: toText(leader.name, "Team Leader"),
+                email: toText(leader.email),
+                title: toText(leader.title, "Team Leader"),
+                teamMemberCount: toNumber(leader.teamMemberCount),
+                ...normalizeProfileFields(leader),
+              }))
+            : [],
+          operationsManagerCount: toNumber(
+            account.operationsManagerCount ??
+              (Array.isArray(account.operationsManagers) ? account.operationsManagers.length : 0),
+          ),
+          operationsManagers: Array.isArray(account.operationsManagers)
+            ? account.operationsManagers.map((manager) => ({
+                sibsId: toText(manager.sibsId),
+                userId: toNumber(manager.userId),
+                name: toText(manager.name, "Operations Manager"),
+                email: toText(manager.email),
+                title: toText(manager.title, "Operations Manager"),
+                ...normalizeProfileFields(manager),
+              }))
+            : [],
+          seniorOperationsManagerCount: toNumber(
+            account.seniorOperationsManagerCount ??
+              (Array.isArray(account.seniorOperationsManagers)
+                ? account.seniorOperationsManagers.length
+                : 0),
+          ),
+          seniorOperationsManagers: Array.isArray(account.seniorOperationsManagers)
+            ? account.seniorOperationsManagers.map((manager) => ({
+                sibsId: toText(manager.sibsId),
+                userId: toNumber(manager.userId),
+                name: toText(manager.name, "Senior Operations Manager"),
+                email: toText(manager.email),
+                title: toText(manager.title, "Senior Operations Manager"),
+                ...normalizeProfileFields(manager),
+              }))
+            : [],
         }))
       : [],
     budget: row.budget ?? null,
