@@ -148,9 +148,10 @@ export function buildAuditNotificationActionState(item = {}) {
   const action = cleanText(item.action).toUpperCase();
   const targetPath = cleanText(item.targetPath);
   const targetSibsId = cleanText(item.targetSibsId || item.target_sibs_id);
-  const isAccountSettingsModule = [
+  const isUserSettingsModule = [
     "users",
     "account-settings",
+    "user-settings",
     "assigned-accounts",
   ].includes(moduleName);
   const isResignationModule = [
@@ -176,12 +177,12 @@ export function buildAuditNotificationActionState(item = {}) {
     Boolean(resignationId || employeeSibsId);
 
   if (
-    isAccountSettingsModule &&
+    isUserSettingsModule &&
     ["CREATE", "UPDATE"].includes(action) &&
     targetSibsId
   ) {
     return {
-      source: "account-settings-notification",
+      source: "user-settings-notification",
       highlightSibsId: targetSibsId,
       accessAction: action,
     };

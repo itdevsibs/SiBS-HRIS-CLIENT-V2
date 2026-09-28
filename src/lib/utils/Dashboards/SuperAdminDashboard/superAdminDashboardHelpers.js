@@ -8,7 +8,7 @@ export const SUPER_ADMIN_ROUTES = Object.freeze({
   hiringNeeds: "/recruitment/hiring-needs",
   candidatePipeline: "/recruitment/candidate-pipeline",
   reports: "/recruitment/weekly-reports",
-  accessSettings: "/settings/account-settings",
+  accessSettings: "/settings/user-settings",
 });
 
 export const ACCESS_LEVELS = Object.freeze([

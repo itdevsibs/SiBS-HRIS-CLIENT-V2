@@ -12,7 +12,7 @@ import {
 import { getEmployee } from "../../../lib/axios/getEmployee";
 import { getApprovalRequests } from "../../../lib/axios/getApprovalRequest";
 import { getLeaves } from "../../../lib/axios/getLeaves";
-import { getAccountSettingsUsers } from "../../../lib/axios/accountSettings";
+import { getUserSettingsUsers } from "../../../lib/axios/userSettings";
 import { normalizeDashboardOverview } from "../../../lib/utils/Dashboards/AdminDashboard/adminDashboardHelpers";
 import {
   ACCESS_LEVELS,
@@ -106,7 +106,7 @@ export default function SuperAdminDashboardPage() {
             includeDepartments: true,
             includeAccounts: true,
           }),
-          getAccountSettingsUsers({ limit: 100 }),
+          getUserSettingsUsers({ limit: 100 }),
           getApprovalRequests({ status: "Pending", limit: 50 }),
           getLeaves({ status: "Pending", limit: 50 }),
         ]);
