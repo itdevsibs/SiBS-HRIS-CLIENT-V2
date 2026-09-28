@@ -104,6 +104,7 @@ export default function OfferRecordsTable({
     handleApproval,
     canCurrentUserApproveOffer,
     getOfferApprovalStatus,
+    getOfferDisplayStatus,
     isLoading: contextIsLoading = false,
   } = useOffers() || {};
 
@@ -121,6 +122,30 @@ export default function OfferRecordsTable({
     return getOfferApprovalStatus
       ? getOfferApprovalStatus(offer)
       : offer.offerApprovalStatus || offer.status || "For Review";
+  }
+
+  function getDisplayStatus(offer) {
+    if (typeof getOfferDisplayStatus === "function") {
+      return getOfferDisplayStatus(offer);
+    }
+
+    const responseStatus = String(
+      offer.offerResponseStatus ||
+        offer.offer_response_status ||
+        offer.candidateResponse ||
+        offer.candidate_response ||
+        offer.offerDecision ||
+        offer.offer_decision ||
+        "",
+    )
+      .trim()
+      .toLowerCase();
+
+    if (["negotiate", "negotiation"].includes(responseStatus)) {
+      return "Negotiation";
+    }
+
+    return getApprovalStatus(offer);
   }
 
   function isAuthorizedApproverForOffer(offer) {
@@ -171,6 +196,7 @@ export default function OfferRecordsTable({
               ) : displayedOffers.length > 0 ? (
                 displayedOffers.map((offer, index) => {
                   const approvalStatus = getApprovalStatus(offer);
+                  const displayStatus = getDisplayStatus(offer);
                   const isAuthorizedApprover =
                     isAuthorizedApproverForOffer(offer);
 
@@ -237,13 +263,13 @@ export default function OfferRecordsTable({
 
                       <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
                         <span
-                          title={approvalStatus}
+                          title={displayStatus}
                           className={`mx-auto inline-flex h-7 max-w-[195px] items-center justify-center rounded-lg border px-2.5 text-center text-[10px] font-extrabold leading-none ${getStatusClass(
-                            approvalStatus,
+                            displayStatus,
                           )}`}
                         >
                           <span className="line-clamp-2 break-words">
-                            {approvalStatus}
+                            {displayStatus}
                           </span>
                         </span>
                       </td>
@@ -286,9 +312,16 @@ export default function OfferRecordsTable({
                               </span>
                             )}
 
-                          {approvalStatus === "Approved" && (
-                            <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-extrabold leading-none text-emerald-700">
-                              Ready in Pipeline
+                          {approvalStatus === "Approved" &&
+                            displayStatus !== "Negotiation" && (
+                              <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-extrabold leading-none text-emerald-700">
+                                Ready in Pipeline
+                              </span>
+                            )}
+
+                          {displayStatus === "Negotiation" && (
+                            <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[10px] font-extrabold leading-none text-blue-700">
+                              Negotiation Requested
                             </span>
                           )}
 

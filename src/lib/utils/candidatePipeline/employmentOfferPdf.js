@@ -73,8 +73,20 @@ async function loadOfferHeaderDataUrl() {
 
 function getCandidateAddress(candidate = {}) {
   const metadata = candidate.metadata || candidate.candidateMetadata || {};
+  const candidateSnapshot =
+    candidate.candidateSnapshot ||
+    metadata.candidateSnapshot ||
+    metadata.candidate ||
+    {};
+
   return clean(
-    candidate.address ||
+    candidate.physicalAddress ||
+      candidate.physical_address ||
+      metadata.physicalAddress ||
+      metadata.physical_address ||
+      candidateSnapshot.physicalAddress ||
+      candidateSnapshot.physical_address ||
+      candidate.address ||
       candidate.currentAddress ||
       candidate.current_address ||
       candidate.homeAddress ||

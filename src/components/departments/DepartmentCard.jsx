@@ -19,8 +19,26 @@ export default function DepartmentCard({ department, onView }) {
     0,
   );
 
+  function openDepartment() {
+    onView?.(department);
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openDepartment();
+    }
+  }
+
   return (
-    <article className="flex min-h-[440px] flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white transition hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-lg">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={openDepartment}
+      onKeyDown={handleKeyDown}
+      title={`View ${department.name} details`}
+      className="group flex min-h-[440px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white transition hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
+    >
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -139,15 +157,11 @@ export default function DepartmentCard({ department, onView }) {
           Budget not available
         </span>
 
-        <button
-          type="button"
-          onClick={() => onView(department)}
-          className="inline-flex items-center gap-2 text-xs font-extrabold text-sibs-navy transition hover:text-sibs-orange"
-        >
+        <span className="inline-flex items-center gap-2 text-xs font-extrabold text-sibs-navy transition group-hover:text-sibs-orange">
           <Building2 className="h-4 w-4" />
           View Details
-          <ArrowRight className="h-4 w-4" />
-        </button>
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </span>
       </div>
     </article>
   );
