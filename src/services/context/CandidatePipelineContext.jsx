@@ -48,7 +48,7 @@ import {
 } from "../../lib/utils/candidatePipeline/candidatePipelineIdentity";
 
 import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
-import { generateEmploymentOfferPdf } from "../../lib/utils/candidatePipeline/employmentOfferPdf";
+import { generateEmploymentOfferPdf } from "../../lib/utils/candidatePipeline/candidateEmploymentOfferPdf";
 import { getTalentPoolApplicationById } from "../../lib/axios/getTalentPool";
 import { STATIC_PIPELINE_CANDIDATES } from "../../lib/utils/candidatePipeline/mockPipelineCandidates";
 
