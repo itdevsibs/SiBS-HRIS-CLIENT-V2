@@ -520,7 +520,7 @@ function DropdownPortal({
       onMouseDown={(event) => event.stopPropagation()}
       onTouchStartCapture={(event) => event.stopPropagation()}
       onTouchStart={(event) => event.stopPropagation()}
-      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
+      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -561,7 +561,7 @@ function TrendDisplayDropdown({
 
   return (
     <div className="relative min-w-0 overflow-visible">
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </label>
 
@@ -570,7 +570,7 @@ function TrendDisplayDropdown({
         type="button"
         disabled={disabled}
         onClick={onToggle}
-        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between ${EDGE} border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between ${EDGE} border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${open ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : ""
           }`}
       >
         <span className="min-w-0 truncate">{value || "—"}</span>
@@ -602,8 +602,8 @@ function TrendDisplayDropdown({
                 type="button"
                 onClick={() => handleSelect(option)}
                 className={`block w-full px-3.5 py-2 text-left sibs-text-xs transition ${isSelected
-                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                  : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  ? "bg-orange-50 font-extrabold text-sibs-orange"
+                  : "font-bold text-slate-700 hover:bg-orange-50/50 hover:text-sibs-orange"
                   }`}
               >
                 <p className="truncate font-bold">{option.title}</p>
@@ -615,7 +615,7 @@ function TrendDisplayDropdown({
             );
           })
         ) : (
-          <div className="px-3.5 py-2.5 sibs-text-xs font-semibold text-[#667085]">
+          <div className="px-3.5 py-2.5 sibs-text-xs font-semibold text-sibs-muted">
             No weekly versions available.
           </div>
         )}
@@ -627,12 +627,12 @@ function TrendDisplayDropdown({
 function TrendDisplayField({ label, value }) {
   return (
     <div className="min-w-0">
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </label>
 
       <div
-        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between ${EDGE} border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-[#042C51] shadow-sm`}
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between ${EDGE} border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-sibs-navy shadow-sm`}
       >
         <span className="min-w-0 truncate">{value || "—"}</span>
 
@@ -707,7 +707,7 @@ function TrendCheckboxDropdown({
 
   return (
     <div className="relative min-w-0 overflow-visible">
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </label>
 
@@ -736,7 +736,7 @@ function TrendCheckboxDropdown({
             disabled={loading}
             placeholder={searchPlaceholder}
             autoComplete="off"
-            className={`h-8.5 2xl:h-10 w-full ${EDGE} border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 pr-10 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10`}
+            className={`h-8.5 2xl:h-10 w-full ${EDGE} border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 pr-10 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10`}
           />
 
           <ChevronDown
@@ -752,7 +752,7 @@ function TrendCheckboxDropdown({
           type="button"
           disabled={loading}
           onClick={handleOpen}
-          className={`flex h-8.5 2xl:h-10 w-full items-center justify-between ${EDGE} border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : ""
+          className={`flex h-8.5 2xl:h-10 w-full items-center justify-between ${EDGE} border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${open ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : ""
             }`}
         >
           <span className="min-w-0 truncate">
@@ -777,15 +777,15 @@ function TrendCheckboxDropdown({
           type="button"
           onClick={() => handleToggle(allValue)}
           className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs transition ${selectedValues.includes(allValue)
-            ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-            : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+            ? "bg-orange-50 font-extrabold text-sibs-orange"
+            : "font-bold text-slate-700 hover:bg-orange-50/50 hover:text-sibs-orange"
             }`}
         >
           <input
             type="checkbox"
             checked={selectedValues.includes(allValue)}
             readOnly
-            className="h-4 w-4 rounded border-[#D0D5DD] accent-[#FF5C28]"
+            className="h-4 w-4 rounded border-sibs-border accent-sibs-orange"
           />
 
           <span className="truncate">{allLabel}</span>
@@ -803,15 +803,15 @@ function TrendCheckboxDropdown({
                 type="button"
                 onClick={() => handleToggle(option.value)}
                 className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs transition ${checked
-                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                  : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  ? "bg-orange-50 font-extrabold text-sibs-orange"
+                  : "font-bold text-slate-700 hover:bg-orange-50/50 hover:text-sibs-orange"
                   }`}
               >
                 <input
                   type="checkbox"
                   checked={checked}
                   readOnly
-                  className="h-4 w-4 rounded border-[#D0D5DD] accent-[#FF5C28]"
+                  className="h-4 w-4 rounded border-sibs-border accent-sibs-orange"
                 />
 
                 <span className="truncate">{option.label}</span>
@@ -819,7 +819,7 @@ function TrendCheckboxDropdown({
             );
           })
         ) : (
-          <div className="px-4 py-4 text-xs font-semibold text-[#667085]">
+          <div className="px-4 py-4 text-xs font-semibold text-sibs-muted">
             {emptyText}
           </div>
         )}
@@ -834,7 +834,7 @@ function getBufferColor(value) {
   if (numberValue < 0) return "!font-jakarta !text-xs !font-black !text-rose-600";
   if (numberValue > 0) return "!font-jakarta !text-xs !font-black !text-emerald-600";
 
-  return "font-black text-[#042C51]";
+  return "font-black text-sibs-navy";
 }
 
 function getRowValue(row = {}, keys = []) {
@@ -1054,7 +1054,7 @@ function getNegativePositiveColor(value) {
   if (numberValue < 0) return "!font-jakarta !text-xs !font-black !text-rose-600";
   if (numberValue > 0) return "!font-jakarta !text-xs !font-black !text-emerald-600";
 
-  return "font-black text-[#042C51]";
+  return "font-black text-sibs-navy";
 }
 
 function getHiringNeededColor(value) {
@@ -1237,8 +1237,8 @@ function DetailTh({
       colSpan={colSpan}
       className={`sibs-data-table-th border border-slate-200 !px-3 text-center align-middle font-jakarta uppercase tracking-wider ${
         group
-          ? "!bg-[#EBF3FA] !py-2 !text-[10px] !font-black !text-sibs-primary-1"
-          : "!bg-[#F8FAFC] !py-2.5 !text-[10px] !font-extrabold !text-slate-500"
+          ? "!bg-blue-50 !py-2 !text-[10px] !font-black !text-sibs-navy"
+          : "!bg-sibs-surface !py-2.5 !text-[10px] !font-extrabold !text-slate-500"
       } ${className}`}
     >
       {children}
@@ -1246,7 +1246,7 @@ function DetailTh({
   );
 }
 
-const DETAIL_BOLD_NUMBER_CLASS = "!font-jakarta !text-xs !font-black !text-[#042C51]";
+const DETAIL_BOLD_NUMBER_CLASS = "!font-jakarta !text-xs !font-black !text-sibs-navy";
 
 function DetailTd({
   children,
@@ -1265,7 +1265,7 @@ function DetailTd({
   return (
     <td
       {...props}
-      className={`whitespace-nowrap border-b border-[#E6ECF2] px-3 py-2.5 align-middle text-xs leading-tight ${
+      className={`whitespace-nowrap border-b border-sibs-border px-3 py-2.5 align-middle text-xs leading-tight ${
         numeric ? "font-mono tabular-nums" : "font-jakarta"
       } ${alignmentClass} ${className}`}
     >
@@ -1281,10 +1281,10 @@ function SortHeaderButton({ label, active = false, direction = "asc", onClick })
       onClick={onClick}
       onMouseDown={(event) => event.stopPropagation()}
       className={[
-        "group inline-flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-none bg-transparent p-0 font-jakarta text-[10px] font-black uppercase leading-tight tracking-wider transition-colors focus:outline-none focus-visible:text-sibs-primary-1",
+        "group inline-flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-none bg-transparent p-0 font-jakarta text-[10px] font-black uppercase leading-tight tracking-wider transition-colors focus:outline-none focus-visible:text-sibs-navy",
         active
-          ? "text-sibs-primary-1"
-          : "text-[#042C51] hover:text-sibs-primary-2",
+          ? "text-sibs-navy"
+          : "text-sibs-navy hover:text-sibs-orange",
       ].join(" ")}
     >
       <span>{label}</span>
@@ -1293,8 +1293,8 @@ function SortHeaderButton({ label, active = false, direction = "asc", onClick })
           aria-hidden="true"
           className={`h-0 w-0 border-x-[3px] border-x-transparent ${
             direction === "asc"
-              ? "border-b-[5px] border-b-[#042C51]"
-              : "border-t-[5px] border-t-[#042C51]"
+              ? "border-b-[5px] border-b-sibs-navy"
+              : "border-t-[5px] border-t-sibs-navy"
           }`}
         />
       ) : null}
@@ -2197,10 +2197,10 @@ function getInitialEndOption({ options = [], trendDetails = [], trendWeeks = [],
 function TrendRangeSelector({ value, onChange }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         Trend Range
       </label>
-      <div className="grid grid-cols-4 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1 shadow-sm">
+      <div className="grid grid-cols-4 rounded-xl border border-sibs-border bg-sibs-surface p-1 shadow-sm">
         {TREND_RANGE_OPTIONS.map((option) => {
           const active = value === option.key;
           return (
@@ -2209,8 +2209,8 @@ function TrendRangeSelector({ value, onChange }) {
               type="button"
               onClick={() => onChange(option.key)}
               className={`min-w-0 rounded-lg py-1.5 2xl:py-2 text-[9px] 2xl:text-[10px] font-extrabold transition ${active
-                ? "bg-[#042C51] text-white shadow-sm"
-                : "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                ? "bg-sibs-navy text-white shadow-sm"
+                : "text-sibs-navy hover:bg-orange-50 hover:text-sibs-orange"
                 }`}
               aria-pressed={active}
             >
@@ -2534,11 +2534,11 @@ export default function WorkforceHiringTrendDetailsModal({
 
   return createPortal(
     <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-3 sm:p-5">
-      <div className="sibs-modal-pop-in flex max-h-[94vh] w-full max-w-[1480px] flex-col overflow-hidden rounded-2xl border border-[#315779] bg-[#F8FAFC] font-jakarta text-[#042C51] shadow-2xl">
-        <header className="shrink-0 border-b border-white/10 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+      <div className="sibs-modal-pop-in flex max-h-[94vh] w-full max-w-[1480px] flex-col overflow-hidden rounded-2xl border border-sibs-navy bg-sibs-surface font-jakarta text-sibs-navy shadow-2xl">
+        <header className="shrink-0 border-b border-white/10 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-sm">
                 <BarChart3 size={16} />
               </span>
 
@@ -2547,7 +2547,7 @@ export default function WorkforceHiringTrendDetailsModal({
                   <h2 className="sibs-modal-title truncate text-white">
                     {rangeLabel} Trend Details
                   </h2>
-                  <span className="rounded-full bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wider text-white">
+                  <span className="rounded-full bg-sibs-orange px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wider text-white">
                     Executive Suite
                   </span>
                 </div>
@@ -2572,18 +2572,18 @@ export default function WorkforceHiringTrendDetailsModal({
         <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto">
           <main className="space-y-5 p-4 sm:p-6">
             <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
-              <aside className="sibs-page-card-in sibs-card overflow-visible rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-                <div className="border-b border-[#E6ECF2] px-4 py-4 sm:px-5">
+              <aside className="sibs-page-card-in sibs-card overflow-visible rounded-2xl border border-sibs-border bg-white shadow-sm">
+                <div className="border-b border-sibs-border px-4 py-4 sm:px-5">
                   <div className="flex items-center gap-2">
                     <CalendarDays
-                      className="h-4 w-4 text-[#FF5C28]"
+                      className="h-4 w-4 text-sibs-orange"
                       strokeWidth={2.4}
                     />
-                    <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                       Scope Controls
                     </h3>
                   </div>
-                  <p className="sibs-section-subtitle mt-1 text-xs font-semibold text-[#667085]">
+                  <p className="sibs-section-subtitle mt-1 text-xs font-semibold text-sibs-muted">
                     Range, weekly version, cluster, and account controls refresh the graph and table together.
                   </p>
                 </div>
@@ -2663,13 +2663,13 @@ export default function WorkforceHiringTrendDetailsModal({
                     />
                   </section>
 
-                  <section className="border-t border-[#E6ECF2] pt-5">
+                  <section className="border-t border-sibs-border pt-5">
                     <div className="mb-3 flex items-center gap-2">
                       <Filter
-                        className="h-4 w-4 text-[#FF5C28]"
+                        className="h-4 w-4 text-sibs-orange"
                         strokeWidth={2.4}
                       />
-                      <h4 className="text-[10px] font-black uppercase tracking-wide text-[#042C51]">
+                      <h4 className="text-[10px] font-black uppercase tracking-wide text-sibs-navy">
                         Metric Visibility
                       </h4>
                     </div>
@@ -2699,20 +2699,20 @@ export default function WorkforceHiringTrendDetailsModal({
                 </div>
               </aside>
 
-              <section className="sibs-page-card-in sibs-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-                <div className="border-b border-[#E6ECF2] px-4 py-4 sm:px-5">
+              <section className="sibs-page-card-in sibs-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+                <div className="border-b border-sibs-border px-4 py-4 sm:px-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
-                      <h3 className="sibs-section-title flex items-center gap-2 text-base font-extrabold text-[#042C51]">
+                      <h3 className="sibs-section-title flex items-center gap-2 text-base font-extrabold text-sibs-navy">
                         Interactive Multi-Series {rangeLabel}
                       </h3>
-                      <p className="sibs-section-subtitle mt-1 text-xs font-semibold text-[#667085]">
+                      <p className="sibs-section-subtitle mt-1 text-xs font-semibold text-sibs-muted">
                         Move the cursor across the graph to inspect each production week.
                       </p>
                     </div>
 
-                    <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-blue-100 bg-[#E9F0FC] px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
-                      <LineChart className="h-3.5 w-3.5 text-[#FF5C28]" />
+                    <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                      <LineChart className="h-3.5 w-3.5 text-sibs-orange" />
                       {selectedWeekCount}-week view
                     </span>
                   </div>
@@ -2726,12 +2726,12 @@ export default function WorkforceHiringTrendDetailsModal({
                   ) : null}
 
                   {coverageLimited ? (
-                    <div className="mb-3 rounded-xl border border-blue-100 bg-[#E9F0FC] px-4 py-3 text-xs font-semibold text-[#315779]">
+                    <div className="mb-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold text-sibs-navy">
                       Requested {requestedWeekCount} weeks; {activePoints.length} production weeks were returned and displayed. No missing values were generated.
                     </div>
                   ) : null}
 
-                  <div className="min-h-0 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:h-[420px] sm:p-4 xl:h-[500px]">
+                  <div className="min-h-0 rounded-2xl border border-sibs-border bg-sibs-surface p-3 sm:h-[420px] sm:p-4 xl:h-[500px]">
                     {combinedTrendLoading ? (
                       <TrendLoadingScreen
                         title={`Loading ${rangeLabel.toLowerCase()} graph...`}
@@ -2747,7 +2747,7 @@ export default function WorkforceHiringTrendDetailsModal({
                         />
                       </div>
                     ) : (
-                      <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-[#D6E0EA] bg-white px-5 text-center text-xs font-semibold text-[#667085]">
+                      <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-sibs-border bg-white px-5 text-center text-xs font-semibold text-sibs-muted">
                         No production trend data is available for the selected range.
                       </div>
                     )}

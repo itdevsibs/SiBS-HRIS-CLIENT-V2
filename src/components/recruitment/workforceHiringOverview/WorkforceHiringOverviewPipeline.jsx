@@ -24,7 +24,7 @@ const PIPELINE_ICONS = {
 };
 
 const STAGE_TONES = [
-  "border-blue-100 bg-[#E9F0FC] text-[#042C51]",
+  "border-blue-100 bg-blue-50 text-sibs-navy",
   "border-indigo-100 bg-indigo-50 text-indigo-700",
   "border-cyan-100 bg-cyan-50 text-cyan-700",
   "border-amber-100 bg-amber-50 text-amber-700",
@@ -44,7 +44,7 @@ export function WorkforceHiringOverviewPipelineStrip() {
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-3.5 shadow-sm 2xl:p-5">
+    <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white p-3.5 shadow-sm 2xl:p-5">
       <div className="flex flex-col gap-3 2xl:gap-4 2xl:flex-row 2xl:items-center">
         <div className="grid min-w-0 flex-1 grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_20px_1fr_20px_1fr_20px_1fr_20px_1fr] 2xl:grid-cols-[1fr_26px_1fr_26px_1fr_26px_1fr_26px_1fr]">
           {pipeline.map((stage, index) => {
@@ -84,23 +84,23 @@ export function WorkforceHiringOverviewPipelineStrip() {
           })}
         </div>
 
-        <aside className="grid shrink-0 grid-cols-2 gap-3 border-t border-[#E6ECF2] pt-3 2xl:w-[260px] 2xl:border-l 2xl:border-t-0 2xl:pl-5 2xl:pt-0">
+        <aside className="grid shrink-0 grid-cols-2 gap-3 border-t border-sibs-border pt-3 2xl:w-[260px] 2xl:border-l 2xl:border-t-0 2xl:pl-5 2xl:pt-0">
           <div>
-            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]">
+            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
               Leads to Interview
             </p>
             <AnimatedNumber
               value={formatOverviewNumber(summary.leadsToInterview)}
-              className="mt-0.5 2xl:mt-1 block text-lg 2xl:text-xl font-extrabold text-[#042C51]"
+              className="mt-0.5 2xl:mt-1 block text-lg 2xl:text-xl font-extrabold text-sibs-navy"
             />
           </div>
           <div className="text-right">
-            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]">
+            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
               Hiring Rate
             </p>
             <AnimatedNumber
               value={`${Number(summary.hiringRate || 0).toFixed(1)}%`}
-              className="mt-0.5 2xl:mt-1 block text-lg 2xl:text-xl font-extrabold text-[#FF5C28]"
+              className="mt-0.5 2xl:mt-1 block text-lg 2xl:text-xl font-extrabold text-sibs-orange"
             />
           </div>
         </aside>
@@ -122,7 +122,7 @@ export function HiringFunnelCard() {
     return (
       <section
         data-testid="hiring-funnel-skeleton"
-        className="sibs-page-card-in sibs-card flex h-full min-h-[480px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+        className="sibs-page-card-in sibs-card flex h-full min-h-[480px] flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm"
         role="status"
         aria-live="polite"
         aria-busy="true"
@@ -132,10 +132,10 @@ export function HiringFunnelCard() {
           <Skeleton className="h-5 w-32" />
           <Skeleton className="h-3.5 w-64" />
         </div>
-        <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] px-4 py-5">
+        <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-xl border border-sibs-border bg-sibs-surface px-4 py-5">
           <Skeleton className="h-44 w-3/4 rounded-xl" />
         </div>
-        <div className="mt-3 overflow-hidden rounded-xl border border-[#DDE5EE] bg-white p-2 space-y-2">
+        <div className="mt-3 overflow-hidden rounded-xl border border-sibs-border bg-white p-2 space-y-2">
           {Array.from({ length: 5 }).map((_, index) => (
             <div key={index} className="flex justify-between py-1">
               <Skeleton className="h-3.5 w-24" />
@@ -150,21 +150,21 @@ export function HiringFunnelCard() {
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card flex h-full min-h-[480px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+    <section className="sibs-page-card-in sibs-card flex h-full min-h-[480px] flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm">
       <div>
         <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           Hiring Funnel
         </h3>
-        <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+        <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
           Visual stacked funnel depicting active candidate volume and sequential conversion rates.
         </p>
       </div>
 
-      <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] px-4 py-5">
+      <div className="mt-4 flex min-h-[220px] items-center justify-center rounded-xl border border-sibs-border bg-sibs-surface px-4 py-5">
         <FunnelShape pipeline={pipeline} />
       </div>
 
-      <div className="mt-3 overflow-hidden rounded-xl border border-[#DDE5EE] bg-white">
+      <div className="mt-3 overflow-hidden rounded-xl border border-sibs-border bg-white">
         <table className="w-full border-collapse">
           <thead>
             <tr>
@@ -177,10 +177,10 @@ export function HiringFunnelCard() {
           <tbody>
             {pipeline.map((stage) => (
               <tr key={stage.stage}>
-                <SmallTd className="text-left font-extrabold text-[#042C51]">
+                <SmallTd className="text-left font-extrabold text-sibs-navy">
                   {stage.short || stage.stage}
                 </SmallTd>
-                <SmallTd className="font-extrabold text-[#042C51]">
+                <SmallTd className="font-extrabold text-sibs-navy">
                   <AnimatedNumber value={stage.count} />
                 </SmallTd>
                 <SmallTd>
@@ -192,7 +192,7 @@ export function HiringFunnelCard() {
                     "—"
                   )}
                 </SmallTd>
-                <SmallTd className="font-extrabold text-[#FF5C28]">
+                <SmallTd className="font-extrabold text-sibs-orange">
                   <AnimatedNumber
                     value={`${Number(stage.cumulative || 0).toFixed(1)}%`}
                   />
@@ -203,11 +203,11 @@ export function HiringFunnelCard() {
         </table>
       </div>
 
-      <div className="mt-auto border-t border-[#E6ECF2] pt-3 text-center text-[10px] font-bold text-[#042C51]">
+      <div className="mt-auto border-t border-sibs-border pt-3 text-center text-[10px] font-bold text-sibs-navy">
         Hiring Rate (Leads to JO):{" "}
         <AnimatedNumber
           value={`${Number(summary.hiringRate || 0).toFixed(1)}%`}
-          className="text-xs font-black text-[#FF5C28]"
+          className="text-xs font-black text-sibs-orange"
         />
       </div>
     </section>

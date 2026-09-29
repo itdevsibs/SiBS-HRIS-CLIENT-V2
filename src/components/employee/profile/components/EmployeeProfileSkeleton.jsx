@@ -98,7 +98,7 @@ export default function EmployeeProfileSkeleton() {
               key={tab}
               className={`inline-flex h-8 2xl:h-9 min-w-max items-center justify-center gap-1.5 rounded-lg border px-2.5 2xl:px-3.5 sibs-text-micro 2xl:sibs-text-xs font-extrabold ${
                 idx === 0
-                  ? "border-[#BFD3F2] bg-[#E9F0FC] text-sibs-navy shadow-xs"
+                  ? "border-blue-200 bg-blue-50 text-sibs-navy shadow-xs"
                   : "border-transparent text-sibs-muted/60"
               }`}
             >
@@ -118,7 +118,7 @@ export default function EmployeeProfileSkeleton() {
               className={`h-6 2xl:h-7 min-w-max rounded-full px-2.5 2xl:px-3 sibs-text-micro font-extrabold ${
                 idx === 0
                   ? "bg-sibs-navy text-white shadow-xs"
-                  : "bg-[#F1F5F9] text-sibs-muted/60"
+                  : "bg-slate-100 text-sibs-muted/60"
               }`}
             >
               {sub}
@@ -132,10 +132,10 @@ export default function EmployeeProfileSkeleton() {
         {/* Left Column: Form Card */}
         <section
           data-testid="employee-skeleton-form-card"
-          className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+          className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-sibs-border bg-white p-5 shadow-sm"
         >
           {/* Header Row */}
-          <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-sibs-border-subtle pb-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 space-y-1.5">
               <div className="h-4 w-44 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
               <div className="h-3 w-72 rounded bg-sibs-tertiary-9/60 animate-sibs-pulse motion-reduce:animate-none" />
@@ -153,7 +153,7 @@ export default function EmployeeProfileSkeleton() {
                 className="space-y-1.5"
               >
                 <div className="h-3 w-28 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
-                <div className="h-10 w-full rounded-lg border border-sibs-border bg-[#F8FAFC] animate-sibs-pulse motion-reduce:animate-none" />
+                <div className="h-10 w-full rounded-lg border border-sibs-border bg-sibs-surface animate-sibs-pulse motion-reduce:animate-none" />
               </div>
             ))}
           </div>
@@ -176,7 +176,7 @@ export default function EmployeeProfileSkeleton() {
               <div className="relative mx-auto flex h-24 w-24 2xl:h-28 2xl:w-28 items-center justify-center rounded-full border-8 border-sibs-border/60 animate-sibs-pulse motion-reduce:animate-none">
                 <div className="h-6 w-12 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
               </div>
-              <div className="h-12 w-full rounded-xl border border-sibs-border-subtle bg-[#F8FAFC] animate-sibs-pulse motion-reduce:animate-none" />
+              <div className="h-12 w-full rounded-xl border border-sibs-border-subtle bg-sibs-surface animate-sibs-pulse motion-reduce:animate-none" />
             </div>
           </section>
 
@@ -192,7 +192,7 @@ export default function EmployeeProfileSkeleton() {
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="h-8 w-full rounded-lg border border-sibs-border bg-[#F8FAFC] animate-sibs-pulse motion-reduce:animate-none"
+                  className="h-8 w-full rounded-lg border border-sibs-border bg-sibs-surface animate-sibs-pulse motion-reduce:animate-none"
                 />
               ))}
             </div>

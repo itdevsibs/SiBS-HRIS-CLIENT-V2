@@ -12,7 +12,7 @@ export default function ProfileSectionHeader({
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           {Icon ? (
-            <span className="flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-xl bg-[#E9F0FC] text-sibs-navy">
+            <span className="flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sibs-navy">
               <Icon size={16} className="2xl:h-4.5 2xl:w-4.5 text-sibs-navy" />
             </span>
           ) : null}
@@ -30,7 +30,7 @@ export default function ProfileSectionHeader({
         <button
           type="button"
           onClick={onEdit}
-          className="inline-flex h-7 2xl:h-8 w-fit shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3 sibs-text-xs font-black text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-[#FFF7F2] hover:text-sibs-orange sm:self-center"
+          className="inline-flex h-7 2xl:h-8 w-fit shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-sibs-border bg-white px-2.5 2xl:px-3 sibs-text-xs font-black text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange sm:self-center"
         >
           <Edit3 size={12} className="text-sibs-orange 2xl:h-[13px] 2xl:w-[13px]" />
           Edit Section

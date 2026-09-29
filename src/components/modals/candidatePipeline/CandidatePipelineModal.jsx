@@ -1,4 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowRight,
   BarChart3,
@@ -6663,6 +6670,154 @@ function CandidateStageJourney({ currentStage = "" }) {
   );
 }
 
+function ManualCandidateResponseDropdown({
+  candidate,
+  options = [],
+  onDecision,
+}) {
+  const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState(null);
+  const containerRef = useRef(null);
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current || !menuRef.current) return undefined;
+
+    const updatePosition = () => {
+      if (!buttonRef.current || !menuRef.current) return;
+
+      const rect = buttonRef.current.getBoundingClientRect();
+      const scrollParent = buttonRef.current.closest(".overflow-y-auto");
+      const scrollBounds = scrollParent?.getBoundingClientRect();
+      const menuHeight = menuRef.current.firstElementChild.scrollHeight + 14;
+      const viewportPadding = 8;
+      const menuOffset = 6;
+      const topBoundary = Math.max(viewportPadding, scrollBounds?.top ?? 0);
+      const bottomBoundary = Math.min(
+        window.innerHeight - viewportPadding,
+        scrollBounds?.bottom ?? window.innerHeight,
+      );
+      const spaceAbove = Math.max(0, rect.top - topBoundary - menuOffset);
+      const spaceBelow = Math.max(
+        0,
+        bottomBoundary - rect.bottom - menuOffset,
+      );
+      const openUpward = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+      const availableHeight = openUpward ? spaceAbove : spaceBelow;
+      const maxHeight = Math.min(menuHeight, availableHeight);
+      const width = Math.min(176, window.innerWidth - viewportPadding * 2);
+      const preferredLeft = window.innerWidth < 640 ? rect.left : rect.right - width;
+      const left = Math.min(
+        Math.max(viewportPadding, preferredLeft),
+        window.innerWidth - width - viewportPadding,
+      );
+      const top = openUpward
+        ? Math.max(topBoundary, rect.top - maxHeight - menuOffset)
+        : rect.bottom + menuOffset;
+
+      setMenuPosition({ left, top, width, maxHeight });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, options.length]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleClickOutside = (event) => {
+      const isInsideAnchor = containerRef.current?.contains(event.target);
+      const isInsideMenu = menuRef.current?.contains(event.target);
+      if (!isInsideAnchor && !isInsideMenu) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative shrink-0" ref={containerRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="inline-flex h-8.5 items-center justify-between gap-2 rounded-lg border border-sibs-border bg-sibs-surface px-3 text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-navy hover:bg-white focus:outline-none focus:ring-2 focus:ring-sibs-orange/20 cursor-pointer"
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        <span>Record Decision</span>
+        <ChevronDown
+          size={14}
+          className={`text-sibs-muted transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={menuRef}
+              className="fixed z-[12001] w-44 overflow-hidden rounded-xl border border-sibs-border bg-white p-1.5 shadow-xl"
+              style={{
+                left: menuPosition?.left ?? 0,
+                top: menuPosition?.top ?? 0,
+                width: menuPosition?.width ?? 176,
+                maxHeight: menuPosition?.maxHeight ?? undefined,
+                visibility: menuPosition ? "visible" : "hidden",
+              }}
+            >
+              <div
+                className="flex flex-col gap-1.5 overflow-y-auto"
+                style={{
+                  maxHeight: menuPosition
+                    ? Math.max(0, menuPosition.maxHeight - 14)
+                    : undefined,
+                }}
+              >
+                {options.map((decision) => (
+                  <button
+                    key={decision}
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onDecision?.(candidate, decision);
+                    }}
+                    className={`flex w-full items-center justify-center rounded-lg border px-3 py-2 text-xs font-extrabold transition-all duration-150 cursor-pointer ${getOfferDecisionClass(
+                      decision,
+                    )}`}
+                  >
+                    <span>{decision}</span>
+                  </button>
+                ))}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}
+
 const CandidatePipelineModal = ({
   open,
   candidate,
@@ -12204,27 +12359,21 @@ const concretePreferredFinalInterviewFormId =
               )}
 
               {activeCandidate.offerEmailSent && !hasFinalOfferDecision && !isOfferNegotiationRequested && (
-                <div className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-white p-3">
-                  <p className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
-                    Manual Candidate Response
-                  </p>
-                  <p className="mt-0.5 text-[10px] font-semibold leading-relaxed text-[#667085]">
-                    Use only when the candidate cannot access the email response link.
-                  </p>
-                  <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:justify-end">
-                    {offerDecisionOptions.map((decision) => (
-                      <button
-                        key={decision}
-                        type="button"
-                        onClick={() => onOfferDecision?.(activeCandidate, decision)}
-                        className={`inline-flex h-8 w-full items-center justify-center rounded-lg border px-3 text-xs font-bold transition sm:w-24 ${getOfferDecisionClass(
-                          decision,
-                        )}`}
-                      >
-                        {decision}
-                      </button>
-                    ))}
+                <div className="mt-2.5 flex flex-col gap-3 rounded-xl border border-sibs-border bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                      Manual Candidate Response
+                    </p>
+                    <p className="mt-0.5 text-[10px] font-semibold leading-relaxed text-sibs-muted">
+                      Use only when the candidate cannot access the email response link.
+                    </p>
                   </div>
+
+                  <ManualCandidateResponseDropdown
+                    candidate={activeCandidate}
+                    options={offerDecisionOptions}
+                    onDecision={onOfferDecision}
+                  />
                 </div>
               )}
             </CandidateModalSection>

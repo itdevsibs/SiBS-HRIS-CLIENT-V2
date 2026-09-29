@@ -168,7 +168,7 @@ function DropdownPortal({
       onMouseDown={(e) => e.stopPropagation()}
       onTouchStartCapture={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
-      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
+      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-xl`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -240,7 +240,7 @@ export default function FilterSelect({
 
   return (
     <div className="relative z-[80] min-w-0 overflow-visible">
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1 block text-sm font-bold text-sibs-navy">
         {label}
       </label>
 
@@ -253,7 +253,7 @@ export default function FilterSelect({
           setOpen((prev) => !prev);
           setSearch("");
         }}
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-sibs-border bg-white px-4 text-left text-sm font-bold text-slate-700 outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-orange/30 hover:bg-sibs-surface focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10`}
       >
         <span className="min-w-0 truncate">
           {loading ? "Loading..." : selectedOption?.label || placeholder}
@@ -261,8 +261,8 @@ export default function FilterSelect({
 
         <ChevronDown
           size={18}
-          className={`ml-2 shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
+          className={`ml-2 shrink-0 text-sibs-muted transition-transform duration-300 ${
+            open ? "rotate-180 text-sibs-orange" : ""
           }`}
         />
       </button>
@@ -278,14 +278,14 @@ export default function FilterSelect({
             <div className="relative">
               <Search
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={searchPlaceholder}
                 autoFocus
-                className="h-10 w-full rounded-lg border border-[#D0D5DD] bg-white pl-9 pr-3 text-sm font-semibold text-[#344054] outline-none placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                className="h-10 w-full rounded-lg border border-sibs-border bg-white pl-9 pr-3 text-sm font-semibold text-slate-700 outline-none placeholder:text-sibs-muted focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
               />
             </div>
           </div>
@@ -302,8 +302,8 @@ export default function FilterSelect({
                 onClick={() => handleSelect(option)}
                 className={`block w-full px-4 py-3 text-left text-sm transition ${
                   selected
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "font-semibold text-[#344054] hover:bg-[#F8FAFC]"
+                    ? "bg-blue-50 font-bold text-sibs-navy"
+                    : "font-semibold text-slate-700 hover:bg-sibs-surface"
                 }`}
               >
                 <span className="block truncate">{option.label}</span>
@@ -311,7 +311,7 @@ export default function FilterSelect({
             );
           })
         ) : (
-          <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+          <div className="px-4 py-4 text-sm font-semibold text-sibs-muted">
             {emptyText}
           </div>
         )}

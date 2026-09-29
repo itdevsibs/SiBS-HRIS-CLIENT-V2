@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { ChevronDown, FileText, X } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FileText } from "lucide-react";
 
 import {
   formatDate,
@@ -9,6 +8,7 @@ import {
 import { useUser } from "../../../services/context/UserContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import StatusModal from "../../modals/StatusModal";
+import { ModalShell, SelectDropdown } from "@/components/ui";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 const PAGE_LIMIT = 15;
@@ -43,9 +43,9 @@ function getUploadedFileUrl(item) {
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+    <label className="mb-1 block sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
       {children}
-      {required && <span className="text-red-500"> *</span>}
+      {required && <span className="text-sibs-orange"> *</span>}
     </label>
   );
 }
@@ -57,29 +57,8 @@ function ReadOnlyInput({ value, className = "" }) {
       value={value || ""}
       readOnly
       disabled
-      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-[#F2F4F7] px-4 text-sm font-semibold text-sibs-primary-1 outline-none disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
+      className={`h-11 w-full rounded-xl border border-sibs-border bg-slate-100/70 px-4 sibs-text-xs font-semibold text-sibs-navy outline-none disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100/70 disabled:text-sibs-muted ${className}`}
     />
-  );
-}
-
-function SelectButton({ value, placeholder, open, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-    >
-      <span className={value ? "" : "text-sibs-tertiary-5"}>
-        {value || placeholder}
-      </span>
-
-      <ChevronDown
-        size={18}
-        className={`text-sibs-tertiary-5 transition ${
-          open ? "rotate-180" : ""
-        }`}
-      />
-    </button>
   );
 }
 
@@ -139,7 +118,7 @@ function FileTypeIcon({ filename }) {
 
 function UploadedFileCell({ item, className = "" }) {
   if (!item?.uploadedFile) {
-    return <span className="text-sm font-semibold text-gray-400">N/A</span>;
+    return <span className="sibs-text-xs font-semibold text-sibs-muted">N/A</span>;
   }
 
   return (
@@ -156,7 +135,7 @@ function UploadedFileCell({ item, className = "" }) {
         e.stopPropagation();
       }}
       onClick={(e) => e.stopPropagation()}
-      className={`flex min-w-0 items-center gap-3 rounded-lg p-1 text-left text-sm font-semibold text-[#344054] no-underline transition hover:bg-slate-50 hover:text-sibs-primary-1 ${className}`}
+      className={`flex min-w-0 items-center gap-3 rounded-lg p-1 text-left sibs-text-xs font-semibold text-sibs-navy no-underline transition hover:bg-sibs-cream-subtle hover:text-sibs-orange ${className}`}
       title={`Open ${item.uploadedFile}`}
     >
       <FileTypeIcon filename={item.uploadedFile} />
@@ -182,371 +161,249 @@ function EditResignationModal({
   setForm,
   readOnly = false,
 }) {
-  const [commentSpokenOpen, setCommentSpokenOpen] = useState(false);
-  const [employeeRetainedOpen, setEmployeeRetainedOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleEscape = (e) => {
-      if (e.key === "Escape") onClose?.();
-    };
-
-    const handleClickOutside = (e) => {
-      const commentSpokenDropdown = document.getElementById(
-        "comment-spoken-dropdown-wrapper",
-      );
-      const retainedDropdown = document.getElementById(
-        "employee-retained-dropdown-wrapper",
-      );
-
-      if (commentSpokenDropdown && !commentSpokenDropdown.contains(e.target)) {
-        setCommentSpokenOpen(false);
-      }
-
-      if (retainedDropdown && !retainedDropdown.contains(e.target)) {
-        setEmployeeRetainedOpen(false);
-      }
-    };
-
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
-    document.addEventListener("keydown", handleEscape);
-    document.addEventListener("mousedown", handleClickOutside);
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.removeEventListener("mousedown", handleClickOutside);
-
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-
-      setCommentSpokenOpen(false);
-      setEmployeeRetainedOpen(false);
-    };
-  }, [open, onClose]);
-
   if (!open || !selectedItem) return null;
 
-  return createPortal(
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex h-dvh items-center justify-center px-4 py-4"
-      onClick={onClose}
+  return (
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      maxWidth="max-w-4xl"
+      title={readOnly ? "RESIGNATION REQUEST" : "UPDATE RESIGNATION REQUEST"}
+      subtitle={
+        readOnly
+          ? "Review the resignation request details and uploaded file."
+          : "Review the resignation request, confirm retention discussion, and submit supervisor update."
+      }
+      icon={FileText}
+      badge={readOnly ? "Resignation Request" : "Supervisor Review"}
+      bodyClassName="p-0 overflow-y-auto max-h-[calc(90dvh-130px)] bg-slate-50/50"
+      footer={
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-sibs-border bg-white px-5 sibs-text-xs font-bold text-sibs-navy transition hover:bg-sibs-cream-subtle"
+          >
+            {readOnly ? "Close" : "Cancel"}
+          </button>
+
+          {!readOnly && (
+            <button
+              type="submit"
+              form="edit-resignation-form"
+              disabled={submitting}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-sibs-orange px-5 sibs-text-xs font-bold text-white shadow-xs transition hover:bg-sibs-orange-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? "Saving..." : "Submit"}
+            </button>
+          )}
+        </div>
+      }
     >
       <form
+        id="edit-resignation-form"
         onSubmit={onSubmit}
-        onClick={(e) => e.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl font-jakarta"
+        className="p-5 sm:p-6 font-jakarta"
       >
-        <div className="border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                <FileText size={14} />
-                {readOnly ? "Resignation Request" : "Supervisor Review"}
-              </div>
+        <div className="rounded-2xl border border-sibs-border bg-white p-5 shadow-xs sm:p-6">
+          <div className="mb-6 flex flex-col gap-1">
+            <h3 className="text-base font-extrabold text-sibs-navy">
+              Request Details
+            </h3>
 
-              <h2 className="mt-3 text-2xl font-extrabold text-sibs-primary-1">
-                {readOnly
-                  ? "RESIGNATION REQUEST"
-                  : "UPDATE RESIGNATION REQUEST"}
-              </h2>
-
-              <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-sibs-tertiary-5">
-                {readOnly
-                  ? "Review the resignation request details and uploaded file."
-                  : "Review the resignation request, confirm retention discussion, and submit supervisor update."}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-              aria-label="Close modal"
-            >
-              <X size={20} />
-            </button>
+            <p className="sibs-text-xs font-medium text-sibs-muted">
+              Review the employee resignation information below.
+            </p>
           </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
-          <div className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-6 flex flex-col gap-1">
-              <h3 className="text-base font-extrabold text-[#101828]">
-                Request Details
-              </h3>
-
-              <p className="text-sm font-medium text-sibs-tertiary-5">
-                Review the employee resignation information below.
-              </p>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <div>
+              <FieldLabel>Request ID</FieldLabel>
+              <ReadOnlyInput value={selectedItem.id || ""} />
             </div>
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-              <div>
-                <FieldLabel>Request ID</FieldLabel>
-                <ReadOnlyInput value={selectedItem.id || ""} />
-              </div>
+            <div>
+              <FieldLabel>SiBS ID</FieldLabel>
+              <ReadOnlyInput value={selectedItem.sibsId || ""} />
+            </div>
 
-              <div>
-                <FieldLabel>SiBS ID</FieldLabel>
-                <ReadOnlyInput value={selectedItem.sibsId || ""} />
-              </div>
+            <div>
+              <FieldLabel>Resignation Type</FieldLabel>
+              <ReadOnlyInput value={selectedItem.resignationType || "N/A"} />
+            </div>
 
-              <div>
-                <FieldLabel>Resignation Type</FieldLabel>
-                <ReadOnlyInput value={selectedItem.resignationType || "N/A"} />
-              </div>
+            <div>
+              <FieldLabel>Employee Name</FieldLabel>
+              <ReadOnlyInput
+                value={selectedItem.fullName || "N/A"}
+                className="uppercase"
+              />
+            </div>
 
-              <div>
-                <FieldLabel>Employee Name</FieldLabel>
-                <ReadOnlyInput
-                  value={selectedItem.fullName || "N/A"}
-                  className="uppercase"
+            <div>
+              <FieldLabel>Assigned Location</FieldLabel>
+              <ReadOnlyInput
+                value={mapAssignedLocation(selectedItem.location)}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Resignation Date</FieldLabel>
+              <ReadOnlyInput
+                value={formatDate(selectedItem.resignationDate)}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Last Working Date</FieldLabel>
+              <ReadOnlyInput
+                value={formatDate(selectedItem.lastWorkingDate)}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Submitted At</FieldLabel>
+              <ReadOnlyInput value={formatDateTime(selectedItem.createdAt)} />
+            </div>
+
+            <div>
+              <FieldLabel>Supervisor SiBS ID</FieldLabel>
+              <ReadOnlyInput value={selectedItem.supervisorSibsId || "N/A"} />
+            </div>
+
+            <div>
+              <FieldLabel>Supervisor Name</FieldLabel>
+              <ReadOnlyInput
+                value={selectedItem.supervisorName || "N/A"}
+                className="uppercase"
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Reason</FieldLabel>
+              <ReadOnlyInput value={selectedItem.reason || "N/A"} />
+            </div>
+
+            <div>
+              <FieldLabel>Specify Others</FieldLabel>
+              <ReadOnlyInput value={selectedItem.specifyOthers || "N/A"} />
+            </div>
+
+            <div>
+              <FieldLabel required={!readOnly}>
+                Have you personally spoken to the resigning employee?
+              </FieldLabel>
+
+              {readOnly ? (
+                <ReadOnlyInput value={form.commentSpoken || "N/A"} />
+              ) : (
+                <SelectDropdown
+                  value={form.commentSpoken}
+                  placeholder="Select answer"
+                  options={[
+                    { label: "Yes", value: "Yes" },
+                    { label: "No", value: "No" },
+                  ]}
+                  onChange={(val) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      commentSpoken: val,
+                      commentRetain: val === "No" ? "" : prev.commentRetain,
+                    }));
+                  }}
+                  clearable={false}
                 />
-              </div>
-
-              <div>
-                <FieldLabel>Assigned Location</FieldLabel>
-                <ReadOnlyInput
-                  value={mapAssignedLocation(selectedItem.location)}
-                />
-              </div>
-
-              <div>
-                <FieldLabel>Resignation Date</FieldLabel>
-                <ReadOnlyInput
-                  value={formatDate(selectedItem.resignationDate)}
-                />
-              </div>
-
-              <div>
-                <FieldLabel>Last Working Date</FieldLabel>
-                <ReadOnlyInput
-                  value={formatDate(selectedItem.lastWorkingDate)}
-                />
-              </div>
-
-              <div>
-                <FieldLabel>Submitted At</FieldLabel>
-                <ReadOnlyInput value={formatDateTime(selectedItem.createdAt)} />
-              </div>
-
-              <div>
-                <FieldLabel>Supervisor SiBS ID</FieldLabel>
-                <ReadOnlyInput value={selectedItem.supervisorSibsId || "N/A"} />
-              </div>
-
-              <div>
-                <FieldLabel>Supervisor Name</FieldLabel>
-                <ReadOnlyInput
-                  value={selectedItem.supervisorName || "N/A"}
-                  className="uppercase"
-                />
-              </div>
-
-              <div>
-                <FieldLabel>Reason</FieldLabel>
-                <ReadOnlyInput value={selectedItem.reason || "N/A"} />
-              </div>
-
-              <div>
-                <FieldLabel>Specify Others</FieldLabel>
-                <ReadOnlyInput value={selectedItem.specifyOthers || "N/A"} />
-              </div>
-
-              <div>
-                <FieldLabel required={!readOnly}>
-                  Have you personally spoken to the resigning employee?
-                </FieldLabel>
-
-                {readOnly ? (
-                  <ReadOnlyInput value={form.commentSpoken || "N/A"} />
-                ) : (
-                  <div id="comment-spoken-dropdown-wrapper" className="relative">
-                    <SelectButton
-                      value={form.commentSpoken}
-                      placeholder="Select answer"
-                      open={commentSpokenOpen}
-                      onClick={() => setCommentSpokenOpen((prev) => !prev)}
-                    />
-
-                    {commentSpokenOpen && (
-                      <div className="absolute top-[calc(100%+8px)] z-30 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-xl">
-                        {["Yes", "No"].map((item) => (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => {
-                              setForm((prev) => ({
-                                ...prev,
-                                commentSpoken: item,
-                                commentRetain:
-                                  item === "No" ? "" : prev.commentRetain,
-                              }));
-                              setCommentSpokenOpen(false);
-                            }}
-                            className={`block w-full bg-white px-4 py-3 text-left text-sm font-semibold text-sibs-primary-1 transition hover:bg-[#F8FAFC] ${
-                              form.commentSpoken === item
-                                ? "bg-[#EAF2FB] font-extrabold"
-                                : ""
-                            }`}
-                          >
-                            {item}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <FieldLabel required={!readOnly}>
-                  Was the employee retained (Y/N)?
-                </FieldLabel>
-
-                {readOnly ? (
-                  <ReadOnlyInput
-                    value={
-                      form.employeeRetained === "1"
-                        ? "Yes"
-                        : form.employeeRetained === "0"
-                          ? "No"
-                          : "N/A"
-                    }
-                  />
-                ) : (
-                  <div
-                    id="employee-retained-dropdown-wrapper"
-                    className="relative"
-                  >
-                    <SelectButton
-                      value={
-                        form.employeeRetained === "1"
-                          ? "Yes"
-                          : form.employeeRetained === "0"
-                            ? "No"
-                            : ""
-                      }
-                      placeholder="Select answer"
-                      open={employeeRetainedOpen}
-                      onClick={() => setEmployeeRetainedOpen((prev) => !prev)}
-                    />
-
-                    {employeeRetainedOpen && (
-                      <div className="absolute top-[calc(100%+8px)] z-30 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-xl">
-                        {[
-                          { label: "Yes", value: "1" },
-                          { label: "No", value: "0" },
-                        ].map((item) => (
-                          <button
-                            key={item.value}
-                            type="button"
-                            onClick={() => {
-                              setForm((prev) => ({
-                                ...prev,
-                                employeeRetained: item.value,
-                              }));
-                              setEmployeeRetainedOpen(false);
-                            }}
-                            className={`block w-full bg-white px-4 py-3 text-left text-sm font-semibold text-sibs-primary-1 transition hover:bg-[#F8FAFC] ${
-                              form.employeeRetained === item.value
-                                ? "bg-[#EAF2FB] font-extrabold"
-                                : ""
-                            }`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {form.commentSpoken === "Yes" && (
-                <div className="lg:col-span-2">
-                  <FieldLabel required={!readOnly}>
-                    What have you done/offered to retain the employee
-                    (retention efforts)?
-                  </FieldLabel>
-
-                  <textarea
-                    value={form.commentRetain}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        commentRetain: e.target.value,
-                      }))
-                    }
-                    rows={5}
-                    readOnly={readOnly}
-                    placeholder="Enter your comments here"
-                    className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
-                  />
-                </div>
               )}
-
-              <div className="lg:col-span-2">
-                <FieldLabel>Uploaded File</FieldLabel>
-
-                {selectedItem.uploadedFile ? (
-                  <UploadedFileCell
-                    item={selectedItem}
-                    className="min-h-14 rounded-xl border border-[#D0D5DD] bg-white px-4 py-2"
-                  />
-                ) : (
-                  <ReadOnlyInput value="N/A" />
-                )}
-              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-            >
-              {readOnly ? "Close" : "Cancel"}
-            </button>
+            <div>
+              <FieldLabel required={!readOnly}>
+                Was the employee retained (Y/N)?
+              </FieldLabel>
 
-            {!readOnly && (
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {submitting ? "Saving..." : "Submit"}
-              </button>
+              {readOnly ? (
+                <ReadOnlyInput
+                  value={
+                    form.employeeRetained === "1"
+                      ? "Yes"
+                      : form.employeeRetained === "0"
+                        ? "No"
+                        : "N/A"
+                  }
+                />
+              ) : (
+                <SelectDropdown
+                  value={form.employeeRetained}
+                  placeholder="Select answer"
+                  options={[
+                    { label: "Yes", value: "1" },
+                    { label: "No", value: "0" },
+                  ]}
+                  onChange={(val) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      employeeRetained: val,
+                    }));
+                  }}
+                  clearable={false}
+                />
+              )}
+            </div>
+
+            {form.commentSpoken === "Yes" && (
+              <div className="lg:col-span-2">
+                <FieldLabel required={!readOnly}>
+                  What have you done/offered to retain the employee
+                  (retention efforts)?
+                </FieldLabel>
+
+                <textarea
+                  value={form.commentRetain}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      commentRetain: e.target.value,
+                    }))
+                  }
+                  rows={5}
+                  readOnly={readOnly}
+                  placeholder="Enter your comments here"
+                  className="w-full resize-none rounded-xl border border-sibs-border bg-white px-4 py-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100/70"
+                />
+              </div>
             )}
+
+            <div className="lg:col-span-2">
+              <FieldLabel>Uploaded File</FieldLabel>
+
+              {selectedItem.uploadedFile ? (
+                <UploadedFileCell
+                  item={selectedItem}
+                  className="min-h-12 rounded-xl border border-sibs-border bg-white px-4 py-2"
+                />
+              ) : (
+                <ReadOnlyInput value="N/A" />
+              )}
+            </div>
           </div>
         </div>
       </form>
-    </div>,
-    document.body,
+    </ModalShell>
   );
 }
 
 function MobileField({ label, value, full = false }) {
   return (
     <div
-      className={`rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm ${
+      className={`rounded-xl border border-sibs-border-subtle bg-slate-50/70 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-border hover:bg-white hover:shadow-xs ${
         full ? "sm:col-span-2" : ""
       }`}
     >
-      <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+      <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
 
-      <strong className="mt-1 block text-sm font-bold text-sibs-primary-1">
+      <strong className="mt-1 block text-sm font-bold text-sibs-navy">
         {value || "N/A"}
       </strong>
     </div>
@@ -567,22 +424,22 @@ function MobileResignationCard({ item, onOpen, canOpen }) {
           onOpen(item);
         }
       }}
-      className={`sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 ${
+      className={`sibs-page-card-in rounded-xl border border-sibs-border bg-white p-4 text-left shadow-xs transition-all duration-200 ${
         canOpen
-          ? "cursor-pointer hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+          ? "cursor-pointer hover:-translate-y-0.5 hover:bg-sibs-cream-subtle hover:shadow-sm active:scale-[0.99]"
           : "cursor-not-allowed opacity-80"
       }`}
     >
       <div className="min-w-0">
-        <p className="m-0 text-xs font-semibold text-sibs-tertiary-5">
+        <p className="m-0 text-xs font-semibold text-sibs-muted">
           {item.sibsId || "N/A"}
         </p>
 
-        <h3 className="mt-1 text-sm font-bold leading-tight text-sibs-primary-1">
+        <h3 className="mt-1 text-sm font-bold leading-tight text-sibs-navy">
           {(item.fullName || "N/A").toUpperCase()}
         </h3>
 
-        <span className="mt-1 block text-xs font-semibold text-sibs-tertiary-5">
+        <span className="mt-1 block text-xs font-semibold text-sibs-muted">
           {item.resignationType || "N/A"}
         </span>
       </div>
@@ -593,8 +450,8 @@ function MobileResignationCard({ item, onOpen, canOpen }) {
           value={mapAssignedLocation(item.location)}
         />
 
-        <div className="rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
-          <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        <div className="rounded-xl border border-sibs-border-subtle bg-slate-50/70 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-border hover:bg-white hover:shadow-xs">
+          <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-muted">
             Uploaded File
           </p>
 
@@ -993,7 +850,7 @@ export default function ResignationTable({
 
   return (
     <>
-      <div className="min-w-0 overflow-hidden rounded-xl bg-white">
+      <div className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
         <div className="p-4 sm:p-5">
           <PaginationTable
             title="Resignation Records"
@@ -1021,7 +878,7 @@ export default function ResignationTable({
             className="mb-5"
           />
 
-          <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+          <div className="hidden overflow-hidden rounded-xl border border-sibs-border sibs-data-table-shell lg:block">
             <div
               ref={tableScrollRef}
               onMouseDown={handleDragStart}
@@ -1044,37 +901,37 @@ export default function ResignationTable({
                   <col className="w-[180px]" />
                 </colgroup>
 
-                <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                <thead className="sticky top-0 z-10 border-b border-sibs-border bg-slate-50">
                   <tr>
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-sibs-muted">
                       SIBS ID
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-sibs-muted">
                       Resignation Type
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-sibs-muted">
                       Employee Name
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-sibs-muted">
                       Assigned Location
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-sibs-muted">
                       Uploaded File
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-sibs-muted">
                       Resignation Date
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-sibs-muted">
                       Last Working Date
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="sibs-data-table-th whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-sibs-muted">
                       Submitted At
                     </th>
                   </tr>
@@ -1086,9 +943,9 @@ export default function ResignationTable({
                       <tr key={index}>
                         <td
                           colSpan={8}
-                          className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5"
+                          className="border-t border-sibs-border-subtle px-3 2xl:px-4 py-2 2xl:py-2.5"
                         >
-                          <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
+                          <div className="h-5 w-full animate-sibs-pulse rounded bg-slate-200" />
                         </td>
                       </tr>
                     ))
@@ -1096,7 +953,7 @@ export default function ResignationTable({
                     <tr>
                       <td
                         colSpan={8}
-                        className="border-t border-[#f3f4f6] p-10 text-center sibs-text-sm font-bold text-[#667085]"
+                        className="border-t border-sibs-border-subtle p-10 text-center sibs-text-sm font-bold text-sibs-muted"
                       >
                         No resignation records found.
                       </td>
@@ -1111,43 +968,43 @@ export default function ResignationTable({
                         <tr
                           key={item.id}
                           onClick={() => handleOpenEdit(item)}
-                          className={`transition-all duration-200 hover:bg-[#FFF8F5] ${
+                          className={`transition-all duration-200 hover:bg-sibs-cream-subtle ${
                             isAssignedSupervisor
                               ? "cursor-pointer"
                               : "cursor-not-allowed opacity-80"
                           }`}
                         >
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
+                          <td className="whitespace-nowrap border-t border-sibs-border-subtle px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-sibs-orange tabular-nums">
                             {item.sibsId || "N/A"}
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border-subtle px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                             {item.resignationType || "N/A"}
                           </td>
 
-                          <td className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#042C51]">
+                          <td className="border-t border-sibs-border-subtle px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-sibs-navy">
                             <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap uppercase">
                               {item.fullName || "N/A"}
                             </p>
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border-subtle px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                             {mapAssignedLocation(item.location)}
                           </td>
 
-                          <td className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="border-t border-sibs-border-subtle px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                             <UploadedFileCell item={item} />
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border-subtle px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                             {formatDate(item.resignationDate)}
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border-subtle px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                             {formatDate(item.lastWorkingDate)}
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border-subtle px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                             {formatDateTime(item.createdAt)}
                           </td>
                         </tr>
@@ -1158,7 +1015,7 @@ export default function ResignationTable({
               </table>
             </div>
 
-            <p className="mt-2 sibs-text-xs font-semibold text-[#667085]">
+            <p className="mt-2 sibs-text-xs font-semibold text-sibs-muted">
               Hold left click and drag left or right to scroll the table.
             </p>
           </div>
@@ -1166,11 +1023,11 @@ export default function ResignationTable({
           <div className="block lg:hidden">
             <div ref={mobileScrollRef} className="max-h-[620px] overflow-y-auto">
               {loading ? (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+                <div className="rounded-xl border border-sibs-border bg-white p-6 text-center text-sm font-bold text-sibs-muted">
                   Loading...
                 </div>
               ) : paginatedData.length === 0 ? (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+                <div className="rounded-xl border border-sibs-border bg-white p-6 text-center text-sm font-bold text-sibs-muted">
                   No resignation records found.
                 </div>
               ) : (

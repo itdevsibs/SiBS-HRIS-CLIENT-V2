@@ -143,8 +143,10 @@ function TrendPoint({
   x,
   y,
   value,
-  fill,
-  textFill,
+  fill = "currentColor",
+  fillClass = "",
+  textFill = "currentColor",
+  textClass = "",
   labelOffset,
   index,
   total,
@@ -166,7 +168,8 @@ function TrendPoint({
         cy={y}
         r={active ? 6.5 : 4.75}
         fill={fill}
-        stroke="#ffffff"
+        className={fillClass}
+        stroke="white"
         strokeWidth="2"
       />
       {showLabel ? (
@@ -175,7 +178,7 @@ function TrendPoint({
           y={labelPosition.y}
           textAnchor={labelPosition.textAnchor}
           fill={textFill}
-          className="text-[11px] font-extrabold"
+          className={`text-[11px] font-extrabold ${textClass}`}
           style={{
             paintOrder: "stroke",
             stroke: "white",
@@ -393,7 +396,8 @@ export default function TrendSvg({
             x2={width - right}
             y1={yScale(tick)}
             y2={yScale(tick)}
-            stroke={tick === 0 ? "#EF4444" : "#D7E0EA"}
+            stroke="currentColor"
+            className={tick === 0 ? "text-rose-500" : "text-slate-200"}
             strokeWidth={tick === 0 ? 1.5 : 1}
             strokeDasharray={tick === 0 ? "0" : "4 4"}
           />
@@ -401,8 +405,10 @@ export default function TrendSvg({
             x={left - 12}
             y={yScale(tick) + 4}
             textAnchor="end"
-            fill={tick === 0 ? "#EF4444" : "#52637A"}
-            className="text-[10px] font-semibold"
+            fill="currentColor"
+            className={`text-[10px] font-semibold ${
+              tick === 0 ? "text-rose-500" : "text-slate-600"
+            }`}
           >
             {tick}%
           </text>
@@ -417,7 +423,8 @@ export default function TrendSvg({
             x2={xScale(index)}
             y1={top}
             y2={height - bottom}
-            stroke="#D7E0EA"
+            stroke="currentColor"
+            className="text-slate-200"
             strokeWidth="1"
             strokeDasharray="4 4"
           />
@@ -429,7 +436,8 @@ export default function TrendSvg({
         x2={left}
         y1={top}
         y2={height - bottom}
-        stroke="#042C51"
+        stroke="currentColor"
+        className="text-sibs-navy"
         strokeWidth="1.5"
       />
       <line
@@ -437,7 +445,8 @@ export default function TrendSvg({
         x2={width - right}
         y1={height - bottom}
         y2={height - bottom}
-        stroke="#042C51"
+        stroke="currentColor"
+        className="text-sibs-navy"
         strokeWidth="1.5"
       />
 
@@ -445,8 +454,8 @@ export default function TrendSvg({
         x={width - right - 8}
         y={zeroY - 7}
         textAnchor="end"
-        fill="#EF4444"
-        className="text-[9px] font-bold"
+        fill="currentColor"
+        className="text-[9px] font-bold text-rose-500"
       >
         TARGET BUFFER FLOOR (0%)
       </text>
@@ -475,8 +484,8 @@ export default function TrendSvg({
           x={xScale(index)}
           y={yScale(value)}
           value={`${value.toFixed(1)}%`}
-          fill="#2563EB"
-          textFill="#1D4ED8"
+          fillClass="text-blue-600"
+          textClass="text-blue-700"
           labelOffset={labels.absenteeism[index] ?? -13}
           index={index}
           total={weekCount}
@@ -491,8 +500,8 @@ export default function TrendSvg({
           x={xScale(index)}
           y={yScale(value)}
           value={`${value.toFixed(1)}%`}
-          fill="#EA580C"
-          textFill="#C2410C"
+          fillClass="text-sibs-orange"
+          textClass="text-orange-700"
           labelOffset={labels.attrition[index] ?? 19}
           index={index}
           total={weekCount}
@@ -507,8 +516,8 @@ export default function TrendSvg({
           x={xScale(index)}
           y={yScale(value)}
           value={`${value.toFixed(1)}%`}
-          fill="#16A34A"
-          textFill={value < 0 ? "#DC2626" : "#15803D"}
+          fillClass="text-emerald-600"
+          textClass={value < 0 ? "text-rose-600" : "text-emerald-700"}
           labelOffset={labels.buffer[index] ?? 19}
           index={index}
           total={weekCount}
@@ -547,8 +556,8 @@ export default function TrendSvg({
                 x={xScale(index)}
                 y={height - 20}
                 textAnchor="middle"
-                fill="#344054"
-                className="text-[10px] font-bold"
+                fill="currentColor"
+                className="text-[10px] font-bold text-slate-700"
               >
                 {formatWeekAxisLabel(safeWeeks[index])}
               </text>
@@ -563,7 +572,8 @@ export default function TrendSvg({
           x2={activePoint.x}
           y1={top}
           y2={height - bottom}
-          stroke="#042C51"
+          stroke="currentColor"
+          className="text-sibs-navy"
           strokeWidth="1.3"
           strokeDasharray="4 4"
           pointerEvents="none"
@@ -578,14 +588,15 @@ export default function TrendSvg({
             width={tooltipWidth}
             height={tooltipHeight}
             rx="14"
-            fill="#042C51"
+            fill="currentColor"
+            className="text-sibs-navy"
             opacity="0.98"
           />
           <text
             x={tooltipPosition.x + 18}
             y={tooltipPosition.y + 26}
-            fill="#D7E0EA"
-            className="text-[12px] font-extrabold uppercase tracking-wide"
+            fill="currentColor"
+            className="text-[12px] font-extrabold uppercase tracking-wide text-slate-200"
           >
             {activePoint.week || "Week Breakdown"} Breakdown
           </text>
@@ -594,14 +605,15 @@ export default function TrendSvg({
             x2={tooltipPosition.x + tooltipWidth - 16}
             y1={tooltipPosition.y + 36}
             y2={tooltipPosition.y + 36}
-            stroke="#315779"
+            stroke="currentColor"
+            className="text-slate-500"
             strokeWidth="1.2"
           />
           <text
             x={tooltipPosition.x + 18}
             y={tooltipPosition.y + 61}
-            fill="#D7E0EA"
-            className="text-[12px] font-bold"
+            fill="currentColor"
+            className="text-[12px] font-bold text-slate-200"
           >
             Absenteeism (ABS):
           </text>
@@ -609,16 +621,16 @@ export default function TrendSvg({
             x={tooltipPosition.x + tooltipWidth - 18}
             y={tooltipPosition.y + 61}
             textAnchor="end"
-            fill="#60A5FA"
-            className="text-[13px] font-black"
+            fill="currentColor"
+            className="text-[13px] font-black text-blue-400"
           >
             {Number(activePoint.absenteeism || 0).toFixed(1)}%
           </text>
           <text
             x={tooltipPosition.x + 18}
             y={tooltipPosition.y + 84}
-            fill="#D7E0EA"
-            className="text-[12px] font-bold"
+            fill="currentColor"
+            className="text-[12px] font-bold text-slate-200"
           >
             Attrition (ATT):
           </text>
@@ -626,16 +638,16 @@ export default function TrendSvg({
             x={tooltipPosition.x + tooltipWidth - 18}
             y={tooltipPosition.y + 84}
             textAnchor="end"
-            fill="#FB923C"
-            className="text-[13px] font-black"
+            fill="currentColor"
+            className="text-[13px] font-black text-orange-400"
           >
             {Number(activePoint.attrition || 0).toFixed(1)}%
           </text>
           <text
             x={tooltipPosition.x + 18}
             y={tooltipPosition.y + 107}
-            fill="#D7E0EA"
-            className="text-[12px] font-bold"
+            fill="currentColor"
+            className="text-[12px] font-bold text-slate-200"
           >
             Buffer Cushion (BUF):
           </text>
@@ -643,10 +655,10 @@ export default function TrendSvg({
             x={tooltipPosition.x + tooltipWidth - 18}
             y={tooltipPosition.y + 107}
             textAnchor="end"
-            fill={
-              Number(activePoint.buffer || 0) < 0 ? "#F87171" : "#4ADE80"
-            }
-            className="text-[13px] font-black"
+            fill="currentColor"
+            className={`text-[13px] font-black ${
+              Number(activePoint.buffer || 0) < 0 ? "text-rose-400" : "text-emerald-400"
+            }`}
           >
             {Number(activePoint.buffer || 0).toFixed(1)}%
           </text>

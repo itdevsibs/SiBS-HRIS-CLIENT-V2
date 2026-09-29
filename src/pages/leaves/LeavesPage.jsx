@@ -22,151 +22,15 @@ import { useUser } from "../../services/context/UserContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { usePagination } from "@/services/context/PaginationContext";
 import LeavesTable from "@/components/tables/Leaves/LeavesTable";
-import { MetricGridSkeleton } from "@/components/ui";
-
-const PAGE_LIMIT = 15;
-
-function formatNumber(value) {
-  if (value === "..." || value === null || value === undefined) return "...";
-
-  const numberValue = Number(value || 0);
-
-  return numberValue.toLocaleString("en-PH", {
-    maximumFractionDigits: 2,
-  });
-}
-
-function normalizeRole(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-}
-
-function getAccessValue(user) {
-  return Number(
-    user?.admin_access ??
-      user?.adminAccess ??
-      user?.access ??
-      user?.gy_user_access ??
-      user?.gyUserAccess ??
-      0,
-  );
-}
-
-function isTeamLeaderUser(user) {
-  const access = getAccessValue(user);
-
-  if (access) return access === 8;
-
-  const roles = [
-    user?.role,
-    user?.userRole,
-    user?.accountType,
-    user?.user_type,
-    user?.gy_user_type,
-  ].map(normalizeRole);
-
-  return roles.some((role) =>
-    ["team_leader", "teamleader", "tl"].includes(role),
-  );
-}
-
-function isWfmUser(user) {
-  const access = getAccessValue(user);
-
-  if (access) return access === 9;
-
-  const roles = [
-    user?.role,
-    user?.userRole,
-    user?.accountType,
-    user?.user_type,
-    user?.gy_user_type,
-  ].map(normalizeRole);
-
-  return roles.some((role) =>
-    ["wfm", "workforce_management"].includes(role),
-  );
-}
-
-function canViewLeaveFilters(user) {
-  if (isTeamLeaderUser(user) || isWfmUser(user)) return true;
-
-  const roles = [
-    user?.role,
-    user?.tokenType,
-    user?.userRole,
-    user?.accountType,
-    user?.user_type,
-    user?.gy_user_type,
-  ].map(normalizeRole);
-
-  return roles.some((role) =>
-    [
-      "admin",
-      "administrator",
-      "hr_admin",
-      "hradmin",
-      "super_admin",
-      "superadmin",
-      "super_administrator",
-    ].includes(role),
-  );
-}
-
-function getLeaveTypeLabel(type, fallbackLabel) {
-  if (fallbackLabel) return fallbackLabel;
-
-  const value = Number(type);
-
-  switch (value) {
-    case 1:
-      return "Vacation / Personal";
-    case 2:
-      return "Sick";
-    case 3:
-      return "Maternal";
-    case 4:
-      return "Paternal";
-    case 5:
-      return "Solo Parent";
-    case 6:
-      return "Force";
-    case 7:
-      return "Indefinite";
-    case 8:
-      return "Quarantine";
-    case 9:
-      return "Emergency";
-    default:
-      return type ? `Leave Type ${type}` : "—";
-  }
-}
-
-function normalizeStatus(status) {
-  const value = String(status || "").trim();
-
-  if (!value) return "Pending";
-
-  const lower = value.toLowerCase();
-
-  if (["approved", "approve", "1"].includes(lower)) return "Approved";
-
-  if (
-    ["rejected", "declined", "not approved", "not_approved", "2"].includes(
-      lower,
-    )
-  ) {
-    return "Rejected";
-  }
-
-  if (["pending", "for approval", "for_approval", "0"].includes(lower)) {
-    return "Pending";
-  }
-
-  return value;
-}
+import { MetricGridSkeleton, PageHeaderHero } from "@/components/ui";
+import {
+  PAGE_LIMIT,
+  calculateLeavePageStats,
+  canViewLeaveFilters,
+  formatNumber,
+  getLeaveTypeLabel,
+  normalizeStatus,
+} from "@/lib/utils/leaves/leaveHelpers";
 
 function StatCard({
   title,
@@ -178,34 +42,34 @@ function StatCard({
 }) {
   const toneMap = {
     navy: {
-      label: "text-[#042C51]",
-      value: "text-[#042C51]",
-      iconWrap: "bg-[#EAF2FB]",
-      icon: "text-[#042C51]",
+      label: "text-sibs-navy",
+      value: "text-sibs-navy",
+      iconWrap: "bg-blue-50",
+      icon: "text-sibs-navy",
     },
     emerald: {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      iconWrap: "bg-[#ECFDF3]",
-      icon: "text-[#059669]",
+      label: "text-emerald-700",
+      value: "text-emerald-600",
+      iconWrap: "bg-emerald-50",
+      icon: "text-emerald-600",
     },
     amber: {
-      label: "text-[#B45309]",
-      value: "text-[#F59E0B]",
-      iconWrap: "bg-[#FFFBEB]",
-      icon: "text-[#F59E0B]",
+      label: "text-amber-700",
+      value: "text-amber-500",
+      iconWrap: "bg-amber-50",
+      icon: "text-amber-500",
     },
-    red: {
-      label: "text-[#BE123C]",
-      value: "text-[#E11D48]",
-      iconWrap: "bg-[#FFF1F2]",
-      icon: "text-[#E11D48]",
+    rose: {
+      label: "text-rose-700",
+      value: "text-rose-600",
+      iconWrap: "bg-rose-50",
+      icon: "text-rose-600",
     },
     orange: {
-      label: "text-[#C2410C]",
-      value: "text-[#FF5C28]",
-      iconWrap: "bg-[#FFF3ED]",
-      icon: "text-[#FF5C28]",
+      label: "text-sibs-orange",
+      value: "text-sibs-orange",
+      iconWrap: "bg-orange-50",
+      icon: "text-sibs-orange",
     },
   };
 
@@ -223,18 +87,18 @@ function StatCard({
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
         <div className="min-w-0 flex-1 self-stretch">
           <p
-            className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${currentTone.label}`}
+            className={`m-0 truncate sibs-kpi-kicker font-extrabold uppercase ${currentTone.label}`}
           >
             {title}
           </p>
 
           <p
-            className={`font-heading mt-1.5 2xl:mt-2 text-xl sm:text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${currentTone.value}`}
+            className={`font-heading sibs-kpi-value mt-1.5 2xl:mt-2 text-xl sm:text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${currentTone.value}`}
           >
             {value}
           </p>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
+          <p className="sibs-kpi-desc mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-sibs-muted">
             {description}
           </p>
         </div>
@@ -570,38 +434,7 @@ export default function LeavesPage() {
   }, [leaves]);
 
   const pageStats = useMemo(() => {
-    const totalLeaves = paginatedLeaves.length;
-
-    const approvedLeaves = paginatedLeaves.filter(
-      (item) => item.normalizedStatus === "Approved",
-    ).length;
-
-    const pendingLeaves = paginatedLeaves.filter(
-      (item) => item.normalizedStatus === "Pending",
-    ).length;
-
-    const rejectedLeaves = paginatedLeaves.filter(
-      (item) => item.normalizedStatus === "Rejected",
-    ).length;
-
-    const totalLeaveDays = paginatedLeaves.reduce(
-      (sum, item) => sum + Number(item.gy_leave_day || 0),
-      0,
-    );
-
-    const totalRemaining = paginatedLeaves.reduce(
-      (sum, item) => sum + Number(item.leave_remaining || 0),
-      0,
-    );
-
-    return {
-      totalLeaves,
-      approvedLeaves,
-      pendingLeaves,
-      rejectedLeaves,
-      totalLeaveDays,
-      totalRemaining,
-    };
+    return calculateLeavePageStats(paginatedLeaves);
   }, [paginatedLeaves]);
 
   const isPersonalView = isEmployeeAccount || recordScope === "personal";
@@ -663,43 +496,27 @@ export default function LeavesPage() {
 
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-1 flex-col space-y-4 sm:space-y-5">
-          <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card font-jakarta relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm 2xl:p-6"
-            style={{ animationDelay: "0ms", animationFillMode: "both" }}
-          >
-            <span className="sibs-top-accent" aria-hidden="true" />
-
-            <div className="mt-0.5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
-                    Core HR View
-                  </span>
-                </div>
-
-                <h1 className="font-heading break-words text-xl 2xl:text-3xl font-bold tracking-tight text-sibs-navy">
-                  {isPersonalView ? "My Leaves" : "Leaves"}
-                </h1>
-
-                <p className="sibs-text-sm font-semibold leading-relaxed text-[#667085]">
-                  {isPersonalView
-                    ? "View your leave requests, credits, plotted leaves, and remaining balance."
-                    : "Review employee leave requests, credits, plotted leaves, and remaining balances."}
-                </p>
-              </div>
-
+          <PageHeaderHero
+            badgeText="Core HR View"
+            badgePulse
+            title={isPersonalView ? "My Leaves" : "Leaves"}
+            subtitle={
+              isPersonalView
+                ? "View your leave requests, credits, plotted leaves, and remaining balance."
+                : "Review employee leave requests, credits, plotted leaves, and remaining balances."
+            }
+            actions={
               <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
                 <button
                   type="button"
                   onClick={handleManualRefresh}
                   disabled={isManualRefreshing || loading}
                   title="Refresh Leaves Data"
-                  className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] shadow-xs outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  className="sibs-btn-icon"
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
-                      isManualRefreshing ? "animate-spin text-[#FF5C28]" : ""
+                      isManualRefreshing ? "animate-spin text-sibs-orange" : ""
                     }`}
                   />
                 </button>
@@ -709,8 +526,8 @@ export default function LeavesPage() {
                   {isPersonalView ? "Personal View" : "Administrative View"}
                 </span>
               </div>
-            </div>
-          </section>
+            }
+          />
 
           {loading ? (
             <MetricGridSkeleton
@@ -762,7 +579,7 @@ export default function LeavesPage() {
                 value={formatNumber(pageStats.rejectedLeaves)}
                 description="Rejected leave requests"
                 icon={XCircle}
-                tone="red"
+                tone="rose"
                 delay={180}
               />
 

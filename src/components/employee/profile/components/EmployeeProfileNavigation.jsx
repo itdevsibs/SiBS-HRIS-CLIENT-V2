@@ -63,7 +63,7 @@ export default function EmployeeProfileNavigation({
                 className={`h-6 2xl:h-7 min-w-max rounded-full px-2.5 2xl:px-3 sibs-text-micro font-extrabold transition-all ${
                   active
                     ? "bg-sibs-navy text-white shadow-xs"
-                    : "bg-[#F1F5F9] text-sibs-muted hover:bg-[#E2E8F0] hover:text-sibs-navy"
+                    : "bg-slate-100 text-sibs-muted hover:bg-slate-200 hover:text-sibs-navy"
                 }`}
               >
                 {child.label}

@@ -13,7 +13,7 @@ export default function ProfileSaveBar({ label, onCancel, onSave }) {
         <button
           type="button"
           onClick={onCancel}
-          className="h-8 flex-1 rounded-lg bg-[#F1F5F9] px-3 sibs-text-xs font-black text-sibs-muted transition hover:bg-[#E2E8F0] hover:text-sibs-navy sm:flex-none"
+          className="h-8 flex-1 rounded-lg bg-slate-100 px-3 sibs-text-xs font-black text-sibs-muted transition hover:bg-slate-200 hover:text-sibs-navy sm:flex-none"
         >
           Cancel
         </button>

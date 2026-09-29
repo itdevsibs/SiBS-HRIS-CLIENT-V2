@@ -30,7 +30,7 @@ export default function KpiCard({
       <div className="flex items-start justify-between gap-1.5 2xl:gap-3">
         <span
           title={title}
-          className={`min-w-0 truncate sibs-text-micro font-extrabold uppercase tracking-normal ${palette.label}`}
+          className={`min-w-0 truncate sibs-kpi-kicker font-extrabold uppercase tracking-normal ${palette.label}`}
         >
           {title}
         </span>
@@ -57,11 +57,11 @@ export default function KpiCard({
       <div className="mt-1 2xl:mt-1.5">
         <AnimatedNumber
           value={value}
-          className={`font-heading block text-xl 2xl:text-2xl font-bold leading-none tabular-nums tracking-tight ${palette.value}`}
+          className={`font-heading sibs-kpi-value block text-xl 2xl:text-2xl font-bold leading-none tabular-nums tracking-tight ${palette.value}`}
         />
         <p
           title={subtitle}
-          className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-tight text-[#667085]"
+          className="sibs-kpi-desc mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-tight text-sibs-muted"
         >
           {subtitle || "Current selected scope"}
         </p>
@@ -69,4 +69,3 @@ export default function KpiCard({
     </article>
   );
 }
-

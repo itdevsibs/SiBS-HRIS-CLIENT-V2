@@ -176,7 +176,7 @@ export default function EmployeeProfileHeader({
                 {employee?.employmentStatus || employee?.status || "Active"}
               </span>
 
-              <span className="font-heading rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] 2xl:text-[10px] font-bold uppercase text-sibs-navy tracking-wide">
+              <span className="font-heading rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] 2xl:text-[10px] font-bold uppercase text-sibs-navy tracking-wide">
                 {getProfileSibsId(employee) || "SIBS ID N/A"}
               </span>
             </div>

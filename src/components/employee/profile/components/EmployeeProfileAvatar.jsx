@@ -17,7 +17,7 @@ export default function EmployeeProfileAvatar({ employee, apiUrl, onClick }) {
       className="group relative flex h-13 w-13 2xl:h-16 2xl:w-16 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-transparent text-lg 2xl:text-xl font-extrabold text-white transition hover:-translate-y-0.5 active:scale-[0.98]"
       title="View profile picture"
     >
-      <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#042C51] to-[#084782] shadow-md transition group-hover:shadow-lg">
+      <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-sibs-navy to-slate-800 shadow-md transition group-hover:shadow-lg">
         {shouldShowImage ? (
           <img
             src={imageUrl}
