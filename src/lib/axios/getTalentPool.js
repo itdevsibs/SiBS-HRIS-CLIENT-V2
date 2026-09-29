@@ -777,6 +777,26 @@ export function getTalentPoolFileUrl(applicationId, type = "attachment") {
   return `${base}/api/talent-pool/file/${applicationId}/${type}`;
 }
 
+export async function getTalentPoolFileBlob(applicationId, type = "attachment") {
+  const safeId = String(applicationId || "").trim();
+  const safeType = String(type || "").trim().toLowerCase();
+
+  if (!/^\d+$/.test(safeId) || !["audio", "attachment"].includes(safeType)) {
+    throw new Error("A valid Talent Pool application ID and file type are required.");
+  }
+
+  const response = await api.get(
+    `/api/talent-pool/file/${encodeURIComponent(safeId)}/${safeType}`,
+    { withCredentials: true, responseType: "blob" },
+  );
+
+  if (!response.data?.size) {
+    throw new Error("The uploaded file is empty or unavailable.");
+  }
+
+  return response.data;
+}
+
 export async function getTalentPoolResumePdf(applicationId) {
   const safeId = String(applicationId || "").trim();
   if (!/^\d+$/.test(safeId)) {

@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 
 import DetailRow from "../../layout/common/DetailRow";
+import { useConfirmDialog } from "../../layout/common/ConfirmationModal";
 import CandidatePipelineModalShell, {
   CandidateModalPrimaryButton,
   CandidateModalSecondaryButton,
@@ -6832,6 +6833,7 @@ const CandidatePipelineModal = ({
   onSendOfferEmail,
   onOfferDecision,
 }) => {
+  const { confirmAction, ConfirmationDialog } = useConfirmDialog();
   const [showTalentPoolDetails, setShowTalentPoolDetails] = useState(false);
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [showNhoUploadModal, setShowNhoUploadModal] = useState(false);
@@ -8287,6 +8289,16 @@ rawOpenedCandidate || {},
       return;
     }
 
+    const confirmation = await confirmAction(
+      activePrfStatus === "Matched"
+        ? `Move ${activeCandidate?.name || "this candidate"} from Initial Screening to Online Assessment?`
+        : `Proceed with ${activeCandidate?.name || "this candidate"} from Initial Screening?`,
+    );
+
+    if (!confirmation?.confirmed) return;
+
+    const actionNotes = cleanText(confirmation.notes);
+
     setIsProceedingInitialScreening(true);
 
     try {
@@ -8297,6 +8309,9 @@ rawOpenedCandidate || {},
         {
           prfStatus: activePrfStatus,
           prf_status: activePrfStatus,
+          notes: actionNotes,
+          actionNotes,
+          action_notes: actionNotes,
 
           /*
            * Send the selected candidate's stable identities with the action.
@@ -11735,6 +11750,7 @@ const concretePreferredFinalInterviewFormId =
 
   return (
     <>
+      {ConfirmationDialog}
       <CandidatePipelineModalShell
         open={open}
         title="Candidate Pipeline Record"
@@ -11922,7 +11938,7 @@ const concretePreferredFinalInterviewFormId =
                 },
                 {
                   label: "Created Date",
-                  value: compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : EMPTY_DISPLAY_VALUE,
+                  value: compactCreatedDate ? formatCandidateDateOnly(compactCreatedDate) : EMPTY_DISPLAY_VALUE,
                   icon: CalendarDays,
                 },
               ].map((item, index) => (

@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -1062,7 +1063,14 @@ function normalizeDateTimeInput(value) {
 
 export function CandidatePipelineProvider({ children }) {
   const { user } = useUser();
-  const { confirmAction, ConfirmationDialog } = useConfirmDialog();
+  const { confirmAction: openConfirmAction, ConfirmationDialog } = useConfirmDialog();
+  const lastActionNotesRef = useRef("");
+
+  async function confirmAction(message, options = {}) {
+    const result = await openConfirmAction(message, { ...options, showNotes: true });
+    lastActionNotesRef.current = result?.confirmed ? String(result.notes || "").trim() : "";
+    return Boolean(result?.confirmed);
+  }
 
   const loggedInUserIdentifier = useMemo(
     () => getLoggedInUserIdentifier(user),
@@ -2988,7 +2996,11 @@ export function CandidatePipelineProvider({ children }) {
           current_stage: nextStage,
           reason: finalReason,
           reasonForMovement: finalReason,
-          remarks: moveForm.remarks.trim(),
+          remarks: [moveForm.remarks.trim(), lastActionNotesRef.current]
+            .filter(Boolean)
+            .join("\n\n"),
+          notes: lastActionNotesRef.current,
+          actionNotes: lastActionNotesRef.current,
         }),
       {
         activeStageAfter: nextStage,

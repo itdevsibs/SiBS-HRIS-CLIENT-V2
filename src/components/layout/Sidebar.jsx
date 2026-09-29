@@ -43,6 +43,7 @@ import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsAppro
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
 import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
 import { getAvailablePositions } from "../../lib/axios/getAvailablePosition";
+import { getApplicantLeads } from "../../lib/axios/getApplicantLeads";
 import { isHiringNeedUnlinkedFromJd } from "../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 import { buildSidebarBadgeText } from "../../lib/utils/sidebarNotifications";
 import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
@@ -505,6 +506,30 @@ export default function Sidebar() {
   const availablePositionApprovalRuleRevision =
     useApprovalRuleRevision("availablePositions");
 
+  const loadApplicantLeadNotifications = useCallback(async () => {
+    try {
+      const result = await getApplicantLeads();
+      if (!result?.success) return;
+
+      const newLeadCount = (result.data || []).filter(
+        (lead) => String(lead?.status || "").trim() === "New Lead",
+      ).length;
+
+      setSidebarNotification?.(
+        "applicantLeadsNew",
+        newLeadCount > 0
+          ? {
+              count: newLeadCount,
+              title: `${newLeadCount} new applicant lead${newLeadCount === 1 ? "" : "s"}`,
+              tone: "action",
+            }
+          : null,
+      );
+    } catch (error) {
+      console.error("Failed to load Applicant Leads notification count:", error);
+    }
+  }, [setSidebarNotification]);
+
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
       const moduleAccessResults = await Promise.all(
@@ -847,11 +872,13 @@ export default function Sidebar() {
     const initialLoadTimer = window.setTimeout(() => {
       loadApprovalRequestNotifications();
       loadUnlinkedJdNotifications();
+      loadApplicantLeadNotifications();
     }, 0);
 
     const interval = window.setInterval(() => {
       loadApprovalRequestNotifications();
       loadUnlinkedJdNotifications();
+      loadApplicantLeadNotifications();
     }, 30000);
 
     return () => {
@@ -866,6 +893,7 @@ export default function Sidebar() {
     ADMIN_ROLES,
     loadApprovalRequestNotifications,
     loadUnlinkedJdNotifications,
+    loadApplicantLeadNotifications,
     setSidebarNotification,
     jdApprovalRuleRevision,
     hiringNeedsApprovalRuleRevision,
@@ -1003,6 +1031,7 @@ export default function Sidebar() {
       icon: UserRoundPlus,
       path: "/recruitment/applicant-leads",
       allowedUsers: [1, 2, 3, 6, 7],
+      notificationKey: "applicantLeadsNew",
     },
     {
       name: "Talent Pool",
