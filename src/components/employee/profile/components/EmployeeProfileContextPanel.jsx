@@ -171,20 +171,27 @@ export default function EmployeeProfileContextPanel({
                 cy="56"
                 r="48"
                 fill="transparent"
-                stroke="#F1F5F9"
+                stroke="currentColor"
                 strokeWidth="8"
+                className="text-slate-100"
               />
               <circle
                 cx="56"
                 cy="56"
                 r="48"
                 fill="transparent"
-                stroke={score >= 80 ? "#1B804B" : score >= 50 ? "#042C51" : "#FF5C28"}
+                stroke="currentColor"
                 strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
                 strokeDashoffset={dashOffset}
-                className="transition-all duration-500"
+                className={`transition-all duration-500 ${
+                  score >= 80
+                    ? "text-emerald-600"
+                    : score >= 50
+                      ? "text-sibs-navy"
+                      : "text-sibs-orange"
+                }`}
               />
             </svg>
 
@@ -201,7 +208,7 @@ export default function EmployeeProfileContextPanel({
           <button
             type="button"
             onClick={() => onNavigate?.(targetTab)}
-            className="w-full rounded-xl border border-sibs-border-subtle bg-[#F8FAFC] p-2.5 text-center transition hover:border-sibs-orange/40 hover:bg-[#FFF7F3]"
+            className="w-full rounded-xl border border-sibs-border-subtle bg-sibs-surface p-2.5 text-center transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle"
           >
             <p className="font-heading text-xs 2xl:text-sm font-bold text-sibs-navy tracking-tight">
               {health.label}
@@ -224,7 +231,7 @@ export default function EmployeeProfileContextPanel({
                 key={`${action.label}-${index}`}
                 type="button"
                 onClick={() => handleQuickAction(item)}
-                className="group flex w-full items-center justify-between rounded-lg border border-sibs-border bg-[#F8FAFC] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-micro 2xl:sibs-text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-[#FFF9F6] hover:text-sibs-orange"
+                className="group flex w-full items-center justify-between rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-micro 2xl:sibs-text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
               >
                 <div className="flex min-w-0 items-center gap-2 pr-2">
                   {Icon ? <Icon size={14} className="shrink-0 text-sibs-muted group-hover:text-sibs-orange" /> : null}

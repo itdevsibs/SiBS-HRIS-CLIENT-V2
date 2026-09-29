@@ -246,13 +246,13 @@ export function getOfferApprovalClass(status) {
 export function getOfferDecisionClass(status) {
   switch (status) {
     case "Accepted":
-      return "border-emerald-100 bg-emerald-50 text-emerald-700";
+      return "border-emerald-300 bg-emerald-50 text-emerald-700 font-extrabold shadow-2xs hover:bg-emerald-600 hover:border-emerald-600 hover:text-white hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500/30";
     case "Rejected":
-      return "border-red-100 bg-red-50 text-sibs-primary-1";
+      return "border-rose-300 bg-rose-50 text-rose-700 font-extrabold shadow-2xs hover:bg-rose-600 hover:border-rose-600 hover:text-white hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 focus:outline-none focus:ring-2 focus:ring-rose-500/30";
     case "Negotiate":
-      return "border-blue-100 bg-blue-50 text-blue-700";
+      return "border-blue-300 bg-blue-50 text-blue-700 font-extrabold shadow-2xs hover:bg-blue-600 hover:border-blue-600 hover:text-white hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/30";
     default:
-      return "border-gray-100 bg-gray-50 text-gray-600";
+      return "border-slate-300 bg-slate-100 text-slate-700 font-bold hover:bg-slate-700 hover:text-white";
   }
 }
 

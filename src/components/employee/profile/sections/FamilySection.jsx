@@ -127,7 +127,7 @@ export function FamilySection({
         isEditing ? (
           <ProfilePanel title={`Children Dependents (${children.length})`}>
             <div className="mb-4 flex justify-end">
-              <button type="button" onClick={() => onListChange("children", [...children, { id: `child_${Date.now()}`, name: "", birthDate: "" }])} className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white">
+              <button type="button" onClick={() => onListChange("children", [...children, { id: `child_${Date.now()}`, name: "", birthDate: "" }])} className="inline-flex h-9 items-center gap-2 rounded-xl bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-sibs-tertiary-2">
                 <Plus size={14} /> Add Dependent
               </button>
             </div>
@@ -136,7 +136,7 @@ export function FamilySection({
             ) : (
               <div className="space-y-4">
                 {children.map((child, index) => (
-                  <div key={child?.id || index} className="grid grid-cols-1 gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 md:grid-cols-[minmax(0,1fr)_220px_auto] md:items-end">
+                  <div key={child?.id || index} className="grid grid-cols-1 gap-3 rounded-xl border border-sibs-border bg-slate-50/70 p-4 md:grid-cols-[minmax(0,1fr)_220px_auto] md:items-end">
                     <ProfileFieldControl label="Child's Full Name" value={child?.name} onChange={(v) => updateChild(index, "name", v)} required />
                     <ProfileFieldControl label="Birth Date" type="date" value={toInputDate(child?.birthDate)} onChange={(v) => updateChild(index, "birthDate", v)} required />
                     <button type="button" onClick={() => onListChange("children", children.filter((_, childIndex) => childIndex !== index))} className="flex h-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 px-3 text-red-600 hover:bg-red-100" title="Remove child">
@@ -155,18 +155,18 @@ export function FamilySection({
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[560px] text-left text-xs">
                   <thead>
-                    <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                    <tr className="border-b border-sibs-border-subtle bg-slate-50 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
                       <th className="rounded-l-xl px-4 py-3">Child's Complete Name</th>
                       <th className="px-4 py-3">Birth Date</th>
                       <th className="rounded-r-xl px-4 py-3">Calculated Age</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E6ECF2]">
+                  <tbody className="divide-y divide-sibs-border-subtle">
                     {children.map((child, index) => (
                       <tr key={child?.id || index}>
-                        <td className="px-4 py-4 font-extrabold text-[#344054]">{child?.name || "—"}</td>
-                        <td className="px-4 py-4 font-semibold text-[#667085]">{formatDisplayDate(child?.birthDate)}</td>
-                        <td className="px-4 py-4"><span className="rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">{calculateAge(child?.birthDate)}</span></td>
+                        <td className="px-4 py-4 font-extrabold text-sibs-navy">{child?.name || "—"}</td>
+                        <td className="px-4 py-4 font-semibold text-sibs-muted">{formatDisplayDate(child?.birthDate)}</td>
+                        <td className="px-4 py-4"><span className="rounded-full bg-blue-50 px-2.5 py-1 sibs-text-micro font-extrabold text-sibs-navy">{calculateAge(child?.birthDate)}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -194,11 +194,11 @@ export function FamilySection({
                 {cleanText(employee?.emergencyName).slice(0, 2).toUpperCase() || "EC"}
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-extrabold text-[#042C51]">{employee?.emergencyName || "—"}</h3>
+                <h3 className="text-lg font-extrabold text-sibs-navy">{employee?.emergencyName || "—"}</h3>
                 <span className="mt-1 inline-flex rounded-full border border-red-100 bg-red-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-red-700">{employee?.emergencyRelationship || "Emergency Contact"}</span>
-                <div className="mt-4 grid grid-cols-1 gap-3 border-t border-[#E6ECF2] pt-4 sm:grid-cols-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#344054]"><Phone size={15} className="text-[#667085]" />{employee?.emergencyPhone || "—"}</div>
-                  <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-[#52637A]"><Mail size={15} className="shrink-0 text-[#667085]" /><span className="truncate">{employee?.emergencyEmail || "—"}</span></div>
+                <div className="mt-4 grid grid-cols-1 gap-3 border-t border-sibs-border-subtle pt-4 sm:grid-cols-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-sibs-navy"><Phone size={15} className="text-sibs-muted" />{employee?.emergencyPhone || "—"}</div>
+                  <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-sibs-navy"><Mail size={15} className="shrink-0 text-sibs-muted" /><span className="truncate">{employee?.emergencyEmail || "—"}</span></div>
                 </div>
               </div>
             </div>

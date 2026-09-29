@@ -20,7 +20,7 @@ export function WorkforceHiringHeaderSkeleton() {
           <h1 className="text-xl sm:text-2xl 2xl:text-3xl font-extrabold text-sibs-navy tracking-tight">
             Workforce & Hiring Overview
           </h1>
-          <p className="mt-1 text-xs font-semibold text-[#667085]">
+          <p className="mt-1 text-xs font-semibold text-sibs-muted">
             Review workforce capacity, hiring gaps, pipeline conversion, attrition, and six-week operating trends.
           </p>
         </div>
@@ -42,7 +42,7 @@ export function WorkforceHiringPipelineStripSkeleton() {
       aria-live="polite"
       aria-busy="true"
       aria-label="Loading pipeline conversion strip"
-      className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-3.5 shadow-sm 2xl:p-5"
+      className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white p-3.5 shadow-sm 2xl:p-5"
     >
       <div className="flex flex-col gap-3 2xl:gap-4 2xl:flex-row 2xl:items-center">
         <div className="grid min-w-0 flex-1 grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_20px_1fr_20px_1fr_20px_1fr_20px_1fr] 2xl:grid-cols-[1fr_26px_1fr_26px_1fr_26px_1fr_26px_1fr]">
@@ -51,7 +51,7 @@ export function WorkforceHiringPipelineStripSkeleton() {
               <article className="flex min-h-[64px] 2xl:min-h-[78px] items-center gap-2.5 2xl:gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 px-2.5 py-2 2xl:px-3 2xl:py-2.5">
                 <Skeleton className="h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 rounded-full" />
                 <div className="min-w-0 flex-1 space-y-1.5">
-                  <p className="m-0 truncate sibs-text-micro font-extrabold uppercase text-[#667085]">
+                  <p className="m-0 truncate sibs-text-micro font-extrabold uppercase text-sibs-muted">
                     {stage}
                   </p>
                   <div className="flex items-center gap-2">
@@ -69,7 +69,7 @@ export function WorkforceHiringPipelineStripSkeleton() {
           ))}
         </div>
 
-        <aside className="grid shrink-0 grid-cols-2 gap-3 border-t border-[#E6ECF2] pt-3 2xl:w-[260px] 2xl:border-l 2xl:border-t-0 2xl:pl-5 2xl:pt-0">
+        <aside className="grid shrink-0 grid-cols-2 gap-3 border-t border-sibs-border pt-3 2xl:w-[260px] 2xl:border-l 2xl:border-t-0 2xl:pl-5 2xl:pt-0">
           <div className="space-y-1">
             <Skeleton className="h-3 w-24" />
             <Skeleton className="h-6 w-16" />
@@ -93,17 +93,17 @@ export function WorkforceHiringChartsSkeleton() {
       {/* Hiring Funnel / Attrition Panel Skeleton */}
       <section
         data-testid="attrition-stages-skeleton"
-        className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+        className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm"
       >
         <div className="space-y-1.5">
           <Skeleton className="h-5 w-48" />
           <Skeleton className="h-3.5 w-72" />
         </div>
-        <div className="mt-4 flex flex-1 flex-col justify-around gap-3 rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3">
+        <div className="mt-4 flex flex-1 flex-col justify-around gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3">
           {Array.from({ length: 4 }).map((_, index) => (
             <article
               key={index}
-              className="rounded-lg border border-[#DDE5EE] bg-white px-3 py-3 shadow-sm"
+              className="rounded-lg border border-sibs-border bg-white px-3 py-3 shadow-sm"
             >
               <div className="flex items-center justify-between gap-3">
                 <Skeleton className="h-3 w-36" />
@@ -131,7 +131,7 @@ export function WorkforceHiringChartsSkeleton() {
       {/* 6-Week Trends Panel Skeleton */}
       <section
         data-testid="trends-chart-skeleton"
-        className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+        className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="space-y-1.5">
@@ -141,7 +141,7 @@ export function WorkforceHiringChartsSkeleton() {
           <Skeleton className="h-8 w-28 rounded-lg" />
         </div>
 
-        <div className="mt-3 flex min-h-0 flex-1 flex-col justify-between rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3 xl:min-h-[350px]">
+        <div className="mt-3 flex min-h-0 flex-1 flex-col justify-between rounded-xl border border-sibs-border bg-sibs-surface p-3 xl:min-h-[350px]">
           <div className="mb-2 flex justify-center gap-4">
             <Skeleton className="h-3 w-14 rounded" />
             <Skeleton className="h-3 w-14 rounded" />
@@ -172,9 +172,9 @@ export function WorkforceHiringTableSkeleton() {
   return (
     <section
       data-testid="workforce-table-skeleton"
-      className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+      className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"
     >
-      <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+      <div className="border-b border-sibs-border bg-white px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <Skeleton className="h-5 w-44" />
@@ -204,7 +204,7 @@ export function WorkforceHiringTableSkeleton() {
 export default function WorkforceHiringOverviewSkeleton() {
   return (
     <div
-      className="sibs-dashboard-shell flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta"
+      className="sibs-dashboard-shell flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-canvas font-jakarta"
       role="status"
       aria-live="polite"
       aria-busy="true"

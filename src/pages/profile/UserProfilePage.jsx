@@ -219,19 +219,19 @@ function ResignationHistorySection({ items = [], loading = false, onView }) {
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-        <p className="text-xs font-bold text-[#042C51]">
+        <p className="sibs-text-xs font-bold text-sibs-navy">
           Resignation Application History
         </p>
-        <p className="mt-1 text-[10px] font-semibold leading-4 text-[#667085]">
+        <p className="mt-1 sibs-text-micro font-semibold leading-4 text-sibs-muted">
           Review your previous and current resignation applications. Select a record to open the complete case details.
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
+      <div className="overflow-hidden rounded-xl border border-sibs-border sibs-data-table-shell">
         <div className="hidden overflow-x-auto lg:block">
           <table className="w-full min-w-[980px] border-collapse text-left">
-            <thead className="bg-[#F8FAFC]">
-              <tr className="border-b border-[#E6ECF2]">
+            <thead className="border-b border-sibs-border bg-slate-50">
+              <tr>
                 {[
                   "Case ID",
                   "Filed Date",
@@ -242,21 +242,21 @@ function ResignationHistorySection({ items = [], loading = false, onView }) {
                 ].map((label) => (
                   <th
                     key={label}
-                    className="px-3 py-3 text-[10px] font-extrabold uppercase tracking-wide text-[#7B8DB3]"
+                    className="sibs-data-table-th whitespace-nowrap px-3 py-2.5 text-sibs-muted"
                   >
                     {label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EEF2F6] bg-white">
+            <tbody className="divide-y divide-sibs-border-subtle bg-white">
               {loading ? (
                 <TableSkeletonRows count={3} columns={6} />
               ) : items.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-4 py-8 text-center text-xs font-semibold text-[#667085]"
+                    className="px-4 py-8 text-center sibs-text-xs font-semibold text-sibs-muted"
                   >
                     No resignation records found.
                   </td>
@@ -276,26 +276,26 @@ function ResignationHistorySection({ items = [], loading = false, onView }) {
                           onView?.(item);
                         }
                       }}
-                      className="cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                      className="cursor-pointer transition hover:bg-sibs-cream-subtle focus-visible:bg-sibs-cream-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
                     >
-                      <td className="px-3 py-3 text-xs font-extrabold text-[#FF5C28]">
+                      <td className="whitespace-nowrap px-3 py-3 sibs-text-xs font-extrabold text-sibs-orange tabular-nums">
                         {getResignationCaseId(item)}
                       </td>
-                      <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
+                      <td className="whitespace-nowrap px-3 py-3 sibs-text-xs font-semibold text-sibs-navy">
                         {formatResignationDate(getResignationDateValue(item))}
                       </td>
-                      <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
+                      <td className="whitespace-nowrap px-3 py-3 sibs-text-xs font-semibold text-sibs-navy">
                         {formatResignationDate(getResignationLastWorkingDate(item))}
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold uppercase ${getResignationStatusClass(status)}`}>
+                        <span className={`inline-flex rounded-md border px-2 py-1 sibs-text-micro font-extrabold uppercase ${getResignationStatusClass(status)}`}>
                           {status}
                         </span>
                       </td>
-                      <td className="max-w-[280px] px-3 py-3 text-xs font-semibold text-[#344054]">
+                      <td className="max-w-[280px] px-3 py-3 sibs-text-xs font-semibold text-sibs-navy">
                         <span className="line-clamp-2">{getResignationReason(item)}</span>
                       </td>
-                      <td className="px-3 py-3 text-xs font-bold text-[#042C51]">
+                      <td className="whitespace-nowrap px-3 py-3 sibs-text-xs font-bold text-sibs-navy">
                         {getResignationStage(item)}
                       </td>
                     </tr>
@@ -306,11 +306,11 @@ function ResignationHistorySection({ items = [], loading = false, onView }) {
           </table>
         </div>
 
-        <div className="space-y-3 bg-[#F8FAFC] p-3 lg:hidden">
+        <div className="space-y-3 bg-slate-50/50 p-3 lg:hidden">
           {loading ? (
             <DataCard.Skeleton count={3} />
           ) : items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#D6E0EA] bg-white p-6 text-center text-xs font-semibold text-[#667085]">
+            <div className="rounded-xl border border-dashed border-sibs-border bg-white p-6 text-center sibs-text-xs font-semibold text-sibs-muted">
               No resignation records found.
             </div>
           ) : (
@@ -321,43 +321,43 @@ function ResignationHistorySection({ items = [], loading = false, onView }) {
                   key={item?.id || item?.resignationId || `resignation-history-mobile-${index}`}
                   type="button"
                   onClick={() => onView?.(item)}
-                  className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[#FF5C28]/30 hover:bg-[#FFF9F6]"
+                  className="w-full rounded-xl border border-sibs-border bg-white p-4 text-left shadow-xs transition hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                      <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
                         Case ID
                       </p>
-                      <p className="mt-1 text-sm font-extrabold text-[#FF5C28]">
+                      <p className="mt-1 text-sm font-extrabold text-sibs-orange tabular-nums">
                         {getResignationCaseId(item)}
                       </p>
                     </div>
-                    <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold uppercase ${getResignationStatusClass(status)}`}>
+                    <span className={`inline-flex rounded-md border px-2 py-1 sibs-text-micro font-extrabold uppercase ${getResignationStatusClass(status)}`}>
                       {status}
                     </span>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <div className="mt-4 grid grid-cols-2 gap-3 sibs-text-xs">
                     <div>
-                      <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Filed</p>
-                      <p className="mt-1 font-semibold text-[#344054]">
+                      <p className="sibs-text-micro font-bold uppercase text-sibs-muted">Filed</p>
+                      <p className="mt-1 font-semibold text-sibs-navy">
                         {formatResignationDate(getResignationDateValue(item))}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Last Working Day</p>
-                      <p className="mt-1 font-semibold text-[#344054]">
+                      <p className="sibs-text-micro font-bold uppercase text-sibs-muted">Last Working Day</p>
+                      <p className="mt-1 font-semibold text-sibs-navy">
                         {formatResignationDate(getResignationLastWorkingDate(item))}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-3 border-t border-[#EEF2F6] pt-3">
-                    <p className="text-[10px] font-bold uppercase text-[#8A98B8]">Reason</p>
-                    <p className="mt-1 line-clamp-2 text-xs font-semibold text-[#344054]">
+                  <div className="mt-3 border-t border-sibs-border-subtle pt-3">
+                    <p className="sibs-text-micro font-bold uppercase text-sibs-muted">Reason</p>
+                    <p className="mt-1 line-clamp-2 sibs-text-xs font-semibold text-sibs-navy">
                       {getResignationReason(item)}
                     </p>
-                    <p className="mt-2 text-[10px] font-bold text-[#042C51]">
+                    <p className="mt-2 sibs-text-micro font-bold text-sibs-navy">
                       Approval Stage: {getResignationStage(item)}
                     </p>
                   </div>
@@ -971,35 +971,35 @@ export default function UserProfilePage() {
   return (
     <div
       onClick={() => setOpenProfileDropdown(false)}
-      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#EEF2F6] font-jakarta"
+      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-canvas font-jakarta sibs-dashboard-shell"
     >
       <div className="shrink-0">
         <Header />
       </div>
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden sibs-scrollbar bg-[#EEF2F6] px-3 py-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden sibs-scrollbar bg-sibs-canvas px-3 py-4 sm:p-6">
         <div className="mx-auto w-full max-w-[1600px] space-y-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-sm font-black text-[#042C51]">My Profile</h1>
-              <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
+              <h1 className="text-sm font-black text-sibs-navy">My Profile</h1>
+              <p className="mt-0.5 sibs-text-micro font-semibold text-sibs-muted">
                 Employee self-service profile and official HRIS records
               </p>
             </div>
 
-            <div className="hidden min-w-0 items-center gap-1.5 text-[10px] font-semibold text-[#667085] sm:flex">
+            <div className="hidden min-w-0 items-center gap-1.5 sibs-text-micro font-semibold text-sibs-muted sm:flex">
               <span>SiBS HRIS Portal</span>
               <span>/</span>
               <span>Employee Self-Service</span>
               <span>/</span>
-              <span className="font-black text-[#042C51]">My Profile</span>
+              <span className="font-black text-sibs-navy">My Profile</span>
             </div>
           </div>
 
           {userLoading || profileLoading ? (
             <EmployeeProfileSkeleton />
           ) : !displayEmployee ? (
-            <div className="sibs-card p-6 text-sm font-semibold text-[#667085]">
+            <div className="sibs-card p-6 text-sm font-semibold text-sibs-muted">
               Your employee profile could not be found.
             </div>
           ) : (
@@ -1046,11 +1046,11 @@ export default function UserProfilePage() {
               <div className="sibs-page-card-in grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_360px]">
                 <section
                   key={activeTab}
-                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-sibs-border bg-white p-5 shadow-xs"
                 >
-                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-sibs-border-subtle pb-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <h2 className="break-words text-sm font-black uppercase tracking-wider text-[#042C51]">
+                      <h2 className="break-words text-sm font-black uppercase tracking-wider text-sibs-navy">
                         {activeProfileLabel.primary}
                         {activeProfileLabel.secondary
                           ? ` - ${activeProfileLabel.secondary}`
@@ -1070,7 +1070,7 @@ export default function UserProfilePage() {
                         className={`h-2.5 w-2.5 rounded-full ${
                           isEditing
                             ? "animate-pulse bg-amber-400"
-                            : "bg-[#042C51]"
+                            : "bg-sibs-navy"
                         }`}
                       />
                       <span className="text-[10px] font-bold uppercase text-slate-500">

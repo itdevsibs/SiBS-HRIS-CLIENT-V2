@@ -210,11 +210,11 @@ export function ApplicationSection({
                       key={item.day}
                       className={`rounded-xl border p-3 text-center transition ${
                         item.type === "work"
-                          ? "border-[#E6ECF2] bg-white shadow-xs"
-                          : "border-dashed border-[#D7DEE8] bg-[#F8FAFC]"
+                          ? "border-sibs-border bg-white shadow-xs"
+                          : "border-dashed border-sibs-border bg-slate-50/70"
                       }`}
                     >
-                      <span className="block text-[10px] font-black uppercase tracking-wider text-[#042C51]">
+                      <span className="block text-[10px] font-black uppercase tracking-wider text-sibs-navy">
                         {item.full}
                       </span>
                       <span
@@ -226,7 +226,7 @@ export function ApplicationSection({
                       >
                         {item.type === "work" ? "Work Day" : "Rest Day"}
                       </span>
-                      <p className="mt-2 text-[10px] font-semibold text-[#667085]">
+                      <p className="mt-2 text-[10px] font-semibold text-sibs-muted">
                         {item.time}
                       </p>
                     </div>
@@ -268,10 +268,10 @@ export function ApplicationSection({
                       const state = index < currentIndex ? "completed" : index === currentIndex ? "active" : "pending";
                       return (
                         <div key={stage} className="flex flex-col items-center text-center">
-                          <span className={`z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-extrabold ${state === "completed" ? "border-emerald-500 bg-emerald-500 text-white" : state === "active" ? "border-[#042C51] bg-[#042C51] text-white ring-4 ring-[#E9F0FC]" : "border-slate-200 bg-white text-slate-400"}`}>
+                          <span className={`z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-extrabold ${state === "completed" ? "border-emerald-500 bg-emerald-500 text-white" : state === "active" ? "border-sibs-navy bg-sibs-navy text-white ring-4 ring-blue-100" : "border-slate-200 bg-white text-slate-400"}`}>
                             {state === "completed" ? <CheckCircle2 size={18} /> : index + 1}
                           </span>
-                          <span className={`mt-2 max-w-[110px] text-[10px] font-extrabold ${state === "active" ? "text-[#042C51]" : "text-[#667085]"}`}>
+                          <span className={`mt-2 max-w-[110px] text-[10px] font-extrabold ${state === "active" ? "text-sibs-navy" : "text-sibs-muted"}`}>
                             {stage}
                           </span>
                         </div>
@@ -295,7 +295,7 @@ export function ApplicationSection({
                     ["taOwner", "TA Owner"],
                   ]}
                 />
-                <div className="mt-4 grid grid-cols-1 gap-4 border-t border-[#E6ECF2] pt-4 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-1 gap-4 border-t border-sibs-border-subtle pt-4 sm:grid-cols-2">
                   <ProfileReadField label="PRF Match Status" value={employee?.prfMatchStatus} />
                   <ProfileReadField label="Recruitment Remarks" value={employee?.remarks} />
                 </div>
@@ -322,20 +322,20 @@ export function ApplicationSection({
         ) : (
           <ProfilePanel>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
-              <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] text-center">
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">Weighted Score</p>
-                <p className="mt-2 text-4xl font-extrabold text-[#042C51]">{employee?.assessmentScore || "—"}</p>
+              <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-sibs-border bg-slate-50/70 text-center">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">Weighted Score</p>
+                <p className="mt-2 text-4xl font-extrabold text-sibs-navy">{employee?.assessmentScore || "—"}</p>
                 <span className="mt-2 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">
                   {employee?.assessmentStatus || "Pending"}
                 </span>
               </div>
-              <div className="rounded-xl border border-blue-100 bg-[#E9F0FC]/60 p-5">
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">Evaluation Summary Remarks</p>
-                <p className="mt-3 text-sm font-semibold leading-7 text-[#344054]">
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-5">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">Evaluation Summary Remarks</p>
+                <p className="mt-3 text-sm font-semibold leading-7 text-sibs-navy">
                   {employee?.assessmentRemarks || employee?.remarks || "No assessment remarks recorded."}
                 </p>
-                <div className="mt-5 flex items-center gap-2 border-t border-blue-100 pt-4 text-xs font-semibold text-[#667085]">
-                  <UserCheck size={16} className="text-[#042C51]" />
+                <div className="mt-5 flex items-center gap-2 border-t border-blue-100 pt-4 text-xs font-semibold text-sibs-muted">
+                  <UserCheck size={16} className="text-sibs-navy" />
                   Verified assessment information
                 </div>
               </div>
@@ -375,7 +375,7 @@ export function ApplicationSection({
                     { id: `history_${Date.now()}`, date: "", status: "", stage: "", remarks: "" },
                   ])
                 }
-                className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white"
+                className="inline-flex h-9 items-center gap-2 rounded-xl bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-sibs-tertiary-2"
               >
                 <Plus size={14} />
                 Add History Entry
@@ -473,24 +473,24 @@ export function ApplicationSection({
               {statusHistory.map((entry, index) => (
                 <article
                   key={entry?.id || index}
-                  className="relative rounded-2xl border border-[#D6E0EA] bg-[#F8FAFC] p-4"
+                  className="relative rounded-2xl border border-sibs-border bg-slate-50/70 p-4"
                 >
                   <span className="absolute -left-[31px] top-5 h-3.5 w-3.5 rounded-full border-4 border-white bg-slate-300" />
-                  <div className="flex flex-col gap-2 border-b border-[#E6ECF2] pb-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-2 border-b border-sibs-border-subtle pb-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-extrabold text-[#042C51]">
+                      <span className="text-xs font-extrabold text-sibs-navy">
                         {entry?.status || "—"}
                       </span>
-                      <span className="rounded bg-[#E9F0FC] px-2 py-1 text-[9px] font-extrabold text-[#042C51]">
+                      <span className="rounded bg-blue-50 px-2 py-1 text-[9px] font-extrabold text-sibs-navy">
                         Stage: {entry?.stage || "—"}
                       </span>
                     </div>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[#667085]">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono text-sibs-muted">
                       <CalendarDays size={13} />
                       {formatDisplayDate(entry?.date)}
                     </span>
                   </div>
-                  <p className="mt-3 text-xs font-medium italic leading-6 text-[#52637A]">
+                  <p className="mt-3 text-xs font-medium italic leading-6 text-sibs-navy">
                     {entry?.remarks || "—"}
                   </p>
                 </article>

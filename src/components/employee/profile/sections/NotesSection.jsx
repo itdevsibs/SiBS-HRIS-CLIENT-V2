@@ -65,17 +65,17 @@ export function NotesSection({ employee, onCommitNote, onFeedback, canEditDetail
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder="Document a private administrative note..."
-              className="w-full resize-y rounded-xl border border-[#D0D5DD] bg-[#F8FAFC] p-3 sibs-text-xs font-semibold leading-relaxed outline-none transition focus:border-[#042C51] focus:bg-white"
+              className="w-full resize-y rounded-xl border border-sibs-border bg-slate-50 p-3 sibs-text-xs font-semibold leading-relaxed outline-none transition focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 focus:bg-white"
             />
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="sibs-text-micro font-semibold text-[#667085]">
+              <span className="sibs-text-micro font-semibold text-sibs-muted">
                 The entry will be timestamped under the current HR user.
               </span>
               <button
                 type="submit"
-                className="inline-flex h-8.5 2xl:h-9 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-white transition hover:bg-[#063c6d]"
+                className="inline-flex h-8.5 2xl:h-9 items-center justify-center gap-2 rounded-lg bg-sibs-navy px-4 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-white transition hover:bg-sibs-tertiary-2"
               >
-                <Save size={14} className="text-[#FF5C28]" />
+                <Save size={14} className="text-sibs-orange" />
                 Log Internal Note
               </button>
             </div>
@@ -83,7 +83,7 @@ export function NotesSection({ employee, onCommitNote, onFeedback, canEditDetail
         </ProfilePanel>
       ) : null}
       <div className="mt-5 space-y-3">
-        <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+        <h3 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
           Confidential History ({history.length})
         </h3>
         {history.length === 0 ? (
@@ -92,19 +92,19 @@ export function NotesSection({ employee, onCommitNote, onFeedback, canEditDetail
           history.map((note) => (
             <article
               key={note.id}
-              className="group relative rounded-xl border border-[#D6E0EA] bg-white p-4"
+              className="group relative rounded-xl border border-sibs-border bg-white p-4 shadow-xs"
             >
-              <div className="flex flex-col gap-1 border-b border-[#E6ECF2] pb-2.5 sm:flex-row sm:items-center sm:justify-between">
-                <span className="flex items-center gap-2 sibs-text-xs font-extrabold text-[#042C51]">
-                  <User size={13} className="text-[#667085]" />
+              <div className="flex flex-col gap-1 border-b border-sibs-border-subtle pb-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <span className="flex items-center gap-2 sibs-text-xs font-extrabold text-sibs-navy">
+                  <User size={13} className="text-sibs-muted" />
                   {note.author || "HR User"}
                 </span>
-                <span className="flex items-center gap-1.5 font-mono sibs-text-micro text-[#667085]">
+                <span className="flex items-center gap-1.5 font-mono sibs-text-micro text-sibs-muted">
                   <CalendarDays size={12} />
                   {formatDisplayDate(note.date)}
                 </span>
               </div>
-              <p className="mt-3 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-[#52637A]">
+              <p className="mt-3 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-sibs-navy">
                 {note.content}
               </p>
               {canEditDetails ? (

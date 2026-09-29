@@ -1,9 +1,11 @@
-const FALLBACK_COLORS = [
-  "#042C51",
-  "#2563EB",
-  "#0D9488",
-  "#EA580C",
-  "#15803D",
+import React from "react";
+
+const FALLBACK_FILL_CLASSES = [
+  "fill-sibs-navy",
+  "fill-blue-600",
+  "fill-teal-600",
+  "fill-sibs-orange",
+  "fill-emerald-600",
 ];
 
 function getStageLabel(stage = {}, index = 0) {
@@ -49,7 +51,8 @@ export default function FunnelShape({ pipeline = [] }) {
               points={`${x1},${y} ${x2},${y} ${x3},${
                 y + segmentHeight
               } ${x4},${y + segmentHeight}`}
-              fill={stage.color || FALLBACK_COLORS[index]}
+              className={stage.fillClass || FALLBACK_FILL_CLASSES[index] || "fill-sibs-navy"}
+              style={stage.color ? { fill: stage.color } : undefined}
             />
 
             <text
@@ -57,8 +60,8 @@ export default function FunnelShape({ pipeline = [] }) {
               y={y + segmentHeight / 2 + 4}
               textAnchor="middle"
               dominantBaseline="middle"
-              fill="#ffffff"
-              className="text-[13px] font-extrabold"
+              fill="currentColor"
+              className="text-[11px] font-extrabold text-white"
             >
               {label}: {count}
             </text>

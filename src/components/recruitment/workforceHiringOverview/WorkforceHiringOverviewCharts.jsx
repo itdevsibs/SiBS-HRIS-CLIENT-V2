@@ -25,8 +25,8 @@ function TrendSummaryBox({ label, value, tone, loading = false, animate = true }
   };
 
   return (
-    <div className="min-h-[64px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-center">
-      <span className="block text-[9px] font-extrabold uppercase tracking-wider text-[#667085]">
+    <div className="min-h-[64px] rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2.5 text-center">
+      <span className="block text-[9px] font-extrabold uppercase tracking-wider text-sibs-muted">
         {label}
       </span>
 
@@ -125,17 +125,17 @@ function AttritionBetweenStagesCard() {
     return (
       <section
         data-testid="attrition-stages-skeleton"
-        className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+        className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm"
       >
         <div className="space-y-1.5">
           <Skeleton className="h-5 w-48" />
           <Skeleton className="h-3.5 w-72" />
         </div>
-        <div className="mt-4 flex flex-1 flex-col justify-around gap-3 rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3">
+        <div className="mt-4 flex flex-1 flex-col justify-around gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3">
           {Array.from({ length: 4 }).map((_, index) => (
             <article
               key={index}
-              className="rounded-lg border border-[#DDE5EE] bg-white px-3 py-3 shadow-sm"
+              className="rounded-lg border border-sibs-border bg-white px-3 py-3 shadow-sm"
             >
               <div className="flex items-center justify-between gap-3">
                 <Skeleton className="h-3 w-36" />
@@ -163,40 +163,40 @@ function AttritionBetweenStagesCard() {
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+    <section className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm">
       <div>
         <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           Attrition Between Stages
         </h3>
-        <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+        <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
           Identifies candidate drop-off metrics between consecutive milestone stages.
         </p>
       </div>
 
-      <div className="mt-4 flex flex-1 flex-col justify-around gap-3 rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3">
+      <div className="mt-4 flex flex-1 flex-col justify-around gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3">
         {attritionStages.length === 0 ? (
-          <div className="sibs-empty-panel rounded-xl border border-dashed border-[#D6E0EA] bg-white px-5 py-10 text-center text-xs font-bold text-[#667085]">
+          <div className="sibs-empty-panel rounded-xl border border-dashed border-sibs-border bg-white px-5 py-10 text-center text-xs font-bold text-sibs-muted">
             No stage attrition data available.
           </div>
         ) : (
           attritionStages.map((row) => (
             <article
               key={row.fromTo}
-              className="rounded-lg border border-[#DDE5EE] bg-white px-3 py-3 shadow-sm"
+              className="rounded-lg border border-sibs-border bg-white px-3 py-3 shadow-sm"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="flex min-w-0 items-center gap-1.5 truncate text-[10px] font-extrabold text-[#344054]">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#E74C3C]" />
+                <span className="flex min-w-0 items-center gap-1.5 truncate text-[10px] font-extrabold text-slate-700">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-500" />
                   {row.fromTo}
                 </span>
 
-                <span className="shrink-0 font-mono text-[9px] font-bold text-[#98A2B3]">
+                <span className="shrink-0 font-mono text-[9px] font-bold text-sibs-muted">
                   Loss:{" "}
-                  <b className="text-[#E74C3C]">
+                  <b className="text-rose-600">
                     <AnimatedNumber value={row.count} />
                   </b>{" "}
-                  <span className="mx-1 text-[#D0D5DD]">|</span>
-                  <b className="text-[#E74C3C]">
+                  <span className="mx-1 text-slate-300">|</span>
+                  <b className="text-rose-600">
                     <AnimatedNumber
                       value={`${Number(row.percentage || 0).toFixed(1)}%`}
                     />
@@ -206,7 +206,7 @@ function AttritionBetweenStagesCard() {
 
               <div className="mt-2 h-1.5 overflow-hidden rounded-full border border-slate-200/70 bg-slate-100">
                 <span
-                  className="block h-full rounded-full bg-[#E74C3C] transition-all duration-500"
+                  className="block h-full rounded-full bg-rose-500 transition-all duration-500"
                   style={{ width: row.width }}
                 />
               </div>
@@ -217,7 +217,7 @@ function AttritionBetweenStagesCard() {
 
       <div className="mt-3 flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/70 px-3 py-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-[#E74C3C]">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-600">
             <X className="h-3.5 w-3.5" />
           </span>
           <div>
@@ -233,9 +233,9 @@ function AttritionBetweenStagesCard() {
         <div className="text-right">
           <AnimatedNumber
             value={summary.attrition}
-            className="block text-base font-black leading-none text-[#E74C3C]"
+            className="block text-base font-black leading-none text-rose-600"
           />
-          <span className="mt-1 block text-[9px] font-bold text-[#E74C3C]">
+          <span className="mt-1 block text-[9px] font-bold text-rose-600">
             <AnimatedNumber
               value={`${Number(summary.attritionPercentage || 0).toFixed(2)}%`}
             />{" "}
@@ -296,13 +296,13 @@ function SixWeekTrendsCard() {
   const summaryLoading = trendsLoading || Boolean(trendsError) || !summaryReady;
 
   return (
-    <section className="sibs-page-card-in sibs-card flex h-full min-h-0 flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm xl:min-h-[520px]">
+    <section className="sibs-page-card-in sibs-card flex h-full min-h-0 flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm xl:min-h-[520px]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             6-Week Trends
           </h3>
-          <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+          <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
             {trendRangeLabel || "Historical trajectory of core operational metrics."}
           </p>
         </div>
@@ -311,16 +311,16 @@ function SixWeekTrendsCard() {
           <button
             type="button"
             onClick={() => setTrendModalOpen(true)}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-3 text-[9px] font-extrabold text-white shadow-sm transition hover:bg-[#073D6F]"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-3 text-[9px] font-extrabold text-white shadow-sm transition hover:bg-sibs-navy-light"
           >
-            <Maximize2 className="h-3 w-3 text-[#FF5C28]" />
+            <Maximize2 className="h-3 w-3 text-sibs-orange" />
             View Trend Details
           </button>
         </div>
       </div>
 
-      <div className="mt-3 flex min-h-0 flex-1 flex-col rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3 xl:min-h-[350px]">
-        <div className="mb-1 flex flex-wrap justify-center gap-4 text-[9px] font-extrabold uppercase tracking-wide text-[#344054]">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col rounded-xl border border-sibs-border bg-sibs-surface p-3 xl:min-h-[350px]">
+        <div className="mb-1 flex flex-wrap justify-center gap-4 text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
           <Legend color="bg-blue-600" label="ABS %" />
           <Legend color="bg-orange-600" label="ATT %" />
           <Legend color="bg-emerald-600" label="BUF %" />

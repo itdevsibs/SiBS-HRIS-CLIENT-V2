@@ -211,7 +211,7 @@ export function PersonalSection({
             {[
               { label: "Corporate Email", value: employee?.email, icon: Mail, key: "email", tone: "bg-blue-50 text-blue-600" },
               { label: "Mobile Number", value: employee?.contact, icon: Phone, key: "mobile", tone: "bg-emerald-50 text-emerald-600" },
-              { label: "Telephone", value: employee?.telephone, icon: Building2, key: "telephone", tone: "bg-orange-50 text-[#FF5C28]" },
+              { label: "Telephone", value: employee?.telephone, icon: Building2, key: "telephone", tone: "bg-orange-50 text-sibs-orange" },
             ].map((item) => (
               <ProfilePanel key={item.key} className="p-3.5 2xl:p-4">
                 <div className="flex items-center gap-2.5 2xl:gap-3">
@@ -219,12 +219,12 @@ export function PersonalSection({
                     <item.icon size={17} />
                   </span>
                   <div className="min-w-0">
-                    <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">{item.label}</p>
-                    <p className="sibs-text-micro font-semibold text-[#8A98B8]">Primary contact channel</p>
+                    <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">{item.label}</p>
+                    <p className="sibs-text-micro font-semibold text-sibs-muted">Primary contact channel</p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#F3F6FA] px-3 py-2.5">
-                  <span className={`min-w-0 break-all font-mono text-[11px] 2xl:text-xs font-extrabold ${hasValue(item.value) ? "text-[#042C51]" : "italic text-[#98A2B3]"}`}>
+                <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-slate-100 px-3 py-2.5">
+                  <span className={`min-w-0 break-all font-mono text-[11px] 2xl:text-xs font-extrabold ${hasValue(item.value) ? "text-sibs-navy" : "italic text-sibs-faint"}`}>
                     {hasValue(item.value) ? item.value : "—"}
                   </span>
                   <ProfileCopyButton value={item.value} copyKey={item.key} copiedKey={copiedKey} onCopy={copyValue} />
@@ -252,7 +252,7 @@ export function PersonalSection({
                 ["Permanent Address", employee?.permanentAddress, "navy"],
               ].map(([label, value, accent]) => (
                 <ProfilePanel key={label} title={label} accent={accent} className="p-3.5 2xl:p-4">
-                  <p className={`min-h-16 2xl:min-h-20 rounded-xl bg-[#F8FAFC] p-3 sibs-text-xs font-semibold leading-relaxed ${hasValue(value) ? "text-[#042C51]" : "italic text-[#98A2B3]"}`}>
+                  <p className={`min-h-16 2xl:min-h-20 rounded-xl bg-slate-50 p-3 sibs-text-xs font-semibold leading-relaxed ${hasValue(value) ? "text-sibs-navy" : "italic text-sibs-faint"}`}>
                     {hasValue(value) ? value : "—"}
                   </p>
                 </ProfilePanel>
@@ -265,12 +265,12 @@ export function PersonalSection({
                     <Building2 size={19} />
                   </span>
                   <div>
-                    <h3 className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">Active Work Arrangement</h3>
-                    <p className="sibs-text-micro font-semibold text-[#667085]">Current corporate work setup assignment.</p>
+                    <h3 className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">Active Work Arrangement</h3>
+                    <p className="sibs-text-micro font-semibold text-sibs-muted">Current corporate work setup assignment.</p>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-[#E9F0FC] px-3 py-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-[#042C51]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
                   {employee?.workSetup || "—"}
                 </span>
               </div>
@@ -296,7 +296,7 @@ export function PersonalSection({
               <Lock size={15} className="mt-0.5 shrink-0 text-amber-600" />
               Regulatory data is masked by default. Reveal or copy only when authorized.
             </div>
-            <div className="divide-y divide-[#E6ECF2]">
+            <div className="divide-y divide-sibs-border-subtle">
               {[
                 ["gsis", "GSIS", employee?.gsis],
                 ["sss", "Social Security System (SSS)", employee?.sss],
@@ -306,11 +306,11 @@ export function PersonalSection({
               ].map(([key, label, value]) => (
                 <div key={key} className="flex flex-col gap-2 py-2.5 2xl:py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">{label}</p>
-                    <p className="mt-0.5 font-mono sibs-text-xs font-extrabold text-[#042C51]">{maskedValue(value, masked[key])}</p>
+                    <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">{label}</p>
+                    <p className="mt-0.5 font-mono sibs-text-xs font-extrabold text-sibs-navy">{maskedValue(value, masked[key])}</p>
                   </div>
                   <div className="flex items-center gap-1 self-end sm:self-auto">
-                    <button type="button" onClick={() => setMasked((current) => ({ ...current, [key]: !current[key] }))} className="rounded-lg p-1.5 text-[#667085] hover:bg-[#F3F6FA] hover:text-[#042C51]" title={masked[key] ? "Reveal ID" : "Hide ID"}>
+                    <button type="button" onClick={() => setMasked((current) => ({ ...current, [key]: !current[key] }))} className="rounded-lg p-1.5 text-sibs-muted hover:bg-slate-100 hover:text-sibs-navy" title={masked[key] ? "Reveal ID" : "Hide ID"}>
                       {masked[key] ? <Eye size={15} /> : <EyeOff size={15} />}
                     </button>
                     <ProfileCopyButton value={value} copyKey={key} copiedKey={copiedKey} onCopy={copyValue} />

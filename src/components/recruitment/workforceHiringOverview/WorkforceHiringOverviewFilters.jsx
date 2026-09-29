@@ -239,7 +239,7 @@ function DropdownPortal({
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={`overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+          className={`overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xl transition-all duration-200 ease-out ${
             isAnimatedOpen
               ? "translate-y-0 scale-100"
               : "-translate-y-1 scale-[0.99]"
@@ -385,7 +385,7 @@ function WeeklyVersionDropdown({
 
   return (
     <div className="relative z-[80] min-w-0 overflow-visible">
-      <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-[#101828]">
+      <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-sibs-navy">
         Weekly Version
       </label>
 
@@ -394,9 +394,9 @@ function WeeklyVersionDropdown({
         type="button"
         disabled={loading}
         onClick={handleOpen}
-        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-left font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:bg-sibs-surface disabled:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
             : ""
         }`}
       >
@@ -408,7 +408,7 @@ function WeeklyVersionDropdown({
 
         <ChevronDown
           className={`ml-1.5 2xl:ml-2 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 transition-all duration-300 ${
-            open ? "rotate-180 text-[#FF5C28]" : "text-[#667085]"
+            open ? "rotate-180 text-sibs-orange" : "text-sibs-muted"
           }`}
         />
       </button>
@@ -434,20 +434,20 @@ function WeeklyVersionDropdown({
                 onClick={() => handleSelect(option)}
                 className={`block w-full px-4 py-2.5 text-left font-jakarta text-xs transition ${
                   isSelected
-                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                    : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                    ? "bg-orange-50 font-extrabold text-sibs-orange"
+                    : "font-bold text-slate-700 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                 }`}
               >
                 <p className="truncate font-extrabold">{formatWeekLabel(week)}</p>
 
-                <p className="mt-1 truncate text-[10px] font-semibold text-[#667085]">
+                <p className="mt-1 truncate text-[10px] font-semibold text-sibs-muted">
                   {week?.weekRange || week?.week_range || "—"}
                 </p>
               </button>
             );
           })
         ) : (
-          <div className="px-4 py-3 font-jakarta text-xs font-semibold text-[#667085]">
+          <div className="px-4 py-3 font-jakarta text-xs font-semibold text-sibs-muted">
             No weekly versions available.
           </div>
         )}
@@ -521,7 +521,7 @@ function CheckboxDropdown({
 
   return (
     <div className="relative z-[70] min-w-0 overflow-visible">
-      <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-[#101828]">
+      <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-sibs-navy">
         {label}
       </label>
 
@@ -548,9 +548,9 @@ function CheckboxDropdown({
             disabled={loading}
             placeholder={searchPlaceholder}
             autoComplete="off"
-            className={`h-8.5 2xl:h-10 w-full rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 pr-8 2xl:pr-10 font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+            className={`h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 pr-8 2xl:pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:bg-sibs-surface disabled:text-sibs-faint placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${
               open
-                ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+                ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
                 : ""
             }`}
           />
@@ -558,7 +558,7 @@ function CheckboxDropdown({
           <ChevronDown
             onClick={handleOpen}
             className={`absolute right-2.5 2xl:right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 2xl:h-4 2xl:w-4 cursor-pointer transition-all duration-300 ${
-              open ? "rotate-180 text-[#FF5C28]" : "text-[#667085]"
+              open ? "rotate-180 text-sibs-orange" : "text-sibs-muted"
             }`}
           />
         </div>
@@ -568,9 +568,9 @@ function CheckboxDropdown({
           type="button"
           disabled={loading}
           onClick={handleOpen}
-          className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 2xl:px-3 text-left font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+          className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:bg-sibs-surface disabled:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${
             open
-              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+              ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
               : ""
           }`}
         >
@@ -580,8 +580,8 @@ function CheckboxDropdown({
 
           <ChevronDown
             className={`ml-1.5 2xl:ml-2 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 transition-all duration-300 ${
-            open ? "rotate-180 text-[#FF5C28]" : "text-[#667085]"
-          }`}
+              open ? "rotate-180 text-sibs-orange" : "text-sibs-muted"
+            }`}
           />
         </button>
       )}
@@ -597,15 +597,15 @@ function CheckboxDropdown({
           onClick={() => handleToggle(allValue)}
           className={`flex w-full items-center gap-3 px-4 py-2.5 text-left font-jakarta text-xs transition ${
             selectedValues.includes(allValue)
-              ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-              : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+              ? "bg-orange-50 font-extrabold text-sibs-orange"
+              : "font-bold text-slate-700 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
           }`}
         >
           <input
             type="checkbox"
             checked={selectedValues.includes(allValue)}
             readOnly
-            className="h-4 w-4 rounded border-[#D6E0EA] accent-[#FF5C28]"
+            className="h-4 w-4 rounded border-sibs-border accent-sibs-orange"
           />
 
           <span className="truncate">{allLabel}</span>
@@ -624,15 +624,15 @@ function CheckboxDropdown({
                 onClick={() => handleToggle(option.value)}
                 className={`flex w-full items-center gap-3 px-4 py-2.5 text-left font-jakarta text-xs transition ${
                   checked
-                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                    : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                    ? "bg-orange-50 font-extrabold text-sibs-orange"
+                    : "font-bold text-slate-700 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={checked}
                   readOnly
-                  className="h-4 w-4 rounded border-[#D6E0EA] accent-[#FF5C28]"
+                  className="h-4 w-4 rounded border-sibs-border accent-sibs-orange"
                 />
 
                 <span className="truncate">{option.label}</span>
@@ -640,7 +640,7 @@ function CheckboxDropdown({
             );
           })
         ) : (
-          <div className="px-4 py-4 font-jakarta text-xs font-semibold text-[#667085]">
+          <div className="px-4 py-4 font-jakarta text-xs font-semibold text-sibs-muted">
             {emptyText}
           </div>
         )}

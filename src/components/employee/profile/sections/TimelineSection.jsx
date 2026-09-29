@@ -54,7 +54,7 @@ function GenericRecordEditor({ schema, records, onChange }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button type="button" onClick={addRecord} className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white">
+        <button type="button" onClick={addRecord} className="inline-flex h-9 items-center gap-2 rounded-xl bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-sibs-tertiary-2">
           <Plus size={14} /> {schema.addLabel}
         </button>
       </div>
@@ -116,18 +116,18 @@ export function TimelineSection({
             const degree = normalizeRecordValue(record, ["degree", "degreeCourse"]);
             const honors = normalizeRecordValue(record, ["honors", "honorsReceived"]);
             return (
-              <article key={record?.id || index} className="relative rounded-xl border border-[#D6E0EA] bg-white p-3.5 2xl:p-4 shadow-sm">
-                <span className="absolute -left-[25px] sm:-left-[33px] top-5 h-3.5 w-3.5 rounded-full border-3 border-white bg-[#042C51] shadow" />
+              <article key={record?.id || index} className="relative rounded-xl border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-xs">
+                <span className="absolute -left-[25px] sm:-left-[33px] top-5 h-3.5 w-3.5 rounded-full border-3 border-white bg-sibs-navy shadow" />
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="flex flex-wrap gap-1.5">
-                      <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-[#042C51]">{level || "Education"}</span>
-                      {honors && <span className="inline-flex items-center gap-1 rounded-full border border-orange-100 bg-orange-50 px-2 py-0.5 sibs-text-micro font-extrabold text-[#FF5C28]"><Award size={11} />{honors}</span>}
+                      <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">{level || "Education"}</span>
+                      {honors && <span className="inline-flex items-center gap-1 rounded-full border border-orange-100 bg-orange-50 px-2 py-0.5 sibs-text-micro font-extrabold text-sibs-orange"><Award size={11} />{honors}</span>}
                     </div>
-                    <h3 className="mt-2 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">{degree || "Academic Program"}</h3>
-                    <p className="mt-0.5 sibs-text-micro font-bold text-[#667085]">{school || "—"}</p>
+                    <h3 className="mt-2 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">{degree || "Academic Program"}</h3>
+                    <p className="mt-0.5 sibs-text-micro font-bold text-sibs-muted">{school || "—"}</p>
                   </div>
-                  <div className="rounded-lg bg-[#F3F6FA] px-2.5 py-1.5 sibs-text-micro font-extrabold text-[#042C51]">{record?.from || "—"} — {record?.to || "Present"}</div>
+                  <div className="rounded-lg bg-slate-100 px-2.5 py-1.5 sibs-text-micro font-extrabold text-sibs-navy">{record?.from || "—"} — {record?.to || "Present"}</div>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                   <ProfileReadField label="Highest Level / Units Earned" value={normalizeRecordValue(record, ["highestLevel", "highestLevelUnits"])} />
@@ -143,10 +143,10 @@ export function TimelineSection({
             const [status, statusClass] = licenseStatus(record?.validityDate);
             return (
               <ProfilePanel key={record?.id || index} className="p-3.5 2xl:p-4">
-                <div className="flex items-start justify-between gap-2 border-b border-[#E6ECF2] pb-2.5">
+                <div className="flex items-start justify-between gap-2 border-b border-sibs-border-subtle pb-2.5">
                   <div className="min-w-0">
-                    <h3 className="break-words text-xs font-extrabold uppercase tracking-wide text-[#042C51]">{normalizeRecordValue(record, ["title", "eligibilityLicense"]) || "Eligibility / License"}</h3>
-                    <p className="mt-0.5 font-mono sibs-text-micro text-[#667085]">License: {record?.licenseNumber || "—"}</p>
+                    <h3 className="break-words text-xs font-extrabold uppercase tracking-wide text-sibs-navy">{normalizeRecordValue(record, ["title", "eligibilityLicense"]) || "Eligibility / License"}</h3>
+                    <p className="mt-0.5 font-mono sibs-text-micro text-sibs-muted">License: {record?.licenseNumber || "—"}</p>
                   </div>
                   <span className={`shrink-0 rounded-full border px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide ${statusClass}`}>{status}</span>
                 </div>
@@ -167,12 +167,12 @@ export function TimelineSection({
             const company = normalizeRecordValue(record, ["company", "companyOffice"]);
             const isOpen = expanded[index];
             return (
-              <article key={record?.id || index} className="relative rounded-xl border border-[#D6E0EA] bg-white p-3.5 2xl:p-4 shadow-sm">
+              <article key={record?.id || index} className="relative rounded-xl border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-xs">
                 <span className="absolute -left-[25px] sm:-left-[33px] top-5 h-3.5 w-3.5 rounded-full border-3 border-white bg-indigo-600 shadow" />
-                <div className="flex flex-col gap-2 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-col gap-2 border-b border-sibs-border-subtle pb-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">{position || "—"}</h3>
-                    <p className="mt-0.5 flex items-center gap-1.5 sibs-text-micro font-bold text-[#667085]"><Building2 size={13} />{company || "—"}</p>
+                    <h3 className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">{position || "—"}</h3>
+                    <p className="mt-0.5 flex items-center gap-1.5 sibs-text-micro font-bold text-sibs-muted"><Building2 size={13} />{company || "—"}</p>
                   </div>
                   <span className="rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1 sibs-text-micro font-extrabold text-indigo-700">{record?.from || "—"} — {record?.to || "Present"}</span>
                 </div>
@@ -182,12 +182,12 @@ export function TimelineSection({
                   <ProfileReadField label="Government Service" value={record?.governmentService} />
                 </div>
                 {record?.duties && (
-                  <div className="mt-3 border-t border-[#E6ECF2] pt-2.5">
-                    <button type="button" onClick={() => setExpanded((current) => ({ ...current, [index]: !current[index] }))} className="inline-flex items-center gap-1.5 sibs-text-micro font-extrabold text-[#042C51] hover:text-[#FF5C28]">
+                  <div className="mt-3 border-t border-sibs-border-subtle pt-2.5">
+                    <button type="button" onClick={() => setExpanded((current) => ({ ...current, [index]: !current[index] }))} className="inline-flex items-center gap-1.5 sibs-text-micro font-extrabold text-sibs-navy hover:text-sibs-orange">
                       {isOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                       {isOpen ? "Collapse Duties" : "Expand Duties & Responsibilities"}
                     </button>
-                    {isOpen && <p className="mt-2 rounded-lg bg-[#F8FAFC] p-3 sibs-text-xs font-medium leading-relaxed text-[#52637A]">{record.duties}</p>}
+                    {isOpen && <p className="mt-2 rounded-lg bg-slate-50 p-3 sibs-text-xs font-medium leading-relaxed text-sibs-muted">{record.duties}</p>}
                   </div>
                 )}
               </article>
@@ -198,18 +198,18 @@ export function TimelineSection({
         <div className="space-y-3.5">
           {records.length > 0 && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <ProfilePanel className="p-3"><p className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">Total Programs</p><p className="mt-1 text-xl font-extrabold tabular-nums text-[#042C51]">{records.length}</p></ProfilePanel>
-              <ProfilePanel className="p-3"><p className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">Total LD Hours</p><p className="mt-1 text-xl font-extrabold tabular-nums text-[#FF5C28]">{records.reduce((sum, item) => sum + (Number(item?.hours || item?.hoursNumber) || 0), 0)}</p></ProfilePanel>
-              <ProfilePanel className="p-3"><p className="sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">Latest Training</p><p className="mt-1 truncate sibs-text-xs font-extrabold text-[#042C51]">{normalizeRecordValue(records[0], ["title", "trainingTitle"]) || "—"}</p></ProfilePanel>
+              <ProfilePanel className="p-3"><p className="sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">Total Programs</p><p className="mt-1 text-xl font-extrabold tabular-nums text-sibs-navy">{records.length}</p></ProfilePanel>
+              <ProfilePanel className="p-3"><p className="sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">Total LD Hours</p><p className="mt-1 text-xl font-extrabold tabular-nums text-sibs-orange">{records.reduce((sum, item) => sum + (Number(item?.hours || item?.hoursNumber) || 0), 0)}</p></ProfilePanel>
+              <ProfilePanel className="p-3"><p className="sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">Latest Training</p><p className="mt-1 truncate sibs-text-xs font-extrabold text-sibs-navy">{normalizeRecordValue(records[0], ["title", "trainingTitle"]) || "—"}</p></ProfilePanel>
             </div>
           )}
           {records.length === 0 ? <ProfileEmptyState message={schema.empty} actionLabel={schema.addLabel} onAction={onEdit} /> : records.map((record, index) => (
             <ProfilePanel key={record?.id || index} className="p-3.5 2xl:p-4">
-              <div className="flex flex-col gap-2 border-b border-[#E6ECF2] pb-2.5 sm:flex-row sm:items-start sm:justify-between">
-                <div><h3 className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">{normalizeRecordValue(record, ["title", "trainingTitle"]) || "—"}</h3><p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">Conducted by <strong className="font-extrabold text-[#042C51]">{record?.conductedBy || "—"}</strong></p></div>
-                <div className="text-left sm:text-right"><span className="rounded-full border border-sky-100 bg-sky-50 px-2 py-0.5 sibs-text-micro font-extrabold text-sky-700">{normalizeRecordValue(record, ["type", "typeOfLD"]) || "Learning & Development"}</span><p className="mt-1 font-mono sibs-text-micro font-bold text-[#667085]">{normalizeRecordValue(record, ["hours", "hoursNumber"]) || "0"} hours</p></div>
+              <div className="flex flex-col gap-2 border-b border-sibs-border-subtle pb-2.5 sm:flex-row sm:items-start sm:justify-between">
+                <div><h3 className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">{normalizeRecordValue(record, ["title", "trainingTitle"]) || "—"}</h3><p className="mt-0.5 sibs-text-micro font-semibold text-sibs-muted">Conducted by <strong className="font-extrabold text-sibs-navy">{record?.conductedBy || "—"}</strong></p></div>
+                <div className="text-left sm:text-right"><span className="rounded-full border border-sky-100 bg-sky-50 px-2 py-0.5 sibs-text-micro font-extrabold text-sky-700">{normalizeRecordValue(record, ["type", "typeOfLD"]) || "Learning & Development"}</span><p className="mt-1 font-mono sibs-text-micro font-bold text-sibs-muted">{normalizeRecordValue(record, ["hours", "hoursNumber"]) || "0"} hours</p></div>
               </div>
-              <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-[#F3F6FA] px-2.5 py-1.5 sibs-text-micro font-bold text-[#042C51]"><CalendarDays size={13} className="text-[#FF5C28]" />{formatDisplayDate(record?.from)} to {formatDisplayDate(record?.to)}</p>
+              <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 sibs-text-micro font-bold text-sibs-navy"><CalendarDays size={13} className="text-sibs-orange" />{formatDisplayDate(record?.from)} to {formatDisplayDate(record?.to)}</p>
             </ProfilePanel>
           ))}
         </div>
@@ -217,7 +217,7 @@ export function TimelineSection({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {records.length === 0 ? <div className="sm:col-span-2"><ProfileEmptyState message={schema.empty} actionLabel={schema.addLabel} onAction={onEdit} /></div> : records.map((record, index) => (
             <ProfilePanel key={record?.id || index} className="p-3.5 2xl:p-4">
-              <h3 className="border-b border-[#E6ECF2] pb-2.5 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">{record?.name || "—"}</h3>
+              <h3 className="border-b border-sibs-border-subtle pb-2.5 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">{record?.name || "—"}</h3>
               <div className="mt-3 space-y-2">
                 <ProfileReadField label="Address" value={record?.address} />
                 <ProfileReadField label="Contact Number" value={record?.telNo || record?.contact} />

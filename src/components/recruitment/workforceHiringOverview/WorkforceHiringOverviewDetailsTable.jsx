@@ -174,8 +174,8 @@ function HeaderTh({
       colSpan={colSpan}
       className={`sibs-data-table-th border border-slate-200 !px-2.5 2xl:!px-3 text-center align-middle font-jakarta uppercase tracking-wider ${
         group
-          ? "!bg-[#EBF3FA] !py-1.5 2xl:!py-2 sibs-text-micro !font-black !text-sibs-primary-1"
-          : "!bg-[#F8FAFC] !py-1.5 2xl:!py-2.5 sibs-text-micro !font-extrabold !text-slate-500"
+          ? "!bg-blue-50 !py-1.5 2xl:!py-2 sibs-text-micro !font-black !text-sibs-navy"
+          : "!bg-sibs-surface !py-1.5 2xl:!py-2.5 sibs-text-micro !font-extrabold !text-slate-500"
       } ${className}`}
     >
       {children}
@@ -200,7 +200,7 @@ function BodyTd({
   return (
     <td
       {...props}
-      className={`whitespace-nowrap border-b border-[#E6ECF2] px-2.5 py-1.5 2xl:px-3 2xl:py-2.5 align-middle sibs-text-xs leading-tight font-jakarta tabular-nums ${alignmentClass} ${className}`}
+      className={`whitespace-nowrap border-b border-sibs-border px-2.5 py-1.5 2xl:px-3 2xl:py-2.5 align-middle sibs-text-xs leading-tight font-jakarta tabular-nums ${alignmentClass} ${className}`}
     >
       {children}
     </td>
@@ -210,7 +210,7 @@ function BodyTd({
 function HistoryTh({ children, className = "" }) {
   return (
     <th
-      className={`border-r border-[#174B78] bg-[#063C69] px-3 py-2.5 text-center text-[9px] font-black uppercase tracking-wide text-white last:border-r-0 ${className}`}
+      className={`border-r border-white/20 bg-sibs-navy px-3 py-2.5 text-center text-[9px] font-black uppercase tracking-wide text-white last:border-r-0 ${className}`}
     >
       {children}
     </th>
@@ -220,7 +220,7 @@ function HistoryTh({ children, className = "" }) {
 function HistoryTd({ children, className = "" }) {
   return (
     <td
-      className={`border-r border-[#E6ECF2] px-3 py-2.5 text-center text-[10px] font-semibold text-[#344054] last:border-r-0 ${className}`}
+      className={`border-r border-sibs-border px-3 py-2.5 text-center text-[10px] font-semibold text-slate-700 last:border-r-0 ${className}`}
     >
       {children}
     </td>
@@ -364,9 +364,9 @@ function buildFilteredTotals(rows = [], fallbackTotals = {}) {
 
 function getBufferColor(value) {
   const numberValue = Number(value || 0);
-  if (numberValue < 0) return "text-[#E74C3C]";
+  if (numberValue < 0) return "text-rose-600";
   if (numberValue > 0) return "text-emerald-600";
-  return "text-[#042C51]";
+  return "text-sibs-navy";
 }
 
 function getHiringNeededColor(value) {
@@ -855,9 +855,9 @@ export function buildPeriodDisplayRow(
 
 function PeriodSelector({ options = [], value = "", onChange }) {
   return (
-    <div className="inline-flex min-w-0 items-center overflow-hidden rounded-xl border border-[#DDE5EE] bg-[#F3F6FA] p-1.5 font-jakarta">
-      <div className="flex h-8 shrink-0 items-center gap-1.5 px-2.5 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
-        <CalendarDays className="h-3.5 w-3.5 text-[#FF5C28]" />
+    <div className="inline-flex min-w-0 items-center overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface p-1.5 font-jakarta">
+      <div className="flex h-8 shrink-0 items-center gap-1.5 px-2.5 text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
+        <CalendarDays className="h-3.5 w-3.5 text-sibs-orange" />
         <span>Period:</span>
       </div>
 
@@ -872,10 +872,10 @@ function PeriodSelector({ options = [], value = "", onChange }) {
                 type="button"
                 onClick={() => onChange?.(option.value)}
                 aria-pressed={isActive}
-                className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-lg px-3 text-[10px] font-extrabold leading-tight transition focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/20 ${
+                className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-lg px-3 text-[10px] font-extrabold leading-tight transition focus:outline-none focus:ring-2 focus:ring-sibs-orange/20 ${
                   isActive
-                    ? "bg-[#042C51] text-white shadow-sm"
-                    : "text-[#52637A] hover:bg-white hover:text-[#FF5C28]"
+                    ? "bg-sibs-navy text-white shadow-sm"
+                    : "text-slate-600 hover:bg-white hover:text-sibs-orange"
                 }`}
               >
                 {option.label}
@@ -921,7 +921,7 @@ function getRiskBadgeClasses(riskLabel = "") {
   }
 
   if (riskLabel === "Summary") {
-    return "border-[#042C51] bg-[#042C51] text-white";
+    return "border-sibs-navy bg-sibs-navy text-white";
   }
 
   return "border-emerald-100 bg-emerald-50 text-emerald-700";
@@ -940,14 +940,14 @@ function StageConversionCell({
 
   return (
     <BodyTd align="center">
-      <span className="font-bold text-[#E74C3C]">
+      <span className="font-bold text-rose-600">
         -{formatOverviewNumber(dropCount)}
       </span>
 
       <span
         className={`ml-1 ${
           summary
-            ? "font-bold text-[#E74C3C]"
+            ? "font-bold text-rose-600"
             : "text-[10px] font-medium text-slate-400"
         }`}
       >
@@ -957,7 +957,7 @@ function StageConversionCell({
   );
 }
 
-const BOLD_NUMBER_CLASS = "!font-jakarta !text-xs !font-black !text-[#042C51]";
+const BOLD_NUMBER_CLASS = "!font-jakarta !text-xs !font-black !text-sibs-navy";
 
 function PerformanceCells({ row, summary = false }) {
   const hiringNeeded = toNumber(row.hiringNeeded);
@@ -1093,7 +1093,7 @@ function PerformanceCells({ row, summary = false }) {
       </BodyTd>
 
       {/* Hiring Rate % (BOLD ORANGE) */}
-      <BodyTd className="!font-black !text-[#FF5C28]">
+      <BodyTd className="!font-black !text-sibs-orange">
         {formatOverviewPercent(row.hiringRate)}
       </BodyTd>
 
@@ -1727,8 +1727,8 @@ export default function WorkforceHiringOverviewDetailsTable() {
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] px-3 py-2 2xl:px-5 2xl:py-4">
+    <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+      <div className="border-b border-sibs-border px-3 py-2 2xl:px-5 2xl:py-4">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,1fr)_minmax(680px,860px)] xl:items-start">
           <div className="min-w-0">
             <div className="flex min-w-0 items-start gap-2">
@@ -1737,14 +1737,14 @@ export default function WorkforceHiringOverviewDetailsTable() {
                 <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                   Detailed Performance by Cluster / Account (6-Week Multi-Week Ledger)
                 </h2>
-                <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+                <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
                   Master account-level capacity ledger across the selected six-week window, including requirements, buffer, workforce loss, pipeline, and yield metrics.
                 </p>
               </div>
             </div>
 
-            <span className="mt-2.5 inline-flex w-fit items-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 2xl:px-3 2xl:py-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">
-              <GripHorizontal className="h-3.5 w-3.5 text-[#FF5C28]" />
+            <span className="mt-2.5 inline-flex w-fit items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1 2xl:px-3 2xl:py-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
+              <GripHorizontal className="h-3.5 w-3.5 text-sibs-orange" />
               Drag horizontally to inspect all columns
             </span>
           </div>
@@ -1799,7 +1799,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
               rightContentClassName="flex w-full items-end xl:w-auto xl:flex-none"
               rightContent={
                 <div className="flex w-full flex-wrap items-center justify-start gap-2 xl:w-auto xl:justify-end">
-                  <span className="inline-flex h-10 items-center rounded-[10px] border border-blue-100 bg-[#E9F0FC] px-3 text-[10px] font-extrabold tabular-nums text-[#042C51]">
+                  <span className="inline-flex h-10 items-center rounded-[10px] border border-blue-100 bg-blue-50 px-3 text-[10px] font-extrabold tabular-nums text-sibs-navy">
                     {sortedRows.length} account rows
                   </span>
 
@@ -1807,7 +1807,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
                     <button
                       type="button"
                       onClick={clearAllFilters}
-                      className="h-10 rounded-[10px] border border-[#D6E0EA] bg-white px-3 text-[10px] font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/10"
+                      className="h-10 rounded-[10px] border border-sibs-border bg-white px-3 text-[10px] font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange focus:outline-none focus:ring-4 focus:ring-sibs-orange/10"
                     >
                       Clear
                     </button>
@@ -1908,7 +1908,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
                     <col style={{ width: "110px" }} />
                   </colgroup>
 
-                  <thead className="bg-[#F8FAFC] font-jakarta">
+                  <thead className="bg-sibs-surface font-jakarta">
                     <tr className="border-b border-slate-200 text-slate-600 font-extrabold text-[10px] tracking-wider uppercase">
                       <HeaderTh className="!text-center">#</HeaderTh>
                       <HeaderTh sortable sortKey="cluster">Cluster</HeaderTh>
@@ -2016,7 +2016,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
                         return (
                           <Fragment key={rowKey}>
                             <tr
-                              className={`border-b border-[#E6ECF2] transition-colors cursor-pointer text-xs ${
+                              className={`border-b border-sibs-border transition-colors cursor-pointer text-xs ${
                                 isExpanded ? "bg-amber-50/60" : "hover:bg-slate-50/80"
                               }`}
                             >
@@ -2061,7 +2061,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
                                 className={BOLD_NUMBER_CLASS}
                               >
                                 <span
-                                  className="block max-w-[135px] truncate !font-black !text-[#042C51]"
+                                  className="block max-w-[135px] truncate !font-black !text-sibs-navy"
                                   title={row.account}
                                 >
                                   {row.account}
@@ -2108,7 +2108,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
 
                   {sortedRows.length > 0 ? (
                     <tfoot>
-                      <tr className="border-t-2 border-slate-300 bg-[#EBF3FA] font-black text-sibs-primary-1">
+                      <tr className="border-t-2 border-slate-300 bg-blue-50 font-black text-sibs-navy">
                         <BodyTd
                           colSpan={3}
                           align="left"

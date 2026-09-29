@@ -11,8 +11,10 @@ export default function WorkforceHiringOverviewPage() {
   const { mainScrollRef } = useWorkforceHiringPage();
 
   return (
-    <div className="sibs-dashboard-shell flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-      <Header />
+    <div className="sibs-dashboard-shell bg-sibs-canvas font-jakarta">
+      <div className="shrink-0">
+        <Header />
+      </div>
 
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">

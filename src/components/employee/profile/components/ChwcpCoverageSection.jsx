@@ -82,25 +82,25 @@ function CoverageRow({ item }) {
 
   return (
     <div className="flex items-center gap-3 sm:gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#042C51] sm:h-11 sm:w-11">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sibs-navy sm:h-11 sm:w-11">
         <Icon size={21} strokeWidth={1.9} />
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-3">
-          <div className="relative hidden h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[#E4EAF1] sm:block">
+          <div className="relative hidden h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200 sm:block">
             <div
-              className="absolute inset-y-0 left-0 rounded-full bg-[#042C51] transition-[width] duration-500 ease-out"
+              className="absolute inset-y-0 left-0 rounded-full bg-sibs-navy transition-[width] duration-500 ease-out"
               style={{ width: `${percentage}%` }}
             />
           </div>
 
-          <span className="ml-auto shrink-0 whitespace-nowrap text-[10px] font-extrabold tabular-nums text-[#042C51] sm:text-[11px]">
+          <span className="ml-auto shrink-0 whitespace-nowrap text-[10px] font-extrabold tabular-nums text-sibs-navy sm:text-[11px]">
             {formatCurrency(used)} / {formatCurrency(total)}
           </span>
         </div>
 
-        <p className="mt-1.5 text-xs font-bold text-[#042C51]">
+        <p className="mt-1.5 text-xs font-bold text-sibs-navy">
           {item?.label || "Coverage"}
         </p>
       </div>
@@ -110,13 +110,13 @@ function CoverageRow({ item }) {
 
 function CoverageCard({ title, accentText, items }) {
   return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
-      <h3 className="text-base font-black text-[#042C51] sm:text-lg">
+    <section className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm sm:p-6">
+      <h3 className="text-base font-black text-sibs-navy sm:text-lg">
         {title}
         {accentText ? (
           <>
             {" "}
-            <span className="text-[#FF5C28]">{accentText}</span>
+            <span className="text-sibs-orange">{accentText}</span>
           </>
         ) : null}
       </h3>
@@ -173,8 +173,8 @@ export default function ChwcpCoverageSection({ sibsId = "" }) {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-36 animate-pulse rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC]" />
-        <div className="h-72 animate-pulse rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC]" />
+        <div className="h-36 animate-pulse rounded-2xl border border-sibs-border bg-sibs-surface" />
+        <div className="h-72 animate-pulse rounded-2xl border border-sibs-border bg-sibs-surface" />
       </div>
     );
   }
@@ -191,7 +191,7 @@ export default function ChwcpCoverageSection({ sibsId = "" }) {
         <button
           type="button"
           onClick={() => loadCoverage()}
-          className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#063B69]"
+          className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-slate-800"
         >
           <RefreshCcw size={14} />
           Retry
@@ -202,12 +202,12 @@ export default function ChwcpCoverageSection({ sibsId = "" }) {
 
   if (!coverage?.eligible) {
     return (
-      <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center">
-        <HeartPulse size={32} className="mx-auto text-[#98A2B3]" />
-        <p className="mt-3 text-sm font-black text-[#042C51]">
+      <div className="rounded-2xl border border-sibs-border bg-sibs-surface px-5 py-10 text-center">
+        <HeartPulse size={32} className="mx-auto text-sibs-faint" />
+        <p className="mt-3 text-sm font-black text-sibs-navy">
           CHWCP coverage is currently unavailable
         </p>
-        <p className="mx-auto mt-1 max-w-xl text-xs font-semibold leading-5 text-[#667085]">
+        <p className="mx-auto mt-1 max-w-xl text-xs font-semibold leading-5 text-sibs-muted">
           Coverage is available to regular employees based on the CHWCP
           eligibility and fiscal-period rules.
         </p>
@@ -220,12 +220,12 @@ export default function ChwcpCoverageSection({ sibsId = "" }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-wider text-[#7B8DB3]">
+          <p className="text-[10px] font-black uppercase tracking-wider text-sibs-faint">
             CHWCP Coverage Period
           </p>
-          <p className="mt-0.5 text-xs font-extrabold text-[#042C51]">
+          <p className="mt-0.5 text-xs font-extrabold text-sibs-navy">
             {formatDate(coverage?.fiscalPeriod?.start)} –{" "}
             {formatDate(coverage?.fiscalPeriod?.end)}
           </p>
@@ -237,7 +237,7 @@ export default function ChwcpCoverageSection({ sibsId = "" }) {
               href="https://chwcp.mysibs.info/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3 text-[10px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+              className="inline-flex h-8 items-center justify-center rounded-lg border border-sibs-border bg-white px-3 sibs-text-micro font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
             >
               Redirect to CHWCP Site
             </a>
@@ -247,7 +247,7 @@ export default function ChwcpCoverageSection({ sibsId = "" }) {
             type="button"
             onClick={() => loadCoverage({ silent: true })}
             disabled={refreshing}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:text-[#FF5C28] disabled:opacity-50"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:text-sibs-orange disabled:opacity-50"
             title="Refresh CHWCP coverage"
             aria-label="Refresh CHWCP coverage"
           >
