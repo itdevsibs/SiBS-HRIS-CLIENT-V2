@@ -32,9 +32,9 @@ export default function FormDetailsCard() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 rounded-xl bg-sibs-primary-1 px-4 py-4 text-white">
+      <div className="flex items-center justify-between gap-3 rounded-xl bg-sibs-navy px-4 py-4 text-white">
         <div className="min-w-0">
-          <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
+          <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-orange">
             Selected Position
           </p>
 
@@ -60,27 +60,27 @@ export default function FormDetailsCard() {
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-xs font-extrabold text-[#101828]">
+          <label className="mb-1 block text-xs font-bold text-sibs-navy">
             Form Name
           </label>
 
           <input
             value={formName}
             onChange={(e) => setFormName(e.target.value)}
-            className="h-10 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+            className="sibs-dashboard-input h-10 w-full text-xs sm:text-sm text-sibs-navy"
           />
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-extrabold text-[#101828]">
+            <label className="mb-1 block text-xs font-bold text-sibs-navy">
               Status
             </label>
 
             <select
               value={formStatus}
               onChange={(e) => setFormStatus(e.target.value)}
-              className="h-10 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-xs font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="sibs-dashboard-input h-10 w-full text-xs sm:text-sm font-semibold text-sibs-navy bg-white cursor-pointer"
             >
               <option>Active</option>
               <option>Draft</option>
@@ -89,7 +89,7 @@ export default function FormDetailsCard() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-extrabold text-[#101828]">
+            <label className="mb-1 block text-xs font-bold text-sibs-navy">
               Passing Score (%)
             </label>
 
@@ -97,13 +97,13 @@ export default function FormDetailsCard() {
               type="number"
               value={passingScore}
               onChange={(e) => setPassingScore(e.target.value)}
-              className="h-10 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-xs font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="sibs-dashboard-input h-10 w-full text-xs sm:text-sm text-sibs-navy"
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-extrabold text-[#101828]">
+          <label className="mb-1 block text-xs font-bold text-sibs-navy">
             Description
           </label>
 
@@ -111,7 +111,7 @@ export default function FormDetailsCard() {
             rows={3}
             value={formDescription}
             onChange={(e) => setFormDescription(e.target.value)}
-            className="w-full resize-none rounded-[10px] border border-[#D0D5DD] bg-white px-3 py-2.5 text-xs font-semibold leading-5 text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+            className="w-full resize-none rounded-xl border border-sibs-border bg-white px-3 py-2.5 text-xs font-medium leading-5 text-sibs-navy outline-none transition focus:border-sibs-border focus:ring-2 focus:ring-sibs-border/30"
           />
         </div>
       </div>

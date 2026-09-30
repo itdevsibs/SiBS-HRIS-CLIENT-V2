@@ -127,6 +127,7 @@ function DropdownPortal({
 export default function SelectDropdown({
   label,
   hideLabel = false,
+  labelClassName = "",
   value,
   options = [],
   onChange,
@@ -214,7 +215,11 @@ export default function SelectDropdown({
   return (
     <div ref={anchorRef} className="relative min-w-0 w-full font-jakarta">
       {label && !hideLabel && (
-        <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
+        <label
+          className={`mb-1 block font-jakarta ${
+            labelClassName || "sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint"
+          }`}
+        >
           {label}
           {required && <span className="text-sibs-orange"> *</span>}
         </label>

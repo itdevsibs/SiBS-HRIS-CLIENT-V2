@@ -10,26 +10,26 @@ const launchRules = [
 
 export default function FormLaunchRulesCard() {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+    <div className="sibs-card p-4 sm:p-5 font-jakarta">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-extrabold text-[#101828]">
+        <h3 className="font-heading text-sm sm:text-base font-bold text-sibs-navy">
           Form Launch Rules
         </h3>
-        <CalendarDays size={18} className="text-sibs-tertiary-5" />
+        <CalendarDays size={18} className="text-sibs-grey-4" />
       </div>
 
       <div className="mt-4 space-y-3">
         {launchRules.map((rule) => (
           <label
             key={rule}
-            className="flex items-start gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3"
+            className="flex items-start gap-3 rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3"
           >
             <input
               type="checkbox"
               defaultChecked
               className="mt-0.5 h-4 w-4 accent-sibs-primary-1"
             />
-            <span className="text-xs font-bold leading-5 text-[#344054]">
+            <span className="text-xs font-semibold leading-5 text-sibs-navy">
               {rule}
             </span>
           </label>

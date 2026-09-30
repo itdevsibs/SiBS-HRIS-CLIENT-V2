@@ -6,7 +6,7 @@ import {
   Target,
 } from "lucide-react";
 
-import { ModalShell } from "../../ui";
+import { ModalShell, StatusBadge as SharedStatusBadge } from "../../ui";
 import {
   formatDate,
   safePercentage,
@@ -25,38 +25,6 @@ function safeValue(value, fallback = "—") {
   return value === null || value === undefined || value === ""
     ? fallback
     : value;
-}
-
-function getStatusClass(status) {
-  if (status === "On Track") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-
-  if (status === "At Risk") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  if (status === "Delayed") {
-    return "border-rose-200 bg-rose-50 text-rose-700";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-600";
-}
-
-function getRiskClass(riskFlag) {
-  if (riskFlag === "High") {
-    return "border-rose-200 bg-rose-50 text-rose-700";
-  }
-
-  if (riskFlag === "Medium") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  if (riskFlag === "Low") {
-    return "border-blue-200 bg-blue-50 text-blue-700";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-600";
 }
 
 function DeliveryDetail({ label, value }) {
@@ -149,20 +117,15 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
             </p>
 
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <span
-                className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${getStatusClass(
-                  role.status,
-                )}`}
-              >
-                {safeValue(role.status, "Unknown")}
-              </span>
-              <span
-                className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${getRiskClass(
-                  role.riskFlag,
-                )}`}
-              >
-                Risk: {safeValue(role.riskFlag, "None")}
-              </span>
+              <SharedStatusBadge
+                status={safeValue(role.status, "Unknown")}
+                showDot={false}
+              />
+              <SharedStatusBadge
+                status={`${safeValue(role.riskFlag, "None")} Risk`}
+                prefix="Risk: "
+                showDot={false}
+              />
             </div>
           </div>
 
@@ -197,11 +160,11 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
           </div>
         </section>
 
-        <section className="rounded-xl border border-blue-200/60 bg-blue-50/60 p-3.5">
-          <span className="sibs-modal-section-subtitle block font-jakarta text-[10px] font-extrabold uppercase text-blue-600">
+        <section className="rounded-xl border border-sibs-border-panel bg-sibs-surface p-3.5">
+          <span className="sibs-modal-section-subtitle block font-jakarta text-[10px] font-extrabold uppercase text-sibs-muted">
             Current Action Item
           </span>
-          <p className="mt-1 font-jakarta text-xs font-semibold leading-relaxed text-blue-950">
+          <p className="mt-1 font-jakarta text-xs font-semibold leading-relaxed text-sibs-navy">
             {safeValue(role.actionItem, "No action item has been assigned.")}
           </p>
         </section>
@@ -240,9 +203,9 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
           <div className="mt-3 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
             {[
               ["Requisition", role.req, "text-sibs-navy"],
-              ["Filled", role.filled, "text-emerald-600"],
+              ["Filled", role.filled, "text-sibs-success"],
               ["Pending", role.open, "text-sibs-orange"],
-              ["Drop-Offs", role.dropOffs, "text-rose-500"],
+              ["Drop-Offs", role.dropOffs, "text-sibs-danger"],
             ].map(([label, value, tone]) => (
               <div key={label} className="rounded-lg border border-sibs-border bg-white p-3">
                 <span className="block font-jakarta text-[10px] font-bold text-sibs-muted">

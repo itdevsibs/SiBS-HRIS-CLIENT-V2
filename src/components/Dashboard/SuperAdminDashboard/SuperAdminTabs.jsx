@@ -6,7 +6,7 @@ import {
   Layers,
   ShieldCheck,
 } from "lucide-react";
-import StatusFilterTabs from "@/components/recruitment/StatusFilterTabs";
+import { StatusFilterTabs } from "@/components/ui";
 
 const TABS = [
   { id: "overview", label: "Overview & Telemetry", icon: Activity },

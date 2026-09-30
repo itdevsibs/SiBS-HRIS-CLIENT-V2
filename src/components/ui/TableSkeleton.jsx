@@ -11,7 +11,7 @@ export function TableSkeletonRow({
 }) {
   if (colSpan) {
     return (
-      <tr data-testid={testId} className={cn("border-b border-[#EEF2F6]", className)}>
+      <tr data-testid={testId} className={cn("border-b border-sibs-border", className)}>
         <td colSpan={colSpan} className="px-4 py-3.5">
           <Skeleton className={cn(`${rowHeight} w-full`, className)} />
         </td>
@@ -20,7 +20,7 @@ export function TableSkeletonRow({
   }
 
   return (
-    <tr data-testid={testId} className={cn("border-b border-[#EEF2F6]", className)}>
+    <tr data-testid={testId} className={cn("border-b border-sibs-border", className)}>
       {Array.from({ length: columns }).map((_, index) => (
         <td
           key={`table-cell-skeleton-${index}`}

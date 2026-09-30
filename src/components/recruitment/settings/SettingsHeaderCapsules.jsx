@@ -6,9 +6,9 @@ export default function SettingsHeaderCapsules({ items = [], className = "" }) {
       {items.map(({ label, icon: Icon }) => (
         <span
           key={label}
-          className="inline-flex items-center gap-2 rounded-full border border-[#D9E9F8] bg-[#F2F7FC] px-3 py-1 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1"
+          className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50/80 px-2.5 py-0.5 text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy"
         >
-          {Icon ? <Icon size={14} className="shrink-0 text-[#FF5C28]" /> : null}
+          {Icon ? <Icon size={13} className="shrink-0 text-sibs-orange" /> : null}
           {label}
         </span>
       ))}

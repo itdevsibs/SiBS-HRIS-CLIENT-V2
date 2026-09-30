@@ -35,10 +35,8 @@ import {
   CustomSelect,
   RecruitmentHeadcountMobileMetric,
   StatusPill,
-  inputClass,
 } from "./RecruitmentHeadcountPrimitives";
-import SettingsHeaderCapsules from "../SettingsHeaderCapsules";
-import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TablePagination, TableSkeletonRows } from "@/components/ui";
 
 async function saveRequiredHeadcountOverride(item, requiredHeadcount) {
   const cleanRequiredHeadcount = Number(requiredHeadcount);
@@ -364,16 +362,6 @@ function UpdateHeadcountsPanel() {
     );
   }, [filteredAccounts, currentPage, totalPages]);
 
-  const showingFrom =
-    totalRecords > 0
-      ? (currentPage - 1) * RECRUITMENT_HEADCOUNT_PAGE_LIMIT + 1
-      : 0;
-
-  const showingTo = Math.min(
-    currentPage * RECRUITMENT_HEADCOUNT_PAGE_LIMIT,
-    totalRecords,
-  );
-
   function openStatusModal({ type = "success", title = "", message = "" }) {
     setStatusModal({
       open: true,
@@ -684,123 +672,120 @@ function UpdateHeadcountsPanel() {
       `}</style>
 
       <section
-        className="relative z-[80] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
-        style={{ animationDelay: "300ms" }}
+        className="sibs-card relative z-[80] overflow-visible rounded-2xl border border-sibs-border shadow-sm sibs-page-card-in bg-white"
+        style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
-        <div className="flex flex-col gap-3 rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <div className="min-w-0">
-            <SettingsHeaderCapsules
-              items={[
-                { label: "Add / Reduce Employee Headcounts", icon: UsersRound },
-              ]}
-            />
+        <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h3 className="font-heading text-sm sm:text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
+                Update Headcounts
+              </h3>
 
-            <h2 className="mt-3 text-base font-extrabold text-[#042C51]">
-              Update Headcounts
-            </h2>
-
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
-              Review and update account-level required headcount.
-            </p>
-          </div>
-
-          <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase text-[#164E7A]">
-            {totalRecords} Records
-          </span>
-        </div>
-
-        <div className="relative z-[90] overflow-visible border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(280px,1.4fr)_minmax(220px,0.8fr)_minmax(180px,0.7fr)_minmax(210px,0.8fr)_minmax(210px,0.8fr)_auto] xl:items-end">
-            <div>
-              <label className="mb-1 block text-xs font-bold text-[#101828]">
-                Search
-              </label>
-
-              <div className="relative">
-                <Search
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
-
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search account, cluster, status..."
-                  className={inputClass("pl-11 pr-4")}
-                />
-              </div>
+              <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-sibs-muted">
+                Review and update account-level required headcount.
+              </p>
             </div>
 
-            <CustomSelect
-              label="Weekly Version"
-              value={activeWeekId}
-              options={weekOptions}
-              placeholder="Select weekly version"
-              loading={weeksLoading}
-              disabled={accountsLoading}
-              onChange={(nextWeekId) => {
-                setActiveWeekId(nextWeekId);
-                setCurrentPage(1);
-              }}
-              zIndex="z-60"
-            />
+            <span className="inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50/80 px-3 py-1 font-jakarta text-[10px] 2xl:text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-navy">
+              {totalRecords} Records
+            </span>
+          </div>
 
-            <CustomSelect
-              label="Cluster"
-              value={selectedCluster}
-              options={clusterOptions}
-              placeholder="All Clusters"
-              disabled={accountsLoading}
-              onChange={(nextCluster) => {
-                setSelectedCluster(nextCluster);
-                setSelectedAccount("All");
-                setCurrentPage(1);
-              }}
-              zIndex="z-50"
-            />
+          <div className="mt-4">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(280px,1.4fr)_minmax(220px,0.8fr)_minmax(180px,0.7fr)_minmax(210px,0.8fr)_minmax(210px,0.8fr)_auto] xl:items-end">
+              <div>
+                <label className="mb-1 block font-jakarta text-xs font-bold text-sibs-navy">
+                  Search
+                </label>
 
-            <CustomSelect
-              label="Account"
-              value={selectedAccount}
-              options={accountOptions}
-              placeholder="All Accounts"
-              loading={accountsLoading}
-              disabled={weeksLoading}
-              onChange={(nextAccount) => {
-                setSelectedAccount(nextAccount);
-                setCurrentPage(1);
-              }}
-              zIndex="z-40"
-            />
+                <div className="relative">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted"
+                  />
 
-            <CustomSelect
-              label="Recruitment Settings Status"
-              value={statusFilter}
-              options={statusOptions}
-              placeholder="All Status"
-              disabled={accountsLoading}
-              onChange={(nextStatus) => {
-                setStatusFilter(nextStatus);
-                setCurrentPage(1);
-              }}
-              zIndex="z-30"
-            />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search account, cluster, status..."
+                    className="sibs-dashboard-input pl-9 pr-4"
+                  />
+                </div>
+              </div>
 
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-[#F8FAFC] px-4 text-xs font-extrabold text-sibs-tertiary-5 transition-all duration-200 hover:border-[#FF5C28]/30 hover:bg-white hover:text-sibs-primary-1 active:scale-[0.98]"
-            >
-              <Filter size={17} />
-              Clear
-            </button>
+              <CustomSelect
+                label="Weekly Version"
+                value={activeWeekId}
+                options={weekOptions}
+                placeholder="Select weekly version"
+                loading={weeksLoading}
+                disabled={accountsLoading}
+                onChange={(nextWeekId) => {
+                  setActiveWeekId(nextWeekId);
+                  setCurrentPage(1);
+                }}
+                zIndex="z-60"
+              />
+
+              <CustomSelect
+                label="Cluster"
+                value={selectedCluster}
+                options={clusterOptions}
+                placeholder="All Clusters"
+                disabled={accountsLoading}
+                onChange={(nextCluster) => {
+                  setSelectedCluster(nextCluster);
+                  setSelectedAccount("All");
+                  setCurrentPage(1);
+                }}
+                zIndex="z-50"
+              />
+
+              <CustomSelect
+                label="Account"
+                value={selectedAccount}
+                options={accountOptions}
+                placeholder="All Accounts"
+                loading={accountsLoading}
+                disabled={weeksLoading}
+                onChange={(nextAccount) => {
+                  setSelectedAccount(nextAccount);
+                  setCurrentPage(1);
+                }}
+                zIndex="z-40"
+              />
+
+              <CustomSelect
+                label="Recruitment Settings Status"
+                value={statusFilter}
+                options={statusOptions}
+                placeholder="All Status"
+                disabled={accountsLoading}
+                onChange={(nextStatus) => {
+                  setStatusFilter(nextStatus);
+                  setCurrentPage(1);
+                }}
+                zIndex="z-30"
+              />
+
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="sibs-btn-secondary h-10 gap-2 px-4 cursor-pointer"
+              >
+                <Filter size={15} />
+                Clear
+              </button>
+            </div>
           </div>
         </div>
 
-        <ResponsiveTableShell
-          breakpoint="lg"
-          mobileView={
-            <div className="space-y-3 px-4 pb-4 sm:px-5 sm:pb-5">
+        <div className="p-3 sm:p-5 2xl:p-6 font-jakarta">
+          <ResponsiveTableShell
+            breakpoint="lg"
+            mobileView={
+              <div className="space-y-3">
               {accountsLoading || weeksLoading ? (
                 <DataCard.Skeleton count={4} />
               ) : paginatedAccounts.length > 0 ? (
@@ -833,9 +818,9 @@ function UpdateHeadcountsPanel() {
                         }
                       />
 
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3">
                         <div className="min-w-0 flex-1">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                          <span className="font-jakarta text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                             Required HC
                           </span>
                           {canEditRequiredHeadcount ? (
@@ -850,21 +835,21 @@ function UpdateHeadcountsPanel() {
                                     e.target.value,
                                   )
                                 }
-                                className="h-10 w-full max-w-[140px] rounded-lg border border-[#D0D5DD] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                                className="h-9 w-full max-w-[140px] rounded-lg border border-sibs-border bg-white px-3 font-jakarta text-xs font-extrabold text-sibs-navy outline-none transition focus:border-sibs-navy focus:ring-2 focus:ring-sibs-orange/20"
                               />
                             </div>
                           ) : (
-                            <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                            <p className="mt-1 font-heading text-sm font-bold text-sibs-navy">
                               {formatHeadcountNumber(metrics.requiredHeadcount)}
                             </p>
                           )}
                         </div>
 
                         <div className="text-right">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                          <span className="font-jakarta text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                             Actual HC
                           </span>
-                          <p className="mt-1 text-sm font-extrabold text-[#344054]">
+                          <p className="mt-1 font-heading text-sm font-bold text-sibs-text-secondary">
                             {formatHeadcountNumber(metrics.actualHeadcount)}
                           </p>
                         </div>
@@ -923,7 +908,7 @@ function UpdateHeadcountsPanel() {
 
                       {item.statusNote ? (
                         <DataCard.Section label="Status Note">
-                          <p className="text-xs font-semibold text-[#344054]">
+                          <p className="font-jakarta text-xs font-semibold text-sibs-text-secondary">
                             {item.statusNote}
                           </p>
                         </DataCard.Section>
@@ -935,12 +920,12 @@ function UpdateHeadcountsPanel() {
                             type="button"
                             onClick={() => handleSaveRequiredHeadcount(item)}
                             disabled={isSaving || accountsLoading}
-                            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-extrabold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex min-h-[40px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 font-jakarta text-xs font-extrabold text-emerald-700 shadow-2xs transition hover:bg-emerald-600 hover:text-white hover:border-emerald-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                           >
                             {isSaving ? (
-                              <Loader2 size={16} className="animate-spin" />
+                              <Loader2 size={15} className="animate-spin" />
                             ) : (
-                              <Save size={16} />
+                              <Save size={15} />
                             )}
                             Save Required Headcount
                           </button>
@@ -959,24 +944,23 @@ function UpdateHeadcountsPanel() {
             </div>
           }
           desktopView={
-            <div className="overflow-hidden bg-white px-4 py-4 sm:px-5 sm:pb-5">
-              <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
-                <table className="w-full min-w-[1120px] border-collapse text-left">
+            <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+              <table className="w-full min-w-[1120px] border-collapse text-left">
                   <thead>
-                    <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC] text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
-                      <th className="w-[21%] px-3 py-3">Account</th>
-                      <th className="w-[16%] px-3 py-3">
+                    <tr className="border-b border-sibs-border bg-sibs-surface text-[9px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                      <th className="sibs-data-table-th w-[21%] px-3.5 py-3">Account</th>
+                      <th className="sibs-data-table-th w-[16%] px-3.5 py-3">
                         Required / Actual HC
                       </th>
-                      <th className="w-[19%] px-3 py-3">Buffer</th>
-                      <th className="w-[14%] px-3 py-3">HC Needs / Leads</th>
-                      <th className="w-[11%] px-3 py-3">Hiring Rate</th>
-                      <th className="w-[11%] px-3 py-3">Status</th>
-                      <th className="w-[8%] px-3 py-3 text-right">Action</th>
+                      <th className="sibs-data-table-th w-[19%] px-3.5 py-3">Buffer</th>
+                      <th className="sibs-data-table-th w-[14%] px-3.5 py-3">HC Needs / Leads</th>
+                      <th className="sibs-data-table-th w-[11%] px-3.5 py-3">Hiring Rate</th>
+                      <th className="sibs-data-table-th w-[11%] px-3.5 py-3">Status</th>
+                      <th className="sibs-data-table-th w-[8%] px-3.5 py-3 text-right">Action</th>
                     </tr>
                   </thead>
 
-                  <tbody>
+                  <tbody className="divide-y divide-sibs-border">
                     {accountsLoading || weeksLoading ? (
                       <TableSkeletonRows
                         count={RECRUITMENT_HEADCOUNT_PAGE_LIMIT}
@@ -995,25 +979,25 @@ function UpdateHeadcountsPanel() {
                         return (
                           <tr
                             key={item.id || index}
-                            className="sibs-recruitment-headcount-row-reveal transition-all duration-200 hover:bg-[#FAFBFC]"
+                            className="sibs-recruitment-headcount-row-reveal transition-all duration-150 hover:bg-sibs-cream-light/35"
                             style={{
                               animationDelay: `${Math.min(index, 10) * 36}ms`,
                             }}
                           >
-                            <td className="border-b border-[#E6ECF2] px-3 py-3">
-                              <p className="max-w-[220px] truncate text-[11px] font-extrabold text-[#042C51]">
+                            <td className="px-3.5 py-3">
+                              <p className="max-w-[220px] truncate text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy">
                                 {item.account || "—"}
                               </p>
 
-                              <p className="mt-0.5 max-w-[220px] truncate text-[10px] font-semibold text-sibs-tertiary-5">
+                              <p className="mt-0.5 max-w-[220px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-sibs-muted">
                                 {item.cluster || "—"}
                               </p>
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-3 py-3">
+                            <td className="px-3.5 py-3">
                               {canEditRequiredHeadcount ? (
                                 <div>
-                                  <p className="mb-0.5 text-[9px] font-bold uppercase tracking-normal text-sibs-tertiary-5">
+                                  <p className="mb-0.5 text-[9px] font-bold uppercase tracking-normal text-sibs-muted">
                                     Required
                                   </p>
 
@@ -1027,13 +1011,13 @@ function UpdateHeadcountsPanel() {
                                         e.target.value,
                                       )
                                     }
-                                    className="h-8 w-20 rounded-lg border border-[#D0D5DD] bg-white px-2 text-center text-[10px] font-extrabold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-2 focus:ring-sibs-primary-1/10"
+                                    className="h-8 w-20 rounded-lg border border-sibs-border bg-white px-2 text-center text-xs font-extrabold text-sibs-navy outline-none transition focus:border-sibs-navy focus:ring-2 focus:ring-sibs-orange/20"
                                   />
                                 </div>
                               ) : (
-                                <p className="text-[10px] font-semibold text-[#344054]">
+                                <p className="text-[11px] font-semibold text-sibs-text-secondary">
                                   Required:{" "}
-                                  <span className="text-sibs-primary-1">
+                                  <span className="font-extrabold text-sibs-navy">
                                     {formatHeadcountNumber(
                                       metrics.requiredHeadcount,
                                     )}
@@ -1041,14 +1025,16 @@ function UpdateHeadcountsPanel() {
                                 </p>
                               )}
 
-                              <p className="mt-1 text-[10px] font-semibold text-sibs-tertiary-5">
+                              <p className="mt-1 text-[10.5px] font-semibold text-sibs-muted">
                                 Actual:{" "}
-                                {formatHeadcountNumber(metrics.actualHeadcount)}
+                                <span className="font-extrabold text-sibs-navy">
+                                  {formatHeadcountNumber(metrics.actualHeadcount)}
+                                </span>
                               </p>
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-3 py-3">
-                              <p className="text-[10px] font-extrabold leading-4 text-sibs-primary-1">
+                            <td className="px-3.5 py-3">
+                              <p className="text-[10px] 2xl:text-[10.5px] font-extrabold leading-4 text-sibs-navy">
                                 Req. Buffer:{" "}
                                 {formatHeadcountNumber(
                                   metrics.requiredBufferHeadcount,
@@ -1056,7 +1042,7 @@ function UpdateHeadcountsPanel() {
                                 )}
                               </p>
 
-                              <p className="mt-0.5 text-[10px] font-semibold leading-4 text-[#344054]">
+                              <p className="mt-0.5 text-[10px] 2xl:text-[10.5px] font-semibold leading-4 text-sibs-text-secondary">
                                 Req. Buffer %:{" "}
                                 {formatHeadcountPercent(
                                   metrics.requiredBufferPercent,
@@ -1064,7 +1050,7 @@ function UpdateHeadcountsPanel() {
                               </p>
 
                               <p
-                                className={`mt-0.5 text-[10px] font-bold leading-4 ${getActualBufferClass(
+                                className={`mt-0.5 text-[10px] 2xl:text-[10.5px] font-bold leading-4 ${getActualBufferClass(
                                   metrics.actualBufferCount,
                                 )}`}
                               >
@@ -1079,8 +1065,8 @@ function UpdateHeadcountsPanel() {
                               </p>
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-3 py-3">
-                              <p className="text-[10px] font-extrabold leading-4 text-violet-700">
+                            <td className="px-3.5 py-3">
+                              <p className="text-[10px] 2xl:text-[10.5px] font-extrabold leading-4 text-violet-700">
                                 Needs:{" "}
                                 {formatHeadcountNumber(
                                   metrics.actualHeadcountNeeds,
@@ -1088,7 +1074,7 @@ function UpdateHeadcountsPanel() {
                                 )}
                               </p>
 
-                              <p className="mt-0.5 text-[10px] font-semibold leading-4 text-[#344054]">
+                              <p className="mt-0.5 text-[10px] 2xl:text-[10.5px] font-semibold leading-4 text-sibs-text-secondary">
                                 Leads:{" "}
                                 {formatHeadcountNumber(
                                   metrics.leadsToInterview,
@@ -1096,11 +1082,11 @@ function UpdateHeadcountsPanel() {
                               </p>
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-3 py-3 text-[10px] font-semibold text-[#344054]">
+                            <td className="px-3.5 py-3 text-[10.5px] font-semibold text-sibs-text-secondary">
                               {formatHeadcountPercent(metrics.hiringRate)}
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-3 py-3">
+                            <td className="px-3.5 py-3">
                               <div className="[&>span]:min-w-[68px] [&>span]:px-2 [&>span]:py-0.5 [&>span]:text-[9px]">
                                 <StatusPill
                                   status={
@@ -1113,7 +1099,7 @@ function UpdateHeadcountsPanel() {
                               </div>
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-3 py-3 text-right">
+                            <td className="px-3.5 py-3 text-right">
                               {canEditRequiredHeadcount ? (
                                 <button
                                   type="button"
@@ -1121,7 +1107,7 @@ function UpdateHeadcountsPanel() {
                                     handleSaveRequiredHeadcount(item)
                                   }
                                   disabled={isSaving || accountsLoading}
-                                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-extrabold text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 text-[10.5px] font-extrabold text-emerald-700 shadow-2xs transition hover:bg-emerald-600 hover:text-white hover:border-emerald-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                                 >
                                   {isSaving ? (
                                     <Loader2
@@ -1134,7 +1120,7 @@ function UpdateHeadcountsPanel() {
                                   Save
                                 </button>
                               ) : (
-                                <span className="text-[10px] font-bold text-sibs-tertiary-5">
+                                <span className="text-[10px] font-bold text-sibs-muted">
                                   View only
                                 </span>
                               )}
@@ -1146,7 +1132,7 @@ function UpdateHeadcountsPanel() {
                       <tr>
                         <td
                           colSpan={7}
-                          className="px-3 py-10 text-center text-xs font-bold text-gray-500"
+                          className="px-3 py-10 text-center text-xs font-bold text-sibs-muted"
                         >
                           No recruitment headcount records found.
                         </td>
@@ -1155,47 +1141,21 @@ function UpdateHeadcountsPanel() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          }
-        />
+            }
+          />
+        </div>
 
-          <div className="flex flex-col justify-between gap-4 rounded-b-2xl border-t border-[#E6ECF2] bg-white px-4 py-4 sm:px-5 md:flex-row md:items-center">
-            <p className="text-xs font-semibold text-sibs-tertiary-5">
-              Showing {showingFrom} to {showingTo} of {totalRecords} headcount
-              records
-            </p>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage <= 1 || accountsLoading || weeksLoading}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-xs font-extrabold text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ChevronLeft size={16} />
-                Previous
-              </button>
-
-              <span
-                aria-current="page"
-                className="flex h-10 min-w-10 items-center justify-center rounded-xl bg-[#FF5C28] px-3 text-xs font-extrabold text-white shadow-sm"
-              >
-                {currentPage}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={
-                  currentPage >= totalPages || accountsLoading || weeksLoading
-                }
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#BFD8F1] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Next
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
+        <div className="border-t border-sibs-border bg-white px-4 py-3 sm:px-5">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalRecords={totalRecords}
+            loadedCount={paginatedAccounts.length}
+            recordLabel="headcount records"
+            onPageChange={handlePageChange}
+            loading={accountsLoading || weeksLoading}
+          />
+        </div>
       </section>
 
       <StatusModal

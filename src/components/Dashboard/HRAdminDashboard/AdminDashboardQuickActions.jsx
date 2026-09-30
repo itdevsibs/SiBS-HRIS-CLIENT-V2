@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import React, { createElement } from "react";
 import { ChevronRight } from "lucide-react";
 
 export default function AdminDashboardQuickActions({
@@ -37,7 +37,7 @@ export default function AdminDashboardQuickActions({
               animationFillMode: "both",
             }}
           >
-            <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-sibs-orange transition-colors group-hover:bg-sibs-orange group-hover:text-white">
+            <span className="sibs-tone-orange-icon flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg transition-colors group-hover:bg-sibs-orange group-hover:text-white">
               {action.icon ? createElement(action.icon, { className: "h-4 w-4 2xl:h-[18px] 2xl:w-[18px]" }) : null}
             </span>
 
@@ -50,7 +50,7 @@ export default function AdminDashboardQuickActions({
               </span>
             </span>
 
-            <ChevronRight className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-slate-400 transition-all group-hover:translate-x-0.5 group-hover:text-sibs-orange" />
+            <ChevronRight className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-faint transition-all group-hover:translate-x-0.5 group-hover:text-sibs-orange" />
           </button>
         ))}
       </div>
