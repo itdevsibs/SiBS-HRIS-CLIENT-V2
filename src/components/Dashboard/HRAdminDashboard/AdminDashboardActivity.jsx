@@ -1,13 +1,14 @@
+import React from "react";
 import { Activity, ChevronRight, RefreshCw } from "lucide-react";
 import { formatLogDetails } from "../../../lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers.js";
 
 const activityDotClass = {
-  leave: "bg-amber-400",
-  employee: "bg-blue-400",
-  attendance: "bg-emerald-400",
-  hiring: "bg-indigo-400",
-  department: "bg-violet-400",
-  system: "bg-slate-400",
+  leave: "sibs-tone-amber-icon",
+  employee: "sibs-tone-blue-icon",
+  attendance: "sibs-tone-green-icon",
+  hiring: "sibs-tone-indigo-icon",
+  department: "sibs-tone-purple-icon",
+  system: "sibs-tone-navy-icon",
 };
 
 export default function AdminDashboardActivity({

@@ -7,7 +7,7 @@ const HR_METRIC_LABELS = [
   "Departments",
   "Attendance",
   "Interviews Today",
-  "Active Requisitions",
+  "Payroll",
 ];
 
 export default function AdminDashboardSkeleton() {
@@ -67,7 +67,7 @@ export default function AdminDashboardSkeleton() {
           {/* HR Admin Metrics Grid (5 cards) */}
           <MetricGridSkeleton
             count={5}
-            className="grid grid-cols-1 gap-2.5 2xl:gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+            className="grid grid-cols-1 gap-2.5 2xl:gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6"
             labels={HR_METRIC_LABELS}
             ariaLabel="Loading HR metrics"
           />

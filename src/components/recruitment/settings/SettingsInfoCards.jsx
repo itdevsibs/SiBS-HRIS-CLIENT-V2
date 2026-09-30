@@ -21,8 +21,8 @@ export default function SettingsInfoCards() {
   } = useRecruitmentSettings();
 
   return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <h2 className="text-base font-bold text-[#101828]">
+    <section className="sibs-card p-4 sm:p-5 font-jakarta">
+      <h2 className="font-heading text-base font-bold text-sibs-navy">
         Recruitment Configuration Summary
       </h2>
 

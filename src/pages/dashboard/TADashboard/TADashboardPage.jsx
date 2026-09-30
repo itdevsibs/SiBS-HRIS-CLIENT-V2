@@ -392,7 +392,7 @@ export default function TADashboardPage() {
           />
 
           {loadError ? (
-            <section className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+            <section className="flex flex-col gap-3 rounded-xl border border-sibs-border-panel bg-sibs-cream-light px-4 py-3 text-xs font-semibold text-sibs-navy sm:flex-row sm:items-center sm:justify-between">
               <span>
                 Dashboard refresh warning: {loadError}. The last successful
                 values remain visible.
@@ -402,7 +402,7 @@ export default function TADashboardPage() {
                 onClick={() =>
                   loadDashboard({ forceRefresh: true, background: true })
                 }
-                className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 font-extrabold text-amber-900"
+                className="sibs-btn-secondary h-9 shrink-0 !px-3"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 Retry
@@ -411,7 +411,7 @@ export default function TADashboardPage() {
           ) : null}
 
           {!loadError && warnings.length > 0 ? (
-            <section className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-900">
+            <section className="rounded-xl border border-sibs-border-panel bg-sibs-surface px-4 py-3 text-xs font-semibold text-sibs-navy">
               {warnings[0]}
             </section>
           ) : null}
@@ -438,6 +438,7 @@ export default function TADashboardPage() {
                 searchInput={searchInput}
                 onSearchChange={setSearchInput}
                 onSearchKeyDown={handleSearchKeyDown}
+                pageSize={ROLE_PAGE_SIZE}
                 status={statusFilter}
                 onStatusChange={(value) => setFilter("status", value)}
                 hasActiveFilters={hasActiveRoleFilters}
@@ -445,11 +446,8 @@ export default function TADashboardPage() {
                 onViewRole={setSelectedRole}
                 currentPage={safeCurrentPage}
                 totalPages={totalPages}
-                onPrevious={() =>
-                  setPage(Math.max(safeCurrentPage - 1, 1))
-                }
-                onNext={() =>
-                  setPage(Math.min(safeCurrentPage + 1, totalPages))
+                onPageChange={(nextPage) =>
+                  setPage(Math.min(Math.max(nextPage, 1), totalPages))
                 }
                 delay={240}
               />

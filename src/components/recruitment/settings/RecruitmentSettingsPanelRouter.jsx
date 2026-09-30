@@ -8,7 +8,6 @@ import RecruitmentHolidayCalendar from "./RecruitmentHolidayCalendar";
 
 export default function RecruitmentSettingsPanelRouter({
   activeTab,
-  FinalInterviewDropdownDesignFix: finalInterviewDropdownDesignFix,
   UpdateHeadcountsPanel: updateHeadcountsPanel,
 }) {
   if (activeTab === "Update Headcounts") {
@@ -17,9 +16,7 @@ export default function RecruitmentSettingsPanelRouter({
 
   if (activeTab === "Final Interview Form") {
     return (
-      <div data-final-interview-panel="true" className="space-y-5 ">
-        {React.createElement(finalInterviewDropdownDesignFix)}
-
+      <div data-final-interview-panel="true" className="space-y-5">
         <FormBuilderCard />
       </div>
     );
@@ -38,7 +35,7 @@ export default function RecruitmentSettingsPanelRouter({
 
   if (activeTab === "Approval Rules") {
     return (
-      <div className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+      <div className="sibs-card overflow-hidden p-5 shadow-sm">
         <ApprovalRulesSettings />
       </div>
     );

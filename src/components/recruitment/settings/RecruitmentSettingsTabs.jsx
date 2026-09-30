@@ -27,8 +27,8 @@ export default function RecruitmentSettingsTabs({
   tabs = [],
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
-      <div className="flex min-w-0 gap-1.5 overflow-x-auto p-1.5 sibs-scrollbar">
+    <section className="sibs-card overflow-hidden p-1.5 shadow-2xs">
+      <div className="flex min-w-0 gap-1 overflow-x-auto p-0.5 sibs-scrollbar">
         {tabs.map((tab) => {
           const isActive = activeTab === tab;
           const TabIcon = tabIconMap[tab] || ClipboardList;
@@ -38,16 +38,16 @@ export default function RecruitmentSettingsTabs({
               key={tab}
               type="button"
               onClick={() => onTabChange(tab)}
-              className={`inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-[10px] border px-3 text-xs font-extrabold leading-none transition ${
+              className={`inline-flex h-9 2xl:h-9.5 shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs 2xl:text-[12.5px] font-extrabold leading-none transition-all duration-150 cursor-pointer ${
                 isActive
-                  ? "border-[#BFD8F1] bg-[#EFF6FF] text-sibs-navy shadow-sm"
-                  : "border-transparent bg-white text-sibs-secondary hover:border-sibs-border-subtle hover:bg-sibs-surface hover:text-sibs-navy"
+                  ? "border-sibs-border bg-sibs-surface text-sibs-navy shadow-xs"
+                  : "border-transparent bg-transparent text-sibs-muted hover:border-sibs-border-subtle hover:bg-sibs-surface/60 hover:text-sibs-navy"
               }`}
             >
               <TabIcon
                 size={15}
                 strokeWidth={2.4}
-                className={isActive ? "text-sibs-orange" : "text-sibs-faint"}
+                className={isActive ? "text-sibs-orange" : "text-sibs-muted/70"}
               />
               {tab}
             </button>

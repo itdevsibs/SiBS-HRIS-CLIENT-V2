@@ -13,7 +13,7 @@ export default function EmptyStatePanel({
     <div
       className={`flex flex-col items-center justify-center py-12 px-4 text-center ${className}`.trim()}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sibs-cream-light text-sibs-orange border border-[#FFE0D3]">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sibs-cream-light text-sibs-orange border border-sibs-cream">
         <Icon size={22} strokeWidth={2.2} />
       </div>
 

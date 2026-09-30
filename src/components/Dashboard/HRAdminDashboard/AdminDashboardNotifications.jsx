@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Bell,
   CheckCircle2,
@@ -9,19 +10,19 @@ import { useSidebarNotifications } from "../../../services/context/SidebarNotifi
 
 const notificationTone = {
   action: {
-    wrapper: "border-blue-200/70 bg-blue-50/70",
-    icon: "bg-blue-100 text-blue-600",
-    button: "bg-sibs-orange text-white hover:bg-sibs-orange/90",
+    wrapper: "border-sibs-border-panel bg-sibs-surface",
+    icon: "sibs-tone-blue-icon",
+    button: "sibs-btn-primary",
   },
   warning: {
-    wrapper: "border-amber-200/70 bg-amber-50/70",
-    icon: "bg-amber-100 text-amber-700",
-    button: "bg-amber-100 text-amber-800 hover:bg-amber-200",
+    wrapper: "border-sibs-border-panel bg-sibs-cream-light",
+    icon: "sibs-tone-amber-icon",
+    button: "sibs-btn-secondary",
   },
   info: {
-    wrapper: "border-slate-200 bg-slate-50",
-    icon: "bg-slate-200 text-slate-600",
-    button: "bg-slate-200 text-slate-700 hover:bg-slate-300",
+    wrapper: "border-sibs-border-panel bg-sibs-surface",
+    icon: "sibs-tone-navy-icon",
+    button: "sibs-btn-secondary",
   },
 };
 
@@ -71,7 +72,7 @@ export default function AdminDashboardNotifications({
       <div className="mt-3 2xl:mt-4 space-y-2.5 2xl:space-y-3">
         {activeNotifications.length === 0 ? (
           <div className="rounded-xl border border-dashed border-sibs-border-subtle bg-sibs-surface px-5 py-6 2xl:py-8 text-center">
-            <CheckCircle2 className="mx-auto h-7 w-7 2xl:h-8 2xl:w-8 text-emerald-500" />
+            <CheckCircle2 className="sibs-tone-green-label mx-auto h-7 w-7 2xl:h-8 2xl:w-8" />
             <p className="mt-2 sibs-text-xs font-extrabold text-sibs-navy">
               All caught up!
             </p>
@@ -115,7 +116,7 @@ export default function AdminDashboardNotifications({
                     <button
                       type="button"
                       onClick={() => onAction?.(notification)}
-                      className={`mt-1 2xl:mt-2 rounded px-2 2xl:px-2.5 py-0.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide transition ${tone.button}`}
+                      className={`mt-1 2xl:mt-2 !h-7 !px-2 !text-[9px] 2xl:!h-8 ${tone.button}`}
                     >
                       {notification.actionLabel}
                     </button>

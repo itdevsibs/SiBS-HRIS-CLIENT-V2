@@ -18,7 +18,6 @@ import {
   updateRecruitmentHoliday,
 } from "../../../lib/axios/getRecruitmentSettings";
 import StatusModal from "../../modals/StatusModal";
-import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
 import { Skeleton } from "@/components/ui";
 
 const EMPTY_FORM = {
@@ -221,19 +220,14 @@ export default function RecruitmentHolidayCalendar() {
   }
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+    <div className="space-y-5 font-jakarta">
+      <section className="sibs-card p-4 sm:p-5 2xl:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <SettingsHeaderCapsules
-              items={[
-                { label: "Add Regular & non-regular Holidays", icon: CalendarDays }
-              ]}
-            />
-            <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
+          <div className="min-w-0">
+            <h3 className="font-heading text-sm sm:text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
               Interview Follow-up Holidays
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-[#667085]">
+            </h3>
+            <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-sibs-muted">
               Active dates are excluded when calculating candidate interview
               response deadlines and the automatic Day 3, 6, 9, and 12
               follow-up workflow.
@@ -244,7 +238,7 @@ export default function RecruitmentHolidayCalendar() {
             type="button"
             onClick={() => void loadHolidays()}
             disabled={loading}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:opacity-60"
+            className="sibs-btn-secondary inline-flex h-9 sm:h-10 items-center justify-center gap-2 px-3 sm:px-4 text-xs sm:text-sm font-semibold disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -257,10 +251,10 @@ export default function RecruitmentHolidayCalendar() {
 
         <form
           onSubmit={handleSubmit}
-          className="mt-6 grid grid-cols-1 gap-4 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:grid-cols-[220px_1fr_160px_auto]"
+          className="mt-5 grid grid-cols-1 gap-4 rounded-xl border border-sibs-border bg-sibs-surface p-4 lg:grid-cols-[220px_1fr_160px_auto]"
         >
           <div>
-            <label className="text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-sibs-navy">
               Holiday Date
             </label>
             <input
@@ -273,12 +267,12 @@ export default function RecruitmentHolidayCalendar() {
                   holidayDate: event.target.value,
                 }))
               }
-              className="mt-2 h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="sibs-dashboard-input mt-1.5 h-10 w-full text-xs sm:text-sm text-sibs-navy"
             />
           </div>
 
           <div>
-            <label className="text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-sibs-navy">
               Holiday Name
             </label>
             <input
@@ -292,12 +286,12 @@ export default function RecruitmentHolidayCalendar() {
                 }))
               }
               placeholder="Example: Ninoy Aquino Day"
-              className="mt-2 h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="sibs-dashboard-input mt-1.5 h-10 w-full text-xs sm:text-sm text-sibs-navy placeholder:text-sibs-grey-3"
             />
           </div>
 
           <div>
-            <label className="text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-sibs-navy">
               Status
             </label>
             <select
@@ -308,7 +302,7 @@ export default function RecruitmentHolidayCalendar() {
                   isActive: event.target.value === "Active",
                 }))
               }
-              className="mt-2 h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="sibs-dashboard-input mt-1.5 h-10 w-full text-xs sm:text-sm font-semibold text-sibs-navy bg-white cursor-pointer"
             >
               <option>Active</option>
               <option>Inactive</option>
@@ -319,7 +313,7 @@ export default function RecruitmentHolidayCalendar() {
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90 disabled:opacity-60"
+              className="sibs-btn-primary inline-flex h-10 flex-1 items-center justify-center gap-2 px-4 text-xs sm:text-sm font-semibold disabled:opacity-60"
             >
               {saving ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -335,7 +329,7 @@ export default function RecruitmentHolidayCalendar() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-[#667085] transition hover:bg-[#F8FAFC]"
+                className="sibs-btn-secondary inline-flex h-10 w-10 items-center justify-center text-sibs-grey-4"
                 title="Cancel editing"
               >
                 <X size={16} />
@@ -345,18 +339,23 @@ export default function RecruitmentHolidayCalendar() {
         </form>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-        <div className="border-b border-[#E6ECF2] px-5 py-4">
-          <h3 className="text-base font-extrabold text-sibs-primary-1">
-            Configured Holidays
-          </h3>
-          <p className="mt-1 text-xs font-semibold text-[#667085]">
+      <section className="sibs-card overflow-hidden">
+        <div className="border-b border-sibs-border px-5 py-4 flex items-center justify-between">
+          <div>
+            <h3 className="font-heading text-sm sm:text-base font-bold text-sibs-navy tracking-tight">
+              Configured Holidays
+            </h3>
+            <p className="mt-0.5 text-xs text-sibs-grey-4">
+              Philippine holidays excluded from response timelines
+            </p>
+          </div>
+          <span className="inline-flex items-center rounded-full border border-sibs-border bg-sibs-surface px-2.5 py-0.5 text-xs font-semibold text-sibs-grey-4">
             {sortedHolidays.length} calendar entr{sortedHolidays.length === 1 ? "y" : "ies"}
-          </p>
+          </span>
         </div>
 
         {loading ? (
-          <div className="divide-y divide-[#EEF2F6]" data-testid="holidays-skeleton">
+          <div className="divide-y divide-sibs-border" data-testid="holidays-skeleton">
             {Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={`holiday-skeleton-${index}`}
@@ -377,28 +376,28 @@ export default function RecruitmentHolidayCalendar() {
             ))}
           </div>
         ) : sortedHolidays.length ? (
-          <div className="divide-y divide-[#EEF2F6]">
+          <div className="divide-y divide-sibs-border">
             {sortedHolidays.map((holiday) => (
               <div
                 key={holiday.id}
-                className="flex flex-col gap-3 px-5 py-4 transition hover:bg-[#F8FAFC] sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 px-5 py-3.5 transition hover:bg-sibs-surface/60 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-extrabold text-[#101828]">
+                    <p className="font-bold text-xs sm:text-sm text-sibs-navy">
                       {holiday.holidayName}
                     </p>
                     <span
-                      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                      className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
                         holiday.isActive
-                          ? "border-emerald-100 bg-emerald-50 text-emerald-700"
-                          : "border-slate-200 bg-slate-50 text-slate-500"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : "border-sibs-border bg-sibs-surface text-sibs-grey-4"
                       }`}
                     >
                       {holiday.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm font-semibold text-[#667085]">
+                  <p className="mt-1 text-xs text-sibs-grey-4">
                     {formatHolidayDate(holiday.holidayDate)}
                   </p>
                 </div>
@@ -407,21 +406,21 @@ export default function RecruitmentHolidayCalendar() {
                   <button
                     type="button"
                     onClick={() => handleEdit(holiday)}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 text-xs font-extrabold text-blue-700 transition hover:bg-blue-100"
+                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition"
                   >
-                    <Pencil size={14} />
+                    <Pencil size={13} />
                     Edit
                   </button>
                   <button
                     type="button"
                     disabled={deletingId === String(holiday.id)}
                     onClick={() => void handleDelete(holiday)}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-xs font-extrabold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition disabled:opacity-60"
                   >
                     {deletingId === String(holiday.id) ? (
-                      <Loader2 size={14} className="animate-spin" />
+                      <Loader2 size={13} className="animate-spin" />
                     ) : (
-                      <Trash2 size={14} />
+                      <Trash2 size={13} />
                     )}
                     Remove
                   </button>
@@ -431,11 +430,11 @@ export default function RecruitmentHolidayCalendar() {
           </div>
         ) : (
           <div className="flex min-h-48 flex-col items-center justify-center px-5 text-center">
-            <CalendarDays size={28} className="text-[#98A2B3]" />
-            <p className="mt-3 text-sm font-extrabold text-sibs-primary-1">
+            <CalendarDays size={28} className="text-sibs-grey-3" />
+            <p className="mt-3 text-sm font-bold text-sibs-navy">
               No holidays configured
             </p>
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
+            <p className="mt-1 text-xs text-sibs-grey-4">
               Add Philippine holidays to exclude them from working-day
               calculations.
             </p>
