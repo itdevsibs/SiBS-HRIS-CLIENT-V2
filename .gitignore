@@ -89,3 +89,4 @@ tests/
 !src/components/Dashboard/TADashboard/TARoleHiringStatus.test.jsx
 !src/components/Dashboard/TADashboard/TADashboardPanels.test.jsx
 !src/components/ui/StatusBadge.test.jsx
+!src/components/recruitment/applicantLeads/ApplicantLeadModal.test.jsx

@@ -138,22 +138,25 @@ function EditedIndicator({ show }) {
   );
 }
 
-function FormSection({ title, subtitle, icon: SectionIcon, children }) {
+function FormSection({ title, subtitle, icon: SectionIcon, action, children }) {
   return (
     <section className="rounded-2xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
-      <div className="mb-3 2xl:mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
-        {React.createElement(SectionIcon, {
-          size: 16,
-          className: "mt-0.5 shrink-0 text-[#FF5C28]",
-        })}
-        <div className="min-w-0">
-          <h3 className="sibs-modal-section-title text-[#042C51]">
-            {title}
-          </h3>
-          <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
-            {subtitle}
-          </p>
+      <div className="mb-3 2xl:mb-4 flex items-start justify-between gap-2 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
+        <div className="flex min-w-0 items-start gap-2.5">
+          {React.createElement(SectionIcon, {
+            size: 16,
+            className: "mt-0.5 shrink-0 text-[#FF5C28]",
+          })}
+          <div className="min-w-0">
+            <h3 className="sibs-modal-section-title text-[#042C51]">
+              {title}
+            </h3>
+            <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
+              {subtitle}
+            </p>
+          </div>
         </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
       {children}
     </section>
@@ -162,6 +165,7 @@ function FormSection({ title, subtitle, icon: SectionIcon, children }) {
 
 export default function ApplicantLeadModal() {
   const [copySuccessMessage, setCopySuccessMessage] = useState("");
+  const [isCommentComposerOpen, setIsCommentComposerOpen] = useState(false);
   const [movementHistoryOpen, setMovementHistoryOpen] = useState(false);
   const [movementHistoryVisible, setMovementHistoryVisible] = useState(false);
   const [movementHistoryPosition, setMovementHistoryPosition] = useState(null);
@@ -193,7 +197,6 @@ export default function ApplicantLeadModal() {
   const isEditMode = Boolean(editingLead);
   const showMovementHistoryPanel = movementHistoryOpen || movementHistoryVisible;
   const loggingAccount = editingLead?.inputtedBy || currentAccountName;
-  const noteAuthor = loggingAccount || "HR User";
   const referralCode =
     editingLead?.referralCode || editingLead?.referral_code || "";
   const canCopyReferralCode = Boolean(referralCode);
@@ -225,6 +228,14 @@ export default function ApplicantLeadModal() {
         label: source,
       }));
   }, [formData.source]);
+
+  React.useEffect(() => {
+    if (!showLeadModal) setIsCommentComposerOpen(false);
+  }, [showLeadModal]);
+
+  React.useEffect(() => {
+    setIsCommentComposerOpen(false);
+  }, [editingLead?.leadId, editingLead?.id]);
 
   React.useEffect(() => {
     if (!movementHistoryOpen) {
@@ -620,6 +631,22 @@ export default function ApplicantLeadModal() {
               title="Inquiry Notes & Remarks"
               subtitle="Record walk-in notes, caller background, shift preference, or recruiter notes."
               icon={FileText}
+              action={
+                isEditMode ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIsCommentComposerOpen((isOpen) => !isOpen)
+                    }
+                    aria-expanded={isCommentComposerOpen}
+                    aria-controls="applicant-lead-inquiry-comment-composer"
+                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#D7DEE8] bg-white px-3.5 text-[11px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40"
+                  >
+                    <MessageSquareText size={13} className="text-[#FF5C28]" />
+                    {isCommentComposerOpen ? "Hide Comment Form" : "Add Comment"}
+                  </button>
+                ) : null
+              }
             >
               <label className="block">
                 <div className="mb-1.5 flex items-center justify-between">
@@ -645,99 +672,118 @@ export default function ApplicantLeadModal() {
                   className={TEXTAREA_CLASS}
                 />
               </label>
-            </FormSection>
-
-            {isEditMode && (
-              <FormSection
-                title="Lead Comments"
-                subtitle="Add comments to this applicant lead without changing HR Notes."
-                icon={MessageSquareText}
-              >
-                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
-                  <div className="flex items-center gap-2 text-xs font-extrabold text-[#042C51]">
-                    <MessageSquareText size={14} className="text-[#FF5C28]" />
-                    Add Comment
-                  </div>
-                  <textarea
-                    rows={3}
-                    maxLength={3000}
-                    value={leadComment}
-                    onChange={(event) => setLeadComment(event.target.value)}
-                    placeholder="Add an activity comment for this applicant lead..."
-                    className={`${TEXTAREA_CLASS} mt-2 bg-white`}
-                  />
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <span className="text-[10px] font-semibold text-[#98A2B3]">
-                      {String(leadComment || "").length} / 3000
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleAddLeadComment}
-                      disabled={
-                        isAddingLeadComment ||
-                        !String(leadComment || "").trim()
-                      }
-                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-3.5 text-[11px] font-extrabold text-white transition hover:bg-[#073A69] disabled:cursor-not-allowed disabled:bg-[#DDE5EE] disabled:text-[#7B8DB3]"
+              {isEditMode ? (
+                <>
+                  {isCommentComposerOpen ? (
+                    <div
+                      id="applicant-lead-inquiry-comment-composer"
+                      className="mt-4 space-y-2 border-t border-[#EEF2F6] pt-3.5"
                     >
-                      {isAddingLeadComment ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <MessageSquareText size={12} />
-                      )}
-                      {isAddingLeadComment ? "Adding..." : "Add Comment"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-4 border-t border-[#E6ECF2] pt-4">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-xs font-extrabold text-[#042C51]">
-                      <MessageSquareText size={14} className="text-[#FF5C28]" />
-                      Comments
-                    </div>
-                    <span className="rounded-full bg-[#EEF4FA] px-2 py-0.5 text-[9px] font-extrabold text-[#174A7C]">
-                      {leadComments.length}
-                    </span>
-                  </div>
-
-                  {isLeadHistoryLoading ? (
-                    <div className="flex items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-4 text-[11px] font-semibold text-[#667085]">
-                      <Loader2 size={13} className="animate-spin text-[#FF5C28]" />
-                      Loading comments...
-                    </div>
-                  ) : leadComments.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-3 py-4 text-center text-[11px] font-semibold text-[#667085]">
-                      No comments yet.
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {leadComments.map((item, index) => (
-                        <div
-                          key={item.id || `lead-comment-${index}`}
-                          className="rounded-xl border border-[#E6ECF2] bg-white p-3"
+                      <div className="flex items-center justify-between gap-3">
+                        <label
+                          htmlFor="applicant-lead-inquiry-comment"
+                          className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#042C51]"
                         >
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-[#667085]">
-                            <span className="inline-flex items-center gap-1 font-extrabold text-[#042C51]">
-                              <UserRound size={11} className="text-[#FF5C28]" />
-                              {formatLeadCommentActor(item)}
-                            </span>
-                            {(item.createdAt || item.created_at) ? (
-                              <span className="inline-flex items-center gap-1">
-                                <Clock3 size={11} className="text-[#98A2B3]" />
-                                {formatLeadCommentDateTime(item.createdAt || item.created_at)}
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="mt-2 whitespace-pre-wrap break-words text-[11px] font-semibold leading-5 text-[#344054]">
-                            {item.comment || item.comment_text}
-                          </p>
-                        </div>
-                      ))}
+                          <MessageSquareText size={14} className="text-[#FF5C28]" />
+                          Add Comment
+                        </label>
+                        <span
+                          aria-live="polite"
+                          className="text-[10px] font-semibold text-[#667085]"
+                        >
+                          {String(leadComment || "").length} / 3000
+                        </span>
+                      </div>
+                      <textarea
+                        id="applicant-lead-inquiry-comment"
+                        rows={3}
+                        maxLength={3000}
+                        value={leadComment}
+                        onChange={(event) => setLeadComment(event.target.value)}
+                        placeholder="Add a comment to these inquiry notes..."
+                        className={`${TEXTAREA_CLASS} bg-white`}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLeadComment("");
+                            setIsCommentComposerOpen(false);
+                          }}
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-[11px] font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleAddLeadComment}
+                          disabled={
+                            isAddingLeadComment ||
+                            !String(leadComment || "").trim()
+                          }
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-3.5 text-[11px] font-extrabold text-white transition hover:bg-[#073A69] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 disabled:cursor-not-allowed disabled:bg-[#DDE5EE] disabled:text-[#7B8DB3]"
+                        >
+                          {isAddingLeadComment ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <MessageSquareText size={12} />
+                          )}
+                          {isAddingLeadComment ? "Adding..." : "Post Comment"}
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </FormSection>
-            )}
+                  ) : null}
+
+                  <div className="mt-4 border-t border-[#EEF2F6] pt-3.5">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#042C51]">
+                        <MessageSquareText size={14} className="text-[#FF5C28]" />
+                        Comments
+                      </div>
+                      <span className="rounded-full bg-[#EEF4FA] px-2 py-0.5 text-[9px] font-extrabold text-[#174A7C]">
+                        {leadComments.length}
+                      </span>
+                    </div>
+
+                    {isLeadHistoryLoading ? (
+                      <div className="flex items-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-3 text-[11px] font-semibold text-[#667085]">
+                        <Loader2 size={13} className="animate-spin text-[#FF5C28]" />
+                        Loading comments...
+                      </div>
+                    ) : leadComments.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-3 py-3 text-center text-[11px] font-semibold text-[#667085]">
+                        No comments yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {leadComments.map((item, index) => (
+                          <div
+                            key={item.id || `lead-comment-${index}`}
+                            className="rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-3"
+                          >
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-[#667085]">
+                              <span className="inline-flex items-center gap-1 font-extrabold text-[#042C51]">
+                                <UserRound size={11} className="text-[#FF5C28]" />
+                                {formatLeadCommentActor(item)}
+                              </span>
+                              {(item.createdAt || item.created_at) ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <Clock3 size={11} className="text-[#98A2B3]" />
+                                  {formatLeadCommentDateTime(item.createdAt || item.created_at)}
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-2 whitespace-pre-wrap break-words text-[11px] font-semibold leading-5 text-[#344054]">
+                              {item.comment || item.comment_text}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
+            </FormSection>
           </div>
 
           {/* Footer Actions */}
