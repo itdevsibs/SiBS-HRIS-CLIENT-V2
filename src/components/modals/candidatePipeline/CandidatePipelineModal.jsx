@@ -780,7 +780,7 @@ const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
   (group) => group.requirements,
 );
 
-const ASSESSMENT_STATUS_OPTIONS = ["Not Take", "Taken"];
+const ASSESSMENT_STATUS_OPTIONS = ["Pending", "Taken"];
 const ASSESSMENT_FAILURE_THRESHOLD = 30;
 const ASSESSMENT_FAILURE_RESULT = "Assessment Not Fit";
 const ASSESSMENT_PASS_RESULT = "Assessment Fit";
@@ -3573,7 +3573,7 @@ function UpdateAssessmentModal({
   onClose,
   onSaved,
 }) {
-  const [assessmentStatus, setAssessmentStatus] = useState("Not Take");
+  const [assessmentStatus, setAssessmentStatus] = useState("Pending");
   const [assessmentResult, setAssessmentResult] = useState("");
   const [assessmentScore, setAssessmentScore] = useState("");
   const [assessmentRemarks, setAssessmentRemarks] = useState("");
@@ -3599,8 +3599,13 @@ function UpdateAssessmentModal({
   useEffect(() => {
     if (!open) return;
 
+    const existingStatus =
+      candidate?.assessmentStatus || candidate?.assessment_status || "";
+
     const initialStatus =
-      candidate?.assessmentStatus || candidate?.assessment_status || "Not Take";
+      cleanText(existingStatus).toLowerCase() === "taken"
+        ? "Taken"
+        : "Pending";
 
     /*
      * Each Update Assessment session is a NEW assessment entry.
@@ -3668,6 +3673,8 @@ function UpdateAssessmentModal({
   async function handleSubmit(event) {
     event.preventDefault();
     event.stopPropagation();
+
+    if (assessmentStatus !== "Taken") return;
 
     const resolvedCandidateId = cleanText(candidateId);
 
@@ -3797,15 +3804,17 @@ function UpdateAssessmentModal({
       >
         Cancel
       </CandidateModalSecondaryButton>
-      <CandidateModalPrimaryButton
-        type="submit"
-        form="candidate-inline-assessment-form"
-        disabled={isSaving}
-        className="min-w-[140px]"
-      >
-        {isSaving ? <Loader2 size={15} className="animate-spin" /> : <ClipboardCheck size={15} />}
-        {isSaving ? "Saving..." : "Save Assessment"}
-      </CandidateModalPrimaryButton>
+      {assessmentStatus === "Taken" ? (
+        <CandidateModalPrimaryButton
+          type="submit"
+          form="candidate-inline-assessment-form"
+          disabled={isSaving}
+          className="min-w-[140px]"
+        >
+          {isSaving ? <Loader2 size={15} className="animate-spin" /> : <ClipboardCheck size={15} />}
+          {isSaving ? "Saving..." : "Save Assessment"}
+        </CandidateModalPrimaryButton>
+      ) : null}
     </div>
   );
 
@@ -11995,12 +12004,12 @@ const concretePreferredFinalInterviewFormId =
                   value={
                     activeCandidate.assessmentStatus ||
                     activeCandidate.assessment_status ||
-                    (getAssessmentResult(activeCandidate) ? "Taken" : "Not Take")
+                    (getAssessmentResult(activeCandidate) ? "Taken" : "Pending")
                   }
                   tone={getStatusTone(
                     activeCandidate.assessmentStatus ||
                       activeCandidate.assessment_status ||
-                      (getAssessmentResult(activeCandidate) ? "Taken" : "Not Take"),
+                      (getAssessmentResult(activeCandidate) ? "Taken" : "Pending"),
                   )}
                   className="border-b border-[#E7EFEB] sm:border-b-0 sm:border-r sm:border-[#DDE8E2] sm:pr-4"
                 />

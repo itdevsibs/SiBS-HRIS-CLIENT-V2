@@ -44,6 +44,11 @@ import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailableP
 import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
 import { getAvailablePositions } from "../../lib/axios/getAvailablePosition";
 import { getApplicantLeads } from "../../lib/axios/getApplicantLeads";
+import { useTalentPool } from "../../services/context/TalentPoolContext";
+import {
+  filterTalentPoolCandidatesForTab,
+  TALENT_POOL_TABS,
+} from "../../lib/utils/talentPool/talentPoolTabs";
 import { isHiringNeedUnlinkedFromJd } from "../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 import { buildSidebarBadgeText } from "../../lib/utils/sidebarNotifications";
 import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
@@ -460,6 +465,7 @@ export default function Sidebar() {
   const sidebarNotifications = useSidebarNotifications();
   const getNotification = sidebarNotifications?.getNotification;
   const setSidebarNotification = sidebarNotifications?.setSidebarNotification;
+  const { candidateList: talentPoolCandidates = [] } = useTalentPool();
 
   const location = useLocation();
   const pathname = location.pathname;
@@ -505,6 +511,43 @@ export default function Sidebar() {
     useApprovalRuleRevision("hiringNeeds");
   const availablePositionApprovalRuleRevision =
     useApprovalRuleRevision("availablePositions");
+
+  const talentPoolNewApplicantCount = useMemo(
+    () =>
+      filterTalentPoolCandidatesForTab(
+        talentPoolCandidates,
+        TALENT_POOL_TABS.NEW_APPLICANT,
+      ).length,
+    [talentPoolCandidates],
+  );
+
+  useEffect(() => {
+    if (!mounted || loading) return;
+
+    if (!user) {
+      setSidebarNotification?.("talentPoolNewApplicant", null);
+      return;
+    }
+
+    setSidebarNotification?.(
+      "talentPoolNewApplicant",
+      talentPoolNewApplicantCount > 0
+        ? {
+            count: talentPoolNewApplicantCount,
+            title: `${talentPoolNewApplicantCount} new Talent Pool applicant${
+              talentPoolNewApplicantCount === 1 ? "" : "s"
+            }`,
+            tone: "action",
+          }
+        : null,
+    );
+  }, [
+    mounted,
+    loading,
+    user,
+    talentPoolNewApplicantCount,
+    setSidebarNotification,
+  ]);
 
   const loadApplicantLeadNotifications = useCallback(async () => {
     try {
@@ -1038,6 +1081,7 @@ export default function Sidebar() {
       icon: Users,
       path: "/recruitment/talent-pool",
       allowedUsers: [1, 2, 3, 6, 7],
+      notificationKey: "talentPoolNewApplicant",
     },
     {
       name: "Candidate Pipeline",
