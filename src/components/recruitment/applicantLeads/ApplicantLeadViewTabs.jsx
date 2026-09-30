@@ -17,7 +17,6 @@ export default function ApplicantLeadViewTabs() {
     leadView,
     setLeadView,
     activeLeads,
-    convertedLeads,
     statusOptions,
   } = useApplicantLeadsPage();
 
@@ -44,16 +43,16 @@ export default function ApplicantLeadViewTabs() {
     {
       id: "all",
       label: "All Leads",
-      count: activeLeads.length + convertedLeads.length,
+      count: null,
       icon: UsersRound,
     },
     ...statuses.map((status) => ({
       id: `status:${status}`,
       label: statusLabel[status] || status,
       count:
-        status === "Converted to Applicant"
-          ? convertedLeads.length
-          : activeLeads.filter((lead) => lead.status === status).length,
+        status === "New Lead"
+          ? activeLeads.filter((lead) => lead.status === status).length
+          : null,
       icon: statusIcon[status] || UserCheck,
     })),
     {

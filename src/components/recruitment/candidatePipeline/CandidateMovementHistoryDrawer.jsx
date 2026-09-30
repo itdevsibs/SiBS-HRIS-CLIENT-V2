@@ -1015,9 +1015,12 @@ export default function CandidateMovementHistoryDrawer({
                           </div>
                         </div>
 
-                        <div className="mt-3 rounded-lg border border-[#E6ECF2] bg-white px-3 py-2.5 text-[10px] font-semibold leading-4 text-[#475467] sm:text-[11px] sm:leading-5">
-                          {reason}
-                        </div>
+                        {reason ? (
+                          <div className="mt-3 rounded-lg border border-[#E6ECF2] bg-white px-3 py-2.5 text-[10px] font-semibold leading-4 text-[#475467] sm:text-[11px] sm:leading-5">
+                            <span className="font-extrabold text-[#667085]">Action: </span>
+                            <span>{reason}</span>
+                          </div>
+                        ) : null}
 
                         {details.nhoFileTracking.length > 0 ? (
                           <div className="mt-3 space-y-2">
@@ -1078,9 +1081,10 @@ export default function CandidateMovementHistoryDrawer({
                         ) : null}
 
                         {remarks && remarks !== reason ? (
-                          <p className="mt-2 text-[9px] font-semibold leading-4 text-[#667085] sm:text-[10px]">
-                            {remarks}
-                          </p>
+                          <div className="mt-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[9px] font-semibold leading-4 text-[#667085] sm:text-[10px]">
+                            <span className="font-extrabold text-[#475467]">Notes: </span>
+                            <span>{remarks}</span>
+                          </div>
                         ) : null}
 
                         {(details.score || details.result) && (

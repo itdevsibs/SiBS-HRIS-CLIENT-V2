@@ -4145,6 +4145,13 @@ export default function CandidateProfileModal() {
     closeProfileOnClose: false,
   });
 
+  const [uploadedFilePreview, setUploadedFilePreview] = useState({
+    open: false,
+    url: "",
+    filename: "",
+    kind: "attachment",
+  });
+
   const [talentPoolCandidateDetails, setTalentPoolCandidateDetails] =
     useState(null);
 
@@ -7563,7 +7570,7 @@ export default function CandidateProfileModal() {
     const audioFileUrl = getResolvedFileUrl(activeCandidate.audioFileUrl);
     const attachmentFileUrl = getResolvedFileUrl(activeCandidate.attachmentFileUrl);
 
-    function openFile(fileUrl) {
+    function openFile(fileUrl, filename, kind = "attachment") {
       const resolvedUrl = getResolvedFileUrl(fileUrl);
 
       if (!resolvedUrl) {
@@ -7575,7 +7582,12 @@ export default function CandidateProfileModal() {
         return;
       }
 
-      window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+      setUploadedFilePreview({
+        open: true,
+        url: resolvedUrl,
+        filename: filename || "Uploaded file",
+        kind,
+      });
     }
 
     return (
@@ -7605,7 +7617,7 @@ export default function CandidateProfileModal() {
               <button
                 type="button"
                 disabled={!audioFileUrl}
-                onClick={() => openFile(audioFileUrl)}
+                onClick={() => openFile(audioFileUrl, activeCandidate.audioFileName, "audio")}
                 className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Eye size={16} />
@@ -7646,7 +7658,7 @@ export default function CandidateProfileModal() {
               <button
                 type="button"
                 disabled={!attachmentFileUrl}
-                onClick={() => openFile(attachmentFileUrl)}
+                onClick={() => openFile(attachmentFileUrl, activeCandidate.attachmentFileName, "attachment")}
                 className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Eye size={16} />
@@ -8906,6 +8918,80 @@ export default function CandidateProfileModal() {
           previousEmploymentEnabled
           onSave={handleTalentPoolNhoSave}
         />
+      )}
+
+      {uploadedFilePreview.open && (
+        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[1px]">
+          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/30 bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-4 bg-sibs-navy px-5 py-4 text-white">
+              <div className="min-w-0">
+                <p className="text-base font-extrabold">File Preview</p>
+                <p className="mt-0.5 truncate text-xs font-semibold text-white/70">
+                  {uploadedFilePreview.filename}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setUploadedFilePreview({ open: false, url: "", filename: "", kind: "attachment" })
+                }
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white transition hover:bg-white/20"
+                aria-label="Close file preview"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto bg-[#F4F7FA] p-5">
+              {uploadedFilePreview.kind === "audio" ? (
+                <div className="mx-auto max-w-2xl rounded-xl border border-[#D9E2EC] bg-white p-5">
+                  <p className="mb-4 break-all text-sm font-extrabold text-sibs-primary-1">
+                    {uploadedFilePreview.filename}
+                  </p>
+                  <audio controls autoPlay src={uploadedFilePreview.url} className="w-full">
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              ) : /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(uploadedFilePreview.filename) ? (
+                <div className="flex min-h-[420px] items-center justify-center">
+                  <img
+                    src={uploadedFilePreview.url}
+                    alt={uploadedFilePreview.filename}
+                    className="max-h-[70vh] max-w-full rounded-xl border border-[#D9E2EC] bg-white object-contain shadow-sm"
+                  />
+                </div>
+              ) : /\.pdf$/i.test(uploadedFilePreview.filename) ? (
+                <iframe
+                  title={uploadedFilePreview.filename}
+                  src={uploadedFilePreview.url}
+                  className="h-[70vh] w-full rounded-xl border border-[#D9E2EC] bg-white"
+                />
+              ) : (
+                <div className="mx-auto max-w-xl rounded-xl border border-[#D9E2EC] bg-white p-8 text-center">
+                  <FileText size={34} className="mx-auto text-sibs-primary-1" />
+                  <p className="mt-3 break-all text-sm font-extrabold text-sibs-primary-1">
+                    {uploadedFilePreview.filename}
+                  </p>
+                  <p className="mt-2 text-xs font-semibold text-sibs-text-muted">
+                    Preview is not available for this file type.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end border-t border-[#E6ECF2] bg-white px-5 py-3.5">
+              <button
+                type="button"
+                onClick={() =>
+                  setUploadedFilePreview({ open: false, url: "", filename: "", kind: "attachment" })
+                }
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <EmploymentOfferPdfPreviewModal

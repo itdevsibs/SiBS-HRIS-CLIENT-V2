@@ -209,7 +209,9 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
      */
     setRevisedBasicPay("");
     setRevisedDeminimis("");
-    setRevisedRemarks("");
+
+    const currentOfferHistory = getOfferHistory(offer || {});
+    setRevisedRemarks(cleanText(currentOfferHistory[0]?.internalRemarks));
     setApprovalAction("");
     setLoadedOfferVersions([]);
   }, [offer]);
@@ -252,6 +254,15 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
         if (active) {
           setLoadedOfferVersions(versions);
+
+          const latestLoadedVersion = getOfferHistory({
+            ...(offer || {}),
+            offerVersions: versions,
+          })[0];
+
+          setRevisedRemarks((currentRemarks) =>
+            cleanText(currentRemarks) || cleanText(latestLoadedVersion?.internalRemarks),
+          );
         }
       } catch (error) {
         if (

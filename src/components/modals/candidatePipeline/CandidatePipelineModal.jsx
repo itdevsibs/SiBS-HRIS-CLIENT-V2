@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 
 import DetailRow from "../../layout/common/DetailRow";
+import { useConfirmDialog } from "../../layout/common/ConfirmationModal";
 import CandidatePipelineModalShell, {
   CandidateModalPrimaryButton,
   CandidateModalSecondaryButton,
@@ -779,7 +780,7 @@ const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
   (group) => group.requirements,
 );
 
-const ASSESSMENT_STATUS_OPTIONS = ["Not Take", "Taken"];
+const ASSESSMENT_STATUS_OPTIONS = ["Pending", "Taken"];
 const ASSESSMENT_FAILURE_THRESHOLD = 30;
 const ASSESSMENT_FAILURE_RESULT = "Assessment Not Fit";
 const ASSESSMENT_PASS_RESULT = "Assessment Fit";
@@ -3572,7 +3573,7 @@ function UpdateAssessmentModal({
   onClose,
   onSaved,
 }) {
-  const [assessmentStatus, setAssessmentStatus] = useState("Not Take");
+  const [assessmentStatus, setAssessmentStatus] = useState("Pending");
   const [assessmentResult, setAssessmentResult] = useState("");
   const [assessmentScore, setAssessmentScore] = useState("");
   const [assessmentRemarks, setAssessmentRemarks] = useState("");
@@ -3598,8 +3599,13 @@ function UpdateAssessmentModal({
   useEffect(() => {
     if (!open) return;
 
+    const existingStatus =
+      candidate?.assessmentStatus || candidate?.assessment_status || "";
+
     const initialStatus =
-      candidate?.assessmentStatus || candidate?.assessment_status || "Not Take";
+      cleanText(existingStatus).toLowerCase() === "taken"
+        ? "Taken"
+        : "Pending";
 
     /*
      * Each Update Assessment session is a NEW assessment entry.
@@ -3667,6 +3673,8 @@ function UpdateAssessmentModal({
   async function handleSubmit(event) {
     event.preventDefault();
     event.stopPropagation();
+
+    if (assessmentStatus !== "Taken") return;
 
     const resolvedCandidateId = cleanText(candidateId);
 
@@ -3796,15 +3804,17 @@ function UpdateAssessmentModal({
       >
         Cancel
       </CandidateModalSecondaryButton>
-      <CandidateModalPrimaryButton
-        type="submit"
-        form="candidate-inline-assessment-form"
-        disabled={isSaving}
-        className="min-w-[140px]"
-      >
-        {isSaving ? <Loader2 size={15} className="animate-spin" /> : <ClipboardCheck size={15} />}
-        {isSaving ? "Saving..." : "Save Assessment"}
-      </CandidateModalPrimaryButton>
+      {assessmentStatus === "Taken" ? (
+        <CandidateModalPrimaryButton
+          type="submit"
+          form="candidate-inline-assessment-form"
+          disabled={isSaving}
+          className="min-w-[140px]"
+        >
+          {isSaving ? <Loader2 size={15} className="animate-spin" /> : <ClipboardCheck size={15} />}
+          {isSaving ? "Saving..." : "Save Assessment"}
+        </CandidateModalPrimaryButton>
+      ) : null}
     </div>
   );
 
@@ -6832,6 +6842,7 @@ const CandidatePipelineModal = ({
   onSendOfferEmail,
   onOfferDecision,
 }) => {
+  const { confirmAction, ConfirmationDialog } = useConfirmDialog();
   const [showTalentPoolDetails, setShowTalentPoolDetails] = useState(false);
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [showNhoUploadModal, setShowNhoUploadModal] = useState(false);
@@ -8287,6 +8298,16 @@ rawOpenedCandidate || {},
       return;
     }
 
+    const confirmation = await confirmAction(
+      activePrfStatus === "Matched"
+        ? `Move ${activeCandidate?.name || "this candidate"} from Initial Screening to Online Assessment?`
+        : `Proceed with ${activeCandidate?.name || "this candidate"} from Initial Screening?`,
+    );
+
+    if (!confirmation?.confirmed) return;
+
+    const actionNotes = cleanText(confirmation.notes);
+
     setIsProceedingInitialScreening(true);
 
     try {
@@ -8297,6 +8318,9 @@ rawOpenedCandidate || {},
         {
           prfStatus: activePrfStatus,
           prf_status: activePrfStatus,
+          notes: actionNotes,
+          actionNotes,
+          action_notes: actionNotes,
 
           /*
            * Send the selected candidate's stable identities with the action.
@@ -11735,6 +11759,7 @@ const concretePreferredFinalInterviewFormId =
 
   return (
     <>
+      {ConfirmationDialog}
       <CandidatePipelineModalShell
         open={open}
         title="Candidate Pipeline Record"
@@ -11922,7 +11947,7 @@ const concretePreferredFinalInterviewFormId =
                 },
                 {
                   label: "Created Date",
-                  value: compactCreatedDate ? String(compactCreatedDate).slice(0, 10) : EMPTY_DISPLAY_VALUE,
+                  value: compactCreatedDate ? formatCandidateDateOnly(compactCreatedDate) : EMPTY_DISPLAY_VALUE,
                   icon: CalendarDays,
                 },
               ].map((item, index) => (
@@ -11979,12 +12004,12 @@ const concretePreferredFinalInterviewFormId =
                   value={
                     activeCandidate.assessmentStatus ||
                     activeCandidate.assessment_status ||
-                    (getAssessmentResult(activeCandidate) ? "Taken" : "Not Take")
+                    (getAssessmentResult(activeCandidate) ? "Taken" : "Pending")
                   }
                   tone={getStatusTone(
                     activeCandidate.assessmentStatus ||
                       activeCandidate.assessment_status ||
-                      (getAssessmentResult(activeCandidate) ? "Taken" : "Not Take"),
+                      (getAssessmentResult(activeCandidate) ? "Taken" : "Pending"),
                   )}
                   className="border-b border-[#E7EFEB] sm:border-b-0 sm:border-r sm:border-[#DDE8E2] sm:pr-4"
                 />

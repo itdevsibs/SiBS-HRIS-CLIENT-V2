@@ -43,6 +43,12 @@ import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsAppro
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
 import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
 import { getAvailablePositions } from "../../lib/axios/getAvailablePosition";
+import { getApplicantLeads } from "../../lib/axios/getApplicantLeads";
+import { useTalentPool } from "../../services/context/TalentPoolContext";
+import {
+  filterTalentPoolCandidatesForTab,
+  TALENT_POOL_TABS,
+} from "../../lib/utils/talentPool/talentPoolTabs";
 import { isHiringNeedUnlinkedFromJd } from "../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 import { buildSidebarBadgeText } from "../../lib/utils/sidebarNotifications";
 import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
@@ -459,6 +465,7 @@ export default function Sidebar() {
   const sidebarNotifications = useSidebarNotifications();
   const getNotification = sidebarNotifications?.getNotification;
   const setSidebarNotification = sidebarNotifications?.setSidebarNotification;
+  const { candidateList: talentPoolCandidates = [] } = useTalentPool();
 
   const location = useLocation();
   const pathname = location.pathname;
@@ -504,6 +511,67 @@ export default function Sidebar() {
     useApprovalRuleRevision("hiringNeeds");
   const availablePositionApprovalRuleRevision =
     useApprovalRuleRevision("availablePositions");
+
+  const talentPoolNewApplicantCount = useMemo(
+    () =>
+      filterTalentPoolCandidatesForTab(
+        talentPoolCandidates,
+        TALENT_POOL_TABS.NEW_APPLICANT,
+      ).length,
+    [talentPoolCandidates],
+  );
+
+  useEffect(() => {
+    if (!mounted || loading) return;
+
+    if (!user) {
+      setSidebarNotification?.("talentPoolNewApplicant", null);
+      return;
+    }
+
+    setSidebarNotification?.(
+      "talentPoolNewApplicant",
+      talentPoolNewApplicantCount > 0
+        ? {
+            count: talentPoolNewApplicantCount,
+            title: `${talentPoolNewApplicantCount} new Talent Pool applicant${
+              talentPoolNewApplicantCount === 1 ? "" : "s"
+            }`,
+            tone: "action",
+          }
+        : null,
+    );
+  }, [
+    mounted,
+    loading,
+    user,
+    talentPoolNewApplicantCount,
+    setSidebarNotification,
+  ]);
+
+  const loadApplicantLeadNotifications = useCallback(async () => {
+    try {
+      const result = await getApplicantLeads();
+      if (!result?.success) return;
+
+      const newLeadCount = (result.data || []).filter(
+        (lead) => String(lead?.status || "").trim() === "New Lead",
+      ).length;
+
+      setSidebarNotification?.(
+        "applicantLeadsNew",
+        newLeadCount > 0
+          ? {
+              count: newLeadCount,
+              title: `${newLeadCount} new applicant lead${newLeadCount === 1 ? "" : "s"}`,
+              tone: "action",
+            }
+          : null,
+      );
+    } catch (error) {
+      console.error("Failed to load Applicant Leads notification count:", error);
+    }
+  }, [setSidebarNotification]);
 
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
@@ -847,11 +915,13 @@ export default function Sidebar() {
     const initialLoadTimer = window.setTimeout(() => {
       loadApprovalRequestNotifications();
       loadUnlinkedJdNotifications();
+      loadApplicantLeadNotifications();
     }, 0);
 
     const interval = window.setInterval(() => {
       loadApprovalRequestNotifications();
       loadUnlinkedJdNotifications();
+      loadApplicantLeadNotifications();
     }, 30000);
 
     return () => {
@@ -866,6 +936,7 @@ export default function Sidebar() {
     ADMIN_ROLES,
     loadApprovalRequestNotifications,
     loadUnlinkedJdNotifications,
+    loadApplicantLeadNotifications,
     setSidebarNotification,
     jdApprovalRuleRevision,
     hiringNeedsApprovalRuleRevision,
@@ -1003,12 +1074,14 @@ export default function Sidebar() {
       icon: UserRoundPlus,
       path: "/recruitment/applicant-leads",
       allowedUsers: [1, 2, 3, 6, 7],
+      notificationKey: "applicantLeadsNew",
     },
     {
       name: "Talent Pool",
       icon: Users,
       path: "/recruitment/talent-pool",
       allowedUsers: [1, 2, 3, 6, 7],
+      notificationKey: "talentPoolNewApplicant",
     },
     {
       name: "Candidate Pipeline",

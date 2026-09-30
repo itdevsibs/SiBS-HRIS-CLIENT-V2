@@ -10,7 +10,7 @@ import CandidatePipelineModalShell, {
 import DropdownField from "../../recruitment/availablePositions/DropdownField";
 import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 
-const ASSESSMENT_STATUS_OPTIONS = ["Not Take", "Taken"];
+const ASSESSMENT_STATUS_OPTIONS = ["Pending", "Taken"];
 
 const ASSESSMENT_RESULT_OPTIONS = [
   "Assessment Fit",
@@ -74,7 +74,7 @@ export default function AssessmentModal({
 
   const fileInputRef = useRef(null);
 
-  const [assessmentStatus, setAssessmentStatus] = useState("Not Take");
+  const [assessmentStatus, setAssessmentStatus] = useState("Pending");
   const [assessmentResult, setAssessmentResult] = useState("");
   const [assessmentScore, setAssessmentScore] = useState("");
   const [assessmentRemarks, setAssessmentRemarks] = useState("");
@@ -87,17 +87,19 @@ export default function AssessmentModal({
   useEffect(() => {
     if (!open) return;
 
-    const initialStatus =
+    const existingStatus =
       cleanText(activeCandidate.assessmentStatus) ||
-      cleanText(activeCandidate.assessment_status) ||
-      "Not Take";
+      cleanText(activeCandidate.assessment_status);
+
+    const initialStatus =
+      existingStatus.toLowerCase() === "taken" ? "Taken" : "Pending";
 
     const initialRemarks =
       cleanText(activeCandidate.assessmentRemarks) ||
       cleanText(activeCandidate.assessment_remarks) ||
       "";
 
-    setAssessmentStatus(initialStatus || "Not Take");
+    setAssessmentStatus(initialStatus);
     setAssessmentResult("");
     setAssessmentScore("");
     setAssessmentRemarks(initialRemarks);
@@ -159,6 +161,8 @@ export default function AssessmentModal({
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (!isTaken) return;
 
     if (!candidateId) {
       window.alert("Candidate ID is missing.");
@@ -240,19 +244,21 @@ export default function AssessmentModal({
       >
         Cancel
       </CandidateModalSecondaryButton>
-      <CandidateModalPrimaryButton
-        type="submit"
-        form="candidate-assessment-form"
-        disabled={saving}
-        className="min-w-[150px]"
-      >
-        {saving ? (
-          <Loader2 size={15} className="animate-spin" />
-        ) : (
-          <ClipboardCheck size={15} />
-        )}
-        {saving ? "Saving..." : "Save Assessment"}
-      </CandidateModalPrimaryButton>
+      {isTaken ? (
+        <CandidateModalPrimaryButton
+          type="submit"
+          form="candidate-assessment-form"
+          disabled={saving}
+          className="min-w-[150px]"
+        >
+          {saving ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <ClipboardCheck size={15} />
+          )}
+          {saving ? "Saving..." : "Save Assessment"}
+        </CandidateModalPrimaryButton>
+      ) : null}
     </div>
   );
 
