@@ -80,7 +80,7 @@ export default function RequisitionByDepartmentTable({
 
   return (
     <section
-      className="sibs-page-card-in sibs-card flex min-h-full flex-col rounded-2xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 font-jakarta shadow-sm"
+      className="sibs-page-card-in sibs-card flex min-h-full flex-col rounded-2xl border border-sibs-border bg-white p-3.5 2xl:p-4 font-jakarta shadow-sm"
       style={{
         animationDelay: `${delay}ms`,
         animationFillMode: "both",
@@ -91,7 +91,7 @@ export default function RequisitionByDepartmentTable({
           Requisition by Department
         </h3>
 
-        <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+        <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
           Active approved and pending request quota
         </p>
       </div>
@@ -110,7 +110,7 @@ export default function RequisitionByDepartmentTable({
                   <Skeleton className="h-3 w-32" />
                   <Skeleton className="h-3 w-12" />
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                   <Skeleton className="h-full w-full" />
                 </div>
               </div>
@@ -133,21 +133,21 @@ export default function RequisitionByDepartmentTable({
               <div key={item.id}>
                 <div className="mb-1.5 flex items-center justify-between gap-4">
                   <p
-                    className="min-w-0 truncate text-xs font-extrabold text-[#344054]"
+                    className="min-w-0 truncate text-xs font-extrabold text-sibs-navy"
                     title={item.label}
                   >
                     {item.label}
                   </p>
 
-                  <p className="shrink-0 text-xs font-extrabold tabular-nums text-[#5B3DF5]">
+                  <p className="shrink-0 text-xs font-extrabold tabular-nums text-indigo-600">
                     {item.value.toLocaleString("en-PH")}{" "}
                     {item.value === 1 ? "slot" : "slots"}
                   </p>
                 </div>
 
-                <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className="h-full rounded-full bg-[#042C51] transition-[width] duration-500 ease-out"
+                    className="h-full rounded-full bg-sibs-navy transition-[width] duration-500 ease-out"
                     style={{
                       width: `${percentage}%`,
                     }}
@@ -157,8 +157,8 @@ export default function RequisitionByDepartmentTable({
             );
           })
         ) : (
-          <div className="flex min-h-36 items-center justify-center rounded-[10px] border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-4 text-center">
-            <p className="text-xs font-semibold text-[#98A2B3]">
+          <div className="flex min-h-36 items-center justify-center rounded-[10px] border border-dashed border-sibs-border bg-slate-50 px-4 text-center">
+            <p className="text-xs font-semibold text-sibs-muted">
               No department data available.
             </p>
           </div>

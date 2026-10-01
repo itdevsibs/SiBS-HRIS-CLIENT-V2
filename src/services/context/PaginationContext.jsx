@@ -678,7 +678,7 @@ function MiniCalendar({ value, min, onSelect, onClose }) {
   );
 }
 
-function DateRangeInput({ label, value, min, onChange }) {
+function DateRangeInput({ label, topLabel, value, min, onChange }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
 
@@ -709,21 +709,26 @@ function DateRangeInput({ label, value, min, onChange }) {
   }, [open]);
 
   return (
-    <div ref={wrapperRef} className="relative h-8.5 sm:h-9 2xl:h-10 w-full min-w-0">
+    <div ref={wrapperRef} className="relative w-full min-w-0">
+      {topLabel && (
+        <label className="mb-1 block font-jakarta sibs-text-xs font-bold text-sibs-navy">
+          {topLabel}
+        </label>
+      )}
       <button
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
         data-state={open ? "open" : "closed"}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-8.5 sm:h-9 2xl:h-10 w-full items-center justify-between gap-2 rounded-lg border bg-[#F8FAFC] px-3 text-left sibs-text-xs font-extrabold text-[#042C51] outline-none transition-all duration-200 active:scale-[0.99] ${
+        className={`flex h-8.5 sm:h-9 2xl:h-10 w-full items-center justify-between gap-2 rounded-[10px] border bg-sibs-surface px-3 text-left sibs-text-xs font-extrabold text-sibs-navy outline-none transition-all duration-200 active:scale-[0.99] ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "border-[#E6ECF2] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
         <span className="flex min-w-0 items-center gap-1.5 2xl:gap-2">
-          <CalendarDays className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#FF5C28]" />
+          <CalendarDays className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-orange" />
 
           <span className="shrink-0">{label}</span>
 
@@ -737,7 +742,7 @@ function DateRangeInput({ label, value, min, onChange }) {
         </span>
 
         <ChevronDown
-          className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#6B88A8] transition-transform duration-200 ${
+          className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-muted transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -759,6 +764,7 @@ export function PaginationDateRangeFilter({
   entity,
   visible = false,
   className = "",
+  showTopLabels = false,
 }) {
   const { filterValues, setDateRange } = usePagination(entity);
 
@@ -785,15 +791,17 @@ export function PaginationDateRangeFilter({
 
   return (
     <div className={`flex w-full justify-end ${className}`}>
-      <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-2 lg:max-w-[430px]">
+      <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:max-w-[430px]">
         <DateRangeInput
           label="From"
+          topLabel={showTopLabels ? "From Date" : null}
           value={dateFrom}
           onChange={handleDateFromChange}
         />
 
         <DateRangeInput
           label="To"
+          topLabel={showTopLabels ? "To Date" : null}
           value={dateTo}
           min={dateFrom || undefined}
           onChange={handleDateToChange}

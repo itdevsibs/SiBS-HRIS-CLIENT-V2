@@ -139,6 +139,7 @@ export default function SelectDropdown({
   emptyMessage = "No matching options.",
   clearable = true,
   className = "",
+  buttonClassName = "",
   menuClassName = "",
   multiple = false,
   optionValue = (opt) =>
@@ -237,20 +238,20 @@ export default function SelectDropdown({
     handleClose();
   }
 
-  const triggerClasses = `flex h-8 2xl:h-9 w-full min-w-0 items-center justify-between gap-2 rounded-xl border font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold outline-none transition text-left px-2.5 2xl:px-3 ${
+  const triggerClasses = `flex h-8.5 2xl:h-10 w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold outline-none transition text-left px-2.5 2xl:px-3 ${
     disabled
       ? "cursor-not-allowed border-sibs-border-subtle bg-sibs-canvas text-sibs-faint opacity-70"
       : open
         ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
         : "border-sibs-border-subtle bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
-  } ${className}`;
+  } ${buttonClassName || className}`;
 
   return (
     <div ref={anchorRef} className="relative min-w-0 w-full font-jakarta">
       {label && !hideLabel && (
         <label
           className={`mb-1 block font-jakarta ${
-            labelClassName || "sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint"
+            labelClassName || "sibs-text-xs font-bold text-sibs-navy"
           }`}
         >
           {label}

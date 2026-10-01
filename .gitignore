@@ -63,3 +63,7 @@ test/
 src/test/
 tests/
 *.test.*
+!src/pages/recruitment/JobDescriptionPage.test.jsx
+!src/pages/recruitment/HiringNeedsPage.test.jsx
+!src/pages/recruitment/AvailablePositionsPage.test.jsx
+!src/components/tables/FilterBarsModernization.test.jsx

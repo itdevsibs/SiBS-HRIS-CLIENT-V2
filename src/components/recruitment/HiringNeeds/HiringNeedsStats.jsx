@@ -9,7 +9,7 @@ import {
 
 import ReasonForHiringTable from "../../tables/HiringNeeds/ReasonForHiringTable";
 import RequisitionByDepartmentTable from "../../tables/HiringNeeds/RequisitionByDepartmentTable";
-import { MetricGridSkeleton } from "@/components/ui";
+import { MetricCard, MetricGrid, MetricGridSkeleton } from "@/components/ui";
 import { useHiringNeeds } from "@/services/context/HiringNeedsContext";
 
 const HIRING_NEEDS_METRIC_LABELS = [
@@ -63,43 +63,6 @@ const metricConfig = [
   },
 ];
 
-function MetricCard({ item, value, delay = 0 }) {
-  return (
-    <article
-      className="sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
-    >
-      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-        <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
-          <div>
-            <p
-              className={`m-0 truncate sibs-text-micro font-extrabold uppercase sibs-tone-${item.tone}-label`}
-            >
-              {item.title}
-            </p>
-
-            <p
-              className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight sibs-tone-${item.tone}-label`}
-            >
-              {value.toLocaleString("en-PH")}
-            </p>
-          </div>
-
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
-            {item.description}
-          </p>
-        </div>
-
-        <span
-          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${item.tone}-icon`}
-        >
-          {React.createElement(item.icon, { className: "h-4 w-4 2xl:h-4.5 2xl:w-4.5", strokeWidth: 2 })}
-        </span>
-      </div>
-    </article>
-  );
-}
-
 export default function HiringNeedsStats() {
   const {
     stats,
@@ -115,19 +78,22 @@ export default function HiringNeedsStats() {
           count={5}
           labels={HIRING_NEEDS_METRIC_LABELS}
           ariaLabel="Loading hiring needs metrics"
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5"
+          className="grid grid-cols-1 gap-2.5 2xl:gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <MetricGrid columns={5}>
           {metricConfig.map((item, index) => (
             <MetricCard
               key={item.key}
-              item={item}
-              value={getStatValue(stats, item.key)}
+              label={item.title}
+              value={getStatValue(stats, item.key).toLocaleString("en-PH")}
+              description={item.description}
+              icon={item.icon}
+              tone={item.tone}
               delay={index * 60}
             />
           ))}
-        </div>
+        </MetricGrid>
       )}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">

@@ -11,6 +11,7 @@ import { useUser } from "../../services/context/UserContext";
 import StatusModal from "../../components/modals/StatusModal";
 import { PageHeaderHero } from "@/components/ui";
 import { Database, Plus, RefreshCw, RotateCcw } from "lucide-react";
+import PaginationTable from "../../services/pagination/PaginationTable";
 import {
   createAvailablePosition,
   getAvailablePositionMeta,
@@ -43,7 +44,6 @@ import {
 import PositionFormModal from "../../components/modals/availablePositions/PositionFormModal";
 import ConfirmationModal from "../../components/modals/availablePositions/ConfirmationModal";
 import AvailablePositionsTable from "../../components/tables/availablePositions/AvailablePositionsTable";
-import PaginationTable from "../../services/pagination/PaginationTable";
 import {
   normalizeAvailablePositionRecord,
   normalizeAvailablePositionRecords,
@@ -1798,7 +1798,8 @@ export default function AvailablePositionsPage() {
                   searchValue={search}
                   searchPlaceholder="Search position, JD, department, account, or skills..."
                   onSearchChange={setSearch}
-                  dropdownFilters={[
+                  className="border-0 bg-transparent p-0 shadow-none"
+                  filters={[
                     {
                       key: "status",
                       value: statusFilter,
@@ -1862,7 +1863,6 @@ export default function AvailablePositionsPage() {
                       Clear
                     </button>
                   }
-                  className="border-0 bg-transparent p-0 shadow-none"
                 />
               </div>
             </div>
@@ -1905,7 +1905,7 @@ export default function AvailablePositionsPage() {
                   Database Mapping Rule
                 </h3>
 
-                <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
+                <p className="mt-1 text-xs font-semibold leading-5 text-sibs-navy/75">
                   Departments and accounts are loaded from the database. Account
                   choices depend on the selected department. Active positions
                   appear in applicant-facing forms, while Inactive and Archived

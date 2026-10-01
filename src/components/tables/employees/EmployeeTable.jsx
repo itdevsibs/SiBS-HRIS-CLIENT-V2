@@ -8,6 +8,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  RotateCcw,
   Search,
   UserRound,
   UserRoundCheck,
@@ -1198,6 +1199,22 @@ export default function EmployeeTable({
   const activeTabDescription =
     currentTab?.description || "Employee master records";
 
+  const hasActiveFilters = Boolean(
+    String(searchInput || "").trim() ||
+    (departmentFilter && departmentFilter !== "All") ||
+    accountFilters.length > 0
+  );
+
+  function handleResetFilters() {
+    setSearchInput?.("");
+    setSearch?.("");
+    setDepartmentFilter("All");
+    setAccountFilters([]);
+    setAccountOptions([]);
+    loadedAccountOptionsKeyRef.current = "";
+    resetToFirstPage();
+  }
+
   return (
     <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
       <style>{`
@@ -1237,47 +1254,64 @@ export default function EmployeeTable({
         </p>
 
         <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
-          <SearchInput
-            value={searchInput}
-            onChange={(e) => setSearchInput?.(typeof e === "string" ? e : e?.target?.value ?? "")}
-            onKeyDown={handleEmployeeSearchKeyDown}
-            placeholder="Search by employee, SIBS ID, department, or account..."
-            ariaLabel="Search by employee, SIBS ID, department, or account"
-            inputClassName="h-8.5 2xl:h-10"
-            className="min-w-0 flex-1"
-          />
+          <div className="min-w-0 flex-1 xl:flex-[1_1_220px] 2xl:flex-[1_1_360px]">
+            <SearchInput
+              label="Search"
+              value={searchInput}
+              onChange={(e) => setSearchInput?.(typeof e === "string" ? e : e?.target?.value ?? "")}
+              onKeyDown={handleEmployeeSearchKeyDown}
+              placeholder="Search by employee, SIBS ID, department, or account..."
+              ariaLabel="Search by employee, SIBS ID, department, or account"
+              className="w-full"
+            />
+          </div>
           {showEmployeeFilterControls ? (
             <>
-              <SelectDropdown
-                label="Department"
-                value={departmentFilter || "All"}
-                options={[{ value: "All", label: "All Departments" }, ...departmentDropdownOptions]}
-                onChange={handleDepartmentChange}
-                searchable
-                searchPlaceholder="Search departments..."
-                clearable={false}
-                className="xl:w-[220px]"
-              />
-              <SelectDropdown
-                label="Account"
-                value={accountFilters.length ? accountFilters : ["All"]}
-                options={[{ value: "All", label: "All Accounts" }, ...accountDropdownOptions]}
-                onChange={(val) => {
-                  if (Array.isArray(val)) {
-                    const cleaned = val.filter((v) => v !== "All");
-                    handleAccountChange(cleaned);
-                  } else {
-                    handleAccountChange(val === "All" ? [] : [val]);
-                  }
-                }}
-                multiple
-                searchable
-                searchPlaceholder="Search accounts..."
-                clearable={false}
-                className="xl:w-[220px]"
-              />
+              <div className="w-full xl:w-[200px] 2xl:w-[240px] xl:flex-none">
+                <SelectDropdown
+                  label="Department"
+                  value={departmentFilter || "All"}
+                  options={[{ value: "All", label: "All Departments" }, ...departmentDropdownOptions]}
+                  onChange={handleDepartmentChange}
+                  searchable
+                  searchPlaceholder="Search departments..."
+                  clearable={false}
+                />
+              </div>
+              <div className="w-full xl:w-[200px] 2xl:w-[240px] xl:flex-none">
+                <SelectDropdown
+                  label="Account"
+                  value={accountFilters.length ? accountFilters : ["All"]}
+                  options={[{ value: "All", label: "All Accounts" }, ...accountDropdownOptions]}
+                  onChange={(val) => {
+                    if (Array.isArray(val)) {
+                      const cleaned = val.filter((v) => v !== "All");
+                      handleAccountChange(cleaned);
+                    } else {
+                      handleAccountChange(val === "All" ? [] : [val]);
+                    }
+                  }}
+                  multiple
+                  searchable
+                  searchPlaceholder="Search accounts..."
+                  clearable={false}
+                />
+              </div>
             </>
           ) : null}
+
+          {hasActiveFilters && (
+            <div className="shrink-0">
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="inline-flex h-8.5 2xl:h-10 w-full xl:w-auto items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RotateCcw size={14} />
+                Clear
+              </button>
+            </div>
+          )}
         </div>
 
         <button

@@ -124,43 +124,36 @@ export default function HiringNeedsFilters() {
               key: "status",
               value: status,
               options: STATUS_OPTIONS,
-              onChange: (value) =>
-                setFilter("status", value),
-              searchable: false,
+              onChange: (value) => setFilter("status", value || "All"),
               includeAll: false,
               allLabel: "All Statuses",
-              label: "Approval Status",
+              label: "Status",
               placeholder: "All Statuses",
+              searchable: false,
             },
             {
               key: "site",
               value: site,
               options: siteOptions,
-              onChange: (value) =>
-                setFilter("site", value),
-              searchable: true,
+              onChange: (value) => setFilter("site", value || "All"),
               includeAll: false,
               allLabel: "All Sites",
-              label: "Location / Site",
-              placeholder: "Search sites...",
+              label: "Site",
+              placeholder: "All Sites",
+              searchable: true,
             },
             {
               key: "reason",
               value: reason,
               options: reasonOptions,
-              onChange: (value) =>
-                setFilter("reason", value),
-              searchable: true,
+              onChange: (value) => setFilter("reason", value || "All"),
               includeAll: false,
               allLabel: "All Reasons",
               label: "Reason",
-              placeholder: "Search reasons...",
+              placeholder: "All Reasons",
+              searchable: true,
             },
           ]}
-          onReset={handleClearAll}
-          resetLabel={
-            hasActiveFilters ? "Reset filters" : "Clear"
-          }
           rightContent={
             <button
               type="button"

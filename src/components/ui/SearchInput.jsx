@@ -36,7 +36,7 @@ export default function SearchInput({
       {label && !hideLabel && (
         <label
           className={`mb-1 block font-jakarta ${
-            labelClassName || "text-xs font-bold text-sibs-navy"
+            labelClassName || "sibs-text-xs font-bold text-sibs-navy"
           }`}
         >
           {label}
@@ -58,7 +58,7 @@ export default function SearchInput({
           placeholder={placeholder}
           disabled={disabled}
           aria-label={ariaLabelProp || ariaLabel || label || placeholder}
-          className={`sibs-dashboard-input h-10 w-full pl-9 pr-8 text-xs font-semibold text-sibs-navy placeholder:text-sibs-faint transition disabled:cursor-not-allowed disabled:opacity-50 ${inputClassName}`.trim()}
+          className={`sibs-dashboard-input h-8.5 2xl:h-10 w-full rounded-[10px] pl-9 pr-8 text-xs font-semibold text-sibs-navy placeholder:text-sibs-faint transition disabled:cursor-not-allowed disabled:opacity-50 ${inputClassName}`.trim()}
           {...props}
         />
 
