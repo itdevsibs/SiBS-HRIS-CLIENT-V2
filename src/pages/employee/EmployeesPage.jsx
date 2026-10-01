@@ -16,7 +16,12 @@ import ChwcpTable from "../../components/tables/employees/ChwcpTable";
 import EmployeeTable from "../../components/tables/employees/EmployeeTable";
 import { getChwcpRequests } from "../../lib/axios/getChwcp";
 import { usePagination } from "@/services/context/PaginationContext";
-import { MetricCardSkeleton, PageHeaderHero } from "@/components/ui";
+import {
+  MetricCard,
+  MetricGrid,
+  MetricCardSkeleton,
+  PageHeaderHero,
+} from "@/components/ui";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 
@@ -52,67 +57,7 @@ function getAnimationStyle(delay = 0) {
   };
 }
 
-function getMetricTone(tone) {
-  if (tone === "emerald") {
-    return {
-      label: "sibs-tone-emerald-label",
-      value: "text-emerald-700",
-      iconWrap: "sibs-tone-emerald-icon",
-    };
-  }
 
-  return {
-    label: "sibs-tone-navy-label",
-    value: "text-sibs-navy",
-    iconWrap: "sibs-tone-navy-icon",
-  };
-}
-
-function SummaryCard({
-  label,
-  value,
-  description,
-  icon,
-  tone = "navy",
-  delay = 0,
-}) {
-  const metricTone = getMetricTone(tone);
-  const CardIcon = icon;
-
-  return (
-    <article
-      data-testid="employee-summary-card"
-      className="group sibs-metric-card sibs-page-card-in font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
-      style={getAnimationStyle(delay)}
-    >
-      <div className="flex h-full items-start justify-between gap-3 2xl:gap-4">
-        <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
-          <div>
-            <p
-              className={`m-0 truncate sibs-text-micro font-extrabold uppercase tracking-wide ${metricTone.label}`}
-            >
-              {label}
-            </p>
-
-            <p className="font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-sibs-navy">
-              {Number(value || 0).toLocaleString("en-PH")}
-            </p>
-          </div>
-
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold leading-4 text-sibs-muted">
-            {description}
-          </p>
-        </div>
-
-        <div
-          className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${metricTone.iconWrap}`}
-        >
-          <CardIcon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
-        </div>
-      </div>
-    </article>
-  );
-}
 
 export default function EmployeesPage() {
   const {
@@ -314,12 +259,9 @@ export default function EmployeesPage() {
             }
           />
 
-          <section
-            role={summaryLoading ? "status" : undefined}
-            aria-live={summaryLoading ? "polite" : undefined}
-            aria-busy={summaryLoading ? "true" : undefined}
-            aria-label={summaryLoading ? "Loading employee directory metrics" : undefined}
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+          <MetricGrid
+            columns={2}
+            className="w-full"
             style={getAnimationStyle(animationTiming.summary)}
           >
             {summaryLoading ? (
@@ -329,13 +271,13 @@ export default function EmployeesPage() {
               </>
             ) : (
               directoryTabs.map((tab, index) => (
-                <SummaryCard
+                <MetricCard
                   key={tab.label}
                   label={tab.label}
-                  value={tab.count}
+                  value={Number(tab.count || 0).toLocaleString("en-PH")}
                   description={tab.description}
                   icon={tab.icon}
-                  tone={tab.tone}
+                  tone={tab.tone === "emerald" ? "emerald" : "navy"}
                   delay={
                     animationTiming.summaryCardBase +
                     index * animationTiming.summaryCardStagger
@@ -343,7 +285,7 @@ export default function EmployeesPage() {
                 />
               ))
             )}
-          </section>
+          </MetricGrid>
 
           <section
             className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"

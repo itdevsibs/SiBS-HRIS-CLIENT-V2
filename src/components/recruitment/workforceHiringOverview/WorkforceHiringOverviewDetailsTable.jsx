@@ -8,8 +8,14 @@ import React, {
 import { CalendarDays, ChevronDown, ChevronRight, ChevronUp, GripHorizontal } from "lucide-react";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import { usePagination } from "../../../services/context/PaginationContext";
-import PaginationTable from "../../../services/pagination/PaginationTable";
-import { DataCard, ResponsiveTableShell, Skeleton, TableSkeletonRows } from "@/components/ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
+  Skeleton,
+  TableSkeletonRows,
+} from "@/components/ui";
 import {
   formatOverviewNumber,
   formatOverviewPercent,
@@ -875,7 +881,7 @@ function PeriodSelector({ options = [], value = "", onChange }) {
                 className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-lg px-3 text-[10px] font-extrabold leading-tight transition focus:outline-none focus:ring-2 focus:ring-sibs-orange/20 ${
                   isActive
                     ? "bg-sibs-navy text-white shadow-sm"
-                    : "text-slate-600 hover:bg-white hover:text-sibs-orange"
+                    : "text-sibs-muted hover:bg-white hover:text-sibs-orange"
                 }`}
               >
                 {option.label}
@@ -1758,63 +1764,62 @@ export default function WorkforceHiringOverviewDetailsTable() {
               />
             </div>
 
-            <PaginationTable
-              className="border-0 bg-transparent p-0 shadow-none"
-              showPagination={false}
-              searchValue={searchInput}
-              searchPlaceholder="Search account / cluster..."
-              onSearchChange={setSearchInput}
-              onSearchKeyDown={handleSearchKeyDown}
-              filterLayout="ta-inline"
-              controlsClassName="grid grid-cols-1 gap-2 overflow-visible sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_170px_auto] xl:items-end"
-              searchClassName="relative w-full min-w-0 sm:col-span-2 xl:col-span-1"
-              dropdownFilters={[
-                {
-                  key: "cluster",
-                  value: activeCluster,
-                  onChange: setSelectedCluster,
-                  options: clusterOptions
-                    .filter((option) => option !== "All Clusters")
-                    .map((option) => ({ label: option, value: option })),
-                  allLabel: "All Clusters",
-                  placeholder: "Search clusters...",
-                  includeAll: true,
-                  searchable: true,
-                  className: "w-full xl:w-[190px] xl:flex-none",
-                },
-                {
-                  key: "risk",
-                  value: selectedRisk,
-                  onChange: setSelectedRisk,
-                  options: WORKFORCE_RISK_OPTIONS
-                    .filter((option) => option !== "All Risks")
-                    .map((option) => ({ label: option, value: option })),
-                  allLabel: "All Risks",
-                  placeholder: "Search risks...",
-                  includeAll: true,
-                  searchable: true,
-                  className: "w-full xl:w-[170px] xl:flex-none",
-                },
-              ]}
-              rightContentClassName="flex w-full items-end xl:w-auto xl:flex-none"
-              rightContent={
-                <div className="flex w-full flex-wrap items-center justify-start gap-2 xl:w-auto xl:justify-end">
-                  <span className="inline-flex h-10 items-center rounded-[10px] border border-blue-100 bg-blue-50 px-3 text-[10px] font-extrabold tabular-nums text-sibs-navy">
-                    {sortedRows.length} account rows
-                  </span>
+            <div className="grid grid-cols-1 gap-2 overflow-visible sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_170px_auto] xl:items-end">
+              <div className="relative w-full min-w-0 sm:col-span-2 xl:col-span-1">
+                <SearchInput
+                  value={searchInput}
+                  onChange={(val) => {
+                    setSearchInput(val);
+                    setSearch?.(val);
+                  }}
+                  onKeyDown={handleSearchKeyDown}
+                  onClear={clearSearch}
+                  placeholder="Search account / cluster..."
+                />
+              </div>
 
-                  {hasActiveFilters ? (
-                    <button
-                      type="button"
-                      onClick={clearAllFilters}
-                      className="h-10 rounded-[10px] border border-sibs-border bg-white px-3 text-[10px] font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange focus:outline-none focus:ring-4 focus:ring-sibs-orange/10"
-                    >
-                      Clear
-                    </button>
-                  ) : null}
-                </div>
-              }
-            />
+              <div className="w-full xl:w-[190px]">
+                <SelectDropdown
+                  value={activeCluster}
+                  onChange={(val) => setSelectedCluster(val || "All Clusters")}
+                  options={clusterOptions.map((opt) => ({
+                    label: opt,
+                    value: opt,
+                  }))}
+                  placeholder="All Clusters"
+                  searchable
+                />
+              </div>
+
+              <div className="w-full xl:w-[170px]">
+                <SelectDropdown
+                  value={selectedRisk}
+                  onChange={(val) => setSelectedRisk(val || "All Risks")}
+                  options={WORKFORCE_RISK_OPTIONS.map((opt) => ({
+                    label: opt,
+                    value: opt,
+                  }))}
+                  placeholder="All Risks"
+                  searchable
+                />
+              </div>
+
+              <div className="flex w-full flex-wrap items-center justify-start gap-2 xl:w-auto xl:justify-end">
+                <span className="inline-flex h-10 items-center rounded-xl border border-sibs-border bg-sibs-surface px-3 text-xs font-bold tabular-nums text-sibs-navy">
+                  {sortedRows.length} account rows
+                </span>
+
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="h-10 rounded-xl border border-sibs-border bg-sibs-surface px-3 text-xs font-bold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange focus:outline-none focus:ring-4 focus:ring-sibs-orange/10"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2108,7 +2113,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
 
                   {sortedRows.length > 0 ? (
                     <tfoot>
-                      <tr className="border-t-2 border-slate-300 bg-blue-50 font-black text-sibs-navy">
+                      <tr className="border-t-2 border-sibs-border bg-sibs-surface font-black text-sibs-navy">
                         <BodyTd
                           colSpan={3}
                           align="left"

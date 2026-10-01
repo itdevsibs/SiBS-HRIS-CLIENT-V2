@@ -155,6 +155,8 @@ export function MetricGrid({ children, columns = 6, className = "" }) {
   let colClass = "";
   if (typeof columns === "string") {
     colClass = columns;
+  } else if (columns === 7) {
+    colClass = "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7";
   } else if (columns === 6) {
     // 1080p (2xl: 1920x1080) -> 1 row (6 columns)
     // 768p (xl: 1366x768 / md: 1024x768) -> 2 rows of 3 columns (preserves full readability without truncation)

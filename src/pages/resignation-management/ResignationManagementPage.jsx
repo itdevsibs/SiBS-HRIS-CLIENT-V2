@@ -34,12 +34,16 @@ import {
 
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
-import PaginationTable from "../../services/pagination/PaginationTable";
 import {
   DataCard,
+  MetricCard,
+  MetricGrid,
   MetricGridSkeleton,
   PageHeaderHero,
   ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
+  TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
 import { useUser } from "../../services/context/UserContext";
@@ -567,85 +571,21 @@ function ResignationSummaryCards({ stats, loading }) {
     },
   ];
 
-  const tones = {
-    navy: {
-      label: "text-[#042C51]",
-      value: "text-[#042C51]",
-      iconWrap: "bg-[#EAF2FB]",
-      icon: "text-[#042C51]",
-    },
-    amber: {
-      label: "text-[#B45309]",
-      value: "text-[#F59E0B]",
-      iconWrap: "bg-[#FFFBEB]",
-      icon: "text-[#F59E0B]",
-    },
-    orange: {
-      label: "text-[#C2410C]",
-      value: "text-[#FF5C28]",
-      iconWrap: "bg-[#FFF0EB]",
-      icon: "text-[#FF5C28]",
-    },
-    emerald: {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      iconWrap: "bg-[#ECFDF3]",
-      icon: "text-[#059669]",
-    },
-    red: {
-      label: "text-[#BE123C]",
-      value: "text-[#E11D48]",
-      iconWrap: "bg-[#FFF1F2]",
-      icon: "text-[#E11D48]",
-    },
-  };
-
   return (
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      {cards.map((card, index) => {
-        const IconComponent = card.icon;
-        const tone = tones[card.tone] || tones.navy;
-
-        return (
-          <article
-            key={card.title}
-            className="sibs-metric-card font-jakarta flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
-            style={{
-              animationDelay: `${index * 55}ms`,
-              animationFillMode: "both",
-            }}
-          >
-            <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-              <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
-                <div>
-                  <p
-                    className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${tone.label}`}
-                  >
-                    {card.title}
-                  </p>
-
-                  <p
-                    className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${tone.value}`}
-                  >
-                    {card.value}
-                  </p>
-                </div>
-
-                <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
-                  {card.description}
-                </p>
-              </div>
-
-              <span
-                className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${tone.iconWrap} ${tone.icon}`}
-              >
-                <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
-              </span>
-            </div>
-          </article>
-        );
-      })}
-    </section>
+    <MetricGrid columns={5}>
+      {cards.map((card, index) => (
+        <MetricCard
+          key={card.title}
+          title={card.title}
+          value={card.value}
+          description={card.description}
+          icon={card.icon}
+          tone={card.tone}
+          delay={index * 55}
+          loading={loading}
+        />
+      ))}
+    </MetricGrid>
   );
 }
 
@@ -1230,71 +1170,6 @@ function ResignationAnalytics({ data = [], loading = false }) {
   );
 }
 
-function ResignationFilters({
-  search,
-  setSearch,
-  statusFilter,
-  setStatusFilter,
-  typeFilter,
-  setTypeFilter,
-  hasActiveFilters,
-  onClearFilters,
-}) {
-  return (
-    <section className="sibs-page-card-in sibs-card overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <PaginationTable
-        filterLayout="ta-inline"
-        showFilterPanel={false}
-        showFilterHeader={false}
-        showPagination={false}
-        showSearch
-        searchValue={search}
-        searchPlaceholder="Search employee, SIBS ID, department, type, status, reason..."
-        onSearchChange={(value) => setSearch(value)}
-        filters={[
-          {
-            key: "status",
-            value: statusFilter,
-            onChange: setStatusFilter,
-            options: STATUS_OPTIONS.map((option) => ({
-              label: option === "All" ? "All Statuses" : option,
-              value: option,
-            })),
-            allLabel: "All Statuses",
-            label: "Status",
-            searchable: false,
-            includeAll: false,
-          },
-          {
-            key: "type",
-            value: typeFilter,
-            onChange: setTypeFilter,
-            options: TYPE_OPTIONS.map((option) => ({
-              label: option === "All" ? "All Types" : option,
-              value: option,
-            })),
-            allLabel: "All Types",
-            label: "Type",
-            searchable: false,
-            includeAll: false,
-          },
-        ]}
-        rightContent={
-          hasActiveFilters ? (
-            <button
-              type="button"
-              onClick={onClearFilters}
-              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] xl:w-auto"
-            >
-              Clear Filters
-            </button>
-          ) : null
-        }
-        className="border-0 bg-transparent p-0 shadow-none"
-      />
-    </section>
-  );
-}
 
 function ResignationTableCard({
   data,
@@ -1420,96 +1295,114 @@ function ResignationTableCard({
     }));
   }
 
+  function handlePageChange(targetPage) {
+    const safePage = Math.max(1, Math.min(totalPages, Number(targetPage) || 1));
+    setPageState({
+      data,
+      page: safePage,
+    });
+  }
+
   return (
-    <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm font-jakarta">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
+    <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm font-jakarta">
+      <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-0.5">
             <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               Employee Resignation Records
             </h2>
 
-            <p className="sibs-text-xs font-semibold text-[#667085]">
+            <p className="sibs-text-xs font-semibold text-sibs-muted">
               View filing details, status, and resignation progress.
             </p>
           </div>
         </div>
 
-        <PaginationTable
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          showSearch
-          searchValue={draftSearch}
-          searchPlaceholder="Search employee, SIBS ID, department, type, status, reason..."
-          onSearchChange={handleSearchChange}
-          onSearchKeyDown={handleFilterSearchKeyDown}
-          filters={[
-            {
-              key: "status",
-              value: draftStatusFilter,
-              onChange: handleStatusChange,
-              options: STATUS_OPTIONS.map((option) => ({
-                label: option === "All" ? "All Statuses" : option,
-                value: option,
-              })),
-              allLabel: "All Statuses",
-              label: "Status",
-              searchable: false,
-              includeAll: false,
-            },
-            {
-              key: "type",
-              value: draftTypeFilter,
-              onChange: handleTypeChange,
-              options: TYPE_OPTIONS.map((option) => ({
-                label: option === "All" ? "All Types" : option,
-                value: option,
-              })),
-              allLabel: "All Types",
-              label: "Type",
-              searchable: false,
-              includeAll: false,
-            },
-          ]}
-          rightContent={
-            hasActiveFilters ? (
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center flex-wrap">
+            <div className="w-full sm:w-72 xl:w-80">
+              <SearchInput
+                value={draftSearch}
+                onChange={(val) => {
+                  const nextVal = typeof val === "string" ? val : val?.target?.value ?? "";
+                  handleSearchChange(nextVal);
+                }}
+                onClear={() => handleSearchChange("")}
+                onKeyDown={handleFilterSearchKeyDown}
+                placeholder="Search employee, SIBS ID, department, type, status, reason..."
+                ariaLabel="Search resignation records"
+                inputClassName="h-8.5 2xl:h-10"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="w-full sm:w-48">
+              <SelectDropdown
+                value={draftStatusFilter}
+                onChange={handleStatusChange}
+                options={STATUS_OPTIONS.map((option) => ({
+                  value: option,
+                  label: option === "All" ? "All Statuses" : option,
+                }))}
+                placeholder="Filter by Status"
+                ariaLabel="Filter by status"
+                buttonClassName="h-8.5 2xl:h-10"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="w-full sm:w-44">
+              <SelectDropdown
+                value={draftTypeFilter}
+                onChange={handleTypeChange}
+                options={TYPE_OPTIONS.map((option) => ({
+                  value: option,
+                  label: option === "All" ? "All Types" : option,
+                }))}
+                placeholder="Filter by Type"
+                ariaLabel="Filter by type"
+                buttonClassName="h-8.5 2xl:h-10"
+                disabled={loading}
+              />
+            </div>
+
+            {hasActiveFilters ? (
               <button
                 type="button"
                 onClick={handleClearTableFilters}
-                className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] xl:w-auto"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-orange transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light max-sm:w-full"
               >
-                Clear
+                Clear Filters
               </button>
-            ) : null
-          }
-          className="mt-4 border-0 bg-transparent p-0 shadow-none"
-        />
+            ) : null}
+          </div>
+        </div>
 
-        <button
-          type="button"
-          onClick={handleApplyFilters}
-          disabled={loading}
-          className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white transition hover:bg-[#E94F1F] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
-        >
-          {loading ? (
-            <Loader2 size={15} className="animate-spin" />
-          ) : (
-            <Search size={15} />
-          )}
-          Apply Search
-        </button>
+        {isMobileFilterMode ? (
+          <button
+            type="button"
+            onClick={handleApplyFilters}
+            disabled={loading}
+            className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-sibs-orange px-4 text-xs font-extrabold text-white transition hover:bg-sibs-orange-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
+          >
+            {loading ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <Search size={15} />
+            )}
+            Apply Search
+          </button>
+        ) : null}
       </div>
 
       <div className="p-3 sm:p-5 2xl:p-6 font-jakarta">
         <ResponsiveTableShell
           desktopContent={
-            <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+            <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
               <div className="max-h-[620px] overflow-auto sibs-scrollbar">
                 <table className="w-full min-w-[1380px] border-collapse bg-white text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="border-b border-[#E6ECF2]">
+                  <thead className="sticky top-0 z-10 bg-sibs-surface">
+                    <tr className="border-b border-sibs-border">
                       <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[240px] whitespace-nowrap text-left">Employee Name</th>
                       <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[190px] whitespace-nowrap text-left">Filed By</th>
                       <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[110px] whitespace-nowrap text-center">Type</th>
@@ -1573,20 +1466,16 @@ function ResignationTableCard({
           }
         />
 
-        <div className="mt-4">
-          <PaginationTable
+        <div className="mt-4 2xl:mt-5">
+          <TablePagination
             loading={loading}
-            showSearch={false}
-            showPagination
-            showCount
             currentPage={currentPage}
             totalPages={totalPages}
             loadedCount={pageData.length}
             totalRecords={data.length}
+            pageSize={PAGE_LIMIT}
             recordLabel="resignation records"
-            onPrevious={handlePreviousPage}
-            onNext={handleNextPage}
-            className="border-0 bg-transparent p-0 shadow-none"
+            onPageChange={handlePageChange}
           />
         </div>
       </div>

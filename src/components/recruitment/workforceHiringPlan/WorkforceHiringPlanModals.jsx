@@ -5,30 +5,30 @@ import KPISnapshotModal from "../../modals/workforceHiringPlan/KPISnapshotModal"
 import AIInsightModal from "./AIInsightModal";
 
 export default function WorkforceHiringPlanModals({
-  statusModal,
+  statusModal = {},
   closeStatusModal,
-  showKpiSnapshot,
+  showKpiSnapshot = false,
   activeWeek,
-  filteredPlans,
+  filteredPlans = [],
   setShowKpiSnapshot,
-  aiInsightOpen,
-  aiInsightLoading,
-  aiInsightResult,
+  aiInsightOpen = false,
+  aiInsightLoading = false,
+  aiInsightResult = {},
   aiInsightError,
   aiInsightQuestion,
   setAiInsightQuestion,
-  aiInsightConversation,
+  aiInsightConversation = [],
   setAiInsightOpen,
   handleAskAiInsight,
   handleAskAiFollowUp,
-}) {
+} = {}) {
   return (
     <>
       <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
+        open={Boolean(statusModal?.open)}
+        type={statusModal?.type}
+        title={statusModal?.title}
+        message={statusModal?.message}
         variant="center"
         onClose={closeStatusModal}
       />
@@ -36,25 +36,25 @@ export default function WorkforceHiringPlanModals({
       <ViewPlanModal />
 
       <KPISnapshotModal
-        open={showKpiSnapshot}
+        open={Boolean(showKpiSnapshot)}
         week={activeWeek}
         records={filteredPlans}
-        onClose={() => setShowKpiSnapshot(false)}
+        onClose={() => setShowKpiSnapshot?.(false)}
       />
 
       <AIInsightModal
-        open={aiInsightOpen}
-        loading={aiInsightLoading}
-        insight={aiInsightResult.insight}
-        highlights={aiInsightResult.highlights}
-        recommendations={aiInsightResult.recommendations}
-        risks={aiInsightResult.risks}
+        open={Boolean(aiInsightOpen)}
+        loading={Boolean(aiInsightLoading)}
+        insight={aiInsightResult?.insight}
+        highlights={aiInsightResult?.highlights}
+        recommendations={aiInsightResult?.recommendations}
+        risks={aiInsightResult?.risks}
         error={aiInsightError}
         question={aiInsightQuestion}
         setQuestion={setAiInsightQuestion}
         conversation={aiInsightConversation}
-        onClose={() => setAiInsightOpen(false)}
-        onRegenerate={() => handleAskAiInsight({ resetConversation: true })}
+        onClose={() => setAiInsightOpen?.(false)}
+        onRegenerate={() => handleAskAiInsight?.({ resetConversation: true })}
         onAskFollowUp={handleAskAiFollowUp}
       />
     </>

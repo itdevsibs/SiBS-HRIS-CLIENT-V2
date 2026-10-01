@@ -22,7 +22,12 @@ import { useUser } from "../../services/context/UserContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { usePagination } from "@/services/context/PaginationContext";
 import LeavesTable from "@/components/tables/Leaves/LeavesTable";
-import { MetricGridSkeleton, PageHeaderHero } from "@/components/ui";
+import {
+  MetricCard,
+  MetricGrid,
+  MetricGridSkeleton,
+  PageHeaderHero,
+} from "@/components/ui";
 import {
   PAGE_LIMIT,
   calculateLeavePageStats,
@@ -31,87 +36,6 @@ import {
   getLeaveTypeLabel,
   normalizeStatus,
 } from "@/lib/utils/leaves/leaveHelpers";
-
-function StatCard({
-  title,
-  value,
-  description,
-  icon,
-  tone = "navy",
-  delay = 0,
-}) {
-  const toneMap = {
-    navy: {
-      label: "text-sibs-navy",
-      value: "text-sibs-navy",
-      iconWrap: "bg-blue-50",
-      icon: "text-sibs-navy",
-    },
-    emerald: {
-      label: "text-emerald-700",
-      value: "text-emerald-600",
-      iconWrap: "bg-emerald-50",
-      icon: "text-emerald-600",
-    },
-    amber: {
-      label: "text-amber-700",
-      value: "text-amber-500",
-      iconWrap: "bg-amber-50",
-      icon: "text-amber-500",
-    },
-    rose: {
-      label: "text-rose-700",
-      value: "text-rose-600",
-      iconWrap: "bg-rose-50",
-      icon: "text-rose-600",
-    },
-    orange: {
-      label: "text-sibs-orange",
-      value: "text-sibs-orange",
-      iconWrap: "bg-orange-50",
-      icon: "text-sibs-orange",
-    },
-  };
-
-  const currentTone = toneMap[tone] || toneMap.navy;
-  const IconComponent = icon;
-
-  return (
-    <article
-      className="sibs-metric-card sibs-page-card-in font-jakarta flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
-      style={{
-        animationDelay: `${delay}ms`,
-        animationFillMode: "both",
-      }}
-    >
-      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-        <div className="min-w-0 flex-1 self-stretch">
-          <p
-            className={`m-0 truncate sibs-kpi-kicker font-extrabold uppercase ${currentTone.label}`}
-          >
-            {title}
-          </p>
-
-          <p
-            className={`font-heading sibs-kpi-value mt-1.5 2xl:mt-2 text-xl sm:text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${currentTone.value}`}
-          >
-            {value}
-          </p>
-
-          <p className="sibs-kpi-desc mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-sibs-muted">
-            {description}
-          </p>
-        </div>
-
-        <div
-          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${currentTone.iconWrap} ${currentTone.icon}`}
-        >
-          <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
-        </div>
-      </div>
-    </article>
-  );
-}
 
 export default function LeavesPage() {
   const { user } = useUser();
@@ -544,11 +468,9 @@ export default function LeavesPage() {
               className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
             />
           ) : (
-            <section
-              className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
-            >
-              <StatCard
-                title="Loaded Leaves"
+            <MetricGrid columns={6}>
+              <MetricCard
+                label="Loaded Leaves"
                 value={formatNumber(pageStats.totalLeaves)}
                 description="Records loaded on this page"
                 icon={FileText}
@@ -556,8 +478,8 @@ export default function LeavesPage() {
                 delay={0}
               />
 
-              <StatCard
-                title="Approved"
+              <MetricCard
+                label="Approved"
                 value={formatNumber(pageStats.approvedLeaves)}
                 description="Approved leave requests"
                 icon={CheckCircle2}
@@ -565,8 +487,8 @@ export default function LeavesPage() {
                 delay={60}
               />
 
-              <StatCard
-                title="Pending"
+              <MetricCard
+                label="Pending"
                 value={formatNumber(pageStats.pendingLeaves)}
                 description="Awaiting review"
                 icon={Clock}
@@ -574,8 +496,8 @@ export default function LeavesPage() {
                 delay={120}
               />
 
-              <StatCard
-                title="Rejected"
+              <MetricCard
+                label="Rejected"
                 value={formatNumber(pageStats.rejectedLeaves)}
                 description="Rejected leave requests"
                 icon={XCircle}
@@ -583,8 +505,8 @@ export default function LeavesPage() {
                 delay={180}
               />
 
-              <StatCard
-                title="Page Leave Days"
+              <MetricCard
+                label="Page Leave Days"
                 value={formatNumber(pageStats.totalLeaveDays)}
                 description="Leave days on this page"
                 icon={CalendarDays}
@@ -592,15 +514,15 @@ export default function LeavesPage() {
                 delay={240}
               />
 
-              <StatCard
-                title="Page Remaining"
+              <MetricCard
+                label="Page Remaining"
                 value={formatNumber(pageStats.totalRemaining)}
                 description="Remaining leave balance"
                 icon={UserRound}
                 tone="emerald"
                 delay={300}
               />
-            </section>
+            </MetricGrid>
           )}
 
           <section className="flex flex-1 flex-col min-w-0">

@@ -19,11 +19,13 @@ import StatusModal from "@/components/modals/StatusModal";
 import { useUser } from "@/services/context/UserContext";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "@/lib/utils/employees/employeeNameDisplay.js";
 import { usePagination } from "@/services/context/PaginationContext";
-import PaginationTable from "@/services/pagination/PaginationTable";
 import {
   DataCard,
   ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
   StatusFilterTabs,
+  TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
 
@@ -1234,47 +1236,49 @@ export default function EmployeeTable({
           {activeTabDescription}
         </p>
 
-        <PaginationTable
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          loading={loading}
-          searchValue={searchInput}
-          searchPlaceholder="Search by employee, SIBS ID, department, or account..."
-          onSearchChange={(value) => setSearchInput?.(value)}
-          onSearchKeyDown={handleEmployeeSearchKeyDown}
-          dropdownFilters={
-            showEmployeeFilterControls
-              ? [
-                  {
-                    key: "department",
-                    value: departmentFilter,
-                    options: departmentDropdownOptions,
-                    onChange: handleDepartmentChange,
-                    includeAll: true,
-                    allLabel: "All Departments",
-                    label: "Department",
-                    placeholder: "Search departments...",
-                    searchable: true,
-                  },
-                  {
-                    key: "account",
-                    value: accountFilters,
-                    options: accountDropdownOptions,
-                    onChange: handleAccountChange,
-                    multiple: true,
-                    includeAll: true,
-                    allLabel: "All Accounts",
-                    label: "Account",
-                    placeholder: "Search accounts...",
-                    searchable: true,
-                  },
-                ]
-              : []
-          }
-          className="mt-4 border-0 bg-transparent p-0 shadow-none"
-        />
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
+          <SearchInput
+            value={searchInput}
+            onChange={(e) => setSearchInput?.(typeof e === "string" ? e : e?.target?.value ?? "")}
+            onKeyDown={handleEmployeeSearchKeyDown}
+            placeholder="Search by employee, SIBS ID, department, or account..."
+            ariaLabel="Search by employee, SIBS ID, department, or account"
+            inputClassName="h-8.5 2xl:h-10"
+            className="min-w-0 flex-1"
+          />
+          {showEmployeeFilterControls ? (
+            <>
+              <SelectDropdown
+                label="Department"
+                value={departmentFilter || "All"}
+                options={[{ value: "All", label: "All Departments" }, ...departmentDropdownOptions]}
+                onChange={handleDepartmentChange}
+                searchable
+                searchPlaceholder="Search departments..."
+                clearable={false}
+                className="xl:w-[220px]"
+              />
+              <SelectDropdown
+                label="Account"
+                value={accountFilters.length ? accountFilters : ["All"]}
+                options={[{ value: "All", label: "All Accounts" }, ...accountDropdownOptions]}
+                onChange={(val) => {
+                  if (Array.isArray(val)) {
+                    const cleaned = val.filter((v) => v !== "All");
+                    handleAccountChange(cleaned);
+                  } else {
+                    handleAccountChange(val === "All" ? [] : [val]);
+                  }
+                }}
+                multiple
+                searchable
+                searchPlaceholder="Search accounts..."
+                clearable={false}
+                className="xl:w-[220px]"
+              />
+            </>
+          ) : null}
+        </div>
 
         <button
           type="button"
@@ -1341,27 +1345,27 @@ export default function EmployeeTable({
               <div className="overflow-hidden bg-white">
                 <div ref={tableScrollRef} className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar">
                 <table className="w-full min-w-[1100px] table-fixed border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-sibs-surface">
-                    <tr className="border-b border-sibs-border">
-                      <th scope="col" className="w-[9%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
+                  <thead className="sibs-data-table-head sticky top-0 z-10 bg-sibs-surface">
+                    <tr className="sibs-data-table-head-row border-b border-sibs-border">
+                      <th scope="col" className="sibs-data-table-th w-[9%] px-3 2xl:px-4 py-2.5 2xl:py-3">
                         SIBS ID
                       </th>
-                      <th scope="col" className="w-[21%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
+                      <th scope="col" className="sibs-data-table-th w-[21%] px-3 2xl:px-4 py-2.5 2xl:py-3">
                         EMPLOYEE NAME
                       </th>
-                      <th scope="col" className="w-[17%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
+                      <th scope="col" className="sibs-data-table-th w-[17%] px-3 2xl:px-4 py-2.5 2xl:py-3">
                         ACCOUNT / SITE
                       </th>
-                      <th scope="col" className="w-[16%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
+                      <th scope="col" className="sibs-data-table-th w-[16%] px-3 2xl:px-4 py-2.5 2xl:py-3">
                         DEPARTMENT
                       </th>
-                      <th scope="col" className="w-[17%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
+                      <th scope="col" className="sibs-data-table-th w-[17%] px-3 2xl:px-4 py-2.5 2xl:py-3">
                         CONTACT & EMAIL
                       </th>
-                      <th scope="col" className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
+                      <th scope="col" className="sibs-data-table-th w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3">
                         HR METADATA
                       </th>
-                      <th scope="col" className="w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-right sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
+                      <th scope="col" className="sibs-data-table-th w-[10%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-right">
                         ACTIONS
                       </th>
                     </tr>
@@ -1510,18 +1514,17 @@ export default function EmployeeTable({
       </div>
 
       <div className="shrink-0 px-4 pb-4 sm:px-5 sm:pb-5">
-        <PaginationTable
+        <TablePagination
           loading={loading}
-          showSearch={false}
           currentPage={currentPage}
           totalPages={totalPages}
           loadedCount={employees.length}
           totalRecords={totalRecords}
+          limit={PAGE_LIMIT}
           recordLabel="employee records"
+          onPageChange={(nextPage) => setPage?.(nextPage)}
           onPrevious={() => setPage?.(Math.max(currentPage - 1, 1))}
           onNext={() => setPage?.(Math.min(currentPage + 1, totalPages))}
-          showCount
-          className="border-0 bg-transparent p-0 shadow-none"
         />
       </div>
 

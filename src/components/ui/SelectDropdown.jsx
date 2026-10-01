@@ -140,6 +140,7 @@ export default function SelectDropdown({
   clearable = true,
   className = "",
   menuClassName = "",
+  multiple = false,
   optionValue = (opt) =>
     typeof opt === "object" && opt !== null ? opt.value : opt,
   optionLabel = (opt) =>
@@ -162,13 +163,30 @@ export default function SelectDropdown({
     }));
   }, [options, optionValue, optionLabel, optionDescription]);
 
+  const selectedValues = useMemo(() => {
+    if (!multiple) return [];
+    if (Array.isArray(value)) return value.map((v) => String(v ?? ""));
+    return value ? [String(value)] : [];
+  }, [multiple, value]);
+
   const selectedOption = useMemo(() => {
+    if (multiple) return null;
     return normalizedOptions.find(
       (opt) => String(opt.value) === String(value ?? ""),
     );
-  }, [normalizedOptions, value]);
+  }, [multiple, normalizedOptions, value]);
 
-  const displayLabel = selectedOption?.label || (value ? String(value) : "");
+  const displayLabel = useMemo(() => {
+    if (multiple) {
+      if (selectedValues.length === 0) return "";
+      if (selectedValues.length === 1) {
+        const found = normalizedOptions.find((opt) => opt.value === selectedValues[0]);
+        return found ? found.label : selectedValues[0];
+      }
+      return `${selectedValues.length} selected`;
+    }
+    return selectedOption?.label || (value ? String(value) : "");
+  }, [multiple, selectedValues, normalizedOptions, selectedOption, value]);
 
   const filteredOptions = useMemo(() => {
     const query = cleanText(searchQuery).toLowerCase();
@@ -200,6 +218,21 @@ export default function SelectDropdown({
   }
 
   function handleSelect(selectedValue, optionRaw) {
+    if (multiple) {
+      if (selectedValue === "All") {
+        onChange?.([], optionRaw);
+        return;
+      }
+
+      const cleanVal = String(selectedValue ?? "");
+      const nextValues = selectedValues.includes(cleanVal)
+        ? selectedValues.filter((item) => item !== cleanVal)
+        : [...selectedValues.filter((item) => item !== "All"), cleanVal];
+
+      onChange?.(nextValues, optionRaw);
+      return;
+    }
+
     onChange?.(selectedValue, optionRaw);
     handleClose();
   }
@@ -297,7 +330,11 @@ export default function SelectDropdown({
 
         {filteredOptions.length > 0 ? (
           filteredOptions.map((opt) => {
-            const isSelected = String(opt.value) === String(value ?? "");
+            const isSelected = multiple
+              ? (opt.value === "All"
+                  ? selectedValues.length === 0 || selectedValues.includes("All")
+                  : selectedValues.includes(String(opt.value)))
+              : String(opt.value) === String(value ?? "");
 
             return (
               <button

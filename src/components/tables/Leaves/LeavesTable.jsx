@@ -10,13 +10,15 @@ import {
   XCircle,
 } from "lucide-react";
 
-import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
 import {
   DataCard,
   ModalShell,
   ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
   TableEmptyRow,
+  TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
 import {
@@ -736,9 +738,17 @@ export default function LeavesTable({
   ]);
 
   const currentPaginationPage = Number(pagination.currentPage || page || 1);
-  const totalPages = pagination.hasNextPage
-    ? currentPaginationPage + 1
-    : currentPaginationPage;
+  const totalPages = pagination.totalPages
+    ? Number(pagination.totalPages)
+    : pagination.hasNextPage
+      ? currentPaginationPage + 1
+      : currentPaginationPage;
+  const totalRecords =
+    pagination.totalRecords !== undefined
+      ? Number(pagination.totalRecords)
+      : pagination.total !== undefined
+        ? Number(pagination.total)
+        : (pagination.hasNextPage ? undefined : (currentPaginationPage - 1) * PAGE_LIMIT + leaves.length);
 
   return (
     <>
@@ -756,72 +766,86 @@ export default function LeavesTable({
               : "Review employee leave requests, approval statuses, justifications, and attachment records."}
           </p>
 
-          <PaginationTable
-            filterLayout="ta-inline"
-            showFilterPanel={false}
-            showFilterHeader={false}
-            showPagination={false}
-            loading={loading}
-            searchValue={searchInput}
-            searchPlaceholder="Search by employee, SiBS ID, leave type, or status..."
-            onSearchChange={(value) => setSearchInput(value)}
-            onSearchKeyDown={handleSearchKeyDown}
-            dropdownFilters={[]}
-            filters={[
-              {
-                key: "status",
-                value: statusFilter,
-                onChange: onStatusChange,
-                options: [
-                  { label: "All Statuses", value: "All" },
-                  { label: "Approved", value: "Approved" },
-                  { label: "Pending", value: "Pending" },
-                  { label: "Rejected", value: "Rejected" },
-                ],
-                label: "Status",
-                searchable: false,
-                includeAll: false,
-              },
-              ...(showDepartmentFilter
-                ? [
-                    {
-                      key: "department",
-                      value: departmentFilter,
-                      onChange: onDepartmentSelect,
-                      options: departmentDropdownOptions,
-                      allLabel: "All Departments",
-                      label: "Department",
-                      placeholder: "Search departments...",
-                      searchable: true,
-                      includeAll: true,
-                    },
-                  ]
-                : []),
-              ...(showAccountFilter
-                ? [
-                    {
-                      key: "account",
-                      value: accountFilter,
-                      onChange: onAccountSelect,
-                      options: accountDropdownOptions,
-                      allLabel: "All Accounts",
-                      label: "Account",
-                      placeholder: "Search accounts...",
-                      searchable: true,
-                      includeAll: true,
-                    },
-                  ]
-                : []),
-            ]}
-            rightContent={<InlineDateRangeFilter visible />}
-            className="mt-4 border-0 bg-transparent p-0 shadow-none"
-          />
+          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center flex-wrap">
+              <div className="w-full sm:w-72 xl:w-80">
+                <SearchInput
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(typeof e === "string" ? e : e?.target?.value ?? "")}
+                  onClear={() => {
+                    setSearchInput("");
+                    if (typeof setSearchKeyword === "function") setSearchKeyword("");
+                    setPage(1);
+                  }}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search by employee, SiBS ID, leave type, or status..."
+                  ariaLabel="Search leave records"
+                  inputClassName="h-8.5 2xl:h-10"
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="w-full sm:w-44">
+                <SelectDropdown
+                  value={statusFilter || "All"}
+                  onChange={onStatusChange}
+                  options={[
+                    { label: "All Statuses", value: "All" },
+                    { label: "Approved", value: "Approved" },
+                    { label: "Pending", value: "Pending" },
+                    { label: "Rejected", value: "Rejected" },
+                  ]}
+                  placeholder="Status"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+
+              {showDepartmentFilter ? (
+                <div className="w-full sm:w-48">
+                  <SelectDropdown
+                    value={departmentFilter || "All"}
+                    onChange={onDepartmentSelect}
+                    options={[
+                      { label: "All Departments", value: "All" },
+                      ...departmentDropdownOptions,
+                    ]}
+                    placeholder="Department"
+                    searchable
+                    searchPlaceholder="Search departments..."
+                    clearable={false}
+                    disabled={loading}
+                  />
+                </div>
+              ) : null}
+
+              {showAccountFilter ? (
+                <div className="w-full sm:w-48">
+                  <SelectDropdown
+                    value={accountFilter || "All"}
+                    onChange={onAccountSelect}
+                    options={[
+                      { label: "All Accounts", value: "All" },
+                      ...accountDropdownOptions,
+                    ]}
+                    placeholder="Account"
+                    searchable
+                    searchPlaceholder="Search accounts..."
+                    clearable={false}
+                    disabled={loading}
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            <InlineDateRangeFilter visible />
+          </div>
 
           <button
             type="button"
             onClick={runSearch}
             disabled={loading}
-            className="mt-4 sibs-btn-primary w-full lg:hidden"
+            className="mt-3 sibs-btn-primary !h-10 w-full text-xs font-extrabold lg:hidden"
           >
             {loading ? (
               <Loader2 size={15} className="animate-spin" />
@@ -1106,19 +1130,15 @@ export default function LeavesTable({
           />
 
           <div className="mt-4 2xl:mt-5">
-            <PaginationTable
-              loading={loading}
-              showSearch={false}
-              showPagination
+            <TablePagination
               currentPage={currentPaginationPage}
               totalPages={totalPages}
+              totalRecords={totalRecords}
               loadedCount={leaves.length}
-              totalRecords={0}
+              pageSize={PAGE_LIMIT}
+              onPageChange={(nextPage) => setPage(nextPage)}
               recordLabel="leave records"
-              onPrevious={handlePreviousPage}
-              onNext={handleNextPage}
-              showCount
-              className="border-0 bg-transparent p-0 shadow-none"
+              loading={loading}
             />
           </div>
         </div>

@@ -251,13 +251,13 @@ function AnalyticsCard({
   footerValueClassName,
 }) {
   return (
-    <article className="flex h-full min-h-[360px] 2xl:min-h-[390px] flex-col overflow-hidden rounded-xl border border-[#DDE5EE] bg-white p-3.5 2xl:p-4 shadow-sm">
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[#E9EEF4] pb-2.5">
+    <article className="flex h-full min-h-[360px] 2xl:min-h-[390px] flex-col overflow-hidden rounded-xl border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-sm">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-sibs-border pb-2.5">
         <div className="min-w-0">
           <h3 className="truncate font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             {title}
           </h3>
-          <p className="mt-0.5 truncate sibs-text-xs font-semibold text-[#667085]">
+          <p className="mt-0.5 truncate sibs-text-xs font-semibold text-sibs-muted">
             {subtitle}
           </p>
         </div>
@@ -271,8 +271,8 @@ function AnalyticsCard({
 
       <div className="flex min-h-0 flex-1 flex-col py-3 2xl:py-4">{children}</div>
 
-      <div className="mt-auto flex shrink-0 items-center justify-between gap-3 border-t border-[#E9EEF4] pt-2.5 sibs-text-micro font-bold">
-        <span className="font-semibold text-[#667085]">{footerLabel}:</span>
+      <div className="mt-auto flex shrink-0 items-center justify-between gap-3 border-t border-sibs-border pt-2.5 sibs-text-micro font-bold">
+        <span className="font-semibold text-sibs-muted">{footerLabel}:</span>
         <strong className={`text-right font-extrabold ${footerValueClassName}`}>
           {footerValue}
         </strong>
@@ -415,9 +415,9 @@ function AttritionStageList({ drops = [] }) {
       {drops.map((drop) => (
         <div
           key={drop.label}
-          className="flex items-center justify-between gap-3 rounded-[7px] border border-[#E9EEF4] bg-[#F8FAFC] px-3 py-3"
+          className="flex items-center justify-between gap-3 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-3"
         >
-          <span className="text-[11px] font-semibold text-[#344054]">
+          <span className="text-[11px] font-semibold text-sibs-navy">
             {drop.label}:
           </span>
           <strong className="text-right text-[10px] font-extrabold text-rose-600">
@@ -940,7 +940,7 @@ export default function ForecastBottomGraphs({ rows = [] }) {
         <div className="xl:col-span-7">
       <AnalyticsCard
         icon={Workflow}
-        iconBoxClassName="bg-[#042C51]"
+        iconBoxClassName="bg-sibs-navy"
         iconClassName="text-white"
         title="Pipeline Flow – Total (6 Weeks)"
         subtitle="6-Week Cumulative Training Funnel"
@@ -948,7 +948,7 @@ export default function ForecastBottomGraphs({ rows = [] }) {
         badgeClassName="border-blue-100 bg-blue-50 text-blue-700"
         footerLabel="Overall Conversion"
         footerValue={`${formatPercent(pipeline.overallConversion, 1)} (JO to Live)`}
-        footerValueClassName="text-[#F97316]"
+        footerValueClassName="text-sibs-orange"
       >
         <PipelineFlowVisual pipeline={pipeline} />
       </AnalyticsCard>
@@ -987,10 +987,10 @@ export default function ForecastBottomGraphs({ rows = [] }) {
       >
         <div className="mb-1 flex items-end justify-between gap-3">
           <div>
-            <strong className="text-[20px] font-black leading-none text-[#042C51]">
+            <strong className="text-[20px] font-black leading-none text-sibs-navy">
               {formatOverviewNumber(totalInterviews)}
             </strong>
-            <span className="ml-1 text-[8px] font-bold uppercase text-[#6B88A8]">
+            <span className="ml-1 text-[8px] font-bold uppercase text-sibs-muted">
               Interviews
             </span>
           </div>
@@ -999,7 +999,7 @@ export default function ForecastBottomGraphs({ rows = [] }) {
           </strong>
         </div>
 
-        <div className="mb-1 flex items-center justify-between gap-3 border-b border-[#E9EEF4] pb-1.5 text-[8px] font-bold">
+        <div className="mb-1 flex items-center justify-between gap-3 border-b border-sibs-border pb-1.5 text-[8px] font-bold">
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1 text-violet-700">
               <span className="h-2 w-2 rounded-full bg-violet-600" />
@@ -1010,7 +1010,7 @@ export default function ForecastBottomGraphs({ rows = [] }) {
               Leads Vol (Ref)
             </span>
           </div>
-          <span className="text-[#94A3B8]">6-Wk Trend</span>
+          <span className="text-sibs-muted">6-Wk Trend</span>
         </div>
 
         <LeadsTrendChart rows={graphRows} />
@@ -1037,7 +1037,7 @@ export default function ForecastBottomGraphs({ rows = [] }) {
             <strong className="text-[20px] font-black leading-none text-teal-600">
               {formatPercent(averageHiringRate, 1)}
             </strong>
-            <span className="ml-1 text-[8px] font-bold uppercase text-[#6B88A8]">
+            <span className="ml-1 text-[8px] font-bold uppercase text-sibs-muted">
               JO Yield
             </span>
           </div>
@@ -1046,7 +1046,7 @@ export default function ForecastBottomGraphs({ rows = [] }) {
           </strong>
         </div>
 
-        <div className="mb-1 flex items-center justify-between gap-3 border-b border-[#E9EEF4] pb-1.5 text-[8px] font-bold">
+        <div className="mb-1 flex items-center justify-between gap-3 border-b border-sibs-border pb-1.5 text-[8px] font-bold">
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1 text-teal-700">
               <span className="h-2 w-2 rounded-full bg-teal-600" />
@@ -1057,7 +1057,7 @@ export default function ForecastBottomGraphs({ rows = [] }) {
               Target Floor (20%)
             </span>
           </div>
-          <span className="text-[#94A3B8]">6-Wk Trend</span>
+          <span className="text-sibs-muted">6-Wk Trend</span>
         </div>
 
         <HiringRateTrendChart rows={graphRows} />

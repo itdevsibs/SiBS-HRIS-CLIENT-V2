@@ -20,7 +20,7 @@ import {
   WorkforceMetricWithPercent,
   getWorkforceValueColor,
 } from "./WorkforceHiringTablePrimitives";
-import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, SearchInput, TableSkeletonRows } from "@/components/ui";
 
 function safeNumber(value) {
   const numberValue = Number(value || 0);
@@ -242,7 +242,7 @@ function ForecastClusterAccountTableView({
             <TableSkeletonRows
               count={6}
               columns={17}
-              cellClassName="border-b border-r border-[#E6ECF2] px-2 py-1.5 2xl:px-3 2xl:py-2 align-middle"
+              cellClassName="border-b border-r border-sibs-border px-2 py-1.5 2xl:px-3 2xl:py-2 align-middle"
             />
           ) : !hasRows ? (
             <tr>
@@ -563,27 +563,21 @@ function ForecastClusterAccountAverageModal({
           </p>
 
           <div className="flex items-center gap-2.5">
-            <div className="relative w-52 sm:w-64">
-              <Search
-                size={14}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted"
-              />
-              <input
-                type="text"
+            <div className="w-52 sm:w-64">
+              <SearchInput
                 value={searchValue}
-                onChange={(e) => setSearchValue?.(e.target.value)}
+                onChange={setSearchValue}
                 placeholder="Search in expanded view..."
-                className="h-8.5 w-full rounded-lg border border-sibs-border bg-white px-3 pl-8.5 font-jakarta text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
               />
             </div>
 
             <button
               type="button"
               onClick={() => setFitToScreen((prev) => !prev)}
-              className={`inline-flex h-8.5 items-center justify-center rounded-lg border px-3 text-xs font-bold transition ${
+              className={`inline-flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold transition ${
                 fitToScreen
                   ? "border-sibs-orange bg-sibs-cream-light text-sibs-orange"
-                  : "border-slate-200 bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
+                  : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange"
               }`}
             >
               {fitToScreen ? "Scroll View" : "Fit to Screen"}
@@ -694,24 +688,18 @@ export default function ForecastClusterAccountAverageTable({
         </div>
 
         <div className="flex items-center gap-2.5 w-full lg:w-auto">
-          <div className="group relative w-full lg:w-64 2xl:w-72">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted transition-colors group-focus-within:text-sibs-orange"
-            />
-            <input
-              type="text"
+          <div className="w-full lg:w-64 2xl:w-72">
+            <SearchInput
               value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
+              onChange={setSearchValue}
               placeholder="Search cluster or account..."
-              className="h-8.5 2xl:h-10 w-full rounded-lg border border-sibs-border bg-sibs-canvas px-3 pl-8.5 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
             />
           </div>
 
           <button
             type="button"
             onClick={() => setIsExpandedModalOpen(true)}
-            className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 sibs-text-xs font-bold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98]"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-bold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange active:scale-[0.98]"
             title="Expand view to show all columns at once"
           >
             <Maximize2 size={14} className="text-sibs-orange" />
