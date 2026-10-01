@@ -110,6 +110,16 @@ export default function ApplicantLeadsTable({
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   }
 
+  function goToPage(page) {
+    const target = Math.max(1, Math.min(tableTotalPages, Number(page) || 1));
+    if (usesOverride) {
+      setOverridePage(target);
+      return;
+    }
+
+    setCurrentPage(target);
+  }
+
   function requestSendApplicationLink(event, lead) {
     event.stopPropagation();
 
@@ -412,19 +422,22 @@ export default function ApplicantLeadsTable({
     />
   </div>
 
-      <PaginationTable
-        showSearch={false}
-        showPagination
-        showCount
-        currentPage={tableCurrentPage}
-        totalPages={tableTotalPages}
-        loadedCount={rows.length}
-        totalRecords={tableTotalRecords}
-        recordLabel={recordLabel}
-        onPrevious={goToPreviousPage}
-        onNext={goToNextPage}
-        className="border-0 bg-transparent p-0 shadow-none"
-      />
+      <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+        <PaginationTable
+          showSearch={false}
+          showPagination
+          showCount
+          currentPage={tableCurrentPage}
+          totalPages={tableTotalPages}
+          loadedCount={rows.length}
+          totalRecords={tableTotalRecords}
+          recordLabel={recordLabel}
+          onPrevious={goToPreviousPage}
+          onNext={goToNextPage}
+          onPageChange={goToPage}
+          className="border-0 bg-transparent p-0 shadow-none"
+        />
+      </div>
 
       <StatusModal
         open={Boolean(emailConfirmationLead)}

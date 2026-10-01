@@ -15,9 +15,18 @@ import {
   usePagination,
   PaginationDateRangeFilter,
 } from "@/services/context/PaginationContext";
-import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate } from "@/components/layout/FormatDateTime";
-import { DataCard, MetricGridSkeleton, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
+import {
+  DataCard,
+  MetricCard,
+  MetricGrid,
+  MetricGridSkeleton,
+  ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
+  TablePagination,
+  TableSkeletonRows,
+} from "@/components/ui";
 import {
   sanitizeDisplayFullName,
   sanitizeMiddleName,
@@ -538,76 +547,6 @@ function getAnimationStyle(delay = 0) {
     animationDelay: `${delay}ms`,
     animationFillMode: "both",
   };
-}
-
-function StatCard({
-  title,
-  value,
-  description,
-  icon,
-  tone = "navy",
-  delay = 0,
-}) {
-  const tones = {
-    navy: {
-      label: "text-sibs-navy",
-      value: "text-sibs-navy",
-      icon: "bg-blue-50 text-sibs-navy",
-    },
-    emerald: {
-      label: "text-emerald-700",
-      value: "text-emerald-600",
-      icon: "bg-emerald-50 text-emerald-600",
-    },
-    amber: {
-      label: "text-amber-700",
-      value: "text-amber-600",
-      icon: "bg-amber-50 text-amber-600",
-    },
-    orange: {
-      label: "text-sibs-orange",
-      value: "text-sibs-orange",
-      icon: "bg-sibs-cream-light text-sibs-orange",
-    },
-  };
-
-  const selectedTone = tones[tone] || tones.navy;
-  const IconComponent = icon;
-
-  return (
-    <article
-      className="sibs-metric-card font-jakarta flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
-      style={getAnimationStyle(delay)}
-    >
-      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-        <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
-          <div>
-            <p
-              className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${selectedTone.label}`}
-            >
-              {title}
-            </p>
-
-            <p
-              className={`font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${selectedTone.value}`}
-            >
-              {value}
-            </p>
-          </div>
-
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-sibs-muted">
-            {description}
-          </p>
-        </div>
-
-        <span
-          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
-        >
-          <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
-        </span>
-      </div>
-    </article>
-  );
 }
 
 function TimeIndicator({ value, label, tone = "neutral" }) {
@@ -1213,9 +1152,9 @@ export default function AttendanceTable() {
             className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
           />
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              title="Loaded Attendance"
+          <MetricGrid columns={4}>
+            <MetricCard
+              label="Loaded Attendance"
               value={formatNumber(pageStats.totalLoaded)}
               description="Records loaded on the current page"
               icon={CalendarDays}
@@ -1223,8 +1162,8 @@ export default function AttendanceTable() {
               delay={0}
             />
 
-            <StatCard
-              title="Approved"
+            <MetricCard
+              label="Approved"
               value={formatNumber(pageStats.approvedCount)}
               description="Ready for payroll processing"
               icon={CircleCheckBig}
@@ -1232,8 +1171,8 @@ export default function AttendanceTable() {
               delay={60}
             />
 
-            <StatCard
-              title="Pending Review"
+            <MetricCard
+              label="Pending Review"
               value={formatNumber(pageStats.pendingCount)}
               description="Awaiting attendance validation"
               icon={CircleX}
@@ -1241,15 +1180,15 @@ export default function AttendanceTable() {
               delay={120}
             />
 
-            <StatCard
-              title="Computed Work Hours"
+            <MetricCard
+              label="Computed Work Hours"
               value={`${formatNumber(pageStats.totalWorkHours)} hrs`}
               description="Capped work hours from this page"
               icon={Timer}
               tone="orange"
               delay={180}
             />
-          </div>
+          </MetricGrid>
         )}
       </section>
 
@@ -1267,60 +1206,75 @@ export default function AttendanceTable() {
               : "Review your time entries, work hours, breaks, and approval status."}
           </p>
 
-          <PaginationTable
-            filterLayout="ta-inline"
-            showFilterPanel={false}
-            showFilterHeader={false}
-            showPagination={false}
-            loading={loading}
-            searchValue={searchInput}
-            searchPlaceholder={
-              adminView
-                ? "Search by employee, SIBS ID, department, or account..."
-                : "Search attendance records..."
-            }
-            onSearchChange={(value) => setSearchInput?.(value)}
-            onSearchKeyDown={handleAttendanceSearchKeyDown}
-            dropdownFilters={
-              attendanceFiltersView
-                ? [
-                    {
-                      key: "department",
-                      value: departmentFilter,
-                      onChange: handleDepartmentSelect,
-                      options: departmentDropdownOptions,
-                      allLabel: "All Departments",
-                      label: "Department",
-                      placeholder: "Search departments...",
-                      searchable: true,
-                      includeAll: true,
-                    },
-                    {
-                      key: "account",
-                      value: accountFilters,
-                      onChange: handleAccountSelect,
-                      multiple: true,
-                      options: accountDropdownOptions,
-                      allLabel: "All Accounts",
-                      label: "Account",
-                      placeholder: "Search accounts...",
-                      searchable: true,
-                      includeAll: true,
-                    },
-                  ]
-                : []
-            }
-            rightContent={
-              <InlineDateRangeFilter visible={attendanceDateRangeView} />
-            }
-            className="mt-4 border-0 bg-transparent p-0 shadow-none"
-          />
+          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center flex-wrap">
+              <div className="w-full sm:w-72 xl:w-80">
+                <SearchInput
+                  value={searchInput}
+                  onChange={(e) => setSearchInput?.(typeof e === "string" ? e : e?.target?.value ?? "")}
+                  onClear={() => {
+                    setSearchInput?.("");
+                    if (typeof setSearch === "function") setSearch("");
+                    goToPage(1);
+                  }}
+                  onKeyDown={handleAttendanceSearchKeyDown}
+                  placeholder={
+                    adminView
+                      ? "Search by employee, SIBS ID, department, or account..."
+                      : "Search attendance records..."
+                  }
+                  ariaLabel="Search attendance"
+                  inputClassName="h-8.5 2xl:h-10"
+                  disabled={loading}
+                />
+              </div>
+
+              {attendanceFiltersView ? (
+                <>
+                  <div className="w-full sm:w-48">
+                    <SelectDropdown
+                      value={departmentFilter || "All"}
+                      onChange={handleDepartmentSelect}
+                      options={[
+                        { value: "All", label: "All Departments" },
+                        ...departmentDropdownOptions,
+                      ]}
+                      placeholder="Department"
+                      searchable
+                      searchPlaceholder="Search departments..."
+                      clearable={false}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="w-full sm:w-48">
+                    <SelectDropdown
+                      multiple
+                      value={accountFilters.length ? accountFilters : ["All"]}
+                      onChange={handleAccountSelect}
+                      options={[
+                        { value: "All", label: "All Accounts" },
+                        ...accountDropdownOptions,
+                      ]}
+                      placeholder="Account"
+                      searchable
+                      searchPlaceholder="Search accounts..."
+                      clearable={false}
+                      disabled={loading}
+                    />
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            <InlineDateRangeFilter visible={attendanceDateRangeView} />
+          </div>
 
           <button
             type="button"
             onClick={handleAttendanceSearchSubmit}
             disabled={loading}
-            className="mt-4 sibs-btn-primary !h-10 w-full text-xs font-extrabold lg:hidden"
+            className="mt-3 sibs-btn-primary !h-10 w-full text-xs font-extrabold lg:hidden"
           >
             {loading ? (
               <Loader2 size={15} className="animate-spin" />
@@ -1689,19 +1643,15 @@ export default function AttendanceTable() {
         />
 
           <div className="mt-5">
-            <PaginationTable
-              loading={loading}
-              showSearch={false}
-              showPagination
+            <TablePagination
               currentPage={currentPage}
               totalPages={totalPages}
-              loadedCount={attendance.length}
               totalRecords={totalRecords}
+              pageSize={PAGE_LIMIT}
+              loadedCount={attendance.length}
+              onPageChange={goToPage}
               recordLabel="attendance records"
-              onPrevious={goPreviousPage}
-              onNext={goNextPage}
-              showCount
-              className="border-0 bg-transparent p-0 shadow-none"
+              loading={loading}
             />
           </div>
         </div>

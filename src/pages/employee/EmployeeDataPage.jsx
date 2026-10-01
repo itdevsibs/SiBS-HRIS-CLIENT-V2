@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, HeartPulse, History } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -472,6 +472,7 @@ function canEditProfileDetails(user) {
 
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user: currentUser } = useUser();
 
   const [employee, setEmployee] = useState(null);
@@ -576,8 +577,10 @@ export default function EmployeeDataPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchEmployee() {
+    async function fetchEmployee(explicitSibsId) {
       const sibsId =
+        explicitSibsId ||
+        location.state?.sibsId ||
         sessionStorage.getItem("selectedEmployeeId") ||
         sessionStorage.getItem("selectedCandidateId");
 
@@ -587,6 +590,8 @@ export default function EmployeeDataPage() {
       }
 
       setLoading(true);
+      setIsEditing(false);
+      setDraftEmployee(null);
 
       try {
         const [employeeResult, sectionsResult] = await Promise.allSettled([
@@ -634,10 +639,31 @@ export default function EmployeeDataPage() {
 
     void fetchEmployee();
 
+    function handleSelectedEmployeeEvent(event) {
+      const newSibsId = event?.detail?.sibsId;
+      if (newSibsId) {
+        void fetchEmployee(newSibsId);
+      }
+    }
+
+    window.addEventListener(
+      "sibs:selected-employee-changed",
+      handleSelectedEmployeeEvent,
+    );
+
     return () => {
       cancelled = true;
+      window.removeEventListener(
+        "sibs:selected-employee-changed",
+        handleSelectedEmployeeEvent,
+      );
     };
-  }, [navigate]);
+  }, [
+    location.key,
+    location.state?.sibsId,
+    location.state?.timestamp,
+    navigate,
+  ]);
 
   function showFeedback(message, type = "success", title) {
     setStatusModal({

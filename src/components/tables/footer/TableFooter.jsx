@@ -1,10 +1,11 @@
 import React from "react";
 import { usePagination } from "@/services/context/PaginationContext";
-import PaginationTable from "@/services/pagination/PaginationTable";
+import TablePagination from "@/components/ui/TablePagination";
 
 export default function TableFooter({
   tableEntity,
   totalLabel = "Total Records",
+  className = "",
 }) {
   const { page, setPage, pagination } = usePagination(tableEntity);
 
@@ -31,16 +32,14 @@ export default function TableFooter({
   }
 
   return (
-    <div className="table-footer">
-      <PaginationTable
-        showSearch={false}
+    <div className={`table-footer ${className}`.trim()}>
+      <TablePagination
         currentPage={currentPage}
         totalPages={totalPages}
         loadedCount={loadedCount}
         totalRecords={totalCount}
         recordLabel={totalLabel.toLowerCase()}
-        onPrevious={() => goToPage(currentPage - 1)}
-        onNext={() => goToPage(currentPage + 1)}
+        onPageChange={goToPage}
       />
     </div>
   );

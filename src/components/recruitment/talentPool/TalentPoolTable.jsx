@@ -485,20 +485,23 @@ export default function TalentPoolTable({
         />
       </div>
 
-          <PaginationTable
-            showSearch={false}
-            showPagination
-            showCount
-            loading={isLoading}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            loadedCount={paginatedCandidates.length}
-            totalRecords={totalCandidates}
-            recordLabel={recordLabel}
-            onPrevious={goToPreviousPage}
-            onNext={goToNextPage}
-            className="border-0 bg-transparent p-0 shadow-none"
-          />
+          <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+            <PaginationTable
+              showSearch={false}
+              showPagination
+              showCount
+              loading={isLoading}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              loadedCount={paginatedCandidates.length}
+              totalRecords={totalCandidates}
+              recordLabel={recordLabel}
+              onPrevious={goToPreviousPage}
+              onNext={goToNextPage}
+              onPageChange={goToPage}
+              className="border-0 bg-transparent p-0 shadow-none"
+            />
+          </div>
         </>
       )}
     </div>
