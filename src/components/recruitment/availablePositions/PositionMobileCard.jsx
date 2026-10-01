@@ -114,13 +114,13 @@ export default function PositionMobileCard({
 
   return (
     <DataCard
-      className={unlinked ? "border-[#FFD1C4] bg-[#FFF8F5]" : ""}
+      className={unlinked ? "border-orange-200 bg-orange-50/60" : ""}
     >
       <DataCard.Header
         title={position.positionTitle || "Untitled Position"}
         subtitle={
           <span className="truncate">
-            <span className="font-extrabold text-[#FF5C28]">{positionId}</span> · {getAvailablePositionDepartment(position)}
+            <span className="font-extrabold text-sibs-orange">{positionId}</span> · {getAvailablePositionDepartment(position)}
           </span>
         }
         badge={
@@ -134,17 +134,17 @@ export default function PositionMobileCard({
       />
 
       <DataCard.ContextRow>
-        <span className="text-[11px] font-extrabold text-[#042C51]">
+        <span className="text-[11px] font-extrabold text-sibs-navy">
           {getAvailablePositionAccount(position) || "—"}
         </span>
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#667085]">
-          <MapPin size={11} className="text-[#98A2B3]" />
+        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-sibs-muted">
+          <MapPin size={11} className="text-sibs-muted" />
           {position.locationSite || "—"}
         </span>
         <span
           className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${
             unlinked
-              ? "border-[#FFB39F] bg-[#FFE1D8] text-[#D92D20]"
+              ? "border-rose-200 bg-rose-50 text-rose-700"
               : "border-emerald-200 bg-emerald-50 text-emerald-700"
           }`}
         >
@@ -153,35 +153,35 @@ export default function PositionMobileCard({
         </span>
       </DataCard.ContextRow>
 
-      <div className="mt-2.5 rounded-[10px] border border-[#EEF2F6] bg-[#F8FAFC] p-2.5">
-        <p className="flex items-center gap-1 text-[9px] font-extrabold uppercase text-[#98A2B3]">
+      <div className="mt-2.5 rounded-[10px] border border-sibs-border bg-slate-50 p-2.5">
+        <p className="flex items-center gap-1 text-[9px] font-extrabold uppercase text-sibs-muted">
           <FileText size={11} />
           Linked JD Manual
         </p>
-        <p className="mt-0.5 truncate text-xs font-extrabold text-[#042C51]">
+        <p className="mt-0.5 truncate text-xs font-extrabold text-sibs-navy">
           {linkedJd.documentTitle}
         </p>
-        <p className="truncate text-[9.5px] font-semibold text-[#667085]">
+        <p className="truncate text-[9.5px] font-semibold text-sibs-muted">
           {linkedJd.code}
         </p>
       </div>
 
       {skillSummary.visible.length > 0 && (
         <div className="mt-2.5">
-          <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+          <p className="text-[9px] font-extrabold uppercase text-sibs-muted">
             Preferred Skills
           </p>
           <div className="mt-1 flex flex-wrap gap-1">
             {skillSummary.visible.map((skill) => (
               <span
                 key={skill}
-                className="rounded-md bg-[#F2F6FA] px-2 py-0.5 text-[9px] font-extrabold text-[#475467]"
+                className="rounded-md bg-slate-100 px-2 py-0.5 text-[9px] font-extrabold text-sibs-muted"
               >
                 {skill}
               </span>
             ))}
             {skillSummary.hiddenCount > 0 && (
-              <span className="rounded-md bg-[#EAF2FB] px-2 py-0.5 text-[9px] font-extrabold text-[#042C51]">
+              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold text-sibs-navy">
                 +{skillSummary.hiddenCount} more
               </span>
             )}
@@ -190,13 +190,13 @@ export default function PositionMobileCard({
       )}
 
       <DataCard.Footer>
-        <div className="flex flex-col text-[10px] font-semibold text-[#667085]">
+        <div className="flex flex-col text-[10px] font-semibold text-sibs-muted">
           <div className="flex items-center gap-1">
             <CalendarDays size={11} />
             <span>{formatDate(getAvailablePositionUpdatedAt(position))}</span>
           </div>
           {updatedByDisplay && (
-            <span className="truncate text-[9.5px] text-[#98A2B3]">
+            <span className="truncate text-[9.5px] text-sibs-muted">
               By: {updatedByDisplay}
             </span>
           )}
@@ -207,7 +207,7 @@ export default function PositionMobileCard({
             type="button"
             onClick={() => onEdit?.(position)}
             disabled={isSaving}
-            className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-[#D7DEE8] bg-white px-2.5 text-[10px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-sibs-border bg-white px-2.5 text-[10px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Pencil size={11} />
             Edit

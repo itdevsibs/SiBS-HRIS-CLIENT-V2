@@ -280,11 +280,11 @@ export default function DropdownField({
 
     input.style.setProperty("box-shadow", "none", "important");
 
-    input.style.setProperty("--tw-ring-shadow", "0 0 #0000", "important");
+    input.style.setProperty("--tw-ring-shadow", "0 0 transparent", "important");
 
     input.style.setProperty(
       "--tw-ring-offset-shadow",
-      "0 0 #0000",
+      "0 0 transparent",
       "important",
     );
   }
@@ -373,7 +373,7 @@ export default function DropdownField({
               width: `${menuStyle.width}px`,
               zIndex: 99999,
             }}
-            className={`sibs-dropdown-pop-in overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
+            className={`sibs-dropdown-pop-in overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
           >
             <div
               className="sibs-scrollbar overflow-y-auto overscroll-contain"
@@ -396,8 +396,8 @@ export default function DropdownField({
                       onClick={() => handleSelect(option)}
                       className={`block w-full px-3 py-1.5 2xl:py-2 text-left sibs-text-xs transition ${
                         isSelected
-                          ? "bg-[#FFF7F3] font-extrabold text-[#FF5C28]"
-                          : "bg-white font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                          ? "bg-orange-50/50 font-extrabold text-sibs-orange"
+                          : "bg-white font-semibold text-sibs-navy hover:bg-orange-50/50 hover:text-sibs-orange"
                       }`}
                     >
                       <span className="block min-w-0 truncate">
@@ -405,7 +405,7 @@ export default function DropdownField({
                       </span>
 
                       {option.description ? (
-                        <span className="mt-0.5 block min-w-0 truncate text-[9px] font-bold text-[#98A2B3]">
+                        <span className="mt-0.5 block min-w-0 truncate text-[9px] font-bold text-sibs-muted">
                           {option.description}
                         </span>
                       ) : null}
@@ -413,7 +413,7 @@ export default function DropdownField({
                   );
                 })
               ) : (
-                <div className="px-3 py-2.5 text-xs font-semibold text-[#98A2B3]">
+                <div className="px-3 py-2.5 text-xs font-semibold text-sibs-muted">
                   {emptyMessage}
                 </div>
               )}
@@ -429,16 +429,16 @@ export default function DropdownField({
     isSecondaryAction ? "rounded-lg px-3.5" : "rounded-lg 2xl:rounded-xl px-3"
   } border text-left sibs-text-xs outline-none transition ${
     open
-      ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
+      ? "border-sibs-orange bg-white ring-2 ring-sibs-orange/10"
       : isSecondaryAction
-        ? "border-[#D6E0EA] bg-white hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
-        : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
+        ? "border-sibs-border bg-white hover:border-sibs-orange/35 hover:bg-orange-50/50 hover:text-sibs-orange"
+        : "border-sibs-border bg-slate-50 hover:border-sibs-orange/40 hover:bg-white"
   } ${
     disabled
-      ? "cursor-not-allowed bg-[#F2F4F7] text-[#98A2B3] opacity-70"
+      ? "cursor-not-allowed bg-slate-100 text-sibs-muted opacity-70"
       : isSecondaryAction
-        ? "font-extrabold text-[#042C51]"
-        : "font-semibold text-[#042C51]"
+        ? "font-extrabold text-sibs-navy"
+        : "font-semibold text-sibs-navy"
   }`;
 
   return (
@@ -501,17 +501,17 @@ export default function DropdownField({
               WebkitAppearance: "none",
               appearance: "none",
             }}
-            className={`h-full min-w-0 flex-1 !appearance-none !border-0 !border-transparent !bg-transparent !p-0 sibs-text-xs font-semibold !outline-none !ring-0 !shadow-none focus:!border-0 focus:!border-transparent focus:!outline-none focus:!ring-0 focus:!shadow-none focus-visible:!border-0 focus-visible:!border-transparent focus-visible:!outline-none focus-visible:!ring-0 focus-visible:!shadow-none active:!border-0 active:!outline-none active:!ring-0 active:!shadow-none placeholder:text-[#98A2B3] ${
+            className={`h-full min-w-0 flex-1 !appearance-none !border-0 !border-transparent !bg-transparent !p-0 sibs-text-xs font-semibold !outline-none !ring-0 !shadow-none focus:!border-0 focus:!border-transparent focus:!outline-none focus:!ring-0 focus:!shadow-none focus-visible:!border-0 focus-visible:!border-transparent focus-visible:!outline-none focus-visible:!ring-0 focus-visible:!shadow-none active:!border-0 active:!outline-none active:!ring-0 active:!shadow-none placeholder:text-sibs-muted ${
               hasDisplayValue || open
                 ? isSecondaryAction
-                  ? "font-extrabold text-[#042C51]"
-                  : "text-[#042C51]"
-                : "text-[#98A2B3]"
-            } disabled:cursor-not-allowed disabled:text-[#98A2B3]`}
+                  ? "font-extrabold text-sibs-navy"
+                  : "text-sibs-navy"
+                : "text-sibs-muted"
+            } disabled:cursor-not-allowed disabled:text-sibs-muted`}
           />
 
           <ChevronDown
-            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#042C51] transition-transform ${
+            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-navy transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -529,16 +529,16 @@ export default function DropdownField({
             className={`min-w-0 flex-1 truncate ${
               hasDisplayValue
                 ? isSecondaryAction
-                  ? "text-[#042C51]"
-                  : "text-[#042C51]"
-                : "text-[#98A2B3]"
+                  ? "text-sibs-navy"
+                  : "text-sibs-navy"
+                : "text-sibs-muted"
             }`}
           >
             {displayLabel || placeholder}
           </span>
 
           <ChevronDown
-            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#042C51] transition-transform ${
+            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-navy transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />

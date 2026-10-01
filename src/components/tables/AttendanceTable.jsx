@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CircleCheckBig,
   CircleX,
+  RotateCcw,
   Timer,
   Loader2,
 } from "lucide-react";
@@ -623,6 +624,7 @@ function InlineDateRangeFilter({ visible }) {
       <PaginationDateRangeFilter
         entity="attendance"
         visible
+        showTopLabels
         className="m-0 w-full"
       />
     </div>
@@ -850,6 +852,24 @@ export default function AttendanceTable() {
 
     e.preventDefault();
     handleAttendanceSearchSubmit();
+  }
+
+  const hasActiveFilters = Boolean(
+    String(searchInput || "").trim() ||
+    (departmentFilter && departmentFilter !== "All") ||
+    accountFilters.length > 0 ||
+    dateFrom ||
+    dateTo
+  );
+
+  function handleClearAttendanceFilters() {
+    setSearchInput?.("");
+    if (typeof setSearch === "function") setSearch("");
+    setDepartmentFilter("All");
+    setAccountFilters([]);
+    const { setDateRange } = paginationContext;
+    setDateRange?.({ dateFrom: "", dateTo: "" });
+    goToPage(1);
   }
 
   function handleDragStart(e) {
@@ -1206,68 +1226,85 @@ export default function AttendanceTable() {
               : "Review your time entries, work hours, breaks, and approval status."}
           </p>
 
-          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center flex-wrap">
-              <div className="w-full sm:w-72 xl:w-80">
-                <SearchInput
-                  value={searchInput}
-                  onChange={(e) => setSearchInput?.(typeof e === "string" ? e : e?.target?.value ?? "")}
-                  onClear={() => {
-                    setSearchInput?.("");
-                    if (typeof setSearch === "function") setSearch("");
-                    goToPage(1);
-                  }}
-                  onKeyDown={handleAttendanceSearchKeyDown}
-                  placeholder={
-                    adminView
-                      ? "Search by employee, SIBS ID, department, or account..."
-                      : "Search attendance records..."
-                  }
-                  ariaLabel="Search attendance"
-                  inputClassName="h-8.5 2xl:h-10"
-                  disabled={loading}
-                />
-              </div>
-
-              {attendanceFiltersView ? (
-                <>
-                  <div className="w-full sm:w-48">
-                    <SelectDropdown
-                      value={departmentFilter || "All"}
-                      onChange={handleDepartmentSelect}
-                      options={[
-                        { value: "All", label: "All Departments" },
-                        ...departmentDropdownOptions,
-                      ]}
-                      placeholder="Department"
-                      searchable
-                      searchPlaceholder="Search departments..."
-                      clearable={false}
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <div className="w-full sm:w-48">
-                    <SelectDropdown
-                      multiple
-                      value={accountFilters.length ? accountFilters : ["All"]}
-                      onChange={handleAccountSelect}
-                      options={[
-                        { value: "All", label: "All Accounts" },
-                        ...accountDropdownOptions,
-                      ]}
-                      placeholder="Account"
-                      searchable
-                      searchPlaceholder="Search accounts..."
-                      clearable={false}
-                      disabled={loading}
-                    />
-                  </div>
-                </>
-              ) : null}
+          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
+            <div className="min-w-0 flex-1 xl:flex-[1_1_220px] 2xl:flex-[1_1_360px]">
+              <SearchInput
+                label="Search"
+                value={searchInput}
+                onChange={(e) => setSearchInput?.(typeof e === "string" ? e : e?.target?.value ?? "")}
+                onClear={() => {
+                  setSearchInput?.("");
+                  if (typeof setSearch === "function") setSearch("");
+                  goToPage(1);
+                }}
+                onKeyDown={handleAttendanceSearchKeyDown}
+                placeholder={
+                  adminView
+                    ? "Search by employee, SIBS ID, department, or account..."
+                    : "Search attendance records..."
+                }
+                ariaLabel="Search attendance"
+                disabled={loading}
+                className="w-full"
+              />
             </div>
 
-            <InlineDateRangeFilter visible={attendanceDateRangeView} />
+            {attendanceFiltersView ? (
+              <>
+                <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
+                  <SelectDropdown
+                    label="Department"
+                    value={departmentFilter || "All"}
+                    onChange={handleDepartmentSelect}
+                    options={[
+                      { value: "All", label: "All Departments" },
+                      ...departmentDropdownOptions,
+                    ]}
+                    placeholder="All Departments"
+                    searchable
+                    searchPlaceholder="Search departments..."
+                    clearable={false}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
+                  <SelectDropdown
+                    label="Account"
+                    multiple
+                    value={accountFilters.length ? accountFilters : ["All"]}
+                    onChange={handleAccountSelect}
+                    options={[
+                      { value: "All", label: "All Accounts" },
+                      ...accountDropdownOptions,
+                    ]}
+                    placeholder="All Accounts"
+                    searchable
+                    searchPlaceholder="Search accounts..."
+                    clearable={false}
+                    disabled={loading}
+                  />
+                </div>
+              </>
+            ) : null}
+
+            <div className="w-full xl:w-auto xl:flex-none">
+              <InlineDateRangeFilter visible={attendanceDateRangeView} />
+            </div>
+
+            {hasActiveFilters && (
+              <div className="shrink-0">
+                <button
+                  type="button"
+                  onClick={handleClearAttendanceFilters}
+                  disabled={loading}
+                  className="inline-flex h-8.5 2xl:h-10 w-full xl:w-auto items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RotateCcw size={14} />
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
 
           <button

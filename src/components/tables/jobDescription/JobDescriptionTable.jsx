@@ -15,6 +15,7 @@ import {
   DataCard,
   ResponsiveTableShell,
   StatusFilterTabs,
+  TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
 
@@ -321,7 +322,7 @@ function getJdStatusClass(status) {
       return "border-amber-200 bg-amber-50 text-amber-700";
 
     case "For Approval":
-      return "border-orange-200 bg-orange-50 text-[#D9480F]";
+      return "border-orange-200 bg-orange-50 text-orange-700";
 
     case "New Job Description":
     case "Draft":
@@ -329,7 +330,7 @@ function getJdStatusClass(status) {
 
     case "Rejected":
     case "Declined":
-      return "border-red-200 bg-red-50 text-red-700";
+      return "border-rose-200 bg-rose-50 text-rose-700";
 
     case "Archived":
       return "border-slate-200 bg-slate-50 text-slate-600";
@@ -412,7 +413,7 @@ function JobDescriptionMobileCard({ item, onView }) {
       <DataCard.Header
         title={roleTitle}
         subtitle={
-          <span className="truncate font-semibold text-[#98A2B3]">
+          <span className="truncate font-semibold text-sibs-muted">
             {documentTitle}
           </span>
         }
@@ -420,8 +421,8 @@ function JobDescriptionMobileCard({ item, onView }) {
       />
 
       <DataCard.ContextRow>
-        <span className="text-[11px] font-extrabold text-[#042C51]">{department}</span>
-        <span className="text-[11px] font-semibold text-[#667085]">{account}</span>
+        <span className="text-[11px] font-extrabold text-sibs-navy">{department}</span>
+        <span className="text-[11px] font-semibold text-sibs-muted">{account}</span>
       </DataCard.ContextRow>
 
       <DataCard.Metrics cols={3}>
@@ -440,8 +441,8 @@ function JobDescriptionMobileCard({ item, onView }) {
       </DataCard.Metrics>
 
       <DataCard.Footer>
-        <div className="truncate text-[10.5px] font-semibold text-[#667085]">
-          <span className="font-extrabold text-[#042C51]">Linked PRF:</span>{" "}
+        <div className="truncate text-[10.5px] font-semibold text-sibs-muted">
+          <span className="font-extrabold text-sibs-navy">Linked PRF:</span>{" "}
           <span>{linkedHiringNeed}</span>
         </div>
         <span className="shrink-0 text-[10px] font-extrabold uppercase text-sibs-orange">
@@ -460,6 +461,11 @@ export default function JobDescriptionTable({
   jobDescriptionList = [],
   canApproveJobDescriptions = false,
   loading = false,
+  onView,
+  onRevise,
+  onPageChange,
+  scrollToTop,
+  onRefresh,
 }) {
   const navigate = useNavigate();
 
@@ -711,6 +717,10 @@ export default function JobDescriptionTable({
   }
 
   function handleOpenFullPageView(item) {
+    if (typeof onView === "function") {
+      onView(item);
+    }
+
     const jdId = getRecordId(item);
 
     if (!jdId) {
@@ -747,38 +757,51 @@ export default function JobDescriptionTable({
             searchValue={searchTerm}
             searchPlaceholder="Search role title, document, department, account, or hiring need..."
             onSearchChange={(value) => updateFilter(setSearchTerm, value)}
-            dropdownFilters={[
+            className="border-0 bg-transparent p-0 shadow-none"
+            filters={[
               {
                 key: "department",
                 value: departmentFilter,
-                options: toDropdownOptions(departmentOptions, "All Departments"),
-                onChange: (value) => updateFilter(setDepartmentFilter, value),
-                includeAll: true,
+                options: departmentOptions.map((opt) => ({
+                  label: opt,
+                  value: opt,
+                })),
+                onChange: (value) =>
+                  updateFilter(setDepartmentFilter, value || "All Departments"),
+                includeAll: false,
                 allLabel: "All Departments",
                 label: "Department",
-                placeholder: "Search departments...",
+                placeholder: "All Departments",
                 searchable: true,
               },
               {
                 key: "account",
                 value: accountFilter,
-                options: toDropdownOptions(accountOptions, "All Accounts"),
-                onChange: (value) => updateFilter(setAccountFilter, value),
-                includeAll: true,
+                options: accountOptions.map((opt) => ({
+                  label: opt,
+                  value: opt,
+                })),
+                onChange: (value) =>
+                  updateFilter(setAccountFilter, value || "All Accounts"),
+                includeAll: false,
                 allLabel: "All Accounts",
                 label: "Account",
-                placeholder: "Search accounts...",
+                placeholder: "All Accounts",
                 searchable: true,
               },
               {
                 key: "supervisory",
                 value: supervisoryFilter,
-                options: toDropdownOptions(supervisoryOptions, "All Levels"),
-                onChange: (value) => updateFilter(setSupervisoryFilter, value),
-                includeAll: true,
+                options: supervisoryOptions.map((opt) => ({
+                  label: opt,
+                  value: opt,
+                })),
+                onChange: (value) =>
+                  updateFilter(setSupervisoryFilter, value || "All Levels"),
+                includeAll: false,
                 allLabel: "All Levels",
                 label: "Supervisory Level",
-                placeholder: "Search levels...",
+                placeholder: "All Levels",
                 searchable: true,
               },
             ]}
@@ -793,7 +816,6 @@ export default function JobDescriptionTable({
                 Clear
               </button>
             }
-            className="border-0 bg-transparent p-0 shadow-none"
           />
         </div>
       </div>
@@ -838,7 +860,7 @@ export default function JobDescriptionTable({
                       <button
                         type="button"
                         onClick={handleResetFilters}
-                        className="rounded-lg bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
+                        className="rounded-lg bg-sibs-navy px-4 py-2 text-xs font-extrabold text-white transition hover:bg-sibs-navy/90"
                       >
                         Reset Search & Filters
                       </button>
@@ -850,7 +872,7 @@ export default function JobDescriptionTable({
             desktopContent={
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1180px] table-fixed border-collapse text-left text-xs">
-                  <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
+                  <thead className="sibs-data-table-head sticky top-0 z-10 bg-slate-50">
                     <tr className="sibs-data-table-head-row">
                       <th className="sibs-data-table-th w-[32%] text-left">
                         Role & Document Title
@@ -876,7 +898,7 @@ export default function JobDescriptionTable({
 
                   <tbody
                     key={effectiveStatusTab}
-                    className="divide-y divide-[#E6ECF2]"
+                    className="divide-y divide-sibs-border"
                   >
                     {loading ? (
                       <TableSkeletonRows
@@ -899,7 +921,7 @@ export default function JobDescriptionTable({
                               getRecordId(item) || `${roleTitle}-${documentTitle}`
                             }
                             onClick={() => handleOpenFullPageView(item)}
-                            className="sibs-data-table-row sibs-page-card-in cursor-pointer hover:bg-[#FFFDFC]"
+                            className="sibs-data-table-row sibs-page-card-in cursor-pointer hover:bg-slate-50/50"
                             style={{
                               animationDelay: `${index * 30}ms`,
                               animationFillMode: "both",
@@ -909,19 +931,19 @@ export default function JobDescriptionTable({
 
                             <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
                               <div className="flex items-start gap-2">
-                                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
+                                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-sibs-orange" />
 
                                 <div className="min-w-0">
                                   <p
                                     title={documentTitle}
-                                    className="max-w-[340px] truncate sibs-text-xs font-extrabold leading-5 text-[#042C51]"
+                                    className="max-w-[340px] truncate sibs-text-xs font-extrabold leading-5 text-sibs-navy"
                                   >
                                     {documentTitle}
                                   </p>
 
                                   <p
                                     title={roleTitle}
-                                    className="mt-0.5 max-w-[340px] truncate sibs-text-micro font-semibold text-[#98A2B3]"
+                                    className="mt-0.5 max-w-[340px] truncate sibs-text-micro font-semibold text-sibs-muted"
                                   >
                                     {roleTitle}
                                   </p>
@@ -934,14 +956,14 @@ export default function JobDescriptionTable({
                             <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
                               <p
                                 title={getDepartment(item) || ""}
-                                className="truncate sibs-text-xs font-extrabold text-[#042C51]"
+                                className="truncate sibs-text-xs font-extrabold text-sibs-navy"
                               >
                                 {getDepartment(item) || "--"}
                               </p>
 
                               <p
                                 title={getAccount(item) || ""}
-                                className="mt-0.5 truncate sibs-text-micro font-semibold text-[#667085]"
+                                className="mt-0.5 truncate sibs-text-micro font-semibold text-sibs-muted"
                               >
                                 {getAccount(item) || "--"}
                               </p>
@@ -949,7 +971,7 @@ export default function JobDescriptionTable({
 
                             {/* SUPERVISORY */}
 
-                            <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold text-[#475467] align-middle">
+                            <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-muted align-middle">
                               {getSupervisoryLevel(item) || "--"}
                             </td>
 
@@ -962,11 +984,11 @@ export default function JobDescriptionTable({
                             {/* DATE / VERSION */}
 
                             <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
-                              <p className="sibs-text-xs font-extrabold tabular-nums text-[#042C51]">
+                              <p className="sibs-text-xs font-extrabold tabular-nums text-sibs-navy">
                                 {getVersion(item) || "--"}
                               </p>
 
-                              <p className="mt-0.5 text-[10px] 2xl:text-[10.5px] font-semibold tabular-nums text-[#98A2B3]">
+                              <p className="mt-0.5 text-[10px] 2xl:text-[10.5px] font-semibold tabular-nums text-sibs-muted">
                                 {formatDate(getDateValue(item))}
                               </p>
                             </td>
@@ -976,13 +998,13 @@ export default function JobDescriptionTable({
                     ) : (
                       <tr>
                         <td colSpan={5} className="px-5 py-14 text-center">
-                          <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+                          <FileText className="mx-auto h-9 w-9 text-slate-300" />
 
-                          <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                          <p className="mt-3 text-sm font-extrabold text-sibs-navy">
                             No Job Descriptions Found
                           </p>
 
-                          <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                          <p className="mt-1 text-xs font-semibold text-sibs-muted">
                             No records matched the active search, filters, and
                             status tab.
                           </p>
@@ -990,7 +1012,7 @@ export default function JobDescriptionTable({
                           <button
                             type="button"
                             onClick={handleResetFilters}
-                            className="mt-4 rounded-lg bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
+                            className="mt-4 rounded-lg bg-sibs-navy px-4 py-2 text-xs font-extrabold text-white transition hover:bg-sibs-navy/90"
                           >
                             Reset Search & Filters
                           </button>
@@ -1008,20 +1030,23 @@ export default function JobDescriptionTable({
             PAGINATION
         ================================================= */}
 
-        <PaginationTable
-          loading={false}
-          showSearch={false}
+        <TablePagination
           currentPage={safeCurrentPage}
           totalPages={totalPages}
-          loadedCount={paginatedList.length}
           totalRecords={filteredList.length}
+          loadedCount={paginatedList.length}
+          limit={PAGE_LIMIT}
           recordLabel="job descriptions"
-          onPrevious={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-          onNext={() =>
-            setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))
-          }
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            if (typeof onPageChange === "function") {
+              onPageChange();
+            }
+            if (typeof scrollToTop === "function") {
+              scrollToTop();
+            }
+          }}
           showCount
-          className="border-0 bg-transparent p-0 shadow-none"
         />
       </div>
     </section>

@@ -20,6 +20,7 @@ import {
   Plus,
   RefreshCcw,
   RefreshCw,
+  RotateCcw,
   Search,
   Send,
   TrendingDown,
@@ -1318,64 +1319,66 @@ function ResignationTableCard({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center flex-wrap">
-            <div className="w-full sm:w-72 xl:w-80">
-              <SearchInput
-                value={draftSearch}
-                onChange={(val) => {
-                  const nextVal = typeof val === "string" ? val : val?.target?.value ?? "";
-                  handleSearchChange(nextVal);
-                }}
-                onClear={() => handleSearchChange("")}
-                onKeyDown={handleFilterSearchKeyDown}
-                placeholder="Search employee, SIBS ID, department, type, status, reason..."
-                ariaLabel="Search resignation records"
-                inputClassName="h-8.5 2xl:h-10"
-                disabled={loading}
-              />
-            </div>
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
+          <div className="min-w-0 flex-1 xl:flex-[1_1_220px] 2xl:flex-[1_1_360px]">
+            <SearchInput
+              label="Search"
+              value={draftSearch}
+              onChange={(val) => {
+                const nextVal = typeof val === "string" ? val : val?.target?.value ?? "";
+                handleSearchChange(nextVal);
+              }}
+              onClear={() => handleSearchChange("")}
+              onKeyDown={handleFilterSearchKeyDown}
+              placeholder="Search employee, SIBS ID, department, type, status, reason..."
+              ariaLabel="Search resignation records"
+              disabled={loading}
+              className="w-full"
+            />
+          </div>
 
-            <div className="w-full sm:w-48">
-              <SelectDropdown
-                value={draftStatusFilter}
-                onChange={handleStatusChange}
-                options={STATUS_OPTIONS.map((option) => ({
-                  value: option,
-                  label: option === "All" ? "All Statuses" : option,
-                }))}
-                placeholder="Filter by Status"
-                ariaLabel="Filter by status"
-                buttonClassName="h-8.5 2xl:h-10"
-                disabled={loading}
-              />
-            </div>
+          <div className="w-full sm:w-48 xl:w-[200px] 2xl:w-[240px] xl:flex-none">
+            <SelectDropdown
+              label="Status"
+              value={draftStatusFilter}
+              onChange={handleStatusChange}
+              options={STATUS_OPTIONS.map((option) => ({
+                value: option,
+                label: option === "All" ? "All Statuses" : option,
+              }))}
+              placeholder="All Statuses"
+              ariaLabel="Filter by status"
+              disabled={loading}
+            />
+          </div>
 
-            <div className="w-full sm:w-44">
-              <SelectDropdown
-                value={draftTypeFilter}
-                onChange={handleTypeChange}
-                options={TYPE_OPTIONS.map((option) => ({
-                  value: option,
-                  label: option === "All" ? "All Types" : option,
-                }))}
-                placeholder="Filter by Type"
-                ariaLabel="Filter by type"
-                buttonClassName="h-8.5 2xl:h-10"
-                disabled={loading}
-              />
-            </div>
+          <div className="w-full sm:w-44 xl:w-[180px] 2xl:w-[220px] xl:flex-none">
+            <SelectDropdown
+              label="Type"
+              value={draftTypeFilter}
+              onChange={handleTypeChange}
+              options={TYPE_OPTIONS.map((option) => ({
+                value: option,
+                label: option === "All" ? "All Types" : option,
+              }))}
+              placeholder="All Types"
+              ariaLabel="Filter by type"
+              disabled={loading}
+            />
+          </div>
 
-            {hasActiveFilters ? (
+          {hasActiveFilters ? (
+            <div className="shrink-0">
               <button
                 type="button"
                 onClick={handleClearTableFilters}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-orange transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light max-sm:w-full"
+                className="inline-flex h-8.5 2xl:h-10 w-full xl:w-auto items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Clear Filters
+                <RotateCcw size={14} />
+                Clear
               </button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
 
         {isMobileFilterMode ? (

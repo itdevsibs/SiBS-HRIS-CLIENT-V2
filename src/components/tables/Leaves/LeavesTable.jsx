@@ -6,6 +6,7 @@ import {
   Check,
   Loader2,
   Paperclip,
+  RotateCcw,
   Search,
   XCircle,
 } from "lucide-react";
@@ -271,7 +272,7 @@ function InlineDateRangeFilter({ visible }) {
 
   return (
     <div className="leaves-date-filter-inline w-full sm:w-auto">
-      <PaginationDateRangeFilter entity="leaves" visible className="m-0 w-full" />
+      <PaginationDateRangeFilter entity="leaves" visible showTopLabels className="m-0 w-full" />
     </div>
   );
 }
@@ -702,6 +703,24 @@ export default function LeavesTable({
     runSearch();
   }
 
+  const hasActiveFilters = Boolean(
+    String(searchInput || "").trim() ||
+    (statusFilter && statusFilter !== "All") ||
+    (departmentFilter && departmentFilter !== "All") ||
+    (accountFilter && accountFilter !== "All") ||
+    dateFrom ||
+    dateTo
+  );
+
+  function handleClearLeavesFilters() {
+    setSearchInput?.("");
+    if (typeof setSearchKeyword === "function") setSearchKeyword("");
+    if (typeof onStatusChange === "function") onStatusChange("All");
+    if (typeof onDepartmentSelect === "function") onDepartmentSelect("All");
+    if (typeof onAccountSelect === "function") onAccountSelect("All");
+    setPage?.(1);
+  }
+
   function handlePreviousPage() {
     const currentPaginationPage = Number(pagination.currentPage || page || 1);
 
@@ -766,79 +785,97 @@ export default function LeavesTable({
               : "Review employee leave requests, approval statuses, justifications, and attachment records."}
           </p>
 
-          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center flex-wrap">
-              <div className="w-full sm:w-72 xl:w-80">
-                <SearchInput
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(typeof e === "string" ? e : e?.target?.value ?? "")}
-                  onClear={() => {
-                    setSearchInput("");
-                    if (typeof setSearchKeyword === "function") setSearchKeyword("");
-                    setPage(1);
-                  }}
-                  onKeyDown={handleSearchKeyDown}
-                  placeholder="Search by employee, SiBS ID, leave type, or status..."
-                  ariaLabel="Search leave records"
-                  inputClassName="h-8.5 2xl:h-10"
-                  disabled={loading}
-                />
-              </div>
+          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
+            <div className="min-w-0 flex-1 xl:flex-[1_1_220px] 2xl:flex-[1_1_360px]">
+              <SearchInput
+                label="Search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(typeof e === "string" ? e : e?.target?.value ?? "")}
+                onClear={() => {
+                  setSearchInput("");
+                  if (typeof setSearchKeyword === "function") setSearchKeyword("");
+                  setPage(1);
+                }}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Search by employee, SiBS ID, leave type, or status..."
+                ariaLabel="Search leave records"
+                disabled={loading}
+                className="w-full"
+              />
+            </div>
 
-              <div className="w-full sm:w-44">
+            <div className="w-full sm:w-44 xl:w-[150px] 2xl:w-[170px] xl:flex-none">
+              <SelectDropdown
+                label="Status"
+                value={statusFilter || "All"}
+                onChange={onStatusChange}
+                options={[
+                  { label: "All Statuses", value: "All" },
+                  { label: "Approved", value: "Approved" },
+                  { label: "Pending", value: "Pending" },
+                  { label: "Rejected", value: "Rejected" },
+                ]}
+                placeholder="All Statuses"
+                clearable={false}
+                disabled={loading}
+              />
+            </div>
+
+            {showDepartmentFilter ? (
+              <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
                 <SelectDropdown
-                  value={statusFilter || "All"}
-                  onChange={onStatusChange}
+                  label="Department"
+                  value={departmentFilter || "All"}
+                  onChange={onDepartmentSelect}
                   options={[
-                    { label: "All Statuses", value: "All" },
-                    { label: "Approved", value: "Approved" },
-                    { label: "Pending", value: "Pending" },
-                    { label: "Rejected", value: "Rejected" },
+                    { label: "All Departments", value: "All" },
+                    ...departmentDropdownOptions,
                   ]}
-                  placeholder="Status"
+                  placeholder="All Departments"
+                  searchable
+                  searchPlaceholder="Search departments..."
                   clearable={false}
                   disabled={loading}
                 />
               </div>
+            ) : null}
 
-              {showDepartmentFilter ? (
-                <div className="w-full sm:w-48">
-                  <SelectDropdown
-                    value={departmentFilter || "All"}
-                    onChange={onDepartmentSelect}
-                    options={[
-                      { label: "All Departments", value: "All" },
-                      ...departmentDropdownOptions,
-                    ]}
-                    placeholder="Department"
-                    searchable
-                    searchPlaceholder="Search departments..."
-                    clearable={false}
-                    disabled={loading}
-                  />
-                </div>
-              ) : null}
+            {showAccountFilter ? (
+              <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
+                <SelectDropdown
+                  label="Account"
+                  value={accountFilter || "All"}
+                  onChange={onAccountSelect}
+                  options={[
+                    { label: "All Accounts", value: "All" },
+                    ...accountDropdownOptions,
+                  ]}
+                  placeholder="All Accounts"
+                  searchable
+                  searchPlaceholder="Search accounts..."
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+            ) : null}
 
-              {showAccountFilter ? (
-                <div className="w-full sm:w-48">
-                  <SelectDropdown
-                    value={accountFilter || "All"}
-                    onChange={onAccountSelect}
-                    options={[
-                      { label: "All Accounts", value: "All" },
-                      ...accountDropdownOptions,
-                    ]}
-                    placeholder="Account"
-                    searchable
-                    searchPlaceholder="Search accounts..."
-                    clearable={false}
-                    disabled={loading}
-                  />
-                </div>
-              ) : null}
+            <div className="w-full xl:w-auto xl:flex-none">
+              <InlineDateRangeFilter visible />
             </div>
 
-            <InlineDateRangeFilter visible />
+            {hasActiveFilters && (
+              <div className="shrink-0">
+                <button
+                  type="button"
+                  onClick={handleClearLeavesFilters}
+                  disabled={loading}
+                  className="inline-flex h-8.5 2xl:h-10 w-full xl:w-auto items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RotateCcw size={14} />
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
 
           <button

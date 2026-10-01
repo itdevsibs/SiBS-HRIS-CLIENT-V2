@@ -7,7 +7,12 @@ import React, {
 } from "react";
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
-import { MetricGridSkeleton, PageHeaderHero } from "@/components/ui";
+import {
+  MetricCard,
+  MetricGrid,
+  MetricGridSkeleton,
+  PageHeaderHero,
+} from "@/components/ui";
 import {
   getJobDescriptionDropdowns,
   getJobDescriptions,
@@ -222,57 +227,6 @@ function formatLoggedInOwner(user) {
   };
 }
 
-function StatCard({
-  title,
-  value,
-  icon,
-  description,
-  badgeText,
-  badgeClassName,
-  tone = "navy",
-  delay = 0,
-}) {
-  const MetricIcon = icon;
-
-  return (
-    <article
-      className="sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 font-jakarta"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
-    >
-      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-        <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
-          <div>
-            <p
-              className={`m-0 truncate sibs-kpi-kicker sibs-tone-${tone}-label`}
-            >
-              {title}
-            </p>
-            <div className="mt-1.5 2xl:mt-2 flex flex-wrap items-baseline justify-between gap-2">
-              <p className={`font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight sibs-tone-${tone}-label`}>
-                {value}
-              </p>
-              {badgeText && (
-                <span
-                  className={`inline-flex rounded-full px-2 py-0.5 sibs-text-micro font-extrabold ${badgeClassName || `sibs-tone-${tone}-icon`}`}
-                >
-                  {badgeText}
-                </span>
-              )}
-            </div>
-          </div>
-          <p className="mt-1 line-clamp-1 truncate sibs-kpi-desc text-sibs-muted">
-            {description}
-          </p>
-        </div>
-        <span
-          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full sibs-tone-${tone}-icon`}
-        >
-          <MetricIcon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
-        </span>
-      </div>
-    </article>
-  );
-}
 
 export default function JobDescriptionPage() {
   const mainRef = useRef(null);
@@ -842,43 +796,43 @@ export default function JobDescriptionPage() {
                 "New Job Description",
               ]}
               ariaLabel="Loading job description metrics"
-              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-4"
+              className="grid grid-cols-1 gap-2.5 2xl:gap-3 sm:grid-cols-2 lg:grid-cols-4"
             />
           ) : (
-            <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-4">
-              <StatCard
-                title="Total JD"
+            <MetricGrid columns={4}>
+              <MetricCard
+                label="Total JD"
                 value={stats.total}
                 icon={ClipboardList}
                 description="All job descriptions in database"
                 tone="navy"
                 delay={0}
               />
-              <StatCard
-                title="Existing"
+              <MetricCard
+                label="Existing"
                 value={stats.existing}
                 icon={CheckCircle2}
                 description="Ready or already available"
                 tone="green"
                 delay={60}
               />
-              <StatCard
-                title="For Revision"
+              <MetricCard
+                label="For Revision"
                 value={stats.revision}
                 icon={AlertTriangle}
                 description="Needs specification update or remarks"
                 tone="amber"
                 delay={120}
               />
-              <StatCard
-                title="New Job Description"
+              <MetricCard
+                label="New Job Description"
                 value={stats.newJd}
                 icon={FileText}
                 description="New or unlinked JD intake"
                 tone="indigo"
                 delay={180}
               />
-            </section>
+            </MetricGrid>
           )}
 
           <div

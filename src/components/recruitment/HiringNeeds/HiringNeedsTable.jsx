@@ -8,10 +8,14 @@ import {
 
 import { useHiringNeeds } from "../../../services/context/HiringNeedsContext";
 import { usePagination } from "../../../services/context/PaginationContext";
-import PaginationTable from "../../../services/pagination/PaginationTable";
 import HiringNeedsMobileCard from "./HiringNeedsMobileCard";
 import StatusFilterTabs from "../StatusFilterTabs";
-import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  TablePagination,
+  TableSkeletonRows,
+} from "@/components/ui";
 import {
   getHiringNeedsDateOrWeek,
   getHiringNeedsApprovalStatusLabel,
@@ -245,7 +249,7 @@ export default function HiringNeedsTable({
           desktopContent={
             <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
               <table className="w-full min-w-[1180px] table-fixed border-collapse bg-white text-left text-xs">
-                <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
+                <thead className="sibs-data-table-head sticky top-0 z-10 bg-slate-50">
                   <tr className="sibs-data-table-head-row">
                     <th className="sibs-data-table-th w-[16%] text-left">
                       Department / Account
@@ -285,7 +289,7 @@ export default function HiringNeedsTable({
 
                 <tbody
                   key={filterValues?.status || "All"}
-                  className="divide-y divide-[#E6ECF2]"
+                  className="divide-y divide-sibs-border"
                 >
                   {loading ? (
                     <TableSkeletonRows
@@ -315,10 +319,10 @@ export default function HiringNeedsTable({
                           tabIndex={0}
                           onClick={() => onView?.(item)}
                           onKeyDown={(event) => handleRowKeyDown(event, item)}
-                          className={`sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/40 ${
+                          className={`sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40 ${
                             unlinked
-                              ? "bg-[#FFF4EF] hover:bg-[#FFE9E0] focus-visible:bg-[#FFE9E0]"
-                              : "hover:bg-[#F8FAFC] focus-visible:bg-[#F8FAFC]"
+                              ? "bg-orange-50 hover:bg-orange-100/60 focus-visible:bg-orange-100/60"
+                              : "hover:bg-slate-50/50 focus-visible:bg-slate-50/50"
                           }`}
                           style={{
                             animationDelay: `${index * 30}ms`,
@@ -328,7 +332,7 @@ export default function HiringNeedsTable({
                         >
                           <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
                             <p
-                              className="max-w-[260px] truncate sibs-text-xs font-extrabold leading-5 text-[#042C51]"
+                              className="max-w-[260px] truncate sibs-text-xs font-extrabold leading-5 text-sibs-navy"
                               title={getHiringNeedsDepartmentAccount(item)}
                             >
                               {getHiringNeedsDepartmentAccount(item)}
@@ -336,11 +340,11 @@ export default function HiringNeedsTable({
                           </td>
 
                           <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
-                            <p className="max-w-[320px] sibs-text-xs font-extrabold leading-5 text-[#042C51]">
+                            <p className="max-w-[320px] sibs-text-xs font-extrabold leading-5 text-sibs-navy">
                               {title}
                             </p>
 
-                            <p className="mt-0.5 max-w-[320px] truncate text-[10px] 2xl:text-[11px] font-semibold leading-4 text-[#98A2B3]">
+                            <p className="mt-0.5 max-w-[320px] truncate text-[10px] 2xl:text-[11px] font-semibold leading-4 text-sibs-muted">
                               {getHiringNeedsSubtitle(item)}
                             </p>
                           </td>
@@ -357,7 +361,7 @@ export default function HiringNeedsTable({
 
                           <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
                             <div className="flex flex-col items-center gap-1">
-                              <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-[#F2F6FA] px-2.5 py-1 sibs-text-xs font-extrabold leading-none tabular-nums text-[#042C51]">
+                              <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-slate-100 px-2.5 py-1 sibs-text-xs font-extrabold leading-none tabular-nums text-sibs-navy">
                                 {getHiringNeedsHeadcount(item)}
                               </span>
                               {requestType.toLowerCase() === "requisition" && (
@@ -365,7 +369,7 @@ export default function HiringNeedsTable({
                                   <span className="whitespace-nowrap text-[9px] font-extrabold text-emerald-700">
                                     Successful {getHiringNeedsSuccessfulHeadcount(item)}/{getHiringNeedsHeadcount(item)}
                                   </span>
-                                  <span className="whitespace-nowrap text-[8px] font-semibold text-[#98A2B3]">
+                                  <span className="whitespace-nowrap text-[8px] font-semibold text-sibs-muted">
                                     Remaining {getHiringNeedsRemainingHeadcount(item)}
                                   </span>
                                   {getHiringNeedsFulfillmentStatus(item) === "Filled" && (
@@ -379,16 +383,16 @@ export default function HiringNeedsTable({
                           </td>
 
                           <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">
-                            <p className="max-w-[220px] sibs-text-xs font-semibold leading-5 text-[#475467]">
+                            <p className="max-w-[220px] sibs-text-xs font-semibold leading-5 text-sibs-muted">
                               {getHiringNeedsReason(item)}
                             </p>
                           </td>
 
-                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold text-[#475467] align-middle">
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-muted align-middle">
                             {getHiringNeedsSite(item)}
                           </td>
 
-                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                          <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 sibs-text-xs font-semibold tabular-nums text-sibs-muted align-middle">
                             {getHiringNeedsDateOrWeek(item)}
                           </td>
 
@@ -406,7 +410,7 @@ export default function HiringNeedsTable({
                             <span
                               className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[9px] font-extrabold leading-none ${
                                 unlinked
-                                  ? "border-[#FFB39F] bg-[#FFE1D8] text-[#D92D20]"
+                                  ? "border-rose-200 bg-rose-50 text-rose-700"
                                   : linkNotApplicable
                                     ? "border-slate-200 bg-slate-50 text-slate-500"
                                   : "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -428,13 +432,13 @@ export default function HiringNeedsTable({
                   ) : (
                     <tr>
                       <td colSpan={9} className="px-5 py-14 text-center">
-                        <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+                        <FileText className="mx-auto h-9 w-9 text-slate-300" />
 
-                        <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                        <p className="mt-3 text-sm font-extrabold text-sibs-navy">
                           No Personnel Requisitions Found
                         </p>
 
-                        <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                        <p className="mt-1 text-xs font-semibold text-sibs-muted">
                           No records matched the active search and filters.
                         </p>
                       </td>
@@ -448,21 +452,18 @@ export default function HiringNeedsTable({
       </div>
 
       <div className="pt-3">
-          <PaginationTable
-            showSearch={false}
-            showPagination
-            showCount
-            loading={loading}
-            currentPage={safeCurrentPage}
-            totalPages={totalPages}
-            loadedCount={paginatedData.length}
-            totalRecords={filteredList.length}
-            recordLabel="personnel requisitions"
-            onPrevious={handlePreviousPage}
-            onNext={handleNextPage}
-            className="border-0 bg-transparent p-0 shadow-none"
-          />
-        </div>
+        <TablePagination
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          totalRecords={filteredList.length}
+          loadedCount={paginatedData.length}
+          limit={limit}
+          recordLabel="personnel requisitions"
+          onPageChange={setPage}
+          loading={loading}
+          showCount
+        />
+      </div>
     </div>
   );
 }

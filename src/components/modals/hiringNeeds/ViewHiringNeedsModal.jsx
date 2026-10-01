@@ -446,14 +446,14 @@ function getFiledByDisplay(item = {}) {
 function CompactDetail({
   label,
   value,
-  valueClassName = "text-[#042C51]",
+  valueClassName = "text-sibs-navy",
   children,
 }) {
   const hasValue = value !== undefined && value !== null && value !== "";
 
   return (
     <div className="min-w-0 font-jakarta">
-      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
 
@@ -479,7 +479,7 @@ function SupportingFilePreview({ url, fileName, image }) {
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="block overflow-hidden rounded-xl border border-[#DCE6F1] bg-white font-jakarta"
+        className="block overflow-hidden rounded-xl border border-sibs-border bg-white font-jakarta"
       >
         <img
           src={url}
@@ -496,7 +496,7 @@ function SupportingFilePreview({ url, fileName, image }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-white hover:text-[#FF5C28]"
+      className="inline-flex items-center gap-2 rounded-[10px] border border-sibs-border bg-slate-50 px-3 py-2.5 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-white hover:text-sibs-orange"
     >
       <FileText size={16} />
       <span className="break-all">{fileName}</span>
@@ -507,7 +507,7 @@ function SupportingFilePreview({ url, fileName, image }) {
 function AuditTrailSection({ entries = [] }) {
   return (
     <section className="font-jakarta">
-      <h3 className="text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
+      <h3 className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
         Form Action Audit Trail
       </h3>
 
@@ -522,30 +522,30 @@ function AuditTrailSection({ entries = [] }) {
                 className="relative flex gap-3 pb-4 last:pb-0"
               >
                 {!isLastEntry ? (
-                  <span className="absolute bottom-0 left-[8px] top-[18px] w-px bg-[#DCE6F1]" />
+                  <span className="absolute bottom-0 left-[8px] top-[18px] w-px bg-sibs-border" />
                 ) : null}
 
-                <span className="relative z-10 mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-[#042C51] bg-white text-[#042C51]">
+                <span className="relative z-10 mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-sibs-navy bg-white text-sibs-navy">
                   <Check size={10} strokeWidth={2.5} />
                 </span>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <p className="text-xs font-extrabold leading-5 text-[#042C51]">
+                    <p className="text-xs font-extrabold leading-5 text-sibs-navy">
                       {entry.action || "Recorded Activity"}
                     </p>
 
-                    <span className="text-[10px] font-bold text-[#98A2B3]">
+                    <span className="text-[10px] font-bold text-sibs-muted">
                       {formatDate(entry.date)}
                     </span>
                   </div>
 
-                  <p className="text-[10px] font-semibold leading-4 text-[#667085]">
+                  <p className="text-[10px] font-semibold leading-4 text-sibs-muted">
                     Actor: {entry.actor || "—"}
                   </p>
 
                   {entry.remarks ? (
-                    <p className="mt-1 whitespace-pre-line break-words text-[10px] font-semibold italic leading-4 text-[#667085]">
+                    <p className="mt-1 whitespace-pre-line break-words text-[10px] font-semibold italic leading-4 text-sibs-muted">
                       “{entry.remarks}”
                     </p>
                   ) : null}
@@ -555,9 +555,9 @@ function AuditTrailSection({ entries = [] }) {
           })}
         </div>
       ) : (
-        <div className="mt-3 rounded-xl border border-dashed border-[#D7E0E9] bg-[#F8FAFC] px-4 py-5 text-center">
-          <Clock size={18} className="mx-auto text-[#94A9C1]" />
-          <p className="mt-2 text-xs font-bold text-[#475467]">
+        <div className="mt-3 rounded-xl border border-dashed border-sibs-border bg-slate-50 px-4 py-5 text-center">
+          <Clock size={18} className="mx-auto text-sibs-muted" />
+          <p className="mt-2 text-xs font-bold text-sibs-muted">
             No audit history is available for this request.
           </p>
         </div>
@@ -912,11 +912,11 @@ export default function ViewHiringNeedsModal({
         className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
+        <header className="shrink-0 bg-sibs-navy px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
               <FileText
-                className="mt-0.5 h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 text-[#FF5C28]"
+                className="mt-0.5 h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 text-sibs-orange"
               />
 
               <div className="min-w-0">
@@ -968,17 +968,17 @@ export default function ViewHiringNeedsModal({
         >
           <div className="space-y-5">
             {isRelinkMode ? (
-              <section className="rounded-xl border border-[#F5B942] bg-[#FFF9EE] p-4 sm:p-5">
+              <section className="rounded-xl border border-amber-400 bg-amber-50 p-4 sm:p-5">
                 <div className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#FFF0C7] text-[#D97706]">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-amber-100 text-amber-600">
                     <AlertTriangle size={17} strokeWidth={2.2} />
                   </span>
 
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-xs font-extrabold text-[#7A3B12]">
+                    <h3 className="text-xs font-extrabold text-amber-900">
                       New Job Description Required
                     </h3>
-                    <p className="mt-1 text-[11px] font-semibold leading-5 text-[#A15C24]">
+                    <p className="mt-1 text-[11px] font-semibold leading-5 text-amber-800">
                       This requisition was preserved when its Job Description
                       was removed. Select a new approved Job Description to
                       restore the link without changing its approval status or
@@ -988,7 +988,7 @@ export default function ViewHiringNeedsModal({
                   </div>
                 </div>
 
-                <div className="mt-4 w-full rounded-[12px] border border-[#FF8A5B] bg-white p-3 shadow-[0_0_0_3px_rgba(255,92,40,0.08)]">
+                <div className="mt-4 w-full rounded-[12px] border border-sibs-orange/50 bg-white p-3 shadow-sm">
                   <DropdownField
                     label="Select Job Description"
                     required
@@ -1010,13 +1010,13 @@ export default function ViewHiringNeedsModal({
                     searchable
                     boundaryRef={modalBodyRef}
                     maxMenuHeight={260}
-                    className="w-full [&>div]:!border-[#FF8A5B]"
+                    className="w-full [&>div]:!border-sibs-orange/50"
                   />
                 </div>
               </section>
             ) : null}
 
-            <section className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
+            <section className="rounded-xl border border-sibs-border bg-slate-50 p-4 sm:p-5">
               <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <CompactDetail
                   label="Department"
@@ -1047,7 +1047,7 @@ export default function ViewHiringNeedsModal({
                         : jobDescriptionDisplay || "Not selected"
                   }
                   valueClassName={
-                    isDownsize ? "text-[#042C51]" : "text-[#FF5C28]"
+                    isDownsize ? "text-sibs-navy" : "text-sibs-orange"
                   }
                 />
 
@@ -1060,7 +1060,7 @@ export default function ViewHiringNeedsModal({
                   value={`${getHeadcount(safeItem)} ${
                     isDownsize ? "headcount" : "slots"
                   }`}
-                  valueClassName="text-sm font-extrabold text-[#042C51]"
+                  valueClassName="text-sm font-extrabold text-sibs-navy"
                 />
 
                 {!isDownsize ? (
@@ -1082,14 +1082,14 @@ export default function ViewHiringNeedsModal({
                   <CompactDetail
                     label="Remaining Headcount"
                     value={`${getHiringNeedsRemainingHeadcount(safeItem)} slots`}
-                    valueClassName="text-sm font-extrabold text-[#042C51]"
+                    valueClassName="text-sm font-extrabold text-sibs-navy"
                   />
                 ) : null}
 
                 <CompactDetail
                   label="Primary Reason"
                   value={reasonDisplay}
-                  valueClassName="text-[#042C51]"
+                  valueClassName="text-sibs-navy"
                 />
 
                 <CompactDetail
@@ -1106,7 +1106,7 @@ export default function ViewHiringNeedsModal({
                           safeItem.dateNeeded || safeItem.date_needed,
                         )
                   }
-                  valueClassName="text-[#042C51]"
+                  valueClassName="text-sibs-navy"
                 />
 
                 <CompactDetail
@@ -1139,7 +1139,7 @@ export default function ViewHiringNeedsModal({
                 <CompactDetail
                   label="Submitted Date"
                   value={submittedDate}
-                  valueClassName="text-[#042C51]"
+                  valueClassName="text-sibs-navy"
                 />
 
                 {finalStatus ? (
@@ -1147,7 +1147,7 @@ export default function ViewHiringNeedsModal({
                     <CompactDetail
                       label="Decision Date"
                       value={approvalDate}
-                      valueClassName="text-[#042C51]"
+                      valueClassName="text-sibs-navy"
                     />
                     <CompactDetail
                       label="Decision By"
@@ -1163,7 +1163,7 @@ export default function ViewHiringNeedsModal({
                 <h3 className="text-[9px] font-extrabold uppercase tracking-wide text-indigo-600">
                   HR/OM Remarks Context
                 </h3>
-                <p className="mt-1 whitespace-pre-line break-words text-xs font-semibold leading-5 text-[#475467]">
+                <p className="mt-1 whitespace-pre-line break-words text-xs font-semibold leading-5 text-sibs-muted">
                   {requestRemarks}
                 </p>
               </section>
@@ -1171,7 +1171,7 @@ export default function ViewHiringNeedsModal({
 
             {isDownsize && supportingFileUrl ? (
               <section className="font-jakarta">
-                <h3 className="mb-2 text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
+                <h3 className="mb-2 text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
                   Supporting File
                 </h3>
                 <SupportingFilePreview
@@ -1185,14 +1185,14 @@ export default function ViewHiringNeedsModal({
             <AuditTrailSection entries={auditTrail} />
 
             {!finalStatus && !isRelinkMode ? (
-              <section className="border-t border-[#E6ECF2] pt-4 font-jakarta">
+              <section className="border-t border-sibs-border pt-4 font-jakarta">
                 <div className="flex items-start gap-2.5">
-                  <Clock size={15} className="mt-0.5 shrink-0 text-[#042C51]" />
+                  <Clock size={15} className="mt-0.5 shrink-0 text-sibs-navy" />
                   <div className="min-w-0">
-                    <h3 className="text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
+                    <h3 className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
                       Approval Action
                     </h3>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                    <p className="mt-1 text-xs font-semibold leading-5 text-sibs-muted">
                       {decisionDescription}
                     </p>
                   </div>
@@ -1202,10 +1202,10 @@ export default function ViewHiringNeedsModal({
                   <div className="mt-3">
                     <label
                       htmlFor="hiring-needs-approval-remarks"
-                      className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]"
+                      className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted"
                     >
                       Decision Remarks
-                      <span className="ml-1 font-semibold normal-case tracking-normal text-[#98A2B3]">
+                      <span className="ml-1 font-semibold normal-case tracking-normal text-sibs-muted">
                         (Optional)
                       </span>
                     </label>
@@ -1217,7 +1217,7 @@ export default function ViewHiringNeedsModal({
                       disabled={decisionLoading}
                       rows={3}
                       placeholder="Add remarks for this approval decision..."
-                      className="w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#344054] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
+                      className="w-full resize-none rounded-[10px] border border-sibs-border bg-slate-50 px-3 py-2.5 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100"
                     />
                   </div>
                 ) : null}
@@ -1226,13 +1226,13 @@ export default function ViewHiringNeedsModal({
           </div>
         </main>
 
-        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3 sm:px-6">
+        <footer className="shrink-0 border-t border-sibs-border bg-white px-5 py-3 sm:px-6">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={onClose}
               disabled={decisionLoading || relinkLoading}
-              className="inline-flex h-9 w-full items-center justify-center rounded-[9px] bg-[#EEF3F8] px-4 text-xs font-extrabold text-[#475467] transition hover:bg-[#E4EBF3] hover:text-[#07365F] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              className="inline-flex h-9 w-full items-center justify-center rounded-[9px] bg-slate-100 px-4 text-xs font-extrabold text-sibs-navy transition hover:bg-slate-200 hover:text-sibs-navy disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               Close Panel
             </button>
@@ -1242,7 +1242,7 @@ export default function ViewHiringNeedsModal({
                 type="button"
                 onClick={handleRelink}
                 disabled={relinkLoading || !selectedJobDescriptionId}
-                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:bg-[#98A2B3] disabled:text-white/70 sm:w-auto"
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange-dark disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white/70 sm:w-auto"
               >
                 {relinkLoading ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -1271,7 +1271,7 @@ export default function ViewHiringNeedsModal({
                   type="button"
                   onClick={() => handleDecision("approve")}
                   disabled={decisionLoading}
-                  className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-[#07365F] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                  className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-sibs-navy px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
                   {decisionLoading && decisionAction === "approve" ? (
                     <Loader2 size={14} className="animate-spin" />
