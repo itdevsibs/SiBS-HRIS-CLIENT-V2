@@ -14,7 +14,11 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { getEmployee, getEmployeePdsPdf } from "@/lib/axios/getEmployee";
+import {
+  getEmployee,
+  getEmployeePdsPdf,
+  getEmployeePdsPreviewUrl,
+} from "@/lib/axios/getEmployee";
 import StatusModal from "@/components/modals/StatusModal";
 import { useUser } from "@/services/context/UserContext";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "@/lib/utils/employees/employeeNameDisplay.js";
@@ -886,16 +890,30 @@ export default function EmployeeTable({
         );
       }
 
-      const objectUrl = URL.createObjectURL(result.data);
       if (previewWindow) {
-        previewWindow.location.replace(objectUrl);
+        /*
+         * Do not navigate the new tab to a blob: PDF URL. Adobe Acrobat's
+         * browser extension can take over top-level blob PDF navigation and
+         * leave the viewer blank because the extension cannot reliably reopen
+         * the page-owned blob URL. The normal authenticated HTTP endpoint is
+         * safe to navigate directly and lets either Chrome's native viewer or
+         * Acrobat load the PDF from a real URL.
+         */
+        const previewUrl = getEmployeePdsPreviewUrl(sibsId);
+        if (!previewUrl) {
+          throw new Error("Unable to build the employee PDS preview URL.");
+        }
+        previewWindow.location.replace(previewUrl);
       } else {
+        const objectUrl = URL.createObjectURL(result.data);
         const link = document.createElement("a");
         link.href = objectUrl;
         link.download = result.filename || `${sibsId}_Employee_PDS.pdf`;
         document.body.appendChild(link);
         link.click();
         link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+
         setStatusModal({
           open: true,
           type: "success",
@@ -904,7 +922,6 @@ export default function EmployeeTable({
             "The PDF preview was blocked, so the employee PDS was downloaded instead.",
         });
       }
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (error) {
       if (previewWindow && !previewWindow.closed) previewWindow.close();
       setStatusModal({
