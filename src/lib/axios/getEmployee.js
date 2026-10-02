@@ -1,5 +1,18 @@
 import api from "./api-template";
 
+export function getEmployeePdsPreviewUrl(sibsId) {
+  const safeId = String(sibsId || "").trim();
+  if (!safeId) return "";
+
+  const baseURL = String(api.defaults?.baseURL || "")
+    .trim()
+    .replace(/\/+$/, "");
+  const path = `/api/employees/${encodeURIComponent(safeId)}/pds.pdf`;
+  const query = `_t=${Date.now()}`;
+
+  return baseURL ? `${baseURL}${path}?${query}` : `${path}?${query}`;
+}
+
 export async function getEmployee(
   page = 1,
   search = "",
