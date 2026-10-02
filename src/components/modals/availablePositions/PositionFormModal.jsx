@@ -148,27 +148,27 @@ function getPositionLastUpdated(position = {}, form = {}) {
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <label className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
       {children}
 
-      {required ? <span className="ml-0.5 text-[#FF5C28]">*</span> : null}
+      {required ? <span className="ml-0.5 text-sibs-orange">*</span> : null}
     </label>
   );
 }
 
 function PositionFormSection({ title, subtitle, icon: Icon, children }) {
   return (
-    <section className="rounded-xl 2xl:rounded-2xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
-      <div className="mb-3 2xl:mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
-        {Icon ? <Icon className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#FF5C28]" /> : null}
+    <section className="rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
+      <div className="mb-3 2xl:mb-4 flex items-start gap-2.5 border-b border-sibs-border pb-2.5 2xl:pb-3">
+        {Icon ? <Icon className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-orange" /> : null}
 
         <div className="min-w-0">
-          <h3 className="text-sm font-extrabold text-[#042C51]">
+          <h3 className="text-sm font-extrabold text-sibs-navy">
             {title}
           </h3>
 
           {subtitle ? (
-            <p className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-relaxed text-[#667085]">
+            <p className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-relaxed text-sibs-muted">
               {subtitle}
             </p>
           ) : null}
@@ -852,14 +852,14 @@ export default function PositionFormModal({
       zIndex="z-[190]"
       className={
         isRelinkMode
-          ? "w-full [&>div]:!border-[#FF8A5B] [&>div]:hover:!border-[#FF8A5B] [&>div]:focus-within:!border-[#FF8A5B]"
+          ? "w-full [&>div]:!border-sibs-orange [&>div]:hover:!border-sibs-orange [&>div]:focus-within:!border-sibs-orange"
           : ""
       }
     />
   );
 
   return (
-    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 sm:p-4 font-jakarta bg-[#042C51]/60">
+    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 sm:p-4 font-jakarta bg-sibs-navy/60">
       <form
         id="available-position-form"
         role="dialog"
@@ -867,18 +867,18 @@ export default function PositionFormModal({
         aria-labelledby="available-position-modal-title"
         onSubmit={handleFormSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-[#F7F9FC] shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-slate-50 shadow-2xl font-jakarta"
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
+        <header className="shrink-0 bg-sibs-navy px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-1 items-center gap-2.5 2xl:gap-3">
-              <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
-                <BriefcaseBusiness className="h-4 w-4 text-[#FF5C28]" />
+              <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sibs-orange">
+                <BriefcaseBusiness className="h-4 w-4 text-sibs-orange" />
               </div>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex h-4.5 2xl:h-5 items-center rounded bg-[#FF5C28] px-2 text-[8.5px] font-extrabold uppercase leading-none text-white">
+                  <span className="inline-flex h-4.5 2xl:h-5 items-center rounded bg-sibs-orange px-2 text-[8.5px] font-extrabold uppercase leading-none text-white">
                     Position Dictionary
                   </span>
 
@@ -964,7 +964,7 @@ export default function PositionFormModal({
         <div
           ref={modalBodyRef}
           data-dropdown-boundary="true"
-          className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-4 2xl:p-5"
+          className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50 p-3 sm:p-4 2xl:p-5"
         >
           <div className="space-y-4">
             <PositionFormSection
@@ -977,18 +977,18 @@ export default function PositionFormModal({
               icon={FileCheck2}
             >
               {isRelinkMode ? (
-                <section className="mb-3 rounded-xl border border-[#F5B942] bg-[#FFF9EE] p-3 sm:p-3.5">
+                <section className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 sm:p-3.5">
                   <div className="flex items-start gap-2.5">
-                    <span className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg bg-[#FFF0C7] text-[#D97706]">
+                    <span className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
                       <AlertTriangle size={15} strokeWidth={2.2} />
                     </span>
 
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-xs font-extrabold text-[#7A3B12]">
+                      <h3 className="text-xs font-extrabold text-amber-900">
                         New Job Description Required
                       </h3>
 
-                      <p className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-relaxed text-[#A15C24]">
+                      <p className="mt-0.5 text-[10px] sm:text-xs font-semibold leading-relaxed text-amber-800">
                         This position was preserved when its Job Description was
                         removed. Select a new approved Job Description to restore
                         the link without changing its approval status or position
@@ -997,7 +997,7 @@ export default function PositionFormModal({
                     </div>
                   </div>
 
-                  <div className="mt-2.5 w-full rounded-xl border border-[#FF8A5B] bg-white p-2 sm:p-2.5 shadow-[0_0_0_3px_rgba(255,92,40,0.08)]">
+                  <div className="mt-2.5 w-full rounded-xl border border-sibs-orange bg-white p-2 sm:p-2.5 shadow-[0_0_0_3px_rgba(255,92,40,0.08)]">
                     {approvedJdSelector}
                   </div>
                 </section>
@@ -1214,13 +1214,13 @@ export default function PositionFormModal({
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+        <footer className="shrink-0 border-t border-sibs-border bg-slate-100 px-5 py-3 2xl:py-3.5 sm:px-6">
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="min-w-0 text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
+              <div className="min-w-0 text-[10px] 2xl:text-[11px] font-semibold text-sibs-muted">
                 <span>
                   Position ID:{" "}
-                  <span className="font-extrabold text-[#042C51] font-mono">
+                  <span className="font-extrabold text-sibs-navy font-mono">
                     {displayPositionId}
                   </span>
                 </span>
@@ -1229,7 +1229,7 @@ export default function PositionFormModal({
 
                 <span>
                   Last Updated:{" "}
-                  <span className="font-extrabold text-[#042C51]">
+                  <span className="font-extrabold text-sibs-navy">
                     {lastUpdated ? formatDate(lastUpdated) : "—"}
                   </span>
                 </span>
@@ -1281,7 +1281,7 @@ export default function PositionFormModal({
                         type="button"
                         onClick={handleApprove}
                         disabled={approvalActionsDisabled}
-                        className="inline-flex h-8.5 2xl:h-10 min-w-[92px] items-center justify-center gap-1.5 rounded-lg bg-[#00A878] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#00976D] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                        className="inline-flex h-8.5 2xl:h-10 min-w-[92px] items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                       >
                         <CheckCircle2 size={14} strokeWidth={2} />
                         <span>Approve</span>
@@ -1291,7 +1291,7 @@ export default function PositionFormModal({
                         type="button"
                         onClick={handleReject}
                         disabled={approvalActionsDisabled}
-                        className="inline-flex h-8.5 2xl:h-10 min-w-[82px] items-center justify-center gap-1.5 rounded-lg bg-[#F00046] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#D9003F] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                        className="inline-flex h-8.5 2xl:h-10 min-w-[82px] items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                       >
                         <XCircle size={14} strokeWidth={2} />
                         <span>Reject</span>

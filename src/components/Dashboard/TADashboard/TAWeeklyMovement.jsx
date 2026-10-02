@@ -1,3 +1,4 @@
+import React from "react";
 import { TrendingUp } from "lucide-react";
 
 import {
@@ -6,12 +7,12 @@ import {
 } from "../../../lib/utils/Dashboards/TADashboard/taDashboardHelpers.js";
 
 const stageTone = {
-  Sourced: "border-blue-200 bg-blue-50 text-blue-700",
-  Screened: "border-cyan-200 bg-cyan-50 text-cyan-700",
-  Interviewed: "border-amber-200 bg-amber-50 text-amber-700",
-  Offered: "border-orange-200 bg-orange-50 text-orange-700",
-  Accepted: "border-indigo-200 bg-indigo-50 text-indigo-700",
-  Hired: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  Sourced: "sibs-tone-blue-icon",
+  Screened: "sibs-tone-indigo-icon",
+  Interviewed: "sibs-tone-amber-icon",
+  Offered: "sibs-tone-orange-icon",
+  Accepted: "sibs-tone-purple-icon",
+  Hired: "sibs-tone-green-icon",
 };
 
 export default function TAWeeklyMovement({ funnel = {}, delay = 0 }) {
@@ -57,7 +58,7 @@ export default function TAWeeklyMovement({ funnel = {}, delay = 0 }) {
           {stages.map(([label, value], index) => (
             <div
               key={label}
-              className={`flex min-h-[68px] 2xl:min-h-[76px] flex-col justify-between rounded-xl border p-2 2xl:p-2.5 ${stageTone[label] || "border-slate-200 bg-slate-50 text-slate-700"}`}
+              className={`flex min-h-[68px] 2xl:min-h-[76px] flex-col justify-between rounded-xl border border-sibs-border-panel p-2 2xl:p-2.5 ${stageTone[label] || "sibs-tone-navy-icon"}`}
               style={{
                 animationDelay: `${delay + 40 + index * 30}ms`,
                 animationFillMode: "both",

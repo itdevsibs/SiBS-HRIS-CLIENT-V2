@@ -1,6 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 import { useRecruitmentSettings } from "../../services/context/RecruitmentSettingsContext";
+
+const RECRUITMENT_SETTINGS_OVERVIEW = "Overview";
 
 export function useRecruitmentSettingsPage() {
   const mainRef = useRef(null);
@@ -8,71 +10,7 @@ export function useRecruitmentSettingsPage() {
   const {
     activeTab,
     setActiveTab,
-    recruitmentTabs,
-    handleSaveSettings,
   } = useRecruitmentSettings();
-
-  const [pageStatusModal, setPageStatusModal] = useState({
-    open: false,
-    type: "success",
-    title: "",
-    message: "",
-  });
-
-  const settingsTabs = useMemo(() => {
-    const tabs = Array.isArray(recruitmentTabs) ? recruitmentTabs : [];
-
-    return [
-      "Update Headcounts",
-      ...tabs.filter(
-        (tab) => tab !== "Update Headcounts" && tab !== "Headcount Requests",
-      ),
-    ];
-  }, [recruitmentTabs]);
-
-  function openPageStatusModal({ type = "success", title = "", message = "" }) {
-    setPageStatusModal({
-      open: true,
-      type,
-      title,
-      message,
-    });
-  }
-
-  function closePageStatusModal() {
-    setPageStatusModal((previous) => ({
-      ...previous,
-      open: false,
-    }));
-  }
-
-  async function handleSyncConfigurations() {
-    try {
-      const result = handleSaveSettings?.();
-
-      if (result && typeof result.then === "function") {
-        await result;
-      }
-
-      openPageStatusModal({
-        type: "success",
-        title: "Configurations Synced",
-        message: "Recruitment settings were synced successfully.",
-      });
-    } catch (error) {
-      console.error("SYNC RECRUITMENT SETTINGS ERROR:", error);
-
-      openPageStatusModal({
-        type: "error",
-        title: "Sync Failed",
-        message:
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message ||
-          "Failed to sync recruitment settings.",
-      });
-    }
-  }
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
@@ -94,6 +32,18 @@ export function useRecruitmentSettingsPage() {
     }, 0);
   }
 
+  function handleOpenSetting(settingKey) {
+    if (!settingKey) return;
+
+    setActiveTab(settingKey);
+    forceScrollToTop();
+  }
+
+  function handleBackToOverview() {
+    setActiveTab(RECRUITMENT_SETTINGS_OVERVIEW);
+    forceScrollToTop();
+  }
+
   useLayoutEffect(() => {
     if (
       typeof window !== "undefined" &&
@@ -106,16 +56,13 @@ export function useRecruitmentSettingsPage() {
   }, []);
 
   useEffect(() => {
-    setActiveTab("Update Headcounts");
+    setActiveTab(RECRUITMENT_SETTINGS_OVERVIEW);
   }, [setActiveTab]);
 
   return {
     activeTab,
-    closePageStatusModal,
-    handleSyncConfigurations,
+    handleBackToOverview,
+    handleOpenSetting,
     mainRef,
-    pageStatusModal,
-    setActiveTab,
-    settingsTabs,
   };
 }

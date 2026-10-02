@@ -39,13 +39,13 @@ export default function HiringNeedsMobileCard({ item, onView }) {
     <DataCard
       interactive
       onClick={() => onView(item)}
-      className={unlinked ? "border-[#FFD1C4] bg-[#FFF8F5]" : ""}
+      className={unlinked ? "border-orange-200 bg-orange-50" : ""}
     >
       <DataCard.Header
         title={item.positionTitle || "Untitled Position"}
         subtitle={
           <span className="truncate">
-            <span className="font-extrabold text-[#FF5C28]">{item.id}</span> ·{" "}
+            <span className="font-extrabold text-sibs-orange">{item.id}</span> ·{" "}
             {item.departmentAccount}
           </span>
         }
@@ -61,14 +61,14 @@ export default function HiringNeedsMobileCard({ item, onView }) {
       />
 
       <DataCard.ContextRow>
-        <span className="inline-flex items-center rounded-full border border-slate-200 bg-[#F8FAFC] px-2 py-0.5 text-[9px] font-extrabold leading-none text-[#042C51]">
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-extrabold leading-none text-sibs-navy">
           {requestType}
         </span>
-        <span className="text-[11px] font-semibold text-[#667085]">
+        <span className="text-[11px] font-semibold text-sibs-muted">
           {item.locationSite || "—"}
         </span>
         {dateOrWeek && (
-          <span className="text-[11px] font-semibold text-[#667085]">
+          <span className="text-[11px] font-semibold text-sibs-muted">
             Target: {dateOrWeek}
           </span>
         )}
@@ -104,11 +104,11 @@ export default function HiringNeedsMobileCard({ item, onView }) {
       )}
 
       {item.reasonForHiring ? (
-        <div className="mt-2.5 rounded-lg border border-slate-100 bg-[#F8FAFC] px-2.5 py-1.5 text-left">
+        <div className="mt-2.5 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left">
           <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
             Reason
           </p>
-          <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-[#344054]">
+          <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-sibs-navy">
             {item.reasonForHiring}
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function HiringNeedsMobileCard({ item, onView }) {
         <span
           className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${
             unlinked
-              ? "border-[#FFB39F] bg-[#FFE1D8] text-[#D92D20]"
+              ? "border-rose-200 bg-rose-50 text-rose-700"
               : linkNotApplicable
                 ? "border-slate-200 bg-slate-50 text-slate-500"
                 : "border-emerald-200 bg-emerald-50 text-emerald-700"

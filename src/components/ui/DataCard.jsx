@@ -42,9 +42,9 @@ export default function DataCard({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       style={animationStyle}
-      className={`sibs-page-card-in group relative overflow-hidden rounded-xl border border-[#E6ECF2] bg-white p-3.5 shadow-xs transition-all duration-200 ${
+      className={`sibs-page-card-in group relative overflow-hidden rounded-xl border border-sibs-border bg-white p-3.5 shadow-xs transition-all duration-200 ${
         isInteractive
-          ? "cursor-pointer hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:shadow-md active:scale-[0.99]"
+          ? "cursor-pointer hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-md active:scale-[0.99]"
           : ""
       } ${className}`}
       {...props}
@@ -78,17 +78,17 @@ function DataCardHeader({
         )}
         <div className="min-w-0 flex-1">
           {kicker && (
-            <div className="text-[10px] font-mono font-extrabold text-[#FF5C28]">
+            <div className="text-[10px] font-mono font-extrabold text-sibs-orange">
               {kicker}
             </div>
           )}
           {title && (
-            <h3 className="m-0 truncate font-jakarta text-[13px] sm:text-sm font-extrabold text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
+            <h3 className="m-0 truncate font-jakarta text-[13px] sm:text-sm font-extrabold text-sibs-navy transition-colors group-hover:text-sibs-orange">
               {title}
             </h3>
           )}
           {subtitle && (
-            <div className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+            <div className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
               {subtitle}
             </div>
           )}
@@ -113,7 +113,7 @@ function DataCardHeader({
 function DataCardContextRow({ children, className = "" }) {
   return (
     <div
-      className={`mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E6ECF2]/80 bg-[#F8FAFC] px-2.5 py-2 text-[11px] leading-snug text-[#344054] ${className}`}
+      className={`mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sibs-border/80 bg-sibs-surface px-2.5 py-2 text-[11px] leading-snug text-sibs-text-secondary ${className}`}
     >
       {children}
     </div>
@@ -132,7 +132,7 @@ function DataCardMetrics({ children, cols = 4, className = "" }) {
 
   return (
     <div
-      className={`mt-2.5 grid ${colClass} divide-x divide-[#E6ECF2] rounded-lg border border-[#E6ECF2] bg-white py-1.5 text-center ${className}`}
+      className={`mt-2.5 grid ${colClass} divide-x divide-sibs-border rounded-lg border border-sibs-border bg-white py-1.5 text-center ${className}`}
     >
       {children}
     </div>
@@ -147,13 +147,13 @@ function DataCardMetricItem({
   valueClassName = "",
 }) {
   const toneClasses = {
-    default: "text-[#042C51]",
-    secondary: "text-[#344054]",
-    muted: "text-[#667085]",
-    dim: "text-[#7B8DB3]",
+    default: "text-sibs-navy",
+    secondary: "text-sibs-text-secondary",
+    muted: "text-sibs-muted",
+    dim: "text-sibs-faint",
     amber: "text-amber-600",
     emerald: "text-emerald-600",
-    orange: "text-[#FF5C28]",
+    orange: "text-sibs-orange",
     blue: "text-blue-600",
     danger: "text-rose-600",
   };
@@ -162,7 +162,7 @@ function DataCardMetricItem({
 
   return (
     <div className={`px-1 ${className}`}>
-      <p className="truncate text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
+      <p className="truncate text-[9px] font-extrabold uppercase tracking-wider text-sibs-muted">
         {label}
       </p>
       <div
@@ -183,7 +183,7 @@ function DataCardFooter({
 }) {
   return (
     <div
-      className={`mt-2.5 flex items-center justify-between border-t border-dashed border-[#E6ECF2] pt-2 text-[10px] font-semibold text-[#8A98B8] ${className}`}
+      className={`mt-2.5 flex items-center justify-between border-t border-dashed border-sibs-border pt-2 text-[10px] font-semibold text-sibs-muted ${className}`}
     >
       {children || (
         <>
@@ -195,7 +195,7 @@ function DataCardFooter({
             )}
           </span>
           {actionLabel && (
-            <span className="flex shrink-0 items-center gap-1 font-bold text-[#FF5C28] group-hover:underline">
+            <span className="flex shrink-0 items-center gap-1 font-bold text-sibs-orange group-hover:underline">
               {actionLabel}
               {actionIcon || <ChevronRight size={12} />}
             </span>
@@ -215,7 +215,7 @@ function DataCardSkeleton({ count = 4, lines = 2, className = "" }) {
         <div
           data-testid="data-card-skeleton"
           key={`data-card-skeleton-${index}`}
-          className="rounded-xl border border-[#E6ECF2] bg-white p-3.5 shadow-xs"
+          className="rounded-xl border border-sibs-border bg-white p-3.5 shadow-xs"
         >
           <div className="flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5">
@@ -238,7 +238,7 @@ function DataCardSkeleton({ count = 4, lines = 2, className = "" }) {
             </div>
             <Skeleton className="h-5 w-16 rounded-full" />
           </div>
-          <div className="mt-3 grid grid-cols-4 gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-2">
+          <div className="mt-3 grid grid-cols-4 gap-2 rounded-lg border border-sibs-border bg-sibs-surface p-2">
             {Array.from({ length: 4 }).map((__, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
                 <Skeleton className="h-2 w-8" />
@@ -267,16 +267,16 @@ function DataCardEmpty({
 
   return (
     <div
-      className={`rounded-xl border border-[#E6ECF2] bg-white p-8 text-center shadow-xs ${className}`}
+      className={`rounded-xl border border-sibs-border bg-white p-8 text-center shadow-xs ${className}`}
     >
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF0EB] text-[#FF5C28]">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sibs-cream-light text-sibs-orange">
         {renderedIcon}
       </div>
-      <h4 className="mt-3 font-heading text-sm font-bold text-[#042C51]">
+      <h4 className="mt-3 font-heading text-sm font-bold text-sibs-navy">
         {title}
       </h4>
       {description && (
-        <p className="mx-auto mt-1 max-w-xs text-xs text-[#667085]">
+        <p className="mx-auto mt-1 max-w-xs text-xs text-sibs-muted">
           {description}
         </p>
       )}
@@ -293,10 +293,10 @@ function DataCardSection({
 }) {
   return (
     <section
-      className={`mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 ${className}`}
+      className={`mt-3 rounded-xl border border-sibs-border bg-sibs-surface p-3 ${className}`}
     >
       {label ? (
-        <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+        <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
           {label}
         </p>
       ) : null}
@@ -311,7 +311,7 @@ function DataCardSection({
 function DataCardActions({ children, className = "" }) {
   return (
     <div
-      className={`mt-3 flex flex-col gap-2 border-t border-[#E6ECF2] pt-3 sm:flex-row ${className}`}
+      className={`mt-3 flex flex-col gap-2 border-t border-sibs-border pt-3 sm:flex-row ${className}`}
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >

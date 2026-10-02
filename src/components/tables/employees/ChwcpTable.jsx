@@ -7,13 +7,14 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 
-import PaginationTable from "@/services/pagination/PaginationTable";
 import ChwcpRequestDetailsModal from "../../modals/employees/ChwcpRequestDetailsModal";
 import { getChwcpRequests } from "../../../lib/axios/getChwcp";
 import {
   DataCard,
   ResponsiveTableShell,
+  SearchInput,
   StatusFilterTabs,
+  TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
 
@@ -434,7 +435,7 @@ function StatusProgress({ row }) {
       >
         {progress.map((state, index) => (
           <span
-            key={`${row.requestId}-${index}`}
+            key={`${row.requestId || row.id || index}-${index}`}
             className={`h-1.5 w-full rounded-full ${progressClass(state)}`}
           />
         ))}
@@ -514,7 +515,7 @@ function ChwcpMobileCard({ row, onOpen }) {
         <div className="flex w-20 items-center gap-1" aria-label={row.status}>
           {progress.map((state, index) => (
             <span
-              key={`${row.requestId}-${index}`}
+              key={`${row.requestId || row.id || index}-${index}`}
               className={`h-1.5 w-full rounded-full ${progressClass(state)}`}
             />
           ))}
@@ -757,28 +758,23 @@ export default function ChwcpTable({
           Review employee CHWCP compliance requests and approval records.
         </p>
 
-        <PaginationTable
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          loading={loading}
-          searchValue={searchInput}
-          searchPlaceholder="Search SIBS ID, employee, account, site, department, form, service, or status..."
-          onSearchChange={(value) => setSearchInput(value)}
-          onSearchKeyDown={handleSearchKeyDown}
-          dropdownFilters={[]}
-          rightContent={
-            <WorkflowFilter
-              stage={stage}
-              onStageChange={selectStage}
-              refreshing={refreshing}
-              onRefresh={() => loadRows({ silent: true })}
-            />
-          }
-          rightContentClassName="flex w-full min-w-0 items-end xl:w-auto xl:flex-none"
-          className="border-0 bg-transparent p-0 shadow-none"
-        />
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
+          <SearchInput
+            value={searchInput}
+            onChange={(e) => setSearchInput(typeof e === "string" ? e : e?.target?.value ?? "")}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Search SIBS ID, employee, account, site, department, form, service, or status..."
+            ariaLabel="Search CHWCP requests"
+            inputClassName="h-8.5 2xl:h-10"
+            className="min-w-0 flex-1"
+          />
+          <WorkflowFilter
+            stage={stage}
+            onStageChange={selectStage}
+            refreshing={refreshing}
+            onRefresh={() => loadRows({ silent: true })}
+          />
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
@@ -828,7 +824,7 @@ export default function ChwcpTable({
                   <div className="space-y-3">
                     {rows.map((row, index) => (
                       <div
-                        key={row.requestId}
+                        key={row.requestId || row.id || row.ticket_no || row.ticketNo || index}
                         className="sibs-employee-row-reveal"
                         style={{
                           animationDelay: `${Math.min(index, 10) * 36}ms`,
@@ -851,30 +847,30 @@ export default function ChwcpTable({
                 className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar"
               >
                 <table className="w-full min-w-[1500px] table-fixed border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-sibs-surface">
-                    <tr className="border-b border-sibs-border">
-                      <th className="w-[7%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
+                  <thead className="sibs-data-table-head sticky top-0 z-10 bg-sibs-surface">
+                    <tr className="sibs-data-table-head-row border-b border-sibs-border">
+                      <th className="sibs-data-table-th w-[7%] px-3 py-2.5 2xl:px-4 2xl:py-3">
                         SIBS ID
                       </th>
-                      <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
+                      <th className="sibs-data-table-th w-[13%] px-3 py-2.5 2xl:px-4 2xl:py-3">
                         EMPLOYEE FULL NAME
                       </th>
-                      <th className="w-[14%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
+                      <th className="sibs-data-table-th w-[14%] px-3 py-2.5 2xl:px-4 2xl:py-3">
                         ACCOUNT / SITE
                       </th>
-                      <th className="w-[13%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
+                      <th className="sibs-data-table-th w-[13%] px-3 py-2.5 2xl:px-4 2xl:py-3">
                         DEPARTMENT
                       </th>
-                      <th className="w-[8%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
+                      <th className="sibs-data-table-th w-[8%] px-3 py-2.5 2xl:px-4 2xl:py-3">
                         FORM TYPE
                       </th>
-                      <th className="w-[17%] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3">
+                      <th className="sibs-data-table-th w-[17%] px-3 py-2.5 2xl:px-4 2xl:py-3">
                         SERVICE
                       </th>
-                      <th className="w-[16%] pl-3 pr-6 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:pl-4 2xl:pr-8 2xl:py-3">
+                      <th className="sibs-data-table-th w-[16%] pl-3 pr-6 py-2.5 2xl:pl-4 2xl:pr-8 2xl:py-3">
                         REQUEST DATE
                       </th>
-                      <th className="w-[12%] pl-5 pr-3 py-2.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted 2xl:pl-6 2xl:pr-4 2xl:py-3">
+                      <th className="sibs-data-table-th w-[12%] pl-5 pr-3 py-2.5 text-center 2xl:pl-6 2xl:pr-4 2xl:py-3">
                         STATUS
                       </th>
                     </tr>
@@ -908,7 +904,7 @@ export default function ChwcpTable({
                     ) : rows.length ? (
                       rows.map((row, index) => (
                         <tr
-                          key={row.requestId}
+                          key={row.requestId || row.id || row.ticket_no || row.ticketNo || index}
                           role="button"
                           tabIndex={0}
                           onClick={() => openRequestDetails(row)}
@@ -1015,18 +1011,17 @@ export default function ChwcpTable({
       </div>
 
       <div className="shrink-0 px-4 pb-4 sm:px-5 sm:pb-5">
-        <PaginationTable
+        <TablePagination
           loading={loading}
-          showSearch={false}
           currentPage={currentPage}
           totalPages={totalPages}
           loadedCount={rows.length}
           totalRecords={totalRecords}
+          limit={DEFAULT_LIMIT}
           recordLabel="CHWCP requests"
+          onPageChange={(nextPage) => setPage(nextPage)}
           onPrevious={() => setPage(Math.max(currentPage - 1, 1))}
           onNext={() => setPage(Math.min(currentPage + 1, totalPages))}
-          showCount
-          className="border-0 bg-transparent p-0 shadow-none"
         />
       </div>
 

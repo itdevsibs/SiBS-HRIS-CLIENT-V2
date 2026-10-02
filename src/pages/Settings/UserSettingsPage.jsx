@@ -32,15 +32,38 @@ import {
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
 import { useUser } from "../../services/context/UserContext";
-import { sanitizeDisplayFullName, sanitizeMiddleName } from "../../lib/utils/employees/employeeNameDisplay.js";
 import {
   DataCard,
   MetricGridSkeleton,
+  ModalShell,
   PageHeaderHero,
   ResponsiveTableShell,
+  SelectDropdown,
   TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
+import {
+  formatCompactDate,
+  formatCompactDateTime,
+  formatEmployeeName,
+  formatNumber,
+  formatDateTime,
+  getAccountId,
+  getAccountName,
+  getAdminAccess,
+  getAuditDateValue,
+  getAuditDisplayValue,
+  getDepartmentName,
+  getRoleLabel,
+  getRoleOptionByAccess,
+  getRolePillClass,
+  getStatusPillClass,
+  isActiveAssignedUser,
+  isSuperAdmin,
+  normalizeRole,
+  safeText,
+  ROLE_OPTIONS,
+} from "../../lib/utils/settings/userSettingsHelpers.js";
 import {
   createUserSettingsUser,
   deleteUserSettingsUser,
@@ -57,21 +80,6 @@ const API_URL = (
   import.meta.env.VITE_API_URL || "http://localhost:5001"
 ).replace(/\/+$/, "");
 
-const ROLE_OPTIONS = [
-  { value: "All", label: "All Access Levels" },
-  { value: "employee", label: "Employee", access: 0 },
-  { value: "ta", label: "Talent Acquisition", access: 1 },
-  { value: "hr", label: "HR", access: 2 },
-  { value: "hr_admin", label: "HR Admin", access: 3 },
-  { value: "finance", label: "Finance", access: 4 },
-  { value: "manager", label: "Manager", access: 5 },
-  { value: "executive", label: "Executive", access: 6 },
-  { value: "super_admin", label: "Super Admin", access: 7 },
-  { value: "team_leaders", label: "Team Leaders", access: 8 },
-  { value: "wfm", label: "WFM", access: 9 },
-  { value: "som", label: "SOM", access: 10 },
-];
-
 const EMPTY_SUMMARY = {
   totalAssignments: 0,
   totalUsers: 0,
@@ -83,86 +91,6 @@ const EMPTY_SUMMARY = {
   activeKronosAccounts: 0,
   kronosDepartments: 0,
 };
-
-function normalizeRole(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-}
-
-function getAdminAccess(user) {
-  const value =
-    user?.adminAccess ??
-    user?.admin_access ??
-    user?.gy_user_access ??
-    user?.access ??
-    user?.adminLevel ??
-    user?.admin_level ??
-    0;
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function isSuperAdmin(user) {
-  const role = normalizeRole(
-    user?.role ||
-      user?.userRole ||
-      user?.user_role ||
-      user?.adminRole ||
-      user?.admin_role,
-  );
-
-  return (
-    getAdminAccess(user) === 7 ||
-    role === "super_admin" ||
-    role === "superadmin"
-  );
-}
-
-function safeText(value) {
-  return String(value ?? "").trim();
-}
-
-function formatNumber(value) {
-  return Number(value || 0).toLocaleString("en-PH", {
-    maximumFractionDigits: 0,
-  });
-}
-
-function formatDateTime(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-
-  return date.toLocaleString("en-PH", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function formatEmployeeName(employee = {}) {
-  const fullName = sanitizeDisplayFullName(
-    safeText(employee.fullName || employee.full_name),
-  );
-  if (fullName) return fullName;
-
-  const name = [
-    employee.firstName,
-    sanitizeMiddleName(employee.middleName),
-    employee.lastName,
-  ]
-    .map(safeText)
-    .filter(Boolean)
-    .join(" ");
-
-  return name || "Unknown Employee";
-}
 
 function getProfileImageUrl(employee = {}) {
   const directUrl = safeText(
@@ -216,7 +144,7 @@ function ProfileAvatar({ employee, size = "md" }) {
 
   return (
     <div
-      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm`}
+      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-sibs-border-subtle bg-sibs-surface shadow-sm`}
     >
       {imageUrl ? (
         <img
@@ -303,7 +231,7 @@ function HoverProfileAvatar({ employee, size = "sm" }) {
         ? createPortal(
             <div
               data-account-profile-hover-preview="true"
-              className="pointer-events-none fixed z-[999999] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white p-2 shadow-2xl"
+              className="pointer-events-none fixed z-[999999] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white p-2 shadow-2xl"
               style={{
                 top: `${preview.top}px`,
                 left: `${preview.left}px`,
@@ -327,197 +255,13 @@ function HoverProfileAvatar({ employee, size = "sm" }) {
   );
 }
 
-function getRoleOptionByAccess(adminAccess) {
-  return (
-    ROLE_OPTIONS.find(
-      (option) => option.access === Number(adminAccess),
-    ) || ROLE_OPTIONS[1]
-  );
-}
-
-function getRoleLabel(role, adminAccess) {
-  const byAccess = getRoleOptionByAccess(adminAccess);
-  if (byAccess) return byAccess.label;
-
-  return (
-    ROLE_OPTIONS.find((option) => option.value === normalizeRole(role))
-      ?.label || "Employee"
-  );
-}
-
-function getRolePillClass(adminAccess) {
-  const access = Number(adminAccess || 0);
-
-  if (access === 7) {
-    return "border-violet-200 bg-violet-50 text-violet-700";
-  }
-
-  if (access >= 4) {
-    return "border-blue-200 bg-blue-50 text-blue-700";
-  }
-
-  if (access >= 1) {
-    return "border-cyan-200 bg-cyan-50 text-cyan-700";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-600";
-}
-
-function isActiveAssignedUser(user = {}) {
-  return safeText(user.status).toLowerCase() === "active";
-}
-
-function getStatusPillClass(status) {
-  const normalized = safeText(status).toLowerCase();
-
-  if (normalized === "active") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-600";
-}
-
-function getAccountName(account = {}) {
-  return safeText(
-    account.accountName ||
-      account.account_name ||
-      account.gy_acc_name ||
-      account.account,
-  );
-}
-
-function getAccountId(account = {}) {
-  return safeText(
-    account.accountId ||
-      account.account_id ||
-      account.gy_acc_id ||
-      account.id,
-  );
-}
-
-function getDepartmentName(account = {}) {
-  return safeText(
-    account.departmentName ||
-      account.department ||
-      account.name_department,
-  );
-}
-
-function getAuditDisplayValue(user = {}, type = "creator") {
-  const directDisplay =
-    type === "creator"
-      ? safeText(
-          user.creatorDisplay ||
-            user.creator_display ||
-            user.sibsIdCreatorDisplay ||
-            user.sibs_id_creator_display,
-        )
-      : safeText(
-          user.updaterDisplay ||
-            user.updater_display ||
-            user.sibsIdUpdaterDisplay ||
-            user.sibs_id_updater_display,
-        );
-
-  const assignedDisplayValues = [
-    ...new Set(
-      (user.assignedAccounts || [])
-        .map((account) =>
-          type === "creator"
-            ? safeText(
-                account.creatorDisplay ||
-                  account.creator_display ||
-                  account.sibsIdCreatorDisplay ||
-                  account.sibs_id_creator_display,
-              )
-            : safeText(
-                account.updaterDisplay ||
-                  account.updater_display ||
-                  account.sibsIdUpdaterDisplay ||
-                  account.sibs_id_updater_display,
-              ),
-        )
-        .filter(Boolean),
-    ),
-  ];
-
-  if (directDisplay) return directDisplay;
-
-  if (assignedDisplayValues.length) {
-    return assignedDisplayValues.join(", ");
-  }
-
-  const directSibsId =
-    type === "creator"
-      ? safeText(user.sibsIdCreator || user.sibs_id_creator)
-      : safeText(user.sibsIdUpdater || user.sibs_id_updater);
-
-  const assignedSibsIds = [
-    ...new Set(
-      (user.assignedAccounts || [])
-        .map((account) =>
-          type === "creator"
-            ? safeText(
-                account.sibsIdCreator ||
-                  account.sibs_id_creator,
-              )
-            : safeText(
-                account.sibsIdUpdater ||
-                  account.sibs_id_updater,
-              ),
-        )
-        .filter(Boolean),
-    ),
-  ];
-
-  if (directSibsId) return directSibsId;
-  if (assignedSibsIds.length) return assignedSibsIds.join(", ");
-
-  return "—";
-}
-
-function getAuditDateValue(user = {}, type = "created") {
-  const directValue =
-    type === "created"
-      ? user.createdAt || user.created_at
-      : user.updatedAt || user.updated_at;
-
-  if (directValue) return directValue;
-
-  const values = (user.assignedAccounts || [])
-    .map((account) =>
-      type === "created"
-        ? account.createdAt || account.created_at
-        : account.updatedAt || account.updated_at,
-    )
-    .filter(Boolean);
-
-  if (!values.length) return null;
-
-  return values.reduce((selected, current) => {
-    if (!selected) return current;
-
-    const selectedTime = new Date(selected).getTime();
-    const currentTime = new Date(current).getTime();
-
-    if (!Number.isFinite(selectedTime)) return current;
-    if (!Number.isFinite(currentTime)) return selected;
-
-    if (type === "created") {
-      return currentTime < selectedTime ? current : selected;
-    }
-
-    return currentTime > selectedTime ? current : selected;
-  }, null);
-}
-
 function SummaryCard(props) {
-  const { icon: Icon, label, value, description, tone = "blue" } = props;
+  const { icon: Icon, label, value, description, tone = "blue", index = 0 } = props;
   const tones = {
     blue: {
-      label: "text-[#042C51]",
-      value: "text-[#042C51]",
-      icon: "bg-[#EAF2FB] text-[#042C51]",
+      label: "text-sibs-navy",
+      value: "text-sibs-navy",
+      icon: "bg-blue-50/80 text-sibs-navy",
     },
     emerald: {
       label: "text-emerald-700",
@@ -543,7 +287,13 @@ function SummaryCard(props) {
   const selectedTone = tones[tone] || tones.blue;
 
   return (
-    <article className="sibs-metric-card sibs-card p-4">
+    <article
+      className="sibs-metric-card sibs-card p-4 animate-fade-in-up"
+      style={{
+        animationDelay: `${index * 60}ms`,
+        animationFillMode: "both",
+      }}
+    >
       <div className="flex h-full items-start justify-between gap-4">
         <div className="min-w-0 flex-1 self-stretch">
           <p
@@ -558,7 +308,7 @@ function SummaryCard(props) {
             {formatNumber(value)}
           </p>
 
-          <p className="mt-1 line-clamp-2 sibs-text-micro font-semibold leading-tight text-[#667085]">
+          <p className="mt-1 line-clamp-2 sibs-text-micro font-semibold leading-tight text-sibs-muted">
             {description}
           </p>
         </div>
@@ -660,7 +410,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
+      className="fixed z-[999999] overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-2xl"
       style={{
         top: position.top == null ? "auto" : `${position.top}px`,
         bottom: position.bottom == null ? "auto" : `${position.bottom}px`,
@@ -680,302 +430,6 @@ function DropdownPortal({
   );
 }
 
-function CustomSelect({
-  value,
-  options = [],
-  onChange,
-  placeholder = "Select",
-  disabled = false,
-  searchable = false,
-  searchPlaceholder = "Search...",
-  noResultsMessage = "No matching option found.",
-  compact = false,
-}) {
-  const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const anchorRef = useRef(null);
-  const inputRef = useRef(null);
-
-  const selectedOption = useMemo(
-    () =>
-      options.find(
-        (option) => String(option.value) === String(value),
-      ) || null,
-    [options, value],
-  );
-
-  const selectedLabel = selectedOption?.label || "";
-
-  const filteredOptions = useMemo(() => {
-    const keyword = safeText(searchQuery).toLowerCase();
-
-    if (!searchable || !keyword) {
-      return options;
-    }
-
-    return options.filter((option) =>
-      [
-        option.label,
-        option.value,
-        option.description,
-        option.searchText,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(keyword),
-    );
-  }, [options, searchQuery, searchable]);
-
-  function openDropdown() {
-    if (disabled) return;
-
-    if (!open) {
-      setSearchQuery("");
-    }
-
-    setOpen(true);
-
-    if (searchable) {
-      window.requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
-    }
-  }
-
-  function closeDropdown() {
-    setOpen(false);
-    setSearchQuery("");
-  }
-
-  function selectOption(option) {
-    if (option.disabled) return;
-
-    onChange(option.value, option);
-    closeDropdown();
-  }
-
-  if (searchable) {
-    return (
-      <div ref={anchorRef} className="relative">
-        <div
-          onClick={openDropdown}
-          className={`flex ${compact ? "h-10 rounded-lg px-3" : "h-12 rounded-xl px-4"} w-full items-center gap-2 border transition-all duration-200 ${
-            disabled
-              ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
-              : open
-                ? "border-sibs-primary-1 bg-white text-[#344054] ring-4 ring-sibs-primary-1/10"
-                : "border-[#D0D5DD] bg-white text-[#344054] hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
-          }`}
-        >
-          <Search
-            size={17}
-            className="shrink-0 text-sibs-tertiary-5"
-          />
-
-          <input
-            ref={inputRef}
-            type="text"
-            disabled={disabled}
-            value={open ? searchQuery : selectedLabel}
-            onFocus={openDropdown}
-            onChange={(event) => {
-              setSearchQuery(event.target.value);
-              setOpen(true);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                closeDropdown();
-              }
-
-              if (event.key === "Enter") {
-                event.preventDefault();
-
-                const firstOption = filteredOptions.find(
-                  (option) => !option.disabled,
-                );
-
-                if (firstOption) {
-                  selectOption(firstOption);
-                }
-              }
-            }}
-            placeholder={searchPlaceholder || placeholder}
-            className={`min-w-0 flex-1 bg-transparent font-bold text-[#344054] outline-none placeholder:text-sibs-tertiary-5 ${compact ? "text-xs" : "text-sm"}`}
-          />
-
-          <ChevronDown
-            size={18}
-            className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-              open ? "rotate-180" : ""
-            }`}
-          />
-        </div>
-
-        <DropdownPortal
-          open={open && !disabled}
-          anchorRef={anchorRef}
-          onClose={closeDropdown}
-          maxHeight={280}
-        >
-          {filteredOptions.length ? (
-            filteredOptions.map((option) => {
-              const selected =
-                String(option.value) === String(value);
-
-              return (
-                <button
-                  key={`${option.value}-${option.label}`}
-                  type="button"
-                  disabled={option.disabled}
-                  onClick={() => selectOption(option)}
-                  className={`block w-full px-4 py-3 text-left text-sm transition ${
-                    option.disabled
-                      ? "cursor-not-allowed text-sibs-tertiary-5"
-                      : selected
-                        ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                        : "text-[#344054] hover:bg-[#F8FAFC]"
-                  }`}
-                >
-                  <span className="block truncate">
-                    {option.label}
-                  </span>
-
-                  {option.description && (
-                    <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
-                      {option.description}
-                    </span>
-                  )}
-                </button>
-              );
-            })
-          ) : (
-            <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-              {noResultsMessage}
-            </div>
-          )}
-        </DropdownPortal>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={anchorRef} className="relative">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => {
-          if (open) {
-            closeDropdown();
-          } else {
-            openDropdown();
-          }
-        }}
-        className={`flex ${compact ? "h-10 rounded-lg px-3 text-xs" : "h-12 rounded-xl px-4 text-sm"} w-full items-center justify-between border text-left font-bold outline-none transition-all duration-200 ${
-          disabled
-            ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
-            : open
-              ? "border-sibs-primary-1 bg-white text-[#344054] ring-4 ring-sibs-primary-1/10"
-              : "border-[#D0D5DD] bg-white text-[#344054] hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-        }`}
-      >
-        <span
-          className={`truncate ${
-            selectedOption
-              ? "text-[#344054]"
-              : "text-sibs-tertiary-5"
-          }`}
-        >
-          {selectedLabel || placeholder}
-        </span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      <DropdownPortal
-        open={open && !disabled}
-        anchorRef={anchorRef}
-        onClose={closeDropdown}
-        maxHeight={280}
-      >
-        {options.length ? (
-          options.map((option) => {
-            const selected =
-              String(option.value) === String(value);
-
-            return (
-              <button
-                key={`${option.value}-${option.label}`}
-                type="button"
-                disabled={option.disabled}
-                onClick={() => selectOption(option)}
-                className={`block w-full px-4 py-3 text-left text-sm transition ${
-                  option.disabled
-                    ? "cursor-not-allowed text-sibs-tertiary-5"
-                    : selected
-                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                      : "text-[#344054] hover:bg-[#F8FAFC]"
-                }`}
-              >
-                <span className="block truncate">
-                  {option.label}
-                </span>
-
-                {option.description && (
-                  <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
-                    {option.description}
-                  </span>
-                )}
-              </button>
-            );
-          })
-        ) : (
-          <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-            No options available.
-          </div>
-        )}
-      </DropdownPortal>
-    </div>
-  );
-}
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-  disabled = false,
-  searchable = false,
-  searchPlaceholder = "Search...",
-  placeholder = "Select",
-  compact = false,
-}) {
-  return (
-    <div>
-      {label && (
-        <label className={`${compact ? "text-[10px]" : "text-sm"} mb-1 block font-bold text-[#101828]`}>
-          {label}
-        </label>
-      )}
-
-      <CustomSelect
-        value={value}
-        options={options}
-        onChange={onChange}
-        disabled={disabled}
-        searchable={searchable}
-        searchPlaceholder={searchPlaceholder}
-        placeholder={placeholder}
-        compact={compact}
-      />
-    </div>
-  );
-}
 
 function RolePill({ role, adminAccess }) {
   return (
@@ -1003,7 +457,7 @@ function StatusPill({ status }) {
   );
 }
 
-function AccountChips({ accounts = [] }) {
+function AccountChips({ accounts = [], limit = Number.POSITIVE_INFINITY, compact = false }) {
   if (!accounts.length) {
     return (
       <span className="text-xs font-semibold text-sibs-tertiary-5">
@@ -1012,9 +466,19 @@ function AccountChips({ accounts = [] }) {
     );
   }
 
+  const safeLimit = Number.isFinite(limit)
+    ? Math.max(Number(limit), 0)
+    : accounts.length;
+  const visible = accounts.slice(0, safeLimit);
+  const hidden = accounts.slice(safeLimit);
+  const hiddenTitle = hidden
+    .map((account) => getAccountName(account) || `Account ${getAccountId(account)}`)
+    .filter(Boolean)
+    .join("\n");
+
   return (
-    <div className="flex w-full min-w-0 flex-wrap gap-1 overflow-hidden">
-      {accounts.map((account, index) => {
+    <div className="flex w-full min-w-0 flex-wrap items-center gap-1 overflow-hidden">
+      {visible.map((account, index) => {
         const accountId = getAccountId(account);
         const accountName =
           getAccountName(account) || `Account ${accountId}`;
@@ -1023,41 +487,75 @@ function AccountChips({ accounts = [] }) {
           <span
             key={`${account.id || accountId}-${accountName}-${index}`}
             title={`${accountName}${accountId ? ` (${accountId})` : ""}`}
-            className="inline-flex min-w-0 max-w-full items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-sibs-primary-1"
+            className={`inline-flex min-w-0 max-w-full items-center rounded-md border border-blue-100 bg-blue-50/70 font-bold text-sibs-primary-1 ${
+              compact
+                ? "px-2 py-0.5 text-[10px] leading-5"
+                : "px-2 py-0.5 text-[10px]"
+            }`}
           >
             <span className="truncate">{accountName}</span>
           </span>
         );
       })}
+
+      {hidden.length > 0 && (
+        <span
+          title={hiddenTitle}
+          className={`inline-flex shrink-0 items-center rounded-md border border-sibs-border bg-white font-extrabold text-sibs-primary-1 ${
+            compact
+              ? "px-2 py-0.5 text-[10px] leading-5"
+              : "px-2 py-0.5 text-[10px]"
+          }`}
+        >
+          +{hidden.length} more
+        </span>
+      )}
     </div>
   );
 }
 
-function DepartmentChips({ accounts = [], limit = 2 }) {
+function DepartmentChips({ accounts = [], limit = 2, compact = false }) {
   const departments = [
     ...new Set(accounts.map(getDepartmentName).filter(Boolean)),
   ];
   const visible = departments.slice(0, limit);
-  const hiddenCount = Math.max(departments.length - visible.length, 0);
+  const hidden = departments.slice(limit);
+  const hiddenCount = hidden.length;
 
   if (!departments.length) {
-    return <span className="text-xs font-semibold text-sibs-tertiary-5">—</span>;
+    return (
+      <span className="text-xs font-semibold text-sibs-tertiary-5">
+        —
+      </span>
+    );
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-wrap gap-1 overflow-hidden">
+    <div className="flex w-full min-w-0 flex-wrap items-center gap-1 overflow-hidden">
       {visible.map((department) => (
         <span
           key={department}
-          className="inline-flex min-w-0 max-w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-700"
+          title={department}
+          className={`inline-flex min-w-0 max-w-full rounded-md border border-slate-200 bg-slate-50/80 font-bold text-slate-700 ${
+            compact
+              ? "px-1.5 py-0 text-[9.5px] leading-5"
+              : "px-2 py-0.5 text-[10px]"
+          }`}
         >
           <span className="truncate">{department}</span>
         </span>
       ))}
 
       {hiddenCount > 0 && (
-        <span className="inline-flex rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-600">
-          +{hiddenCount}
+        <span
+          title={hidden.join("\n")}
+          className={`inline-flex shrink-0 rounded-md border border-slate-200 bg-white font-extrabold text-slate-600 ${
+            compact
+              ? "px-1.5 py-0 text-[9.5px] leading-5"
+              : "px-2 py-0.5 text-[10px]"
+          }`}
+        >
+          +{hiddenCount} more
         </span>
       )}
     </div>
@@ -1138,7 +636,7 @@ function DraggableTableScroll({ children }) {
   }
 
   return (
-    <div className="mt-5 sibs-data-table-shell">
+    <div className="sibs-data-table-shell">
       <div
         ref={scrollRef}
         onMouseDown={handleDragStart}
@@ -1161,7 +659,7 @@ function DraggableTableScroll({ children }) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sibs-surface text-sibs-primary-1">
         <UsersRound size={26} />
       </div>
 
@@ -1176,152 +674,6 @@ function EmptyState() {
   );
 }
 
-function ModalShell({
-  open,
-  title,
-  description,
-  onClose,
-  children,
-  footer,
-  variant = "default",
-}) {
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        onClose?.();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose, open]);
-
-  if (!open || typeof document === "undefined") {
-    return null;
-  }
-
-  if (variant === "talentPool") {
-    return createPortal(
-      <div
-        className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
-        role="presentation"
-      >
-        <section
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="user-settings-modal-title"
-          className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-2xl font-jakarta"
-        >
-          <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
-            <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
-                <UserCog size={16} />
-              </span>
-
-              <div className="min-w-0">
-                <h2
-                  id="user-settings-modal-title"
-                  className="sibs-modal-title truncate text-white"
-                >
-                  {title}
-                </h2>
-                {description ? (
-                  <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
-                    {description}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close account access modal"
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
-            >
-              <X size={18} />
-            </button>
-          </header>
-
-          <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
-            {children}
-          </div>
-
-          {footer ? (
-            <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
-              {footer}
-            </footer>
-          ) : null}
-        </section>
-      </div>,
-      document.body,
-    );
-  }
-
-  return createPortal(
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[99999] flex items-center justify-center p-2 font-jakarta sm:p-4"
-      role="presentation"
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="user-settings-modal-title"
-        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-2xl font-jakarta"
-      >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
-          <div className="min-w-0">
-            <h2
-              id="user-settings-modal-title"
-              className="sibs-modal-title truncate text-white"
-            >
-              {title}
-            </h2>
-
-            {description && (
-              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
-                {description}
-              </p>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
-            aria-label="Close modal"
-          >
-            <X size={18} />
-          </button>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
-          {children}
-        </div>
-
-        {footer && (
-          <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
-            {footer}
-          </footer>
-        )}
-      </section>
-    </div>,
-    document.body,
-  );
-}
 
 function EmployeeSearchBox({
   search,
@@ -1333,7 +685,7 @@ function EmployeeSearchBox({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1 block text-sm font-bold text-sibs-navy">
         Employee <span className="text-red-500">*</span>
       </label>
 
@@ -1378,7 +730,7 @@ function EmployeeSearchBox({
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search SIBS ID, name, or email..."
               autoComplete="off"
-              className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white pl-11 pr-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="h-12 w-full rounded-xl border border-sibs-border-subtle bg-white pl-11 pr-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
             />
 
             {loading && (
@@ -1390,7 +742,7 @@ function EmployeeSearchBox({
           </div>
 
           {search.trim().length >= 2 && (
-            <div className="mt-2 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+            <div className="mt-2 overflow-hidden rounded-xl border border-sibs-border bg-white">
               {loading ? (
                 <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-bold text-sibs-tertiary-5">
                   <Loader2 size={17} className="animate-spin" />
@@ -1403,7 +755,7 @@ function EmployeeSearchBox({
                       key={`${employee.gyEmpId}-${employee.sibsId}`}
                       type="button"
                       onClick={() => onSelect(employee)}
-                      className="flex w-full items-start gap-3 border-b border-[#EEF2F6] px-4 py-3 text-left transition last:border-b-0 hover:bg-[#F8FAFC]"
+                      className="flex w-full items-start gap-3 border-b border-sibs-border-subtle px-4 py-3 text-left transition last:border-b-0 hover:bg-sibs-surface"
                     >
                       <ProfileAvatar employee={employee} />
 
@@ -1520,7 +872,7 @@ function AccountMultiSelect({
     <div>
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <label className="block text-sm font-bold text-[#101828]">
+          <label className="block text-sm font-bold text-sibs-navy">
             Assigned Accounts <span className="text-red-500">*</span>
           </label>
 
@@ -1559,10 +911,10 @@ function AccountMultiSelect({
           onClick={openDropdown}
           className={`flex h-12 w-full items-center gap-2 rounded-xl border px-4 transition-all duration-200 ${
             disabled
-              ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
+              ? "cursor-not-allowed border-sibs-border-subtle bg-sibs-surface text-sibs-muted"
               : open
                 ? "border-sibs-primary-1 bg-white ring-4 ring-sibs-primary-1/10"
-                : "cursor-text border-[#D0D5DD] bg-white hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+                : "cursor-text border-sibs-border-subtle bg-white hover:border-sibs-primary-1/40 hover:bg-sibs-surface"
           }`}
         >
           <Search
@@ -1608,7 +960,7 @@ function AccountMultiSelect({
                 openDropdown();
               }
             }}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sibs-tertiary-5 transition hover:bg-[#EEF3F8] hover:text-sibs-primary-1 disabled:cursor-not-allowed"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sibs-tertiary-5 transition hover:bg-blue-50/80 hover:text-sibs-primary-1 disabled:cursor-not-allowed"
             aria-label={open ? "Close account dropdown" : "Open account dropdown"}
           >
             <ChevronDown
@@ -1626,7 +978,7 @@ function AccountMultiSelect({
           onClose={closeDropdown}
           maxHeight={320}
         >
-          <div className="border-b border-[#E6ECF2] px-4 py-2.5">
+          <div className="border-b border-sibs-border px-4 py-2.5">
             <p className="text-xs font-bold text-sibs-tertiary-5">
               {filteredAccounts.length} account
               {filteredAccounts.length === 1 ? "" : "s"} found
@@ -1643,17 +995,17 @@ function AccountMultiSelect({
                   key={accountId}
                   type="button"
                   onClick={() => handleToggle(accountId)}
-                  className={`flex w-full items-start gap-3 border-b border-[#EEF2F6] px-4 py-3 text-left transition last:border-b-0 ${
+                  className={`flex w-full items-start gap-3 border-b border-sibs-border-subtle px-4 py-3 text-left transition last:border-b-0 ${
                     selected
-                      ? "bg-[#EAF2FB]"
-                      : "bg-white hover:bg-[#F8FAFC]"
+                      ? "bg-blue-50"
+                      : "bg-white hover:bg-sibs-surface"
                   }`}
                 >
                   <span
                     className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
                       selected
                         ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-                        : "border-[#CBD5E1] bg-white text-transparent"
+                        : "border-slate-300 bg-white text-transparent"
                     }`}
                   >
                     <Check size={13} strokeWidth={3} />
@@ -1895,9 +1247,11 @@ function AccessModal({
   return (
     <ModalShell
       open={open}
-      variant="talentPool"
+      variant="navy"
+      maxWidth="max-w-4xl"
+      icon={UserCog}
       title={isEdit ? "Edit User Account Access" : "Add User Access"}
-      description={
+      subtitle={
         isEdit
           ? "Update the employee's admin access and assigned accounts."
           : "Employee information is read-only. Only the selected access settings are saved."
@@ -1911,7 +1265,7 @@ function AccessModal({
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="sibs-btn-secondary h-10 px-5 text-sm"
           >
             Cancel
           </button>
@@ -1920,7 +1274,7 @@ function AccessModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#042C51] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#042C51]/15 transition hover:bg-[#063D6F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#042C51]/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="sibs-btn-primary h-10 px-5 text-sm"
           >
             {saving ? (
               <Loader2 size={17} className="animate-spin" />
@@ -1935,40 +1289,40 @@ function AccessModal({
       }
     >
       <div className="space-y-4">
-        <section className="relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#E6ECF2] pb-3">
+        <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3 border-b border-sibs-border pb-3">
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
+              <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
                 Employee Record
               </p>
-              <p className="mt-1 text-xs font-semibold text-[#667085]">
+              <p className="mt-1 text-xs font-semibold text-sibs-muted">
                 Employee information is read-only on this form.
               </p>
             </div>
 
-            <span className="inline-flex shrink-0 items-center rounded-full border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#042C51]">
+            <span className="inline-flex shrink-0 items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-sibs-navy">
               Read Only
             </span>
           </div>
 
           {isEdit ? (
-            <div className="flex items-start gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+            <div className="flex items-start gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-4">
               <ProfileAvatar
                 employee={selectedEmployee || {}}
                 size="lg"
               />
 
               <div className="min-w-0">
-                <p className="truncate text-base font-extrabold text-[#042C51]">
+                <p className="truncate text-base font-extrabold text-sibs-navy">
                   {formatEmployeeName(selectedEmployee || {})}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-[#667085]">
+                <p className="mt-1 text-sm font-semibold text-sibs-muted">
                   SIBS ID: {selectedEmployee?.sibsId || "—"}
                 </p>
-                <p className="mt-1 truncate text-xs font-semibold text-[#667085]">
+                <p className="mt-1 truncate text-xs font-semibold text-sibs-muted">
                   {selectedEmployee?.email || "No email available"}
                 </p>
-                <p className="mt-1 text-xs font-semibold text-[#8A98B8]">
+                <p className="mt-1 text-xs font-semibold text-sibs-faint">
                   Access settings can be updated below without changing the employee record.
                 </p>
               </div>
@@ -1985,21 +1339,22 @@ function AccessModal({
           )}
         </section>
 
-        <section className="relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4 border-b border-[#E6ECF2] pb-3">
-            <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
+        <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 border-b border-sibs-border pb-3">
+            <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
               Access Configuration
             </p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+            <p className="mt-1 text-xs font-semibold leading-5 text-sibs-muted">
               Set the employee's access level and choose the accounts available to this user.
             </p>
           </div>
 
           <div className="space-y-5">
-            <SelectField
+            <SelectDropdown
               label="Access"
+              labelClassName="text-sm font-bold text-sibs-navy normal-case"
               value={adminAccess}
-              onChange={setAdminAccess}
+              onChange={(val) => setAdminAccess(val)}
               disabled={!selectedEmployee}
               options={ROLE_OPTIONS.filter(
                 (option) =>
@@ -2015,6 +1370,8 @@ function AccessModal({
                   ? "Select admin access"
                   : "Select an employee first"
               }
+              clearable={false}
+              className="h-12 text-sm bg-white rounded-xl border-sibs-border-subtle"
             />
 
             <AccountMultiSelect
@@ -2058,8 +1415,11 @@ function DeleteAccessModal({ target, onClose, onDeleted, openStatus }) {
   return (
     <ModalShell
       open={Boolean(target)}
+      variant="navy"
+      maxWidth="max-w-md"
+      icon={Trash2}
       title="Remove User Account Access"
-      description="This removes all account access assigned to the selected employee. Employee information will not be changed."
+      subtitle="This removes all account access assigned to the selected employee. Employee information will not be changed."
       onClose={() => {
         if (!deleting) onClose();
       }}
@@ -2069,7 +1429,7 @@ function DeleteAccessModal({ target, onClose, onDeleted, openStatus }) {
             type="button"
             onClick={onClose}
             disabled={deleting}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:opacity-50"
+            className="sibs-btn-secondary h-10 px-5 text-sm"
           >
             Cancel
           </button>
@@ -2078,7 +1438,7 @@ function DeleteAccessModal({ target, onClose, onDeleted, openStatus }) {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-red-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {deleting ? (
               <Loader2 size={17} className="animate-spin" />
@@ -2108,9 +1468,11 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
   return (
     <ModalShell
       open={Boolean(target)}
-      variant="talentPool"
+      variant="navy"
+      maxWidth="max-w-4xl"
+      icon={UserCog}
       title="Employee Access Details"
-      description="Review the employee's assigned access before making changes."
+      subtitle="Review the employee's assigned access before making changes."
       onClose={onClose}
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -2127,7 +1489,7 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/10"
+              className="sibs-btn-secondary h-10 px-5 text-sm"
             >
               Close
             </button>
@@ -2135,7 +1497,7 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
             <button
               type="button"
               onClick={() => onEdit(target)}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#042C51] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#042C51]/15 transition hover:bg-[#063D6F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#042C51]/20"
+              className="sibs-btn-primary h-10 px-5 text-sm"
             >
               <Edit3 size={16} />
               Edit Access
@@ -2145,19 +1507,19 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
       }
     >
       <div className="space-y-4">
-        <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-3">
               <ProfileAvatar employee={target || {}} size="lg" />
 
               <div className="min-w-0">
-                <p className="break-words text-base font-extrabold text-[#042C51]">
+                <p className="break-words text-base font-extrabold text-sibs-navy">
                   {formatEmployeeName(target || {})}
                 </p>
-                <p className="mt-1 break-all text-xs font-semibold text-[#667085]">
+                <p className="mt-1 break-all text-xs font-semibold text-sibs-muted">
                   {target?.email || "No email available"}
                 </p>
-                <p className="mt-1 text-xs font-semibold text-[#8A98B8]">
+                <p className="mt-1 text-xs font-semibold text-sibs-faint">
                   SIBS ID: {target?.sibsId || "—"}
                 </p>
               </div>
@@ -2170,19 +1532,19 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4 border-b border-[#E6ECF2] pb-3">
-            <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
+        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 border-b border-sibs-border pb-3">
+            <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
               Access Assignment
             </p>
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
+            <p className="mt-1 text-xs font-semibold text-sibs-muted">
               Current access level, assigned accounts, and departments.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+            <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 Access Level
               </p>
               <div className="mt-2">
@@ -2190,8 +1552,8 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
               </div>
             </div>
 
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+            <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 Status
               </p>
               <div className="mt-2">
@@ -2199,8 +1561,8 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
               </div>
             </div>
 
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:col-span-2">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+            <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4 lg:col-span-2">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 Assigned Accounts
               </p>
               <div className="mt-2">
@@ -2208,8 +1570,8 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
               </div>
             </div>
 
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 lg:col-span-2">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+            <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4 lg:col-span-2">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 Departments
               </p>
               <div className="mt-2">
@@ -2219,37 +1581,37 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4 border-b border-[#E6ECF2] pb-3">
-            <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#174A7C]">
+        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+          <div className="mb-4 border-b border-sibs-border pb-3">
+            <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
               Audit Information
             </p>
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
+            <p className="mt-1 text-xs font-semibold text-sibs-muted">
               Creation and latest update details for this access record.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+            <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 Creator
               </p>
-              <p className="mt-2 break-words text-xs font-extrabold text-[#344054]">
+              <p className="mt-2 break-words text-xs font-extrabold text-sibs-text-secondary">
                 {getAuditDisplayValue(target || {}, "creator")}
               </p>
-              <p className="mt-1 text-xs font-semibold text-[#667085]">
+              <p className="mt-1 text-xs font-semibold text-sibs-muted">
                 {formatDateTime(getAuditDateValue(target || {}, "created"))}
               </p>
             </div>
 
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+            <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 Updater
               </p>
-              <p className="mt-2 break-words text-xs font-extrabold text-[#344054]">
+              <p className="mt-2 break-words text-xs font-extrabold text-sibs-text-secondary">
                 {getAuditDisplayValue(target || {}, "updater")}
               </p>
-              <p className="mt-1 text-xs font-semibold text-[#667085]">
+              <p className="mt-1 text-xs font-semibold text-sibs-muted">
                 {formatDateTime(getAuditDateValue(target || {}, "updated"))}
               </p>
             </div>
@@ -2271,14 +1633,14 @@ function MobileUserCard({
       data-user-settings-sibs-id={safeText(user?.sibsId)}
       className={`rounded-2xl transition-all duration-300 ${
         highlighted
-          ? "ring-2 ring-[#FF5C28]/50 ring-offset-2 ring-offset-[#F8FAFC]"
+          ? "ring-2 ring-sibs-orange/50 ring-offset-2 ring-offset-sibs-surface"
           : ""
       }`}
     >
       <DataCard
         className={
           highlighted
-            ? "border-[#FF5C28]/50 bg-[#FFF9F6] shadow-md"
+            ? "border-sibs-orange/50 bg-orange-50/40 shadow-md"
             : ""
         }
       >
@@ -2289,7 +1651,7 @@ function MobileUserCard({
         badge={<StatusPill status={user.status} />}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sibs-border bg-sibs-surface p-3">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
             SIBS ID
@@ -2312,7 +1674,7 @@ function MobileUserCard({
       </DataCard.Section>
 
       <DataCard.Section label="Audit Trail">
-        <div className="space-y-1 text-xs text-[#344054]">
+        <div className="space-y-1 text-xs text-sibs-text-secondary">
           <p>
             <span className="font-semibold text-sibs-tertiary-5">Creator:</span>{" "}
             {getAuditDisplayValue(user, "creator")}{" "}
@@ -2466,6 +1828,10 @@ export default function UserSettingsPage() {
   );
 
   const isDataLoading = pageLoading || tableLoading;
+  const hasActiveFilters =
+    Boolean(search.trim() || appliedSearch) ||
+    roleFilter !== "All" ||
+    accountFilter !== "All";
 
   const openStatus = useCallback((type, title, message) => {
     setStatusModal({ open: true, type, title, message });
@@ -2895,12 +2261,14 @@ export default function UserSettingsPage() {
           ) : (
             <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
               <SummaryCard
+                index={0}
                 icon={UsersRound}
                 label="Assigned Users"
                 value={summary.totalUsers}
                 description="Distinct HRIS users"
               />
               <SummaryCard
+                index={1}
                 icon={KeyRound}
                 label="Assignments"
                 value={summary.totalAssignments}
@@ -2908,6 +2276,7 @@ export default function UserSettingsPage() {
                 tone="violet"
               />
               <SummaryCard
+                index={2}
                 icon={Building2}
                 label="Assigned Accounts"
                 value={summary.assignedAccounts}
@@ -2915,6 +2284,7 @@ export default function UserSettingsPage() {
                 tone="cyan"
               />
               <SummaryCard
+                index={3}
                 icon={UserCog}
                 label="Departments"
                 value={summary.assignedDepartments}
@@ -2922,6 +2292,7 @@ export default function UserSettingsPage() {
                 tone="amber"
               />
               <SummaryCard
+                index={4}
                 icon={ShieldCheck}
                 label="Super Admins"
                 value={summary.superAdmins}
@@ -2932,7 +2303,7 @@ export default function UserSettingsPage() {
           )}
 
           <section className="sibs-card overflow-hidden rounded-2xl">
-            <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+            <div className="border-b border-sibs-border bg-white p-4 sm:p-5 font-jakarta">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div className="min-w-0">
                   <h2 className="sibs-section-title">Assigned Users</h2>
@@ -2942,7 +2313,7 @@ export default function UserSettingsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
+                  <span className="sibs-badge-neutral w-max">
                     {pageLoading ? "Loading..." : `${pagination.total} Users`}
                   </span>
 
@@ -2950,7 +2321,7 @@ export default function UserSettingsPage() {
                     type="button"
                     onClick={() => reloadAll({ showRefresh: true })}
                     disabled={refreshing}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:bg-sibs-surface disabled:opacity-50"
                     aria-label="Refresh user settings"
                   >
                     <RefreshCw
@@ -2960,71 +2331,78 @@ export default function UserSettingsPage() {
                   </button>
                 </div>
               </div>
+
+              <div className="mt-4">
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_210px_260px_auto] xl:items-end">
+                  <div>
+                    <label className="mb-1 block font-jakarta text-xs font-bold text-sibs-navy">
+                      Search
+                    </label>
+
+                    <div className="relative">
+                      <Search
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted"
+                      />
+
+                      <input
+                        ref={searchInputRef}
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Search employee, SIBS ID, account..."
+                        className="sibs-dashboard-input pl-9 pr-4"
+                      />
+                    </div>
+                  </div>
+
+                  <SelectDropdown
+                    label="Access"
+                    labelClassName="text-xs font-bold text-sibs-navy normal-case"
+                    value={roleFilter}
+                    onChange={(value) => {
+                      setRoleFilter(value);
+                      setCurrentPage(1);
+                    }}
+                    options={roleFilterOptions}
+                    placeholder="All Access Levels"
+                    clearable={false}
+                    className="h-10 text-xs bg-white rounded-lg border-sibs-border-subtle"
+                  />
+
+                  <SelectDropdown
+                    label="Assigned Account"
+                    labelClassName="text-xs font-bold text-sibs-navy normal-case"
+                    value={accountFilter}
+                    onChange={(value) => {
+                      setAccountFilter(value);
+                      setCurrentPage(1);
+                    }}
+                    options={accountFilterOptions}
+                    searchable
+                    searchPlaceholder="Search account..."
+                    placeholder="All Accounts"
+                    clearable={false}
+                    className="h-10 text-xs bg-white rounded-lg border-sibs-border-subtle"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    disabled={!hasActiveFilters}
+                    className="sibs-btn-secondary h-10 gap-2 px-4 cursor-pointer"
+                  >
+                    <Filter size={15} />
+                    Clear
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="relative overflow-visible p-4 sm:p-5">
-              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_210px_260px_auto] xl:items-end">
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold text-[#101828]">
-                    Search
-                  </label>
-
-                  <div className="relative">
-                    <Search
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                    />
-
-                    <input
-                      ref={searchInputRef}
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Search employee, SIBS ID, account, department..."
-                      className="h-10 w-full rounded-lg border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-4 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#042C51]/30 focus:border-[#042C51] focus:bg-white focus:ring-4 focus:ring-[#042C51]/10"
-                    />
-                  </div>
-                </div>
-
-                <SelectField
-                  label="Access"
-                  compact
-                  value={roleFilter}
-                  onChange={(value) => {
-                    setRoleFilter(value);
-                    setCurrentPage(1);
-                  }}
-                  options={roleFilterOptions}
-                  placeholder="All Access Levels"
-                />
-
-                <SelectField
-                  label="Assigned Account"
-                  compact
-                  value={accountFilter}
-                  onChange={(value) => {
-                    setAccountFilter(value);
-                    setCurrentPage(1);
-                  }}
-                  options={accountFilterOptions}
-                  searchable
-                  searchPlaceholder="Search account..."
-                  placeholder="All Accounts"
-                />
-
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
-                >
-                  <Filter size={16} />
-                  Clear
-                </button>
-              </div>
-
+            <div className="p-4 sm:p-5 font-jakarta">
               <ResponsiveTableShell
                 breakpoint="lg"
                 mobileView={
-                  <div className="mt-5 space-y-3">
+                  <div className="space-y-3">
                     {isDataLoading ? (
                       <DataCard.Skeleton count={4} />
                     ) : users.length ? (
@@ -3052,169 +2430,221 @@ export default function UserSettingsPage() {
                 desktopView={
                   <DraggableTableScroll>
                     <table className="w-full table-fixed border-collapse bg-white text-left">
-                  <colgroup>
-                    <col className="w-[5%]" />
-                    <col className="w-[4%]" />
-                    <col className="w-[17%]" />
-                    <col className="w-[7%]" />
-                    <col className="w-[8%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[9%]" />
-                    <col className="w-[9%]" />
-                    <col className="w-[11%]" />
-                  </colgroup>
-                  <thead className="sibs-data-table-head">
-                    <tr className="sibs-data-table-head-row">
-                      <th className="sibs-data-table-th">SIBS ID</th>
-                      <th className="sibs-data-table-th text-center">Profile</th>
-                      <th className="sibs-data-table-th">Employee</th>
-                      <th className="sibs-data-table-th">Status</th>
-                      <th className="sibs-data-table-th">Access</th>
-                      <th className="sibs-data-table-th">Assigned Accounts</th>
-                      <th className="sibs-data-table-th">Departments</th>
-                      <th className="sibs-data-table-th">Creator</th>
-                      <th className="sibs-data-table-th">Updater</th>
-                      <th className="sibs-data-table-th">Created / Updated</th>
-                    </tr>
-                  </thead>
+                      <colgroup>
+                        <col className="w-[28%]" />
+                        <col className="w-[8%]" />
+                        <col className="w-[9%]" />
+                        <col className="w-[22%]" />
+                        <col className="w-[14%]" />
+                        <col className="w-[19%]" />
+                      </colgroup>
 
-                  <tbody>
-                    {isDataLoading ? (
-                      <TableSkeletonRows count={PAGE_LIMIT} columns={10} />
-                    ) : users.length ? (
-                      users.map((assignedUser, index) => (
-                        <tr
-                          key={assignedUser.id}
-                          data-user-settings-sibs-id={safeText(
-                            assignedUser.sibsId,
-                          )}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => openDetailsModal(assignedUser)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              openDetailsModal(assignedUser);
-                            }
-                          }}
-                          aria-label={`Open access details for ${formatEmployeeName(assignedUser)}`}
-                          className={`sibs-data-table-row sibs-user-settings-row-reveal cursor-pointer border-b border-[#E6ECF2] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30 ${
-                            safeText(assignedUser.sibsId) ===
-                            safeText(highlightedSibsId)
-                              ? "bg-[#FFF3ED] shadow-[inset_4px_0_0_#FF5C28] ring-2 ring-inset ring-[#FF5C28]/40"
-                              : "hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6]"
-                          }`}
-                          style={{
-                            animationDelay: `${Math.min(index, 10) * 36}ms`,
-                          }}
-                        >
-                          <td className="sibs-data-table-td whitespace-nowrap">
-                            <p className="text-xs font-extrabold text-[#FF5C28]">
-                              {assignedUser.sibsId || "—"}
-                            </p>
-                          </td>
-
-                          <td className="sibs-data-table-td">
-                            <div className="flex justify-center">
-                              <HoverProfileAvatar employee={assignedUser} size="sm" />
-                            </div>
-                          </td>
-
-                          <td className="sibs-data-table-td">
-                            <div className="min-w-0">
-                              <p className="max-w-[220px] truncate text-xs font-extrabold text-[#101828]">
-                                {formatEmployeeName(assignedUser)}
-                              </p>
-                              <p className="mt-0.5 max-w-[220px] truncate text-[10px] font-semibold text-sibs-tertiary-5">
-                                {assignedUser.email || "No email available"}
-                              </p>
-                            </div>
-                          </td>
-
-                          <td className="sibs-data-table-td">
-                            <StatusPill status={assignedUser.status} />
-                          </td>
-
-                          <td className="sibs-data-table-td">
-                            <RolePill
-                              role={assignedUser.role}
-                              adminAccess={assignedUser.adminAccess}
-                            />
-                          </td>
-
-                          <td className="sibs-data-table-td min-w-0 overflow-hidden align-top">
-                            <AccountChips
-                              accounts={assignedUser.assignedAccounts}
-                            />
-                          </td>
-
-                          <td className="sibs-data-table-td min-w-0 overflow-hidden align-top">
-                            <DepartmentChips
-                              accounts={assignedUser.assignedAccounts}
-                            />
-                          </td>
-
-                          <td className="sibs-data-table-td min-w-0 overflow-hidden align-top">
-                            <p className="block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-bold leading-4 text-[#344054]">
-                              {getAuditDisplayValue(
-                                assignedUser,
-                                "creator",
-                              )}
-                            </p>
-                          </td>
-
-                          <td className="sibs-data-table-td min-w-0 overflow-hidden align-top">
-                            <p className="block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-bold leading-4 text-[#344054]">
-                              {getAuditDisplayValue(
-                                assignedUser,
-                                "updater",
-                              )}
-                            </p>
-                          </td>
-
-                          <td className="sibs-data-table-td">
-                            <p className="text-[10px] font-semibold leading-4 text-[#344054]">
-                              {formatDateTime(
-                                getAuditDateValue(
-                                  assignedUser,
-                                  "created",
-                                ),
-                              )}
-                            </p>
-                            <p className="mt-0.5 text-[10px] font-semibold leading-4 text-sibs-tertiary-5">
-                              {formatDateTime(
-                                getAuditDateValue(
-                                  assignedUser,
-                                  "updated",
-                                ),
-                              )}
-                            </p>
-                          </td>
-
+                      <thead className="sibs-data-table-head">
+                        <tr className="sibs-data-table-head-row">
+                          <th className="sibs-data-table-th">Employee</th>
+                          <th className="sibs-data-table-th">Status</th>
+                          <th className="sibs-data-table-th">Access</th>
+                          <th className="sibs-data-table-th">Assigned Accounts</th>
+                          <th className="sibs-data-table-th">Departments</th>
+                          <th className="sibs-data-table-th">Audit</th>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={10}>
-                          <EmptyState />
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      </thead>
+
+                      <tbody>
+                        {isDataLoading ? (
+                          <TableSkeletonRows count={PAGE_LIMIT} columns={6} />
+                        ) : users.length ? (
+                          users.map((assignedUser, index) => (
+                            <tr
+                              key={assignedUser.id}
+                              data-user-settings-sibs-id={safeText(
+                                assignedUser.sibsId,
+                              )}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => openDetailsModal(assignedUser)}
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" ||
+                                  event.key === " "
+                                ) {
+                                  event.preventDefault();
+                                  openDetailsModal(assignedUser);
+                                }
+                              }}
+                              aria-label={`Open access details for ${formatEmployeeName(assignedUser)}`}
+                              className={`sibs-data-table-row sibs-user-settings-row-reveal cursor-pointer border-b border-sibs-border transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30 ${
+                                safeText(assignedUser.sibsId) ===
+                                safeText(highlightedSibsId)
+                                  ? "bg-orange-50/70 shadow-[inset_4px_0_0_theme(colors.sibs.orange)] ring-2 ring-inset ring-sibs-orange/40"
+                                  : "hover:bg-orange-50/40 focus-visible:bg-orange-50/40"
+                              }`}
+                              style={{
+                                animationDelay: `${Math.min(index, 10) * 36}ms`,
+                              }}
+                            >
+                              <td className="sibs-data-table-td py-3.5 align-middle">
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <HoverProfileAvatar
+                                    employee={assignedUser}
+                                    size="sm"
+                                  />
+
+                                  <div className="min-w-0 flex-1">
+                                    <p
+                                      className="truncate text-xs font-extrabold text-sibs-navy"
+                                      title={formatEmployeeName(assignedUser)}
+                                    >
+                                      {formatEmployeeName(assignedUser)}
+                                    </p>
+
+                                    <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[10px] font-semibold text-sibs-tertiary-5">
+                                      <span className="shrink-0">
+                                        SIBS {assignedUser.sibsId || "—"}
+                                      </span>
+                                      <span className="shrink-0 text-sibs-border-subtle">
+                                        ·
+                                      </span>
+                                      <span
+                                        className="min-w-0 truncate"
+                                        title={
+                                          assignedUser.email ||
+                                          "No email available"
+                                        }
+                                      >
+                                        {assignedUser.email ||
+                                          "No email available"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="sibs-data-table-td py-3.5 align-middle">
+                                <StatusPill status={assignedUser.status} />
+                              </td>
+
+                              <td className="sibs-data-table-td py-3.5 align-middle">
+                                <RolePill
+                                  role={assignedUser.role}
+                                  adminAccess={assignedUser.adminAccess}
+                                />
+                              </td>
+
+                              <td className="sibs-data-table-td min-w-0 overflow-hidden py-3.5 align-middle">
+                                <AccountChips
+                                  accounts={assignedUser.assignedAccounts}
+                                  limit={3}
+                                  compact
+                                />
+                              </td>
+
+                              <td className="sibs-data-table-td min-w-0 overflow-hidden py-3.5 align-middle">
+                                <DepartmentChips
+                                  accounts={assignedUser.assignedAccounts}
+                                  limit={2}
+                                  compact
+                                />
+                              </td>
+
+                              <td className="sibs-data-table-td min-w-0 py-3 align-middle">
+                                <div className="min-w-0 space-y-1.5">
+                                  <p
+                                    className="flex min-w-0 items-center gap-2 text-[10px] leading-4"
+                                    title={`Created: ${getAuditDisplayValue(
+                                      assignedUser,
+                                      "creator",
+                                    )} · ${formatDateTime(
+                                      getAuditDateValue(
+                                        assignedUser,
+                                        "created",
+                                      ),
+                                    )}`}
+                                  >
+                                    <span className="w-[46px] shrink-0 font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                                      Created
+                                    </span>
+                                    <span className="shrink-0 font-semibold text-sibs-muted">
+                                      {formatCompactDate(
+                                        getAuditDateValue(
+                                          assignedUser,
+                                          "created",
+                                        ),
+                                      )}
+                                    </span>
+                                    <span className="shrink-0 text-sibs-border-subtle">
+                                      ·
+                                    </span>
+                                    <span className="min-w-0 truncate font-bold text-sibs-text-secondary">
+                                      {getAuditDisplayValue(
+                                        assignedUser,
+                                        "creator",
+                                      )}
+                                    </span>
+                                  </p>
+
+                                  <p
+                                    className="flex min-w-0 items-center gap-2 text-[10px] leading-4"
+                                    title={`Updated: ${getAuditDisplayValue(
+                                      assignedUser,
+                                      "updater",
+                                    )} · ${formatDateTime(
+                                      getAuditDateValue(
+                                        assignedUser,
+                                        "updated",
+                                      ),
+                                    )}`}
+                                  >
+                                    <span className="w-[46px] shrink-0 font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                                      Updated
+                                    </span>
+                                    <span className="shrink-0 font-semibold text-sibs-muted">
+                                      {formatCompactDate(
+                                        getAuditDateValue(
+                                          assignedUser,
+                                          "updated",
+                                        ),
+                                      )}
+                                    </span>
+                                    <span className="shrink-0 text-sibs-border-subtle">
+                                      ·
+                                    </span>
+                                    <span className="min-w-0 truncate font-bold text-sibs-text-secondary">
+                                      {getAuditDisplayValue(
+                                        assignedUser,
+                                        "updater",
+                                      )}
+                                    </span>
+                                  </p>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={6}>
+                              <EmptyState />
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
               </DraggableTableScroll>
             }
           />
+            </div>
 
+            <div className="border-t border-sibs-border bg-white px-4 py-3 sm:px-5 font-jakarta">
               <TablePagination
                 currentPage={currentPage}
                 totalPages={pagination.totalPages}
                 totalRecords={pagination.total}
+                limit={PAGE_LIMIT}
                 loadedCount={users.length}
                 recordLabel="assigned users"
                 onPageChange={(nextPage) => handlePageChange(nextPage)}
                 loading={isDataLoading}
+                className="!border-t-0 !pt-0"
               />
             </div>
           </section>

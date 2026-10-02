@@ -1,16 +1,6 @@
+import React from "react";
 import { UsersRound } from "lucide-react";
-
-function getLoadClass(status) {
-  if (status === "High") {
-    return "border-rose-200 bg-rose-50 text-rose-700";
-  }
-
-  if (status === "Medium") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  return "border-emerald-200 bg-emerald-50 text-emerald-700";
-}
+import { StatusBadge } from "@/components/ui";
 
 export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
   const totalRolesHandled = recruiters.reduce(
@@ -54,11 +44,15 @@ export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
                 </div>
 
                 <span
-                  className={`shrink-0 rounded border px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide ${getLoadClass(
-                    row.loadStatus,
-                  )}`}
+                  className="inline-flex shrink-0 items-center gap-1"
                 >
-                  {row.loadStatus} Load
+                  <StatusBadge
+                    status={`${row.loadStatus || "Low"} Risk`}
+                    showDot={false}
+                  />
+                  <span className="sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
+                    Load
+                  </span>
                 </span>
               </div>
 
@@ -66,7 +60,7 @@ export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
                 {[
                   ["Sourced", row.output.sourced, "text-sibs-navy"],
                   ["Interviewed", row.output.interviewed, "text-sibs-navy"],
-                  ["Hired", row.output.hired, "text-emerald-600"],
+                  ["Hired", row.output.hired, "text-sibs-success"],
                 ].map(([label, value, tone]) => (
                   <div key={label}>
                     <span className="block sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
@@ -83,13 +77,13 @@ export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
         )}
       </div>
 
-      <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/70 px-3.5 py-3">
+      <div className="mt-3 flex items-center justify-between rounded-xl border border-sibs-border-panel bg-sibs-surface px-3.5 py-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-sibs-navy">
-            <UsersRound className="h-3.5 w-3.5 text-indigo-700" />
+          <span className="sibs-tone-indigo-icon flex h-7 w-7 items-center justify-center rounded-full">
+            <UsersRound className="h-3.5 w-3.5" />
           </span>
           <div>
-            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-indigo-900">
+            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-navy">
               Active TA Team
             </p>
             <p className="sibs-text-xs font-black text-sibs-navy">
@@ -102,7 +96,7 @@ export default function TARecruiterLoad({ recruiters = [], delay = 0 }) {
           <span className="font-heading block text-base 2xl:text-lg font-bold leading-none tabular-nums text-sibs-navy">
             {recruiters.length} Recruiters
           </span>
-          <span className="mt-1 block sibs-text-micro font-bold text-indigo-700">
+          <span className="mt-1 block sibs-text-micro font-bold text-sibs-orange">
             {totalRolesHandled} active roles
           </span>
         </div>

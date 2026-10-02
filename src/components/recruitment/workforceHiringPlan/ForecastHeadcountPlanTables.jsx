@@ -621,7 +621,7 @@ function ForecastWeekMobileCard({ row, index, onOpen }) {
         />
       </DataCard.Metrics>
 
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border pt-2 text-[10.5px] font-semibold text-[#667085]">
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border pt-2 text-[10.5px] font-semibold text-sibs-muted">
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sibs-muted">
           <span>JO: <strong className="text-sibs-navy">{formatOverviewNumber(row.acceptedJo)}</strong></span>
           <span>NHO: <strong className="text-sibs-navy">{formatOverviewNumber(row.nho)}</strong></span>
@@ -834,19 +834,19 @@ export default function ForecastHeadcountPlanTable({
 
   return (
     <>
-      <section className="sibs-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-4 py-3.5 2xl:px-5 2xl:py-4">
+      <section className="sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-sibs-border px-4 py-3.5 2xl:px-5 2xl:py-4">
           <div>
             <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               6-Week Forecast Headcount Plan
             </h3>
 
-            <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+            <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
               Projected next 6 weeks from the past 6 actual workforce weeks.
             </p>
           </div>
 
-          <span className="rounded-full bg-slate-100 px-3 py-1 sibs-text-micro font-extrabold text-[#52637A]">
+          <span className="rounded-xl border border-sibs-border bg-sibs-surface px-3 py-1 sibs-text-micro font-extrabold text-sibs-navy">
             {forecastData.loading
               ? "Loading forecast..."
               : hasRows
@@ -915,10 +915,10 @@ export default function ForecastHeadcountPlanTable({
                     <col style={{ width: "170px" }} />
                   </colgroup>
 
-                  <thead className="sibs-data-table-head bg-[#F8FAFC]">
+                  <thead className="sibs-data-table-head bg-sibs-surface">
                     <tr className="sibs-data-table-head-row">
                       <WorkforceGroupHeaderTh rowSpan={2} className="!text-left">
-                        Forecast Period
+                         Forecast Period
                       </WorkforceGroupHeaderTh>
                       <WorkforceGroupHeaderTh colSpan={7}>
                         Workforce Capacity &amp; Gap
@@ -932,7 +932,7 @@ export default function ForecastHeadcountPlanTable({
                     </tr>
 
                     <tr className="sibs-data-table-head-row">
-                      <WorkforceHeaderTh className="!text-center !font-black !text-[#042C51]">
+                      <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
                         Required HC
                       </WorkforceHeaderTh>
                       <WorkforceHeaderTh className="!text-center">
@@ -947,7 +947,7 @@ export default function ForecastHeadcountPlanTable({
                       <WorkforceHeaderTh className="!text-center">
                         Attrition
                       </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center !font-black !text-[#042C51]">
+                      <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
                         Net Actual HC
                       </WorkforceHeaderTh>
                       <WorkforceHeaderTh className="!text-center !font-black !text-rose-600">
@@ -968,10 +968,10 @@ export default function ForecastHeadcountPlanTable({
                       <WorkforceHeaderTh className="!text-center !font-black !text-emerald-700">
                         Go Live
                       </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center !font-black !text-[#042C51]">
+                      <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
                         Hired Count
                       </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center !font-black !text-[#FF5C28]">
+                      <WorkforceHeaderTh className="!text-center !font-black !text-sibs-orange">
                         Hiring Rate
                       </WorkforceHeaderTh>
                       <WorkforceHeaderTh className="border-r-0 !text-center !font-black !text-purple-700">
@@ -1000,7 +1000,7 @@ export default function ForecastHeadcountPlanTable({
                           <WorkforceBodyTd
                             align="left"
                             numeric={false}
-                            className="font-black text-[#042C51]"
+                            className="font-black text-sibs-navy"
                           >
                             {formatForecastWeekLabel(row)}
                           </WorkforceBodyTd>
@@ -1069,7 +1069,7 @@ export default function ForecastHeadcountPlanTable({
                             {formatOverviewNumber(row.hiredCount)}
                           </WorkforceBodyTd>
 
-                          <WorkforceBodyTd className="font-black text-[#FF5C28]">
+                          <WorkforceBodyTd className="font-black text-sibs-orange">
                             {formatOverviewPercent(row.hiringRate)}
                           </WorkforceBodyTd>
 
@@ -1082,7 +1082,7 @@ export default function ForecastHeadcountPlanTable({
                       <TableSkeletonRows
                         count={6}
                         columns={16}
-                        cellClassName="border-b border-r border-[#E6ECF2] px-2 py-1.5 2xl:px-3 2xl:py-2 align-middle"
+                        cellClassName="border-b border-r border-sibs-border px-2 py-1.5 2xl:px-3 2xl:py-2 align-middle"
                       />
                     ) : (
                       <tr>
@@ -1178,7 +1178,7 @@ export default function ForecastHeadcountPlanTable({
                           {formatOverviewNumber(totals.hiredCount)}
                         </WorkforceFooterTd>
 
-                        <WorkforceFooterTd className="font-black text-[#FF5C28]">
+                        <WorkforceFooterTd className="font-black text-sibs-orange">
                           {formatOverviewPercent(totals.hiringRate)}
                         </WorkforceFooterTd>
 

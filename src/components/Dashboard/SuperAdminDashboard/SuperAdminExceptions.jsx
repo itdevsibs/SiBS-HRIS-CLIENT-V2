@@ -1,6 +1,6 @@
+import React from "react";
 import { CheckCircle2 } from "lucide-react";
-
-import PaginationTable from "../../../services/pagination/PaginationTable";
+import { SearchInput, SelectDropdown, TablePagination } from "@/components/ui";
 import { getSeverityPillClass } from "../../../lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers.js";
 
 export default function SuperAdminExceptions({
@@ -16,6 +16,18 @@ export default function SuperAdminExceptions({
   moduleOptions = [],
   onFilterChange,
 }) {
+  const formattedModuleOptions = React.useMemo(() => {
+    const hasAll = moduleOptions.some(
+      (opt) => (typeof opt === "string" ? opt : opt.value) === "All Modules",
+    );
+    const mapped = moduleOptions.map((opt) =>
+      typeof opt === "string" ? { value: opt, label: opt } : opt,
+    );
+    return hasAll
+      ? mapped
+      : [{ value: "All Modules", label: "All Modules" }, ...mapped];
+  }, [moduleOptions]);
+
   return (
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
       <div>
@@ -28,30 +40,30 @@ export default function SuperAdminExceptions({
         </p>
       </div>
 
-      <div className="relative overflow-visible">
-        <PaginationTable
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          searchValue={searchInput}
-          searchPlaceholder="Search exception title, description, or assigned..."
-          onSearchChange={onSearchChange}
-          onSearchKeyDown={onSearchKeyDown}
-          filters={[
-            {
-              key: "module",
-              label: "Target Module",
-              value: module,
-              options: moduleOptions,
-              onChange: (value) => onFilterChange?.("module", value),
-              searchable: true,
-              allLabel: "All Modules",
-              includeAll: true,
-            },
-          ]}
-          className="border-0 bg-transparent p-0 shadow-none"
-        />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="w-full sm:w-80 2xl:w-96">
+          <SearchInput
+            value={searchInput}
+            onChange={(val) => onSearchChange?.(val)}
+            onClear={() => onSearchChange?.("")}
+            onKeyDown={onSearchKeyDown}
+            placeholder="Search exception title, description, or assigned..."
+            ariaLabel="Search risk exceptions"
+          />
+        </div>
+
+        <div className="w-full sm:w-56 2xl:w-64">
+          <SelectDropdown
+            label="Target Module"
+            hideLabel
+            value={module}
+            options={formattedModuleOptions}
+            onChange={(val) => onFilterChange?.("module", val)}
+            searchable
+            clearable={false}
+            triggerClassName="w-full"
+          />
+        </div>
       </div>
 
       {items.length > 0 ? (
@@ -130,16 +142,13 @@ export default function SuperAdminExceptions({
         </div>
       )}
 
-      <PaginationTable
-        className="border-0 bg-transparent p-0 shadow-none"
-        showSearch={false}
-        currentPage={pagination.currentPage}
-        totalPages={pagination.totalPages}
+      <TablePagination
+        currentPage={pagination?.currentPage || 1}
+        totalPages={pagination?.totalPages || 1}
         loadedCount={items.length}
-        totalRecords={totalItems}
-        recordLabel="risk exceptions"
-        onPrevious={() => pagination.onPageChange(pagination.currentPage - 1)}
-        onNext={() => pagination.onPageChange(pagination.currentPage + 1)}
+        totalItems={totalItems}
+        itemName="risk exceptions"
+        onPageChange={pagination?.onPageChange}
       />
     </div>
   );

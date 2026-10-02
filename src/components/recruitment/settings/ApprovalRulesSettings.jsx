@@ -16,7 +16,6 @@ import {
 
 import StatusModal from "../../modals/StatusModal";
 import { useUser } from "../../../services/context/UserContext";
-import SettingsHeaderCapsules from "./SettingsHeaderCapsules";
 import { Skeleton } from "@/components/ui";
 
 import {
@@ -408,7 +407,7 @@ function RuleInnerNav({ activeRuleKey, counts, onChange }) {
               className={`group flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200 ${
                 isActive
                   ? "bg-sibs-primary-1 text-white shadow-md"
-                  : "border-[#D9E2EC] bg-white text-[#344054] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                  : "border-sibs-border bg-white text-sibs-text-secondary hover:bg-sibs-surface hover:text-sibs-navy"
               }`}
             >
               <span
@@ -480,7 +479,7 @@ function EmployeeSearchDropdown({
         className={`flex h-10 items-center gap-3 rounded-[10px] border bg-white px-3 transition ${
           open
             ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1/30"
+            : "border-sibs-border hover:border-sibs-navy/30"
         } ${disabled ? "opacity-60" : ""}`}
       >
         <Search size={18} className="shrink-0 text-sibs-primary-1" />
@@ -517,7 +516,7 @@ function EmployeeSearchDropdown({
       </div>
 
       {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-sibs-border bg-white shadow-lg">
           <div className="max-h-72 overflow-y-auto py-2">
             {loading ? (
               <div className="px-4 py-3 text-xs font-bold text-sibs-primary-1">
@@ -532,9 +531,9 @@ function EmployeeSearchDropdown({
                     onSelect(candidate);
                     setOpen(false);
                   }}
-                  className="block w-full px-4 py-3 text-left transition hover:bg-[#F8FAFC]"
+                  className="block w-full px-4 py-3 text-left transition hover:bg-sibs-surface"
                 >
-                  <span className="block text-xs font-extrabold text-[#101828]">
+                  <span className="block text-xs font-extrabold text-sibs-navy">
                     {candidate.label}
                   </span>
 
@@ -561,7 +560,7 @@ function EmployeeSearchDropdown({
 
 function ApprovalUserRow({ user, description, removing, onRemove }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-[#D9E2EC] bg-white px-4 py-3">
+    <div className="flex items-center gap-4 rounded-xl border border-sibs-border bg-white px-4 py-3">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-sm font-extrabold text-white">
         {String(user.employeeName || user.label || "?").trim().charAt(0)}
       </div>
@@ -613,10 +612,10 @@ function ApprovalRulePanel({
   const isDisabled = !rule.isConnected;
 
   return (
-    <section className="min-w-0 flex-1 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+    <section className="min-w-0 flex-1 rounded-2xl border border-sibs-border bg-sibs-surface p-5">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
+          <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-orange">
             Active Module Rules
           </p>
 
@@ -635,8 +634,8 @@ function ApprovalRulePanel({
         </span>
       </div>
 
-      <div className="rounded-xl border border-[#D9E2EC] bg-white p-3">
-        <label className="mb-2 block text-xs font-extrabold text-[#101828]">
+      <div className="rounded-xl border border-sibs-border bg-white p-3">
+        <label className="mb-2 block text-xs font-extrabold text-sibs-navy">
           Add Approval User
         </label>
 
@@ -656,7 +655,7 @@ function ApprovalRulePanel({
             type="button"
             onClick={onAddUser}
             disabled={adding || !selectedCandidate || isDisabled}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-4 text-xs font-extrabold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
+            className="sibs-btn-primary h-10 gap-2 px-4 cursor-pointer"
           >
             {adding ? (
               <Loader2 size={17} className="animate-spin" />
@@ -679,7 +678,7 @@ function ApprovalRulePanel({
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={`approval-user-skeleton-${index}`}
-                className="flex items-center justify-between gap-4 rounded-xl border border-[#D9E2EC] bg-white p-4"
+                className="flex items-center justify-between gap-4 rounded-xl border border-sibs-border bg-white p-4"
               >
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-10 w-10 rounded-full" />
@@ -703,7 +702,7 @@ function ApprovalRulePanel({
             />
           ))
         ) : (
-          <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-white px-5 py-12 text-center text-xs font-bold text-sibs-tertiary-5">
+          <div className="rounded-xl border border-dashed border-sibs-border bg-white px-5 py-12 text-center text-xs font-bold text-sibs-tertiary-5">
             {rule.emptyText}
           </div>
         )}
@@ -1033,20 +1032,14 @@ export default function ApprovalRulesSettings() {
 
   return (
     <div>
-      <div className="mb-5 border-b border-[#E6ECF2] pb-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mb-5 border-b border-sibs-border pb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <SettingsHeaderCapsules
-              items={[
-                { label: "Approval Rules Configuration", icon: UserRoundCheck }
-              ]}
-            />
-
-            <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
+            <h3 className="font-heading text-sm sm:text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
               Recruitment Approval Rules
-            </h2>
+            </h3>
 
-            <p className="mt-1 text-xs font-medium leading-5 text-sibs-primary-1/80">
+            <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-sibs-muted">
               Configure approval users for Job Descriptions, Hiring Needs,
               Available Positions, and Offers from one settings panel.
             </p>

@@ -63,11 +63,7 @@ test/
 src/test/
 tests/
 *.test.*
-!src/lib/utils/sidebarNavigation.test.jsx
-!src/components/chat/ChatAudioPlayer.test.jsx
-!src/components/recruitment/candidatePipeline/ExpandableCandidateRemark.test.jsx
-!src/lib/utils/chat/chatWindowLayout.test.jsx
-!src/lib/utils/employeeDashboardHelpers.test.jsx
-!src/lib/utils/employees/employeeDirectoryHelpers.test.jsx
-!src/lib/utils/attendance/attendanceHelpers.test.jsx
-!src/lib/axios/getNotifications.test.jsx
+!src/pages/recruitment/JobDescriptionPage.test.jsx
+!src/pages/recruitment/HiringNeedsPage.test.jsx
+!src/pages/recruitment/AvailablePositionsPage.test.jsx
+!src/components/tables/FilterBarsModernization.test.jsx

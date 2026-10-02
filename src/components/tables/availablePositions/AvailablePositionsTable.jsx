@@ -1,6 +1,11 @@
 import React from "react";
 import { AlertTriangle, CheckCircle2, FileText } from "lucide-react";
-import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  TablePagination,
+  TableSkeletonRows,
+} from "@/components/ui";
 
 import PositionMobileCard from "../../recruitment/availablePositions/PositionMobileCard";
 import StatusFilterTabs from "../../recruitment/StatusFilterTabs";
@@ -15,7 +20,6 @@ import {
   getAvailablePositionUpdatedAt,
   getAvailablePositionUpdatedBy,
 } from "../../../lib/utils/availablePositions/availablePositionsPresentation";
-import PaginationTable from "../../../services/pagination/PaginationTable";
 
 function normalizeText(value = "") {
   return String(value || "")
@@ -47,14 +51,14 @@ function EmptyTableRow() {
   return (
     <tr>
       <td colSpan={8} className="px-5 py-14 text-center">
-        <div className="mx-auto max-w-sm rounded-2xl border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-5 py-8">
-          <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+        <div className="mx-auto max-w-sm rounded-2xl border border-dashed border-sibs-border bg-slate-50 px-5 py-8">
+          <FileText className="mx-auto h-9 w-9 text-sibs-muted" />
 
-          <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+          <p className="mt-3 text-sm font-extrabold text-sibs-navy">
             No Available Positions Found
           </p>
 
-          <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+          <p className="mt-1 text-xs font-semibold text-sibs-muted">
             Adjust the active filters or register a new position.
           </p>
         </div>
@@ -122,7 +126,7 @@ function JdLinkStatusBadge({ status = "Linked" }) {
 
   if (isUnlinked) {
     return (
-      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[#FFB39F] bg-[#FFE1D8] px-2.5 py-1 text-[9px] font-extrabold text-[#D92D20]">
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[9px] font-extrabold text-rose-700">
         <AlertTriangle size={11} strokeWidth={2} />
         Unlinked from JD
       </span>
@@ -223,37 +227,37 @@ export default function AvailablePositionsTable({
               desktopContent={
                 <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
                   <table className="w-full border-collapse bg-white text-left text-xs">
-                  <thead className="bg-[#F8FAFC]">
-                    <tr className="border-b border-[#E6ECF2]">
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-[#667085]">
+                  <thead className="bg-slate-50">
+                    <tr className="border-b border-sibs-border">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-sibs-muted">
                         Position ID
                       </th>
 
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-sibs-muted">
                         Position & Mapping
                       </th>
 
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-sibs-muted">
                         Linked JD Manual
                       </th>
 
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-sibs-muted">
                         Location
                       </th>
 
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] font-extrabold uppercase text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] font-extrabold uppercase text-sibs-muted">
                         Status
                       </th>
 
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] font-extrabold uppercase text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] font-extrabold uppercase text-sibs-muted">
                         Approval Status
                       </th>
 
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] font-extrabold uppercase text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center text-[10px] font-extrabold uppercase text-sibs-muted">
                         JD Link Status
                       </th>
 
-                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-[#667085]">
+                      <th className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] font-extrabold uppercase text-sibs-muted">
                         Last Updated
                       </th>
                     </tr>
@@ -261,7 +265,7 @@ export default function AvailablePositionsTable({
 
                   <tbody
                     key={statusFilter}
-                    className="divide-y divide-[#E6ECF2]"
+                    className="divide-y divide-sibs-border"
                   >
                     {isLoading ? (
                       <TableSkeletonRows count={10} columns={8} />
@@ -306,14 +310,14 @@ export default function AvailablePositionsTable({
                               "sibs-page-card-in align-middle transition-colors duration-150",
 
                               unlinked
-                                ? "bg-[#FFF4EF] hover:bg-[#FFE9E0]"
-                                : "bg-white hover:bg-[#F8FAFC]",
+                                ? "bg-orange-50/60 hover:bg-orange-100/50"
+                                : "bg-white hover:bg-slate-50/80",
 
                               rowClickable
-                                ? `cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25 ${
+                                ? `cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25 ${
                                     unlinked
-                                      ? "focus-visible:bg-[#FFE9E0]"
-                                      : "focus-visible:bg-[#F8FAFC]"
+                                      ? "focus-visible:bg-orange-100/50"
+                                      : "focus-visible:bg-slate-50"
                                   }`
                                 : "cursor-wait",
                             ].join(" ")}
@@ -337,8 +341,8 @@ export default function AvailablePositionsTable({
                                   "inline-flex whitespace-nowrap rounded-lg px-2.5 py-1 font-mono text-[9.5px] 2xl:text-[10px] font-extrabold tabular-nums",
 
                                   unlinked
-                                    ? "border border-[#FFD1C4] bg-[#FFF0EA] text-[#A5492B]"
-                                    : "bg-[#F2F6FA] text-[#042C51]",
+                                    ? "border border-orange-200 bg-orange-50 text-orange-800"
+                                    : "bg-slate-100 text-sibs-navy",
                                 ].join(" ")}
                               >
                                 {formatAvailablePositionId(
@@ -350,21 +354,21 @@ export default function AvailablePositionsTable({
 
                             <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                               <p
-                                className="max-w-[220px] truncate sibs-text-xs font-extrabold text-[#042C51]"
+                                className="max-w-[220px] truncate sibs-text-xs font-extrabold text-sibs-navy"
                                 title={position.positionTitle || ""}
                               >
                                 {position.positionTitle || "—"}
                               </p>
 
                               <p
-                                className="mt-0.5 max-w-[220px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-[#667085]"
+                                className="mt-0.5 max-w-[220px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-sibs-muted"
                                 title={department}
                               >
                                 {department}
                               </p>
 
                               <p
-                                className="mt-0.5 max-w-[220px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-[#98A2B3]"
+                                className="mt-0.5 max-w-[220px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-sibs-muted"
                                 title={account}
                               >
                                 {account}
@@ -373,14 +377,14 @@ export default function AvailablePositionsTable({
 
                             <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                               <p
-                                className="max-w-[200px] truncate sibs-text-xs font-extrabold text-[#042C51]"
+                                className="max-w-[200px] truncate sibs-text-xs font-extrabold text-sibs-navy"
                                 title={linkedJd.documentTitle}
                               >
                                 {linkedJd.documentTitle}
                               </p>
 
                               <p
-                                className="mt-0.5 max-w-[200px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-[#98A2B3]"
+                                className="mt-0.5 max-w-[200px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-sibs-muted"
                                 title={linkedJd.code}
                               >
                                 {linkedJd.code}
@@ -389,7 +393,7 @@ export default function AvailablePositionsTable({
 
                             <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                               <p
-                                className="max-w-[130px] truncate sibs-text-xs font-semibold text-[#475467]"
+                                className="max-w-[130px] truncate sibs-text-xs font-semibold text-sibs-muted"
                                 title={position.locationSite || ""}
                               >
                                 {position.locationSite || "—"}
@@ -415,14 +419,14 @@ export default function AvailablePositionsTable({
                             </td>
 
                             <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                              <p className="sibs-text-xs font-extrabold tabular-nums text-[#344054]">
+                              <p className="sibs-text-xs font-extrabold tabular-nums text-sibs-navy">
                                 {formatDate(
                                   getAvailablePositionUpdatedAt(position),
                                 )}
                               </p>
 
                               <p
-                                className="mt-0.5 max-w-[220px] truncate text-[10px] 2xl:text-[10.5px] font-bold text-[#667085]"
+                                className="mt-0.5 max-w-[220px] truncate text-[10px] 2xl:text-[10.5px] font-bold text-sibs-muted"
                                 title={updatedByDisplay}
                               >
                                 By: {updatedByDisplay}
@@ -441,22 +445,16 @@ export default function AvailablePositionsTable({
           />
         </div>
 
-        <div>
-          <PaginationTable
-            showSearch={false}
-            showPagination
-            showCount
-            loading={isLoading}
+        <div className="pt-3">
+          <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
-            loadedCount={paginatedPositions.length}
             totalRecords={filteredPositionsCount}
+            loadedCount={paginatedPositions.length}
             recordLabel="positions"
-            onPrevious={() => onPageChange?.(Math.max(currentPage - 1, 1))}
-            onNext={() =>
-              onPageChange?.(Math.min(currentPage + 1, totalPages))
-            }
-            className="border-0 bg-transparent p-0 shadow-none"
+            onPageChange={onPageChange}
+            loading={isLoading}
+            showCount
           />
         </div>
       </div>

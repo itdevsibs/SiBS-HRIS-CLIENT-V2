@@ -1,7 +1,14 @@
+import React from "react";
 import { RotateCcw } from "lucide-react";
 
-import PaginationTable from "../../../services/pagination/PaginationTable";
-import { DataCard, ResponsiveTableShell } from "../../ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
+  StatusBadge as SharedStatusBadge,
+  TablePagination,
+} from "../../ui";
 import { formatDate } from "../../../lib/utils/Dashboards/OMDashboard/omDashboardHelpers.js";
 
 const STATUS_OPTIONS = [
@@ -11,32 +18,8 @@ const STATUS_OPTIONS = [
   { label: "Delayed", value: "Delayed" },
 ];
 
-function getStatusClass(status) {
-  if (status === "On Track") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-
-  if (status === "At Risk") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  if (status === "Delayed") {
-    return "border-rose-200 bg-rose-50 text-rose-700";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-600";
-}
-
 function StatusBadge({ status }) {
-  return (
-    <span
-      className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-normal ${getStatusClass(
-        status,
-      )}`}
-    >
-      {status || "Unknown"}
-    </span>
-  );
+  return <SharedStatusBadge status={status || "Unknown"} showDot={false} />;
 }
 
 function RoleMobileCard({ role, onViewRole, delay = 0 }) {
@@ -100,6 +83,7 @@ export default function OMRoleHiringStatus({
   searchInput,
   onSearchChange,
   onSearchKeyDown,
+  pageSize = 6,
   status,
   onStatusChange,
   hasActiveFilters,
@@ -107,6 +91,7 @@ export default function OMRoleHiringStatus({
   onViewRole,
   currentPage,
   totalPages,
+  onPageChange,
   onPrevious,
   onNext,
   delay = 0,
@@ -136,42 +121,34 @@ export default function OMRoleHiringStatus({
           Viewing only: <strong className="font-extrabold text-sibs-navy">{scopeText || "manager-assigned scope"}</strong>
         </div>
 
-        <PaginationTable
-          className="mt-4 border-0 bg-transparent p-0 shadow-none"
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          searchValue={searchInput}
-          searchPlaceholder="Search by role, account, department, owner, or status..."
-          onSearchChange={onSearchChange}
-          onSearchKeyDown={onSearchKeyDown}
-          filters={[
-            {
-              key: "status",
-              label: "Status",
-              value: status,
-              options: STATUS_OPTIONS,
-              onChange: onStatusChange,
-              searchable: false,
-              includeAll: false,
-              allLabel: "All Statuses",
-              placeholder: "All Statuses",
-              className: "xl:w-[190px]",
-            },
-          ]}
-          rightContent={
-            <button
-              type="button"
-              onClick={onClearFilters}
-              disabled={!hasActiveFilters}
-              className="sibs-btn-secondary !h-10 !px-3 sibs-text-xs w-full xl:w-auto"
-            >
-              <RotateCcw size={14} />
-              Clear
-            </button>
-          }
-        />
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
+          <SearchInput
+            value={searchInput}
+            onChange={onSearchChange}
+            onKeyDown={onSearchKeyDown}
+            placeholder="Search by role, account, department, owner, or status..."
+            ariaLabel="Search by role, account, department, owner, or status"
+            inputClassName="h-8.5 2xl:h-10"
+            className="min-w-0 flex-1"
+          />
+          <SelectDropdown
+            label="Status"
+            value={status || "All"}
+            options={STATUS_OPTIONS}
+            onChange={onStatusChange}
+            clearable={false}
+            className="xl:w-[190px]"
+          />
+          <button
+            type="button"
+            onClick={onClearFilters}
+            disabled={!hasActiveFilters}
+            className="sibs-btn-secondary !h-8.5 2xl:!h-10 !px-3 sibs-text-xs w-full xl:w-auto"
+          >
+            <RotateCcw size={14} />
+            Clear
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col justify-between p-4 sm:p-5 2xl:p-6">
@@ -283,17 +260,16 @@ export default function OMRoleHiringStatus({
           }
         />
 
-        <PaginationTable
-          className="mt-4 border-0 bg-transparent p-0 shadow-none"
-          showSearch={false}
-          showPagination
-          showCount
+        <TablePagination
+          className="mt-4"
           loading={loading}
           currentPage={currentPage}
           totalPages={totalPages}
           loadedCount={roles.length}
           totalRecords={totalRoles}
+          limit={pageSize}
           recordLabel="accessible roles"
+          onPageChange={onPageChange}
           onPrevious={onPrevious}
           onNext={onNext}
         />

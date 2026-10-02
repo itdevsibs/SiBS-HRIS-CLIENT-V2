@@ -6,17 +6,20 @@ import {
   Check,
   Loader2,
   Paperclip,
+  RotateCcw,
   Search,
   XCircle,
 } from "lucide-react";
 
-import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
 import {
   DataCard,
   ModalShell,
   ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
   TableEmptyRow,
+  TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
 import {
@@ -269,7 +272,7 @@ function InlineDateRangeFilter({ visible }) {
 
   return (
     <div className="leaves-date-filter-inline w-full sm:w-auto">
-      <PaginationDateRangeFilter entity="leaves" visible className="m-0 w-full" />
+      <PaginationDateRangeFilter entity="leaves" visible showTopLabels className="m-0 w-full" />
     </div>
   );
 }
@@ -700,6 +703,24 @@ export default function LeavesTable({
     runSearch();
   }
 
+  const hasActiveFilters = Boolean(
+    String(searchInput || "").trim() ||
+    (statusFilter && statusFilter !== "All") ||
+    (departmentFilter && departmentFilter !== "All") ||
+    (accountFilter && accountFilter !== "All") ||
+    dateFrom ||
+    dateTo
+  );
+
+  function handleClearLeavesFilters() {
+    setSearchInput?.("");
+    if (typeof setSearchKeyword === "function") setSearchKeyword("");
+    if (typeof onStatusChange === "function") onStatusChange("All");
+    if (typeof onDepartmentSelect === "function") onDepartmentSelect("All");
+    if (typeof onAccountSelect === "function") onAccountSelect("All");
+    setPage?.(1);
+  }
+
   function handlePreviousPage() {
     const currentPaginationPage = Number(pagination.currentPage || page || 1);
 
@@ -736,9 +757,17 @@ export default function LeavesTable({
   ]);
 
   const currentPaginationPage = Number(pagination.currentPage || page || 1);
-  const totalPages = pagination.hasNextPage
-    ? currentPaginationPage + 1
-    : currentPaginationPage;
+  const totalPages = pagination.totalPages
+    ? Number(pagination.totalPages)
+    : pagination.hasNextPage
+      ? currentPaginationPage + 1
+      : currentPaginationPage;
+  const totalRecords =
+    pagination.totalRecords !== undefined
+      ? Number(pagination.totalRecords)
+      : pagination.total !== undefined
+        ? Number(pagination.total)
+        : (pagination.hasNextPage ? undefined : (currentPaginationPage - 1) * PAGE_LIMIT + leaves.length);
 
   return (
     <>
@@ -756,72 +785,104 @@ export default function LeavesTable({
               : "Review employee leave requests, approval statuses, justifications, and attachment records."}
           </p>
 
-          <PaginationTable
-            filterLayout="ta-inline"
-            showFilterPanel={false}
-            showFilterHeader={false}
-            showPagination={false}
-            loading={loading}
-            searchValue={searchInput}
-            searchPlaceholder="Search by employee, SiBS ID, leave type, or status..."
-            onSearchChange={(value) => setSearchInput(value)}
-            onSearchKeyDown={handleSearchKeyDown}
-            dropdownFilters={[]}
-            filters={[
-              {
-                key: "status",
-                value: statusFilter,
-                onChange: onStatusChange,
-                options: [
+          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
+            <div className="min-w-0 flex-1 xl:flex-[1_1_220px] 2xl:flex-[1_1_360px]">
+              <SearchInput
+                label="Search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(typeof e === "string" ? e : e?.target?.value ?? "")}
+                onClear={() => {
+                  setSearchInput("");
+                  if (typeof setSearchKeyword === "function") setSearchKeyword("");
+                  setPage(1);
+                }}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Search by employee, SiBS ID, leave type, or status..."
+                ariaLabel="Search leave records"
+                disabled={loading}
+                className="w-full"
+              />
+            </div>
+
+            <div className="w-full sm:w-44 xl:w-[150px] 2xl:w-[170px] xl:flex-none">
+              <SelectDropdown
+                label="Status"
+                value={statusFilter || "All"}
+                onChange={onStatusChange}
+                options={[
                   { label: "All Statuses", value: "All" },
                   { label: "Approved", value: "Approved" },
                   { label: "Pending", value: "Pending" },
                   { label: "Rejected", value: "Rejected" },
-                ],
-                label: "Status",
-                searchable: false,
-                includeAll: false,
-              },
-              ...(showDepartmentFilter
-                ? [
-                    {
-                      key: "department",
-                      value: departmentFilter,
-                      onChange: onDepartmentSelect,
-                      options: departmentDropdownOptions,
-                      allLabel: "All Departments",
-                      label: "Department",
-                      placeholder: "Search departments...",
-                      searchable: true,
-                      includeAll: true,
-                    },
-                  ]
-                : []),
-              ...(showAccountFilter
-                ? [
-                    {
-                      key: "account",
-                      value: accountFilter,
-                      onChange: onAccountSelect,
-                      options: accountDropdownOptions,
-                      allLabel: "All Accounts",
-                      label: "Account",
-                      placeholder: "Search accounts...",
-                      searchable: true,
-                      includeAll: true,
-                    },
-                  ]
-                : []),
-            ]}
-            rightContent={<InlineDateRangeFilter visible />}
-            className="mt-4 border-0 bg-transparent p-0 shadow-none"
-          />
+                ]}
+                placeholder="All Statuses"
+                clearable={false}
+                disabled={loading}
+              />
+            </div>
+
+            {showDepartmentFilter ? (
+              <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
+                <SelectDropdown
+                  label="Department"
+                  value={departmentFilter || "All"}
+                  onChange={onDepartmentSelect}
+                  options={[
+                    { label: "All Departments", value: "All" },
+                    ...departmentDropdownOptions,
+                  ]}
+                  placeholder="All Departments"
+                  searchable
+                  searchPlaceholder="Search departments..."
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+            ) : null}
+
+            {showAccountFilter ? (
+              <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
+                <SelectDropdown
+                  label="Account"
+                  value={accountFilter || "All"}
+                  onChange={onAccountSelect}
+                  options={[
+                    { label: "All Accounts", value: "All" },
+                    ...accountDropdownOptions,
+                  ]}
+                  placeholder="All Accounts"
+                  searchable
+                  searchPlaceholder="Search accounts..."
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+            ) : null}
+
+            <div className="w-full xl:w-auto xl:flex-none">
+              <InlineDateRangeFilter visible />
+            </div>
+
+            {hasActiveFilters && (
+              <div className="shrink-0">
+                <button
+                  type="button"
+                  onClick={handleClearLeavesFilters}
+                  disabled={loading}
+                  className="inline-flex h-8.5 2xl:h-10 w-full xl:w-auto items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RotateCcw size={14} />
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
             onClick={runSearch}
             disabled={loading}
-            className="mt-4 sibs-btn-primary w-full lg:hidden"
+            className="mt-3 sibs-btn-primary !h-10 w-full text-xs font-extrabold lg:hidden"
           >
             {loading ? (
               <Loader2 size={15} className="animate-spin" />
@@ -1106,19 +1167,15 @@ export default function LeavesTable({
           />
 
           <div className="mt-4 2xl:mt-5">
-            <PaginationTable
-              loading={loading}
-              showSearch={false}
-              showPagination
+            <TablePagination
               currentPage={currentPaginationPage}
               totalPages={totalPages}
+              totalRecords={totalRecords}
               loadedCount={leaves.length}
-              totalRecords={0}
+              pageSize={PAGE_LIMIT}
+              onPageChange={(nextPage) => setPage(nextPage)}
               recordLabel="leave records"
-              onPrevious={handlePreviousPage}
-              onNext={handleNextPage}
-              showCount
-              className="border-0 bg-transparent p-0 shadow-none"
+              loading={loading}
             />
           </div>
         </div>

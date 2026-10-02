@@ -248,6 +248,8 @@ export default function OMDashboardPage() {
                 onViewRole={setSelectedRole}
                 currentPage={safeCurrentPage}
                 totalPages={totalPages}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
                 onPrevious={() => setCurrentPage((page) => Math.max(1, page - 1))}
                 onNext={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                 delay={240}

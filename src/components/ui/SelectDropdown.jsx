@@ -127,6 +127,7 @@ function DropdownPortal({
 export default function SelectDropdown({
   label,
   hideLabel = false,
+  labelClassName = "",
   value,
   options = [],
   onChange,
@@ -138,7 +139,9 @@ export default function SelectDropdown({
   emptyMessage = "No matching options.",
   clearable = true,
   className = "",
+  buttonClassName = "",
   menuClassName = "",
+  multiple = false,
   optionValue = (opt) =>
     typeof opt === "object" && opt !== null ? opt.value : opt,
   optionLabel = (opt) =>
@@ -161,13 +164,30 @@ export default function SelectDropdown({
     }));
   }, [options, optionValue, optionLabel, optionDescription]);
 
+  const selectedValues = useMemo(() => {
+    if (!multiple) return [];
+    if (Array.isArray(value)) return value.map((v) => String(v ?? ""));
+    return value ? [String(value)] : [];
+  }, [multiple, value]);
+
   const selectedOption = useMemo(() => {
+    if (multiple) return null;
     return normalizedOptions.find(
       (opt) => String(opt.value) === String(value ?? ""),
     );
-  }, [normalizedOptions, value]);
+  }, [multiple, normalizedOptions, value]);
 
-  const displayLabel = selectedOption?.label || (value ? String(value) : "");
+  const displayLabel = useMemo(() => {
+    if (multiple) {
+      if (selectedValues.length === 0) return "";
+      if (selectedValues.length === 1) {
+        const found = normalizedOptions.find((opt) => opt.value === selectedValues[0]);
+        return found ? found.label : selectedValues[0];
+      }
+      return `${selectedValues.length} selected`;
+    }
+    return selectedOption?.label || (value ? String(value) : "");
+  }, [multiple, selectedValues, normalizedOptions, selectedOption, value]);
 
   const filteredOptions = useMemo(() => {
     const query = cleanText(searchQuery).toLowerCase();
@@ -199,22 +219,41 @@ export default function SelectDropdown({
   }
 
   function handleSelect(selectedValue, optionRaw) {
+    if (multiple) {
+      if (selectedValue === "All") {
+        onChange?.([], optionRaw);
+        return;
+      }
+
+      const cleanVal = String(selectedValue ?? "");
+      const nextValues = selectedValues.includes(cleanVal)
+        ? selectedValues.filter((item) => item !== cleanVal)
+        : [...selectedValues.filter((item) => item !== "All"), cleanVal];
+
+      onChange?.(nextValues, optionRaw);
+      return;
+    }
+
     onChange?.(selectedValue, optionRaw);
     handleClose();
   }
 
-  const triggerClasses = `flex h-8 2xl:h-9 w-full min-w-0 items-center justify-between gap-2 rounded-xl border font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold outline-none transition text-left px-2.5 2xl:px-3 ${
+  const triggerClasses = `flex h-8.5 2xl:h-10 w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold outline-none transition text-left px-2.5 2xl:px-3 ${
     disabled
       ? "cursor-not-allowed border-sibs-border-subtle bg-sibs-canvas text-sibs-faint opacity-70"
       : open
         ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
         : "border-sibs-border-subtle bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
-  } ${className}`;
+  } ${buttonClassName || className}`;
 
   return (
     <div ref={anchorRef} className="relative min-w-0 w-full font-jakarta">
       {label && !hideLabel && (
-        <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
+        <label
+          className={`mb-1 block font-jakarta ${
+            labelClassName || "sibs-text-xs font-bold text-sibs-navy"
+          }`}
+        >
           {label}
           {required && <span className="text-sibs-orange"> *</span>}
         </label>
@@ -292,7 +331,11 @@ export default function SelectDropdown({
 
         {filteredOptions.length > 0 ? (
           filteredOptions.map((opt) => {
-            const isSelected = String(opt.value) === String(value ?? "");
+            const isSelected = multiple
+              ? (opt.value === "All"
+                  ? selectedValues.length === 0 || selectedValues.includes("All")
+                  : selectedValues.includes(String(opt.value)))
+              : String(opt.value) === String(value ?? "");
 
             return (
               <button

@@ -41,9 +41,9 @@ const VALID_LOCATION_SITES = ["Davao Site", "Tagum Site", "Mabini Site"];
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <label className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
       {children}
-      {required && <span className="text-[#FF5C28]"> *</span>}
+      {required && <span className="text-sibs-orange"> *</span>}
     </label>
   );
 }
@@ -52,7 +52,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 font-jakarta text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-2 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#EEF2F6] disabled:text-[#98A2B3] ${className}`}
+      className={`h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border bg-slate-50 px-3 font-jakarta text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${className}`}
     />
   );
 }
@@ -61,7 +61,7 @@ function TextArea({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-28 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 font-jakarta text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-2 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#EEF2F6] disabled:text-[#98A2B3] ${className}`}
+      className={`min-h-28 w-full resize-none rounded-xl border border-sibs-border bg-slate-50 px-3 py-2.5 font-jakarta text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${className}`}
     />
   );
 }
@@ -74,20 +74,20 @@ function FormSection({
   headerAction = null,
 }) {
   return (
-    <section className="rounded-xl 2xl:rounded-2xl border border-[#D6E0EA] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm">
-      <div className="mb-3 2xl:mb-4 flex flex-col gap-2.5 border-b border-[#EEF2F6] pb-2.5 sm:flex-row sm:items-start sm:justify-between">
+    <section className="rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm">
+      <div className="mb-3 2xl:mb-4 flex flex-col gap-2.5 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-2 2xl:gap-2.5">
           {React.createElement(SectionIcon, {
-            className: "mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#FF5C28]",
+            className: "mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-orange",
             "aria-hidden": "true",
           })}
 
           <div className="min-w-0">
-            <h3 className="sibs-modal-section-title text-[#042C51]">
+            <h3 className="sibs-modal-section-title text-sibs-navy">
               {title}
             </h3>
 
-            <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
+            <p className="sibs-modal-section-subtitle mt-0.5 text-sibs-muted">
               {subtitle}
             </p>
           </div>
@@ -1113,7 +1113,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl ${className}`}
+      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-sibs-border bg-white shadow-2xl ${className}`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -1257,13 +1257,13 @@ function CustomSelect({
           onClick={handleOpen}
           className={`flex h-10 w-full min-w-0 items-center gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
             disabled
-              ? "cursor-not-allowed border-[#D0D5DD] bg-[#EEF2F6] text-[#98A2B3] opacity-70"
+              ? "cursor-not-allowed border-sibs-border bg-slate-100 text-sibs-muted opacity-70"
               : open
-                ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
-                : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+                ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
+                : "border-sibs-border bg-slate-50 text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
           }`}
         >
-          <Search size={15} className={`shrink-0 ${open ? "text-[#FF5C28]" : "text-[#042C51]"}`} />
+          <Search size={15} className={`shrink-0 ${open ? "text-sibs-orange" : "text-sibs-navy"}`} />
 
           <input
             ref={inputRef}
@@ -1292,12 +1292,12 @@ function CustomSelect({
               }
             }}
             placeholder={open ? searchPlaceholder : placeholder}
-            className="h-full min-w-0 flex-1 bg-transparent font-jakarta text-xs font-bold text-[#042C51] outline-none placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:text-[#98A2B3]"
+            className="h-full min-w-0 flex-1 bg-transparent font-jakarta text-xs font-bold text-sibs-navy outline-none placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:text-sibs-muted"
           />
 
           <ChevronDown
             size={15}
-            className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180 text-[#FF5C28]" : "text-[#042C51]"}`}
+            className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180 text-sibs-orange" : "text-sibs-navy"}`}
           />
         </div>
 
@@ -1308,7 +1308,7 @@ function CustomSelect({
           maxHeight={280}
         >
           {loading ? (
-            <div className="px-3.5 py-3 font-jakarta text-xs font-semibold text-[#98A2B3]">
+            <div className="px-3.5 py-3 font-jakarta text-xs font-semibold text-sibs-muted">
               {loadingMessage}
             </div>
           ) : filteredOptions.length > 0 ? (
@@ -1330,26 +1330,26 @@ function CustomSelect({
                   }}
                   className={`flex w-full items-start justify-between gap-2.5 px-3.5 py-2.5 text-left font-jakarta transition ${
                     selected
-                      ? "bg-[#FFF0EB] text-[#FF5C28] font-extrabold"
-                      : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                      ? "bg-orange-50 text-sibs-orange font-extrabold"
+                      : "bg-white text-sibs-navy hover:bg-orange-50/50 hover:text-sibs-orange"
                   }`}
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-xs font-bold">{currentLabel}</span>
 
                     {currentDescription && (
-                      <span className="mt-0.5 block truncate text-[10px] font-semibold text-[#667085]">
+                      <span className="mt-0.5 block truncate text-[10px] font-semibold text-sibs-muted">
                         {currentDescription}
                       </span>
                     )}
                   </span>
 
-                  {selected && <Check size={15} className="mt-0.5 shrink-0 text-[#FF5C28]" />}
+                  {selected && <Check size={15} className="mt-0.5 shrink-0 text-sibs-orange" />}
                 </button>
               );
             })
           ) : (
-            <div className="px-3.5 py-3 font-jakarta text-xs font-semibold text-[#98A2B3]">
+            <div className="px-3.5 py-3 font-jakarta text-xs font-semibold text-sibs-muted">
               {emptyMessage}
             </div>
           )}
@@ -1366,15 +1366,15 @@ function CustomSelect({
         onClick={() => setOpen((prev) => !prev)}
         className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
           disabled
-            ? "cursor-not-allowed border-[#D0D5DD] bg-[#EEF2F6] text-[#98A2B3] opacity-70"
+            ? "cursor-not-allowed border-sibs-border bg-slate-100 text-sibs-muted opacity-70"
             : open
-              ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
-              : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+              ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
+              : "border-sibs-border bg-slate-50 text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-[#042C51]" : "text-[#98A2B3]"
+            selectedOption ? "text-sibs-navy" : "text-sibs-muted"
           }`}
         >
           {selectedLabel || placeholder}
@@ -1383,7 +1383,7 @@ function CustomSelect({
         <ChevronDown
           size={15}
           className={`shrink-0 transition-transform duration-200 ${
-            disabled ? "text-[#98A2B3]" : open ? "rotate-180 text-[#FF5C28]" : "text-[#042C51]"
+            disabled ? "text-sibs-muted" : open ? "rotate-180 text-sibs-orange" : "text-sibs-navy"
           }`}
         />
       </button>
@@ -1415,28 +1415,28 @@ function CustomSelect({
                 }}
                 className={`flex w-full items-start justify-between gap-2.5 px-3.5 py-2.5 text-left font-jakarta transition ${
                   option.disabled
-                    ? "cursor-not-allowed text-[#98A2B3] opacity-60"
+                    ? "cursor-not-allowed text-sibs-muted opacity-60"
                     : selected
-                      ? "bg-[#FFF0EB] text-[#FF5C28] font-extrabold"
-                      : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                      ? "bg-orange-50 text-sibs-orange font-extrabold"
+                      : "bg-white text-sibs-navy hover:bg-orange-50/50 hover:text-sibs-orange"
                 }`}
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-bold">{currentLabel}</span>
 
                   {currentDescription && (
-                    <span className="mt-0.5 block truncate text-[10px] font-semibold text-[#667085]">
+                    <span className="mt-0.5 block truncate text-[10px] font-semibold text-sibs-muted">
                       {currentDescription}
                     </span>
                   )}
                 </span>
 
-                {selected && <Check size={15} className="mt-0.5 shrink-0 text-[#FF5C28]" />}
+                {selected && <Check size={15} className="mt-0.5 shrink-0 text-sibs-orange" />}
               </button>
             );
           })
         ) : (
-          <div className="px-3.5 py-3 font-jakarta text-xs font-semibold text-[#98A2B3]">
+          <div className="px-3.5 py-3 font-jakarta text-xs font-semibold text-sibs-muted">
             No options available.
           </div>
         )}
@@ -1492,21 +1492,21 @@ function CalendarHeaderDropdown({
         onClick={() => setOpen((previous) => !previous)}
         className={`flex h-7 w-full min-w-0 items-center justify-between gap-1 rounded-lg border px-2 text-left font-jakarta text-xs font-extrabold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
+            : "border-sibs-border bg-slate-50 text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
         <span className="truncate">{displayText}</span>
         <ChevronDown
           size={13}
-          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-orange transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && (
-        <div className="sibs-dropdown-pop-in sibs-scrollbar absolute left-0 top-[calc(100%+4px)] z-[10090] max-h-48 overflow-y-auto rounded-xl border border-[#D7DEE8] bg-white p-1 shadow-2xl">
+        <div className="sibs-dropdown-pop-in sibs-scrollbar absolute left-0 top-[calc(100%+4px)] z-[10090] max-h-48 overflow-y-auto rounded-xl border border-sibs-border bg-white p-1 shadow-2xl">
           {options.map((option) => {
             const active = String(option.value) === String(value);
 
@@ -1520,8 +1520,8 @@ function CalendarHeaderDropdown({
                 }}
                 className={`block w-full rounded-lg px-2.5 py-1.5 text-left font-jakarta text-xs transition ${
                   active
-                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                    : "bg-white font-bold text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                    ? "bg-orange-50 font-extrabold text-sibs-orange"
+                    : "bg-white font-bold text-sibs-navy hover:bg-orange-50/50 hover:text-sibs-orange"
                 }`}
               >
                 {option.label}
@@ -1627,20 +1627,20 @@ function DateDropdown({
         onClick={() => setOpen((prev) => !prev)}
         className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
           disabled
-            ? "cursor-not-allowed border-[#D0D5DD] bg-[#EEF2F6] text-[#98A2B3] opacity-70"
+            ? "cursor-not-allowed border-sibs-border bg-slate-100 text-sibs-muted opacity-70"
             : open
-              ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
-              : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+              ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
+              : "border-sibs-border bg-slate-50 text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
           <CalendarDays
             size={15}
-            className={`shrink-0 ${open ? "text-[#FF5C28]" : "text-[#042C51]"}`}
+            className={`shrink-0 ${open ? "text-sibs-orange" : "text-sibs-navy"}`}
           />
 
           <span
-            className={`truncate ${value ? "text-[#042C51]" : "text-[#98A2B3]"}`}
+            className={`truncate ${value ? "text-sibs-navy" : "text-sibs-muted"}`}
           >
             {displayValue}
           </span>
@@ -1649,7 +1649,7 @@ function DateDropdown({
         <ChevronDown
           size={15}
           className={`shrink-0 transition-transform duration-200 ${
-            disabled ? "text-[#98A2B3]" : open ? "rotate-180 text-[#FF5C28]" : "text-[#042C51]"
+            disabled ? "text-sibs-muted" : open ? "rotate-180 text-sibs-orange" : "text-sibs-navy"
           }`}
         />
       </button>
@@ -1661,14 +1661,14 @@ function DateDropdown({
         maxHeight={420}
         matchAnchorWidth={false}
         width={300}
-        className="rounded-xl border-[#D7DEE8]"
+        className="rounded-xl border-sibs-border"
         innerClassName="p-3"
       >
-        <div className="mb-3 flex items-center gap-1.5 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1.5">
+        <div className="mb-3 flex items-center gap-1.5 rounded-xl border border-sibs-border bg-slate-50 p-1.5">
           <button
             type="button"
             onClick={goToPreviousMonth}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange"
             aria-label="Previous month"
           >
             <ChevronLeft size={15} />
@@ -1690,7 +1690,7 @@ function DateDropdown({
           <button
             type="button"
             onClick={goToNextMonth}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange"
             aria-label="Next month"
           >
             <ChevronRight size={15} />
@@ -1701,7 +1701,7 @@ function DateDropdown({
           {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map((day) => (
             <div
               key={day}
-              className="py-1 text-center font-jakarta text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]"
+              className="py-1 text-center font-jakarta text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted"
             >
               {day}
             </div>
@@ -1719,12 +1719,12 @@ function DateDropdown({
                 onClick={() => handleSelectDate(date)}
                 className={`flex h-8 items-center justify-center rounded-lg font-jakarta text-xs transition-all active:scale-[0.98] ${
                   active
-                    ? "bg-[#FF5C28] font-extrabold text-white shadow-md"
+                    ? "bg-sibs-orange font-extrabold text-white shadow-md"
                     : isToday
-                      ? "border border-[#FF5C28]/40 bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                      ? "border border-sibs-orange/40 bg-orange-50 font-extrabold text-sibs-orange"
                       : currentMonth
-                        ? "bg-white font-bold text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
-                        : "bg-white font-semibold text-[#D0D5DD] opacity-60 hover:bg-[#F8FAFC]"
+                        ? "bg-white font-bold text-sibs-navy hover:bg-orange-50/50 hover:text-sibs-orange"
+                        : "bg-white font-semibold text-slate-300 opacity-60 hover:bg-slate-50"
                 }`}
               >
                 {date.getDate()}
@@ -1733,14 +1733,14 @@ function DateDropdown({
           })}
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-2.5">
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-sibs-border pt-2.5">
           <button
             type="button"
             onClick={() => {
               onChange("");
               setOpen(false);
             }}
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 font-jakarta text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28] active:scale-[0.98]"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-sibs-border bg-white px-3 font-jakarta text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange active:scale-[0.98]"
           >
             Clear
           </button>
@@ -1748,7 +1748,7 @@ function DateDropdown({
           <button
             type="button"
             onClick={handleTodayClick}
-            className="inline-flex h-8 items-center justify-center rounded-lg bg-[#FF5C28] px-3 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04D1D] active:scale-[0.98]"
+            className="inline-flex h-8 items-center justify-center rounded-lg bg-sibs-orange px-3 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange-dark active:scale-[0.98]"
           >
             Today
           </button>
@@ -2614,13 +2614,13 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
         aria-labelledby="add-hiring-needs-title"
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-[#F7F9FC] shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-slate-50 shadow-2xl font-jakarta"
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
+        <header className="shrink-0 bg-sibs-navy px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
-                <FileText className="h-4 w-4 text-[#FF5C28]" />
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sibs-orange">
+                <FileText className="h-4 w-4 text-sibs-orange" />
               </span>
 
               <div className="min-w-0">
@@ -2632,7 +2632,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                     New Personnel Requisition
                   </h2>
 
-                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
+                  <span className="inline-flex rounded bg-sibs-orange px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
                     {form.requestType === "downsize"
                       ? "Downsize"
                       : form.requestType === "requisition"
@@ -2662,18 +2662,18 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
           </div>
         </header>
 
-        <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-4 2xl:p-5">
+        <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50 p-3 sm:p-4 2xl:p-5">
           <div className="space-y-3.5 2xl:space-y-4">
-            <section className="rounded-2xl border border-blue-200 bg-[#EEF5FF] p-3 2xl:p-3.5">
+            <section className="rounded-2xl border border-blue-200 bg-blue-50/70 p-3 2xl:p-3.5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-                  <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-[#245BFF] text-white">
+                  <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
                     <Info className="h-4 w-4" />
                   </span>
 
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-xs font-extrabold text-[#042C51]">
+                      <h3 className="text-xs font-extrabold text-sibs-navy">
                         Personnel Request Guide
                       </h3>
 
@@ -2686,7 +2686,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                       </span>
                     </div>
 
-                    <p className="mt-1 text-xs font-semibold leading-relaxed text-[#667085]">
+                    <p className="mt-1 text-xs font-semibold leading-relaxed text-sibs-muted">
                       {!form.requestType
                         ? "Select whether this request adds or reduces required headcount."
                         : form.requestType === "downsize"
@@ -2696,8 +2696,8 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   </div>
                 </div>
 
-                <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded bg-[#07365F] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">
-                  <ShieldCheck size={12} className="text-[#FF5C28]" />
+                <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded bg-sibs-navy px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">
+                  <ShieldCheck size={12} className="text-sibs-orange" />
                   For Approval
                 </span>
               </div>
@@ -2723,7 +2723,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   </div>
                 }
               >
-                <p className="font-jakarta text-xs font-semibold text-[#667085]">
+                <p className="font-jakarta text-xs font-semibold text-sibs-muted">
                   Select the workflow that determines the required personnel details.
                 </p>
               </FormSection>
@@ -3041,10 +3041,10 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                         Previous Required Headcount
                       </FieldLabel>
 
-                      <div className="overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white">
+                      <div className="overflow-hidden rounded-[10px] border border-sibs-border bg-white">
                         <table className="w-full table-fixed border-separate border-spacing-0 text-left">
                           <thead>
-                            <tr className="bg-[#F5F7FA] text-[10px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                            <tr className="bg-slate-50 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                               <th className="px-4 py-3">
                                 Account / Week
                               </th>
@@ -3055,15 +3055,15 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                           </thead>
                           <tbody>
                             <tr>
-                              <td className="border-t border-[#E6ECF2] px-4 py-4">
-                                <p className="text-xs font-extrabold text-[#101828]">
+                              <td className="border-t border-sibs-border px-4 py-4">
+                                <p className="text-xs font-extrabold text-sibs-navy">
                                   {form.accountName || "—"}
                                 </p>
-                                <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                                <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                                   {form.downsizeCluster ||
                                     "Weekly Hiring Account"}
                                 </p>
-                                <p className="mt-1 text-[10px] font-semibold text-[#98A2B3]">
+                                <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                                   {form.weeklyWeekDateRange ||
                                     getWeeklyWeekDateRange(
                                       form.weeklyWeekStart,
@@ -3072,7 +3072,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                                     "—"}
                                 </p>
                               </td>
-                              <td className="border-t border-[#E6ECF2] px-4 py-4 text-center text-sm font-extrabold tabular-nums text-[#042C51]">
+                              <td className="border-t border-sibs-border px-4 py-4 text-center text-sm font-extrabold tabular-nums text-sibs-navy">
                                 {formatNumber(
                                   form.previousRequiredHeadcount ||
                                   0,
@@ -3139,7 +3139,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                         Upload Image or File
                       </FieldLabel>
 
-                      <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-[10px] border-2 border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-4 py-5 text-center transition hover:border-[#FF5C28]/40 hover:bg-white">
+                      <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-[10px] border-2 border-dashed border-sibs-border bg-slate-50 px-4 py-5 text-center transition hover:border-sibs-orange/40 hover:bg-white">
                         {downsizeFile ? (
                           <div className="flex w-full flex-col items-center gap-3">
                             {downsizeFileIsImage &&
@@ -3147,19 +3147,19 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                               <img
                                 src={downsizeFilePreviewUrl}
                                 alt={downsizeFile.name}
-                                className="max-h-52 w-auto max-w-full rounded-[10px] border border-[#E6ECF2] bg-white object-contain shadow-sm"
+                                className="max-h-52 w-auto max-w-full rounded-[10px] border border-sibs-border bg-white object-contain shadow-sm"
                               />
                             ) : (
-                              <span className="flex h-16 w-16 items-center justify-center rounded-xl border border-[#D7DEE8] bg-white text-[#042C51] shadow-sm">
+                              <span className="flex h-16 w-16 items-center justify-center rounded-xl border border-sibs-border bg-white text-sibs-navy shadow-sm">
                                 <FileText size={27} />
                               </span>
                             )}
 
                             <div>
-                              <p className="break-all text-xs font-extrabold text-[#042C51]">
+                              <p className="break-all text-xs font-extrabold text-sibs-navy">
                                 {downsizeFile.name}
                               </p>
-                              <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                              <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                                 {(
                                   downsizeFile.size /
                                   1024 /
@@ -3167,7 +3167,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                                 ).toFixed(2)}{" "}
                                 MB
                               </p>
-                              <p className="mt-1 text-[10px] font-extrabold text-[#FF5C28]">
+                              <p className="mt-1 text-[10px] font-extrabold text-sibs-orange">
                                 Click to change file
                               </p>
                             </div>
@@ -3176,12 +3176,12 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                           <>
                             <Upload
                               size={24}
-                              className="mb-2 text-[#FF5C28]"
+                              className="mb-2 text-sibs-orange"
                             />
-                            <span className="text-xs font-extrabold text-[#042C51]">
+                            <span className="text-xs font-extrabold text-sibs-navy">
                               Click to upload supporting file
                             </span>
-                            <span className="mt-1 text-[10px] font-semibold text-[#667085]">
+                            <span className="mt-1 text-[10px] font-semibold text-sibs-muted">
                               Images, PDF, Word, and Excel files
                               are supported.
                             </span>
@@ -3259,7 +3259,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+        <footer className="shrink-0 border-t border-sibs-border bg-slate-50 px-5 py-3 2xl:py-3.5 sm:px-6">
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center">
               <button

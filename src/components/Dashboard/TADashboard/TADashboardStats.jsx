@@ -1,69 +1,20 @@
-import { createElement } from "react";
-
-function getToneClasses(tone = "navy") {
-  const safeTone = tone === "rose" ? "red" : tone || "navy";
-  return {
-    label: `sibs-tone-${safeTone}-label`,
-    icon: `sibs-tone-${safeTone}-icon`,
-    value: `sibs-tone-${safeTone}-label`,
-  };
-}
-
-function MetricCard({ item, delay }) {
-  const tone = getToneClasses(item.tone);
-
-  return (
-    <article
-      className="sibs-metric-card sibs-page-card-in font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
-      style={{
-        animationDelay: `${delay}ms`,
-        animationFillMode: "both",
-      }}
-    >
-      <div className="flex h-full items-start justify-between gap-2 2xl:gap-2.5">
-        <div className="min-w-0 flex-1 self-stretch">
-          <p
-            className={`sibs-kpi-kicker m-0 truncate ${tone.label}`}
-          >
-            {item.label}
-          </p>
-
-          <p
-            className={`sibs-kpi-value text-2xl 2xl:text-3xl ${tone.value}`}
-          >
-            {item.value}
-          </p>
-
-          <p className="mt-1 line-clamp-1 truncate sibs-kpi-desc">
-            {item.description}
-          </p>
-        </div>
-
-        <span
-          className={`flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-full ${tone.icon}`}
-        >
-          {item.icon
-            ? createElement(item.icon, {
-                className: "h-3.5 w-3.5 2xl:h-4 2xl:w-4",
-                strokeWidth: 2,
-              })
-            : null}
-        </span>
-      </div>
-    </article>
-  );
-}
+import React from "react";
+import { MetricCard, MetricGrid } from "@/components/ui";
 
 export default function TADashboardStats({ metrics = [] }) {
   return (
-    <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8 xl:gap-3 2xl:gap-3">
+    <MetricGrid>
       {metrics.map((item, index) => (
         <MetricCard
           key={item.id || item.label}
-          item={item}
+          label={item.label}
+          value={item.value}
+          description={item.description}
+          icon={item.icon}
+          tone={item.tone === "rose" ? "red" : item.tone === "slate" ? "navy" : item.tone}
           delay={index * 60}
         />
       ))}
-    </section>
+    </MetricGrid>
   );
 }

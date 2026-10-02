@@ -5,10 +5,16 @@ import {
   Clock,
   CreditCard,
   LoaderCircle,
-  Search,
   Users,
 } from "lucide-react";
-import { ModalShell } from "@/components/ui";
+import {
+  DataCard,
+  ModalShell,
+  ResponsiveTableShell,
+  SearchInput,
+  StatusBadge,
+  TablePagination,
+} from "@/components/ui";
 
 const modalMeta = {
   employees: {
@@ -38,9 +44,6 @@ const modalMeta = {
   },
 };
 
-const inputClass =
-  "h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border-subtle bg-sibs-surface px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
-
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("en-PH", {
     maximumFractionDigits: 0,
@@ -69,24 +72,6 @@ function EmptyTableRow({ colSpan, message }) {
   );
 }
 
-function StatusBadge({ status }) {
-  const normalized = String(status || "").toLowerCase();
-  const className =
-    normalized === "present" || normalized === "completed" || normalized === "eligible"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : normalized === "on leave" || normalized === "in progress" || normalized === "scheduled"
-        ? "border-amber-200 bg-amber-50 text-amber-700"
-        : normalized === "late" || normalized === "absent"
-          ? "border-rose-200 bg-rose-50 text-rose-700"
-          : "border-slate-200 bg-slate-50 text-slate-600";
-
-  return (
-    <span className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase ${className}`}>
-      {status || "Unknown"}
-    </span>
-  );
-}
-
 function SearchBox({ onSearch }) {
   const [search, setSearch] = useState("");
 
@@ -99,54 +84,108 @@ function SearchBox({ onSearch }) {
   }, [search, onSearch]);
 
   return (
-    <div className="relative">
-      <label htmlFor="admin-modal-search" className="sibs-field-label sr-only">
-        Search live records
-      </label>
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sibs-muted" />
-      <input
-        id="admin-modal-search"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        placeholder="Search live records..."
-        aria-label="Search live records"
-        className={`${inputClass} pl-9`}
-      />
-    </div>
+    <SearchInput
+      value={search}
+      onChange={setSearch}
+      placeholder="Search live records..."
+      ariaLabel="Search live records"
+      inputClassName="h-8.5 2xl:h-10"
+    />
   );
 }
 
-function PaginationControls({ pagination, onPageChange, disabled }) {
-  const currentPage = Number(pagination?.currentPage || pagination?.page || 1);
-  const totalPages = Number(pagination?.totalPages || 1);
-  const total = Number(pagination?.total || 0);
+function MobileRecordCard({ title, kicker, badge, fields, index }) {
+  return (
+    <DataCard index={index}>
+      <DataCard.Header
+        kicker={kicker}
+        title={title}
+        badge={badge ? <StatusBadge status={badge} /> : null}
+      />
+      <DataCard.Section label="Record details" contentClassName="grid grid-cols-2 gap-x-3 gap-y-2">
+        {fields.map(([label, value]) => (
+          <div key={label} className="min-w-0">
+            <p className="m-0 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
+              {label}
+            </p>
+            <p className="m-0 mt-0.5 break-words sibs-text-xs font-bold text-sibs-navy">
+              {value || "—"}
+            </p>
+          </div>
+        ))}
+      </DataCard.Section>
+    </DataCard>
+  );
+}
+
+const emptyMobileMessages = {
+  employees: ["No active employees match the search.", "Search for an employee or adjust the search terms."],
+  departments: ["No active departments match the search.", "Search for a department or adjust the search terms."],
+  interviews: ["No interviews are scheduled today.", "Scheduled interviews will appear here."],
+  payroll: ["No payroll-eligible employees match the search.", "Search for an employee or adjust the search terms."],
+};
+
+function getMobileRecordDetails(modalId, record) {
+  if (modalId === "employees") {
+    return {
+      title: record.name || "Employee",
+      kicker: `SIBS ID · ${record.sibsId || record.id || "—"}`,
+      badge: record.status || "Unknown",
+      fields: [
+        ["Department", record.department],
+        ["Account / Role", record.role],
+        ["Shift", record.shift],
+      ],
+    };
+  }
+
+  if (modalId === "departments") {
+    return {
+      title: record.name || "Department",
+      kicker: `Department ID · ${record.id || "—"}`,
+      fields: [["Active headcount", formatNumber(record.headcount)]],
+    };
+  }
+
+  if (modalId === "interviews") {
+    return {
+      title: record.candidate || "Candidate",
+      kicker: record.time || "Interview",
+      badge: record.status || "Unknown",
+      fields: [
+        ["Position", record.position],
+        ["Account", record.account],
+        ["Type", record.type],
+      ],
+    };
+  }
+
+  return {
+    title: record.name || "Employee",
+    kicker: `SIBS ID · ${record.sibsId || record.id || "—"}`,
+    badge: "Eligible",
+    fields: [
+      ["Department", record.department],
+      ["Account", record.account],
+    ],
+  };
+}
+
+function MobileRecordCards({ modalId, rows }) {
+  if (rows.length === 0) {
+    const [title, description] = emptyMobileMessages[modalId] || emptyMobileMessages.employees;
+    return <DataCard.Empty title={title} description={description} />;
+  }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-sibs-border bg-sibs-surface px-3.5 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between font-jakarta">
-      <span className="font-jakarta sibs-text-xs font-semibold text-sibs-muted">
-        {formatNumber(total)} total record{total === 1 ? "" : "s"}
-      </span>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          disabled={disabled || currentPage <= 1}
-          onClick={() => onPageChange?.(currentPage - 1)}
-          className="sibs-btn-secondary !h-8 2xl:!h-8.5 !px-3 sibs-text-xs disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Previous
-        </button>
-        <span className="min-w-20 text-center font-jakarta sibs-text-xs font-bold text-sibs-navy">
-          Page {currentPage} of {totalPages}
-        </span>
-        <button
-          type="button"
-          disabled={disabled || currentPage >= totalPages}
-          onClick={() => onPageChange?.(currentPage + 1)}
-          className="sibs-btn-secondary !h-8 2xl:!h-8.5 !px-3 sibs-text-xs disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Next
-        </button>
-      </div>
+    <div className="space-y-3 p-3">
+      {rows.map((record, index) => (
+        <MobileRecordCard
+          key={record.id || record.sibsId || record.name || record.candidate || index}
+          index={index}
+          {...getMobileRecordDetails(modalId, record)}
+        />
+      ))}
     </div>
   );
 }
@@ -171,16 +210,16 @@ function ErrorState({ error }) {
 
 function EmployeesModal({ rows }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-sibs-border font-jakarta">
+    <div className="sibs-data-table-shell font-jakarta !overflow-x-auto">
       <table className="min-w-[900px] w-full border-collapse text-left">
-        <thead className="bg-sibs-surface text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
-          <tr>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">SIBS ID</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Name</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Department</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Account / Role</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Shift</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Today</th>
+        <thead className="sibs-data-table-head">
+          <tr className="sibs-data-table-head-row">
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">SIBS ID</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Name</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Department</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Account / Role</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Shift</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Today</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-sibs-border">
@@ -206,13 +245,13 @@ function EmployeesModal({ rows }) {
 
 function DepartmentsModal({ rows }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-sibs-border font-jakarta">
+    <div className="sibs-data-table-shell font-jakarta !overflow-x-auto">
       <table className="min-w-[720px] w-full border-collapse text-left">
-        <thead className="bg-sibs-surface text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
-          <tr>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Department ID</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Department</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Active Headcount</th>
+        <thead className="sibs-data-table-head">
+          <tr className="sibs-data-table-head-row">
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Department ID</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Department</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Active Headcount</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-sibs-border">
@@ -274,16 +313,16 @@ function AttendanceModal({ attendance }) {
 
 function InterviewsModal({ rows }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-sibs-border font-jakarta">
+    <div className="sibs-data-table-shell font-jakarta !overflow-x-auto">
       <table className="min-w-[880px] w-full border-collapse text-left">
-        <thead className="bg-sibs-surface text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
-          <tr>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Time</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Candidate</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Position</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Account</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Type</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Status</th>
+        <thead className="sibs-data-table-head">
+          <tr className="sibs-data-table-head-row">
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Time</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Candidate</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Position</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Account</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Type</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Status</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-sibs-border">
@@ -309,15 +348,15 @@ function InterviewsModal({ rows }) {
 
 function PayrollModal({ rows }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-sibs-border font-jakarta">
+    <div className="sibs-data-table-shell font-jakarta !overflow-x-auto">
       <table className="min-w-[760px] w-full border-collapse text-left">
-        <thead className="bg-sibs-surface text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
-          <tr>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">SIBS ID</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Employee</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Department</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Account</th>
-            <th className="px-3.5 py-2.5 2xl:px-4 2xl:py-3">Eligibility</th>
+        <thead className="sibs-data-table-head">
+          <tr className="sibs-data-table-head-row">
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">SIBS ID</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Employee</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Department</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Account</th>
+            <th className="sibs-data-table-th !px-3.5 !py-2.5 2xl:!px-4 2xl:!py-3">Eligibility</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-sibs-border">
@@ -354,6 +393,11 @@ export function DashboardModalManager({
     () => (Array.isArray(detail?.data) ? detail.data : []),
     [detail],
   );
+  const pagination = detail?.pagination || {};
+  const totalRecords =
+    pagination.total ?? pagination.totalRecords ?? pagination.totalItems ?? 0;
+  const pageSize =
+    pagination.limit ?? pagination.pageSize ?? pagination.perPage ?? 15;
   const isPaged = activeModal !== "attendance";
 
   if (!activeModal) return null;
@@ -379,6 +423,12 @@ export function DashboardModalManager({
       ) : (
         <PayrollModal rows={rows} />
       );
+    const responsiveTable = (
+      <ResponsiveTableShell
+        desktopContent={table}
+        mobileContent={<MobileRecordCards modalId={activeModal} rows={rows} />}
+      />
+    );
 
     content = (
       <div className="space-y-4">
@@ -390,11 +440,16 @@ export function DashboardModalManager({
           </div>
         ) : null}
         {error ? <ErrorState error={error} /> : null}
-        {table}
-        <PaginationControls
-          pagination={detail?.pagination}
+        {responsiveTable}
+        <TablePagination
+          currentPage={pagination.currentPage ?? pagination.page ?? 1}
+          totalPages={pagination.totalPages ?? 1}
+          totalRecords={totalRecords}
+          limit={pageSize}
+          loadedCount={rows.length}
+          recordLabel="records"
           onPageChange={onPageChange}
-          disabled={loading}
+          loading={loading}
         />
       </div>
     );

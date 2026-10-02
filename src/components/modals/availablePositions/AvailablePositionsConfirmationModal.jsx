@@ -19,7 +19,7 @@ function AvailablePositionsConfirmationModal({
 
   return (
     <div
-      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[12000] flex h-dvh items-center justify-center p-3 sm:p-4 font-jakarta bg-[#042C51]/60"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[12000] flex h-dvh items-center justify-center p-3 sm:p-4 font-jakarta bg-sibs-navy/60"
       onClick={() => {
         if (!isSaving) onCancel?.();
       }}
@@ -33,11 +33,11 @@ function AvailablePositionsConfirmationModal({
           event.stopPropagation()
         }
       >
-        <header className="bg-[#042C51] px-4 py-3 text-white sm:px-5">
+        <header className="bg-sibs-navy px-4 py-3 text-white sm:px-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
-                <AlertTriangle className="h-4 w-4 text-[#FF5C28]" />
+              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sibs-orange">
+                <AlertTriangle className="h-4 w-4 text-sibs-orange" />
               </span>
 
               <div className="min-w-0">
@@ -68,7 +68,7 @@ function AvailablePositionsConfirmationModal({
         </header>
 
         <div className="p-4 sm:p-5">
-          <p className="text-xs font-semibold leading-relaxed text-[#667085]">
+          <p className="text-xs font-semibold leading-relaxed text-sibs-muted">
             {message ||
               "Confirm this Available Position action."}
           </p>
@@ -80,7 +80,7 @@ function AvailablePositionsConfirmationModal({
           </div>
         </div>
 
-        <footer className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 sm:flex-row sm:justify-end sm:gap-2.5 sm:px-5">
+        <footer className="flex flex-col-reverse gap-2 border-t border-sibs-border bg-slate-50 px-4 py-3 sm:flex-row sm:justify-end sm:gap-2.5 sm:px-5">
           <button
             type="button"
             onClick={onCancel}

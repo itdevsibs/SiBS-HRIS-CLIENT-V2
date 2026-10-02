@@ -1,7 +1,13 @@
+import React from "react";
 import { Lock, Plus } from "lucide-react";
 
-import PaginationTable from "../../../services/pagination/PaginationTable";
-import { DataCard, ResponsiveTableShell } from "../../ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
+  TablePagination,
+} from "@/components/ui";
 import {
   ACCESS_HIERARCHY,
   getAccessLevelClass,
@@ -25,6 +31,42 @@ export default function SuperAdminAccessGovernance({
   statusOptions = [],
   onFilterChange,
 }) {
+  const formattedAccessOptions = React.useMemo(() => {
+    const hasAll = accessOptions.some(
+      (opt) =>
+        (typeof opt === "string" ? opt : opt.value) === "All Access Levels",
+    );
+    const mapped = accessOptions.map((opt) =>
+      typeof opt === "string" ? { value: opt, label: opt } : opt,
+    );
+    return hasAll
+      ? mapped
+      : [{ value: "All Access Levels", label: "All Access Levels" }, ...mapped];
+  }, [accessOptions]);
+
+  const formattedAccountOptions = React.useMemo(() => {
+    const hasAll = accountOptions.some(
+      (opt) => (typeof opt === "string" ? opt : opt.value) === "All Accounts",
+    );
+    const mapped = accountOptions.map((opt) =>
+      typeof opt === "string" ? { value: opt, label: opt } : opt,
+    );
+    return hasAll
+      ? mapped
+      : [{ value: "All Accounts", label: "All Accounts" }, ...mapped];
+  }, [accountOptions]);
+
+  const formattedStatusOptions = React.useMemo(() => {
+    const hasAll = statusOptions.some(
+      (opt) => (typeof opt === "string" ? opt : opt.value) === "All Statuses",
+    );
+    const mapped = statusOptions.map((opt) =>
+      typeof opt === "string" ? { value: opt, label: opt } : opt,
+    );
+    return hasAll
+      ? mapped
+      : [{ value: "All Statuses", label: "All Statuses" }, ...mapped];
+  }, [statusOptions]);
   return (
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
       <section
@@ -92,50 +134,58 @@ export default function SuperAdminAccessGovernance({
         </button>
       </div>
 
-      <div className="relative overflow-visible">
-        <PaginationTable
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          searchValue={searchInput}
-          searchPlaceholder="Search admin name or email..."
-          onSearchChange={onSearchChange}
-          onSearchKeyDown={onSearchKeyDown}
-          filters={[
-            {
-              key: "accessLevel",
-              label: "Access Level",
-              value: accessLevel,
-              options: accessOptions,
-              onChange: (value) => onFilterChange?.("accessLevel", value),
-              searchable: false,
-              allLabel: "All Access Levels",
-              includeAll: true,
-            },
-            {
-              key: "account",
-              label: "Account Group",
-              value: account,
-              options: accountOptions,
-              onChange: (value) => onFilterChange?.("account", value),
-              searchable: true,
-              allLabel: "All Accounts",
-              includeAll: true,
-            },
-            {
-              key: "status",
-              label: "Status",
-              value: status,
-              options: statusOptions,
-              onChange: (value) => onFilterChange?.("status", value),
-              searchable: false,
-              allLabel: "All Statuses",
-              includeAll: true,
-            },
-          ]}
-          className="border-0 bg-transparent p-0 shadow-none"
-        />
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
+        <div className="w-full lg:w-72 2xl:w-80">
+          <SearchInput
+            value={searchInput}
+            onChange={(val) => onSearchChange?.(val)}
+            onClear={() => onSearchChange?.("")}
+            onKeyDown={onSearchKeyDown}
+            placeholder="Search admin name or email..."
+            ariaLabel="Search admin name or email"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 lg:flex lg:flex-1 lg:items-center">
+          <div className="w-full lg:w-48 2xl:w-56">
+            <SelectDropdown
+              label="Access Level"
+              hideLabel
+              value={accessLevel}
+              options={formattedAccessOptions}
+              onChange={(val) => onFilterChange?.("accessLevel", val)}
+              searchable={false}
+              clearable={false}
+              triggerClassName="w-full"
+            />
+          </div>
+
+          <div className="w-full lg:w-48 2xl:w-56">
+            <SelectDropdown
+              label="Account Group"
+              hideLabel
+              value={account}
+              options={formattedAccountOptions}
+              onChange={(val) => onFilterChange?.("account", val)}
+              searchable
+              clearable={false}
+              triggerClassName="w-full"
+            />
+          </div>
+
+          <div className="w-full lg:w-40 2xl:w-44">
+            <SelectDropdown
+              label="Status"
+              hideLabel
+              value={status}
+              options={formattedStatusOptions}
+              onChange={(val) => onFilterChange?.("status", val)}
+              searchable={false}
+              clearable={false}
+              triggerClassName="w-full"
+            />
+          </div>
+        </div>
       </div>
 
       <ResponsiveTableShell
@@ -297,16 +347,13 @@ export default function SuperAdminAccessGovernance({
         }
       />
 
-      <PaginationTable
-        className="border-0 bg-transparent p-0 shadow-none"
-        showSearch={false}
-        currentPage={pagination.currentPage}
-        totalPages={pagination.totalPages}
+      <TablePagination
+        currentPage={pagination?.currentPage || 1}
+        totalPages={pagination?.totalPages || 1}
         loadedCount={admins.length}
-        totalRecords={totalItems}
-        recordLabel="admin users"
-        onPrevious={() => pagination.onPageChange(pagination.currentPage - 1)}
-        onNext={() => pagination.onPageChange(pagination.currentPage + 1)}
+        totalItems={totalItems}
+        itemName="admin users"
+        onPageChange={pagination?.onPageChange}
       />
     </div>
   );

@@ -1,7 +1,13 @@
+import React from "react";
 import { Download } from "lucide-react";
 
-import PaginationTable from "../../../services/pagination/PaginationTable";
-import { DataCard, ResponsiveTableShell } from "../../ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
+  TablePagination,
+} from "@/components/ui";
 import {
   formatLogDetails,
   getStatusPillClass,
@@ -21,6 +27,30 @@ export default function SuperAdminActivity({
   statusOptions = [],
   onFilterChange,
 }) {
+  const formattedModuleOptions = React.useMemo(() => {
+    const hasAll = moduleOptions.some(
+      (opt) => (typeof opt === "string" ? opt : opt.value) === "All Modules",
+    );
+    const mapped = moduleOptions.map((opt) =>
+      typeof opt === "string" ? { value: opt, label: opt } : opt,
+    );
+    return hasAll
+      ? mapped
+      : [{ value: "All Modules", label: "All Modules" }, ...mapped];
+  }, [moduleOptions]);
+
+  const formattedStatusOptions = React.useMemo(() => {
+    const hasAll = statusOptions.some(
+      (opt) => (typeof opt === "string" ? opt : opt.value) === "All Statuses",
+    );
+    const mapped = statusOptions.map((opt) =>
+      typeof opt === "string" ? { value: opt, label: opt } : opt,
+    );
+    return hasAll
+      ? mapped
+      : [{ value: "All Statuses", label: "All Statuses" }, ...mapped];
+  }, [statusOptions]);
+
   return (
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -42,39 +72,45 @@ export default function SuperAdminActivity({
         </button>
       </div>
 
-      <div className="relative overflow-visible">
-        <PaginationTable
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          searchValue={searchInput}
-          searchPlaceholder="Search user actor, action, or details..."
-          onSearchChange={onSearchChange}
-          onSearchKeyDown={onSearchKeyDown}
-          filters={[
-            {
-              key: "module",
-              label: "Module",
-              value: module,
-              options: moduleOptions,
-              onChange: (value) => onFilterChange?.("module", value),
-              searchable: true,
-              allLabel: "All Modules",
-              includeAll: true,
-            },
-            {
-              key: "status",
-              label: "Result Status",
-              value: status,
-              options: statusOptions,
-              onChange: (value) => onFilterChange?.("status", value),
-              searchable: false,
-              includeAll: false,
-            },
-          ]}
-          className="border-0 bg-transparent p-0 shadow-none"
-        />
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        <div className="w-full sm:w-80 2xl:w-96">
+          <SearchInput
+            value={searchInput}
+            onChange={(val) => onSearchChange?.(val)}
+            onClear={() => onSearchChange?.("")}
+            onKeyDown={onSearchKeyDown}
+            placeholder="Search user actor, action, or details..."
+            ariaLabel="Search activity logs"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-2.5 sm:flex sm:flex-1 sm:items-center">
+          <div className="w-full sm:w-52 2xl:w-60">
+            <SelectDropdown
+              label="Module"
+              hideLabel
+              value={module}
+              options={formattedModuleOptions}
+              onChange={(val) => onFilterChange?.("module", val)}
+              searchable
+              clearable={false}
+              triggerClassName="w-full"
+            />
+          </div>
+
+          <div className="w-full sm:w-44 2xl:w-48">
+            <SelectDropdown
+              label="Result Status"
+              hideLabel
+              value={status}
+              options={formattedStatusOptions}
+              onChange={(val) => onFilterChange?.("status", val)}
+              searchable={false}
+              clearable={false}
+              triggerClassName="w-full"
+            />
+          </div>
+        </div>
       </div>
 
       <ResponsiveTableShell
@@ -193,16 +229,13 @@ export default function SuperAdminActivity({
         }
       />
 
-      <PaginationTable
-        className="border-0 bg-transparent p-0 shadow-none"
-        showSearch={false}
-        currentPage={pagination.currentPage}
-        totalPages={pagination.totalPages}
+      <TablePagination
+        currentPage={pagination?.currentPage || 1}
+        totalPages={pagination?.totalPages || 1}
         loadedCount={items.length}
-        totalRecords={totalItems}
-        recordLabel="activity logs"
-        onPrevious={() => pagination.onPageChange(pagination.currentPage - 1)}
-        onNext={() => pagination.onPageChange(pagination.currentPage + 1)}
+        totalItems={totalItems}
+        itemName="activity logs"
+        onPageChange={pagination?.onPageChange}
       />
     </div>
   );

@@ -1,78 +1,102 @@
 import React from "react";
+import { ArrowLeft } from "lucide-react";
 
 import RecruitmentSettingsHero from "../../components/recruitment/settings/RecruitmentSettingsHero";
+import RecruitmentSettingsOverview from "../../components/recruitment/settings/RecruitmentSettingsOverview";
 import RecruitmentSettingsPanelRouter from "../../components/recruitment/settings/RecruitmentSettingsPanelRouter";
-import RecruitmentSettingsTabs from "../../components/recruitment/settings/RecruitmentSettingsTabs";
 import UpdateHeadcountsPanel from "../../components/recruitment/settings/headcounts/UpdateHeadcountsPanel";
-import StatusModal from "../../components/modals/StatusModal";
 import Header from "../../components/layout/Header";
 import { useRecruitmentSettingsPage } from "../../hooks/recruitmentSettings/useRecruitmentSettingsPage";
-function FinalInterviewDropdownDesignFix() {
+
+const SETTING_META = {
+  "Update Headcounts": {
+    title: "Headcount Targets",
+    description:
+      "Review and update weekly required headcount by account and recruitment week.",
+  },
+  "Final Interview Form": {
+    title: "Final Interview Forms",
+    description:
+      "Manage position-based interview forms, scoring criteria, and passing thresholds.",
+  },
+  "Application Screening Questionnaires": {
+    title: "Application Screening Forms",
+    description:
+      "Manage position-based application intake questions and candidate screening requirements.",
+  },
+  "Pipeline Settings": {
+    title: "Pipeline & SLAs",
+    description:
+      "Configure recruitment workflow stages, automation rules, and service-level targets.",
+  },
+  "Assessment Settings": {
+    title: "Assessment Rules",
+    description:
+      "Configure candidate assessment requirements and evaluation rules.",
+  },
+  "Email Templates": {
+    title: "Email Templates",
+    description:
+      "Manage candidate communication templates used by recruitment workflows.",
+  },
+  "Holiday Calendar": {
+    title: "Holiday Calendar",
+    description:
+      "Manage dates excluded from interview follow-up working-day calculations.",
+  },
+  "Approval Rules": {
+    title: "Approval Rules",
+    description:
+      "Manage the users who can approve recruitment requests by module.",
+  },
+};
+
+function RecruitmentSettingsDetailHeader({ activeTab, onBack }) {
+  const meta = SETTING_META[activeTab] || {
+    title: activeTab || "Recruitment Setting",
+    description: "Manage this recruitment configuration.",
+  };
+
   return (
-    <style>
-      {`
-        [data-final-interview-panel="true"] select {
-          height: 40px !important;
-          width: 100% !important;
-          appearance: none !important;
-          -webkit-appearance: none !important;
-          border-radius: 10px !important;
-          border: 1px solid #D0D5DD !important;
-          background-color: #FFFFFF !important;
-          color: #344054 !important;
-          font-size: 12px !important;
-          font-weight: 800 !important;
-          padding: 0 40px 0 12px !important;
-          outline: none !important;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
-          transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease !important;
-          background-image:
-            linear-gradient(45deg, transparent 50%, #0D4676 50%),
-            linear-gradient(135deg, #0D4676 50%, transparent 50%) !important;
-          background-position:
-            calc(100% - 21px) calc(50% - 2px),
-            calc(100% - 15px) calc(50% - 2px) !important;
-          background-size:
-            6px 6px,
-            6px 6px !important;
-          background-repeat: no-repeat !important;
-        }
+    <section className="sibs-card overflow-hidden p-4 sm:p-5 2xl:p-6 sibs-page-header-in">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <p className="sibs-kicker">Settings / Recruitment</p>
 
-        [data-final-interview-panel="true"] select:hover {
-          border-color: rgba(13, 70, 118, 0.3) !important;
-          background-color: #F8FAFC !important;
-        }
+          <h1 className="mt-1 font-heading text-xl font-bold tracking-tight text-sibs-navy 2xl:text-2xl">
+            {meta.title}
+          </h1>
 
-        [data-final-interview-panel="true"] select:focus,
-        [data-final-interview-panel="true"] select:focus-visible {
-          border-color: #0D4676 !important;
-          color: #0D4676 !important;
-          box-shadow: 0 0 0 4px rgba(13, 70, 118, 0.10) !important;
-        }
+          <p className="mt-1 max-w-4xl sibs-text-xs font-semibold leading-relaxed text-sibs-muted">
+            {meta.description}
+          </p>
+        </div>
 
-        [data-final-interview-panel="true"] label {
-          color: #101828;
-          font-weight: 800;
-        }
-      `}
-    </style>
+        <button
+          type="button"
+          onClick={onBack}
+          className="sibs-btn-secondary shrink-0"
+        >
+          <ArrowLeft size={15} />
+          Recruitment Settings
+        </button>
+      </div>
+    </section>
   );
 }
-
 
 export default function RecruitmentSettingsPage() {
   const {
     activeTab,
-    closePageStatusModal,
-    handleSyncConfigurations,
+    handleBackToOverview,
+    handleOpenSetting,
     mainRef,
-    pageStatusModal,
-    setActiveTab,
-    settingsTabs,
   } = useRecruitmentSettingsPage();
 
+  const isOverview = activeTab === "Overview";
+
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell font-jakarta flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0">
         <Header />
       </div>
@@ -82,39 +106,32 @@ export default function RecruitmentSettingsPage() {
         data-recruitment-settings-main="true"
         className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto w-full max-w-[1700px] space-y-5">
-          <RecruitmentSettingsHero
-            onSyncConfigurations={handleSyncConfigurations}
-          />
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 2xl:space-y-5">
+          {isOverview ? (
+            <>
+              <RecruitmentSettingsHero />
 
-          <RecruitmentSettingsTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            tabs={settingsTabs}
-          />
+              <RecruitmentSettingsOverview
+                onSelectSetting={handleOpenSetting}
+              />
+            </>
+          ) : (
+            <>
+              <RecruitmentSettingsDetailHeader
+                activeTab={activeTab}
+                onBack={handleBackToOverview}
+              />
 
-          <section
-            className="sibs-profile-tab-panel"
-            style={{ animationDelay: "120ms" }}
-          >
-            <RecruitmentSettingsPanelRouter
-              activeTab={activeTab}
-              FinalInterviewDropdownDesignFix={FinalInterviewDropdownDesignFix}
-              UpdateHeadcountsPanel={UpdateHeadcountsPanel}
-            />
-          </section>
+              <section className="sibs-page-card-in">
+                <RecruitmentSettingsPanelRouter
+                  activeTab={activeTab}
+                  UpdateHeadcountsPanel={UpdateHeadcountsPanel}
+                />
+              </section>
+            </>
+          )}
         </div>
       </main>
-
-      <StatusModal
-        open={pageStatusModal.open}
-        type={pageStatusModal.type}
-        title={pageStatusModal.title}
-        message={pageStatusModal.message}
-        variant="center"
-        onClose={closePageStatusModal}
-        lockScroll
-      />
     </div>
   );
 }

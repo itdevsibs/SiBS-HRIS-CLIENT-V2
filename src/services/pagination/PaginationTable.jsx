@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import TablePagination from "@/components/ui/TablePagination";
 
 const EDGE = "rounded-[10px]";
 const INLINE_CONTROLS_CLASS =
@@ -133,6 +134,7 @@ export default function PaginationTable({
   recordLabel = "records",
   onPrevious,
   onNext,
+  onPageChange,
 
   controlsClassName = "",
   searchClassName = "",
@@ -253,6 +255,17 @@ export default function PaginationTable({
   function handleNext() {
     if (loading || !hasNextPage) return;
     onNext?.();
+  }
+
+  function handlePageChange(targetPage) {
+    if (loading) return;
+    if (typeof onPageChange === "function") {
+      onPageChange(targetPage);
+    } else if (targetPage < safeCurrentPage) {
+      handlePrevious();
+    } else if (targetPage > safeCurrentPage) {
+      handleNext();
+    }
   }
 
   function handleReset() {
@@ -694,56 +707,17 @@ export default function PaginationTable({
       ) : null}
 
       {showPagination ? (
-        <div className="mt-3 2xl:mt-5 flex flex-col gap-2.5 border-t border-[#F1F5F9] pt-2.5 2xl:pt-4 sm:flex-row sm:items-center sm:justify-between">
-          {showCount ? (
-            <p className="m-0 text-center font-jakarta sibs-text-micro font-semibold leading-relaxed text-[#667085] sm:text-left">
-              Showing{" "}
-              <span className="font-extrabold text-[#042C51]">
-                {loadedCount}
-              </span>{" "}
-              loaded {recordLabel}
-              {Number(totalRecords || 0) > 0 ? (
-                <>
-                  {" "}
-                  out of{" "}
-                  <span className="font-extrabold text-[#042C51]">
-                    {totalRecords}
-                  </span>
-                </>
-              ) : null}
-            </p>
-          ) : (
-            <span />
-          )}
-
-          <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 sm:w-auto">
-            <button
-              type="button"
-              disabled={loading || !hasPreviousPage}
-              onClick={handlePrevious}
-              className={`inline-flex h-8 2xl:h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-2.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51]`}
-            >
-              <ChevronLeft className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0" />
-              <span className="truncate">Previous</span>
-            </button>
-
-            <span
-              className={`inline-flex h-8 2xl:h-10 items-center justify-center whitespace-nowrap ${EDGE} border border-[#FF5C28] bg-[#FF5C28] px-3 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm`}
-            >
-              {safeCurrentPage}
-            </span>
-
-            <button
-              type="button"
-              disabled={loading || !hasNextPage}
-              onClick={handleNext}
-              className={`inline-flex h-8 2xl:h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-2.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51]`}
-            >
-              <span className="truncate">Next</span>
-              <ChevronRight className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0" />
-            </button>
-          </div>
-        </div>
+        <TablePagination
+          currentPage={safeCurrentPage}
+          totalPages={safeTotalPages}
+          loadedCount={loadedCount}
+          totalRecords={totalRecords}
+          recordLabel={recordLabel}
+          loading={loading}
+          showCount={showCount}
+          onPageChange={handlePageChange}
+          className="mt-3 2xl:mt-5 pt-2.5 2xl:pt-4"
+        />
       ) : null}
     </div>
   );

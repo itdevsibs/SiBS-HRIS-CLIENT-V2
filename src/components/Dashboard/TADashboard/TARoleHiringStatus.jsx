@@ -1,8 +1,17 @@
+import React from "react";
 import { RotateCcw } from "lucide-react";
 
-import PaginationTable from "../../../services/pagination/PaginationTable";
-import { DataCard, ResponsiveTableShell } from "../../ui";
+import {
+  DataCard,
+  ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
+  StatusBadge as SharedStatusBadge,
+  TablePagination,
+} from "../../ui";
 import { formatDate } from "../../../lib/utils/Dashboards/TADashboard/taDashboardHelpers.js";
+
+const ROLE_PAGE_SIZE = 6;
 
 const STATUS_OPTIONS = [
   { label: "All Statuses", value: "All" },
@@ -11,59 +20,15 @@ const STATUS_OPTIONS = [
   { label: "Delayed", value: "Delayed" },
 ];
 
-function getStatusClass(status) {
-  if (status === "On Track") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-
-  if (status === "At Risk") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  if (status === "Delayed") {
-    return "border-rose-200 bg-rose-50 text-rose-700";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-600";
-}
-
-function getRiskClass(riskFlag) {
-  if (riskFlag === "High") {
-    return "border-rose-200 bg-rose-50 text-rose-700";
-  }
-
-  if (riskFlag === "Medium") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  if (riskFlag === "Low") {
-    return "border-blue-200 bg-blue-50 text-blue-700";
-  }
-
-  return "border-slate-200 bg-slate-50 text-slate-600";
-}
-
 function StatusBadge({ status }) {
-  return (
-    <span
-      className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-normal ${getStatusClass(
-        status,
-      )}`}
-    >
-      {status || "Unknown"}
-    </span>
-  );
+  return <SharedStatusBadge status={status || "Unknown"} showDot={false} />;
 }
 
 function RiskBadge({ riskFlag }) {
+  const status = `${String(riskFlag || "None").trim()} Risk`;
+
   return (
-    <span
-      className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-normal ${getRiskClass(
-        riskFlag,
-      )}`}
-    >
-      Risk: {riskFlag || "None"}
-    </span>
+    <SharedStatusBadge status={status} prefix="Risk: " showDot={false} />
   );
 }
 
@@ -132,6 +97,7 @@ export default function TARoleHiringStatus({
   searchInput,
   onSearchChange,
   onSearchKeyDown,
+  pageSize = ROLE_PAGE_SIZE,
   status,
   onStatusChange,
   hasActiveFilters,
@@ -139,8 +105,7 @@ export default function TARoleHiringStatus({
   onViewRole,
   currentPage,
   totalPages,
-  onPrevious,
-  onNext,
+  onPageChange,
   delay = 0,
 }) {
   return (
@@ -156,42 +121,34 @@ export default function TARoleHiringStatus({
           Detailed recruitment telemetry per requisition
         </p>
 
-        <PaginationTable
-          className="mt-4 border-0 bg-transparent p-0 shadow-none"
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          searchValue={searchInput}
-          searchPlaceholder="Search by role, account, department, owner, status, or risk..."
-          onSearchChange={onSearchChange}
-          onSearchKeyDown={onSearchKeyDown}
-          filters={[
-            {
-              key: "status",
-              label: "Status",
-              value: status,
-              options: STATUS_OPTIONS,
-              onChange: onStatusChange,
-              searchable: false,
-              includeAll: false,
-              allLabel: "All Statuses",
-              placeholder: "All Statuses",
-              className: "xl:w-[190px]",
-            },
-          ]}
-          rightContent={
-            <button
-              type="button"
-              onClick={onClearFilters}
-              disabled={!hasActiveFilters}
-              className="sibs-btn-secondary !h-10 !px-3 sibs-text-xs w-full xl:w-auto"
-            >
-              <RotateCcw size={14} />
-              Clear
-            </button>
-          }
-        />
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
+          <SearchInput
+            value={searchInput}
+            onChange={onSearchChange}
+            onKeyDown={onSearchKeyDown}
+            placeholder="Search by role, account, department, owner, status, or risk..."
+            ariaLabel="Search by role, account, department, owner, status, or risk"
+            inputClassName="h-8.5 2xl:h-10"
+            className="min-w-0 flex-1"
+          />
+          <SelectDropdown
+            label="Status"
+            value={status || "All"}
+            options={STATUS_OPTIONS}
+            onChange={onStatusChange}
+            clearable={false}
+            className="xl:w-[190px]"
+          />
+          <button
+            type="button"
+            onClick={onClearFilters}
+            disabled={!hasActiveFilters}
+            className="sibs-btn-secondary !h-8.5 2xl:!h-10 !px-3 sibs-text-xs w-full xl:w-auto"
+          >
+            <RotateCcw size={14} />
+            Clear
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col justify-between p-4 sm:p-5 2xl:p-6">
@@ -216,7 +173,7 @@ export default function TARoleHiringStatus({
             )
           }
           desktopView={
-            <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+            <div className="sibs-data-table-shell overflow-x-auto">
               <div className="max-h-[480px] overflow-auto sibs-scrollbar">
                 <table className="w-full min-w-[920px] border-collapse bg-white text-left text-xs">
                   <thead className="sibs-data-table-head">
@@ -283,7 +240,7 @@ export default function TARoleHiringStatus({
                           <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-sibs-navy">
                             {role.req}
                           </td>
-                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-emerald-600">
+                          <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-sibs-success">
                             {role.filled}
                           </td>
                           <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center font-extrabold tabular-nums text-sibs-orange">
@@ -314,19 +271,16 @@ export default function TARoleHiringStatus({
           }
         />
 
-        <PaginationTable
-          className="mt-4 border-0 bg-transparent p-0 shadow-none"
-          showSearch={false}
-          showPagination
-          showCount
+        <TablePagination
+          className="mt-4"
           loading={loading}
           currentPage={currentPage}
           totalPages={totalPages}
           loadedCount={roles.length}
           totalRecords={totalRoles}
+          limit={pageSize}
           recordLabel="roles"
-          onPrevious={onPrevious}
-          onNext={onNext}
+          onPageChange={onPageChange}
         />
       </div>
     </section>

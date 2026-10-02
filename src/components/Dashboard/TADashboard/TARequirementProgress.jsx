@@ -1,3 +1,4 @@
+import React from "react";
 import { Target } from "lucide-react";
 import { safePercentage } from "../../../lib/utils/Dashboards/TADashboard/taDashboardHelpers.js";
 
@@ -30,16 +31,16 @@ export default function TARequirementProgress({ roles = [], delay = 0 }) {
             const percentage = safePercentage(role.filled, role.req);
             const progressClass =
               role.status === "Delayed"
-                ? "bg-rose-500"
+                ? "bg-sibs-danger"
                 : role.status === "At Risk"
-                  ? "bg-amber-400"
+                  ? "bg-sibs-warning"
                   : "bg-sibs-orange";
 
             const dotClass =
               role.status === "Delayed"
-                ? "bg-rose-500"
+                ? "bg-sibs-danger"
                 : role.status === "At Risk"
-                  ? "bg-amber-400"
+                  ? "bg-sibs-warning"
                   : "bg-sibs-orange";
 
             return (
@@ -66,7 +67,7 @@ export default function TARequirementProgress({ roles = [], delay = 0 }) {
                   </span>
                 </div>
 
-                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full border border-slate-200/70 bg-slate-100">
+                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full border border-sibs-border-subtle bg-sibs-surface">
                   <span
                     className={`block h-full rounded-full transition-all duration-500 ${progressClass}`}
                     style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -78,13 +79,13 @@ export default function TARequirementProgress({ roles = [], delay = 0 }) {
         )}
       </div>
 
-      <div className="mt-3 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/70 px-3.5 py-3">
+      <div className="mt-3 flex items-center justify-between rounded-xl border border-sibs-border-panel bg-sibs-surface px-3.5 py-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-sibs-navy">
-            <Target className="h-3.5 w-3.5 text-sibs-orange" />
+          <span className="sibs-tone-blue-icon flex h-7 w-7 items-center justify-center rounded-full">
+            <Target className="h-3.5 w-3.5" />
           </span>
           <div>
-            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-blue-900">
+            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-navy">
               Overall Fulfillment
             </p>
             <p className="sibs-text-xs font-black text-sibs-navy">

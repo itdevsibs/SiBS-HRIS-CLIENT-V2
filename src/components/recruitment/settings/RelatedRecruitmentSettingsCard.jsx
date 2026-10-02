@@ -22,24 +22,24 @@ const relatedSettings = [
 
 export default function RelatedRecruitmentSettingsCard() {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+    <div className="sibs-card p-4 sm:p-5 font-jakarta">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-extrabold text-[#101828]">
+        <h3 className="font-heading text-sm sm:text-base font-bold text-sibs-navy">
           Related Recruitment Settings
         </h3>
-        <BriefcaseBusiness size={18} className="text-sibs-tertiary-5" />
+        <BriefcaseBusiness size={18} className="text-sibs-grey-4" />
       </div>
 
       <div className="mt-4 space-y-3">
         {relatedSettings.map((item) => (
           <div
             key={item.title}
-            className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3"
+            className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3"
           >
-            <p className="text-xs font-extrabold text-[#101828]">
+            <p className="text-xs font-bold text-sibs-navy">
               {item.title}
             </p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+            <p className="mt-0.5 text-xs text-sibs-grey-4">
               {item.desc}
             </p>
           </div>

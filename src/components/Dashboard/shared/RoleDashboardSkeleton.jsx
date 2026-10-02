@@ -61,7 +61,7 @@ export default function RoleDashboardSkeleton({ kind }) {
   const prefix = isTa ? "ta" : "om";
   const metrics = isTa ? TA_METRICS : OM_METRICS;
   const gridClass = isTa
-    ? "grid grid-cols-2 gap-3 sm:grid-cols-4 2xl:grid-cols-8"
+    ? "grid grid-cols-1 gap-2.5 2xl:gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6"
     : "grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7";
 
   return (

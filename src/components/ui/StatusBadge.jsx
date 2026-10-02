@@ -27,6 +27,11 @@ const STATUS_CONFIGS = {
     dotClassName: "bg-emerald-500",
     label: "Accepted",
   },
+  "on track": {
+    className: "sibs-badge-success",
+    dotClassName: "bg-emerald-500",
+    label: "On Track",
+  },
 
   // Warning / Pending / Review
   pending: {
@@ -58,6 +63,16 @@ const STATUS_CONFIGS = {
     className: "sibs-badge-warning",
     dotClassName: "bg-amber-500",
     label: "Incomplete",
+  },
+  "at risk": {
+    className: "sibs-badge-warning",
+    dotClassName: "bg-amber-500",
+    label: "At Risk",
+  },
+  "medium risk": {
+    className: "sibs-badge-warning",
+    dotClassName: "bg-amber-500",
+    label: "Medium",
   },
 
   // Danger / Rejected / Declined / Late
@@ -91,6 +106,16 @@ const STATUS_CONFIGS = {
     dotClassName: "bg-rose-500",
     label: "Drop Off",
   },
+  delayed: {
+    className: "sibs-badge-danger",
+    dotClassName: "bg-rose-500",
+    label: "Delayed",
+  },
+  "high risk": {
+    className: "sibs-badge-danger",
+    dotClassName: "bg-rose-500",
+    label: "High",
+  },
 
   // Neutral / Draft / Scheduled
   draft: {
@@ -102,6 +127,11 @@ const STATUS_CONFIGS = {
     className: "sibs-badge-neutral",
     dotClassName: "bg-slate-500",
     label: "Scheduled",
+  },
+  "none risk": {
+    className: "sibs-badge-neutral",
+    dotClassName: "bg-slate-500",
+    label: "None",
   },
   "no clock-in": {
     className: "sibs-badge-neutral",
@@ -120,12 +150,18 @@ const STATUS_CONFIGS = {
     dotClassName: "bg-blue-600",
     label: "Interview Scheduled",
   },
+  "low risk": {
+    className: "sibs-badge-info",
+    dotClassName: "bg-blue-600",
+    label: "Low",
+  },
 };
 
 export default function StatusBadge({
   status = "Pending",
   showDot = true,
   className = "",
+  prefix = "",
 }) {
   const normalizedKey = String(status || "Pending")
     .trim()
@@ -146,7 +182,7 @@ export default function StatusBadge({
           aria-hidden="true"
         />
       )}
-      {config.label}
+      {prefix}{config.label}
     </span>
   );
 }
