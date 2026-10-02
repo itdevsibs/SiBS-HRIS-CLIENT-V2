@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, HeartPulse, History } from "lucide-react";
+import { BriefcaseBusiness, ChevronLeft, HeartPulse, History } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
@@ -741,6 +741,7 @@ export default function EmployeeDataPage() {
 
     function handleSelectedEmployeeEvent(event) {
       const newSibsId = event?.detail?.sibsId;
+
       if (newSibsId) {
         void fetchEmployee(newSibsId);
       }
