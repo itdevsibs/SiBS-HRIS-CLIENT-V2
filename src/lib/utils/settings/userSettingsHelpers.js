@@ -3,16 +3,16 @@ import { sanitizeDisplayFullName, sanitizeMiddleName } from "../employees/employ
 export const ROLE_OPTIONS = [
   { value: "All", label: "All Access Levels" },
   { value: "employee", label: "Employee", access: 0 },
-  { value: "wfm", label: "WFM", access: 1 },
-  { value: "team_leaders", label: "Team Leaders", access: 2 },
-  { value: "som", label: "SOM", access: 3 },
-  { value: "manager", label: "Manager", access: 4 },
-  { value: "ta", label: "Talent Acquisition", access: 5 },
-  { value: "hr_admin", label: "Admin", access: 6 },
+  { value: "ta", label: "Talent Acquisition", access: 1 },
+  { value: "hr", label: "HR", access: 2 },
+  { value: "hr_admin", label: "HR Admin", access: 3 },
+  { value: "finance", label: "Finance", access: 4 },
+  { value: "manager", label: "Manager", access: 5 },
+  { value: "executive", label: "Executive", access: 6 },
   { value: "super_admin", label: "Super Admin", access: 7 },
-  { value: "finance", label: "Finance", access: 8 },
-  { value: "hr", label: "HR", access: 9 },
-  { value: "executive", label: "Executive", access: 10 },
+  { value: "team_leaders", label: "Team Leaders", access: 8 },
+  { value: "wfm", label: "WFM", access: 9 },
+  { value: "som", label: "SOM", access: 10 },
 ];
 
 export function safeText(value) {
