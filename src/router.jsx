@@ -67,6 +67,7 @@ const TalentPoolApplyPage = lazyWithRetry(() => import("./pages/recruitment/tale
 const CandidatePipelinePage = lazyWithRetry(() => import("./pages/recruitment/CandidatePipelinePage"));
 const PublicInterviewDateSelectionPage = lazyWithRetry(() => import("./pages/recruitment/candidate-pipeline/PublicInterviewDateSelectionPage"));
 const OffersPage = lazyWithRetry(() => import("./pages/recruitment/OffersPage"));
+const EmploymentOfferDocumentPage = lazyWithRetry(() => import("./pages/recruitment/EmploymentOfferDocumentPage"));
 const PublicOfferResponsePage = lazyWithRetry(() => import("./pages/recruitment/PublicOfferResponsePage"));
 const PublicNhoScheduleResponsePage = lazyWithRetry(() => import("./pages/recruitment/PublicNhoScheduleResponsePage"));
 const OnboardingPage = lazyWithRetry(() => import("./pages/recruitment/OnboardingPage"));
@@ -440,6 +441,15 @@ function MainApplicationRoutes() {
         element={
           <PrivateRoute>
             <OffersPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/recruitment/offers/document/:candidatePipelineId/:versionNumber"
+        element={
+          <PrivateRoute>
+            <EmploymentOfferDocumentPage />
           </PrivateRoute>
         }
       />

@@ -48,8 +48,6 @@ import {
 } from "../../lib/utils/candidatePipeline/candidatePipelineIdentity";
 
 import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
-import { generateEmploymentOfferPdf } from "../../lib/utils/candidatePipeline/candidateEmploymentOfferPdf";
-import { getTalentPoolApplicationById } from "../../lib/axios/getTalentPool";
 import { STATIC_PIPELINE_CANDIDATES } from "../../lib/utils/candidatePipeline/mockPipelineCandidates";
 
 const CandidatePipelineContext = createContext(null);
@@ -1070,6 +1068,15 @@ export function CandidatePipelineProvider({ children }) {
     const result = await openConfirmAction(message, { ...options, showNotes: true });
     lastActionNotesRef.current = result?.confirmed ? String(result.notes || "").trim() : "";
     return Boolean(result?.confirmed);
+  }
+  function getActionNotesPayload() {
+    const notes = String(lastActionNotesRef.current || "").trim();
+
+    return {
+      notes,
+      actionNotes: notes,
+      action_notes: notes,
+    };
   }
 
   const loggedInUserIdentifier = useMemo(
@@ -2250,6 +2257,7 @@ export function CandidatePipelineProvider({ children }) {
               ? scheduleForm.onlineInterviewLink
               : "",
           remarks: scheduleForm.remarks,
+          ...getActionNotesPayload(),
           taEmail: String(
             user?.email ||
               user?.workEmail ||
@@ -2316,6 +2324,7 @@ export function CandidatePipelineProvider({ children }) {
         cancelCandidatePipelineInterview(id, {
           reason: cleanedReason,
           cancellationReason: cleanedReason,
+          ...getActionNotesPayload(),
         }),
       {
         successTitle: "Interview Cancelled",
@@ -2354,6 +2363,7 @@ export function CandidatePipelineProvider({ children }) {
         completeCandidatePipelineInterview(id, {
           interviewNotes: candidate.interviewNotes || "",
           remarks: "Interview marked as completed.",
+          ...getActionNotesPayload(),
         }),
       {
         activeStageAfter: "Interviewed",
@@ -2597,61 +2607,13 @@ export function CandidatePipelineProvider({ children }) {
 
     setOfferSubmitting(true);
 
-    let employmentOfferPdf = null;
     let response;
 
     try {
-      try {
-        let candidateForOfferPdf = offerCandidate;
-        const talentPoolApplicationId =
-          getTalentPoolApplicationIdForOffer(offerCandidate);
-
-        /*
-         * The Talent Pool physical_address field is the authoritative
-         * residential address for the Employment Offer PDF.
-         *
-         * Fetch it when the PDF is generated so existing Candidate
-         * Pipeline records also use the latest Talent Pool address.
-         */
-        if (talentPoolApplicationId) {
-          const talentPoolResponse =
-            await getTalentPoolApplicationById(talentPoolApplicationId);
-
-          const talentPoolCandidate =
-            talentPoolResponse?.data ||
-            talentPoolResponse?.candidate ||
-            null;
-
-          const physicalAddress = cleanText(
-            talentPoolCandidate?.physicalAddress ||
-              talentPoolCandidate?.physical_address,
-          );
-
-          if (physicalAddress) {
-            candidateForOfferPdf = {
-              ...offerCandidate,
-              physicalAddress,
-              physical_address: physicalAddress,
-              metadata: {
-                ...(offerCandidate.metadata || {}),
-                physicalAddress,
-                physical_address: physicalAddress,
-              },
-            };
-          }
-        }
-
-        employmentOfferPdf = await generateEmploymentOfferPdf({
-          candidate: candidateForOfferPdf,
-          offer: offerForm,
-        });
-      } catch (pdfError) {
-        console.error("Employment offer PDF generation failed:", pdfError);
-      }
-
       response = await runCandidateAction(
       () =>
         saveCandidatePipelineOffer(id, {
+          ...getActionNotesPayload(),
           hiringRequirementId: offerForm.hiringRequirementId,
           roleTitle: offerForm.roleTitle,
           finalRole: offerForm.roleTitle,
@@ -2663,12 +2625,6 @@ export function CandidatePipelineProvider({ children }) {
           ),
           ...(offerForm.startDate
             ? { startDate: offerForm.startDate }
-            : {}),
-          ...(employmentOfferPdf?.base64
-            ? {
-                employmentOfferPdfBase64: employmentOfferPdf.base64,
-                employmentOfferPdfFilename: employmentOfferPdf.filename,
-              }
             : {}),
           remarks:
             offerForm.remarks ||
@@ -3153,6 +3109,7 @@ export function CandidatePipelineProvider({ children }) {
         saveCandidatePipelineAssessment(id, {
           ...assessmentForm,
           assessmentRemarks: assessmentForm.assessmentRemarks.trim(),
+          ...getActionNotesPayload(),
         }),
       {
         activeStageAfter: "Online Assessment",
@@ -3226,6 +3183,7 @@ export function CandidatePipelineProvider({ children }) {
           dropOffReason: dropOffForm.reason.trim(),
           remarks: dropOffForm.remarks.trim(),
           previousStage: currentStage,
+          ...getActionNotesPayload(),
         }),
       {
         activeStageAfter: "Drop-off",
@@ -3278,6 +3236,7 @@ export function CandidatePipelineProvider({ children }) {
           approvedBy: approver,
           status,
           approvalStatus: status,
+          ...getActionNotesPayload(),
         }),
       {
         successTitle: "Offer Approval Updated",
@@ -3308,6 +3267,7 @@ export function CandidatePipelineProvider({ children }) {
       () =>
         sendCandidatePipelineOfferEmail(id, {
           remarks: buildOfferContractLink(candidate),
+          ...getActionNotesPayload(),
         }),
       {
         successTitle: "Offer Email Sent",
@@ -3357,6 +3317,7 @@ export function CandidatePipelineProvider({ children }) {
         saveCandidatePipelineOfferDecision(id, {
           decision,
           offerDecision: decision,
+          ...getActionNotesPayload(),
         }),
       {
         activeStageAfter: nextStage,
@@ -3414,6 +3375,7 @@ export function CandidatePipelineProvider({ children }) {
           endorsementStatus: "For Endorsement",
           location: candidate?.workLocation || candidate?.nhoLocation || "—",
           status: "Scheduled",
+          ...getActionNotesPayload(),
           remarks: `NHO automatically scheduled for ${formatNhoScheduleDate(
             fridaySchedule,
           )}.`,

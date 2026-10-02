@@ -133,6 +133,74 @@ function getFinalInterviewSummary(offer = {}) {
   );
 }
 
+export function hasOfferApproverSignature(offer = {}) {
+  const versions = safeArray(
+    offer.offerVersions ||
+      offer.offer_versions ||
+      offer.versions,
+  );
+
+  /*
+   * Signature approval is PER OFFER VERSION.
+   *
+   * A signature from Offer Version 1 must never satisfy the approval
+   * requirement for Offer Version 2 (or any later negotiated offer).
+   *
+   * When version rows exist, inspect ONLY the newest version's own
+   * document_html. Do not fall back to offer_details.documentHtml because
+   * that object may still contain the previously signed offer document.
+   */
+  const latestVersion = versions.length
+    ? [...versions].sort(
+        (a, b) =>
+          Number(
+            b?.versionNumber ??
+              b?.version_number ??
+              b?.offerVersion ??
+              b?.offer_version ??
+              0,
+          ) -
+          Number(
+            a?.versionNumber ??
+              a?.version_number ??
+              a?.offerVersion ??
+              a?.offer_version ??
+              0,
+          ),
+      )[0]
+    : null;
+
+  const source =
+    latestVersion ||
+    offer.latestOfferVersion ||
+    offer.latest_offer_version ||
+    offer;
+
+  const html = latestVersion
+    ? cleanText(
+        latestVersion?.documentHtml ||
+          latestVersion?.document_html,
+      )
+    : cleanText(
+        source?.documentHtml ||
+          source?.document_html ||
+          offer?.offerDetails?.documentHtml ||
+          offer?.offerDetails?.document_html ||
+          offer?.offer_details?.documentHtml ||
+          offer?.offer_details?.document_html,
+      );
+
+  if (!html) {
+    return false;
+  }
+
+  return /<img\b[^>]*data-employment-offer-manager-signature=["']true["'][^>]*src=["']data:image\/png;base64,/i.test(
+    html,
+  ) || /<img\b[^>]*src=["']data:image\/png;base64,[^"']+["'][^>]*data-employment-offer-manager-signature=["']true["']/i.test(
+    html,
+  );
+}
+
 export function getOfferEvaluationScores(offer = {}) {
   const assessmentScore = firstDefined(
     offer.assessmentScore,

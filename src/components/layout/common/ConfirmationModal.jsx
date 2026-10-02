@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 function ConfirmationModal({
   open,
@@ -12,16 +12,30 @@ function ConfirmationModal({
   notes = "",
   onNotesChange,
 }) {
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return undefined;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
     <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[12000] flex h-dvh items-center justify-center px-4 py-4 font-jakarta"
-      onClick={onCancel}
+      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[12000] flex h-dvh touch-none overscroll-contain items-center justify-center px-4 py-4 font-jakarta"
+      role="presentation"
     >
       <div
         className="sibs-modal-pop-in w-full max-w-md overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white font-jakarta shadow-[0_20px_45px_rgba(4,44,81,0.18)]"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="border-b border-[#E6ECF2] bg-white px-5 py-4">
           <h3 className="sibs-modal-title text-[#042C51]">

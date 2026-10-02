@@ -1,589 +1,260 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-
+import { useNavigate } from "react-router-dom";
 import {
-
   ArrowRight,
-
   Check,
-
   FileText,
-
   History,
-
   Loader2,
-
   ShieldCheck,
-
   X,
-
   XCircle,
-
 } from "lucide-react";
-
 import api from "../../../lib/axios/api-template";
-
-
-
 import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
-
-
-
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
-
 import { formatCurrency } from "../../../lib/utils/offers/offerFormatters";
-
 import {
-
   formatOfferVersionDate,
-
   getOfferEvaluationScores,
-
   getOfferHistory,
-
+  hasOfferApproverSignature,
 } from "../../../lib/utils/offers/offerEvaluationHistory";
-
 import { useOffers } from "../../../services/context/OffersContext";
-
-
-
 function cleanText(value) {
-
   return String(value ?? "").trim();
-
 }
-
-
-
 function getOfferOwnerDisplay(version = {}, offer = {}) {
-
   return (
-
     cleanText(
-
       version?.submittedByDisplay ||
-
         version?.submitted_by_display ||
-
         offer?.ownerDisplay ||
-
         offer?.owner_display ||
-
         version?.submittedBy ||
-
         version?.submitted_by ||
-
         offer?.owner,
-
     ) || "—"
-
   );
-
 }
-
-
-
-
-
 function getRateDisplay(value) {
-
   return value === null || value === undefined || value === ""
-
     ? "—"
-
     : formatCurrency(value);
-
 }
-
-
-
 function getVersionTone(status = "") {
-
   const key = cleanText(status).toLowerCase();
-
-
-
   if (key.includes("approved") || key.includes("accepted")) {
-
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
-
   }
-
-
-
   if (key.includes("reject") || key.includes("declin")) {
-
     return "border-red-200 bg-red-50 text-red-700";
-
   }
-
-
-
   if (key.includes("review") || key.includes("pending")) {
-
     return "border-amber-200 bg-amber-50 text-amber-700";
-
   }
-
-
-
   return "border-blue-100 bg-blue-50 text-sibs-primary-1";
-
 }
-
-
-
 function getAlignedInternalRemarkLines(value) {
-
   const text = cleanText(value);
-
   if (!text) return [];
-
-
-
   const normalized = text
-
     .replaceAll("\r\n", "\n")
-
     .replaceAll("\r", "\n");
-
-
-
   if (normalized.includes("\n")) {
-
     return normalized
-
       .split("\n")
-
       .map((line) => cleanText(line))
-
       .filter(Boolean);
-
   }
-
-
-
   return normalized
-
-    .split(/,\s\*(?=[A-Z][A-Za-z0-9/() .#&-]\*:)/)
-
+    .split(/,\s*(?=[A-Z][A-Za-z0-9/() .#&-]*:)/)
     .map((line) => cleanText(line))
-
     .filter(Boolean);
-
 }
-
-
-
 function InternalRemarkContent({ value }) {
-
   const lines = getAlignedInternalRemarkLines(value);
-
-
-
   if (!lines.length) {
-
     return (
-
       <p className="mt-1.5 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-[#344054]">
-
         —
-
       </p>
-
     );
-
   }
-
-
-
   return (
-
     <div className="mt-1.5 space-y-1.5">
-
       {lines.map((line, index) => {
-
         const colonIndex = line.indexOf(":");
-
         const hasLabel = colonIndex > 0;
-
         const label = hasLabel ? cleanText(line.slice(0, colonIndex)) : "";
-
         const content = hasLabel ? cleanText(line.slice(colonIndex + 1)) : line;
-
-
-
         return (
-
           <div key={`${line}-${index}`} className="sibs-text-xs font-semibold leading-relaxed text-[#344054]">
-
             {hasLabel ? (
-
               <>
-
                 <span className="font-extrabold text-[#042C51]">{label}:</span>{" "}
-
                 <span>{content || "—"}</span>
-
               </>
-
             ) : (
-
               <span>{content || "—"}</span>
-
             )}
-
           </div>
-
         );
-
       })}
-
     </div>
-
   );
-
 }
-
-
-
 function EvaluationResultItem({ label, value, detail = "" }) {
-
   return (
-
     <div className="rounded-xl border border-[#E6ECF2] bg-white p-2.5 2xl:p-3">
-
       <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-
         {label}
-
       </p>
-
       <p className="mt-0.5 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">
-
         {value || "—"}
-
       </p>
-
       {detail ? (
-
         <p className="mt-0.5 sibs-text-micro font-semibold leading-4 text-[#667085]">
-
           {detail}
-
         </p>
-
       ) : null}
-
     </div>
-
   );
-
 }
-
-
-
 function VersionRateChange({ label, previousValue, currentValue }) {
-
   const hasPrevious =
-
     previousValue !== null &&
-
     previousValue !== undefined &&
-
     previousValue !== "";
-
-
-
   return (
-
     <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 2xl:p-3">
-
       <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-
         {label}
-
       </p>
-
-
-
       <div className="mt-1.5 flex flex-wrap items-center gap-2">
-
         {hasPrevious ? (
-
           <>
-
             <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-
               Previous Offer
-
             </span>
-
             <span className="sibs-text-xs 2xl:sibs-text-sm font-bold text-[#667085] tabular-nums">
-
               {getRateDisplay(previousValue)}
-
             </span>
-
             <ArrowRight size={14} className="text-[#FF5C28]" />
-
           </>
-
         ) : null}
-
         <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-
           Current Offer
-
         </span>
-
         <span className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51] tabular-nums">
-
           {getRateDisplay(currentValue)}
-
         </span>
-
       </div>
-
     </div>
-
   );
-
 }
-
-
-
 export default function OfferDetailsModal({ open, offer, onClose }) {
-
   const {
-
     getOfferApprovalStatus,
-
     handleApproval,
-
     canCurrentUserApproveOffer,
-
     isSubmittingApproval = false,
-
     refreshOffers,
-
     openStatusModal,
-
     setSelectedOffer,
-
   } = useOffers();
 
-
+  const navigate = useNavigate();
 
   const historySectionRef = useRef(null);
-
   const [revisedBasicPay, setRevisedBasicPay] = useState("");
-
   const [revisedDeminimis, setRevisedDeminimis] = useState("");
-
   const [revisedRemarks, setRevisedRemarks] = useState("");
-
   const [savingRevision, setSavingRevision] = useState(false);
-
   const [approvalAction, setApprovalAction] = useState("");
-
   const [loadedOfferVersions, setLoadedOfferVersions] = useState([]);
-
   const [loadingOfferHistory, setLoadingOfferHistory] = useState(false);
-
   const [employmentOfferPreview, setEmploymentOfferPreview] = useState({
-
     open: false,
-
     filename: "",
-
     requestUrl: "",
-
   });
-
   const [activeDetailsTab, setActiveDetailsTab] = useState("breakdown");
-
-
-
   useEffect(() => {
-
     if (!offer) return;
-
-
-
     /*
-
      * A negotiated offer must be entered explicitly. Do not prefill the
-
      * current approved compensation because that can be submitted by mistake.
-
      */
-
     setRevisedBasicPay("");
-
     setRevisedDeminimis("");
-
-
-
     const currentOfferHistory = getOfferHistory(offer || {});
-
     setRevisedRemarks(cleanText(currentOfferHistory[0]?.internalRemarks));
-
     setApprovalAction("");
-
     setLoadedOfferVersions([]);
-
     setActiveDetailsTab("breakdown");
-
   }, [offer]);
-
-
-
   useEffect(() => {
-
     if (!open || !offer) return undefined;
-
-
-
     const pipelineId =
-
       offer.candidatePipelineId ||
-
       offer.candidate_pipeline_id ||
-
       offer.dbId ||
-
       offer.id;
-
-
-
     if (!pipelineId) return undefined;
-
-
-
     let active = true;
-
     const controller = new AbortController();
-
-
-
     async function loadOfferHistory() {
-
       setLoadingOfferHistory(true);
-
-
-
       try {
-
         const response = await api.get(
-
           `/api/candidate-pipeline/${encodeURIComponent(pipelineId)}/offer-versions`,
-
           {
-
             withCredentials: true,
-
             signal: controller.signal,
-
             params: { _t: Date.now() },
-
           },
-
         );
-
-
-
         const payload = response?.data ?? response;
-
         const versions = Array.isArray(payload?.offerVersions)
-
           ? payload.offerVersions
-
           : Array.isArray(payload?.versions)
-
             ? payload.versions
-
             : Array.isArray(payload?.data)
-
               ? payload.data
-
               : [];
-
-
-
         if (active) {
-
           setLoadedOfferVersions(versions);
-
-
-
           const latestLoadedVersion = getOfferHistory({
-
             ...(offer || {}),
-
             offerVersions: versions,
-
           })[0];
-
-
-
           setRevisedRemarks((currentRemarks) =>
-
             cleanText(currentRemarks) || cleanText(latestLoadedVersion?.internalRemarks),
-
           );
-
         }
-
       } catch (error) {
-
         if (
-
           active &&
-
           error?.code !== "ERR_CANCELED" &&
-
           error?.name !== "CanceledError"
-
         ) {
-
           setLoadedOfferVersions([]);
-
         }
-
       } finally {
-
         if (active) setLoadingOfferHistory(false);
-
       }
-
     }
-
-
-
     loadOfferHistory();
-
-
-
     return () => {
-
       active = false;
-
       controller.abort();
-
     };
-
   }, [open, offer?.candidatePipelineId, offer?.candidate_pipeline_id, offer?.dbId, offer?.id]);
-
-
-
   useEffect(() => {
-
     if (!open || offer?.__openSection !== "negotiation-history") return;
-
     setActiveDetailsTab("breakdown");
-
     let secondFrame = null;
-
     const firstFrame = window.requestAnimationFrame(() => {
       secondFrame = window.requestAnimationFrame(() => {
         historySectionRef.current?.scrollIntoView({
@@ -592,488 +263,262 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
         });
       });
     });
-
     return () => {
       window.cancelAnimationFrame(firstFrame);
       if (secondFrame !== null) window.cancelAnimationFrame(secondFrame);
     };
-
   }, [open, offer?.__openSection, offer?.id]);
-
-
-
   const evaluationScores = useMemo(
-
     () => getOfferEvaluationScores(offer || {}),
-
     [offer],
-
   );
-
-
-
   const offerHistory = useMemo(
-
     () =>
-
       getOfferHistory({
-
         ...(offer || {}),
-
         offerVersions:
-
           loadedOfferVersions.length > 0
-
             ? loadedOfferVersions
-
             : offer?.offerVersions || offer?.offer_versions,
-
       }),
-
     [loadedOfferVersions, offer],
-
   );
-
-
-
   /*
-
    * Keep the newest offer version as the single source of truth for the
-
    * summary/current status, but display every saved offer version in the
-
    * Negotiation History for a complete audit trail.
-
    */
-
   const latestOfferVersion = offerHistory[0] || null;
-
   const displayedOfferHistory = offerHistory;
-
-
-
   if (!open || !offer) return null;
-
-
-
   const approvalStatus =
-
     latestOfferVersion?.approvalStatus ||
-
     (
-
       getOfferApprovalStatus
-
         ? getOfferApprovalStatus(offer)
-
         : offer.offerApprovalStatus || offer.status || "For Review"
-
     );
-
-
-
   const isAuthorizedApprover =
-
     typeof canCurrentUserApproveOffer === "function"
-
       ? canCurrentUserApproveOffer(offer)
-
       : Boolean(canCurrentUserApproveOffer);
-
-
-
   const canReviewOffer =
-
     approvalStatus === "For Review" && isAuthorizedApprover;
 
-
+  const approverSignatureUploaded = hasOfferApproverSignature({
+    ...(offer || {}),
+    offerVersions:
+      loadedOfferVersions.length > 0
+        ? loadedOfferVersions
+        : offer?.offerVersions || offer?.offer_versions || [],
+  });
 
   const responseStatus =
-
     latestOfferVersion?.candidateResponse ||
-
     offer.offerResponseStatus ||
-
     offer.offer_response_status ||
-
     offer.candidateResponse ||
-
     offer.candidate_response ||
-
     offer.offerDecision ||
-
     offer.offer_decision ||
-
     "Pending";
-
-
-
   const negotiationMessage =
-
     latestOfferVersion?.candidateMessage ||
-
     offer.offerNegotiationMessage ||
-
     offer.offer_negotiation_message ||
-
     offer.offerDetails?.offerNegotiationMessage ||
-
     offer.offerDetails?.offer_negotiation_message ||
-
     "";
-
-
-
   const canSubmitRevision = ["negotiate", "negotiation"].includes(
-
     cleanText(responseStatus).toLowerCase(),
-
   );
-
-
-
   const isProcessingApproval = Boolean(isSubmittingApproval);
-
   const isBusy = savingRevision || isProcessingApproval;
-
-
-
   function handleClose() {
-
     if (isBusy) return;
-
     onClose?.();
-
   }
-
-
-
   async function handleOfferApproval(status) {
-
     if (!canReviewOffer || isBusy || typeof handleApproval !== "function") {
-
       return;
-
     }
 
-
-
-    setApprovalAction(status);
-
-
-
-    try {
-
-      const result = await handleApproval(offer, status);
-
-
-
-      if (result?.success === false) {
-
-        throw new Error(
-
-          result?.message ||
-
-            `Unable to ${status === "Approved" ? "approve" : "decline"} the offer.`,
-
-        );
-
-      }
-
-
-
-      if (status === "Approved") {
-
-        onClose?.();
-
-      }
-
-    } catch (error) {
-
-      openStatusModal?.({
-
-        type: "error",
-
-        title:
-
-          status === "Approved"
-
-            ? "Offer Approval Failed"
-
-            : "Offer Decline Failed",
-
-        message:
-
-          error?.response?.data?.message ||
-
-          error?.message ||
-
-          `Unable to ${status === "Approved" ? "approve" : "decline"} the offer.`,
-
-      });
-
-    } finally {
-
-      setApprovalAction("");
-
-    }
-
-  }
-
-
-
-  function preventCompensationWheel(event) {
-
-    event.preventDefault();
-
-    event.currentTarget.blur();
-
-  }
-
-
-
-  function preventCompensationArrowChange(event) {
-
-    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-
-      event.preventDefault();
-
-    }
-
-  }
-
-
-
-  async function submitRevision() {
-
-    const pipelineId =
-
-      offer.candidatePipelineId ||
-
-      offer.candidate_pipeline_id ||
-
-      offer.dbId ||
-
-      offer.id;
-
-
-
-    if (!pipelineId || isBusy) return;
-
-
-
-    if (String(revisedBasicPay).trim() === "") {
-
-      openStatusModal?.({
-
-        type: "error",
-
-        title: "New Basic Daily Rate Required",
-
-        message: "Please enter the new Basic Daily Rate.",
-
-      });
-
-      return;
-
-    }
-
-
-
-    if (String(revisedDeminimis).trim() === "") {
-
-      openStatusModal?.({
-
-        type: "error",
-
-        title: "New Daily De Minimis Required",
-
-        message: "Please enter the new Daily De Minimis.",
-
-      });
-
-      return;
-
-    }
-
-
-
-    const nextBasicPay = Number(revisedBasicPay);
-
-    const nextDeminimis = Number(revisedDeminimis);
-
-
-
-    if (!Number.isFinite(nextBasicPay) || nextBasicPay < 0) {
-
-      openStatusModal?.({
-
-        type: "error",
-
-        title: "Invalid New Basic Daily Rate",
-
-        message: "Enter a valid non-negative new Basic Daily Rate.",
-
-      });
-
-      return;
-
-    }
-
-
-
-    if (!Number.isFinite(nextDeminimis) || nextDeminimis < 0) {
-
-      openStatusModal?.({
-
-        type: "error",
-
-        title: "Invalid New Daily De Minimis",
-
-        message: "Enter a valid non-negative new Daily De Minimis.",
-
-      });
-
-      return;
-
-    }
-
-
-
-    setSavingRevision(true);
-
-
-
-    try {
-
-      const response = await api.post(
-
-        `/api/candidate-pipeline/${encodeURIComponent(pipelineId)}/offer-revisions`,
-
-        {
-
-          basicDailyRate: nextBasicPay,
-
-          dailyDeMinimis: nextDeminimis,
-
-          remarks: revisedRemarks,
-
-        },
-
-        { withCredentials: true },
-
+    if (status === "Approved" && !approverSignatureUploaded) {
+      const pipelineId =
+        offer.candidatePipelineId ||
+        offer.candidate_pipeline_id ||
+        offer.dbId ||
+        offer.id;
+
+      const currentVersionNumber = Math.max(
+        Number(
+          latestOfferVersion?.versionNumber ||
+            latestOfferVersion?.version_number ||
+            offer.offerVersion ||
+            offer.offer_version ||
+            1,
+        ) || 1,
+        1,
       );
 
-
-
-      const payload = response?.data ?? response;
-
-
-
-      if (payload?.success === false) {
-
-        throw new Error(payload?.message || "Unable to save revised offer.");
-
+      if (!pipelineId) {
+        openStatusModal?.({
+          type: "error",
+          title: "Employment Offer Not Found",
+          message:
+            "The Candidate Pipeline record for this Employment Offer could not be found.",
+        });
+        return;
       }
-
-
-
-      const refreshedCandidates = await refreshOffers?.();
-
-      const responseCandidate =
-
-        payload?.candidate || payload?.data?.candidate || payload?.data;
-
-
-
-      if (responseCandidate && typeof setSelectedOffer === "function") {
-
-        setSelectedOffer(responseCandidate);
-
-      } else if (Array.isArray(refreshedCandidates)) {
-
-        const refreshedOffer = refreshedCandidates.find(
-
-          (candidate) =>
-
-            String(
-
-              candidate.candidatePipelineId || candidate.dbId || candidate.id,
-
-            ) === String(pipelineId),
-
-        );
-
-
-
-        if (refreshedOffer && typeof setSelectedOffer === "function") {
-
-          setSelectedOffer(refreshedOffer);
-
-        }
-
-      }
-
-
-
-      /*
-
-       * Close Offer Details after a successful revised-offer submission.
-
-       * The success modal is owned by OffersContext, so it remains visible
-
-       * after this details modal is closed.
-
-       *
-
-       * Error paths intentionally do not close this modal so the user can
-
-       * correct the values and try again.
-
-       */
 
       onClose?.();
-
-
-
-      openStatusModal?.({
-
-        type: "success",
-
-        title: "Revised Offer Submitted",
-
-        message:
-
-          payload?.message ||
-
-          "The negotiated rates were returned for approver review.",
-
-      });
-
-    } catch (error) {
-
-      openStatusModal?.({
-
-        type: "error",
-
-        title: "Revision Failed",
-
-        message:
-
-          error?.response?.data?.message ||
-
-          error?.message ||
-
-          "Unable to save revised rates.",
-
-      });
-
-    } finally {
-
-      setSavingRevision(false);
-
+      navigate(
+        `/recruitment/offers/document/${encodeURIComponent(
+          pipelineId,
+        )}/${encodeURIComponent(
+          currentVersionNumber,
+        )}?approval=1`,
+      );
+      return;
     }
 
+    setApprovalAction(status);
+    try {
+      const result = await handleApproval(offer, status);
+      if (result?.success === false) {
+        throw new Error(
+          result?.message ||
+            `Unable to ${status === "Approved" ? "approve" : "decline"} the offer.`,
+        );
+      }
+      if (status === "Approved") {
+        onClose?.();
+      }
+    } catch (error) {
+      openStatusModal?.({
+        type: "error",
+        title:
+          status === "Approved"
+            ? "Offer Approval Failed"
+            : "Offer Decline Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          `Unable to ${status === "Approved" ? "approve" : "decline"} the offer.`,
+      });
+    } finally {
+      setApprovalAction("");
+    }
+  }
+  function preventCompensationWheel(event) {
+    event.preventDefault();
+    event.currentTarget.blur();
+  }
+  function preventCompensationArrowChange(event) {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+    }
+  }
+  async function submitRevision() {
+    const pipelineId =
+      offer.candidatePipelineId ||
+      offer.candidate_pipeline_id ||
+      offer.dbId ||
+      offer.id;
+    if (!pipelineId || isBusy) return;
+    if (String(revisedBasicPay).trim() === "") {
+      openStatusModal?.({
+        type: "error",
+        title: "New Basic Daily Rate Required",
+        message: "Please enter the new Basic Daily Rate.",
+      });
+      return;
+    }
+    if (String(revisedDeminimis).trim() === "") {
+      openStatusModal?.({
+        type: "error",
+        title: "New Daily De Minimis Required",
+        message: "Please enter the new Daily De Minimis.",
+      });
+      return;
+    }
+    const nextBasicPay = Number(revisedBasicPay);
+    const nextDeminimis = Number(revisedDeminimis);
+    if (!Number.isFinite(nextBasicPay) || nextBasicPay < 0) {
+      openStatusModal?.({
+        type: "error",
+        title: "Invalid New Basic Daily Rate",
+        message: "Enter a valid non-negative new Basic Daily Rate.",
+      });
+      return;
+    }
+    if (!Number.isFinite(nextDeminimis) || nextDeminimis < 0) {
+      openStatusModal?.({
+        type: "error",
+        title: "Invalid New Daily De Minimis",
+        message: "Enter a valid non-negative new Daily De Minimis.",
+      });
+      return;
+    }
+    setSavingRevision(true);
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(pipelineId)}/offer-revisions`,
+        {
+          basicDailyRate: nextBasicPay,
+          dailyDeMinimis: nextDeminimis,
+          remarks: revisedRemarks,
+        },
+        { withCredentials: true },
+      );
+      const payload = response?.data ?? response;
+      if (payload?.success === false) {
+        throw new Error(payload?.message || "Unable to save revised offer.");
+      }
+      const refreshedCandidates = await refreshOffers?.();
+      const responseCandidate =
+        payload?.candidate || payload?.data?.candidate || payload?.data;
+      if (responseCandidate && typeof setSelectedOffer === "function") {
+        setSelectedOffer(responseCandidate);
+      } else if (Array.isArray(refreshedCandidates)) {
+        const refreshedOffer = refreshedCandidates.find(
+          (candidate) =>
+            String(
+              candidate.candidatePipelineId || candidate.dbId || candidate.id,
+            ) === String(pipelineId),
+        );
+        if (refreshedOffer && typeof setSelectedOffer === "function") {
+          setSelectedOffer(refreshedOffer);
+        }
+      }
+      /*
+       * Close Offer Details after a successful revised-offer submission.
+       * The success modal is owned by OffersContext, so it remains visible
+       * after this details modal is closed.
+       *
+       * Error paths intentionally do not close this modal so the user can
+       * correct the values and try again.
+       */
+      onClose?.();
+      openStatusModal?.({
+        type: "success",
+        title: "Revised Offer Submitted",
+        message:
+          payload?.message ||
+          "The negotiated rates were returned for approver review.",
+      });
+    } catch (error) {
+      openStatusModal?.({
+        type: "error",
+        title: "Revision Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Unable to save revised rates.",
+      });
+    } finally {
+      setSavingRevision(false);
+    }
   }
   const currentBasicDailyRate =
     latestOfferVersion?.basicDailyRate ?? offer.basicPay;
@@ -1105,15 +550,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     offer.hiringRequirementId ||
     offer.hiring_requirement_id ||
     "—";
-
   function normalizeBenefitList(value) {
     if (Array.isArray(value)) {
       return value.map((item) => cleanText(item?.label || item?.name || item)).filter(Boolean);
     }
-
     const text = cleanText(value);
     if (!text) return [];
-
     try {
       const parsed = JSON.parse(text);
       if (Array.isArray(parsed)) {
@@ -1124,13 +566,11 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     } catch {
       // Keep plain-text benefits compatible with older offer records.
     }
-
     return text
       .split(/[,\n]+/)
       .map((item) => cleanText(item))
       .filter(Boolean);
   }
-
   const benefitList = normalizeBenefitList(
     latestOfferVersion?.benefits ||
       latestOfferVersion?.offerBenefits ||
@@ -1139,7 +579,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
       offer.offer_benefits ||
       offer.offerDetails?.benefits,
   );
-
   const rawApprovers = Array.isArray(latestOfferVersion?.approvers)
     ? latestOfferVersion.approvers
     : Array.isArray(offer.approvers)
@@ -1149,7 +588,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
         : Array.isArray(offer.approval_users)
           ? offer.approval_users
           : [];
-
   const approvalRows = rawApprovers.length
     ? rawApprovers.map((approver, index) => ({
         id: approver.id || approver.userId || approver.user_id || `approver-${index}`,
@@ -1217,21 +655,17 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
             "",
         },
       ];
-
   const currentPdfVersion =
     displayedOfferHistory.find(
       (version) => version?.pdfAvailable || version?.pdfFilename || version?.pdf_filename,
     ) || null;
-
   function openEmploymentOfferPdf(version = currentPdfVersion) {
     const pipelineId =
       offer.candidatePipelineId ||
       offer.candidate_pipeline_id ||
       offer.dbId ||
       offer.id;
-
     if (!pipelineId || !version?.versionNumber) return;
-
     setEmploymentOfferPreview({
       open: true,
       filename:
@@ -1243,21 +677,16 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
       )}/offer-versions/${encodeURIComponent(version.versionNumber)}/pdf`,
     });
   }
-
   function getApprovalRowTone(status = "") {
     const key = cleanText(status).toLowerCase();
-
     if (key.includes("approved") || key.includes("accepted")) {
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
     }
-
     if (key.includes("reject") || key.includes("declin")) {
       return "border-red-200 bg-red-50 text-red-700";
     }
-
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
-
   return (
     <>
       <div
@@ -1273,7 +702,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[#FF5C28]">
                 <FileText size={19} />
               </span>
-
               <div className="min-w-0">
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <h2 className="truncate text-base font-extrabold tracking-tight text-white sm:text-lg">
@@ -1285,7 +713,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     </span>
                   ) : null}
                 </div>
-
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-semibold text-white/65 sm:text-xs">
                   <span>{currentRoleTitle}</span>
                   <span className="text-white/30">•</span>
@@ -1299,7 +726,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 </p>
               </div>
             </div>
-
             <button
               type="button"
               onClick={handleClose}
@@ -1310,7 +736,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               <X size={18} />
             </button>
           </div>
-
           <div className="flex shrink-0 flex-col gap-2 border-b border-[#DDE4EC] bg-[#F8FAFC] px-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="flex min-w-0 items-center gap-4 overflow-x-auto no-scrollbar">
               <button
@@ -1324,7 +749,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               >
                 Compensation & Approval Breakdown
               </button>
-
               <button
                 type="button"
                 onClick={() => setActiveDetailsTab("contract")}
@@ -1338,7 +762,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 Generated Contract Document
               </button>
             </div>
-
             <div className="flex items-center gap-2 pb-2 sm:pb-0">
               <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                 Consensus:
@@ -1352,7 +775,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </span>
             </div>
           </div>
-
           <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-5 2xl:p-6">
             {activeDetailsTab === "breakdown" ? (
               <div className="space-y-4 2xl:space-y-5">
@@ -1362,7 +784,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       Candidate & Requisition Profile
                     </h3>
                   </div>
-
                   <div className="grid grid-cols-1 gap-x-8 gap-y-1.5 md:grid-cols-2">
                     <div className="space-y-1.5">
                       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-start gap-3 text-xs">
@@ -1378,7 +799,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         <span className="text-right font-extrabold text-[#042C51] tabular-nums">{candidatePhone}</span>
                       </div>
                     </div>
-
                     <div className="space-y-1.5">
                       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-start gap-3 text-xs">
                         <span className="font-medium text-[#8A98B8]">Position Title:</span>
@@ -1398,7 +818,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     </div>
                   </div>
                 </section>
-
                 <section className="rounded-2xl border border-[#DDE4EC] bg-white p-4 shadow-sm sm:p-5">
                   <div className="mb-3 flex flex-col gap-2 border-b border-[#E8EDF3] pb-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
@@ -1408,7 +827,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       Total Value: {formatCurrency(currentTotalDailyRate)} / day
                     </span>
                   </div>
-
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5">
                       <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
@@ -1418,7 +836,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         {getRateDisplay(currentBasicDailyRate)}
                       </p>
                     </div>
-
                     <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5">
                       <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
                         Daily De Minimis
@@ -1428,7 +845,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       </p>
                     </div>
                   </div>
-
                   {benefitList.length ? (
                     <div className="mt-3">
                       <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
@@ -1448,7 +864,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     </div>
                   ) : null}
                 </section>
-
                 <section className="rounded-2xl border border-[#DDE4EC] bg-white p-4 shadow-sm sm:p-5">
                   <div className="mb-3 flex flex-col gap-2 border-b border-[#E8EDF3] pb-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
@@ -1459,7 +874,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       Consensus: All configured votes required
                     </span>
                   </div>
-
                   <div className="space-y-2">
                     {approvalRows.map((approver) => (
                       <div
@@ -1479,7 +893,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                             </p>
                           ) : null}
                         </div>
-
                         <div className="shrink-0 text-left sm:text-right">
                           <span
                             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getApprovalRowTone(
@@ -1499,7 +912,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     ))}
                   </div>
                 </section>
-
                 {canSubmitRevision ? (
                   <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
                     <h3 className="text-sm font-extrabold text-amber-900">
@@ -1508,7 +920,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     <p className="mt-2 rounded-lg border border-amber-200 bg-white p-3 text-xs font-semibold leading-5 text-amber-900">
                       {negotiationMessage || "No negotiation message was saved."}
                     </p>
-
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <label className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
                         New Basic Daily Rate
@@ -1526,7 +937,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                           className="mt-1.5 h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-xs font-bold text-[#042C51] outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                       </label>
-
                       <label className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
                         New Daily De Minimis
                         <input
@@ -1544,7 +954,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         />
                       </label>
                     </div>
-
                     <label className="mt-3 block text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
                       Internal Remarks
                       <textarea
@@ -1555,7 +964,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         className="mt-1.5 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white p-3 text-xs font-semibold leading-5 text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
                       />
                     </label>
-
                     <button
                       type="button"
                       disabled={isBusy}
@@ -1567,7 +975,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     </button>
                   </section>
                 ) : null}
-
                 <section className="rounded-2xl border border-[#DDE4EC] bg-white p-4 shadow-sm sm:p-5">
                   <div className="mb-3 border-b border-[#E8EDF3] pb-2.5">
                     <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
@@ -1603,7 +1010,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     />
                   </div>
                 </section>
-
                 <section
                   ref={historySectionRef}
                   className="scroll-mt-5 rounded-2xl border border-[#DDE4EC] bg-white p-4 shadow-sm sm:p-5"
@@ -1620,24 +1026,20 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       {displayedOfferHistory.length === 1 ? "" : "s"}
                     </span>
                   </div>
-
                   {loadingOfferHistory ? (
                     <div className="mt-4 space-y-3 animate-pulse">
                       <div className="h-4 w-1/3 rounded-full bg-slate-200" />
                       <div className="h-28 rounded-2xl bg-slate-100" />
                     </div>
                   ) : null}
-
                   {!loadingOfferHistory && displayedOfferHistory.length === 0 ? (
                     <div className="mt-4 rounded-xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-8 text-center text-xs font-bold text-[#667085]">
                       No offer versions are available yet.
                     </div>
                   ) : null}
-
                   <div className="mt-4 space-y-3">
                     {displayedOfferHistory.map((version, versionIndex) => {
                       const isCurrentVersion = versionIndex === 0;
-
                       return (
                         <article
                           key={`${version.id || "version"}-${version.versionNumber}`}
@@ -1664,12 +1066,10 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                                 Submitted: {formatOfferVersionDate(version.submittedAt)} · Submitted by: {getOfferOwnerDisplay(version, offer)}
                               </p>
                             </div>
-
                             <span className="w-fit rounded-full border border-[#E6ECF2] bg-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase text-[#475467]">
                               Candidate: {version.candidateResponse || "Pending"}
                             </span>
                           </div>
-
                           <div className="mt-3 grid gap-3 sm:grid-cols-2">
                             <VersionRateChange
                               label="Basic Daily Rate"
@@ -1682,7 +1082,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                               currentValue={version.dailyDeMinimis}
                             />
                           </div>
-
                           {(version.candidateMessage || version.internalRemarks) ? (
                             <div className="mt-3 grid gap-3 sm:grid-cols-2">
                               <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
@@ -1723,7 +1122,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       {approvalStatus}
                     </span>
                   </div>
-
                   {currentPdfVersion ? (
                     <div className="mt-5 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1742,14 +1140,13 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                             </p>
                           </div>
                         </div>
-
                         <button
                           type="button"
                           onClick={() => openEmploymentOfferPdf(currentPdfVersion)}
                           className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:opacity-90"
                         >
                           <FileText size={15} className="text-[#FF5C28]" />
-                          Open Employment Offer PDF
+                          Open Employment Offer
                         </button>
                       </div>
                     </div>
@@ -1763,7 +1160,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     </div>
                   )}
                 </section>
-
                 {displayedOfferHistory.filter(
                   (version) => version?.pdfAvailable || version?.pdfFilename || version?.pdf_filename,
                 ).length > 1 ? (
@@ -1803,7 +1199,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </div>
             )}
           </div>
-
           <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3 sm:px-6 2xl:py-4">
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
               <button
@@ -1814,7 +1209,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               >
                 Close
               </button>
-
               {canReviewOffer ? (
                 <>
                   <button
@@ -1830,7 +1224,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     )}
                     {approvalAction === "Rejected" ? "Declining..." : "Decline"}
                   </button>
-
                   <button
                     type="button"
                     disabled={isBusy}
@@ -1850,7 +1243,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
           </div>
         </div>
       </div>
-
       <EmploymentOfferPdfPreviewModal
         open={employmentOfferPreview.open}
         filename={employmentOfferPreview.filename}

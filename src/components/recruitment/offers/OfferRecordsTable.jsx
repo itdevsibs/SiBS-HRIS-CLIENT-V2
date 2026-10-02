@@ -8,9 +8,14 @@ import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import {
   getLatestNegotiationSummary,
   getOfferEvaluationScores,
+  hasOfferApproverSignature,
 } from "../../../lib/utils/offers/offerEvaluationHistory";
 
-function ApprovalActionButtons({ offer, onApproveReject }) {
+function ApprovalActionButtons({
+  offer,
+  onApproveReject,
+  allowApprove = false,
+}) {
   return (
     <>
       <button
@@ -22,14 +27,16 @@ function ApprovalActionButtons({ offer, onApproveReject }) {
         <X size={15} />
       </button>
 
-      <button
-        type="button"
-        onClick={() => onApproveReject?.(offer, "Approved")}
-        className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#042C51] text-white transition hover:bg-[#063b6d]"
-        title="Approve offer"
-      >
-        <Check size={15} />
-      </button>
+      {allowApprove ? (
+        <button
+          type="button"
+          onClick={() => onApproveReject?.(offer, "Approved")}
+          className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#042C51] text-white transition hover:bg-[#063b6d]"
+          title="Approve offer"
+        >
+          <Check size={15} />
+        </button>
+      ) : null}
     </>
   );
 }
@@ -185,8 +192,8 @@ export default function OfferRecordsTable({
                 <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[14%] text-left">Evaluation Scores</th>
                 <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[17%] text-left">Negotiation</th>
                 <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[10%] text-center">Status</th>
-                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[9%] text-left">Owner</th>
-                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[17%] text-right">Actions</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[16%] text-left">Owner</th>
+                <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[10%] text-right">Actions</th>
               </tr>
             </thead>
 
@@ -199,6 +206,10 @@ export default function OfferRecordsTable({
                   const displayStatus = getDisplayStatus(offer);
                   const isAuthorizedApprover =
                     isAuthorizedApproverForOffer(offer);
+                  const ownerDisplay =
+                    offer.ownerDisplay || offer.owner_display || offer.owner || "—";
+                  const ownerRoleLabel =
+                    offer.ownerRoleLabel || offer.owner_role_label || "";
 
                   return (
                     <tr
@@ -275,12 +286,19 @@ export default function OfferRecordsTable({
                       </td>
 
                       <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                        <p
-                          title={offer.owner}
-                          className="truncate sibs-text-xs font-semibold text-sibs-secondary"
-                        >
-                          {offer.owner || "—"}
-                        </p>
+                        <div className="flex min-w-0 flex-col items-start gap-1">
+                          {ownerRoleLabel ? (
+                            <span className="inline-flex w-fit items-center rounded-full border border-[#B2CCFF] bg-[#EFF4FF] px-2 py-0.5 text-[9px] font-extrabold leading-none text-[#175CD3]">
+                              {ownerRoleLabel}
+                            </span>
+                          ) : null}
+                          <p
+                            title={ownerDisplay}
+                            className="line-clamp-2 break-words sibs-text-xs font-semibold leading-4 text-sibs-secondary"
+                          >
+                            {ownerDisplay}
+                          </p>
+                        </div>
                       </td>
 
                       <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-right align-middle">
@@ -302,6 +320,7 @@ export default function OfferRecordsTable({
                               <ApprovalActionButtons
                                 offer={offer}
                                 onApproveReject={handleApproval}
+                                allowApprove={hasOfferApproverSignature(offer)}
                               />
                             )}
 

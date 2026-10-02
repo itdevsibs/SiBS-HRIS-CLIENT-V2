@@ -286,6 +286,12 @@ export default function OffersPage() {
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
+  useEffect(() => {
+    if (typeof refreshOffers !== "function") return;
+
+    refreshOffers({ silent: true });
+  }, [refreshOffers]);
+
   const handleManualRefresh = async () => {
     if (isManualRefreshing) return;
     setIsManualRefreshing(true);

@@ -424,7 +424,10 @@ export default function CandidatePipelineModalShell({
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-sibs-tertiary-10 p-3 sm:p-4 2xl:p-5 sibs-scrollbar">
+        <div
+          data-dropdown-boundary="true"
+          className="min-h-0 flex-1 overflow-y-auto bg-sibs-tertiary-10 p-3 sm:p-4 2xl:p-5 sibs-scrollbar"
+        >
           {children}
         </div>
 

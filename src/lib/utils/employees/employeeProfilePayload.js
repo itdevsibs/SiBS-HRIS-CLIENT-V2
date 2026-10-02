@@ -15,6 +15,7 @@ export const EDITABLE_PROFILE_FIELDS = Object.freeze([
   "residentialAddress",
   "permanentAddress",
   "workSetup",
+  "position",
   "gsis",
   "sss",
   "phic",

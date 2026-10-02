@@ -663,12 +663,23 @@ function normalizeTimelineItem(
   const rawDate = getTimelineDate(item);
   const updatedBy = getUpdatedBy(item, currentAuditActorLabel, candidateName);
 
-  const remarks = getFirstValue(item, [
-    "remarks",
-    "notes",
-    "comment",
-    "comments",
-  ]);
+  const remarks =
+    getFirstValue(item, [
+      "notes",
+      "actionNotes",
+      "action_notes",
+      "remarks",
+      "comment",
+      "comments",
+    ]) ||
+    getFirstValue(item.extra || {}, [
+      "notes",
+      "actionNotes",
+      "action_notes",
+      "remarks",
+      "comment",
+      "comments",
+    ]);
 
   const score = getFirstValue(item, [
     "score",

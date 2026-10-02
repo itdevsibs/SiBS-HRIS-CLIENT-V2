@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -615,6 +616,41 @@ function normalizeCandidateForOffers(candidate = {}) {
     safeCandidate.offer_approvals ||
     {};
 
+  const latestOfferVersion = safeObject(
+    safeCandidate.latestOfferVersion ||
+      safeCandidate.latest_offer_version ||
+      {},
+  );
+
+  const ownerDisplay =
+    latestOfferVersion.submittedByDisplay ||
+    latestOfferVersion.submitted_by_display ||
+    safeCandidate.ownerDisplay ||
+    safeCandidate.owner_display ||
+    safeCandidate.owner ||
+    safeCandidate.currentTaOwner ||
+    safeCandidate.current_ta_owner ||
+    safeCandidate.taOwner ||
+    safeCandidate.updatedBySibsId ||
+    safeCandidate.updated_by_sibs_id ||
+    safeCandidate.createdBySibsId ||
+    safeCandidate.created_by_sibs_id ||
+    "—";
+
+  const ownerAdminAccess =
+    latestOfferVersion.submittedByAdminAccess ??
+    latestOfferVersion.submitted_by_admin_access ??
+    safeCandidate.ownerAdminAccess ??
+    safeCandidate.owner_admin_access ??
+    null;
+
+  const ownerRoleLabel =
+    latestOfferVersion.submittedByRoleLabel ||
+    latestOfferVersion.submitted_by_role_label ||
+    safeCandidate.ownerRoleLabel ||
+    safeCandidate.owner_role_label ||
+    "";
+
   return {
     ...safeCandidate,
 
@@ -782,16 +818,13 @@ function normalizeCandidateForOffers(candidate = {}) {
       safeCandidate.contractSentAt ||
       "",
 
-    owner:
-      safeCandidate.owner ||
-      safeCandidate.currentTaOwner ||
-      safeCandidate.current_ta_owner ||
-      safeCandidate.taOwner ||
-      safeCandidate.updatedBySibsId ||
-      safeCandidate.updated_by_sibs_id ||
-      safeCandidate.createdBySibsId ||
-      safeCandidate.created_by_sibs_id ||
-      "—",
+    owner: ownerDisplay,
+    ownerDisplay,
+    owner_display: ownerDisplay,
+    ownerAdminAccess,
+    owner_admin_access: ownerAdminAccess,
+    ownerRoleLabel,
+    owner_role_label: ownerRoleLabel,
   };
 }
 
@@ -991,10 +1024,24 @@ export function OffersProvider({ children }) {
   const [approvalUsers, setApprovalUsers] = useState([]);
   const [approvalUsersLoading, setApprovalUsersLoading] = useState(false);
 
-  const [apiCandidates, setApiCandidates] = useState([]);
-  const [isLoadingOffers, setIsLoadingOffers] = useState(true);
+  const initialCachedCandidates = useMemo(
+    () =>
+      getStoredPipelineCandidates().map(normalizeCandidateForOffers),
+    [],
+  );
+
+  const [apiCandidates, setApiCandidates] = useState(
+    () => initialCachedCandidates,
+  );
+  const [isLoadingOffers, setIsLoadingOffers] = useState(
+    () => initialCachedCandidates.length === 0,
+  );
   const [offersLoadError, setOffersLoadError] = useState("");
   const [storageSyncTick, setStorageSyncTick] = useState(0);
+
+  const hasLoadedOffersRef = useRef(initialCachedCandidates.length > 0);
+  const refreshOffersPromiseRef = useRef(null);
+  const apiCandidatesRef = useRef(initialCachedCandidates);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -1019,52 +1066,83 @@ export function OffersProvider({ children }) {
     }));
   }
 
+  function isOffersRouteActive() {
+    if (typeof window === "undefined") return false;
+
+    const pathname = String(window.location?.pathname || "").toLowerCase();
+
+    return (
+      pathname === "/recruitment/offers" ||
+      pathname.startsWith("/recruitment/offers/")
+    );
+  }
+
   const refreshOffers = useCallback(async ({ silent = false } = {}) => {
-    if (!silent) {
+    if (refreshOffersPromiseRef.current) {
+      return refreshOffersPromiseRef.current;
+    }
+
+    const shouldShowLoading =
+      !silent && !hasLoadedOffersRef.current;
+
+    if (shouldShowLoading) {
       setIsLoadingOffers(true);
     }
 
     setOffersLoadError("");
 
-    try {
-      const response = await getCandidatePipelineCandidates({
-        page: 1,
-        limit: 500,
-        _t: Date.now(),
-      });
+    const refreshPromise = (async () => {
+      try {
+        const response = await getCandidatePipelineCandidates({
+          page: 1,
+          limit: 500,
+          _t: Date.now(),
+        });
 
-      const candidates = extractCandidatesFromResponse(response).map(
-        normalizeCandidateForOffers,
-      );
+        const candidates = extractCandidatesFromResponse(response).map(
+          normalizeCandidateForOffers,
+        );
 
-      const offeredCandidates = candidates.filter(isOfferStageCandidate);
+        const offeredCandidates = candidates.filter(isOfferStageCandidate);
 
-      setApiCandidates(candidates);
+        apiCandidatesRef.current = candidates;
+        setApiCandidates(candidates);
 
-      safeWriteArray(PIPELINE_CANDIDATES_STORAGE_KEY, candidates);
-      safeWriteArray(OFFER_ELIGIBLE_STORAGE_KEY, offeredCandidates);
+        safeWriteArray(PIPELINE_CANDIDATES_STORAGE_KEY, candidates);
+        safeWriteArray(OFFER_ELIGIBLE_STORAGE_KEY, offeredCandidates);
 
-      setStorageSyncTick((previous) => previous + 1);
+        setStorageSyncTick((previous) => previous + 1);
+        hasLoadedOffersRef.current = true;
 
-      return candidates;
-    } catch (error) {
-      const message = getApiErrorMessage(
-        error,
-        "Failed to load offered candidates from Candidate Pipeline.",
-      );
+        return candidates;
+      } catch (error) {
+        const message = getApiErrorMessage(
+          error,
+          "Failed to load offered candidates from Candidate Pipeline.",
+        );
 
-      console.error("Load offers from Candidate Pipeline error:", error);
+        console.error("Load offers from Candidate Pipeline error:", error);
 
-      setOffersLoadError(message);
+        setOffersLoadError(message);
 
-      return [];
-    } finally {
-      if (!silent) {
-        setIsLoadingOffers(false);
+        // Keep the currently rendered Offers data when a background
+        // accuracy check fails. Do not clear or visually reload the page.
+        return safeArray(apiCandidatesRef.current);
+      } finally {
+        if (shouldShowLoading) {
+          setIsLoadingOffers(false);
+        }
       }
+    })();
+
+    refreshOffersPromiseRef.current = refreshPromise;
+
+    try {
+      return await refreshPromise;
+    } finally {
+      refreshOffersPromiseRef.current = null;
     }
   }, []);
-
   async function loadApprovalUsers() {
     try {
       setApprovalUsersLoading(true);
@@ -1098,7 +1176,12 @@ export function OffersProvider({ children }) {
 
   useEffect(() => {
     loadApprovalUsers();
-    refreshOffers();
+
+    if (!isOffersRouteActive()) return;
+
+    refreshOffers({
+      silent: hasLoadedOffersRef.current,
+    });
   }, [approvalRuleRevision, refreshOffers]);
 
   useEffect(() => {
@@ -1144,7 +1227,9 @@ export function OffersProvider({ children }) {
         );
 
         if (existingIndex < 0) {
-          return dedupeCandidates([...current, candidate]);
+          const merged = dedupeCandidates([...current, candidate]);
+          apiCandidatesRef.current = merged;
+          return merged;
         }
 
         const next = [...current];
@@ -1165,7 +1250,9 @@ export function OffersProvider({ children }) {
           },
         });
 
-        return dedupeCandidates(next);
+        const merged = dedupeCandidates(next);
+        apiCandidatesRef.current = merged;
+        return merged;
       });
 
       const storedCandidates = getStoredPipelineCandidates();
@@ -1213,6 +1300,8 @@ export function OffersProvider({ children }) {
     }
 
     function handlePipelineUpdated(event) {
+      if (!isOffersRouteActive()) return;
+
       const candidate = getEventCandidate(event);
 
       if (mergeCandidateImmediately(candidate)) {
@@ -1226,6 +1315,8 @@ export function OffersProvider({ children }) {
     }
 
     function handleOffersUpdated(event) {
+      if (!isOffersRouteActive()) return;
+
       if (event?.detail?.removed) {
         setOfferOverrides(readOfferOverrides());
         setStorageSyncTick((previous) => previous + 1);
@@ -1243,17 +1334,30 @@ export function OffersProvider({ children }) {
     }
 
     function handleStorageSync() {
+      if (!isOffersRouteActive()) return;
+
       setOfferOverrides(readOfferOverrides());
       setStorageSyncTick((previous) => previous + 1);
     }
 
-    function handleWindowFocus() {
-      // Quiet accuracy check only. It does not clear/reload the Offers UI.
+    function refreshLatestOffersSilently() {
+      if (!isOffersRouteActive()) return;
+
       refreshOffers({ silent: true });
+    }
+
+    function handleWindowFocus() {
+      refreshLatestOffersSilently();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState !== "visible") return;
+      refreshLatestOffersSilently();
     }
 
     window.addEventListener("storage", handleStorageSync);
     window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener(
       "ta-pipeline-candidates-updated",
       handlePipelineUpdated,
@@ -1263,6 +1367,7 @@ export function OffersProvider({ children }) {
     return () => {
       window.removeEventListener("storage", handleStorageSync);
       window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener(
         "ta-pipeline-candidates-updated",
         handlePipelineUpdated,
@@ -1456,11 +1561,14 @@ export function OffersProvider({ children }) {
       previous.filter((offer) => !isSameOfferRecord(offer, offerToRemove)),
     );
 
-    setApiCandidates((previous) =>
-      previous.filter(
+    setApiCandidates((previous) => {
+      const next = previous.filter(
         (candidate) => !isSameOfferRecord(candidate, offerToRemove),
-      ),
-    );
+      );
+
+      apiCandidatesRef.current = next;
+      return next;
+    });
 
     setSelectedOffer((previous) =>
       previous && isSameOfferRecord(previous, offerToRemove) ? null : previous,
@@ -1580,16 +1688,19 @@ export function OffersProvider({ children }) {
 
     const action = status === "Approved" ? "approve" : "reject";
 
-    const confirmed = await confirmAction(
+    const confirmation = await confirmAction(
       `You will ${action} the offer for ${offer.candidateName}. Continue?`,
       {
         title: status === "Approved" ? "Approve Offer" : "Reject Offer",
         confirmText: status === "Approved" ? "Approve" : "Reject",
         variant: status === "Approved" ? "default" : "danger",
+        showNotes: true,
       },
     );
 
-    if (!confirmed) return;
+    if (!confirmation?.confirmed) return;
+
+    const approvalNotes = cleanText(confirmation.notes);
 
     const approverKey = getApprovalUserLabel(currentApprovalUser);
 
@@ -1600,7 +1711,7 @@ export function OffersProvider({ children }) {
         updatedAt: getCurrentTimestamp(),
         updatedBy: currentUserName,
         approverSibsId: currentApprovalUser?.sibsId || currentUserSibsId,
-        remarks: `Updated by ${currentUserName}`,
+        remarks: approvalNotes || `Updated by ${currentUserName}`,
       },
     };
 
@@ -1632,7 +1743,10 @@ export function OffersProvider({ children }) {
           approvedBy: approverKey,
           status,
           approvalStatus: status,
-          remarks: `Updated by ${currentUserName}`,
+          remarks: approvalNotes,
+          notes: approvalNotes,
+          actionNotes: approvalNotes,
+          action_notes: approvalNotes,
         },
       );
 
@@ -1658,6 +1772,8 @@ export function OffersProvider({ children }) {
             nextApprovalStatus === "Approved"
               ? `${currentUserName} approved the offer. Candidate remains in Offered while waiting for the candidate response.`
               : `${currentUserName} rejected the offer.`,
+          approvalRemarks: approvalNotes,
+          approval_remarks: approvalNotes,
         },
         0,
         {
@@ -1718,10 +1834,13 @@ export function OffersProvider({ children }) {
             : `${currentUserName} rejected the offer.`,
         owner: currentUserName,
         source: "Offers Page",
-        remarks: `Updated by ${currentUserName}`,
+        notes: approvalNotes,
+        actionNotes: approvalNotes,
+        action_notes: approvalNotes,
+        remarks: approvalNotes || `Updated by ${currentUserName}`,
       });
 
-      await refreshOffers();
+      await refreshOffers({ silent: true });
 
       window.dispatchEvent(new Event("ta-pipeline-candidates-updated"));
 
@@ -1803,7 +1922,7 @@ export function OffersProvider({ children }) {
     <OffersContext.Provider value={value}>
       {children}
 
-      <ConfirmationDialog />
+      {ConfirmationDialog}
 
       <StatusModal
         open={statusModal.open}

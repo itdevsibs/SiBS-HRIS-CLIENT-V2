@@ -42,7 +42,7 @@ import {
   STATUS_OPTIONS,
 } from "../../lib/utils/availablePositions/availablePositionsConstants";
 import PositionFormModal from "../../components/modals/availablePositions/PositionFormModal";
-import ConfirmationModal from "../../components/modals/availablePositions/ConfirmationModal";
+import AvailablePositionsConfirmationModal from "../../components/modals/availablePositions/AvailablePositionsConfirmationModal";
 import AvailablePositionsTable from "../../components/tables/availablePositions/AvailablePositionsTable";
 import {
   normalizeAvailablePositionRecord,
@@ -1938,7 +1938,7 @@ export default function AvailablePositionsPage() {
         }
       />
 
-      <ConfirmationModal
+      <AvailablePositionsConfirmationModal
         open={Boolean(confirmState)}
         title={confirmState?.title}
         message={confirmState?.message}

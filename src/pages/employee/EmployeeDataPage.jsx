@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, HeartPulse, History } from "lucide-react";
+import { BriefcaseBusiness, ChevronLeft, HeartPulse, History } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
@@ -14,6 +14,7 @@ import EmployeeProfileNavigation from "../../components/employee/profile/compone
 import EmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
 import EmployeeProfileSkeleton from "../../components/employee/profile/components/EmployeeProfileSkeleton.jsx";
 import ChwcpCoverageSection from "../../components/employee/profile/components/ChwcpCoverageSection.jsx";
+import PositionSection from "../../components/employee/profile/sections/PositionSection.jsx";
 
 import { useUser } from "../../services/context/UserContext";
 import {
@@ -58,9 +59,34 @@ const RESIGNATION_HISTORY_TAB = {
   icon: History,
 };
 
-const EMPLOYEE_PROFILE_TABS = PROFILE_TABS.flatMap((tab) =>
-  tab.key === "documents" ? [tab, CHWCP_PROFILE_TAB] : [tab],
-);
+const POSITION_PROFILE_TAB = {
+  key: "position",
+  label: "Position",
+  icon: BriefcaseBusiness,
+};
+
+function buildEmployeeProfileTabs({
+  includeResignationHistory = false,
+  includePosition = false,
+} = {}) {
+  return PROFILE_TABS.flatMap((tab) => {
+    if (tab.key !== "documents") return [tab];
+
+    const tabs = [tab];
+
+    if (includeResignationHistory) {
+      tabs.push(RESIGNATION_HISTORY_TAB);
+    }
+
+    tabs.push(CHWCP_PROFILE_TAB);
+
+    if (includePosition) {
+      tabs.push(POSITION_PROFILE_TAB);
+    }
+
+    return tabs;
+  });
+}
 
 function cleanResignationText(value) {
   return String(value ?? "").trim();
@@ -470,6 +496,75 @@ function canEditProfileDetails(user) {
   );
 }
 
+function getUserAdminAccessValues(user) {
+  const directValues = [
+    user?.admin_access,
+    user?.adminAccess,
+    user?.access,
+    user?.gy_user_access,
+    user?.gyUserAccess,
+  ];
+
+  const assignedValues = Array.isArray(user?.assignedAccounts)
+    ? user.assignedAccounts.flatMap((account) => [
+        account?.admin_access,
+        account?.adminAccess,
+        account?.access,
+        account?.gy_user_access,
+        account?.gyUserAccess,
+      ])
+    : [];
+
+  return [...directValues, ...assignedValues]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+}
+
+function canManageEmployeePosition(user) {
+  const allowedAccessValues = new Set([1, 2, 3, 7]);
+
+  if (
+    getUserAdminAccessValues(user).some((value) =>
+      allowedAccessValues.has(value),
+    )
+  ) {
+    return true;
+  }
+
+  const roles = [
+    user?.resolvedRole,
+    user?.resolved_role,
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.user_role,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+    user?.adminRole,
+    user?.admin_role,
+    user?.roleName,
+    user?.role_name,
+  ]
+    .map(normalizeRole)
+    .filter(Boolean);
+
+  const allowedRoles = new Set([
+    "ta",
+    "talent_acquisition",
+    "hr",
+    "human_resource",
+    "human_resources",
+    "hr_admin",
+    "hradmin",
+    "super_admin",
+    "superadmin",
+    "super_administrator",
+  ]);
+
+  return roles.some((role) => allowedRoles.has(role));
+}
+
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -497,6 +592,7 @@ export default function EmployeeDataPage() {
 
   const displayEmployee = isEditing ? draftEmployee || employee : employee;
   const canEditDetails = canEditProfileDetails(currentUser);
+  const canManagePosition = canManageEmployeePosition(currentUser);
   const activePrimary = getActivePrimaryKey(activeTab);
   const activeSubTab = String(activeTab).includes(".")
     ? String(activeTab).split(".")[1]
@@ -506,19 +602,23 @@ export default function EmployeeDataPage() {
       ? { primary: "Resignation History", secondary: "Application Records" }
       : activePrimary === "chwcp"
         ? { primary: "CHWCP", secondary: "Coverage" }
-        : getActiveProfileLabel(activeTab);
+        : activePrimary === "position"
+          ? { primary: "Position", secondary: "Employee Assignment" }
+          : getActiveProfileLabel(activeTab);
   const activeSectionSupportsSave =
+    activePrimary === "position" ||
     activePrimary === "personal" ||
     Boolean(getStructuredProfileSection(activePrimary));
-  const visibleTabs = useMemo(() => {
-    if (resignationHistory.length === 0) return EMPLOYEE_PROFILE_TABS;
-
-    return PROFILE_TABS.flatMap((tab) =>
-      tab.key === "documents"
-        ? [tab, RESIGNATION_HISTORY_TAB, CHWCP_PROFILE_TAB]
-        : [tab],
-    );
-  }, [resignationHistory.length]);
+  const canEditActiveSection =
+    activePrimary === "position" ? canManagePosition : canEditDetails;
+  const visibleTabs = useMemo(
+    () =>
+      buildEmployeeProfileTabs({
+        includeResignationHistory: resignationHistory.length > 0,
+        includePosition: canManagePosition,
+      }),
+    [canManagePosition, resignationHistory.length],
+  );
 
   const selectedEmployeeSibsId = getProfileSibsId(employee);
 
@@ -641,6 +741,7 @@ export default function EmployeeDataPage() {
 
     function handleSelectedEmployeeEvent(event) {
       const newSibsId = event?.detail?.sibsId;
+
       if (newSibsId) {
         void fetchEmployee(newSibsId);
       }
@@ -753,7 +854,7 @@ export default function EmployeeDataPage() {
     if (
       !employee ||
       isSaving ||
-      !canEditDetails ||
+      !canEditActiveSection ||
       activePrimary === "chwcp" ||
       activePrimary === "resignation-history" ||
       !activeSectionSupportsSave
@@ -908,7 +1009,7 @@ export default function EmployeeDataPage() {
   }
 
   function saveChanges() {
-    if (activePrimary === "personal") {
+    if (activePrimary === "personal" || activePrimary === "position") {
       return saveProfileChanges();
     }
 
@@ -984,7 +1085,7 @@ export default function EmployeeDataPage() {
     isEditing,
     isSaving,
     onEdit:
-      canEditDetails &&
+      canEditActiveSection &&
       activeSectionSupportsSave &&
       activePrimary !== "chwcp" &&
       activePrimary !== "resignation-history"
@@ -1058,7 +1159,7 @@ export default function EmployeeDataPage() {
                 onGeneratePds={handleGeneratePds}
                 isGeneratingPds={isGeneratingPds}
                 canEdit={
-                  canEditDetails &&
+                  canEditActiveSection &&
                   activeSectionSupportsSave &&
                   activePrimary !== "chwcp" &&
                   activePrimary !== "resignation-history"
@@ -1115,9 +1216,13 @@ export default function EmployeeDataPage() {
                           ? "Read-only resignation application history for the selected employee."
                           : activePrimary === "chwcp"
                             ? "Read-only CHWCP shared and personal coverage for the selected employee."
-                            : isEditing
-                            ? "Editable input mode. Save the profile to lock the current updates."
-                            : "Official record values are shown from the existing employee data source."}
+                            : activePrimary === "position"
+                              ? isEditing
+                                ? "Enter the employee's official position, then save the profile update."
+                                : "HRIS-managed employee position maintained by authorized HR and Talent Acquisition users."
+                              : isEditing
+                                ? "Editable input mode. Save the profile to lock the current updates."
+                                : "Official record values are shown from the existing employee data source."}
                       </p>
                     </div>
 
@@ -1147,6 +1252,17 @@ export default function EmployeeDataPage() {
                   ) : activePrimary === "chwcp" ? (
                     <ChwcpCoverageSection
                       sibsId={getProfileSibsId(employee)}
+                    />
+                  ) : activePrimary === "position" ? (
+                    <PositionSection
+                      employee={displayEmployee}
+                      isEditing={isEditing}
+                      isSaving={isSaving}
+                      canEditDetails={canManagePosition}
+                      onEdit={startEditing}
+                      onChange={updateDraftField}
+                      onSave={saveChanges}
+                      onCancel={cancelEditing}
                     />
                   ) : (
                     <EmployeeProfileContent
