@@ -112,7 +112,9 @@ export default function EmployeeProfileHeader({
   isGeneratingPds = false,
 }) {
   const fullName = getFullName(employee) || "Employee Name";
-  const role = firstValue(
+  const employeePosition = firstValue(
+    employee?.employeePosition,
+    employee?.employee_position,
     employee?.position,
     employee?.positionName,
     employee?.position_name,
@@ -125,8 +127,6 @@ export default function EmployeeProfileHeader({
     employee?.roleTitle,
     employee?.role_title,
     employee?.designation,
-    employee?.employeePosition,
-    employee?.employee_position,
     employee?.gy_emp_position,
     employee?.appliedPosition,
     employee?.applied_position,
@@ -181,9 +181,9 @@ export default function EmployeeProfileHeader({
               </span>
             </div>
 
-            {role ? (
+            {employeePosition ? (
               <p className="mt-0.5 text-xs font-semibold text-sibs-orange">
-                {role}
+                {employeePosition}
               </p>
             ) : null}
 

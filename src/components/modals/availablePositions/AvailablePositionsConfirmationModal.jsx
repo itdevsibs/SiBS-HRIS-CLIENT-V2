@@ -5,7 +5,7 @@ import {
   X,
 } from "lucide-react";
 
-function ConfirmationModal({
+function AvailablePositionsConfirmationModal({
   open,
   title = "Confirm Action",
   message,
@@ -173,4 +173,4 @@ export function useConfirmDialog() {
   };
 }
 
-export default ConfirmationModal;
+export default AvailablePositionsConfirmationModal;

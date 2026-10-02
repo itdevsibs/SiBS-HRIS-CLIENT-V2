@@ -113,6 +113,14 @@ export default function AssessmentModal({
   if (!open) return null;
 
   const isTaken = assessmentStatus === "Taken";
+  const assessmentScoreNumber = Number(assessmentScore);
+  const hasValidAssessmentScore = Boolean(
+    isTaken &&
+      assessmentScore !== "" &&
+      Number.isFinite(assessmentScoreNumber) &&
+      assessmentScoreNumber >= 0 &&
+      assessmentScoreNumber <= 100,
+  );
 
   function handleStatusChange(value) {
     setAssessmentStatus(value);
@@ -133,6 +141,7 @@ export default function AssessmentModal({
 
     if (rawValue === "") {
       setAssessmentScore("");
+      setAssessmentResult("");
       return;
     }
 
@@ -244,7 +253,7 @@ export default function AssessmentModal({
       >
         Cancel
       </CandidateModalSecondaryButton>
-      {isTaken ? (
+      {hasValidAssessmentScore ? (
         <CandidateModalPrimaryButton
           type="submit"
           form="candidate-assessment-form"
@@ -308,6 +317,7 @@ export default function AssessmentModal({
               zIndex="z-[300]"
             />
 
+            {isTaken ? (<>
             <div>
               <ModalFieldLabel>Assessment Score</ModalFieldLabel>
               <div className="relative">
@@ -331,17 +341,19 @@ export default function AssessmentModal({
               </p>
             </div>
 
-            <DropdownField
-              label="Assessment Result"
-              required={isTaken}
-              value={assessmentResult}
-              onChange={(val) => setAssessmentResult(val)}
-              options={ASSESSMENT_RESULT_OPTIONS}
-              placeholder={isTaken ? "Select assessment result" : "Not required"}
-              searchable={false}
-              disabled={saving || !isTaken}
-              zIndex="z-[200]"
-            />
+            {hasValidAssessmentScore ? (
+              <DropdownField
+                label="Assessment Result"
+                required
+                value={assessmentResult}
+                onChange={(val) => setAssessmentResult(val)}
+                options={ASSESSMENT_RESULT_OPTIONS}
+                placeholder="Select assessment result"
+                searchable={false}
+                disabled={saving}
+                zIndex="z-[200]"
+              />
+            ) : null}
 
             <div>
               <ModalFieldLabel>Remarks</ModalFieldLabel>
@@ -384,6 +396,7 @@ export default function AssessmentModal({
                 />
               </div>
             </div>
+            </>) : null}
           </div>
         </CandidateModalSection>
       </form>

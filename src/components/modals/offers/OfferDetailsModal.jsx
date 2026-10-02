@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Check,
@@ -11,7 +12,6 @@ import {
 import api from "../../../lib/axios/api-template";
 
 import DetailRow from "../../recruitment/offers/common/DetailRow";
-import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
 
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import { formatCurrency } from "../../../lib/utils/offers/offerFormatters";
@@ -19,6 +19,7 @@ import {
   formatOfferVersionDate,
   getOfferEvaluationScores,
   getOfferHistory,
+  hasOfferApproverSignature,
 } from "../../../lib/utils/offers/offerEvaluationHistory";
 import { useOffers } from "../../../services/context/OffersContext";
 
@@ -186,6 +187,8 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
     setSelectedOffer,
   } = useOffers();
 
+  const navigate = useNavigate();
+
   const historySectionRef = useRef(null);
   const [revisedBasicPay, setRevisedBasicPay] = useState("");
   const [revisedDeminimis, setRevisedDeminimis] = useState("");
@@ -194,11 +197,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   const [approvalAction, setApprovalAction] = useState("");
   const [loadedOfferVersions, setLoadedOfferVersions] = useState([]);
   const [loadingOfferHistory, setLoadingOfferHistory] = useState(false);
-  const [employmentOfferPreview, setEmploymentOfferPreview] = useState({
-    open: false,
-    filename: "",
-    requestUrl: "",
-  });
 
   useEffect(() => {
     if (!offer) return;
@@ -341,6 +339,14 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   const canReviewOffer =
     approvalStatus === "For Review" && isAuthorizedApprover;
 
+  const approverSignatureUploaded = hasOfferApproverSignature({
+    ...(offer || {}),
+    offerVersions:
+      loadedOfferVersions.length > 0
+        ? loadedOfferVersions
+        : offer?.offerVersions || offer?.offer_versions || [],
+  });
+
   const responseStatus =
     latestOfferVersion?.candidateResponse ||
     offer.offerResponseStatus ||
@@ -373,6 +379,45 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
   async function handleOfferApproval(status) {
     if (!canReviewOffer || isBusy || typeof handleApproval !== "function") {
+      return;
+    }
+
+    if (status === "Approved" && !approverSignatureUploaded) {
+      const pipelineId =
+        offer.candidatePipelineId ||
+        offer.candidate_pipeline_id ||
+        offer.dbId ||
+        offer.id;
+
+      const currentVersionNumber = Math.max(
+        Number(
+          latestOfferVersion?.versionNumber ||
+            latestOfferVersion?.version_number ||
+            offer.offerVersion ||
+            offer.offer_version ||
+            1,
+        ) || 1,
+        1,
+      );
+
+      if (!pipelineId) {
+        openStatusModal?.({
+          type: "error",
+          title: "Employment Offer Not Found",
+          message:
+            "The Candidate Pipeline record for this Employment Offer could not be found.",
+        });
+        return;
+      }
+
+      onClose?.();
+      navigate(
+        `/recruitment/offers/document/${encodeURIComponent(
+          pipelineId,
+        )}/${encodeURIComponent(
+          currentVersionNumber,
+        )}?approval=1`,
+      );
       return;
     }
 
@@ -818,7 +863,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         </div>
                       </div>
 
-                      {version.pdfAvailable || version.pdfFilename ? (
+                      {Number(version.versionNumber || version.version_number || 0) > 0 ? (
                         <button
                           type="button"
                           onClick={() => {
@@ -832,23 +877,17 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                               return;
                             }
 
-                            setEmploymentOfferPreview({
-                              open: true,
-                              filename:
-                                version.pdfFilename ||
-                                version.pdf_filename ||
-                                `Employment Offer Version ${version.versionNumber}.pdf`,
-                              requestUrl: `/api/candidate-pipeline/${encodeURIComponent(
+                            onClose?.();
+                            navigate(
+                              `/recruitment/offers/document/${encodeURIComponent(
                                 pipelineId,
-                              )}/offer-versions/${encodeURIComponent(
-                                version.versionNumber,
-                              )}/pdf`,
-                            });
+                              )}/${encodeURIComponent(version.versionNumber)}`,
+                            );
                           }}
                           className="mt-3 inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90"
                         >
                           <FileText size={15} className="text-[#FF5C28]" />
-                          Open Employment Offer PDF
+                          Open Employment Offer
                         </button>
                       ) : null}
                     </article>
@@ -1036,19 +1075,6 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
         </div>
       </div>
     </div>
-
-      <EmploymentOfferPdfPreviewModal
-        open={employmentOfferPreview.open}
-        filename={employmentOfferPreview.filename}
-        requestUrl={employmentOfferPreview.requestUrl}
-        onClose={() =>
-          setEmploymentOfferPreview({
-            open: false,
-            filename: "",
-            requestUrl: "",
-          })
-        }
-      />
     </>
   );
 }

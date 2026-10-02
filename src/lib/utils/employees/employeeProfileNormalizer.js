@@ -158,7 +158,19 @@ export function normalizeEmployeeData(employee) {
       employee?.gy_account,
     ),
 
+    employeePosition: firstValue(
+      employee?.employeePosition,
+      employee?.employee_position,
+      employee?.position,
+      employee?.positionName,
+      employee?.position_name,
+      employee?.positionTitle,
+      employee?.position_title,
+    ),
+
     position: firstValue(
+      employee?.employeePosition,
+      employee?.employee_position,
       employee?.position,
       employee?.positionName,
       employee?.position_name,
@@ -171,8 +183,6 @@ export function normalizeEmployeeData(employee) {
       employee?.roleTitle,
       employee?.role_title,
       employee?.designation,
-      employee?.employeePosition,
-      employee?.employee_position,
       employee?.gy_emp_position,
       employee?.appliedPosition,
       employee?.applied_position,

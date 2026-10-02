@@ -2654,6 +2654,7 @@ function FormDropdown({
 }) {
   const dropdownRef = useRef(null);
   const [internalOpen, setInternalOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
 
   const isControlled = Boolean(
     dropdownId && typeof onOpenDropdownChange === "function",
@@ -2665,6 +2666,64 @@ function FormDropdown({
 
   const selectedOption = options.find((option) => option.value === value);
 
+  function updateOpenDirection() {
+    const control = dropdownRef.current;
+
+    if (!control) return;
+
+    const controlRect = control.getBoundingClientRect();
+    const boundary =
+      control.closest?.('[data-dropdown-boundary="true"]') ||
+      control.closest?.(".overflow-y-auto");
+    const boundaryRect = boundary?.getBoundingClientRect?.();
+
+    const viewportPadding = 12;
+    const gap = 8;
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight;
+    const boundaryTop = Math.max(
+      viewportPadding,
+      boundaryRect?.top ?? viewportPadding,
+    );
+    const boundaryBottom = Math.min(
+      viewportHeight - viewportPadding,
+      boundaryRect?.bottom ?? viewportHeight - viewportPadding,
+    );
+    const menuHeight = Math.min(
+      260,
+      Math.max(44, options.length * 44 + 8),
+    );
+    const availableBelow = Math.max(
+      0,
+      boundaryBottom - controlRect.bottom - gap,
+    );
+    const availableAbove = Math.max(
+      0,
+      controlRect.top - boundaryTop - gap,
+    );
+
+    setOpenUpward(
+      availableBelow < menuHeight && availableAbove > availableBelow,
+    );
+  }
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    updateOpenDirection();
+
+    function handlePositionChange() {
+      updateOpenDirection();
+    }
+
+    window.addEventListener("resize", handlePositionChange);
+    window.addEventListener("scroll", handlePositionChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handlePositionChange);
+      window.removeEventListener("scroll", handlePositionChange, true);
+    };
+  }, [open, options.length]);
   useEffect(() => {
     function closeDropdown() {
       if (isControlled) {
@@ -2700,6 +2759,10 @@ function FormDropdown({
 
   function handleToggle() {
     if (disabled) return;
+
+    if (!open) {
+      updateOpenDirection();
+    }
 
     if (isControlled) {
       onOpenDropdownChange(open ? "" : dropdownId);
@@ -2762,7 +2825,13 @@ function FormDropdown({
         </button>
 
         {open && !disabled && (
-          <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] max-h-[260px] w-full overflow-hidden rounded-xl border border-[#D6DEE8] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
+          <div
+            className={`absolute left-0 z-[99999] max-h-[260px] w-full overflow-hidden rounded-xl border border-[#D6DEE8] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)] ${
+              openUpward
+                ? "bottom-[calc(100%+8px)]"
+                : "top-[calc(100%+8px)]"
+            }`}
+          >
             <div className="max-h-[260px] overflow-y-auto py-1">
               {options.map((option) => {
                 const active = option.value === value;
@@ -3572,6 +3641,7 @@ function UpdateAssessmentModal({
   candidateId,
   onClose,
   onSaved,
+  confirmAction,
 }) {
   const [assessmentStatus, setAssessmentStatus] = useState("Pending");
   const [assessmentResult, setAssessmentResult] = useState("");
@@ -3705,6 +3775,13 @@ function UpdateAssessmentModal({
       return;
     }
 
+    const confirmation = await confirmAction?.(
+      `Save assessment update for ${candidate?.name || "this candidate"}?`,
+    );
+
+    if (confirmation && !confirmation.confirmed) return;
+
+    const actionNotes = cleanText(confirmation?.notes);
     setIsSaving(true);
     setErrorMessage("");
 
@@ -3734,6 +3811,9 @@ function UpdateAssessmentModal({
 
       formData.append("assessmentRemarks", assessmentRemarks);
       formData.append("assessment_remarks", assessmentRemarks);
+      formData.append("notes", actionNotes);
+      formData.append("actionNotes", actionNotes);
+      formData.append("action_notes", actionNotes);
 
       if (assessmentFile) {
         formData.append("assessmentFile", assessmentFile, assessmentFile.name);
@@ -3804,7 +3884,7 @@ function UpdateAssessmentModal({
       >
         Cancel
       </CandidateModalSecondaryButton>
-      {assessmentStatus === "Taken" ? (
+      {hasValidAssessmentScore ? (
         <CandidateModalPrimaryButton
           type="submit"
           form="candidate-inline-assessment-form"
@@ -3865,6 +3945,7 @@ function UpdateAssessmentModal({
               }}
             />
 
+            {assessmentStatus === "Taken" ? (<>
             <label className="block">
               <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
                 Assessment Score
@@ -3892,29 +3973,27 @@ function UpdateAssessmentModal({
               </p>
             </label>
 
-            <div>
-              <FormDropdown
-                label="Assessment Result"
-                value={assessmentResult}
-                options={ASSESSMENT_RESULT_DROPDOWN_OPTIONS}
-                disabled={
-                  isSaving ||
-                  assessmentStatus !== "Taken" ||
-                  !hasValidAssessmentScore
-                }
-                dropdownId="assessment-result"
-                openDropdownId={openAssessmentDropdown}
-                onOpenDropdownChange={setOpenAssessmentDropdown}
-                placeholder="Select assessment result"
-                onChange={setAssessmentResult}
-              />
+            {hasValidAssessmentScore ? (
+              <div>
+                <FormDropdown
+                  label="Assessment Result"
+                  value={assessmentResult}
+                  options={ASSESSMENT_RESULT_DROPDOWN_OPTIONS}
+                  disabled={isSaving || !hasValidAssessmentScore}
+                  dropdownId="assessment-result"
+                  openDropdownId={openAssessmentDropdown}
+                  onOpenDropdownChange={setOpenAssessmentDropdown}
+                  placeholder="Select assessment result"
+                  onChange={setAssessmentResult}
+                />
 
-              {hasValidAssessmentScore && (
-                <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                  Suggested from the score. You can still select another assessment result.
-                </p>
-              )}
-            </div>
+                {hasValidAssessmentScore && (
+                  <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                    Suggested from the score. You can still select another assessment result.
+                  </p>
+                )}
+              </div>
+            ) : null}
 
             {isAutomaticAssessmentFailure && (
               <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-700">
@@ -3968,6 +4047,7 @@ function UpdateAssessmentModal({
                 )}
               </div>
             </label>
+            </>) : null}
 
             {errorMessage && (
               <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
@@ -4609,15 +4689,199 @@ function NhoTimeDropdown({
   disabled = false,
 }) {
   const dropdownRef = useRef(null);
-  const open = openDropdown === dropdownId;
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+  const [menuPosition, setMenuPosition] = useState(null);
+
+  const open =
+    openDropdown === dropdownId;
 
   const selectedOption = options.find(
-    (option) => String(option.value) === String(value),
+    (option) =>
+      String(option.value) === String(value),
   );
 
+  useLayoutEffect(() => {
+    if (
+      !open ||
+      !buttonRef.current
+    ) {
+      setMenuPosition(null);
+      return undefined;
+    }
+
+    function updatePosition() {
+      const button =
+        buttonRef.current;
+
+      if (!button) return;
+
+      const rect =
+        button.getBoundingClientRect();
+
+      const boundary =
+        button.closest?.(
+          '[data-dropdown-boundary="true"]',
+        ) ||
+        button.closest?.(
+          ".overflow-y-auto",
+        );
+
+      const boundaryRect =
+        boundary?.getBoundingClientRect?.();
+
+      const viewportPadding = 10;
+      const menuGap = 6;
+      const viewportHeight =
+        window.innerHeight ||
+        document.documentElement.clientHeight;
+      const viewportWidth =
+        window.innerWidth ||
+        document.documentElement.clientWidth;
+
+      /*
+       * The Schedule NHO modal has a fixed footer. Its scrollable
+       * data-dropdown-boundary ends directly above that footer, so
+       * use that boundary instead of the full viewport. This keeps
+       * Hour/Minute menus from being hidden behind the footer.
+       */
+      const topBoundary = Math.max(
+        viewportPadding,
+        boundaryRect?.top ??
+          viewportPadding,
+      );
+
+      const bottomBoundary = Math.min(
+        viewportHeight -
+          viewportPadding,
+        boundaryRect?.bottom ??
+          viewportHeight -
+            viewportPadding,
+      );
+
+      const desiredMenuHeight =
+        Math.min(
+          220,
+          Math.max(
+            44,
+            options.length * 38 + 8,
+          ),
+        );
+
+      const spaceBelow = Math.max(
+        0,
+        bottomBoundary -
+          rect.bottom -
+          menuGap,
+      );
+
+      const spaceAbove = Math.max(
+        0,
+        rect.top -
+          topBoundary -
+          menuGap,
+      );
+
+      const openUpward =
+        spaceBelow <
+          desiredMenuHeight &&
+        spaceAbove >
+          spaceBelow;
+
+      const availableHeight =
+        openUpward
+          ? spaceAbove
+          : spaceBelow;
+
+      const maxHeight = Math.max(
+        76,
+        Math.min(
+          desiredMenuHeight,
+          availableHeight,
+        ),
+      );
+
+      const width = Math.min(
+        rect.width,
+        viewportWidth -
+          viewportPadding * 2,
+      );
+
+      const left = Math.min(
+        Math.max(
+          viewportPadding,
+          rect.left,
+        ),
+        viewportWidth -
+          width -
+          viewportPadding,
+      );
+
+      const top = openUpward
+        ? Math.max(
+            topBoundary,
+            rect.top -
+              maxHeight -
+              menuGap,
+          )
+        : rect.bottom +
+          menuGap;
+
+      setMenuPosition({
+        left,
+        top,
+        width,
+        maxHeight,
+        openUpward,
+      });
+    }
+
+    updatePosition();
+
+    window.addEventListener(
+      "resize",
+      updatePosition,
+    );
+    window.addEventListener(
+      "scroll",
+      updatePosition,
+      true,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        updatePosition,
+      );
+      window.removeEventListener(
+        "scroll",
+        updatePosition,
+        true,
+      );
+    };
+  }, [
+    open,
+    options.length,
+  ]);
+
   useEffect(() => {
+    if (!open) return undefined;
+
     function handleClickOutside(event) {
-      if (!dropdownRef.current?.contains(event.target)) {
+      const isInsideControl =
+        dropdownRef.current?.contains(
+          event.target,
+        );
+
+      const isInsideMenu =
+        menuRef.current?.contains(
+          event.target,
+        );
+
+      if (
+        !isInsideControl &&
+        !isInsideMenu
+      ) {
         setOpenDropdown?.("");
       }
     }
@@ -4628,28 +4892,60 @@ function NhoTimeDropdown({
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside,
+    );
+    document.addEventListener(
+      "keydown",
+      handleEscape,
+    );
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside,
+      );
+      document.removeEventListener(
+        "keydown",
+        handleEscape,
+      );
     };
-  }, [setOpenDropdown]);
+  }, [
+    open,
+    setOpenDropdown,
+  ]);
 
   function handleSelect(option) {
-    if (disabled || option.disabled) return;
+    if (
+      disabled ||
+      option.disabled
+    ) {
+      return;
+    }
 
     onChange?.(option.value);
     setOpenDropdown?.("");
   }
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div
+      ref={dropdownRef}
+      className="relative"
+    >
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
-        onClick={() => setOpenDropdown?.(open ? "" : dropdownId)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() =>
+          setOpenDropdown?.(
+            open
+              ? ""
+              : dropdownId,
+          )
+        }
         className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-[#F8FAFC] px-3 text-left sibs-text-xs font-bold outline-none transition ${
           open
             ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
@@ -4661,46 +4957,113 @@ function NhoTimeDropdown({
         }`}
       >
         <span className="truncate">
-          {selectedOption?.label || placeholder}
+          {selectedOption?.label ||
+            placeholder}
         </span>
 
         <ChevronDown
           size={15}
           className={`shrink-0 text-[#315B7E] transition-transform ${
-            open ? "rotate-180" : ""
+            open
+              ? "rotate-180"
+              : ""
           }`}
         />
       </button>
 
-      {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[13000] max-h-[220px] w-full overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]">
-          <div className="max-h-[220px] overflow-y-auto py-1">
-            {options.map((option) => {
-              const active =
-                String(option.value) === String(value);
+      {open &&
+      !disabled &&
+      typeof document !==
+        "undefined"
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="listbox"
+              className="sibs-dropdown-pop-in fixed z-[13000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]"
+              style={{
+                left:
+                  menuPosition?.left ??
+                  0,
+                top:
+                  menuPosition?.top ??
+                  0,
+                width:
+                  menuPosition?.width ??
+                  buttonRef.current
+                    ?.getBoundingClientRect()
+                    .width ??
+                  0,
+                maxHeight:
+                  menuPosition?.maxHeight ??
+                  220,
+                visibility:
+                  menuPosition
+                    ? "visible"
+                    : "hidden",
+              }}
+            >
+              <div
+                className="overflow-y-auto py-1 sibs-scrollbar"
+                style={{
+                  maxHeight:
+                    menuPosition
+                      ?.maxHeight ??
+                    220,
+                }}
+              >
+                {options.map(
+                  (option) => {
+                    const active =
+                      String(
+                        option.value,
+                      ) ===
+                      String(value);
 
-              return (
-                <button
-                  key={String(option.value)}
-                  type="button"
-                  disabled={option.disabled}
-                  onClick={() => handleSelect(option)}
-                  className={`flex min-h-[38px] w-full items-center justify-between gap-2 px-3 text-left sibs-text-xs font-semibold transition ${
-                    option.disabled
-                      ? "cursor-not-allowed bg-white text-[#C8D2DE]"
-                      : active
-                        ? "bg-[#FFF4EF] text-[#FF5C28]"
-                        : "bg-white text-[#31465B] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
-                  }`}
-                >
-                  <span>{option.label}</span>
-                  {active && !option.disabled && <Check size={14} />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                    return (
+                      <button
+                        key={String(
+                          option.value,
+                        )}
+                        type="button"
+                        role="option"
+                        aria-selected={
+                          active
+                        }
+                        disabled={
+                          option.disabled
+                        }
+                        onClick={() =>
+                          handleSelect(
+                            option,
+                          )
+                        }
+                        className={`flex min-h-[38px] w-full items-center justify-between gap-2 px-3 text-left sibs-text-xs font-semibold transition ${
+                          option.disabled
+                            ? "cursor-not-allowed bg-white text-[#C8D2DE]"
+                            : active
+                              ? "bg-[#FFF4EF] text-[#FF5C28]"
+                              : "bg-white text-[#31465B] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                        }`}
+                      >
+                        <span>
+                          {option.label}
+                        </span>
+
+                        {active &&
+                        !option.disabled ? (
+                          <Check
+                            size={14}
+                          />
+                        ) : null}
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -9393,6 +9756,7 @@ candidateId,
     targetStage,
     savedFiles,
     savedMajorProgress,
+    actionNotes = "",
   ) {
     if (!candidateNhoUploadId || !targetStage) return null;
 
@@ -9410,6 +9774,9 @@ candidateId,
         requestedStage: targetStage,
         reason,
         reasonForMovement: reason,
+        notes: actionNotes,
+        actionNotes,
+        action_notes: actionNotes,
         remarks:
           targetStage === INCOMPLETE_ONBOARDING_STAGE
             ? "Candidate saved with incomplete major requirements."
@@ -9572,6 +9939,13 @@ candidateId,
       ALL_REQUIREMENTS,
     );
 
+    const confirmation = await confirmAction(
+      `Save pre-employment requirements for ${activeCandidate?.name || "this candidate"}?`,
+    );
+
+    if (!confirmation?.confirmed) return;
+
+    const actionNotes = cleanText(confirmation.notes);
     setIsSavingNhoFiles(true);
     setNhoFilesError("");
     setNhoFilesSuccess("");
@@ -9696,6 +10070,10 @@ candidateId,
         "candidateEmail",
         saveIdentity.candidateEmail,
       );
+
+      formData.append("notes", actionNotes);
+      formData.append("actionNotes", actionNotes);
+      formData.append("action_notes", actionNotes);
 
       /*
        * Leave Content-Type unset so the browser generates the multipart
@@ -10059,6 +10437,13 @@ saveCandidate.pipelineStage ||
       return;
     }
 
+    const confirmation = await confirmAction(
+      `Move ${activeCandidate?.name || "this candidate"} to Onboarding?`,
+    );
+
+    if (!confirmation?.confirmed) return;
+
+    const actionNotes = cleanText(confirmation.notes);
     setIsSavingNhoFiles(true);
     setNhoFilesError("");
     setNhoFilesSuccess("");
@@ -10068,6 +10453,7 @@ saveCandidate.pipelineStage ||
         ONBOARDING_STAGE,
         sortedCandidateFiles,
         majorNhoProgress,
+        actionNotes,
       );
 
       const successMessage =
@@ -10168,6 +10554,13 @@ saveCandidate.pipelineStage ||
       return;
     }
 
+    const confirmation = await confirmAction(
+      `Accept the applicant-rescheduled NHO date for ${activeCandidate?.name || "this candidate"}?`,
+    );
+
+    if (!confirmation?.confirmed) return;
+
+    const actionNotes = cleanText(confirmation.notes);
     setIsAcceptingNhoReschedule(true);
 
     try {
@@ -10175,7 +10568,11 @@ saveCandidate.pipelineStage ||
         `/api/candidate-pipeline/${encodeURIComponent(
           candidateId,
         )}/nho/accept-reschedule`,
-        {},
+        {
+          notes: actionNotes,
+          actionNotes,
+          action_notes: actionNotes,
+        },
         {
           withCredentials: true,
         },
@@ -10312,6 +10709,13 @@ saveCandidate.pipelineStage ||
       return;
     }
 
+    const confirmation = await confirmAction(
+      `Reschedule NHO for ${activeCandidate?.name || "this candidate"}?`,
+    );
+
+    if (!confirmation?.confirmed) return;
+
+    const actionNotes = cleanText(confirmation.notes);
     setIsReschedulingNho(true);
 
     try {
@@ -10325,6 +10729,9 @@ saveCandidate.pipelineStage ||
           startTime: selectedTime,
           start_time: selectedTime,
           time: selectedTime,
+          notes: actionNotes,
+          actionNotes,
+          action_notes: actionNotes,
         },
         {
           withCredentials: true,
@@ -10537,6 +10944,13 @@ async function handleConfirmScheduleNho() {
       return;
     }
 
+    const confirmation = await confirmAction(
+      `Schedule NHO for ${activeCandidate?.name || "this candidate"}?`,
+    );
+
+    if (!confirmation?.confirmed) return;
+
+    const actionNotes = cleanText(confirmation.notes);
     setIsSchedulingNho(true);
 
     try {
@@ -10596,6 +11010,9 @@ async function handleConfirmScheduleNho() {
             ?.applyingLocation ||
           "—",
         status: "Scheduled",
+        notes: actionNotes,
+        actionNotes,
+        action_notes: actionNotes,
         remarks:
           `NHO scheduled for ${selectedDateDisplay} at ${formatNhoScheduleTimeDisplay(selectedTime)}.`,
       };
@@ -12299,7 +12716,7 @@ const concretePreferredFinalInterviewFormId =
                     {isLoadingOfferVersions && <Loader2 size={13} className="animate-spin text-[#667085]" />}
                   </div>
                   <div className="mt-2 space-y-1.5">
-                    {candidateOfferVersions.slice(0, 3).map((version) => {
+                    {candidateOfferVersions.map((version) => {
                       const versionNumber = getOfferVersionNumber(version);
                       const filename =
                         getOfferVersionPdfFilename(version) ||
@@ -12617,6 +13034,7 @@ const concretePreferredFinalInterviewFormId =
         candidateId={candidateNhoUploadId}
         onClose={() => setShowAssessmentModal(false)}
         onSaved={handleAssessmentSaved}
+        confirmAction={confirmAction}
       />
 
       <AssessmentEmailFormatModal

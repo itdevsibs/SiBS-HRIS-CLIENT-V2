@@ -5,6 +5,7 @@ import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import {
   getLatestNegotiationSummary,
   getOfferEvaluationScores,
+  hasOfferApproverSignature,
 } from "../../../lib/utils/offers/offerEvaluationHistory";
 import { useOffers } from "../../../services/context/OffersContext";
 
@@ -71,6 +72,10 @@ export default function OfferMobileCards({
             : Boolean(canCurrentUserApproveOffer);
         const scores = getOfferEvaluationScores(offer);
         const negotiation = getLatestNegotiationSummary(offer);
+        const ownerDisplay =
+          offer.ownerDisplay || offer.owner_display || offer.owner || "—";
+        const ownerRoleLabel =
+          offer.ownerRoleLabel || offer.owner_role_label || "";
 
         return (
           <DataCard
@@ -125,10 +130,17 @@ export default function OfferMobileCards({
                 <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
                   Owner
                 </p>
-                <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-bold text-[#042C51]">
-                  <UserRound size={11} className="shrink-0 text-[#98A2B3]" />
-                  <span className="truncate">{offer.owner || "—"}</span>
-                </p>
+                <div className="mt-1 flex min-w-0 flex-col items-start gap-1">
+                  {ownerRoleLabel ? (
+                    <span className="inline-flex w-fit items-center rounded-full border border-[#B2CCFF] bg-[#EFF4FF] px-2 py-0.5 text-[9px] font-extrabold leading-none text-[#175CD3]">
+                      {ownerRoleLabel}
+                    </span>
+                  ) : null}
+                  <p className="flex min-w-0 items-start gap-1 text-xs font-bold leading-4 text-[#042C51]">
+                    <UserRound size={11} className="mt-0.5 shrink-0 text-[#98A2B3]" />
+                    <span className="line-clamp-2 break-words">{ownerDisplay}</span>
+                  </p>
+                </div>
               </div>
             </DataCard.ContextRow>
 
@@ -210,14 +222,16 @@ export default function OfferMobileCards({
                       <X size={13} />
                       Decline
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleApproval?.(offer, "Approved")}
-                      className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#042C51] px-2.5 text-[10px] font-extrabold text-white transition hover:bg-[#063b6d] active:scale-95"
-                    >
-                      <Check size={13} />
-                      Approve
-                    </button>
+                    {hasOfferApproverSignature(offer) ? (
+                      <button
+                        type="button"
+                        onClick={() => handleApproval?.(offer, "Approved")}
+                        className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#042C51] px-2.5 text-[10px] font-extrabold text-white transition hover:bg-[#063b6d] active:scale-95"
+                      >
+                        <Check size={13} />
+                        Approve
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
