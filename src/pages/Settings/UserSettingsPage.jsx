@@ -1199,9 +1199,12 @@ function AccessModal({
     try {
       setSaving(true);
 
+      const selectedRoleOption = getRoleOptionByAccess(Number(adminAccess));
+
       const payload = {
         gyEmpId: selectedEmployee.gyEmpId,
         sibsId: selectedEmployee.sibsId,
+        role: selectedRoleOption?.value || "",
         adminAccess: Number(adminAccess),
         accountIds: selectedAccountIds,
       };

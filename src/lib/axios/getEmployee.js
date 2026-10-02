@@ -6,41 +6,76 @@ export async function getEmployee(
   account = "All",
   options = {},
 ) {
-  try {
-    const res = await api.get("/api/employees", {
-      params: {
-        page,
-        search,
-        department: options?.department || "All",
-        account: account || "All",
-        includeDepartments: options?.includeDepartments ? 1 : 0,
-        includeAccounts: options?.includeAccounts ? 1 : 0,
-      },
-      withCredentials: true,
-    });
+  const requestConfig = {
+    params: {
+      page,
+      search,
+      department: options?.department || "All",
+      account: account || "All",
+      includeDepartments: options?.includeDepartments ? 1 : 0,
+      includeAccounts: options?.includeAccounts ? 1 : 0,
+    },
+    withCredentials: true,
+  };
 
-    return {
-      success: res.data?.success ?? true,
-      data: res.data?.data || [],
-      departmentOptions: res.data?.departmentOptions || [],
-      accountOptions: res.data?.accountOptions || [],
-      selectedDepartment:
-        res.data?.selectedDepartment || options?.department || "All",
-      selectedAccount: res.data?.selectedAccount || account || "All",
-      access: res.data?.access || null,
-      pagination: res.data?.pagination || {
-        totalPages: 1,
-        currentPage: 1,
-        total: 0,
-      },
-      message: res.data?.message || "",
-      status: res.status,
-    };
+  const mapResponse = (res) => ({
+    success: res.data?.success ?? true,
+    data: res.data?.data || [],
+    departmentOptions: res.data?.departmentOptions || [],
+    accountOptions: res.data?.accountOptions || [],
+    selectedDepartment:
+      res.data?.selectedDepartment || options?.department || "All",
+    selectedAccount: res.data?.selectedAccount || account || "All",
+    access: res.data?.access || null,
+    pagination: res.data?.pagination || {
+      totalPages: 1,
+      currentPage: 1,
+      total: 0,
+    },
+    message: res.data?.message || "",
+    status: res.status,
+  });
+
+  try {
+    const res = await api.get("/api/employees", requestConfig);
+    return mapResponse(res);
   } catch (err) {
+    let finalError = err;
+
+    /*
+     * An assigned user's admin access can be changed while an older admin JWT
+     * is still active. In that case /api/employees can correctly reject the
+     * stale Manager/TL/WFM claim with 403 even though assigned_accounts now
+     * grants HR/HR Admin/Super Admin/SOM access.
+     *
+     * Refresh the authenticated session once so the server can rebuild the JWT
+     * from the current assigned_accounts record, then retry this read request.
+     * A legitimate 403 remains a 403 after the single retry.
+     */
+    if (err?.response?.status === 403) {
+      try {
+        const refreshResponse = await api.post(
+          "/api/users/refresh",
+          {},
+          {
+            withCredentials: true,
+            skipAuthRedirect: true,
+          },
+        );
+
+        if (refreshResponse?.data?.success !== false) {
+          const retryResponse = await api.get("/api/employees", requestConfig);
+          return mapResponse(retryResponse);
+        }
+      } catch (retryError) {
+        finalError = retryError;
+      }
+    }
+
     console.error(
       "Axios getEmployee API error:",
-      err?.response?.status,
-      err?.message,
+      finalError?.response?.status,
+      finalError?.response?.data || finalError?.message,
     );
 
     return {
@@ -50,18 +85,18 @@ export async function getEmployee(
       accountOptions: [],
       selectedDepartment: options?.department || "All",
       selectedAccount: account || "All",
-      access: null,
+      access: finalError?.response?.data?.access || null,
       pagination: {
         totalPages: 1,
         currentPage: 1,
         total: 0,
       },
       message:
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
+        finalError?.response?.data?.message ||
+        finalError?.response?.data?.error ||
         "Failed to fetch employees",
-      status: err?.response?.status || 500,
-      error: err,
+      status: finalError?.response?.status || 500,
+      error: finalError,
     };
   }
 }
